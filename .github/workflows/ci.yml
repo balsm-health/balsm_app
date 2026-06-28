@@ -89,7 +89,7 @@ jobs:
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Build web (release, prod)
         working-directory: app
-        run: flutter build web --release -t lib/main_prod.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
+        run: flutter build web --release -t lib/main_patient.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
       - uses: actions/upload-artifact@v4
         with:
           name: web-prod
@@ -118,7 +118,7 @@ jobs:
       # keystore is wired (see SIGNING below).
       - name: Build APK (release, prod flavor)
         working-directory: app
-        run: flutter build apk --release --flavor prod -t lib/main_prod.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
+        run: flutter build apk --release --flavor prod -t lib/main_patient.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
       - uses: actions/upload-artifact@v4
         with:
           name: android-prod-apk
@@ -140,7 +140,7 @@ jobs:
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Build iOS (release, no codesign, prod)
         working-directory: app
-        run: flutter build ios --release --no-codesign -t lib/main_prod.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
+        run: flutter build ios --release --no-codesign -t lib/main_patient.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
       - uses: actions/upload-artifact@v4
         with:
           name: ios-prod-app

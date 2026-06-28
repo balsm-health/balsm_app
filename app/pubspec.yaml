@@ -52,6 +52,12 @@ dev_dependencies:
   # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
   golden_toolkit: ^0.15.0
   dio: ^5.8.0
+dependency_overrides:
+  # path_provider_foundation 2.6.0 migrated to package:objective_c + the
+  # experimental native-assets build, which mislinks on iOS (Foundation not
+  # linked → "Couldn't resolve OBJC_CLASS_$_NSArray ... symbol not found").
+  # Pin to the last method-channel build to sidestep native assets.
+  path_provider_foundation: 2.4.1
 flutter:
   uses-material-design: true
   generate: true

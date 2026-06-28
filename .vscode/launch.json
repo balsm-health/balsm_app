@@ -1,44 +1,8 @@
 {
   "version": "0.2.0",
-  "inputs": [
-    {
-      "id": "brand",
-      "type": "pickString",
-      "description": "Brand",
-      "default": "balsm",
-      "options": [
-        { "label": "Balsm", "value": "balsm" },
-        { "label": "Balsm-Pro", "value": "balsm_pro" }
-      ]
-    },
-    {
-      "id": "env",
-      "type": "pickString",
-      "description": "Environment",
-      "default": "dev",
-      "options": [
-        { "label": "dev", "value": "dev" },
-        { "label": "staging", "value": "staging" },
-        { "label": "prod", "value": "prod" }
-      ]
-    }
-  ],
   "configurations": [
     {
-      "name": "Balsm (pick brand + env)",
-      "request": "launch",
-      "type": "dart",
-      "cwd": "app",
-      "program": "lib/main.dart",
-      "args": [
-        "--flavor",
-        "${input:env}",
-        "--dart-define-from-file=env/${input:brand}/${input:env}.json",
-        "--dart-define-from-file=env/envs.json"
-      ]
-    },
-    {
-      "name": "Balsm Patient App (design)",
+      "name": "Balsm Patient App",
       "request": "launch",
       "type": "dart",
       "cwd": "app",

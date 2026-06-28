@@ -21,38 +21,38 @@ scripts:
   e2e:
     run: melos exec --scope=app -- "flutter test integration_test"
   run:dev:
-    run: flutter run -t lib/main_dev.dart --flavor dev --dart-define-from-file=env/dev.json
+    run: flutter run -t lib/main_patient.dart --flavor dev --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   run:patient:
-    run: flutter run -t lib/main_patient.dart --flavor dev --dart-define-from-file=env/dev.json
+    run: flutter run -t lib/main_patient.dart --flavor dev --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   run:staging:
-    run: flutter run -t lib/main_staging.dart --flavor staging --dart-define-from-file=env/staging.json
+    run: flutter run -t lib/main_patient.dart --flavor staging --dart-define-from-file=env/balsm/staging.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   run:prod:
-    run: flutter run -t lib/main_prod.dart --flavor prod --dart-define-from-file=env/prod.json
+    run: flutter run -t lib/main_patient.dart --flavor prod --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   build:android:dev:
-    run: flutter build apk --flavor dev -t lib/main_dev.dart --dart-define-from-file=env/dev.json
+    run: flutter build apk --flavor dev -t lib/main_patient.dart --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   build:android:staging:
-    run: flutter build apk --flavor staging -t lib/main_staging.dart --dart-define-from-file=env/staging.json
+    run: flutter build apk --flavor staging -t lib/main_patient.dart --dart-define-from-file=env/balsm/staging.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   build:android:prod:
-    run: flutter build apk --flavor prod -t lib/main_prod.dart --dart-define-from-file=env/prod.json
+    run: flutter build apk --flavor prod -t lib/main_patient.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   build:web:dev:
-    run: flutter build web --flavor dev -t lib/main_dev.dart --dart-define-from-file=env/dev.json
+    run: flutter build web --flavor dev -t lib/main_patient.dart --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
   build:web:prod:
-    run: flutter build web --flavor prod -t lib/main_prod.dart --dart-define-from-file=env/prod.json
+    run: flutter build web --flavor prod -t lib/main_patient.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/envs.json
     exec:
       scope: app
