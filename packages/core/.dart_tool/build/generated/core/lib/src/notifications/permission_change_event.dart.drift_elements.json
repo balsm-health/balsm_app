@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:core/src/domain/events/app_event.dart","transitive":false},{"uri":"package:core/src/notifications/permission_state.dart","transitive":false}],"elements":[]}

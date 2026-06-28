@@ -1,0 +1,8 @@
+{
+  "elements": {},
+  "imports": [
+    "package:dio/dio.dart",
+    "package:flutter_riverpod/flutter_riverpod.dart",
+    "package:core/src/network/balsm_api_client.dart"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "elements": {},
+  "imports": [
+    "package:drift/drift.dart",
+    "package:core/src/domain/value_objects/uuid_v7.dart"
+  ]
+}

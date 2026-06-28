@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:flutter/material.dart","transitive":false},{"uri":"package:core/src/config/flavor.dart","transitive":false},{"uri":"package:core/src/config/server_preset.dart","transitive":false},{"uri":"package:core/src/network/balsm_api_client.dart","transitive":false}],"elements":[]}

@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+    branches: [main, '001-*']
+  pull_request:
+    branches: [main]
+
+env:
+  FLUTTER_VERSION: '3.41.9'
+  # All packages in dependency-safe order. core first (everything depends on it);
+  # app last (aggregates the tree). balsm_boundary_lint excluded — its analyzer
+  # ^6.11 pin needs the `_macros` SDK pkg absent in Dart 3.11.
+  PKGS: >-
+    packages/core packages/geofence_block packages/auth packages/disclosure
+    packages/profile packages/account packages/home packages/emergency_card
+    packages/medications packages/deletion packages/sessions app
+
+jobs:
+  analyze:
+    name: Analyze (all packages)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: pub get (all packages)
+        run: |
+          set -e
+          for p in $PKGS; do
+            echo "::group::pub get $p"; (cd "$p" && flutter pub get); echo "::endgroup::"
+          done
+      - name: Generate drift code (core)
+        working-directory: packages/core
+        run: dart run build_runner build
+      - name: Analyze (all packages — fails on errors only)
+        # Warnings/infos are surfaced in logs but non-blocking; the gate is
+        # zero analyzer ERRORS (verified across all 12 packages).
+        run: |
+          set -e
+          for p in $PKGS; do
+            echo "::group::analyze $p"; (cd "$p" && flutter analyze --no-fatal-warnings --no-fatal-infos); echo "::endgroup::"
+          done
+
+  test:
+    name: Tests (PHI-leak + i18n)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: pub get core + app
+        run: |
+          (cd packages/core && flutter pub get)
+          (cd app && flutter pub get)
+      - name: Generate drift code (core)
+        working-directory: packages/core
+        run: dart run build_runner build
+      - name: PHI-leak fuzz tests
+        working-directory: app
+        run: flutter test ../test/phi_leak_fuzz_test --exclude-tags e2e
+      - name: Translation completeness
+        working-directory: app
+        run: flutter test ../test/i18n --exclude-tags e2e
+
+  build-web:
+    name: Build web
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Validate public-route assets (.well-known)
+        run: |
+          python3 -c "import json; json.load(open('app/web/.well-known/apple-app-site-association')); print('AASA OK')"
+          python3 -c "import json; json.load(open('app/web/.well-known/assetlinks.json')); print('assetlinks OK')"
+          python3 -c "import json; json.load(open('app/web/.well-known/emergency-keys.json')); print('emergency-keys OK')"
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Build web (release, prod)
+        working-directory: app
+        run: flutter build web --release -t lib/main_prod.dart --dart-define-from-file=env/prod.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-prod
+          path: app/build/web
+          if-no-files-found: error
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # NDK is pinned in app/android/app/build.gradle.kts; AGP installs it on the
+      # runner if missing. Release uses the debug signing fallback until a prod
+      # keystore is wired (see SIGNING below).
+      - name: Build APK (release, prod flavor)
+        working-directory: app
+        run: flutter build apk --release --flavor prod -t lib/main_prod.dart --dart-define-from-file=env/prod.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-prod-apk
+          path: app/build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
+
+  build-ios:
+    name: Build iOS (no codesign)
+    runs-on: macos-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Build iOS (release, no codesign, prod)
+        working-directory: app
+        run: flutter build ios --release --no-codesign -t lib/main_prod.dart --dart-define-from-file=env/prod.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-prod-app
+          path: app/build/ios/iphoneos/Runner.app
+          if-no-files-found: error
+
+# SIGNING (TODO before store release):
+#   Android — add a signingConfig in app/android/app/build.gradle.kts fed by
+#     secrets (KEYSTORE_BASE64, KEY_ALIAS, KEY_PASSWORD, STORE_PASSWORD), decode
+#     the keystore in a CI step, and switch the release build off the debug key.
+#   iOS — supply provisioning profile + cert via secrets (e.g. apple-actions/
+#     import-codesign-certs), drop --no-codesign, set the team/profile.

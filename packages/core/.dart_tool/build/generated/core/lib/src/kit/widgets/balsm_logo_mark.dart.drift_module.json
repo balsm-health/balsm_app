@@ -1,0 +1,8 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter/material.dart",
+    "package:flutter_svg/flutter_svg.dart",
+    "package:core/src/kit/_tokens.dart"
+  ]
+}

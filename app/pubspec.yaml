@@ -1,0 +1,59 @@
+name: app
+description: Balsm runnable shell
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  core:
+    path: ../packages/core
+  auth:
+    path: ../packages/auth
+  disclosure:
+    path: ../packages/disclosure
+  home:
+    path: ../packages/home
+  profile:
+    path: ../packages/profile
+  emergency_card:
+    path: ../packages/emergency_card
+  medications:
+    path: ../packages/medications
+  sessions:
+    path: ../packages/sessions
+  account:
+    path: ../packages/account
+  deletion:
+    path: ../packages/deletion
+  geofence_block:
+    path: ../packages/geofence_block
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.0.0
+  app_links: ^6.3.0
+  url_strategy: ^0.3.0
+  lucide_icons: ^0.257.0
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  shared_preferences: ^2.3.2
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
+  golden_toolkit: ^0.15.0
+  dio: ^5.8.0
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/body/

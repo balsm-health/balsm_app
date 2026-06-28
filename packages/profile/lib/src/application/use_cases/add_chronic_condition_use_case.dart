@@ -1,0 +1,86 @@
+import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../domain/aggregates/health_profile.dart';
+import '../../domain/events/health_profile_updated.dart';
+import '../../infrastructure/drift/profile_dao.dart';
+
+/// Adds a [ChronicCondition] to the user's [HealthProfile] and publishes
+/// [HealthProfileUpdated] on the [EventBus].
+///
+/// PHI is written to the on-device SQLite/SQLCipher store only — no network
+/// call, no PHI in logs.
+class AddChronicConditionUseCase {
+  const AddChronicConditionUseCase({
+    required ProfileDao dao,
+    required EventBus eventBus,
+  })  : _dao = dao,
+        _bus = eventBus;
+
+  final ProfileDao _dao;
+  final EventBus _bus;
+
+  /// Validates input, persists the condition, and emits an event.
+  Future<AppResult<HealthProfile>> execute({
+    required String userId,
+    required String name,
+  }) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) {
+      return AppResult.failure(
+        const ValidationFailure('Condition name is required'),
+      );
+    }
+    if (trimmedName.length > 100) {
+      return AppResult.failure(
+        const ValidationFailure(
+          'Condition name must be 100 characters or fewer',
+        ),
+      );
+    }
+
+    try {
+      var profile = await _dao.getProfile(userId);
+
+      if (profile == null) {
+        profile = HealthProfile(
+          id: UuidV7.generate(),
+          userId: userId,
+          bloodType: null,
+          allergies: const [],
+          conditions: const [],
+          emergencyContacts: const [],
+          updatedAt: DateTime.now().toUtc(),
+        );
+        await _dao.upsertProfile(profile);
+      }
+
+      await _dao.addCondition(
+        profile.id,
+        ChronicCondition(
+          id: UuidV7.generate(),
+          healthProfileId: profile.id,
+          name: trimmedName,
+          createdAt: DateTime.now().toUtc(),
+        ),
+      );
+
+      _bus.publish(
+        HealthProfileUpdated(userId: userId, fieldChanged: 'condition_added'),
+      );
+
+      final updated = await _dao.getProfile(userId);
+      return AppResult.success(updated ?? profile);
+    } catch (e) {
+      return AppResult.failure(StorageFailure(e.toString()));
+    }
+  }
+}
+
+final addChronicConditionUseCaseProvider =
+    Provider<AddChronicConditionUseCase>((ref) {
+  return AddChronicConditionUseCase(
+    dao: ref.watch(profileDaoProvider),
+    eventBus: ref.watch(eventBusProvider),
+  );
+});

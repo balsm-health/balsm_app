@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:core/src/kit/widgets/balsm_list_row.dart","transitive":true},{"uri":"package:flutter/material.dart","transitive":false},{"uri":"package:core/src/kit/_tokens.dart","transitive":false},{"uri":"package:core/src/kit/widgets/balsm_list_row.dart","transitive":false}],"elements":[]}

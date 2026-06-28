@@ -1,0 +1,4 @@
+#include "Generated.xcconfig"
+BUNDLE_ID_SUFFIX=.dev
+APP_NAME_SUFFIX= Dev
+FLUTTER_TARGET=lib/main_dev.dart

@@ -1,0 +1,7 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter/material.dart",
+    "package:core/src/kit/balsm_kit.dart"
+  ]
+}

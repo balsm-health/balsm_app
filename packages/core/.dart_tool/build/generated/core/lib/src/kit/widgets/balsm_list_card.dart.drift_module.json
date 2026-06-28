@@ -1,0 +1,9 @@
+{
+  "elements": {},
+  "imports": [
+    "package:core/src/kit/widgets/balsm_list_row.dart",
+    "package:flutter/material.dart",
+    "package:core/src/kit/_tokens.dart",
+    "package:core/src/kit/widgets/balsm_list_row.dart"
+  ]
+}

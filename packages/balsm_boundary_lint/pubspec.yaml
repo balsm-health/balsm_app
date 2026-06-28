@@ -1,0 +1,11 @@
+name: balsm_boundary_lint
+description: Custom lint rules enforcing DDD module boundaries for Balsm
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  analyzer: ^6.11.0
+  custom_lint_builder: ^0.7.0
+  source_span: ^1.10.0
+dev_dependencies:
+  test: ^1.25.0

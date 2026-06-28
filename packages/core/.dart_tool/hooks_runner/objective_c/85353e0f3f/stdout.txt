@@ -1,0 +1,57 @@
+Running `(cd /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/; PATH=/Users/hossameldin/.antigravity-ide/antigravity-ide/bin:/Users/hossameldin/.rbenv/shims:/Users/hossameldin/.rbenv/shims:/Users/hossameldin/.puro/envs/stable/flutter/bin/:/Users/hossameldin/Library/Application Support/Code/User/globalStorage/github.copilot-chat/debugCommand:/Users/hossameldin/Library/Application Support/Code/User/globalStorage/github.copilot-chat/copilotCli:/Users/hossameldin/.vscode/extensions/vadimcn.vscode-lldb-1.12.2/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/Applications/VMware Fusion.app/Contents/Public:/usr/local/share/dotnet:~/.dotnet/tools:/Users/hossameldin/.local/bin:/Users/hossameldin/.vscode/extensions/vadimcn.vscode-lldb-1.12.2/bin:/Users/hossameldin/Library/Application Support/Code/User/globalStorage/github.copilot-chat/debugCommand:/Users/hossameldin/Library/Application Support/Code/User/globalStorage/github.copilot-chat/copilotCli:/Users/hossameldin/.puro/envs/stable/flutter/bin/:/Users/hossameldin/.antigravity-ide/antigravity-ide/bin:/Users/hossameldin/.rbenv/shims:/Users/hossameldin/.puro/bin:/Users/hossameldin/.puro/shared/pub_cache/bin:/Users/hossameldin/.puro/envs/default/flutter/bin:/Users/hossameldin/.lmstudio/bin:/Users/hossameldin/.puro/bin:/Users/hossameldin/.puro/shared/pub_cache/bin:/Users/hossameldin/.puro/envs/default/flutter/bin:/Users/hossameldin/.lmstudio/bin:/Users/hossameldin/.claude/plugins/cache/caveman/caveman/655b7d9c5431/bin:/Volumes/Dev/Balsm/Balsm-AI/plugin/bin:/Users/hossameldin/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/bin:/Users/hossameldin/.claude/plugins/cache/claude-plugins-official/playground/unknown/bin HOME=/Users/hossameldin TMPDIR=/var/folders/ry/fy58htz14l9_rt_0kssxv_0r0000gn/T/ /Users/hossameldin/.puro/envs/stable/flutter/bin/cache/dart-sdk/bin/dart --packages=/Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/package_config.json /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/objective_c/85353e0f3f/hook.dill --config=/Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/objective_c/85353e0f3f/input.json )`.
+INFO: 2026-06-20 15:54:07.069083: Using compiler /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang from BuildInput.cCompiler.cc.
+
+INFO: 2026-06-20 15:54:07.073184: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/src/include/dart_api_dl.c -fpic -gline-tables-only -I src -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-06-20 15:54:07.074335: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/src/objective_c.c -fpic -gline-tables-only -I src -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c.c.o
+
+INFO: 2026-06-20 15:54:07.074494: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/src/input_stream_adapter.m -fpic -gline-tables-only -I src -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-06-20 15:54:07.074713: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/src/observer.m -fpic -gline-tables-only -I src -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/observer.m.o
+
+.m.o
+
+INFO: 2026-06-20 15:54:07.074804: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/src/ns_number.m -fpic -gline-tables-only -I src -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/ns_number.m.o
+
+INFO: 2026-06-20 15:54:07.074889: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/src/protocol.m -fpic -gline-tables-only -I src -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/protocol.m.o
+
+INFO: 2026-06-20 15:54:07.075032: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/hossameldin/.puro/shared/pub_cache/hosted/pub.dev/objective_c-9.4.1/src/objective_c_bindings_generated.m -fpic -gline-tables-only -I src -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-06-20 15:54:07.153210: 
+INFO: 2026-06-20 15:54:07.153320: 
+INFO: 2026-06-20 15:54:07.153349: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-06-20 15:54:07.153561: 
+INFO: 2026-06-20 15:54:07.153576: 
+INFO: 2026-06-20 15:54:07.153585: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c.c.o
+
+INFO: 2026-06-20 15:54:07.164334: 
+INFO: 2026-06-20 15:54:07.164401: 
+INFO: 2026-06-20 15:54:07.164423: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/observer.m.o
+
+INFO: 2026-06-20 15:54:07.165840: 
+INFO: 2026-06-20 15:54:07.165870: 
+INFO: 2026-06-20 15:54:07.165882: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/protocol.m.o
+
+INFO: 2026-06-20 15:54:07.482249: 
+INFO: 2026-06-20 15:54:07.482306: 
+INFO: 2026-06-20 15:54:07.482338: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/ns_number.m.o
+
+INFO: 2026-06-20 15:54:07.490186: 
+INFO: 2026-06-20 15:54:07.490224: 
+INFO: 2026-06-20 15:54:07.490236: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c.m.o
+
+INFO: 2026-06-20 15:54:07.493896: 
+INFO: 2026-06-20 15:54:07.493933: 
+INFO: 2026-06-20 15:54:07.493949: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-06-20 15:54:07.512106: 
+INFO: 2026-06-20 15:54:07.512143: 
+INFO: 2026-06-20 15:54:07.512154: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-06-20 15:54:07.512451: Running: /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Applications/Xcode/Xcode_26.5.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/include/dart_api_dl.c.o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c.c.o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/input_stream_adapter.m.o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c.m.o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/observer.m.o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/ns_number.m.o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/protocol.m.o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/obj/src/objective_c_bindings_generated.m.o -o /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/objective_c.dylib
+
+INFO: 2026-06-20 15:54:07.556807: 
+INFO: 2026-06-20 15:54:07.556887: 
+INFO: 2026-06-20 15:54:07.556900: Generated /Volumes/Dev/Balsm/balsm_app_flutter/packages/core/.dart_tool/hooks_runner/shared/objective_c/build/85353e0f3f/objective_c.dylib
+

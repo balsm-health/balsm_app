@@ -1,0 +1,9 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter/material.dart",
+    "package:flutter_test/flutter_test.dart",
+    "package:golden_toolkit/golden_toolkit.dart",
+    "package:core/src/kit/theme.dart"
+  ]
+}

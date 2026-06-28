@@ -1,0 +1,7 @@
+{
+  "elements": {},
+  "imports": [
+    "package:core/src/domain/events/app_event.dart",
+    "package:core/src/notifications/permission_state.dart"
+  ]
+}

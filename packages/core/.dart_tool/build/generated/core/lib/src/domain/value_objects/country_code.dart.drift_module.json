@@ -1,0 +1,6 @@
+{
+  "elements": {},
+  "imports": [
+    "package:core/src/domain/value_objects/bcp47_tag.dart"
+  ]
+}

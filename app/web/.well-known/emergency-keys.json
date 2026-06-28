@@ -1,0 +1,1 @@
+{"version":"1","description":"Ed25519 public keys for emergency QR token signature verification","keys":[{"kid":"emergency-v1","kty":"OKP","crv":"Ed25519","x":"PLACEHOLDER_REPLACED_BY_CI","use":"sig"}]}

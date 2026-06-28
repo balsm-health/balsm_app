@@ -1,0 +1,58 @@
+name: balsm_app
+
+packages:
+  - packages/*
+  - app
+
+# balsm_boundary_lint pins analyzer ^6.11 (needs the `_macros` SDK pkg absent in
+# Dart 3.11) and is not wired into any module — exclude it from all melos
+# commands so bootstrap/analyze stay green. Re-enable once its custom_lint /
+# analyzer deps are bumped to analyzer 7.
+ignore:
+  - packages/balsm_boundary_lint
+
+scripts:
+  gen:
+    run: melos exec --concurrency=6 -- "dart run build_runner build --delete-conflicting-outputs"
+  analyze:
+    run: melos exec --concurrency=6 -- "flutter analyze --no-fatal-infos"
+  test:
+    run: melos exec --concurrency=4 -- "flutter test"
+  e2e:
+    run: melos exec --scope=app -- "flutter test integration_test"
+  run:dev:
+    run: flutter run -t lib/main_dev.dart --flavor dev --dart-define-from-file=env/dev.json
+    exec:
+      scope: app
+  run:patient:
+    run: flutter run -t lib/main_patient.dart --flavor dev --dart-define-from-file=env/dev.json
+    exec:
+      scope: app
+  run:staging:
+    run: flutter run -t lib/main_staging.dart --flavor staging --dart-define-from-file=env/staging.json
+    exec:
+      scope: app
+  run:prod:
+    run: flutter run -t lib/main_prod.dart --flavor prod --dart-define-from-file=env/prod.json
+    exec:
+      scope: app
+  build:android:dev:
+    run: flutter build apk --flavor dev -t lib/main_dev.dart --dart-define-from-file=env/dev.json
+    exec:
+      scope: app
+  build:android:staging:
+    run: flutter build apk --flavor staging -t lib/main_staging.dart --dart-define-from-file=env/staging.json
+    exec:
+      scope: app
+  build:android:prod:
+    run: flutter build apk --flavor prod -t lib/main_prod.dart --dart-define-from-file=env/prod.json
+    exec:
+      scope: app
+  build:web:dev:
+    run: flutter build web --flavor dev -t lib/main_dev.dart --dart-define-from-file=env/dev.json
+    exec:
+      scope: app
+  build:web:prod:
+    run: flutter build web --flavor prod -t lib/main_prod.dart --dart-define-from-file=env/prod.json
+    exec:
+      scope: app

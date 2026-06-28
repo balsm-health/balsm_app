@@ -1,0 +1,7 @@
+{
+  "elements": {},
+  "imports": [
+    "package:flutter_riverpod/flutter_riverpod.dart",
+    "package:core/src/domain/value_objects/bcp47_tag.dart"
+  ]
+}
