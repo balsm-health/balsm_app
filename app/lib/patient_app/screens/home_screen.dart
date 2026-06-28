@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/mood_face.dart';
 import '../widgets/account_switcher.dart';
@@ -24,7 +25,9 @@ class HomeScreen extends StatelessWidget {
     final nextAppt = kAppointments.where((a) => a.status == 'upcoming').cast<Appointment?>().firstOrNull;
     final apptDoc = nextAppt != null ? doctorById(nextAppt.doctorId) : null;
 
-    return ListView(
+    return ContentColumn(
+      maxWidth: 720,
+      child: ListView(
       padding: EdgeInsets.zero,
       children: [
         const PadTop(),
@@ -140,6 +143,7 @@ class HomeScreen extends StatelessWidget {
 
         const SizedBox(height: 24),
       ],
+      ),
     );
   }
 }
@@ -300,11 +304,15 @@ class _MetricGrid extends StatelessWidget {
       _Metric(LucideIcons.smile, s.t('m_mood'), moodLbl, '', '', ''),
       _Metric(LucideIcons.thermometer, s.t('m_pain'), '${cur.pain ?? 0}/10', '', '', ''),
     ];
-    return GridView.count(
-      crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.42,
-      children: [for (final m in metrics) _MetricTile(m)],
-    );
+    return LayoutBuilder(builder: (context, c) {
+      // 2 columns on phones, 4 once the content pane is wide enough.
+      final cols = c.maxWidth >= 560 ? 4 : 2;
+      return GridView.count(
+        crossAxisCount: cols, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: cols == 4 ? 1.2 : 1.42,
+        children: [for (final m in metrics) _MetricTile(m)],
+      );
+    });
   }
 }
 

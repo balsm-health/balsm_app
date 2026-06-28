@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart' show AdaptiveFrame;
 import '../widgets/mood_face.dart';
@@ -98,7 +99,9 @@ class _ReportFlowState extends State<ReportFlow> {
     final pct = (step + 1) / steps.length;
     return Scaffold(
       backgroundColor: T.cream50,
-      body: Column(children: [
+      body: ContentColumn(
+        maxWidth: 480,
+        child: Column(children: [
         const PadTop(),
         // progress header
         Padding(
@@ -133,6 +136,7 @@ class _ReportFlowState extends State<ReportFlow> {
           ),
         ),
       ]),
+      ),
     );
   }
 
@@ -386,7 +390,9 @@ class _Summary extends StatelessWidget {
     ];
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(children: [
+      body: ContentColumn(
+        maxWidth: 480,
+        child: Column(children: [
         const PadTop(),
         Expanded(child: SingleChildScrollView(child: Column(children: [
           Padding(
@@ -434,6 +440,7 @@ class _Summary extends StatelessWidget {
           ]),
         ),
       ]),
+      ),
     );
   }
 

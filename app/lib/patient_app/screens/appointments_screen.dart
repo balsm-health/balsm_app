@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
 
@@ -14,7 +15,7 @@ class AppointmentsScreen extends StatelessWidget {
     final s = AppScope.of(context);
     final upcoming = kAppointments.where((a) => a.status == 'upcoming').toList();
     final past = kAppointments.where((a) => a.status == 'past').toList();
-    return ListView(padding: EdgeInsets.zero, children: [
+    return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
       AppBarRow(
         leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => s.setTab('home')),
@@ -44,7 +45,7 @@ class AppointmentsScreen extends StatelessWidget {
         ),
       ],
       const SizedBox(height: 24),
-    ]);
+    ]));
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 
 
@@ -116,7 +117,18 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
       const SizedBox(height: 2),
-      Expanded(child: viewMode == 'map' ? _mapView(s, filtered) : _listView(s, filtered)),
+      Expanded(child: LayoutBuilder(builder: (context, c) {
+        // Tablet/desktop: list + map side by side (master/detail). Phone keeps
+        // the map/list toggle.
+        if (c.maxWidth >= Bp.md) {
+          return Row(children: [
+            SizedBox(width: 360, child: _listView(s, filtered)),
+            const VerticalDivider(width: 1, color: T.border),
+            Expanded(child: _mapView(s, filtered)),
+          ]);
+        }
+        return viewMode == 'map' ? _mapView(s, filtered) : _listView(s, filtered);
+      })),
     ]);
   }
 

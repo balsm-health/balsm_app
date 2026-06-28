@@ -49,7 +49,13 @@ Future<void> showQuickLog(BuildContext context, {required VoidCallback onFullChe
     barrierColor: const Color(0x612B2B25),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
-      child: _QuickLogSheet(s: s, onFullCheckin: () { Navigator.pop(ctx); onFullCheckin(); }),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: _QuickLogSheet(s: s, onFullCheckin: () { Navigator.pop(ctx); onFullCheckin(); }),
+        ),
+      ),
     ),
   );
 }

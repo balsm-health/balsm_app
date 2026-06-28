@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
 
@@ -19,7 +20,7 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final shown = kPrescriptions.where((r) => r.status == filter).toList();
-    return Column(children: [
+    return ContentColumn(maxWidth: 720, child: Column(children: [
       const PadTop(),
       AppBarRow(
         leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => s.setTab('meds')),
@@ -51,7 +52,7 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         children: [for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 12), child: _RxCard(rx: r))],
       )),
-    ]);
+    ]));
   }
 }
 

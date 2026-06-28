@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 
 /// Medications tab (home.jsx MedsScreen).
@@ -16,7 +17,7 @@ class MedsScreen extends StatelessWidget {
       ('morning', LucideIcons.sunrise, kMeds.where((m) => m.when == 'morning').toList()),
       ('evening', LucideIcons.moon, kMeds.where((m) => m.when == 'evening').toList()),
     ];
-    return ListView(padding: EdgeInsets.zero, children: [
+    return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
       AppBarRow(children: [
         Expanded(child: Text(s.t('medications'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
@@ -70,7 +71,7 @@ class MedsScreen extends StatelessWidget {
         ),
       ],
       const SizedBox(height: 24),
-    ]);
+    ]));
   }
 }
 

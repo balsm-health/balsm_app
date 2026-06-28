@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import 'personal_details.dart';
 
@@ -23,7 +24,7 @@ class ProfileScreen extends StatelessWidget {
       (LucideIcons.shieldCheck, 'p_privacy', null),
       (LucideIcons.lifeBuoy, 'p_help', null),
     ];
-    return ListView(padding: EdgeInsets.zero, children: [
+    return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
       AppBarRow(children: [
         Expanded(child: Text(s.t('profile'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
@@ -76,7 +77,7 @@ class ProfileScreen extends StatelessWidget {
         child: PButton(s.t('p_signout'), icon: LucideIcons.logOut, variant: BtnVariant.secondary,
             block: true, ar: s.rtl, color: T.danger),
       ),
-    ]);
+    ]));
   }
 }
 

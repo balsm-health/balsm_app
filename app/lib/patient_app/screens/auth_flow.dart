@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/balsm_flower.dart';
 
@@ -34,7 +35,9 @@ class _WelcomeScreen extends StatelessWidget {
             begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [T.cream50, T.cream100, T.cream50]),
       ),
       child: SafeArea(
-        child: Column(children: [
+        child: ContentColumn(
+          maxWidth: 440,
+          child: Column(children: [
           const Spacer(),
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
@@ -86,6 +89,7 @@ class _WelcomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 26),
         ]),
+        ),
       ),
     );
   }
@@ -194,7 +198,9 @@ class _PhoneScreenState extends State<_PhoneScreen> {
     return Container(
       color: T.cream50,
       child: SafeArea(
-        child: Column(children: [
+        child: ContentColumn(
+          maxWidth: 440,
+          child: Column(children: [
           _AuthHeader(onBack: () => s.go('welcome'), step: 1),
           Expanded(
               child: SingleChildScrollView(
@@ -272,6 +278,7 @@ class _PhoneScreenState extends State<_PhoneScreen> {
             ]),
           ),
         ]),
+        ),
       ),
     );
   }
@@ -324,7 +331,9 @@ class _OtpScreenState extends State<_OtpScreen> {
     return Container(
       color: T.cream50,
       child: SafeArea(
-        child: Column(children: [
+        child: ContentColumn(
+          maxWidth: 440,
+          child: Column(children: [
           _AuthHeader(onBack: () => s.go('phone'), step: 2),
           Expanded(
               child: SingleChildScrollView(
@@ -397,6 +406,7 @@ class _OtpScreenState extends State<_OtpScreen> {
                     onTap: code.length == 6 ? () => s.go('profile') : null)),
           ),
         ]),
+        ),
       ),
     );
   }
@@ -481,7 +491,9 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
     return Container(
       color: T.cream50,
       child: SafeArea(
-        child: Column(children: [
+        child: ContentColumn(
+          maxWidth: 440,
+          child: Column(children: [
           _AuthHeader(onBack: () => s.go('otp'), step: 3),
           Expanded(
               child: SingleChildScrollView(
@@ -559,6 +571,7 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
             ]),
           ),
         ]),
+        ),
       ),
     );
   }

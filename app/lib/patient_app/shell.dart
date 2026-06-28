@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'app_state.dart';
 import 'kit.dart';
+import 'responsive.dart';
 import 'tokens.dart';
 import 'screens/home_screen.dart';
 import 'screens/trends_screen.dart';
@@ -64,52 +65,25 @@ class _PatientAppState extends State<PatientApp> {
   }
 }
 
-/// Responsive container. On phones the app is full-bleed; on tablet / desktop /
-/// web it is centered in a phone-proportioned "device" card on a warm backdrop,
-/// so the touch-first layout stays readable at any window size.
+/// Caps the app on very wide screens so a touch-first layout never stretches
+/// edge-to-edge on desktop/web. Below [_maxW] the app fills the window and the
+/// internal layout (bottom nav ↔ side rail, adaptive panes) handles every size.
 class AdaptiveFrame extends StatelessWidget {
   const AdaptiveFrame({super.key, required this.child});
   final Widget child;
 
-  static const _deviceW = 402.0;
-  static const _deviceH = 874.0;
+  static const _maxW = Bp.xl; // 1280
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, c) {
-      final phone = c.maxWidth < 600;
-      if (phone) return child; // full-bleed, real safe areas
-
-      final h = (c.maxHeight - 48).clamp(560.0, _deviceH);
-      return DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            colors: [Color(0xFFF1EFE7), Color(0xFFE4E2D8)],
-          ),
-        ),
+      if (c.maxWidth <= _maxW) return child;
+      return ColoredBox(
+        color: const Color(0xFFF1EFE7),
         child: Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(44),
-            child: SizedBox(
-              width: _deviceW,
-              height: h,
-              // Inject a synthetic device inset so spacers behave like hardware.
-              child: MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  padding: const EdgeInsets.only(top: 56, bottom: 34),
-                  viewPadding: const EdgeInsets.only(top: 56, bottom: 34),
-                ),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(44),
-                    boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 40, offset: Offset(0, 18))],
-                  ),
-                  child: child,
-                ),
-              ),
-            ),
+          child: SizedBox(
+            width: _maxW,
+            child: ColoredBox(color: Colors.white, child: child),
           ),
         ),
       );
@@ -117,12 +91,15 @@ class AdaptiveFrame extends StatelessWidget {
   }
 }
 
+/// Main signed-in app. Adapts navigation to the window: phones (< md) use the
+/// bottom tab bar; tablets/desktop (≥ md) use a persistent leading nav rail
+/// (Material adaptive-navigation: sidebar on large, bottom nav on small).
 class _MainApp extends StatelessWidget {
   const _MainApp();
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final hideTabBar = const {'trends', 'records', 'appts', 'rx'}.contains(s.tab);
     final screen = switch (s.tab) {
       'home' => const HomeScreen(),
       'trends' => const TrendsScreen(),
@@ -134,13 +111,28 @@ class _MainApp extends StatelessWidget {
       'rx' => const PrescriptionsScreen(),
       _ => _Placeholder(title: s.tab),
     };
-    return Column(children: [
-      Expanded(child: screen),
-      if (!hideTabBar) const _TabBar(),
-    ]);
+
+    return LayoutBuilder(builder: (context, c) {
+      final wide = c.maxWidth >= Bp.md;
+      if (wide) {
+        // Persistent side rail + content. Sub-screens render in-place; the rail
+        // stays reachable (persistent-nav).
+        return Row(children: [
+          const _SideNav(),
+          Expanded(child: screen),
+        ]);
+      }
+      // Phone: full-bleed screen + bottom tab bar (hidden on pushed sub-screens).
+      final hideTabBar = const {'trends', 'records', 'appts', 'rx'}.contains(s.tab);
+      return Column(children: [
+        Expanded(child: screen),
+        if (!hideTabBar) const _TabBar(),
+      ]);
+    });
   }
 }
 
+// ── Phone bottom tab bar ─────────────────────────────────────
 class _TabBar extends StatelessWidget {
   const _TabBar();
   @override
@@ -219,6 +211,76 @@ class _FabTab extends StatelessWidget {
   }
 }
 
+// ── Tablet / desktop side rail ───────────────────────────────
+class _SideNav extends StatelessWidget {
+  const _SideNav();
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Container(
+      width: 96,
+      decoration: const BoxDecoration(
+        color: Color(0xEBFFFFFF),
+        border: BorderDirectional(end: BorderSide(color: T.border)),
+      ),
+      child: SafeArea(
+        child: Column(children: [
+          const SizedBox(height: Space.s4),
+          // Daily check-in — prominent accent action at the top of the rail.
+          GestureDetector(
+            onTap: () => showQuickLog(context, onFullCheckin: () => openCheckin(context)),
+            child: Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                color: s.accent.main, shape: BoxShape.circle,
+                boxShadow: s.accent.boxShadow,
+              ),
+              child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
+            ),
+          ),
+          const SizedBox(height: Space.s5),
+          _RailItem(id: 'home', icon: LucideIcons.home, label: s.t('tab_home')),
+          _RailItem(id: 'map', icon: LucideIcons.mapPin, label: s.t('tab_map')),
+          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.t('tab_meds')),
+          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.t('tab_profile')),
+          const Spacer(),
+        ]),
+      ),
+    );
+  }
+}
+
+class _RailItem extends StatelessWidget {
+  const _RailItem({required this.id, required this.icon, required this.label});
+  final String id;
+  final IconData icon;
+  final String label;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final active = s.tab == id;
+    final color = active ? s.accent.main : T.fg4;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => s.setTab(id),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: Space.s1, horizontal: Space.s2),
+        padding: const EdgeInsets.symmetric(vertical: Space.s2),
+        decoration: BoxDecoration(
+          color: active ? s.accent.bg : Colors.transparent,
+          borderRadius: BorderRadius.circular(T.rMd),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 24, color: color),
+          const SizedBox(height: 4),
+          Text(label, style: Typo.body(ar: s.rtl).copyWith(
+              fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
+        ]),
+      ),
+    );
+  }
+}
+
 class _Placeholder extends StatelessWidget {
   const _Placeholder({required this.title});
   final String title;
@@ -231,4 +293,3 @@ class _Placeholder extends StatelessWidget {
     );
   }
 }
-

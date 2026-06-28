@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/line_chart.dart';
 import 'home_screen.dart' show HistoryRow;
@@ -19,7 +20,7 @@ class _TrendsScreenState extends State<TrendsScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return ListView(padding: EdgeInsets.zero, children: [
+    return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
       AppBarRow(children: [
         RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => s.setTab('home')),
@@ -64,7 +65,7 @@ class _TrendsScreenState extends State<TrendsScreen> {
         ]),
       ),
       const SizedBox(height: 24),
-    ]);
+    ]));
   }
 }
 

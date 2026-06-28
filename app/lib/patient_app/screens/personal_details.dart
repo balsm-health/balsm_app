@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart' show AdaptiveFrame;
 
@@ -57,7 +58,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
             if (saved) Pill(s.t('pd_saved'), kind: PillKind.success, ar: s.rtl),
           ],
         ),
-        Expanded(child: ListView(
+        Expanded(child: ContentColumn(maxWidth: 560, child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
           children: [
             // Avatar
@@ -113,7 +114,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
             PButton(saved ? s.t('pd_saved') : s.t('pd_save'), icon: saved ? LucideIcons.check : LucideIcons.save,
                 variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _save),
           ],
-        )),
+        ))),
       ]),
     );
   }

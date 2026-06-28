@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
 import '../widgets/balsm_flower.dart';
@@ -34,7 +35,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
       );
     }
     final shown = filter == 'all' ? records : records.where((r) => r.type == filter).toList();
-    return Column(children: [
+    return ContentColumn(maxWidth: 720, child: Column(children: [
       const PadTop(),
       AppBarRow(
         leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => s.setTab('home')),
@@ -74,7 +75,7 @@ class _RecordsScreenState extends State<RecordsScreen> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
               children: [for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 10), child: _RecordCard(rec: r, onTap: () => setState(() => selected = r)))],
             )),
-    ]);
+    ]));
   }
 
   Widget _empty(PatientAppState s) => PCard(
@@ -163,7 +164,7 @@ class _RecordDetail extends StatelessWidget {
     final cfg = kRecordTypes[rec.type]!;
     final doc = rec.sourceId == 'self' ? null : doctorById(rec.sourceId);
     final st = storageCfg(rec.storage);
-    return ListView(padding: EdgeInsets.zero, children: [
+    return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
       AppBarRow(
         leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
@@ -257,7 +258,7 @@ class _RecordDetail extends StatelessWidget {
           PButton(s.t('rec_share'), icon: LucideIcons.share2, variant: BtnVariant.secondary, block: true, ar: s.rtl),
         ]),
       ),
-    ]);
+    ]));
   }
 }
 
