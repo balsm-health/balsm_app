@@ -252,6 +252,19 @@ class _ReportFlowState extends State<ReportFlow> {
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       ),
+      const SizedBox(height: 10),
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(T.rMd),
+          border: Border.all(color: T.borderStrong, width: 1.5),
+        ),
+        child: Row(children: [
+          const Icon(LucideIcons.camera, size: 20, color: T.fg3),
+          const SizedBox(width: 12),
+          Text(s.t('add_photo'), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+        ]),
+      ),
     ]);
   }
 

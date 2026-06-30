@@ -39,6 +39,7 @@ dependencies:
   lucide_icons: ^0.257.0
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
+  qr_flutter: ^4.1.0
   shared_preferences: ^2.3.2
   flutter_map: ^7.0.2
   latlong2: ^0.9.1

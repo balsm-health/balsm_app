@@ -192,7 +192,7 @@ class _FabTab extends StatelessWidget {
     return Expanded(
       child: Center(
         child: GestureDetector(
-          onTap: () => showQuickLog(context, onFullCheckin: () => openCheckin(context)),
+          onTap: () => showQuickLog(context, onFullCheckin: () => openCheckin(context), onAddRecord: (type) => showAddRecordSheet(context, initialType: type)),
           child: Transform.translate(
             offset: const Offset(0, -22),
             child: Container(
@@ -228,7 +228,7 @@ class _SideNav extends StatelessWidget {
           const SizedBox(height: Space.s4),
           // Daily check-in — prominent accent action at the top of the rail.
           GestureDetector(
-            onTap: () => showQuickLog(context, onFullCheckin: () => openCheckin(context)),
+            onTap: () => showQuickLog(context, onFullCheckin: () => openCheckin(context), onAddRecord: (type) => showAddRecordSheet(context, initialType: type)),
             child: Container(
               width: 56, height: 56,
               decoration: BoxDecoration(

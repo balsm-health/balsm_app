@@ -253,7 +253,7 @@ const Map<String, RecordType> kRecordTypes = {
 
 class HealthRecord {
   const HealthRecord(this.id, this.type, this.storage, this.title, this.date,
-      this.sourceId, this.fileType, this.pages, this.result);
+      this.sourceId, this.fileType, this.pages, this.result, {this.tags = const []});
   final String id;
   final String type;
   final String storage; // local | icloud | gdrive
@@ -263,26 +263,38 @@ class HealthRecord {
   final String fileType;
   final int pages;
   final L? result;
+  final List<L> tags;
 
   HealthRecord copyWith({String? storage}) => HealthRecord(
-      id, type, storage ?? this.storage, title, date, sourceId, fileType, pages, result);
+      id, type, storage ?? this.storage, title, date, sourceId, fileType, pages, result, tags: tags);
 }
+
+const L _tagDiabetes = {'en': 'Diabetes', 'ar': 'السكري'};
+const L _tagFollowUp = {'en': 'Follow-up', 'ar': 'متابعة'};
+const L _tagCholesterol = {'en': 'Cholesterol', 'ar': 'الكوليسترول'};
+const L _tagHeart = {'en': 'Heart', 'ar': 'القلب'};
+const L _tagChest = {'en': 'Chest', 'ar': 'الصدر'};
 
 const List<HealthRecord> kHealthRecords = [
   HealthRecord('r1', 'lab', 'icloud', {'en': 'HbA1c — glycated hemoglobin', 'ar': 'تحليل السكر التراكمي'},
       {'en': '26 May 2025', 'ar': '26 مايو 2025'}, 'sara', 'PDF', 2,
-      {'en': '6.8% · slightly above target', 'ar': '6.8% · أعلى قليلاً من الهدف'}),
+      {'en': '6.8% · slightly above target', 'ar': '6.8% · أعلى قليلاً من الهدف'},
+      tags: [_tagDiabetes, _tagFollowUp]),
   HealthRecord('r2', 'lab', 'icloud', {'en': 'Lipid panel', 'ar': 'تحليل الدهون'},
       {'en': '26 May 2025', 'ar': '26 مايو 2025'}, 'sara', 'PDF', 1,
-      {'en': 'LDL 128 · within range', 'ar': 'الكوليسترول الضار 128 · ضمن المعدل'}),
+      {'en': 'LDL 128 · within range', 'ar': 'الكوليسترول الضار 128 · ضمن المعدل'},
+      tags: [_tagCholesterol, _tagHeart]),
   HealthRecord('r3', 'scan', 'gdrive', {'en': 'Chest X-ray', 'ar': 'أشعة الصدر'},
       {'en': '12 Mar 2025', 'ar': '12 مارس 2025'}, 'ahmed', 'Image', 1,
-      {'en': 'No acute findings', 'ar': 'لا توجد ملاحظات حادة'}),
+      {'en': 'No acute findings', 'ar': 'لا توجد ملاحظات حادة'},
+      tags: [_tagChest]),
   HealthRecord('r4', 'report', 'gdrive', {'en': 'Cardiology consultation', 'ar': 'استشارة القلب'},
-      {'en': '12 Mar 2025', 'ar': '12 مارس 2025'}, 'ahmed', 'PDF', 3, null),
+      {'en': '12 Mar 2025', 'ar': '12 مارس 2025'}, 'ahmed', 'PDF', 3, null,
+      tags: [_tagHeart, _tagFollowUp]),
   HealthRecord('r5', 'lab', 'local', {'en': 'Fasting blood glucose', 'ar': 'سكر الدم الصائم'},
       {'en': '02 Feb 2025', 'ar': '2 فبراير 2025'}, 'self', 'Image', 1,
-      {'en': '132 mg/dL', 'ar': '132 مجم/دل'}),
+      {'en': '132 mg/dL', 'ar': '132 مجم/دل'},
+      tags: [_tagDiabetes]),
 ];
 
 // ── Nearby care entities ─────────────────────────────────────
@@ -332,4 +344,8 @@ const List<HealthEntity> kHealthEntities = [
   HealthEntity('e6', 'store', 30.0380, 31.2120, {'en': 'Al-Hayat Medical Supplies', 'ar': 'الحياة للمستلزمات الطبية'}, {'en': 'Dokki, Giza', 'ar': 'الدقي، الجيزة'}, '9am – 8pm', '1.8 km', '4.3', '+20 2 3761 2345'),
   HealthEntity('e7', 'pharmacy', 30.0560, 31.2080, {'en': 'Seif Pharmacy', 'ar': 'صيدلية سيف'}, {'en': 'Agouza, Giza', 'ar': 'العجوزة، الجيزة'}, '24/7', '0.9 km', '4.4', '+20 2 3748 9012'),
   HealthEntity('e8', 'clinic', 30.0540, 31.3400, {'en': 'Capital Clinic', 'ar': 'عيادة كابيتال'}, {'en': 'Nasr City, Cairo', 'ar': 'مدينة نصر، القاهرة'}, '10am – 6pm', '3.2 km', '4.1', '+20 2 2402 3456'),
+  HealthEntity('e9', 'hospital', 30.0900, 31.3240, {'en': 'Cleopatra Hospital', 'ar': 'مستشفى كليوباترا'}, {'en': 'Heliopolis, Cairo', 'ar': 'مصر الجديدة، القاهرة'}, '24/7', '4.6 km', '4.5', '+20 2 2414 7890'),
+  HealthEntity('e10', 'pharmacy', 29.9602, 31.2569, {'en': 'Roshdy Pharmacy', 'ar': 'صيدلية رشدي'}, {'en': 'Maadi, Cairo', 'ar': 'المعادي، القاهرة'}, '24/7', '5.4 km', '4.6', '+20 2 2358 1122'),
+  HealthEntity('e11', 'lab', 30.0875, 31.3280, {'en': 'Mokhtabar Labs', 'ar': 'المختبر'}, {'en': 'Heliopolis, Cairo', 'ar': 'مصر الجديدة، القاهرة'}, '7am – 10pm', '4.8 km', '4.8', '+20 2 2690 3344'),
+  HealthEntity('e12', 'clinic', 29.9650, 31.2700, {'en': 'Maadi Family Clinic', 'ar': 'عيادة المعادي للأسرة'}, {'en': 'Maadi, Cairo', 'ar': 'المعادي، القاهرة'}, '9am – 9pm', '5.7 km', '4.4', '+20 2 2380 5566'),
 ];

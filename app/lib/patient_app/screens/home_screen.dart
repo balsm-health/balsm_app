@@ -309,7 +309,7 @@ class _MetricGrid extends StatelessWidget {
       final cols = c.maxWidth >= 560 ? 4 : 2;
       return GridView.count(
         crossAxisCount: cols, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: cols == 4 ? 1.2 : 1.42,
+        mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: cols == 4 ? 1.1 : 1.3,
         children: [for (final m in metrics) _MetricTile(m)],
       );
     });
@@ -343,20 +343,25 @@ class _MetricTile extends StatelessWidget {
               style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
         ]),
         const SizedBox(height: 8),
-        RichText(
-          textDirection: hasNum ? TextDirection.ltr : null,
-          text: TextSpan(children: [
-            TextSpan(text: m.value, style: (hasNum ? Typo.num(size: FS.xl2, weight: FontWeight.w800) : Typo.display().copyWith(fontSize: FS.xl2))),
-            if (m.unit.isNotEmpty)
-              TextSpan(text: ' ${m.unit}', style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-          ]),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: RichText(
+            maxLines: 1,
+            textDirection: hasNum ? TextDirection.ltr : null,
+            text: TextSpan(children: [
+              TextSpan(text: m.value, style: (hasNum ? Typo.num(size: FS.xl2, weight: FontWeight.w800) : Typo.display().copyWith(fontSize: FS.xl2))),
+              if (m.unit.isNotEmpty)
+                TextSpan(text: ' ${m.unit}', style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+            ]),
+          ),
         ),
         if (m.foot.isNotEmpty) ...[
           const SizedBox(height: 8),
           Row(children: [
             Icon(m.tone == 'up' ? LucideIcons.arrowUpRight : LucideIcons.arrowDownRight, size: 14, color: footColor),
             const SizedBox(width: 6),
-            Text(m.foot, style: Typo.meta(ar: s.rtl).copyWith(color: footColor)),
+            Flexible(child: Text(m.foot, maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.meta(ar: s.rtl).copyWith(color: footColor))),
           ]),
         ],
       ]),

@@ -537,7 +537,9 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
                       keyboard: TextInputType.number,
                       mono: true,
                       forceLtr: true,
-                      accent: s.accent)),
+                      accent: s.accent,
+                      prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
+                      suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4))),
               const SizedBox(height: 16),
               _Field(
                   label: s.t('pf_gender'),
@@ -611,6 +613,17 @@ class _UsernameField extends StatelessWidget {
             Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(msg, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: col))),
+          if (controller.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(children: [
+                const Icon(LucideIcons.link, size: 12, color: T.fg4),
+                const SizedBox(width: 5),
+                Text('balsm.health/@${controller.text}',
+                    textDirection: TextDirection.ltr,
+                    style: Typo.num(size: FS.xs, color: T.fg3)),
+              ]),
+            ),
         ]));
   }
 }
@@ -692,6 +705,8 @@ class _Input extends StatelessWidget {
       this.mono = false,
       this.forceLtr = false,
       this.prefix,
+      this.prefixIcon,
+      this.suffixIcon,
       required this.accent,
       this.onChanged});
   final TextEditingController controller;
@@ -700,6 +715,8 @@ class _Input extends StatelessWidget {
   final bool mono;
   final bool forceLtr;
   final String? prefix;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
   final Accent accent;
   final ValueChanged<String>? onChanged;
   @override
@@ -714,6 +731,8 @@ class _Input extends StatelessWidget {
       decoration: InputDecoration(
         isDense: true,
         prefixText: prefix,
+        prefixIcon: prefixIcon,
+        suffixIcon: suffixIcon,
         prefixStyle: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3),
         hintText: hint,
         hintStyle: (mono ? Typo.num(size: FS.lg, color: T.fg4) : Typo.body().copyWith(fontSize: FS.lg, color: T.fg4)),

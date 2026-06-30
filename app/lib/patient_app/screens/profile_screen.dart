@@ -6,6 +6,7 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import 'personal_details.dart';
+import 'profile_subscreens.dart';
 
 /// Profile tab (home.jsx ProfileScreen) — main screen + language/country sheets.
 class ProfileScreen extends StatelessWidget {
@@ -14,15 +15,17 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final curLang = kLanguages.firstWhere((l) => l.code == s.lang, orElse: () => kLanguages[1]);
-    final storageCfg = _storageCfg('icloud'); // demo: primary backup
-    final rows = <(IconData, String, VoidCallback?)>[
-      (LucideIcons.user, 'p_personal', () => openPersonalDetails(context)),
-      (LucideIcons.clipboardList, 'p_cond', null),
-      (LucideIcons.calendar, 'appts', () => s.setTab('appts')),
-      (LucideIcons.stethoscope, 'p_care', null),
-      (LucideIcons.bell, 'p_notif', null),
-      (LucideIcons.shieldCheck, 'p_privacy', null),
-      (LucideIcons.lifeBuoy, 'p_help', null),
+    // Local-first by default ("saved on your phone, synced when you're ready").
+    final storageCfg = _storageCfg('local');
+    final rows = <(IconData, String, VoidCallback?, bool)>[
+      (LucideIcons.user, 'p_personal', () => openPersonalDetails(context), false),
+      (LucideIcons.clipboardList, 'p_cond', () => openMedicalProfile(context), false),
+      (LucideIcons.calendar, 'appts', () => s.setTab('appts'), false),
+      (LucideIcons.stethoscope, 'p_care', () => openCareTeam(context), false),
+      (LucideIcons.phoneCall, 'p_emergency', () => openEmergency(context), true),
+      (LucideIcons.bell, 'p_notif', null, false),
+      (LucideIcons.shieldCheck, 'p_privacy', () => openPrivacyData(context), false),
+      (LucideIcons.lifeBuoy, 'p_help', null, false),
     ];
     return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
@@ -62,13 +65,18 @@ class ProfileScreen extends StatelessWidget {
       // Storage
       _ListCard(children: [
         _ListRow(icon: storageCfg.icon, label: s.t('storage'), iconBg: storageCfg.bg, iconFg: storageCfg.color,
-            trailingWidget: Pill(s.t('store_backed'), kind: PillKind.info, ar: s.rtl), first: true, onTap: () {}),
+            trailingWidget: Pill(s.t('store_local'), kind: PillKind.neutral, dot: false, ar: s.rtl), first: true, onTap: () {}),
       ]),
 
       // Menu
       _ListCard(children: [
         for (var i = 0; i < rows.length; i++)
-          _ListRow(icon: rows[i].$1, label: s.t(rows[i].$2), first: i == 0, onTap: rows[i].$3 ?? () {}),
+          _ListRow(
+            icon: rows[i].$1, label: s.t(rows[i].$2), first: i == 0, onTap: rows[i].$3 ?? () {},
+            iconBg: rows[i].$4 ? T.dangerBg : null,
+            iconFg: rows[i].$4 ? T.danger : null,
+            labelColor: rows[i].$4 ? T.danger : null,
+          ),
       ]),
 
       // Sign out
@@ -101,7 +109,7 @@ class _ListCard extends StatelessWidget {
 }
 
 class _ListRow extends StatelessWidget {
-  const _ListRow({required this.icon, required this.label, this.trailing, this.trailingWidget, this.onTap, this.iconBg, this.iconFg, this.first = false});
+  const _ListRow({required this.icon, required this.label, this.trailing, this.trailingWidget, this.onTap, this.iconBg, this.iconFg, this.labelColor, this.first = false});
   final IconData icon;
   final String label;
   final String? trailing;
@@ -109,6 +117,7 @@ class _ListRow extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? iconBg;
   final Color? iconFg;
+  final Color? labelColor;
   final bool first;
   @override
   Widget build(BuildContext context) {
@@ -122,7 +131,7 @@ class _ListRow extends StatelessWidget {
         child: Row(children: [
           IconSquare(icon, bg: iconBg ?? s.accent.bg, fg: iconFg ?? s.accent.d, size: 34, iconSize: 19, radius: T.rSm),
           const SizedBox(width: 14),
-          Expanded(child: Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: T.fg1))),
+          Expanded(child: Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1))),
           if (trailingWidget != null) trailingWidget!,
           if (trailing != null)
             Padding(padding: const EdgeInsets.only(right: 8, left: 8),

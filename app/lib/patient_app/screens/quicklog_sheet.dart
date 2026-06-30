@@ -39,8 +39,9 @@ const _quickSymptoms = [
   ('s_nausea', LucideIcons.frown), ('s_thirst', LucideIcons.cupSoda),
 ];
 
-/// FAB quick-log bottom sheet (quicklog.jsx). [onFullCheckin] opens the report flow.
-Future<void> showQuickLog(BuildContext context, {required VoidCallback onFullCheckin}) {
+/// FAB quick-log bottom sheet (quicklog.jsx). [onFullCheckin] opens the report
+/// flow; [onAddRecord] opens the add-record sheet for the given record type.
+Future<void> showQuickLog(BuildContext context, {required VoidCallback onFullCheckin, required ValueChanged<String> onAddRecord}) {
   final s = AppScope.of(context);
   return showModalBottomSheet(
     context: context,
@@ -53,7 +54,11 @@ Future<void> showQuickLog(BuildContext context, {required VoidCallback onFullChe
         alignment: Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
-          child: _QuickLogSheet(s: s, onFullCheckin: () { Navigator.pop(ctx); onFullCheckin(); }),
+          child: _QuickLogSheet(
+            s: s,
+            onFullCheckin: () { Navigator.pop(ctx); onFullCheckin(); },
+            onAddRecord: (type) { Navigator.pop(ctx); onAddRecord(type); },
+          ),
         ),
       ),
     ),
@@ -61,9 +66,10 @@ Future<void> showQuickLog(BuildContext context, {required VoidCallback onFullChe
 }
 
 class _QuickLogSheet extends StatefulWidget {
-  const _QuickLogSheet({required this.s, required this.onFullCheckin});
+  const _QuickLogSheet({required this.s, required this.onFullCheckin, required this.onAddRecord});
   final PatientAppState s;
   final VoidCallback onFullCheckin;
+  final ValueChanged<String> onAddRecord;
   @override
   State<_QuickLogSheet> createState() => _QuickLogSheetState();
 }
@@ -84,7 +90,7 @@ class _QuickLogSheetState extends State<_QuickLogSheet> {
     final info = active == null ? null : _metrics.firstWhere((m) => m.id == active);
     return _SheetShell(
       onBack: active != null && savedValue == null ? () => setState(() => active = null) : null,
-      title: info == null ? null : s.t(info.labelKey),
+      title: info == null ? s.t('ql_title') : s.t(info.labelKey),
       child: savedValue != null
           ? _SavedFlash(value: savedValue!)
           : active == null
@@ -137,7 +143,40 @@ class _QuickLogSheetState extends State<_QuickLogSheet> {
               ]),
             ),
           ),
+        // Add to records
+        const SizedBox(height: 6),
+        Row(children: [
+          const Expanded(child: Divider(color: T.ink100)),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(s.t('ql_add_records'), style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg4))),
+          const Expanded(child: Divider(color: T.ink100)),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          _addTile('lab'), const SizedBox(width: 10),
+          _addTile('scan'), const SizedBox(width: 10),
+          _addTile('report'),
+        ]),
       ]);
+
+  Widget _addTile(String key) {
+    final cfg = kRecordTypes[key]!;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => widget.onAddRecord(key),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.border)),
+          child: Column(children: [
+            IconSquare(cfg.icon, bg: cfg.bg, fg: cfg.color, size: 38, iconSize: 20),
+            const SizedBox(height: 8),
+            Text(s.t(cfg.oneKey), style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+          ]),
+        ),
+      ),
+    );
+  }
 
   Widget _flow(String id) => switch (id) {
         'bp' => _BpFlow(s: s, onSave: _save),

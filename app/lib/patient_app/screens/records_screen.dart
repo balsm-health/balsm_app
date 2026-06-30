@@ -18,7 +18,15 @@ class RecordsScreen extends StatefulWidget {
 class _RecordsScreenState extends State<RecordsScreen> {
   List<HealthRecord> records = List.of(kHealthRecords);
   String filter = 'all';
+  String query = '';
+  bool loading = true;
   HealthRecord? selected;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 700), () { if (mounted) setState(() => loading = false); });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,58 +42,100 @@ class _RecordsScreenState extends State<RecordsScreen> {
         onDelete: () => setState(() { records = records.where((r) => r.id != selected!.id).toList(); selected = null; }),
       );
     }
-    final shown = filter == 'all' ? records : records.where((r) => r.type == filter).toList();
-    return ContentColumn(maxWidth: 720, child: Column(children: [
-      const PadTop(),
-      AppBarRow(
-        leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => s.setTab('home')),
-        children: [
-          Expanded(child: Text(s.t('records'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-          GestureDetector(
-            onTap: () => _showAdd(s),
-            child: Container(
-              height: 40, padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
-              child: Row(children: [Icon(LucideIcons.plus, size: 16, color: s.accent.d), const SizedBox(width: 6), Text(s.t('add_record'), style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: s.accent.d))]),
+    final q = query.trim().toLowerCase();
+    final byType = filter == 'all' ? records : records.where((r) => r.type == filter).toList();
+    final shown = q.isEmpty ? byType : byType.where((r) {
+      final doc = r.sourceId == 'self' ? null : doctorById(r.sourceId);
+      final hay = [
+        r.title.of('en'), r.title.of('ar'), r.date.of('en'), r.date.of('ar'), doc?.name.of('en'), doc?.name.of('ar'),
+        for (final t in r.tags) ...[t.of('en'), t.of('ar')],
+      ].whereType<String>().join(' ').toLowerCase();
+      return hay.contains(q);
+    }).toList();
+    final filtering = q.isNotEmpty || filter != 'all';
+    return ContentColumn(maxWidth: 720, child: Stack(children: [
+      Column(children: [
+        const PadTop(),
+        AppBarRow(
+          leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => s.setTab('home')),
+          children: [Expanded(child: Text(s.t('records'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)))],
+        ),
+        // Search
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: TextField(
+            onChanged: (v) => setState(() => query = v),
+            textDirection: s.dir,
+            style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
+            decoration: InputDecoration(
+              hintText: s.t('rec_search_ph'), hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
+              prefixIcon: const Icon(LucideIcons.search, size: 18, color: T.fg4),
+              isDense: true, filled: true, fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
             ),
           ),
-        ],
-      ),
-      SizedBox(
-        height: 50,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          children: [
-            for (final f in const ['all', 'lab', 'scan', 'report'])
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _Filter(
-                  label: f == 'all' ? s.t('all_records') : s.t(kRecordTypes[f]!.labelKey),
-                  active: filter == f, accent: s.accent, ar: s.rtl,
-                  onTap: () => setState(() => filter = f),
-                ),
-              ),
-          ],
         ),
-      ),
-      Expanded(child: shown.isEmpty
-          ? ListView(children: [Padding(padding: const EdgeInsets.all(20), child: _empty(s))])
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              children: [for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 10), child: _RecordCard(rec: r, onTap: () => setState(() => selected = r)))],
-            )),
+        SizedBox(
+          height: 50,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: [
+              for (final f in const ['all', 'lab', 'scan', 'report'])
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 8),
+                  child: _Filter(
+                    label: f == 'all' ? s.t('all_records') : s.t(kRecordTypes[f]!.labelKey),
+                    active: filter == f, accent: s.accent, ar: s.rtl,
+                    onTap: () => setState(() => filter = f),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(child: loading
+            ? ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                children: [for (var i = 0; i < 5; i++) const Padding(padding: EdgeInsets.only(bottom: 10), child: _SkeletonCard())])
+            : shown.isEmpty
+                ? ListView(children: [Padding(padding: const EdgeInsets.all(20), child: _empty(s, filtering))])
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 88),
+                    children: [for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 10), child: _RecordCard(rec: r, onTap: () => setState(() => selected = r)))],
+                  )),
+      ]),
+      // Floating add FAB
+      if (!loading && records.isNotEmpty)
+        PositionedDirectional(
+          end: 20, bottom: 20,
+          child: GestureDetector(
+            onTap: () => _showAdd(s),
+            child: Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle, boxShadow: s.accent.boxShadow),
+              child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
+            ),
+          ),
+        ),
     ]));
   }
 
-  Widget _empty(PatientAppState s) => PCard(
+  Widget _empty(PatientAppState s, bool filtering) => PCard(
         padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 36),
         child: Column(children: [
-          const Icon(LucideIcons.folderOpen, size: 36, color: T.fg4),
+          Icon(filtering ? LucideIcons.search : LucideIcons.folderOpen, size: 36, color: T.fg4),
           const SizedBox(height: 14),
-          Text(s.t('rec_empty'), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+          Text(filtering ? s.t('rec_no_results') : s.t('rec_empty'), textAlign: TextAlign.center,
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
           const SizedBox(height: 8),
-          Text(s.t('rec_empty_h'), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+          Text(filtering ? s.t('rec_no_results_h2') : s.t('rec_empty_h'), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+          const SizedBox(height: 16),
+          filtering
+              ? PButton(s.t('rec_clear_filters'), icon: LucideIcons.x, variant: BtnVariant.soft, accent: s.accent, ar: s.rtl,
+                  onTap: () => setState(() { query = ''; filter = 'all'; }))
+              : PButton(s.t('add_record'), icon: LucideIcons.plus, variant: BtnVariant.primary, accent: s.accent, ar: s.rtl,
+                  onTap: () => _showAdd(s)),
         ]),
       );
 
@@ -120,6 +170,24 @@ class _Filter extends StatelessWidget {
           ),
           child: Text(label, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: active ? accent.d : T.fg2)),
         ),
+      );
+}
+
+/// Loading shimmer placeholder card.
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard();
+  @override
+  Widget build(BuildContext context) => PCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(children: [
+          Container(width: 46, height: 46, decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rMd))),
+          const SizedBox(width: 13),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(width: 150, height: 12, decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(4))),
+            const SizedBox(height: 8),
+            Container(width: 90, height: 10, decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(4))),
+          ])),
+        ]),
       );
 }
 
@@ -218,6 +286,23 @@ class _RecordDetail extends StatelessWidget {
             Expanded(child: Text(rec.result!.of(s.lang), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1))),
           ]),
         ),
+      // Tags
+      if (rec.tags.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final t in rec.tags)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill), border: Border.all(color: T.border)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(LucideIcons.tag, size: 12, color: T.fg3),
+                  const SizedBox(width: 6),
+                  Text(t.of(s.lang), style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+                ]),
+              ),
+          ]),
+        ),
       // Storage row (tap to manage)
       GestureDetector(
         onTap: () => _showManageStorage(context, rec, onStorageChange, onDelete),
@@ -263,24 +348,65 @@ class _RecordDetail extends StatelessWidget {
 }
 
 // ── Add record sheet ─────────────────────────────────────────
+/// Opens the "add record" sheet standalone (e.g. from the quick-log FAB
+/// "add to records" tiles), optionally pre-selecting a record type.
+void showAddRecordSheet(BuildContext context, {String? initialType, ValueChanged<HealthRecord>? onAdd}) {
+  final s = AppScope.of(context);
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: const Color(0x5C2B2B25),
+    builder: (ctx) => Directionality(textDirection: s.dir, child: _AddRecordSheet(initialType: initialType, onAdd: onAdd ?? (_) {})),
+  );
+}
+
 class _AddRecordSheet extends StatefulWidget {
-  const _AddRecordSheet({required this.onAdd});
+  const _AddRecordSheet({required this.onAdd, this.initialType});
   final ValueChanged<HealthRecord> onAdd;
+  final String? initialType;
   @override
   State<_AddRecordSheet> createState() => _AddRecordSheetState();
 }
+
+const _monthsAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 class _AddRecordSheetState extends State<_AddRecordSheet> {
   String step = 'type'; // type | form | done
   String? type;
   final title = TextEditingController();
+  final tagInput = TextEditingController();
+  final List<String> tags = [];
+  String date = '';
+  static const _tagSuggest = ['Diabetes', 'Cholesterol', 'Kidney', 'Thyroid'];
+
+  @override
+  void initState() {
+    super.initState();
+    final n = DateTime.now();
+    date = '${n.day} ${_monthsAbbr[n.month - 1]} ${n.year}';
+    if (widget.initialType != null) { type = widget.initialType; step = 'form'; }
+  }
+
+  void _addTag(String t) {
+    t = t.trim();
+    if (t.isEmpty || tags.contains(t)) { tagInput.clear(); return; }
+    setState(() { tags.add(t); tagInput.clear(); });
+  }
+
+  Future<void> _pickDate() async {
+    final n = DateTime.now();
+    final picked = await showDatePicker(context: context, initialDate: n, firstDate: DateTime(2000), lastDate: n);
+    if (picked != null) setState(() => date = '${picked.day} ${_monthsAbbr[picked.month - 1]} ${picked.year}');
+  }
 
   void _save() {
     final s = AppScope.of(context);
     widget.onAdd(HealthRecord(
       'r${DateTime.now().millisecondsSinceEpoch}', type!, 'local',
       {'en': title.text.isEmpty ? s.t(kRecordTypes[type]!.oneKey) : title.text, 'ar': title.text.isEmpty ? s.t(kRecordTypes[type]!.oneKey) : title.text},
-      {'en': 'Today', 'ar': 'اليوم'}, 'self', 'PDF', 1, null));
+      {'en': date, 'ar': date}, 'self', 'PDF', 1, null,
+      tags: [for (final t in tags) {'en': t, 'ar': t}]));
     setState(() => step = 'done');
     Future.delayed(const Duration(milliseconds: 1600), () { if (mounted) Navigator.pop(context); });
   }
@@ -345,6 +471,71 @@ class _AddRecordSheetState extends State<_AddRecordSheet> {
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
               ),
             ),
+            const SizedBox(height: 18),
+            // Date
+            Text(s.t('rec_date'), style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _pickDate,
+              child: Container(
+                height: 52, padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border, width: 1.5)),
+                child: Row(children: [
+                  const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(date, textDirection: TextDirection.ltr, style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1))),
+                  const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 18),
+            // Tags
+            Text(s.t('rec_tags'), style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+            const SizedBox(height: 8),
+            if (tags.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (var i = 0; i < tags.length; i++)
+                    Container(
+                      padding: const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
+                      decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rPill)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(tags[i], style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: s.accent.d)),
+                        const SizedBox(width: 4),
+                        GestureDetector(onTap: () => setState(() => tags.removeAt(i)), child: Icon(LucideIcons.x, size: 13, color: s.accent.d)),
+                      ]),
+                    ),
+                ]),
+              ),
+            TextField(
+              controller: tagInput, textDirection: s.dir, onSubmitted: _addTag,
+              style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
+              decoration: InputDecoration(
+                hintText: s.t('rec_tags_ph'), hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
+                isDense: true, filled: true, fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final sug in _tagSuggest)
+                if (!tags.contains(sug))
+                  GestureDetector(
+                    onTap: () => _addTag(sug),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rPill), border: Border.all(color: T.border, width: 1.5)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(LucideIcons.plus, size: 13, color: T.fg3),
+                        const SizedBox(width: 5),
+                        Text(sug, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+                      ]),
+                    ),
+                  ),
+            ]),
             const SizedBox(height: 18),
             Text(s.t('rec_attach'), style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
             const SizedBox(height: 8),
