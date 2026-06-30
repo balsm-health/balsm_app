@@ -4,6 +4,15 @@ publish_to: none
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
 
 dev_dependencies:
   melos: ^7.0.0
+  flutter_test:
+    sdk: flutter
+  # Used by the repo-root test/ suites (golden, phi_leak_fuzz) which exercise
+  # the app's shared code; resolved against the app package's dependencies.
+  core:
+    path: packages/core
+  golden_toolkit: ^0.15.0
+  dio: ^5.8.0

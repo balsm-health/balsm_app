@@ -44,15 +44,18 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   geolocator: ^13.0.1
+  dio: ^5.8.0
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  flutter_driver:
     sdk: flutter
   integration_test:
     sdk: flutter
   mocktail: ^1.0.4
   # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
   golden_toolkit: ^0.15.0
-  dio: ^5.8.0
+  flutter_lints: ^4.0.0
 dependency_overrides:
   # path_provider_foundation 2.6.0 migrated to package:objective_c + the
   # experimental native-assets build, which mislinks on iOS (Foundation not

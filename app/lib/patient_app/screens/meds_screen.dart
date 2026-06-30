@@ -29,7 +29,7 @@ class MedsScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
         onTap: () => s.setTab('rx'),
         child: Row(children: [
-          IconSquare(LucideIcons.fileText, bg: T.petalViolet50, fg: T.petalViolet, size: 34, iconSize: 19, radius: T.rSm),
+          const IconSquare(LucideIcons.fileText, bg: T.petalViolet50, fg: T.petalViolet, size: 34, iconSize: 19, radius: T.rSm),
           const SizedBox(width: 14),
           Expanded(child: Text(s.t('prescriptions'),
               style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: T.fg1))),

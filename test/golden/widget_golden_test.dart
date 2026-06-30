@@ -8,7 +8,6 @@
 // widgets + router/provider fixtures which are added in their own tasks.
 import 'package:core/core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 
 /// Builds the BalsmCard sample under a given theme + direction.

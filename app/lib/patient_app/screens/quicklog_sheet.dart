@@ -240,7 +240,7 @@ class _SavedFlash extends StatelessWidget {
     return Column(children: [
       const SizedBox(height: 8),
       Container(width: 72, height: 72, alignment: Alignment.center,
-          decoration: BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
+          decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
           child: const Icon(LucideIcons.check, size: 36, color: T.petalMint600)),
       const SizedBox(height: 14),
       Text(s.t('store_synced') == 'Synced' ? 'Saved' : 'تم الحفظ',
@@ -354,13 +354,20 @@ class _BpFlowState extends State<_BpFlow> {
   final note = TextEditingController();
   bool get ok => sys.length >= 2 && dia.length >= 2;
   void _key(String d) => setState(() {
-        if (field == 'sys') { if (sys.length < 3) { sys += d; if (sys.length == 3) field = 'dia'; } }
-        else if (dia.length < 3) dia += d;
+        if (field == 'sys') {
+          if (sys.length < 3) { sys += d; if (sys.length == 3) field = 'dia'; }
+        } else if (dia.length < 3) {
+          dia += d;
+        }
       });
   void _back() => setState(() {
-        if (field == 'dia' && dia.isEmpty) field = 'sys';
-        else if (field == 'dia') dia = dia.substring(0, dia.length - 1);
-        else if (sys.isNotEmpty) sys = sys.substring(0, sys.length - 1);
+        if (field == 'dia' && dia.isEmpty) {
+          field = 'sys';
+        } else if (field == 'dia') {
+          dia = dia.substring(0, dia.length - 1);
+        } else if (sys.isNotEmpty) {
+          sys = sys.substring(0, sys.length - 1);
+        }
       });
   @override
   Widget build(BuildContext context) {
@@ -530,12 +537,22 @@ class _WeightFlowState extends State<_WeightFlow> {
       const SizedBox(height: 12),
       NumPad(
         decimal: true,
-        onDot: () => setState(() { if (!dot && kg.isNotEmpty) dot = true; }),
-        onKey: (d) => setState(() { if (dot) { if (dec.isEmpty) dec += d; } else if (kg.length < 3) kg += d; }),
+        onDot: () => setState(() { if (!dot && kg.isNotEmpty) { dot = true; } }),
+        onKey: (d) => setState(() {
+          if (dot) {
+            if (dec.isEmpty) dec += d;
+          } else if (kg.length < 3) {
+            kg += d;
+          }
+        }),
         onBack: () => setState(() {
-          if (dot && dec.isNotEmpty) dec = '';
-          else if (dot) dot = false;
-          else if (kg.isNotEmpty) kg = kg.substring(0, kg.length - 1);
+          if (dot && dec.isNotEmpty) {
+            dec = '';
+          } else if (dot) {
+            dot = false;
+          } else if (kg.isNotEmpty) {
+            kg = kg.substring(0, kg.length - 1);
+          }
         }),
       ),
       _NoteAttach(controller: note),

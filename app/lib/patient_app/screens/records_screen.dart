@@ -260,7 +260,7 @@ class _RecordDetail extends StatelessWidget {
           height: 200,
           decoration: BoxDecoration(color: T.cream100, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.ink100)),
           child: Stack(alignment: Alignment.center, children: [
-            Positioned(right: -28, bottom: -28, child: BalsmFlower(size: 130, opacity: 0.07)),
+            const Positioned(right: -28, bottom: -28, child: BalsmFlower(size: 130, opacity: 0.07)),
             Column(mainAxisSize: MainAxisSize.min, children: [
               IconSquare(cfg.icon, bg: cfg.bg, fg: cfg.color, size: 56, iconSize: 28),
               const SizedBox(height: 10),
@@ -327,7 +327,7 @@ class _RecordDetail extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         child: Row(children: [
           if (doc != null) DoctorAvatar(doctor: doc, size: 42)
-          else Container(width: 42, height: 42, alignment: Alignment.center, decoration: BoxDecoration(color: T.ink100, shape: BoxShape.circle), child: const Icon(LucideIcons.user, size: 20, color: T.fg2)),
+          else Container(width: 42, height: 42, alignment: Alignment.center, decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle), child: const Icon(LucideIcons.user, size: 20, color: T.fg2)),
           const SizedBox(width: 13),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(doc?.name.of(s.lang) ?? s.t('rec_self'), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
@@ -559,7 +559,7 @@ class _AddRecordSheetState extends State<_AddRecordSheet> {
           ]),
         _ => Column(children: [
             const SizedBox(height: 20),
-            Container(width: 72, height: 72, alignment: Alignment.center, decoration: BoxDecoration(color: T.petalMint50, shape: BoxShape.circle), child: const Icon(LucideIcons.check, size: 36, color: T.petalMint600)),
+            Container(width: 72, height: 72, alignment: Alignment.center, decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle), child: const Icon(LucideIcons.check, size: 36, color: T.petalMint600)),
             const SizedBox(height: 14),
             Text(s.t('rec_added'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
             const SizedBox(height: 8),
@@ -572,7 +572,7 @@ class _AddRecordSheetState extends State<_AddRecordSheet> {
 void _showManageStorage(BuildContext context, HealthRecord rec, ValueChanged<String> onChange, VoidCallback onDelete) {
   final s = AppScope.of(context);
   final isCloud = rec.storage == 'icloud' || rec.storage == 'gdrive';
-  final clouds = const ['icloud', 'gdrive'];
+  const clouds = ['icloud', 'gdrive'];
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
@@ -607,7 +607,7 @@ void _showManageStorage(BuildContext context, HealthRecord rec, ValueChanged<Str
           title: Text(s.t('store_delete_rec'), style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
           content: Text(s.t('rec_added_h'), style: Typo.bodySm(ar: s.rtl)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dctx), child: Text(s.t('cancel'), style: TextStyle(color: T.fg2))),
+            TextButton(onPressed: () => Navigator.pop(dctx), child: Text(s.t('cancel'), style: const TextStyle(color: T.fg2))),
             TextButton(onPressed: () { Navigator.pop(dctx); onDelete(); }, child: Text(s.t('store_delete_rec'), style: const TextStyle(color: T.danger, fontWeight: FontWeight.w700))),
           ],
         )));

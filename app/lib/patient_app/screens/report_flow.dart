@@ -177,11 +177,18 @@ class _ReportFlowState extends State<ReportFlow> {
               const SizedBox(height: 12),
               NumPad(
                 onKey: (d) => setState(() {
-                  if (bpField == 'sys') { if (bpSys.length < 3) bpSys += d; } else if (bpDia.length < 3) bpDia += d;
+                  if (bpField == 'sys') {
+                    if (bpSys.length < 3) bpSys += d;
+                  } else if (bpDia.length < 3) {
+                    bpDia += d;
+                  }
                 }),
                 onBack: () => setState(() {
-                  if (bpField == 'sys') { if (bpSys.isNotEmpty) bpSys = bpSys.substring(0, bpSys.length - 1); }
-                  else if (bpDia.isNotEmpty) bpDia = bpDia.substring(0, bpDia.length - 1);
+                  if (bpField == 'sys') {
+                    if (bpSys.isNotEmpty) bpSys = bpSys.substring(0, bpSys.length - 1);
+                  } else if (bpDia.isNotEmpty) {
+                    bpDia = bpDia.substring(0, bpDia.length - 1);
+                  }
                 }),
               ),
             ]))),
@@ -412,7 +419,7 @@ class _Summary extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 30, 24, 8),
             child: Column(children: [
               Container(width: 88, height: 88, alignment: Alignment.center,
-                  decoration: BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
                   child: const Icon(LucideIcons.check, size: 44, color: T.petalMint600)),
               const SizedBox(height: 18),
               Text(s.t('saved_t'), style: Typo.title(ar: s.rtl)),

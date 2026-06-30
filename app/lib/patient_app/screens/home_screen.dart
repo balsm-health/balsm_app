@@ -163,7 +163,7 @@ class _AvatarButton extends StatelessWidget {
             right: -1, bottom: -1,
             child: Container(
               width: 14, height: 14,
-              decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
               child: Center(
                 child: Container(width: 8, height: 8, decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle)),
               ),
@@ -245,7 +245,7 @@ class _HeroDone extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       child: Row(children: [
         Container(width: 52, height: 52,
-            decoration: BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
+            decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
             child: const Icon(LucideIcons.check, size: 28, color: T.petalMint600)),
         const SizedBox(width: 14),
         Expanded(
@@ -430,7 +430,7 @@ class HistoryRow extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(h.bp, textDirection: TextDirection.ltr, style: Typo.num(weight: FontWeight.w600, size: FS.md)),
               ]),
-              Text('·', style: TextStyle(color: T.ink300)),
+              const Text('·', style: TextStyle(color: T.ink300)),
               Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(LucideIcons.droplet, size: 14, color: T.petalMint600),
                 const SizedBox(width: 4),

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../config/flavor.dart';
 
@@ -17,19 +16,35 @@ Future<void> initSentry() async {
     options.environment = flavor;
     options.release = 'balsm@$version+$build-$flavor';
     options.beforeSend = (event, hint) => _scrub(event, allowlist);
-    options.beforeBreadcrumb =
-        (breadcrumb, hint) => _scrubBreadcrumb(breadcrumb, allowlist);
+    options.beforeBreadcrumb = (breadcrumb, hint) => _scrubBreadcrumb(breadcrumb, allowlist);
   });
 }
 
 Set<String> _loadAllowlist() {
   // Non-PHI fields from contracts/crash-allowlist.json
   return const {
-    'event_id', 'timestamp', 'platform', 'level', 'logger',
-    'transaction', 'environment', 'release', 'dist',
-    'type', 'value', 'stacktrace', 'module', 'function',
-    'filename', 'lineno', 'colno', 'abs_path',
-    'status_code', 'method', 'url', 'reason',
+    'event_id',
+    'timestamp',
+    'platform',
+    'level',
+    'logger',
+    'transaction',
+    'environment',
+    'release',
+    'dist',
+    'type',
+    'value',
+    'stacktrace',
+    'module',
+    'function',
+    'filename',
+    'lineno',
+    'colno',
+    'abs_path',
+    'status_code',
+    'method',
+    'url',
+    'reason',
   };
 }
 

@@ -6,7 +6,7 @@
       "request": "launch",
       "type": "dart",
       "cwd": "app",
-      "program": "lib/main_patient.dart",
+      "program": "${input:patientEntrypoint}",
       "flutterMode": "debug",
       "args": [
         "--flavor",
@@ -14,6 +14,18 @@
         "--dart-define-from-file=env/balsm/dev.json",
         "--dart-define-from-file=env/envs.json"
       ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "patientEntrypoint",
+      "type": "pickString",
+      "description": "Patient app entrypoint",
+      "options": [
+        "lib/main_patient.dart",
+        "test_driver/main_patient_driver.dart"
+      ],
+      "default": "lib/main_patient.dart"
     }
   ]
 }

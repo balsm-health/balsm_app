@@ -187,7 +187,7 @@ class _MapScreenState extends State<MapScreen> {
       Positioned(
         bottom: 20, right: s.rtl ? null : 14, left: s.rtl ? 14 : null,
         child: Container(
-          decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: T.shadowMd),
+          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: T.shadowMd),
           child: RoundBtn(
             icon: LucideIcons.locateFixed, bg: Colors.white, fg: s.accent.main,
             onTap: () => _map.move(_center, _userLoc != null ? 14 : 13),
@@ -317,8 +317,8 @@ class _UserDot extends StatelessWidget {
   const _UserDot();
   @override
   Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: const Color(0x331283FF), shape: BoxShape.circle,
+        decoration: const BoxDecoration(
+          color: Color(0x331283FF), shape: BoxShape.circle,
         ),
         child: Center(
           child: Container(

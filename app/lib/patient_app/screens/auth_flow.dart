@@ -132,8 +132,8 @@ class _SocialButton extends StatelessWidget {
                 width: 18,
                 height: 18,
                 alignment: Alignment.center,
-                child: Text('G',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: const Color(0xFF4285F4))))
+                child: const Text('G',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF4285F4))))
           else
             Icon(icon, size: 19, color: Colors.white),
           const SizedBox(width: 10),
@@ -372,10 +372,11 @@ class _OtpScreenState extends State<_OtpScreen> {
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
                         onChanged: (v) {
                           setState(() {});
-                          if (v.length == 6)
+                          if (v.length == 6) {
                             Future.delayed(const Duration(milliseconds: 280), () {
                               if (mounted) s.go('profile');
                             });
+                          }
                         },
                       ))),
               const SizedBox(height: 24),
@@ -467,8 +468,9 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
 
   void _setHandle(String raw) {
     final v = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
-    if (handle.text != v)
+    if (handle.text != v) {
       handle.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
+    }
     debounce?.cancel();
     if (v.isEmpty) {
       setState(() => unStatus = 'idle');

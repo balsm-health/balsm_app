@@ -1,1 +1,7 @@
 .DS_Store
+
+# Dart/Flutter build + tool artifacts (all packages)
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
