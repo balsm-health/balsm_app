@@ -89,8 +89,9 @@ class AppBarRow extends StatelessWidget {
       );
 }
 
-/// 44px round icon button (.round-btn).
-class RoundBtn extends StatelessWidget {
+/// 44px round icon button (.round-btn). Background darkens on press
+/// (`:active { background: ink100 }`) over `--dur-base`.
+class RoundBtn extends StatefulWidget {
   const RoundBtn({super.key, required this.icon, this.onTap, this.bg, this.fg, this.ghost = false, this.iconSize = 21});
   final IconData icon;
   final VoidCallback? onTap;
@@ -99,18 +100,36 @@ class RoundBtn extends StatelessWidget {
   final bool ghost;
   final double iconSize;
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(
-            color: ghost ? Colors.transparent : (bg ?? T.ink50),
-            shape: BoxShape.circle,
-            border: ghost ? null : Border.all(color: T.border),
-          ),
-          child: Icon(icon, size: iconSize, color: fg ?? T.ink700),
+  State<RoundBtn> createState() => _RoundBtnState();
+}
+
+class _RoundBtnState extends State<RoundBtn> {
+  bool _down = false;
+  void _set(bool v) {
+    if (widget.onTap != null && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rest = widget.ghost ? Colors.transparent : (widget.bg ?? T.ink50);
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => _set(true),
+      onTapUp: (_) => _set(false),
+      onTapCancel: () => _set(false),
+      child: AnimatedContainer(
+        duration: Motion.base,
+        curve: Motion.easeOut,
+        width: 44, height: 44,
+        decoration: BoxDecoration(
+          color: _down ? T.ink100 : rest,
+          shape: BoxShape.circle,
+          border: widget.ghost ? null : Border.all(color: T.border),
         ),
-      );
+        child: Icon(widget.icon, size: widget.iconSize, color: widget.fg ?? T.ink700),
+      ),
+    );
+  }
 }
 
 /// Colored initials avatar (.avatar).
@@ -155,7 +174,8 @@ class PCard extends StatelessWidget {
       child: child,
     );
     if (onTap == null) return card;
-    return GestureDetector(onTap: onTap, behavior: HitTestBehavior.opaque, child: card);
+    // Gentle press feedback on tappable cards.
+    return Pressable(onTap: onTap, scale: 0.99, child: card);
   }
 }
 
@@ -253,7 +273,8 @@ class PButton extends StatelessWidget {
         ],
       ),
     );
-    return GestureDetector(onTap: onTap, child: child);
+    // .btn:active { transform: scale(0.98) } — press feedback.
+    return Pressable(onTap: onTap, child: child);
   }
 }
 
@@ -304,14 +325,25 @@ class RingProgress extends StatelessWidget {
   final double size;
   final TextStyle? labelStyle;
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: size, height: size,
-        child: Stack(alignment: Alignment.center, children: [
-          CustomPaint(size: Size(size, size), painter: _RingPainter(progress, color)),
-          if (label != null)
-            Text(label!, style: labelStyle ?? Typo.display().copyWith(fontSize: FS.md, fontWeight: FontWeight.w800)),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return SizedBox(
+      width: size, height: size,
+      child: Stack(alignment: Alignment.center, children: [
+        // Animate the arc sweep from 0 → progress (`.b-progress-ring__fill`
+        // stroke-dashoffset transition over --dur-slow ease-out).
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
+          duration: reduce ? Duration.zero : Motion.slow,
+          curve: Motion.easeOut,
+          builder: (_, v, __) =>
+              CustomPaint(size: Size(size, size), painter: _RingPainter(v, color)),
+        ),
+        if (label != null)
+          Text(label!, style: labelStyle ?? Typo.display().copyWith(fontSize: FS.md, fontWeight: FontWeight.w800)),
+      ]),
+    );
+  }
 }
 
 class _RingPainter extends CustomPainter {
@@ -362,4 +394,359 @@ class Chevron extends StatelessWidget {
         flipX: rtl,
         child: Icon(LucideIcons.chevronRight, size: size, color: color ?? T.fg4),
       );
+}
+
+// ════════════════════════════════════════════════════════════════
+//  Motion primitives — ported from app.css / ds-loaders.css.
+//  Every one honors MediaQuery.disableAnimations (prefers-reduced-motion).
+// ════════════════════════════════════════════════════════════════
+
+/// Press-to-scale feedback wrapper. Matches `.btn:active { transform:
+/// scale(0.98) }` with `transform var(--dur-fast) var(--ease-out)`.
+/// Pass a smaller [scale] for FABs (0.93) / keypad (0.97).
+class Pressable extends StatefulWidget {
+  const Pressable({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.scale = 0.98,
+    this.behavior = HitTestBehavior.opaque,
+  });
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scale;
+  final HitTestBehavior behavior;
+
+  @override
+  State<Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<Pressable> {
+  bool _down = false;
+  void _set(bool v) {
+    if (widget.onTap != null && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final target = (_down && !reduce) ? widget.scale : 1.0;
+    return GestureDetector(
+      behavior: widget.behavior,
+      onTap: widget.onTap,
+      onTapDown: (_) => _set(true),
+      onTapUp: (_) => _set(false),
+      onTapCancel: () => _set(false),
+      child: AnimatedScale(
+        scale: target,
+        duration: Motion.fast,
+        curve: Motion.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Tap row that flashes a background tint while held (`.list-row:active`,
+/// `.history-row:active` → `background: ink50`) over `--dur-base`. Use for
+/// list/history rows that change background rather than scale on press.
+class PressHighlight extends StatefulWidget {
+  const PressHighlight({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.radius = 0,
+    this.color,
+    this.behavior = HitTestBehavior.opaque,
+  });
+  final Widget child;
+  final VoidCallback? onTap;
+  final double radius;
+  final Color? color;
+  final HitTestBehavior behavior;
+  @override
+  State<PressHighlight> createState() => _PressHighlightState();
+}
+
+class _PressHighlightState extends State<PressHighlight> {
+  bool _down = false;
+  void _set(bool v) {
+    if (widget.onTap != null && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return GestureDetector(
+      behavior: widget.behavior,
+      onTap: widget.onTap,
+      onTapDown: (_) => _set(true),
+      onTapUp: (_) => _set(false),
+      onTapCancel: () => _set(false),
+      child: AnimatedContainer(
+        duration: reduce ? Duration.zero : Motion.base,
+        curve: Motion.easeOut,
+        decoration: BoxDecoration(
+          color: _down ? (widget.color ?? T.ink50) : Colors.transparent,
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Entrance motion — `.fade-in` (`@keyframes fadeIn`): rises 7px → 0 over
+/// `--dur-slow`. Transform-only (content is never hidden if throttled), with
+/// an optional [delay] for staggering list/grid items (~40ms each).
+class RiseIn extends StatefulWidget {
+  const RiseIn({super.key, required this.child, this.delay = Duration.zero, this.dy = 7});
+  final Widget child;
+  final Duration delay;
+  final double dy;
+  @override
+  State<RiseIn> createState() => _RiseInState();
+}
+
+class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: Motion.slow);
+  late final Animation<double> _a =
+      CurvedAnimation(parent: _c, curve: Motion.easeOut);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.delay == Duration.zero) {
+      _c.forward();
+    } else {
+      Future.delayed(widget.delay, () { if (mounted) _c.forward(); });
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) return widget.child;
+    return AnimatedBuilder(
+      animation: _a,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, widget.dy * (1 - _a.value)),
+        child: Opacity(opacity: _a.value, child: child),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// Linear progress bar (`.progress` + `.bar`): 7px track, accent fill whose
+/// width animates over `--dur-slow` ease-out. [value] is 0..1.
+class LinearProgress extends StatelessWidget {
+  const LinearProgress({super.key, required this.value, this.color, this.height = 7, this.track});
+  final double value;
+  final Color? color;
+  final double height;
+  final Color? track;
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(T.rPill),
+      child: Container(
+        height: height,
+        color: track ?? T.ink100,
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
+            duration: reduce ? Duration.zero : Motion.slow,
+            curve: Motion.easeOut,
+            builder: (_, v, __) => FractionallySizedBox(
+              widthFactor: v,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: color ?? Accent.blue.main,
+                  borderRadius: BorderRadius.circular(T.rPill),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shimmering skeleton placeholder (`.b-skeleton` — `b-shimmer 1.5s
+/// ease-in-out infinite`). Sized by the caller.
+class Shimmer extends StatefulWidget {
+  const Shimmer({super.key, this.width, this.height = 12, this.radius = T.rXs, this.circle = false});
+  final double? width;
+  final double height;
+  final double radius;
+  final bool circle;
+  @override
+  State<Shimmer> createState() => _ShimmerState();
+}
+
+class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
+        ..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final shape = BoxDecoration(
+      borderRadius: widget.circle ? null : BorderRadius.circular(widget.radius),
+      shape: widget.circle ? BoxShape.circle : BoxShape.rectangle,
+    );
+    if (reduce) {
+      return Container(
+        width: widget.width, height: widget.height,
+        decoration: shape.copyWith(color: T.ink200),
+      );
+    }
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) => Container(
+        width: widget.width, height: widget.height,
+        decoration: shape.copyWith(
+          gradient: LinearGradient(
+            // 280% background-size swept by b-shimmer 180% → -180%.
+            begin: Alignment(-1 - 2 * (1 - _c.value), 0),
+            end: Alignment(1 + 2 * _c.value, 0),
+            colors: const [T.ink200, T.ink100, T.ink200],
+            stops: const [0.25, 0.37, 0.63],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ring spinner (`.b-ring-spinner` — `b-spin 0.85s linear infinite`).
+/// Loading indicators keep spinning under reduced motion (the one allowed
+/// continuous animation).
+class Spinner extends StatelessWidget {
+  const Spinner({super.key, this.size = 28, this.color, this.stroke = 3});
+  final double size;
+  final Color? color;
+  final double stroke;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: size, height: size,
+        child: CircularProgressIndicator(
+          strokeWidth: stroke,
+          valueColor: AlwaysStoppedAnimation(color ?? Accent.blue.main),
+        ),
+      );
+}
+
+/// Full-surface loading overlay (`.b-overlay`): fades in over `--dur-base`,
+/// centers a [Spinner] + optional message above a cream/scrim backdrop.
+class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({super.key, this.message, this.scrim = false, this.ar = false});
+  final String? message;
+  final bool scrim;
+  final bool ar;
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final inner = Column(mainAxisSize: MainAxisSize.min, children: [
+      Spinner(color: scrim ? Colors.white : Accent.blue.main),
+      if (message != null) ...[
+        const SizedBox(height: 18),
+        Text(message!, textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(
+            color: scrim ? Colors.white : T.fg1, fontSize: 17)),
+      ],
+    ]);
+    final body = Container(
+      color: scrim ? const Color(0x8C2B2B25) : T.cream50,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: inner,
+    );
+    if (reduce) return body;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Motion.base,
+      curve: Motion.easeOut,
+      builder: (_, v, child) => Opacity(opacity: v, child: child),
+      child: body,
+    );
+  }
+}
+
+/// Top navigation loading bar (`.b-toploader--indeterminate`): a glowing accent
+/// segment slides left→right while [loading], fading out when it clears.
+/// Sits flush to the top of the screen surface (shown on tab change).
+class TopLoadingBar extends StatefulWidget {
+  const TopLoadingBar({super.key, required this.loading, this.color, this.height = 3});
+  final bool loading;
+  final Color? color;
+  final double height;
+  @override
+  State<TopLoadingBar> createState() => _TopLoadingBarState();
+}
+
+class _TopLoadingBarState extends State<TopLoadingBar> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1150))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final color = widget.color ?? Accent.blue.main;
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        opacity: widget.loading ? 1 : 0,
+        duration: Motion.slow,
+        curve: Motion.easeOut,
+        child: SizedBox(
+          height: widget.height,
+          width: double.infinity,
+          child: (widget.loading && !reduce)
+              ? LayoutBuilder(builder: (_, c) {
+                  final barW = c.maxWidth * 0.32;
+                  return AnimatedBuilder(
+                    animation: _c,
+                    builder: (_, __) => Stack(children: [
+                      PositionedDirectional(
+                        start: (-0.34 + 1.34 * _c.value) * c.maxWidth,
+                        top: 0, bottom: 0, width: barW,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: const BorderRadiusDirectional.horizontal(end: Radius.circular(T.rPill)),
+                            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)],
+                          ),
+                        ),
+                      ),
+                    ]),
+                  );
+                })
+              : null,
+        ),
+      ),
+    );
+  }
 }

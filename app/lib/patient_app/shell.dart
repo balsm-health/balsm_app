@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'app_state.dart';
 import 'kit.dart';
 import 'responsive.dart';
 import 'tokens.dart';
+import 'widgets/balsm_flower.dart';
 import 'screens/home_screen.dart';
 import 'screens/trends_screen.dart';
 import 'screens/meds_screen.dart';
@@ -31,6 +33,18 @@ class PatientApp extends StatefulWidget {
 class _PatientAppState extends State<PatientApp> {
   late final PatientAppState state = widget.state;
 
+  // Boot splash (app.jsx `DSLoadingOverlay open={booting}`) — branded petal
+  // spinner shown for ~1.7s on cold start, then fades out.
+  bool _booting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(milliseconds: 1700), () {
+      if (mounted) setState(() => _booting = false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppScope(
@@ -55,7 +69,10 @@ class _PatientAppState extends State<PatientApp> {
             child: AdaptiveFrame(
               child: Scaffold(
                 backgroundColor: Colors.white,
-                body: state.route == 'app' ? const _MainApp() : const AuthRouter(),
+                body: Stack(children: [
+                  state.route == 'app' ? const _MainApp() : const AuthRouter(),
+                  Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                ]),
               ),
             ),
           ),
@@ -94,12 +111,42 @@ class AdaptiveFrame extends StatelessWidget {
 /// Main signed-in app. Adapts navigation to the window: phones (< md) use the
 /// bottom tab bar; tablets/desktop (≥ md) use a persistent leading nav rail
 /// (Material adaptive-navigation: sidebar on large, bottom nav on small).
-class _MainApp extends StatelessWidget {
+class _MainApp extends StatefulWidget {
   const _MainApp();
+  @override
+  State<_MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<_MainApp> {
+  String? _lastTab;
+  bool _navLoading = false;
+  Timer? _navTimer;
+
+  @override
+  void dispose() {
+    _navTimer?.cancel();
+    super.dispose();
+  }
+
+  // app.jsx: on tab change, navLoading is true for ~520ms → top loading bar.
+  void _flashNav() {
+    _navTimer?.cancel();
+    if (!_navLoading) setState(() => _navLoading = true);
+    _navTimer = Timer(const Duration(milliseconds: 520), () {
+      if (mounted) setState(() => _navLoading = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    if (_lastTab == null) {
+      _lastTab = s.tab;
+    } else if (_lastTab != s.tab) {
+      _lastTab = s.tab;
+      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _flashNav(); });
+    }
+
     final screen = switch (s.tab) {
       'home' => const HomeScreen(),
       'trends' => const TrendsScreen(),
@@ -112,7 +159,7 @@ class _MainApp extends StatelessWidget {
       _ => _Placeholder(title: s.tab),
     };
 
-    return LayoutBuilder(builder: (context, c) {
+    final content = LayoutBuilder(builder: (context, c) {
       final wide = c.maxWidth >= Bp.md;
       if (wide) {
         // Persistent side rail + content. Sub-screens render in-place; the rail
@@ -129,6 +176,14 @@ class _MainApp extends StatelessWidget {
         if (!hideTabBar) const _TabBar(),
       ]);
     });
+
+    return Stack(children: [
+      content,
+      PositionedDirectional(
+        top: 0, start: 0, end: 0,
+        child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
+      ),
+    ]);
   }
 }
 
@@ -290,6 +345,42 @@ class _Placeholder extends StatelessWidget {
     return Center(
       child: Text('${title[0].toUpperCase()}${title.substring(1)}\n(coming next)',
           textAlign: TextAlign.center, style: Typo.subhead(ar: s.rtl).copyWith(color: T.fg3)),
+    );
+  }
+}
+
+/// Branded boot splash (`DSLoadingOverlay variant="brand" spinner="petal"`):
+/// petal spinner + "Preparing your health record" over the warm cream surface.
+/// Fades out over `--dur-slow` when [visible] flips false.
+class _BootSplash extends StatelessWidget {
+  const _BootSplash({required this.state, required this.visible});
+  final PatientAppState state;
+  final bool visible;
+  @override
+  Widget build(BuildContext context) {
+    final ar = state.rtl;
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: Motion.slow,
+        curve: Motion.easeOut,
+        child: Container(
+          color: T.cream50,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const PetalSpinner(size: 72),
+            const SizedBox(height: 28),
+            Text(ar ? 'نُجهّز سجلّك الصحي' : 'Preparing your health record',
+                textAlign: TextAlign.center,
+                style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(ar ? 'على جهازك، بالتصميم.' : 'On your device, by design.',
+                textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
+          ]),
+        ),
+      ),
     );
   }
 }

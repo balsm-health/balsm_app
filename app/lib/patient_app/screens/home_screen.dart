@@ -154,8 +154,9 @@ class _AvatarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
+      scale: 0.95,
       child: Stack(clipBehavior: Clip.none, children: [
         Avatar(initials: s.account.initials, color: s.account.color, ar: s.rtl),
         if (kFamilyAccounts.length > 1)
@@ -212,7 +213,7 @@ class _HeroCheckin extends StatelessWidget {
         Text(s.t('hero_q'),
             style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2, color: Colors.white)),
         const SizedBox(height: 14),
-        GestureDetector(
+        Pressable(
           onTap: () => openCheckin(context),
           child: Container(
             height: 48,
@@ -411,9 +412,9 @@ class HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final pinfo = h.pain <= 3 ? PillKind.success : (h.pain <= 6 ? PillKind.warn : PillKind.danger);
-    return GestureDetector(
+    // `.history-row:active { background: ink50 }`.
+    return PressHighlight(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

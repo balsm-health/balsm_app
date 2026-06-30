@@ -101,7 +101,7 @@ class _QuickLogSheetState extends State<_QuickLogSheet> {
 
   Widget _menu() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         // Full check-in CTA
-        GestureDetector(
+        Pressable(
           onTap: widget.onFullCheckin,
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
@@ -128,9 +128,9 @@ class _QuickLogSheetState extends State<_QuickLogSheet> {
         ]),
         const SizedBox(height: 4),
         for (final m in _metrics)
-          GestureDetector(
+          PressHighlight(
             onTap: () => setState(() => active = m.id),
-            behavior: HitTestBehavior.opaque,
+            radius: T.rMd,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 11),
               child: Row(children: [
@@ -162,9 +162,8 @@ class _QuickLogSheetState extends State<_QuickLogSheet> {
   Widget _addTile(String key) {
     final cfg = kRecordTypes[key]!;
     return Expanded(
-      child: GestureDetector(
+      child: Pressable(
         onTap: () => widget.onAddRecord(key),
-        behavior: HitTestBehavior.opaque,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.border)),
@@ -237,7 +236,7 @@ class _SavedFlash extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return Column(children: [
+    return RiseIn(child: Column(children: [
       const SizedBox(height: 8),
       Container(width: 72, height: 72, alignment: Alignment.center,
           decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
@@ -248,7 +247,7 @@ class _SavedFlash extends StatelessWidget {
       const SizedBox(height: 6),
       Text(value, textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500)),
       const SizedBox(height: 8),
-    ]);
+    ]));
   }
 }
 
@@ -325,7 +324,10 @@ class _VitalBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
-        child: Container(
+        // `.vital-num` — border/bg animate over --dur-base ease-out.
+        child: AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           constraints: BoxConstraints(minWidth: minWidth),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           alignment: Alignment.center,
@@ -387,7 +389,7 @@ class _BpFlowState extends State<_BpFlow> {
       const SizedBox(height: 4),
       Text(s.t('unit_bp'), style: Typo.body(ar: s.rtl).copyWith(color: T.fg3, fontWeight: FontWeight.w600)),
       const SizedBox(height: 12),
-      NumPad(onKey: _key, onBack: _back),
+      NumPad(onKey: _key, onBack: _back, pressBg: s.accent.bg),
       _NoteAttach(controller: note),
       _SaveBtn(enabled: ok, s: s, onTap: () => widget.onSave('$sys/$dia ${s.t('unit_bp')}')),
     ]);
@@ -420,7 +422,7 @@ class _GlucoseFlowState extends State<_GlucoseFlow> {
       const SizedBox(height: 4),
       Text(s.t('unit_glu'), style: Typo.body(ar: s.rtl).copyWith(color: T.fg3, fontWeight: FontWeight.w600)),
       const SizedBox(height: 12),
-      NumPad(onKey: (d) => setState(() { if (glu.length < 3) glu += d; }), onBack: () => setState(() { if (glu.isNotEmpty) glu = glu.substring(0, glu.length - 1); })),
+      NumPad(onKey: (d) => setState(() { if (glu.length < 3) glu += d; }), onBack: () => setState(() { if (glu.isNotEmpty) glu = glu.substring(0, glu.length - 1); }), pressBg: s.accent.bg),
       _NoteAttach(controller: note),
       _SaveBtn(enabled: glu.length >= 2, s: s, onTap: () => widget.onSave('$glu ${s.t('unit_glu')} · ${s.t(ctx)}')),
     ]);
@@ -449,9 +451,14 @@ class _MoodFlowState extends State<_MoodFlow> {
             padding: EdgeInsets.only(right: lv < 5 ? 10 : 0),
             child: GestureDetector(
               onTap: () => setState(() => mood = lv),
+              // `.mood.sel` — bg/border animate + lift translateY(-2px).
               child: AspectRatio(
                 aspectRatio: 1,
-                child: Container(
+                child: AnimatedContainer(
+                  duration: Motion.base,
+                  curve: Motion.easeOut,
+                  transform: Matrix4.translationValues(0, mood == lv ? -2 : 0, 0),
+                  transformAlignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: mood == lv ? s.accent.bg : Colors.white,
                     borderRadius: BorderRadius.circular(T.rLg),
@@ -537,6 +544,7 @@ class _WeightFlowState extends State<_WeightFlow> {
       const SizedBox(height: 12),
       NumPad(
         decimal: true,
+        pressBg: s.accent.bg,
         onDot: () => setState(() { if (!dot && kg.isNotEmpty) { dot = true; } }),
         onKey: (d) => setState(() {
           if (dot) {
@@ -611,9 +619,13 @@ class _Chip extends StatelessWidget {
   final bool ar;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Pressable(
         onTap: onTap,
-        child: Container(
+        scale: 0.97,
+        // `.chip` — border/bg/color animate over --dur-base ease-out.
+        child: AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
             color: selected ? accent.bg : Colors.white,

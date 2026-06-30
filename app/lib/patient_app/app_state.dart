@@ -22,6 +22,9 @@ class PatientAppState extends ChangeNotifier {
   String activeAccountId = 'layla';
   String countryCode = 'EG';
 
+  /// Active backup target: local | icloud | gdrive (single active cloud).
+  String storageProvider = 'local';
+
   /// Today's completed check-in (null until the report flow finishes).
   CheckinResult? today;
 
@@ -38,6 +41,7 @@ class PatientAppState extends ChangeNotifier {
       s.accent = _accentFromKey(p.getString('pa.accent'));
       s.countryCode = p.getString('pa.country') ?? 'EG';
       s.activeAccountId = p.getString('pa.account') ?? 'layla';
+      s.storageProvider = p.getString('pa.storage') ?? 'local';
       s.route = (p.getBool('pa.signedIn') ?? false) ? 'app' : 'welcome';
     } catch (_) {
       s.route = 'welcome';
@@ -68,6 +72,7 @@ class PatientAppState extends ChangeNotifier {
     p.setString('pa.accent', _accentKey);
     p.setString('pa.country', countryCode);
     p.setString('pa.account', activeAccountId);
+    p.setString('pa.storage', storageProvider);
   }
 
   bool get rtl => lang == 'ar';
@@ -90,6 +95,7 @@ class PatientAppState extends ChangeNotifier {
   }
   void setTab(String tb) { tab = tb; notifyListeners(); }
   void switchAccount(String id) { activeAccountId = id; _save(); notifyListeners(); }
+  void switchCloudProvider(String to) { storageProvider = to; _save(); notifyListeners(); }
   void setCountry(String code) { countryCode = code; _save(); notifyListeners(); }
   void completeCheckin(CheckinResult r) { today = r; notifyListeners(); }
 }

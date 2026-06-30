@@ -80,8 +80,9 @@ class _MapScreenState extends State<MapScreen> {
         padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
         child: Row(children: [
           Expanded(child: Text(s.t('map_nearby'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-          GestureDetector(
+          Pressable(
             onTap: () => setState(() { viewMode = viewMode == 'map' ? 'list' : 'map'; selected = null; }),
+            scale: 0.97,
             child: Container(
               height: 40, padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
@@ -252,9 +253,13 @@ class _FilterChip extends StatelessWidget {
   final bool ar;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Pressable(
         onTap: onTap,
-        child: Container(
+        scale: 0.97,
+        // Filter chip — active bg/border animate over --dur-base ease-out.
+        child: AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
@@ -281,8 +286,11 @@ class _MapPin extends StatelessWidget {
     final w = selected ? 40.0 : 32.0;
     return GestureDetector(
       onTap: onTap,
+      // Marker grows + recolors when selected — animate over --dur-base.
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
+        AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           width: w, height: w, alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? cfg.color : Colors.white,
@@ -341,9 +349,13 @@ class _EntityListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final cfg = kEntityTypes[entity.type]!;
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
-      child: Container(
+      scale: 0.99,
+      // Card highlights when its pin is selected — animate over --dur-base.
+      child: AnimatedContainer(
+        duration: Motion.base,
+        curve: Motion.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: selected ? cfg.bg : Colors.white,

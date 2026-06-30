@@ -94,6 +94,23 @@ class T {
   ];
 }
 
+/// Motion tokens ported verbatim from `colors_and_type.css` (`--ease-*`,
+/// `--dur-*`). One source of truth for every animation in the patient app so
+/// durations/curves stay identical to the claude.ai/design prototype.
+class Motion {
+  Motion._();
+
+  // ── Durations ──────────────────────────────────────────────
+  static const fast = Duration(milliseconds: 120); // --dur-fast (press)
+  static const base = Duration(milliseconds: 200); // --dur-base (state)
+  static const slow = Duration(milliseconds: 320); // --dur-slow (fills/entrance)
+
+  // ── Easing curves ──────────────────────────────────────────
+  static const easeOut = Cubic(0.16, 1, 0.3, 1); // default — calm/spring-like
+  static const easeIn = Cubic(0.7, 0, 0.84, 0);
+  static const easeInOut = Cubic(0.65, 0, 0.35, 1);
+}
+
 /// The accent petal that tints CTAs, rings, active states. Default = blue.
 class Accent {
   const Accent(this.main, this.d, this.bg, this.shadow);

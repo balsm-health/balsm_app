@@ -32,9 +32,12 @@ class _PrescriptionsScreenState extends State<PrescriptionsScreen> {
           for (final f in const ['active', 'expired'])
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
+              child: Pressable(
                 onTap: () => setState(() => filter = f),
-                child: Container(
+                scale: 0.97,
+                child: AnimatedContainer(
+                  duration: Motion.base,
+                  curve: Motion.easeOut,
                   height: 36, padding: const EdgeInsets.symmetric(horizontal: 16), alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: filter == f ? s.accent.bg : Colors.white,

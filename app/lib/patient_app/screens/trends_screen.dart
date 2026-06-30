@@ -110,9 +110,13 @@ class _RangeTabs extends StatelessWidget {
     final s = AppScope.of(context);
     return Row(mainAxisSize: MainAxisSize.min, children: [
       for (final r in const ['range_w', 'range_m', 'range_3m'])
-        GestureDetector(
+        Pressable(
           onTap: () => onChange(r),
-          child: Container(
+          scale: 0.95,
+          // `.range-tabs button.on` — active bg animates over --dur-base.
+          child: AnimatedContainer(
+            duration: Motion.base,
+            curve: Motion.easeOut,
             margin: const EdgeInsets.only(left: 6),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(

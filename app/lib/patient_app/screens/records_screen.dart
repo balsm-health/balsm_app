@@ -102,15 +102,18 @@ class _RecordsScreenState extends State<RecordsScreen> {
                 ? ListView(children: [Padding(padding: const EdgeInsets.all(20), child: _empty(s, filtering))])
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 88),
-                    children: [for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 10), child: _RecordCard(rec: r, onTap: () => setState(() => selected = r)))],
+                    children: [for (final r in shown) Padding(padding: const EdgeInsets.only(bottom: 10), child: RiseIn(key: ValueKey(r.id), child: _RecordCard(rec: r, onTap: () => setState(() => selected = r))))],
                   )),
       ]),
       // Floating add FAB
       if (!loading && records.isNotEmpty)
         PositionedDirectional(
           end: 20, bottom: 20,
-          child: GestureDetector(
+          // `.rec-fab:active { transform: scale(0.93) }`.
+          child: Pressable(
             onTap: () => _showAdd(s),
+            scale: 0.93,
+            behavior: HitTestBehavior.deferToChild,
             child: Container(
               width: 56, height: 56,
               decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle, boxShadow: s.accent.boxShadow),
@@ -158,9 +161,13 @@ class _Filter extends StatelessWidget {
   final bool ar;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Pressable(
         onTap: onTap,
-        child: Container(
+        scale: 0.97,
+        // Filter chip — active bg/border animate over --dur-base ease-out.
+        child: AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
@@ -173,19 +180,19 @@ class _Filter extends StatelessWidget {
       );
 }
 
-/// Loading shimmer placeholder card.
+/// Loading skeleton card — shimmer placeholders (`.b-skeleton`).
 class _SkeletonCard extends StatelessWidget {
   const _SkeletonCard();
   @override
-  Widget build(BuildContext context) => PCard(
-        padding: const EdgeInsets.all(14),
+  Widget build(BuildContext context) => const PCard(
+        padding: EdgeInsets.all(14),
         child: Row(children: [
-          Container(width: 46, height: 46, decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rMd))),
-          const SizedBox(width: 13),
+          Shimmer(width: 46, height: 46, radius: T.rMd),
+          SizedBox(width: 13),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(width: 150, height: 12, decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(4))),
-            const SizedBox(height: 8),
-            Container(width: 90, height: 10, decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(4))),
+            Shimmer(width: 150, height: 12, radius: 4),
+            SizedBox(height: 8),
+            Shimmer(width: 90, height: 10, radius: 4),
           ])),
         ]),
       );
@@ -304,8 +311,9 @@ class _RecordDetail extends StatelessWidget {
           ]),
         ),
       // Storage row (tap to manage)
-      GestureDetector(
+      Pressable(
         onTap: () => _showManageStorage(context, rec, onStorageChange, onDelete),
+        scale: 0.99,
         child: Container(
           margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -443,7 +451,7 @@ class _AddRecordSheetState extends State<_AddRecordSheet> {
   Widget _body(PatientAppState s) => switch (step) {
         'type' => Column(children: [
             for (final e in kRecordTypes.entries)
-              GestureDetector(
+              Pressable(
                 onTap: () => setState(() { type = e.key; step = 'form'; }),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -523,8 +531,9 @@ class _AddRecordSheetState extends State<_AddRecordSheet> {
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final sug in _tagSuggest)
                 if (!tags.contains(sug))
-                  GestureDetector(
+                  Pressable(
                     onTap: () => _addTag(sug),
+                    scale: 0.97,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rPill), border: Border.all(color: T.border, width: 1.5)),
@@ -557,14 +566,14 @@ class _AddRecordSheetState extends State<_AddRecordSheet> {
             const SizedBox(height: 18),
             PButton(s.t('add_record'), variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _save),
           ]),
-        _ => Column(children: [
+        _ => RiseIn(child: Column(children: [
             const SizedBox(height: 20),
             Container(width: 72, height: 72, alignment: Alignment.center, decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle), child: const Icon(LucideIcons.check, size: 36, color: T.petalMint600)),
             const SizedBox(height: 14),
             Text(s.t('rec_added'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
             const SizedBox(height: 8),
             Text(s.t('rec_added_h'), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
-          ]),
+          ])),
       };
 }
 
@@ -579,8 +588,9 @@ void _showManageStorage(BuildContext context, HealthRecord rec, ValueChanged<Str
     barrierColor: const Color(0x5C2B2B25),
     builder: (ctx) {
       final cfg = storageCfg(rec.storage);
-      Widget action(IconData icon, Color iconBg, Color iconColor, String label, {String? sub, required VoidCallback onTap, bool danger = false}) => GestureDetector(
+      Widget action(IconData icon, Color iconBg, Color iconColor, String label, {String? sub, required VoidCallback onTap, bool danger = false}) => Pressable(
             onTap: onTap,
+            scale: 0.98,
             child: Container(
               margin: const EdgeInsets.only(bottom: 10),
               height: 52, padding: const EdgeInsetsDirectional.only(start: 14, end: 14),

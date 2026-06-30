@@ -7,6 +7,8 @@ import '../responsive.dart';
 import '../tokens.dart';
 import 'personal_details.dart';
 import 'profile_subscreens.dart';
+import 'storage_sheet.dart';
+import '../widgets/badges.dart';
 
 /// Profile tab (home.jsx ProfileScreen) — main screen + language/country sheets.
 class ProfileScreen extends StatelessWidget {
@@ -15,8 +17,8 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final curLang = kLanguages.firstWhere((l) => l.code == s.lang, orElse: () => kLanguages[1]);
-    // Local-first by default ("saved on your phone, synced when you're ready").
-    final storageCfg = _storageCfg('local');
+    // Reflects the active backup target (local | icloud | gdrive).
+    final stCfg = storageCfg(s.storageProvider);
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'p_cond', () => openMedicalProfile(context), false),
@@ -62,10 +64,11 @@ class ProfileScreen extends StatelessWidget {
             onTap: () => _showCountrySheet(context)),
       ]),
 
-      // Storage
+      // Storage — opens the backup/sync sheet (connect iCloud / Google Drive).
       _ListCard(children: [
-        _ListRow(icon: storageCfg.icon, label: s.t('storage'), iconBg: storageCfg.bg, iconFg: storageCfg.color,
-            trailingWidget: Pill(s.t('store_local'), kind: PillKind.neutral, dot: false, ar: s.rtl), first: true, onTap: () {}),
+        _ListRow(icon: stCfg.icon, label: s.t('storage'), iconBg: stCfg.bg, iconFg: stCfg.color,
+            trailingWidget: Pill(stCfg.label.of(s.lang), kind: PillKind.neutral, dot: false, ar: s.rtl),
+            first: true, onTap: () => showStorageSync(context)),
       ]),
 
       // Menu
@@ -88,12 +91,6 @@ class ProfileScreen extends StatelessWidget {
     ]));
   }
 }
-
-({IconData icon, Color bg, Color color}) _storageCfg(String which) => switch (which) {
-      'icloud' => (icon: LucideIcons.cloud, bg: T.petalBlue50, color: T.petalBlue),
-      'gdrive' => (icon: LucideIcons.cloud, bg: T.petalMint50, color: T.petalMint600),
-      _ => (icon: LucideIcons.smartphone, bg: T.ink100, color: T.ink700),
-    };
 
 class _ListCard extends StatelessWidget {
   const _ListCard({required this.children});
@@ -122,9 +119,9 @@ class _ListRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return GestureDetector(
+    // `.list-row:active { background: ink50 }`.
+    return PressHighlight(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
@@ -229,9 +226,9 @@ class _SelectRow extends StatelessWidget {
     final s = AppScope.of(context);
     return Opacity(
       opacity: enabled ? 1 : 0.5,
-      child: GestureDetector(
+      child: PressHighlight(
         onTap: onTap,
-        behavior: HitTestBehavior.opaque,
+        radius: T.rMd,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           child: Row(children: [

@@ -133,9 +133,12 @@ class _MedicalProfileScreenState extends State<MedicalProfileScreen> {
         _SectionHead(LucideIcons.droplet, s.t('pd_blood'), s: s),
         PCard(padding: const EdgeInsets.all(16), child: Wrap(spacing: 8, runSpacing: 8, children: [
           for (final bt in const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'])
-            GestureDetector(
+            Pressable(
               onTap: () => setState(() => blood = bt),
-              child: Container(
+              scale: 0.96,
+              child: AnimatedContainer(
+                duration: Motion.base,
+                curve: Motion.easeOut,
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                 decoration: BoxDecoration(
                   color: blood == bt ? s.accent.bg : Colors.white,
@@ -252,8 +255,9 @@ class _ChipEditor extends StatelessWidget {
             ),
           )),
           const SizedBox(width: 8),
-          GestureDetector(
+          Pressable(
             onTap: _add,
+            scale: 0.94,
             child: Container(width: 44, height: 44, alignment: Alignment.center,
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.borderStrong)),
                 child: const Icon(LucideIcons.plus, size: 18, color: T.fg1)),
@@ -279,7 +283,7 @@ class CareTeamScreen extends StatelessWidget {
             for (var i = 0; i < kDoctors.length; i++) _doctorCard(context, kDoctors[i], i == 0),
           ]),
           const SizedBox(height: 16),
-          GestureDetector(
+          Pressable(
             onTap: () { Navigator.pop(context); s.setTab('map'); },
             child: Container(
               height: 52, alignment: Alignment.center,
@@ -482,7 +486,11 @@ class EmergencyScreen extends StatelessWidget {
         ],
       );
 
-  Widget _tile((String, IconData, String, Color, Color) ct) => Container(
+  // `.emergency-tile:active { transform: scale(0.98) }` — tap-to-call tile.
+  Widget _tile((String, IconData, String, Color, Color) ct) => Pressable(
+        onTap: () {},
+        scale: 0.98,
+        child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(T.rLg),
@@ -499,5 +507,5 @@ class EmergencyScreen extends StatelessWidget {
             Icon(LucideIcons.phone, size: 13, color: ct.$4),
           ]),
         ]),
-      );
+      ));
 }

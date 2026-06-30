@@ -116,7 +116,7 @@ class _SocialButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         height: 52,
@@ -421,7 +421,10 @@ class _OtpBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filled = char.isNotEmpty;
-    return Container(
+    // `.otp-box` — border + focus ring animate over --dur-base ease-out.
+    return AnimatedContainer(
+      duration: Motion.base,
+      curve: Motion.easeOut,
       width: 48,
       height: 60,
       margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -609,7 +612,10 @@ class _UsernameField extends StatelessWidget {
                 accent: s.accent,
                 prefix: '@',
                 onChanged: onChanged),
-            if (icon != null) Positioned(right: 12, child: Icon(icon, size: 17, color: col)),
+            if (status == 'checking')
+              const Positioned(right: 12, child: Spinner(size: 16, stroke: 2, color: T.fg3))
+            else if (icon != null)
+              Positioned(right: 12, child: Icon(icon, size: 17, color: col)),
           ]),
           if (msg.isNotEmpty)
             Padding(
@@ -646,10 +652,14 @@ class _Segmented extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // `.segmented button` — active pill bg/shadow animate over --dur-base.
     Widget seg(String label, IconData? icon, bool active, VoidCallback onTap) => Expanded(
           child: GestureDetector(
             onTap: onTap,
-            child: Container(
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: Motion.base,
+              curve: Motion.easeOut,
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(

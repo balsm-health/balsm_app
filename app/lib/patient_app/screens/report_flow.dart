@@ -109,18 +109,17 @@ class _ReportFlowState extends State<ReportFlow> {
           child: Row(children: [
             RoundBtn(icon: step == 0 ? LucideIcons.x : LucideIcons.arrowLeft, ghost: true, onTap: back),
             const SizedBox(width: 12),
-            Expanded(child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(value: pct, minHeight: 7, backgroundColor: T.ink100, color: s.accent.main),
-            )),
+            // `.progress .bar` — width animates over --dur-slow ease-out.
+            Expanded(child: LinearProgress(value: pct, color: s.accent.main)),
             const SizedBox(width: 12),
             SizedBox(width: 40, child: Text('${step + 1} ${s.t('step_of')} ${steps.length}',
                 textAlign: TextAlign.center, style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
           ]),
         ),
+        // `key={cur}` + `.fade-in` — each step rises 7px in on change.
         Expanded(child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-          child: _stepBody(),
+          child: RiseIn(key: ValueKey(cur), child: _stepBody()),
         )),
         // foot
         Container(
@@ -176,6 +175,7 @@ class _ReportFlowState extends State<ReportFlow> {
               Text(s.t('unit_bp'), style: Typo.body(ar: s.rtl).copyWith(color: T.fg3, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               NumPad(
+                pressBg: s.accent.bg,
                 onKey: (d) => setState(() {
                   if (bpField == 'sys') {
                     if (bpSys.length < 3) bpSys += d;
@@ -207,6 +207,7 @@ class _ReportFlowState extends State<ReportFlow> {
               Text(s.t('unit_glu'), style: Typo.body(ar: s.rtl).copyWith(color: T.fg3, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               NumPad(
+                pressBg: s.accent.bg,
                 onKey: (d) => setState(() { if (glu.length < 3) glu += d; }),
                 onBack: () => setState(() { if (glu.isNotEmpty) glu = glu.substring(0, glu.length - 1); }),
               ),
@@ -283,7 +284,10 @@ class _ReportFlowState extends State<ReportFlow> {
 
   Widget _vitalBox(String text, bool active, VoidCallback? onTap, {double minWidth = 90}) => GestureDetector(
         onTap: onTap,
-        child: Container(
+        // `.vital-num` — border/bg animate over --dur-base ease-out.
+        child: AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           constraints: BoxConstraints(minWidth: minWidth),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           alignment: Alignment.center,
@@ -296,9 +300,13 @@ class _ReportFlowState extends State<ReportFlow> {
         ),
       );
 
-  Widget _chip(String label, bool selected, VoidCallback onTap, {IconData? icon}) => GestureDetector(
+  // `.chip` — border/bg/color animate over --dur-base ease-out.
+  Widget _chip(String label, bool selected, VoidCallback onTap, {IconData? icon}) => Pressable(
         onTap: onTap,
-        child: Container(
+        scale: 0.97,
+        child: AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
             color: selected ? s.accent.bg : Colors.white,
@@ -326,9 +334,14 @@ class _ReportFlowState extends State<ReportFlow> {
     final skipped = st == 'skipped';
     return GestureDetector(
       onTap: () => setState(() => meds[m.id] = taken ? '' : 'taken'),
-      child: Opacity(
+      // `.check-row` + `.check-box` — border/bg animate over --dur-base.
+      child: AnimatedOpacity(
+        duration: Motion.base,
+        curve: Motion.easeOut,
         opacity: skipped ? 0.6 : 1,
-        child: Container(
+        child: AnimatedContainer(
+          duration: Motion.base,
+          curve: Motion.easeOut,
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
@@ -337,7 +350,9 @@ class _ReportFlowState extends State<ReportFlow> {
             border: Border.all(color: taken ? T.petalMint : T.border, width: 1.5),
           ),
           child: Row(children: [
-            Container(width: 30, height: 30, alignment: Alignment.center,
+            AnimatedContainer(
+                duration: Motion.base, curve: Motion.easeOut,
+                width: 30, height: 30, alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: taken ? T.petalMint : Colors.transparent,
                   borderRadius: BorderRadius.circular(9),
@@ -372,9 +387,14 @@ class _MoodCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
+        // `.mood.sel` — bg/border animate + lift translateY(-2px), --dur-base.
         child: AspectRatio(
           aspectRatio: 1,
-          child: Container(
+          child: AnimatedContainer(
+            duration: Motion.base,
+            curve: Motion.easeOut,
+            transform: Matrix4.translationValues(0, selected ? -2 : 0, 0),
+            transformAlignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected ? s.accent.bg : Colors.white,
               borderRadius: BorderRadius.circular(T.rLg),
@@ -415,7 +435,7 @@ class _Summary extends StatelessWidget {
         child: Column(children: [
         const PadTop(),
         Expanded(child: SingleChildScrollView(child: Column(children: [
-          Padding(
+          RiseIn(child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 30, 24, 8),
             child: Column(children: [
               Container(width: 88, height: 88, alignment: Alignment.center,
@@ -434,7 +454,7 @@ class _Summary extends StatelessWidget {
                 ]),
               ),
             ]),
-          ),
+          )),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(children: [

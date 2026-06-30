@@ -68,9 +68,8 @@ class _AccountRow extends StatelessWidget {
     final active = acc.id == s.activeAccountId;
     final sub = StringBuffer('${acc.relation.of(s.lang)} · ${acc.age} ${s.rtl ? 'سنة' : 'yrs'}');
     if (acc.conditions.isNotEmpty) sub.write(' · ${acc.conditions.first.of(s.lang)}');
-    return GestureDetector(
+    return PressHighlight(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(vertical: 13),
