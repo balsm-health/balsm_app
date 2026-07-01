@@ -1,49 +1,27 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../tokens.dart';
 
-/// The official Balsm five-petal flower mark, drawn from the prototype's
-/// inline SVG (5 rotated ellipses).
+/// The official Balsm five-petal flower mark, rendered from the bundled brand
+/// vector asset (`assets/brand/icon.svg`, mirrored from Balsm-Core/brand).
 class BalsmFlower extends StatelessWidget {
   const BalsmFlower({super.key, this.size = 92, this.opacity = 1});
   final double size;
   final double opacity;
   @override
-  Widget build(BuildContext context) =>
-      Opacity(opacity: opacity, child: CustomPaint(size: Size.square(size), painter: const _FlowerPainter()));
+  Widget build(BuildContext context) => Opacity(
+        opacity: opacity,
+        child: SvgPicture.asset('assets/brand/icon.svg', width: size, height: size),
+      );
 }
 
-const _petalColors = [
-  T.petalEmerald, T.petalBlue, T.petalMint, T.petalViolet, T.petalAqua,
-];
-
-class _FlowerPainter extends CustomPainter {
-  const _FlowerPainter({this.opacities});
-  /// Per-petal opacity (drives the [PetalSpinner] pulse). Null = fully opaque.
-  final List<double>? opacities;
-  @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width / 100;
-    final center = Offset(size.width / 2, size.height * 0.46);
-    final rx = 7.0 * s, ry = 13.0 * s, dy = -15.0 * s;
-    for (var i = 0; i < 5; i++) {
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.rotate(i * 72 * math.pi / 180);
-      final rect = Rect.fromCenter(center: Offset(0, dy), width: rx * 2, height: ry * 2);
-      final o = opacities == null ? 1.0 : opacities![i];
-      canvas.drawOval(rect, Paint()..color = _petalColors[i].withValues(alpha: o)..isAntiAlias = true);
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(_FlowerPainter old) => old.opacities != opacities;
-}
-
-/// Brand loading spinner (`.b-petal-spinner`): the flower rotates over 3.6s
-/// while each petal pulses .35 → 1, staggered by a fifth of the cycle.
-/// Spinning continues under reduced motion (loading indicators are exempt).
+/// Brand loading spinner (`.b-petal-spinner`) — the canonical design-system
+/// loader: five colored petals arranged in a ring that rotates over 3.6s while
+/// each pulses .35 → 1, staggered by a fifth of the cycle. Geometry ported from
+/// the design CSS (28% petal, `transform-origin 50% 178%` → 0.358·S orbit).
+/// Under reduced motion it holds still at .9 opacity (design's "healthcare
+/// stillness").
 class PetalSpinner extends StatefulWidget {
   const PetalSpinner({super.key, this.size = 48});
   final double size;
@@ -61,7 +39,7 @@ class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderSt
     super.dispose();
   }
 
-  // `b-petal-pulse`: triangle wave — valley .35, peak 1 at 40% of the cycle.
+  // `b-petal-pulse`: triangle wave peaking at 40% of the cycle (.35 → 1 → .35).
   double _pulse(double x) {
     x %= 1.0;
     return x < 0.4 ? 0.35 + 0.65 * (x / 0.4) : 1.0 - 0.65 * ((x - 0.4) / 0.6);
@@ -69,21 +47,64 @@ class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) {
+      return RepaintBoundary(
+        child: CustomPaint(
+          size: Size.square(widget.size),
+          painter: _PetalRingPainter(0, const [0.9, 0.9, 0.9, 0.9, 0.9]),
+        ),
+      );
+    }
     return RepaintBoundary(
       child: AnimatedBuilder(
         animation: _c,
         builder: (_, __) {
           final t = _c.value;
-          final ops = [for (var i = 0; i < 5; i++) _pulse(t + i * 0.2)];
-          return Transform.rotate(
-            angle: t * 2 * math.pi,
-            child: CustomPaint(
-              size: Size.square(widget.size),
-              painter: _FlowerPainter(opacities: ops),
+          return CustomPaint(
+            size: Size.square(widget.size),
+            painter: _PetalRingPainter(
+              t * 2 * math.pi,
+              [for (var i = 0; i < 5; i++) _pulse(t + i * 0.2)],
             ),
           );
         },
       ),
     );
   }
+}
+
+/// Draws the five-petal ring (`.b-petal-spinner`): five circles at 72° steps,
+/// orbit radius 0.358·S, petal radius 0.14·S, each in its brand hue.
+class _PetalRingPainter extends CustomPainter {
+  _PetalRingPainter(this.rotation, this.opacities);
+  final double rotation;
+  final List<double> opacities;
+
+  // Petal order (clockwise from top): emerald → blue → mint → violet → aqua.
+  static const _colors = [
+    T.petalEmerald, T.petalBlue, T.petalMint, T.petalViolet, T.petalAqua,
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    // transform-origin 50% / 178% of a 28% box ≈ the container centre.
+    final center = Offset(size.width / 2, s * 0.4984);
+    final orbit = 0.3584 * s;
+    final pr = 0.14 * s;
+    for (var i = 0; i < 5; i++) {
+      final a = -math.pi / 2 + i * 2 * math.pi / 5 + rotation;
+      final c = center + Offset(orbit * math.cos(a), orbit * math.sin(a));
+      canvas.drawCircle(
+        c, pr, Paint()
+          ..color = _colors[i].withValues(alpha: opacities[i])
+          ..isAntiAlias = true,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PetalRingPainter old) =>
+      old.rotation != rotation || old.opacities != opacities;
 }

@@ -340,7 +340,8 @@ class RingProgress extends StatelessWidget {
               CustomPaint(size: Size(size, size), painter: _RingPainter(v, color)),
         ),
         if (label != null)
-          Text(label!, style: labelStyle ?? Typo.display().copyWith(fontSize: FS.md, fontWeight: FontWeight.w800)),
+          // `.b-progress-ring__center` — mono, weight 600, tabular numerals.
+          Text(label!, style: labelStyle ?? Typo.num(size: FS.md, weight: FontWeight.w700, color: T.fg1)),
       ]),
     );
   }
@@ -545,39 +546,93 @@ class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
   }
 }
 
-/// Linear progress bar (`.progress` + `.bar`): 7px track, accent fill whose
-/// width animates over `--dur-slow` ease-out. [value] is 0..1.
-class LinearProgress extends StatelessWidget {
-  const LinearProgress({super.key, required this.value, this.color, this.height = 7, this.track});
+/// Linear progress bar (`.b-progress__track` + `__fill`): 8px pill track
+/// (`--balsm-ink-100`), fill whose width animates over `--dur-slow` ease-out.
+/// [value] is 0..1. Set [indeterminate] for the unknown-duration loader — a
+/// 42%-wide segment slides through the track (`b-prog-slide 1.5s ease-in-out`).
+class LinearProgress extends StatefulWidget {
+  const LinearProgress({
+    super.key,
+    this.value = 0,
+    this.indeterminate = false,
+    this.color,
+    this.height = 8,
+    this.track,
+  });
   final double value;
+  final bool indeterminate;
   final Color? color;
   final double height;
   final Color? track;
   @override
+  State<LinearProgress> createState() => _LinearProgressState();
+}
+
+class _LinearProgressState extends State<LinearProgress> with SingleTickerProviderStateMixin {
+  AnimationController? _c;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (widget.indeterminate && !reduce) {
+      _c ??= AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(T.rPill),
-      child: Container(
-        height: height,
-        color: track ?? T.ink100,
-        child: Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
-            duration: reduce ? Duration.zero : Motion.slow,
-            curve: Motion.easeOut,
-            builder: (_, v, __) => FractionallySizedBox(
-              widthFactor: v,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: color ?? Accent.blue.main,
-                  borderRadius: BorderRadius.circular(T.rPill),
-                ),
+    final fill = widget.color ?? Accent.blue.main;
+    final pill = BorderRadius.circular(T.rPill);
+
+    Widget fillWidget;
+    if (widget.indeterminate && _c != null) {
+      // 42%-wide segment travels off-left → off-right over the first 60% of the
+      // cycle, then holds (matches the `b-prog-slide` keyframe hold).
+      fillWidget = AnimatedBuilder(
+        animation: _c!,
+        builder: (_, __) => LayoutBuilder(
+          builder: (_, c) {
+            final w = c.maxWidth;
+            final e = Motion.easeInOut.transform((_c!.value / 0.6).clamp(0.0, 1.0));
+            return Stack(children: [
+              PositionedDirectional(
+                start: (-0.42 + 1.42 * e) * w,
+                top: 0, bottom: 0, width: 0.42 * w,
+                child: DecoratedBox(decoration: BoxDecoration(color: fill, borderRadius: pill)),
               ),
-            ),
+            ]);
+          },
+        ),
+      );
+    } else {
+      fillWidget = Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: widget.value.clamp(0.0, 1.0)),
+          duration: reduce ? Duration.zero : Motion.slow,
+          curve: Motion.easeOut,
+          builder: (_, v, __) => FractionallySizedBox(
+            widthFactor: widget.indeterminate ? 1 : v, // reduced-motion indeterminate = full bar
+            child: DecoratedBox(decoration: BoxDecoration(color: fill, borderRadius: pill)),
           ),
         ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: pill,
+      child: Container(
+        height: widget.height,
+        color: widget.track ?? T.ink100,
+        child: fillWidget,
       ),
     );
   }
@@ -621,15 +676,60 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
     }
     return AnimatedBuilder(
       animation: _c,
-      builder: (_, __) => Container(
-        width: widget.width, height: widget.height,
-        decoration: shape.copyWith(
-          gradient: LinearGradient(
-            // 280% background-size swept by b-shimmer 180% → -180%.
-            begin: Alignment(-1 - 2 * (1 - _c.value), 0),
-            end: Alignment(1 + 2 * _c.value, 0),
-            colors: const [T.ink200, T.ink100, T.ink200],
-            stops: const [0.25, 0.37, 0.63],
+      builder: (_, __) {
+        // 280% background swept by b-shimmer 180% → -180% on an ease-in-out clock.
+        final e = Motion.easeInOut.transform(_c.value);
+        return Container(
+          width: widget.width, height: widget.height,
+          decoration: shape.copyWith(
+            gradient: LinearGradient(
+              begin: Alignment(-1 - 2 * (1 - e), 0),
+              end: Alignment(1 + 2 * e, 0),
+              colors: const [T.ink200, T.ink100, T.ink200],
+              stops: const [0.25, 0.37, 0.63],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Ring spinner (`.b-ring-spinner`): a single-hue conic comet — a transparent
+/// tail sweeping to a solid head — rotating at `b-spin 0.85s linear infinite`.
+/// The inline workhorse loader. Pass [color] for the hue variants (accent /
+/// success / violet / ink map to a petal/ink color). Keeps spinning under
+/// reduced motion — a loading indicator that freezes reads as hung.
+class Spinner extends StatefulWidget {
+  const Spinner({super.key, this.size = 28, this.color, this.stroke = 3});
+  final double size;
+  final Color? color;
+  final double stroke;
+  @override
+  State<Spinner> createState() => _SpinnerState();
+}
+
+class _SpinnerState extends State<Spinner> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 850))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color ?? Accent.blue.main;
+    return RepaintBoundary(
+      child: SizedBox(
+        width: widget.size, height: widget.size,
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (_, __) => Transform.rotate(
+            angle: _c.value * 2 * math.pi,
+            child: CustomPaint(painter: _RingSpinnerPainter(color, widget.stroke)),
           ),
         ),
       ),
@@ -637,22 +737,34 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   }
 }
 
-/// Ring spinner (`.b-ring-spinner` — `b-spin 0.85s linear infinite`).
-/// Loading indicators keep spinning under reduced motion (the one allowed
-/// continuous animation).
-class Spinner extends StatelessWidget {
-  const Spinner({super.key, this.size = 28, this.color, this.stroke = 3});
-  final double size;
-  final Color? color;
+class _RingSpinnerPainter extends CustomPainter {
+  _RingSpinnerPainter(this.color, this.stroke);
+  final Color color;
   final double stroke;
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: size, height: size,
-        child: CircularProgressIndicator(
-          strokeWidth: stroke,
-          valueColor: AlwaysStoppedAnimation(color ?? Accent.blue.main),
-        ),
-      );
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final r = (size.shortestSide - stroke) / 2;
+    // conic-gradient(from 90deg, transparent, color) — transparent tail → solid
+    // head. Flutter's SweepGradient starts at +x (= CSS `from 90deg`), so the
+    // seam sits at the 3-o'clock position; rotation makes its origin moot.
+    final shader = SweepGradient(
+      colors: [color.withValues(alpha: 0), color],
+      stops: const [0, 1],
+    ).createShader(Offset.zero & size);
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()
+        ..shader = shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingSpinnerPainter old) => old.color != color || old.stroke != stroke;
 }
 
 /// Full-surface loading overlay (`.b-overlay`): fades in over `--dur-base`,
