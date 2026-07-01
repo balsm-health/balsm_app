@@ -1,4 +1,0 @@
-#include "Generated.xcconfig"
-BUNDLE_ID_SUFFIX=.staging
-APP_NAME_SUFFIX= Staging
-FLUTTER_TARGET=lib/main_staging.dart

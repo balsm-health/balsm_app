@@ -22,14 +22,19 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "health.balsm.app"
+        // Installed package / store id. Kept distinct from `namespace` above
+        // (the code/R package, which matches MainActivity.kt's location).
+        applicationId = "app.balsm.health"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Single Balsm patient build (no product flavors) — manifest
+        // placeholders are fixed here instead of per-flavor.
+        manifestPlaceholders["appNameSuffix"] = ""
+        manifestPlaceholders["BASE_URL"] = "app.balsm.health"
     }
 
     buildTypes {
@@ -40,24 +45,11 @@ android {
         }
     }
 
-    flavorDimensions += "default"
+    // Single product flavor — the Balsm patient app (run with `--flavor balsm`).
+    flavorDimensions += "app"
     productFlavors {
-        create("dev") {
-            dimension = "default"
-            applicationIdSuffix = ".dev"
-            manifestPlaceholders["appNameSuffix"] = " Dev"
-            manifestPlaceholders["BASE_URL"] = "app.balsm.health"
-        }
-        create("staging") {
-            dimension = "default"
-            applicationIdSuffix = ".staging"
-            manifestPlaceholders["appNameSuffix"] = " Staging"
-            manifestPlaceholders["BASE_URL"] = "app.balsm.health"
-        }
-        create("prod") {
-            dimension = "default"
-            manifestPlaceholders["appNameSuffix"] = ""
-            manifestPlaceholders["BASE_URL"] = "app.balsm.health"
+        create("balsm") {
+            dimension = "app"
         }
     }
 }

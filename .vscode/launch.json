@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Balsm Patient App",
+      "name": "Debug Balsm",
       "request": "launch",
       "type": "dart",
       "cwd": "app",
@@ -10,7 +10,7 @@
       "flutterMode": "debug",
       "args": [
         "--flavor",
-        "dev",
+        "balsm",
         "--dart-define-from-file=env/balsm/dev.json",
         "--dart-define-from-file=env/envs.json"
       ]
