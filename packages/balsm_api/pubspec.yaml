@@ -1,0 +1,13 @@
+name: balsm_api
+description: Balsm API contract — typed endpoint interfaces, DTOs, and dio transport.
+publish_to: none
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  dio: ^5.8.0
+
+dev_dependencies:
+  test: ^1.25.0
+  mocktail: ^1.0.4

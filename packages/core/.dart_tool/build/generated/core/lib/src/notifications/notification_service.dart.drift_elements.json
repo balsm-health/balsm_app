@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:flutter_local_notifications/flutter_local_notifications.dart","transitive":false},{"uri":"package:flutter_riverpod/flutter_riverpod.dart","transitive":false},{"uri":"package:timezone/timezone.dart","transitive":false}],"elements":[]}

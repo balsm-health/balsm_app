@@ -1,8 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:googleapis/drive/v3.dart",
-    "package:googleapis_auth/auth_io.dart",
-    "package:core/src/backup/backup_adapter.dart"
-  ]
-}

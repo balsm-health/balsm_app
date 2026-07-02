@@ -1,7 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:sentry_flutter/sentry_flutter.dart",
-    "package:core/src/config/flavor.dart"
-  ]
-}

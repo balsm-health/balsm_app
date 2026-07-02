@@ -1,8 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:app_links/app_links.dart",
-    "package:flutter_riverpod/flutter_riverpod.dart",
-    "package:go_router/go_router.dart"
-  ]
-}

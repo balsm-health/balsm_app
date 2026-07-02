@@ -1,8 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:flutter_local_notifications/flutter_local_notifications.dart",
-    "package:flutter_riverpod/flutter_riverpod.dart",
-    "package:timezone/timezone.dart"
-  ]
-}
