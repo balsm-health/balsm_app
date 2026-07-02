@@ -23,13 +23,16 @@ OpenAPI codegen is **not** a current goal, but the layout must not preclude it.
 
 ## Decision
 
-Create a new **pure-Dart** package `packages/balsm_api` holding transport + all endpoint clients + freezed DTOs. Modules consume **concrete typed clients** (no port/adapter indirection at the API boundary — anti-corruption mapping to domain types stays inside each module).
+Create a new **pure-Dart** package `packages/balsm_api` holding transport + all endpoint clients + freezed DTOs. Each area exposes an **abstract client interface** (`AuthApi`) with its dio implementation (`DioAuthApi`) in the same package; modules and DI bind to the abstraction only. Anti-corruption mapping to domain types stays inside each module.
+
+Interfaces (rather than bare concrete classes) buy: swappable transport later (three-tier architecture — a local-server tier could ship a second implementation), trivial fakes in module tests, and a contract file per area that is pure signatures — the cleanest thing to diff against the .NET controllers.
 
 ### Alternatives rejected
 
 - **Transport-only package, DTOs stay per-module** — fails motivations 1 and 2 (contract stays scattered; modules keep `dio` for their adapters).
 - **Formalize inside `core/src/api/`** — fails motivation 3 (reuse drags all of core's Flutter-heavy deps).
-- **Domain ports in modules + implementations in api package** — dependency cycle (api → module ports → api); moving ports into the api package just recreates concrete clients with extra ceremony.
+- **Domain ports in modules + implementations in api package** — dependency cycle (api → module ports → api). Interfaces avoid this by living in `balsm_api` itself, beside their implementations.
+- **Concrete classes only (no interfaces)** — cheaper ceremony, but loses transport swap and forces module tests to mock concrete classes.
 
 ## Package layout
 
@@ -45,7 +48,8 @@ packages/balsm_api/
         api_exception.dart         # shared error envelope
       shared/              # cross-area DTOs (paging, timestamps)
       auth/
-        auth_api.dart      # endpoint methods
+        auth_api.dart      # abstract interface — pure endpoint signatures
+        dio_auth_api.dart  # DioAuthApi implements AuthApi
         requests.dart      # freezed request DTOs
         responses.dart     # freezed response DTOs
       account/   ...same shape...
@@ -79,14 +83,14 @@ packages/balsm_api/
 ## DI wiring (stays in core)
 
 - `balsmApiClientProvider` remains in core (still overridden in `ProviderScope`).
-- Core adds one provider per area: `authApiProvider`, `accountApiProvider`, `emergencyQrApiProvider`, `sessionsApiProvider`, `deletionApiProvider`, `disclosureApiProvider`, `medicationsApiProvider` — each constructs the typed client from the shared dio instance.
+- Core adds one provider per area: `authApiProvider`, `accountApiProvider`, `emergencyQrApiProvider`, `sessionsApiProvider`, `deletionApiProvider`, `disclosureApiProvider`, `medicationsApiProvider` — each typed as the **abstract interface** (`Provider<AuthApi>`) and constructing the dio implementation from the shared dio instance.
 - `dioClientProvider` is **deleted at the end of migration** — after that, `Dio` is not visible outside `balsm_api` (core wiring excepted).
 
 ## Error model
 
 - `ApiException` hierarchy in `balsm_api/src/transport/api_exception.dart`: HTTP status, machine-readable `code`, optional `retryAfter` (parsed from `Retry-After` header), safe message.
 - Auth's 423 account-lockout special case becomes a typed field on the exception; the auth module maps `ApiException` → its domain `AuthException` (mapping stays in auth).
-- Typed clients throw `ApiException` — never raw `DioException` — so modules drop their `on DioException` handling.
+- Implementations throw `ApiException` — never raw `DioException` — so modules drop their `on DioException` handling. The throwing contract is documented on the interface methods.
 
 ## Migration order
 
@@ -113,10 +117,10 @@ New skill at `.claude/skills/flutter-add-api-endpoint/SKILL.md` (same format as 
 
 - **Trigger description:** adding/modifying any backend API call, endpoint, request/response model, DTO, or dio usage; or on sight of `Dio` imports in module packages.
 - **Rules the skill encodes:**
-  1. All endpoint methods + DTOs live in `packages/balsm_api` under the matching backend-module folder — never inline `Map` payloads or raw `Dio` in feature modules.
+  1. All endpoint methods + DTOs live in `packages/balsm_api` under the matching backend-module folder — never inline `Map` payloads or raw `Dio` in feature modules. Every area is an abstract interface (`AuthApi`) plus a dio implementation (`DioAuthApi`); new endpoints touch both.
   2. freezed DTO conventions (snake_case `@JsonKey`, requests/responses files, export wiring).
-  3. Typed clients throw `ApiException`; modules map to domain errors in their own layer.
-  4. New area ⇒ new provider in core DI; module consumes provider, never constructs clients.
+  3. Implementations throw `ApiException`; modules map to domain errors in their own layer.
+  4. New area ⇒ new `Provider<AbstractApi>` in core DI; module consumes the provider, never constructs implementations.
   5. PHI constraints: never log email/userId/tokens; don't touch `PhiLeakInterceptor` allowlist without adding the new safe fields deliberately.
   6. Cross-repo duty (from AGENTS.md): when an endpoint is added/changed, update the API client collection in `Balsm-Core` `/docs/api/`.
   7. Checklist: DTOs + client method + provider + module mapping + `melos gen` + `analyze` + tests green + no `dio` import outside `balsm_api`/core.
@@ -124,7 +128,7 @@ New skill at `.claude/skills/flutter-add-api-endpoint/SKILL.md` (same format as 
 ## Testing
 
 - `balsm_api` gets its own test suite: DTO round-trip tests + client tests against a mocked dio adapter (status codes, error envelope, `Retry-After` parsing, PHI scrub behavior).
-- Module tests switch from mocking `Dio` to mocking typed clients with mocktail.
+- Module tests switch from mocking `Dio` to faking/mocking the abstract interfaces (plain `implements AuthApi` fakes or mocktail).
 - Existing adapter tests migrate with their endpoints.
 - Repo-root suites (`golden`, `phi_leak_fuzz`) — `phi_leak_fuzz` retargets the interceptor at its new import path.
 
