@@ -1,7 +1,7 @@
 # `balsm_api` Package — API Layer Extraction Design
 
 **Date:** 2026-07-02
-**Status:** Approved (design review with Hossam)
+**Status:** Implemented (2026-07-02)
 **Scope:** Flutter monorepo (`balsm_app_flutter`)
 
 ## Problem
