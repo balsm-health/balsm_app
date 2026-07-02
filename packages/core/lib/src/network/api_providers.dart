@@ -14,32 +14,37 @@ final balsmApiClientProvider = Provider<BalsmApiClient>((ref) {
   return ref.watch(balsmApiControllerProvider).client;
 });
 
-// One Provider<XxxApi> per area is appended here by each area task.
+/// Shared transport wrapper — one per client, injected into every typed API.
+final networkManagerProvider = Provider<NetworkManager>((ref) {
+  return NetworkManager(dio: ref.watch(balsmApiClientProvider).dio);
+});
+
+// One Provider<XxxApi> per area, each backed by the shared NetworkManager.
 
 final emergencyQrApiProvider = Provider<EmergencyQrApi>((ref) {
-  return DioEmergencyQrApi(dio: ref.watch(balsmApiClientProvider).dio);
+  return DioEmergencyQrApi(net: ref.watch(networkManagerProvider));
 });
 
 final sessionsApiProvider = Provider<SessionsApi>((ref) {
-  return DioSessionsApi(dio: ref.watch(balsmApiClientProvider).dio);
+  return DioSessionsApi(net: ref.watch(networkManagerProvider));
 });
 
 final deletionApiProvider = Provider<DeletionApi>((ref) {
-  return DioDeletionApi(dio: ref.watch(balsmApiClientProvider).dio);
+  return DioDeletionApi(net: ref.watch(networkManagerProvider));
 });
 
 final accountApiProvider = Provider<AccountApi>((ref) {
-  return DioAccountApi(dio: ref.watch(balsmApiClientProvider).dio);
+  return DioAccountApi(net: ref.watch(networkManagerProvider));
 });
 
 final authApiProvider = Provider<AuthApi>((ref) {
-  return DioAuthApi(dio: ref.watch(balsmApiClientProvider).dio);
+  return DioAuthApi(net: ref.watch(networkManagerProvider));
 });
 
 final disclosureApiProvider = Provider<DisclosureApi>((ref) {
-  return DioDisclosureApi(dio: ref.watch(balsmApiClientProvider).dio);
+  return DioDisclosureApi(net: ref.watch(networkManagerProvider));
 });
 
 final geofenceApiProvider = Provider<GeofenceApi>((ref) {
-  return DioGeofenceApi(dio: ref.watch(balsmApiClientProvider).dio);
+  return DioGeofenceApi(net: ref.watch(networkManagerProvider));
 });

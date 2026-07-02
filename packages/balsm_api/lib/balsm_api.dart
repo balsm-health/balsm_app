@@ -12,6 +12,7 @@ export 'package:dio/dio.dart' show CancelToken;
 export 'src/transport/api_exception.dart';
 export 'src/transport/balsm_api_client.dart';
 export 'src/transport/envelope.dart';
+export 'src/transport/network_manager.dart';
 export 'src/transport/phi_leak_interceptor.dart';
 
 export 'src/emergency_qr/emergency_qr_api.dart';

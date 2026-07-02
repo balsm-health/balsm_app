@@ -7,7 +7,7 @@ void main() {
   test('requestIntake POSTs and parses grace_until as UTC', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
         '{"data": {"grace_until": "2026-07-30T00:00:00+02:00", "deletion_state": "DELETION_REQUESTED"}}'));
-    final api = DioDeletionApi(dio: fakeDio(adapter));
+    final api = DioDeletionApi(net: fakeNet(adapter));
 
     final res = await api.requestIntake();
 
@@ -20,7 +20,7 @@ void main() {
   test('cancel POSTs and parses deletion_state', () async {
     final adapter = FakeHttpAdapter((_) =>
         jsonResponse('{"data": {"deletion_state": "DELETION_CANCELLED"}}'));
-    final res = await DioDeletionApi(dio: fakeDio(adapter)).cancel();
+    final res = await DioDeletionApi(net: fakeNet(adapter)).cancel();
     expect(res.deletionState, 'DELETION_CANCELLED');
   });
 
@@ -28,7 +28,7 @@ void main() {
     final adapter = FakeHttpAdapter(
         (_) => jsonResponse('{"error": {"message": "already pending"}}'));
     expect(
-      DioDeletionApi(dio: fakeDio(adapter)).requestIntake(),
+      DioDeletionApi(net: fakeNet(adapter)).requestIntake(),
       throwsA(isA<ApiException>()
           .having((e) => e.serverMessage, 'serverMessage', 'already pending')),
     );

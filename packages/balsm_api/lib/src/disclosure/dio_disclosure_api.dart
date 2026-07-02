@@ -1,27 +1,23 @@
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' show CancelToken;
 
-import '../transport/api_exception.dart';
 import '../transport/envelope.dart';
+import '../transport/network_manager.dart';
 import 'disclosure_api.dart';
 import 'requests.dart';
 
 class DioDisclosureApi implements DisclosureApi {
-  const DioDisclosureApi({required Dio dio}) : _dio = dio;
+  const DioDisclosureApi({required NetworkManager net}) : _net = net;
 
-  final Dio _dio;
+  final NetworkManager _net;
 
   @override
   Future<void> accept(AcceptDisclosureRequest request,
       {CancelToken? cancelToken}) async {
-    try {
-      final res = await _dio.post<Map<String, dynamic>>(
-        '/disclosure/accept',
-        data: request.toJson(),
-        cancelToken: cancelToken,
-      );
-      unwrapEnvelope(res);
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res = await _net.post(
+      '/disclosure/accept',
+      data: request.toJson(),
+      cancelToken: cancelToken,
+    );
+    unwrapEnvelope(res);
   }
 }

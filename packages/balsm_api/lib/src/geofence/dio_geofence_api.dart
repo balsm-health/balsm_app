@@ -1,28 +1,22 @@
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' show CancelToken;
 
-import '../transport/api_exception.dart';
+import '../transport/network_manager.dart';
 import 'geofence_api.dart';
 import 'responses.dart';
 
 class DioGeofenceApi implements GeofenceApi {
-  const DioGeofenceApi({required Dio dio}) : _dio = dio;
+  const DioGeofenceApi({required NetworkManager net}) : _net = net;
 
-  final Dio _dio;
+  final NetworkManager _net;
 
   @override
   Future<DeniedCountriesResponse> getDeniedCountries({CancelToken? cancelToken}) async {
-    try {
-      final res = await _dio.get<Map<String, dynamic>>(
-        '/geofence/denied-countries',
-        cancelToken: cancelToken,
-      );
-      final body = res.data ?? const <String, dynamic>{};
-      // Legacy tolerance: unwrap {data: {...}} but fall back to the flat body.
-      final data = body['data'];
-      final payload = data is Map<String, dynamic> ? data : body;
-      return DeniedCountriesResponse.fromJson(payload);
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res =
+        await _net.get('/geofence/denied-countries', cancelToken: cancelToken);
+    final body = res.data ?? const <String, dynamic>{};
+    // Legacy tolerance: unwrap {data: {...}} but fall back to the flat body.
+    final data = body['data'];
+    final payload = data is Map<String, dynamic> ? data : body;
+    return DeniedCountriesResponse.fromJson(payload);
   }
 }

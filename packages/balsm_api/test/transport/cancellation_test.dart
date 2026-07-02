@@ -23,7 +23,7 @@ void main() {
   test('a cancelled request surfaces as ApiException.isCancelled end-to-end',
       () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": []}'));
-    final api = DioSessionsApi(dio: fakeDio(adapter));
+    final api = DioSessionsApi(net: fakeNet(adapter));
     final token = CancelToken()..cancel('user aborted');
 
     await expectLater(

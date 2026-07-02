@@ -6,7 +6,7 @@ import '../helpers/fake_http_adapter.dart';
 void main() {
   test('accept posts snake_case disclosure payload', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": null}'));
-    await DioDisclosureApi(dio: fakeDio(adapter)).accept(
+    await DioDisclosureApi(net: fakeNet(adapter)).accept(
       const AcceptDisclosureRequest(
         disclosureId: 'disc-1',
         version: '2',

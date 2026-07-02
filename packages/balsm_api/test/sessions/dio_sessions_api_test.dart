@@ -12,7 +12,7 @@ void main() {
         "last_activity_at": "2026-01-02T00:00:00Z",
         "revoked_at": null, "is_current": true
       }], "error": null}'''));
-    final api = DioSessionsApi(dio: fakeDio(adapter));
+    final api = DioSessionsApi(net: fakeNet(adapter));
 
     final sessions = await api.listSessions();
 
@@ -27,7 +27,7 @@ void main() {
   test('listSessions throws fromEnvelope ApiException on error body', () {
     final adapter = FakeHttpAdapter((_) =>
         jsonResponse('{"data": null, "error": {"message": "boom"}}'));
-    final api = DioSessionsApi(dio: fakeDio(adapter));
+    final api = DioSessionsApi(net: fakeNet(adapter));
     expect(
       api.listSessions(),
       throwsA(isA<ApiException>()
@@ -38,7 +38,7 @@ void main() {
 
   test('revokeSession DELETEs the session path', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": null}'));
-    await DioSessionsApi(dio: fakeDio(adapter)).revokeSession('s9');
+    await DioSessionsApi(net: fakeNet(adapter)).revokeSession('s9');
     expect(adapter.requests.single.method, 'DELETE');
     expect(adapter.requests.single.path, '/sessions/s9');
   });
@@ -47,12 +47,12 @@ void main() {
     final adapter =
         FakeHttpAdapter((_) => jsonResponse('{"data": {"revoked_count": 3}}'));
     final res =
-        await DioSessionsApi(dio: fakeDio(adapter)).revokeAllSessions();
+        await DioSessionsApi(net: fakeNet(adapter)).revokeAllSessions();
     expect(res.revokedCount, 3);
 
     final adapter2 = FakeHttpAdapter((_) => jsonResponse('{"data": {}}'));
     final res2 =
-        await DioSessionsApi(dio: fakeDio(adapter2)).revokeAllSessions();
+        await DioSessionsApi(net: fakeNet(adapter2)).revokeAllSessions();
     expect(res2.revokedCount, 0);
   });
 }

@@ -1,54 +1,42 @@
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' show CancelToken;
 
-import '../transport/api_exception.dart';
 import '../transport/envelope.dart';
+import '../transport/network_manager.dart';
 import 'emergency_qr_api.dart';
 import 'requests.dart';
 import 'responses.dart';
 
 class DioEmergencyQrApi implements EmergencyQrApi {
-  const DioEmergencyQrApi({required Dio dio}) : _dio = dio;
+  const DioEmergencyQrApi({required NetworkManager net}) : _net = net;
 
-  final Dio _dio;
+  final NetworkManager _net;
 
   @override
   Future<MintQrResponse> mint(MintQrRequest request, {CancelToken? cancelToken}) async {
-    try {
-      final res = await _dio.post<Map<String, dynamic>>(
-        '/emergency-qr/mint',
-        data: request.toJson(),
-        cancelToken: cancelToken,
-      );
-      return MintQrResponse.fromJson(unwrapEnvelope(res));
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res = await _net.post(
+      '/emergency-qr/mint',
+      data: request.toJson(),
+      cancelToken: cancelToken,
+    );
+    return MintQrResponse.fromJson(unwrapEnvelope(res));
   }
 
   @override
   Future<ResolveQrResponse> resolve(String tokenId, {CancelToken? cancelToken}) async {
-    try {
-      final res = await _dio.get<Map<String, dynamic>>(
-        '/emergency-qr/resolve/$tokenId',
-        cancelToken: cancelToken,
-      );
-      return ResolveQrResponse.fromJson(unwrapEnvelope(res));
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res = await _net.get(
+      '/emergency-qr/resolve/$tokenId',
+      cancelToken: cancelToken,
+    );
+    return ResolveQrResponse.fromJson(unwrapEnvelope(res));
   }
 
   @override
   Future<void> revoke(RevokeQrRequest request, {CancelToken? cancelToken}) async {
-    try {
-      final res = await _dio.post<Map<String, dynamic>>(
-        '/emergency-qr/revoke',
-        data: request.toJson(),
-        cancelToken: cancelToken,
-      );
-      unwrapEnvelope(res);
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res = await _net.post(
+      '/emergency-qr/revoke',
+      data: request.toJson(),
+      cancelToken: cancelToken,
+    );
+    unwrapEnvelope(res);
   }
 }

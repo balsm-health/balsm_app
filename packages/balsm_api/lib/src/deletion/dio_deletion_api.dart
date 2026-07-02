@@ -1,38 +1,24 @@
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' show CancelToken;
 
-import '../transport/api_exception.dart';
 import '../transport/envelope.dart';
+import '../transport/network_manager.dart';
 import 'deletion_api.dart';
 import 'responses.dart';
 
 class DioDeletionApi implements DeletionApi {
-  const DioDeletionApi({required Dio dio}) : _dio = dio;
+  const DioDeletionApi({required NetworkManager net}) : _net = net;
 
-  final Dio _dio;
+  final NetworkManager _net;
 
   @override
   Future<DeletionIntakeResponse> requestIntake({CancelToken? cancelToken}) async {
-    try {
-      final res = await _dio.post<Map<String, dynamic>>(
-        '/deletion/intake',
-        cancelToken: cancelToken,
-      );
-      return DeletionIntakeResponse.fromJson(unwrapEnvelope(res));
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res = await _net.post('/deletion/intake', cancelToken: cancelToken);
+    return DeletionIntakeResponse.fromJson(unwrapEnvelope(res));
   }
 
   @override
   Future<DeletionCancelResponse> cancel({CancelToken? cancelToken}) async {
-    try {
-      final res = await _dio.post<Map<String, dynamic>>(
-        '/deletion/cancel',
-        cancelToken: cancelToken,
-      );
-      return DeletionCancelResponse.fromJson(unwrapEnvelope(res));
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res = await _net.post('/deletion/cancel', cancelToken: cancelToken);
+    return DeletionCancelResponse.fromJson(unwrapEnvelope(res));
   }
 }

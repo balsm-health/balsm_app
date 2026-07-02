@@ -7,7 +7,7 @@ void main() {
   test('verifyOtp posts snake_case body and parses FLAT token response', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
         '{"access_token": "at", "refresh_token": "rt", "user_id": "u1", "is_new_user": true}'));
-    final api = DioAuthApi(dio: fakeDio(adapter));
+    final api = DioAuthApi(net: fakeNet(adapter));
 
     final res = await api.verifyOtp(const VerifyOtpRequest(
         email: 'a@b.c', code: '123456', deviceId: 'd1', deviceLabel: 'iPhone'));
@@ -27,7 +27,7 @@ void main() {
   test('is_new_user defaults to false', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
         '{"access_token": "at", "refresh_token": "rt", "user_id": "u1"}'));
-    final res = await DioAuthApi(dio: fakeDio(adapter)).signInWithGoogle(
+    final res = await DioAuthApi(net: fakeNet(adapter)).signInWithGoogle(
         const GoogleSignInRequest(idToken: 't', deviceId: 'd', deviceLabel: 'l'));
     expect(res.isNewUser, isFalse);
   });
@@ -37,7 +37,7 @@ void main() {
         '{"code": "account_locked"}',
         status: 423,
         headers: {'Retry-After': ['120']}));
-    final api = DioAuthApi(dio: fakeDio(adapter));
+    final api = DioAuthApi(net: fakeNet(adapter));
     expect(
       api.verifyOtp(const VerifyOtpRequest(
           email: 'a@b.c', code: '1', deviceId: 'd', deviceLabel: 'l')),
@@ -50,7 +50,7 @@ void main() {
   test('server error code from flat body wins over status mapping', () {
     final adapter = FakeHttpAdapter(
         (_) => jsonResponse('{"code": "otp_expired"}', status: 400));
-    final api = DioAuthApi(dio: fakeDio(adapter));
+    final api = DioAuthApi(net: fakeNet(adapter));
     expect(
       api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG')),
       throwsA(isA<ApiException>().having((e) => e.code, 'code', 'otp_expired')),
@@ -60,7 +60,7 @@ void main() {
   test('refresh and recoveryClaim parse flat refreshed tokens', () async {
     final adapter = FakeHttpAdapter(
         (_) => jsonResponse('{"access_token": "at2", "refresh_token": "rt2"}'));
-    final api = DioAuthApi(dio: fakeDio(adapter));
+    final api = DioAuthApi(net: fakeNet(adapter));
 
     final r1 = await api.refresh(
         const RefreshTokenRequest(refreshToken: 'rt', deviceId: 'd'));
@@ -79,7 +79,7 @@ void main() {
 
   test('signOut posts empty body', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{}'));
-    await DioAuthApi(dio: fakeDio(adapter)).signOut();
+    await DioAuthApi(net: fakeNet(adapter)).signOut();
     expect(adapter.requests.single.path, '/auth/sign-out');
     expect(adapter.requests.single.data, isEmpty);
   });

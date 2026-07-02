@@ -15,12 +15,17 @@ envelopes. Modules bind to **abstract interfaces** via core DI providers.
 
 ```
 packages/balsm_api/lib/src/
-  transport/   BalsmApiClient, PhiLeakInterceptor, ApiException, envelope.dart
+  transport/   BalsmApiClient (owns the Dio), NetworkManager (HTTP verbs +
+               DioException→ApiException mapping), ApiException, envelope.dart
   <area>/      <area>_api.dart        ← abstract interface (pure signatures)
-               dio_<area>_api.dart    ← DioXxxApi implements XxxApi
+               dio_<area>_api.dart    ← DioXxxApi implements XxxApi, calls NetworkManager
                requests.dart          ← request DTOs (toJson)
                responses.dart         ← response DTOs (fromJson)
 ```
+
+`DioXxxApi` never touches `Dio` directly — it calls the injected
+`NetworkManager` (`_net.get/post/put/delete`), which owns transport + error
+mapping. The impl only does DTO `toJson`/`fromJson` and envelope handling.
 
 Areas mirror the .NET backend modules: auth, account, emergency_qr,
 sessions, deletion, disclosure, geofence. New backend module ⇒ new area
@@ -41,11 +46,14 @@ folder, same four-file shape.
 1. **DTOs** in the area's `requests.dart` / `responses.dart`.
 2. **Signature** on the abstract interface (`<area>_api.dart`) with a doc
    comment naming the route (`/// POST /sessions/revoke-all`).
-3. **Implementation** in `dio_<area>_api.dart`: wrap the dio call in
-   `try { … } on DioException catch (e) { throw ApiException.fromDioException(e); }`.
-   Implementations throw `ApiException` — never `DioException`.
+3. **Implementation** in `dio_<area>_api.dart`: call the injected
+   `NetworkManager` (`await _net.post(path, data: …, cancelToken: …)`), then
+   `unwrapEnvelope`/parse. NetworkManager already maps `DioException →
+   ApiException`, so impls carry NO `try/on DioException` (except special cases
+   like account `getSelf` catching `ApiException` for a 404→null). Never call
+   `Dio` directly; never construct `NetworkManager` in a module.
    - **Cancellation:** every method takes an optional `{CancelToken? cancelToken}`
-     (last param) and forwards it to the dio call. `CancelToken` is re-exported
+     (last param) forwarded to NetworkManager. `CancelToken` is re-exported
      from `balsm_api`, so callers never import dio. A cancelled request throws
      `ApiException` with `isCancelled == true` (mapped from
      `DioExceptionType.cancel`); callers should ignore it, not show a failure.

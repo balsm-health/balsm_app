@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:balsm_api/balsm_api.dart';
 import 'package:dio/dio.dart';
 
 /// Canned-response HttpClientAdapter for exercising Dio impls without a
@@ -45,3 +46,7 @@ Dio fakeDio(FakeHttpAdapter adapter) {
   dio.httpClientAdapter = adapter;
   return dio;
 }
+
+/// [NetworkManager] backed by a [FakeHttpAdapter] — what area-client tests inject.
+NetworkManager fakeNet(FakeHttpAdapter adapter) =>
+    NetworkManager(dio: fakeDio(adapter));

@@ -1,30 +1,23 @@
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' show CancelToken;
 
-import '../transport/api_exception.dart';
+import '../transport/network_manager.dart';
 import 'auth_api.dart';
 import 'requests.dart';
 import 'responses.dart';
 
 class DioAuthApi implements AuthApi {
-  const DioAuthApi({required Dio dio}) : _dio = dio;
+  const DioAuthApi({required NetworkManager net}) : _net = net;
 
-  final Dio _dio;
+  final NetworkManager _net;
 
+  /// Auth bodies are FLAT (no `{data, error}` envelope) — return them as-is.
   Future<Map<String, dynamic>> _post(
     String path,
     Map<String, dynamic> body, {
     CancelToken? cancelToken,
   }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        path,
-        data: body,
-        cancelToken: cancelToken,
-      );
-      return response.data ?? {};
-    } on DioException catch (e) {
-      throw ApiException.fromDioException(e);
-    }
+    final res = await _net.post(path, data: body, cancelToken: cancelToken);
+    return res.data ?? {};
   }
 
   @override
