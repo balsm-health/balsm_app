@@ -760,12 +760,19 @@ export 'src/network/dio_client_provider.dart';
 with:
 
 ```dart
-export 'package:balsm_api/balsm_api.dart';
+// TARGETED re-export — only the two transport symbols that unmigrated
+// callers (geofence, disclosure, settings screen) and the PHI fuzz test
+// still reach through `package:core/core.dart`. Do NOT re-export the whole
+// balsm_api library: modules import it directly for the API interfaces,
+// DTOs, and ApiException, and a blanket re-export here would make every
+// shared name ambiguous (defined in both core and balsm_api) in every file
+// that imports both.
+export 'package:balsm_api/balsm_api.dart' show BalsmApiClient, PhiLeakInterceptor;
 export 'src/network/balsm_api_controller.dart';
 export 'src/network/api_providers.dart';
 ```
 
-(The `balsm_api` re-export keeps every existing `package:core/core.dart` consumer — geofence's `BalsmApiClient` reference, disclosure, settings screen — compiling before their own migration tasks. Modules still gain a DIRECT `balsm_api` dependency in their migration task; the re-export is a transition aid and stays afterward for convenience.)
+(The targeted `show` keeps geofence's `BalsmApiClient` reference, disclosure, the account settings screen, and `test/phi_leak_fuzz_test` compiling before their own migration tasks — without polluting `core`'s namespace with the API surface. Modules gain a DIRECT `balsm_api` dependency in their migration task and import `package:balsm_api/balsm_api.dart` for everything else; because `core` re-exports only `BalsmApiClient`/`PhiLeakInterceptor` — which migrated modules never reference — there is no ambiguous-import clash.)
 
 - [ ] **Step 5: Port the server selector screen**
 
@@ -810,14 +817,7 @@ Also update the comment two lines above it (mentions `BalsmApiClient`) to say `B
 
 - [ ] **Step 7: Re-point the root PHI fuzz suite**
 
-Root `pubspec.yaml` `dev_dependencies:` — add below the `core:` path dep:
-
-```yaml
-  balsm_api:
-    path: packages/balsm_api
-```
-
-In `test/phi_leak_fuzz_test/sentry_allowlist_test.dart`: the `import 'package:core/core.dart';` still resolves `PhiLeakInterceptor` via the re-export, so no import change is strictly required — but update the stale path comment (`packages/core/lib/src/network/phi_leak_interceptor.dart` → `packages/balsm_api/lib/src/transport/phi_leak_interceptor.dart`).
+The fuzz test imports `package:core/core.dart` (for `PhiLeakInterceptor`, now surfaced via core's targeted `show`) and `package:dio/dio.dart` — both already root deps, so NO root pubspec change is needed. Only update the stale path comment in `test/phi_leak_fuzz_test/sentry_allowlist_test.dart` (`packages/core/lib/src/network/phi_leak_interceptor.dart` → `packages/balsm_api/lib/src/transport/phi_leak_interceptor.dart`).
 
 - [ ] **Step 8: Verify**
 
@@ -832,7 +832,7 @@ Expected: analyze clean for core + account; core tests pass; fuzz suite passes.
 - [ ] **Step 9: Commit**
 
 ```bash
-git add -A packages/core packages/account pubspec.yaml test/phi_leak_fuzz_test
+git add -A packages/core packages/account test/phi_leak_fuzz_test
 git commit -m "[Refactor] core: rewire transport onto balsm_api via BalsmApiController"
 ```
 
@@ -2544,7 +2544,7 @@ Replace the whole body of `packages/auth/lib/src/infrastructure/api/balsm_auth_a
 
 ```dart
 import 'package:balsm_api/balsm_api.dart';
-import 'package:core/core.dart' hide AuthApi; // keep provider imports working; hide avoids re-export clash
+import 'package:core/core.dart'; // for authApiProvider; core does NOT re-export AuthApi, so no clash
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth_exception.dart';
@@ -2700,7 +2700,7 @@ final balsmAuthAdapterProvider = Provider<BalsmAuthAdapter>((ref) {
 });
 ```
 
-(If `package:core/core.dart` produces no name clash for `AuthApi`, drop the `hide`. `authApiProvider` comes from core's `api_providers.dart`.)
+(`authApiProvider` comes from core's `api_providers.dart`. Core re-exports only `BalsmApiClient`/`PhiLeakInterceptor` from balsm_api, so `AuthApi` resolves unambiguously from the direct `balsm_api` import.)
 
 - [ ] **Step 7: Verify**
 
