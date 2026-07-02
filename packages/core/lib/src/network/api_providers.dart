@@ -26,3 +26,7 @@ final dioClientProvider = Provider<Dio>((ref) {
 final emergencyQrApiProvider = Provider<EmergencyQrApi>((ref) {
   return DioEmergencyQrApi(dio: ref.watch(balsmApiClientProvider).dio);
 });
+
+final sessionsApiProvider = Provider<SessionsApi>((ref) {
+  return DioSessionsApi(dio: ref.watch(balsmApiClientProvider).dio);
+});

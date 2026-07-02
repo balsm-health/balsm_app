@@ -9,7 +9,8 @@ dependencies:
     sdk: flutter
   core:
     path: ../core
-  dio: ^5.8.0
+  balsm_api:
+    path: ../balsm_api
   flutter_riverpod: ^2.6.1
   go_router: ^14.0.0
   intl: ^0.20.0
