@@ -26,3 +26,8 @@ export 'src/account/account_api.dart';
 export 'src/account/dio_account_api.dart';
 export 'src/account/requests.dart';
 export 'src/account/responses.dart';
+
+export 'src/auth/auth_api.dart';
+export 'src/auth/dio_auth_api.dart';
+export 'src/auth/requests.dart';
+export 'src/auth/responses.dart';

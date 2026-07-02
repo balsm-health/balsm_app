@@ -1,5 +1,5 @@
-import 'package:core/core.dart';
-import 'package:dio/dio.dart';
+import 'package:balsm_api/balsm_api.dart';
+import 'package:core/core.dart'; // for authApiProvider; core does NOT re-export AuthApi, so no clash
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth_exception.dart';
@@ -18,58 +18,45 @@ typedef RefreshedTokens = ({
   String refreshToken,
 });
 
-/// Infrastructure adapter — translates .NET REST API calls into typed results.
+/// Anti-corruption adapter — maps balsm_api DTOs/ApiException into the auth
+/// module's records and AuthException.
 /// PHI constraint: do not log email, userId, or tokens at any level.
 class BalsmAuthAdapter {
-  const BalsmAuthAdapter({required Dio dio}) : _dio = dio;
+  const BalsmAuthAdapter({required AuthApi api}) : _api = api;
 
-  final Dio _dio;
-
-  // ── OTP flow ─────────────────────────────────────────────────────────────
+  final AuthApi _api;
 
   /// POST /auth/otp/request
-  /// Triggers a one-time-password email to [email].
-  Future<void> requestOtp(String email, String countryCode) async {
-    await _post('/auth/otp/request', {
-      'email': email,
-      'country_code': countryCode,
-      // captcha_token is added by the interceptor / caller if needed
-    });
-  }
+  Future<void> requestOtp(String email, String countryCode) =>
+      _guard(() => _api.requestOtp(
+          RequestOtpRequest(email: email, countryCode: countryCode)));
 
   /// POST /auth/otp/verify
-  /// Returns tokens on success. Throws [AuthException] with code 'account_locked'
-  /// and a `Retry-After` header value baked into [AuthException.message] on 423.
   Future<AuthTokens> verifyOtp(
     String email,
     String code,
     String deviceId,
     String deviceLabel,
-  ) async {
-    final data = await _post('/auth/otp/verify', {
-      'email': email,
-      'code': code,
-      'device_id': deviceId,
-      'device_label': deviceLabel,
-    });
-    return _parseAuthTokens(data);
-  }
-
-  // ── Social flows ──────────────────────────────────────────────────────────
+  ) =>
+      _guard(() async => _toAuthTokens(await _api.verifyOtp(VerifyOtpRequest(
+            email: email,
+            code: code,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ))));
 
   /// POST /auth/google
   Future<AuthTokens> signInWithGoogle(
     String idToken,
     String deviceId,
     String deviceLabel,
-  ) async {
-    final data = await _post('/auth/google', {
-      'id_token': idToken,
-      'device_id': deviceId,
-      'device_label': deviceLabel,
-    });
-    return _parseAuthTokens(data);
-  }
+  ) =>
+      _guard(() async =>
+          _toAuthTokens(await _api.signInWithGoogle(GoogleSignInRequest(
+            idToken: idToken,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ))));
 
   /// POST /auth/apple
   Future<AuthTokens> signInWithApple(
@@ -77,37 +64,27 @@ class BalsmAuthAdapter {
     String authCode,
     String deviceId,
     String deviceLabel,
-  ) async {
-    final data = await _post('/auth/apple', {
-      'id_token': idToken,
-      'authorization_code': authCode,
-      'device_id': deviceId,
-      'device_label': deviceLabel,
-    });
-    return _parseAuthTokens(data);
-  }
-
-  // ── Session management ────────────────────────────────────────────────────
+  ) =>
+      _guard(() async =>
+          _toAuthTokens(await _api.signInWithApple(AppleSignInRequest(
+            idToken: idToken,
+            authorizationCode: authCode,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ))));
 
   /// POST /auth/sign-out
-  Future<void> signOut() async {
-    await _post('/auth/sign-out', {});
-  }
+  Future<void> signOut() => _guard(() => _api.signOut());
 
   /// POST /auth/refresh
-  /// Returns new access + refresh tokens.
-  Future<RefreshedTokens> refresh(String refreshToken, String deviceId) async {
-    final data = await _post('/auth/refresh', {
-      'refresh_token': refreshToken,
-      'device_id': deviceId,
-    });
-    return (
-      accessToken: data['access_token'] as String,
-      refreshToken: data['refresh_token'] as String,
-    );
-  }
-
-  // ── Recovery ──────────────────────────────────────────────────────────────
+  Future<RefreshedTokens> refresh(String refreshToken, String deviceId) =>
+      _guard(() async {
+        final r = await _api.refresh(RefreshTokenRequest(
+          refreshToken: refreshToken,
+          deviceId: deviceId,
+        ));
+        return (accessToken: r.accessToken, refreshToken: r.refreshToken);
+      });
 
   /// POST /auth/recovery/claim
   Future<RefreshedTokens> recoveryClaim(
@@ -115,78 +92,45 @@ class BalsmAuthAdapter {
     String newEmail,
     String deviceId,
     String deviceLabel,
-  ) async {
-    final data = await _post('/auth/recovery/claim', {
-      'recovery_token': recoveryToken,
-      'new_email': newEmail,
-      'device_id': deviceId,
-      'device_label': deviceLabel,
-    });
-    return (
-      accessToken: data['access_token'] as String,
-      refreshToken: data['refresh_token'] as String,
-    );
-  }
+  ) =>
+      _guard(() async {
+        final r = await _api.recoveryClaim(RecoveryClaimRequest(
+          recoveryToken: recoveryToken,
+          newEmail: newEmail,
+          deviceId: deviceId,
+          deviceLabel: deviceLabel,
+        ));
+        return (accessToken: r.accessToken, refreshToken: r.refreshToken);
+      });
 
   // ── Internals ─────────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> _post(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
+  Future<T> _guard<T>(Future<T> Function() run) async {
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        path,
-        data: body,
-      );
-      return response.data ?? {};
-    } on DioException catch (e) {
-      _throwTyped(e);
+      return await run();
+    } on ApiException catch (e) {
+      throw _toAuthException(e);
     }
   }
 
-  Never _throwTyped(DioException e) {
-    final status = e.response?.statusCode;
-    final responseData = e.response?.data;
+  AuthTokens _toAuthTokens(AuthTokensResponse r) => (
+        accessToken: r.accessToken,
+        refreshToken: r.refreshToken,
+        userId: r.userId,
+        isNewUser: r.isNewUser,
+      );
 
-    // Extract code + message from API error envelope if available.
-    String code = 'unknown';
-    String message = 'An unexpected error occurred. Please try again.';
-
-    if (responseData is Map<String, dynamic>) {
-      code = (responseData['code'] as String?) ?? _codeFromStatus(status);
-      // Use generic message; do not echo back server message that may contain PII.
-      message = _messageFromCode(code);
-    } else {
-      code = _codeFromStatus(status);
-      message = _messageFromCode(code);
-    }
-
-    // Append Retry-After seconds to message for lockout case.
-    if (status == 423) {
-      final retryAfter = e.response?.headers.value('Retry-After') ?? '60';
-      throw AuthException(
+  AuthException _toAuthException(ApiException e) {
+    if (e.statusCode == 423) {
+      final retryAfter = e.retryAfterSeconds ?? 60;
+      return AuthException(
         code: 'account_locked',
         message: 'Account temporarily locked. Try again in $retryAfter seconds.',
       );
     }
-
-    throw AuthException(code: code, message: message);
+    // Use generic message; never echo server text (may contain PII).
+    return AuthException(code: e.code, message: _messageFromCode(e.code));
   }
-
-  String _codeFromStatus(int? status) => switch (status) {
-        null => 'network_error',
-        400 => 'invalid_request',
-        401 => 'unauthorized',
-        403 => 'forbidden',
-        404 => 'not_found',
-        409 => 'conflict',
-        422 => 'validation_error',
-        423 => 'account_locked',
-        429 => 'rate_limited',
-        >= 500 => 'server_error',
-        _ => 'network_error',
-      };
 
   String _messageFromCode(String code) => switch (code) {
         'invalid_request' => 'The request was invalid. Please check your input.',
@@ -202,18 +146,10 @@ class BalsmAuthAdapter {
         'otp_invalid' => 'Incorrect verification code.',
         _ => 'An unexpected error occurred. Please try again.',
       };
-
-  AuthTokens _parseAuthTokens(Map<String, dynamic> data) => (
-        accessToken: data['access_token'] as String,
-        refreshToken: data['refresh_token'] as String,
-        userId: data['user_id'] as String,
-        isNewUser: (data['is_new_user'] as bool?) ?? false,
-      );
 }
 
 // ── Riverpod provider ────────────────────────────────────────────────────────
 
 final balsmAuthAdapterProvider = Provider<BalsmAuthAdapter>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  return BalsmAuthAdapter(dio: dio);
+  return BalsmAuthAdapter(api: ref.watch(authApiProvider));
 });

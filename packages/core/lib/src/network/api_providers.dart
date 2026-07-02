@@ -38,3 +38,7 @@ final deletionApiProvider = Provider<DeletionApi>((ref) {
 final accountApiProvider = Provider<AccountApi>((ref) {
   return DioAccountApi(dio: ref.watch(balsmApiClientProvider).dio);
 });
+
+final authApiProvider = Provider<AuthApi>((ref) {
+  return DioAuthApi(dio: ref.watch(balsmApiClientProvider).dio);
+});
