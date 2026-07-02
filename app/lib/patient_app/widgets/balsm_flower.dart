@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../assets.dart';
 import '../tokens.dart';
 
 /// The official Balsm five-petal flower mark, rendered from the bundled brand
@@ -12,7 +13,7 @@ class BalsmFlower extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Opacity(
         opacity: opacity,
-        child: SvgPicture.asset('assets/brand/icon.svg', width: size, height: size),
+        child: SvgPicture.asset(Assets.brand_icon, width: size, height: size),
       );
 }
 

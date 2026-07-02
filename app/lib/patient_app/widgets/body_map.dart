@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../app_state.dart';
+import '../assets.dart';
 import '../data.dart';
 import '../kit.dart';
 import '../tokens.dart';
@@ -110,7 +111,7 @@ class _BodyMapState extends State<BodyMap> {
             aspectRatio: 200 / 384,
             child: LayoutBuilder(builder: (context, c) {
               return Stack(children: [
-                Positioned.fill(child: SvgPicture.asset('assets/body/${gender}_$view.svg', fit: BoxFit.contain)),
+                Positioned.fill(child: SvgPicture.asset(Assets.bodyFigure(gender, view), fit: BoxFit.contain)),
                 for (final h in hotspots)
                   Positioned(
                     left: h.cx / 200 * c.maxWidth - 14,
