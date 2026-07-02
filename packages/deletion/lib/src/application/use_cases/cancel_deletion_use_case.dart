@@ -1,5 +1,5 @@
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/deletion_request.dart';
@@ -11,26 +11,20 @@ import '../../domain/events/deletion_events.dart';
 /// event is dispatched. Cancellation is only valid while the account is still
 /// within the grace window (server-enforced; FSM-guarded client-side too).
 class CancelDeletionUseCase {
-  CancelDeletionUseCase(this._dio, this._bus);
+  CancelDeletionUseCase(this._api, this._bus);
 
-  final Dio _dio;
+  final DeletionApi _api;
   final EventBus _bus;
 
   Future<AppResult<DeletionState>> call() async {
     try {
-      final res = await _dio.post<Map<String, dynamic>>('/deletion/cancel');
-      final body = res.data ?? const {};
-      final error = body['error'];
-      if (error != null) {
-        return AppResult.failure(ValidationFailure(_messageFor(error)));
-      }
-      final data = (body['data'] as Map<String, dynamic>?) ?? const {};
-      final state = _parseState(data['deletion_state'] as String?);
+      final res = await _api.cancel();
+      final state = _parseState(res.deletionState);
 
       _bus.publish(const DeletionCancelled());
 
       return AppResult.success(state);
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       return AppResult.failure(_failureFor(e));
     }
   }
@@ -46,17 +40,13 @@ class CancelDeletionUseCase {
     }
   }
 
-  String _messageFor(Object error) {
-    if (error is Map && error['message'] is String) {
-      return error['message'] as String;
+  AppFailure _failureFor(ApiException e) {
+    if (e.fromEnvelope) {
+      return ValidationFailure(
+          e.serverMessage ?? 'Unable to cancel account deletion.');
     }
-    return 'Unable to cancel account deletion.';
-  }
-
-  AppFailure _failureFor(DioException e) {
-    final code = e.response?.statusCode;
-    if (code == 401 || code == 403) return const UnauthorizedFailure();
-    if (code == 409) {
+    if (e.isUnauthorized) return const UnauthorizedFailure();
+    if (e.statusCode == 409) {
       return const ConflictFailure('Deletion can no longer be cancelled.');
     }
     return const NetworkFailure();
@@ -65,7 +55,7 @@ class CancelDeletionUseCase {
 
 final cancelDeletionUseCaseProvider = Provider<CancelDeletionUseCase>((ref) {
   return CancelDeletionUseCase(
-    ref.watch(dioClientProvider),
+    ref.watch(deletionApiProvider),
     ref.watch(eventBusProvider),
   );
 });

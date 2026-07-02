@@ -17,3 +17,7 @@ export 'src/emergency_qr/responses.dart';
 export 'src/sessions/sessions_api.dart';
 export 'src/sessions/dio_sessions_api.dart';
 export 'src/sessions/responses.dart';
+
+export 'src/deletion/deletion_api.dart';
+export 'src/deletion/dio_deletion_api.dart';
+export 'src/deletion/responses.dart';

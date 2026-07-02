@@ -30,3 +30,7 @@ final emergencyQrApiProvider = Provider<EmergencyQrApi>((ref) {
 final sessionsApiProvider = Provider<SessionsApi>((ref) {
   return DioSessionsApi(dio: ref.watch(balsmApiClientProvider).dio);
 });
+
+final deletionApiProvider = Provider<DeletionApi>((ref) {
+  return DioDeletionApi(dio: ref.watch(balsmApiClientProvider).dio);
+});
