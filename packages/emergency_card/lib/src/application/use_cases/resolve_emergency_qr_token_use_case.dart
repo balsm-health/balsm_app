@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/emergency_card_snapshot.dart';
@@ -15,12 +15,12 @@ import '../../domain/aggregates/emergency_card_snapshot.dart';
 /// only ciphertext, which is decrypted entirely on the client.
 class ResolveEmergencyQrTokenUseCase {
   ResolveEmergencyQrTokenUseCase({
-    required Dio dio,
+    required EmergencyQrApi api,
     AesGcm? aesGcm,
-  })  : _dio = dio,
+  })  : _api = api,
         _aesGcm = aesGcm ?? AesGcm.with256bits();
 
-  final Dio _dio;
+  final EmergencyQrApi _api;
   final AesGcm _aesGcm;
 
   /// [tokenId] is the path segment; [keyBase64Url] is the `k=` fragment value.
@@ -35,12 +35,11 @@ class ResolveEmergencyQrTokenUseCase {
       );
     }
 
-    final Response<dynamic> response;
+    final ResolveQrResponse resolved;
     try {
-      response = await _dio.get<dynamic>('/emergency-qr/resolve/$tokenId');
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 404 || status == 410) {
+      resolved = await _api.resolve(tokenId);
+    } on ApiException catch (e) {
+      if (e.statusCode == 404 || e.statusCode == 410) {
         return AppResult.failure(
           const NotFoundFailure('QR expired or revoked'),
         );
@@ -48,9 +47,7 @@ class ResolveEmergencyQrTokenUseCase {
       return AppResult.failure(const NetworkFailure('Could not resolve QR'));
     }
 
-    final envelope = response.data as Map<String, dynamic>?;
-    final data = envelope?['data'] as Map<String, dynamic>?;
-    final ciphertextBase64 = data?['ciphertext_base64'] as String?;
+    final ciphertextBase64 = resolved.ciphertextBase64;
     if (ciphertextBase64 == null) {
       return AppResult.failure(
         const NotFoundFailure('QR expired or revoked'),
@@ -105,5 +102,5 @@ class ResolveEmergencyQrTokenUseCase {
 
 final resolveEmergencyQrTokenUseCaseProvider =
     Provider<ResolveEmergencyQrTokenUseCase>((ref) {
-  return ResolveEmergencyQrTokenUseCase(dio: ref.watch(dioClientProvider));
+  return ResolveEmergencyQrTokenUseCase(api: ref.watch(emergencyQrApiProvider));
 });

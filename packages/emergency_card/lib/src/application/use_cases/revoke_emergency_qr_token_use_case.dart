@@ -1,5 +1,5 @@
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/events/emergency_qr_token_revoked.dart';
@@ -8,26 +8,22 @@ import '../../domain/events/emergency_qr_token_revoked.dart';
 /// endpoint returns 410 Gone.
 class RevokeEmergencyQrTokenUseCase {
   RevokeEmergencyQrTokenUseCase({
-    required Dio dio,
+    required EmergencyQrApi api,
     required EventBus eventBus,
-  })  : _dio = dio,
+  })  : _api = api,
         _eventBus = eventBus;
 
-  final Dio _dio;
+  final EmergencyQrApi _api;
   final EventBus _eventBus;
 
   Future<AppResult<void>> call({required String tokenId}) async {
     try {
-      await _dio.post<dynamic>(
-        '/emergency-qr/revoke',
-        data: {'token_id': tokenId},
-      );
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 401 || status == 403) {
+      await _api.revoke(RevokeQrRequest(tokenId: tokenId));
+    } on ApiException catch (e) {
+      if (e.isUnauthorized) {
         return AppResult.failure(const UnauthorizedFailure());
       }
-      if (status == 404) {
+      if (e.statusCode == 404) {
         return AppResult.failure(const NotFoundFailure('Token not found'));
       }
       return AppResult.failure(const NetworkFailure('Could not revoke QR'));
@@ -41,7 +37,7 @@ class RevokeEmergencyQrTokenUseCase {
 final revokeEmergencyQrTokenUseCaseProvider =
     Provider<RevokeEmergencyQrTokenUseCase>((ref) {
   return RevokeEmergencyQrTokenUseCase(
-    dio: ref.watch(dioClientProvider),
+    api: ref.watch(emergencyQrApiProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

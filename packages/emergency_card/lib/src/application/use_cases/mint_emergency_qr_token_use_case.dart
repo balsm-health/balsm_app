@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/emergency_qr_token.dart';
@@ -26,16 +26,16 @@ typedef MintResult = ({EmergencyQrToken token, String qrUrl});
 /// PHI (the snapshot, plaintext, and the key) is never logged or sent to Sentry.
 class MintEmergencyQrTokenUseCase {
   MintEmergencyQrTokenUseCase({
-    required Dio dio,
+    required EmergencyQrApi api,
     required EmergencySnapshotReader snapshotReader,
     required EventBus eventBus,
     AesGcm? aesGcm,
-  })  : _dio = dio,
+  })  : _api = api,
         _snapshotReader = snapshotReader,
         _eventBus = eventBus,
         _aesGcm = aesGcm ?? AesGcm.with256bits();
 
-  final Dio _dio;
+  final EmergencyQrApi _api;
   final EmergencySnapshotReader _snapshotReader;
   final EventBus _eventBus;
   final AesGcm _aesGcm;
@@ -66,27 +66,21 @@ class MintEmergencyQrTokenUseCase {
     final ciphertextBase64 = base64.encode(payload);
 
     // 3. POST ciphertext only — key never leaves the device via the network.
-    final Response<dynamic> response;
+    final MintQrResponse minted;
     try {
-      response = await _dio.post<dynamic>(
-        '/emergency-qr/mint',
-        data: {
-          'ciphertext_base64': ciphertextBase64,
-          'ttl_seconds': ttlSeconds,
-        },
-      );
-    } on DioException catch (e) {
-      return AppResult.failure(_mapDioError(e));
-    }
-
-    final envelope = response.data as Map<String, dynamic>?;
-    final data = envelope?['data'] as Map<String, dynamic>?;
-    if (data == null) {
+      minted = await _api.mint(MintQrRequest(
+        ciphertextBase64: ciphertextBase64,
+        ttlSeconds: ttlSeconds,
+      ));
+    } on ApiException catch (e) {
+      return AppResult.failure(_mapApiError(e));
+    } on TypeError {
+      // Missing token_id/expires_at in an otherwise-successful response.
       return AppResult.failure(const NetworkFailure('Malformed mint response'));
     }
 
-    final jti = data['token_id'] as String;
-    final expiresAt = DateTime.parse(data['expires_at'] as String);
+    final jti = minted.tokenId;
+    final expiresAt = minted.expiresAt;
 
     final token = EmergencyQrToken(
       jti: jti,
@@ -104,10 +98,9 @@ class MintEmergencyQrTokenUseCase {
     return AppResult.success((token: token, qrUrl: qrUrl));
   }
 
-  AppFailure _mapDioError(DioException e) {
-    final status = e.response?.statusCode;
-    if (status == 401 || status == 403) return const UnauthorizedFailure();
-    if (status == 422 || status == 400) {
+  AppFailure _mapApiError(ApiException e) {
+    if (e.isUnauthorized) return const UnauthorizedFailure();
+    if (e.statusCode == 422 || e.statusCode == 400) {
       return const ValidationFailure('Invalid mint request');
     }
     return const NetworkFailure('Could not generate emergency QR');
@@ -117,7 +110,7 @@ class MintEmergencyQrTokenUseCase {
 final mintEmergencyQrTokenUseCaseProvider =
     Provider<MintEmergencyQrTokenUseCase>((ref) {
   return MintEmergencyQrTokenUseCase(
-    dio: ref.watch(dioClientProvider),
+    api: ref.watch(emergencyQrApiProvider),
     snapshotReader: ref.watch(emergencySnapshotReaderProvider),
     eventBus: ref.watch(eventBusProvider),
   );

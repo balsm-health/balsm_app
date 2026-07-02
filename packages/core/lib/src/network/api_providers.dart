@@ -22,3 +22,7 @@ final dioClientProvider = Provider<Dio>((ref) {
 });
 
 // One Provider<XxxApi> per area is appended here by each area task.
+
+final emergencyQrApiProvider = Provider<EmergencyQrApi>((ref) {
+  return DioEmergencyQrApi(dio: ref.watch(balsmApiClientProvider).dio);
+});
