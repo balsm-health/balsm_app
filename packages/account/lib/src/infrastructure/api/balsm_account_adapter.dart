@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/repositories/read_account_repository.dart';
@@ -9,32 +9,31 @@ import '../../domain/value_objects/account_summary.dart';
 
 /// .NET REST adapter for the account read-model.
 ///
-/// Response envelope: `{ "data": { ... }, "error": null }`.
+/// Anti-corruption layer: maps [AccountSelfResponse] → [AccountSummary].
 /// PHI rule: never logs the response body (it may contain user identifiers);
 /// only structural failures are surfaced as typed [AppFailure]s upstream.
 class BalsmAccountAdapter implements ReadAccountRepository {
-  BalsmAccountAdapter(this._dio);
+  BalsmAccountAdapter(this._api);
 
-  final Dio _dio;
+  final AccountApi _api;
 
   /// Local fan-out so [watchAccount] re-emits after mutations re-fetch.
   final _controller = StreamController<AccountSummary>.broadcast();
 
   @override
   Future<AccountSummary?> getAccount(String userId) async {
-    try {
-      final res = await _dio.get<Map<String, dynamic>>('/account/self');
-      final body = res.data;
-      if (body == null) return null;
-      final data = body['data'] as Map<String, dynamic>?;
-      if (data == null) return null;
-      final summary = AccountSummary.fromJson(data);
-      if (!_controller.isClosed) _controller.add(summary);
-      return summary;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) return null;
-      rethrow;
-    }
+    final res = await _api.getSelf();
+    if (res == null) return null;
+    final summary = AccountSummary(
+      id: res.id,
+      handle: res.handle,
+      displayName: res.displayName,
+      countryCode: res.countryCode,
+      preferredLanguage: res.preferredLanguage,
+      deletionState: res.deletionState,
+    );
+    if (!_controller.isClosed) _controller.add(summary);
+    return summary;
   }
 
   @override
@@ -47,10 +46,9 @@ class BalsmAccountAdapter implements ReadAccountRepository {
   void dispose() => _controller.close();
 }
 
-/// DI: the account read-repository backed by the shared dio client.
+/// DI: the account read-repository backed by the typed account client.
 final readAccountRepositoryProvider = Provider<ReadAccountRepository>((ref) {
-  final dio = ref.watch(dioClientProvider);
-  final adapter = BalsmAccountAdapter(dio);
+  final adapter = BalsmAccountAdapter(ref.watch(accountApiProvider));
   ref.onDispose(adapter.dispose);
   return adapter;
 });

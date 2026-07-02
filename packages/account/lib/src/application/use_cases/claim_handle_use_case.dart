@@ -1,5 +1,5 @@
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Allowed handle format: 3-30 chars, lowercase letters, digits, `_` and `.`.
@@ -10,9 +10,9 @@ final RegExp kHandleFormat = RegExp(r'^[a-z0-9_.]{3,30}$');
 /// POST /account/handle/claim  body: { "handle": "<value>" }
 /// 409 -> [ConflictFailure] ("Handle taken").
 class ClaimHandleUseCase {
-  ClaimHandleUseCase(this._dio);
+  ClaimHandleUseCase(this._api);
 
-  final Dio _dio;
+  final AccountApi _api;
 
   Future<AppResult<String>> execute(String handle) async {
     final value = handle.trim();
@@ -25,29 +25,19 @@ class ClaimHandleUseCase {
     }
 
     try {
-      final res = await _dio.post<Map<String, dynamic>>(
-        '/account/handle/claim',
-        data: {'handle': value},
-      );
-      final data = res.data?['data'] as Map<String, dynamic>?;
-      final claimed = (data?['handle'] as String?) ?? value;
-      return AppResult.success(claimed);
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 409) {
-        return AppResult.failure(const ConflictFailure('Handle taken'));
-      }
-      if (status == 401 || status == 403) {
-        return AppResult.failure(const UnauthorizedFailure());
-      }
-      if (status == 400 || status == 422) {
-        return AppResult.failure(const ValidationFailure('Invalid handle'));
-      }
-      return AppResult.failure(const NetworkFailure());
+      final res = await _api.claimHandle(ClaimHandleRequest(handle: value));
+      return AppResult.success(res.handle ?? value);
+    } on ApiException catch (e) {
+      return AppResult.failure(switch (e.statusCode) {
+        409 => const ConflictFailure('Handle taken'),
+        401 || 403 => const UnauthorizedFailure(),
+        400 || 422 => const ValidationFailure('Invalid handle'),
+        _ => const NetworkFailure(),
+      });
     }
   }
 }
 
 final claimHandleUseCaseProvider = Provider<ClaimHandleUseCase>((ref) {
-  return ClaimHandleUseCase(ref.watch(dioClientProvider));
+  return ClaimHandleUseCase(ref.watch(accountApiProvider));
 });

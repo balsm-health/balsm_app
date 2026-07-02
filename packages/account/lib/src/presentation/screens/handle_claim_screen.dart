@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,24 +75,18 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
   }
 
   Future<void> _check(String handle) async {
-    final dio = ref.read(dioClientProvider);
+    final api = ref.read(accountApiProvider);
     try {
-      // GET /account/handle/available?handle=<value> -> { data: { available: bool } }
-      final res = await dio.get<Map<String, dynamic>>(
-        '/account/handle/available',
-        queryParameters: {'handle': handle},
-      );
+      final res = await api.checkHandleAvailability(handle);
       if (!mounted || _controller.text != handle) return;
-      final available =
-          (res.data?['data'] as Map<String, dynamic>?)?['available'] as bool? ??
-              false;
+      final available = res.available;
       setState(() {
         _status = available ? _HandleStatus.available : _HandleStatus.taken;
         _message = available ? 'Available' : 'Handle taken';
       });
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted || _controller.text != handle) return;
-      final taken = e.response?.statusCode == 409;
+      final taken = e.statusCode == 409;
       setState(() {
         _status = taken ? _HandleStatus.taken : _HandleStatus.idle;
         _message = taken ? 'Handle taken' : 'Could not check availability';

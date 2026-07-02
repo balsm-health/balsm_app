@@ -1,5 +1,5 @@
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/events/country_changed.dart';
@@ -17,14 +17,14 @@ import '../ports/denied_countries_port.dart';
 /// account's operating country changes here.
 class ChangeCountryUseCase {
   ChangeCountryUseCase({
-    required Dio dio,
+    required AccountApi api,
     required DeniedCountriesPort deniedCountries,
     required EventBus bus,
-  })  : _dio = dio,
+  })  : _api = api,
         _denied = deniedCountries,
         _bus = bus;
 
-  final Dio _dio;
+  final AccountApi _api;
   final DeniedCountriesPort _denied;
   final EventBus _bus;
 
@@ -43,10 +43,7 @@ class ChangeCountryUseCase {
     }
 
     try {
-      await _dio.post<Map<String, dynamic>>(
-        '/account/country',
-        data: {'countryCode': target},
-      );
+      await _api.changeCountry(ChangeCountryRequest(countryCode: target));
       // RR-001: no DOB residency migration is performed.
       _bus.publish(
         CountryChanged(
@@ -56,22 +53,19 @@ class ChangeCountryUseCase {
         ),
       );
       return AppResult.success(target);
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 401 || status == 403) {
-        return AppResult.failure(const UnauthorizedFailure());
-      }
-      if (status == 400 || status == 422) {
-        return AppResult.failure(const ValidationFailure('Invalid country'));
-      }
-      return AppResult.failure(const NetworkFailure());
+    } on ApiException catch (e) {
+      return AppResult.failure(switch (e.statusCode) {
+        401 || 403 => const UnauthorizedFailure(),
+        400 || 422 => const ValidationFailure('Invalid country'),
+        _ => const NetworkFailure(),
+      });
     }
   }
 }
 
 final changeCountryUseCaseProvider = Provider<ChangeCountryUseCase>((ref) {
   return ChangeCountryUseCase(
-    dio: ref.watch(dioClientProvider),
+    api: ref.watch(accountApiProvider),
     deniedCountries: ref.watch(deniedCountriesPortProvider),
     bus: ref.watch(eventBusProvider),
   );

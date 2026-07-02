@@ -21,3 +21,8 @@ export 'src/sessions/responses.dart';
 export 'src/deletion/deletion_api.dart';
 export 'src/deletion/dio_deletion_api.dart';
 export 'src/deletion/responses.dart';
+
+export 'src/account/account_api.dart';
+export 'src/account/dio_account_api.dart';
+export 'src/account/requests.dart';
+export 'src/account/responses.dart';

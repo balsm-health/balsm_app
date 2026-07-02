@@ -34,3 +34,7 @@ final sessionsApiProvider = Provider<SessionsApi>((ref) {
 final deletionApiProvider = Provider<DeletionApi>((ref) {
   return DioDeletionApi(dio: ref.watch(balsmApiClientProvider).dio);
 });
+
+final accountApiProvider = Provider<AccountApi>((ref) {
+  return DioAccountApi(dio: ref.watch(balsmApiClientProvider).dio);
+});

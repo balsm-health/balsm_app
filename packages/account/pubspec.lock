@@ -58,7 +58,7 @@ packages:
     source: hosted
     version: "2.13.1"
   balsm_api:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "../balsm_api"
       relative: true
@@ -160,7 +160,7 @@ packages:
     source: hosted
     version: "0.7.14"
   dio:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: dio
       sha256: aff32c08f92787a557dd5c0145ac91536481831a01b4648136373cddb0e64f8c

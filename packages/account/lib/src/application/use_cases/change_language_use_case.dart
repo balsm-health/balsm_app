@@ -1,5 +1,5 @@
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/events/language_changed.dart';
@@ -10,11 +10,11 @@ import '../../domain/events/language_changed.dart';
 /// On success, dispatches [LanguageChanged] so the UI can flip
 /// Directionality / reload translations.
 class ChangeLanguageUseCase {
-  ChangeLanguageUseCase({required Dio dio, required EventBus bus})
-      : _dio = dio,
+  ChangeLanguageUseCase({required AccountApi api, required EventBus bus})
+      : _api = api,
         _bus = bus;
 
-  final Dio _dio;
+  final AccountApi _api;
   final EventBus _bus;
 
   Future<AppResult<String>> execute({
@@ -30,9 +30,8 @@ class ChangeLanguageUseCase {
     }
 
     try {
-      await _dio.post<Map<String, dynamic>>(
-        '/account/language',
-        data: {'preferredLanguage': tag.value},
+      await _api.changeLanguage(
+        ChangeLanguageRequest(preferredLanguage: tag.value),
       );
       _bus.publish(
         LanguageChanged(
@@ -42,22 +41,19 @@ class ChangeLanguageUseCase {
         ),
       );
       return AppResult.success(tag.value);
-    } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 401 || status == 403) {
-        return AppResult.failure(const UnauthorizedFailure());
-      }
-      if (status == 400 || status == 422) {
-        return AppResult.failure(const ValidationFailure('Invalid language'));
-      }
-      return AppResult.failure(const NetworkFailure());
+    } on ApiException catch (e) {
+      return AppResult.failure(switch (e.statusCode) {
+        401 || 403 => const UnauthorizedFailure(),
+        400 || 422 => const ValidationFailure('Invalid language'),
+        _ => const NetworkFailure(),
+      });
     }
   }
 }
 
 final changeLanguageUseCaseProvider = Provider<ChangeLanguageUseCase>((ref) {
   return ChangeLanguageUseCase(
-    dio: ref.watch(dioClientProvider),
+    api: ref.watch(accountApiProvider),
     bus: ref.watch(eventBusProvider),
   );
 });
