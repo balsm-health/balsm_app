@@ -16,7 +16,7 @@ import 'corpus.dart';
 
 // Allowlist mirror — keep in sync with:
 //   packages/core/lib/src/crash/sentry_init.dart (_loadAllowlist)
-//   packages/core/lib/src/network/phi_leak_interceptor.dart (_allowedFields)
+//   packages/balsm_api/lib/src/transport/phi_leak_interceptor.dart (allowedFields)
 //   specs/001-patient-app-mvp/contracts/crash-allowlist.json
 const Set<String> kAllowlist = {
   'event_id',

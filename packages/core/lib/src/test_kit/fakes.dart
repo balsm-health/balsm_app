@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:balsm_api/balsm_api.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,7 +9,7 @@ import '../config/active_server.dart';
 import '../config/server_preset.dart';
 import '../domain/events/app_event.dart';
 import '../event_bus/event_bus.dart';
-import '../network/balsm_api_client.dart';
+import '../network/balsm_api_controller.dart';
 import '../secure_storage/secure_storage_wrapper.dart';
 import '../notifications/notification_service.dart';
 import '../localization/translation_catalog.dart';
@@ -27,13 +28,15 @@ class FakeEventBus extends EventBus {
   }
 }
 
-class FakeBalsmApiClient extends BalsmApiClient {
+class FakeBalsmApiController extends BalsmApiController {
   final initiated = <String>[];
   final reconfigured = <ServerPreset>[];
 
-  FakeBalsmApiClient()
+  FakeBalsmApiController()
       : super(
-          dio: Dio(BaseOptions(baseUrl: 'http://localhost:5000')),
+          client: BalsmApiClient(
+            dio: Dio(BaseOptions(baseUrl: 'http://localhost:5000')),
+          ),
           store: ActiveServerStore(const FlutterSecureStorage()),
           bus: EventBus(),
         );

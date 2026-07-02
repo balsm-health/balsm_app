@@ -20,6 +20,8 @@ dependencies:
   # depend on sqlite3_flutter_libs (duplicate Sqlite3FlutterLibsPlugin class).
   sqlcipher_flutter_libs: ^0.5.4
   dio: ^5.8.0
+  balsm_api:
+    path: ../balsm_api
   google_sign_in: ^6.2.0
   http: ^1.2.0
   sign_in_with_apple: ^6.1.0

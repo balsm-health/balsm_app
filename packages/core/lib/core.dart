@@ -9,9 +9,16 @@ export 'src/domain/value_objects/iso8601_timestamp.dart';
 export 'src/domain/value_objects/money.dart';
 export 'src/event_bus/event_bus.dart';
 export 'src/db/app_database.dart';
-export 'src/network/balsm_api_client.dart';
-export 'src/network/phi_leak_interceptor.dart';
-export 'src/network/dio_client_provider.dart';
+// TARGETED re-export — only the two transport symbols that unmigrated
+// callers (geofence, disclosure, settings screen) and the PHI fuzz test
+// still reach through `package:core/core.dart`. Do NOT re-export the whole
+// balsm_api library: modules import it directly for the API interfaces,
+// DTOs, and ApiException, and a blanket re-export here would make every
+// shared name ambiguous (defined in both core and balsm_api) in every file
+// that imports both.
+export 'package:balsm_api/balsm_api.dart' show BalsmApiClient, PhiLeakInterceptor;
+export 'src/network/balsm_api_controller.dart';
+export 'src/network/api_providers.dart';
 export 'src/auth_context/current_user.dart';
 export 'src/localization/translation_catalog.dart';
 export 'src/localization/country_registry.dart';

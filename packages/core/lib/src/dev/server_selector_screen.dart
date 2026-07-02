@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../config/flavor.dart';
 import '../config/server_preset.dart';
-import '../network/balsm_api_client.dart';
+import '../network/balsm_api_controller.dart';
 
 class ServerSelectorScreen extends StatefulWidget {
-  const ServerSelectorScreen({super.key, required this.client});
-  final BalsmApiClient client;
+  const ServerSelectorScreen({super.key, required this.controller});
+  final BalsmApiController controller;
 
   @override
   State<ServerSelectorScreen> createState() => _ServerSelectorScreenState();
@@ -23,7 +23,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     }
   }
 
-  String get _currentBaseUrl => widget.client.dio.options.baseUrl;
+  String get _currentBaseUrl => widget.controller.client.baseUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +60,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Future<void> _select(ServerPreset preset) async {
     setState(() => _loading = true);
     try {
-      await widget.client.reconfigure(preset);
+      await widget.controller.reconfigure(preset);
       if (mounted) setState(() {});
     } finally {
       if (mounted) setState(() => _loading = false);

@@ -37,8 +37,8 @@ final accountRoutes = <RouteBase>[
   ),
   // Developer route: registered always but only meaningful in dev builds.
   // `ServerSelectorScreen` lives in core (dev-gated export) and needs a
-  // BalsmApiClient; we read it from the provider. In non-dev builds we render
-  // a harmless placeholder so the dev-only path is never exercised.
+  // BalsmApiController; we read it from the provider. In non-dev builds we
+  // render a harmless placeholder so the dev-only path is never exercised.
   GoRoute(
     path: '/account/developer',
     name: 'account.developer',
@@ -46,9 +46,9 @@ final accountRoutes = <RouteBase>[
       if (FlavorConfig.current.flavor != Flavor.dev) {
         return const SizedBox.shrink();
       }
-      final client =
-          ProviderScope.containerOf(context).read(balsmApiClientProvider);
-      return ServerSelectorScreen(client: client);
+      final controller =
+          ProviderScope.containerOf(context).read(balsmApiControllerProvider);
+      return ServerSelectorScreen(controller: controller);
     },
   ),
 ];
