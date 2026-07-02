@@ -31,3 +31,11 @@ export 'src/auth/auth_api.dart';
 export 'src/auth/dio_auth_api.dart';
 export 'src/auth/requests.dart';
 export 'src/auth/responses.dart';
+
+export 'src/disclosure/disclosure_api.dart';
+export 'src/disclosure/dio_disclosure_api.dart';
+export 'src/disclosure/requests.dart';
+
+export 'src/geofence/geofence_api.dart';
+export 'src/geofence/dio_geofence_api.dart';
+export 'src/geofence/responses.dart';

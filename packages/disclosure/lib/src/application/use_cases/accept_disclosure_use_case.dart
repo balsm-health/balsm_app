@@ -1,3 +1,4 @@
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import '../../domain/aggregates/disclosure_acceptance.dart';
 import '../../domain/events/disclosure_accepted.dart';
@@ -10,14 +11,14 @@ import '../../infrastructure/drift/disclosure_dao.dart';
 class AcceptDisclosureUseCase {
   AcceptDisclosureUseCase({
     required DisclosureDao dao,
-    required BalsmApiClient apiClient,
+    required DisclosureApi api,
     required EventBus eventBus,
   })  : _dao = dao,
-        _apiClient = apiClient,
+        _api = api,
         _eventBus = eventBus;
 
   final DisclosureDao _dao;
-  final BalsmApiClient _apiClient;
+  final DisclosureApi _api;
   final EventBus _eventBus;
 
   Future<AppResult<void>> execute({
@@ -47,16 +48,13 @@ class AcceptDisclosureUseCase {
 
     // Step 2: sync to cloud (best-effort; offline tolerance).
     try {
-      await _apiClient.dio.post<void>(
-        '/disclosure/accept',
-        data: {
-          'disclosure_id': disclosureId,
-          'version': version,
-          'country_code': countryCode,
-          'supervisory_authority': supervisoryAuthority,
-          'preferred_language': preferredLanguage,
-        },
-      );
+      await _api.accept(AcceptDisclosureRequest(
+        disclosureId: disclosureId,
+        version: version,
+        countryCode: countryCode,
+        supervisoryAuthority: supervisoryAuthority,
+        preferredLanguage: preferredLanguage,
+      ));
     } catch (_) {
       // Cloud sync is best-effort; offline is tolerated.
       // A background retry queue will pick this up (Phase 4).

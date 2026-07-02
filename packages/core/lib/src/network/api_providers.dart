@@ -42,3 +42,11 @@ final accountApiProvider = Provider<AccountApi>((ref) {
 final authApiProvider = Provider<AuthApi>((ref) {
   return DioAuthApi(dio: ref.watch(balsmApiClientProvider).dio);
 });
+
+final disclosureApiProvider = Provider<DisclosureApi>((ref) {
+  return DioDisclosureApi(dio: ref.watch(balsmApiClientProvider).dio);
+});
+
+final geofenceApiProvider = Provider<GeofenceApi>((ref) {
+  return DioGeofenceApi(dio: ref.watch(balsmApiClientProvider).dio);
+});

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,17 +21,16 @@ const _cacheTtl = Duration(hours: 24);
 /// - PHI-free: country codes are not personal health information, so they may
 ///   be logged and cached.
 ///
-/// Uses [BalsmApiClient.dio] for transport (same underlying [Dio] instance
-/// exposed by `dioClientProvider`) so the module avoids a direct `dio`
-/// dependency, matching the convention used by other bounded contexts.
+/// Uses the typed [GeofenceApi] from `balsm_api` for transport, matching the
+/// convention used by other bounded contexts.
 class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
   BalsmGeofenceAdapter({
-    required BalsmApiClient apiClient,
+    required GeofenceApi api,
     required SecureStorageWrapper storage,
-  })  : _apiClient = apiClient,
+  })  : _api = api,
         _storage = storage;
 
-  final BalsmApiClient _apiClient;
+  final GeofenceApi _api;
   final SecureStorageWrapper _storage;
 
   @override
@@ -67,20 +67,9 @@ class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
   }
 
   Future<List<String>> _fetch() async {
-    final response = await _apiClient.dio.get<Map<String, dynamic>>(
-      '/geofence/denied-countries',
-    );
-
-    final body = response.data ?? const <String, dynamic>{};
-    // Response envelope: {data: {...}, error: null} — unwrap `data`.
-    final data = body['data'];
-    final payload = data is Map<String, dynamic> ? data : body;
-
-    final raw = payload['denied_codes'];
-    if (raw is! List) return const <String>[];
-
-    return raw
-        .map((e) => e.toString().trim().toUpperCase())
+    final res = await _api.getDeniedCountries();
+    return res.deniedCodes
+        .map((e) => e.trim().toUpperCase())
         .where((e) => e.isNotEmpty)
         .toList(growable: false);
   }
@@ -125,7 +114,7 @@ class _CachedDenyList {
 final deniedCountriesRepositoryProvider =
     Provider<ReadDeniedCountriesRepository>((ref) {
   return BalsmGeofenceAdapter(
-    apiClient: ref.watch(balsmApiClientProvider),
+    api: ref.watch(geofenceApiProvider),
     storage: ref.watch(secureStorageProvider),
   );
 });

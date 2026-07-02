@@ -8,11 +8,11 @@ import '../../infrastructure/drift/disclosure_dao.dart';
 final acceptDisclosureUseCaseProvider =
     Provider<AcceptDisclosureUseCase>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  final api = ref.watch(balsmApiClientProvider);
+  final api = ref.watch(disclosureApiProvider);
   final bus = ref.watch(eventBusProvider);
   return AcceptDisclosureUseCase(
     dao: DisclosureDao(db),
-    apiClient: api,
+    api: api,
     eventBus: bus,
   );
 });
