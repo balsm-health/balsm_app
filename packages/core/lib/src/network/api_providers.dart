@@ -1,5 +1,4 @@
 import 'package:balsm_api/balsm_api.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'balsm_api_controller.dart';
@@ -13,12 +12,6 @@ final balsmApiControllerProvider = Provider<BalsmApiController>((ref) {
 
 final balsmApiClientProvider = Provider<BalsmApiClient>((ref) {
   return ref.watch(balsmApiControllerProvider).client;
-});
-
-/// TEMPORARY during the balsm_api migration — deleted once no module reads
-/// raw Dio anymore.
-final dioClientProvider = Provider<Dio>((ref) {
-  return ref.watch(balsmApiClientProvider).dio;
 });
 
 // One Provider<XxxApi> per area is appended here by each area task.
