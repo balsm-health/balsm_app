@@ -27,62 +27,77 @@ class BalsmAuthAdapter {
   final AuthApi _api;
 
   /// POST /auth/otp/request
-  Future<void> requestOtp(String email, String countryCode) =>
+  Future<void> requestOtp(String email, String countryCode,
+          {CancelToken? cancelToken}) =>
       _guard(() => _api.requestOtp(
-          RequestOtpRequest(email: email, countryCode: countryCode)));
+            RequestOtpRequest(email: email, countryCode: countryCode),
+            cancelToken: cancelToken,
+          ));
 
   /// POST /auth/otp/verify
   Future<AuthTokens> verifyOtp(
     String email,
     String code,
     String deviceId,
-    String deviceLabel,
-  ) =>
-      _guard(() async => _toAuthTokens(await _api.verifyOtp(VerifyOtpRequest(
-            email: email,
-            code: code,
-            deviceId: deviceId,
-            deviceLabel: deviceLabel,
-          ))));
+    String deviceLabel, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async => _toAuthTokens(await _api.verifyOtp(
+            VerifyOtpRequest(
+              email: email,
+              code: code,
+              deviceId: deviceId,
+              deviceLabel: deviceLabel,
+            ),
+            cancelToken: cancelToken,
+          )));
 
   /// POST /auth/google
   Future<AuthTokens> signInWithGoogle(
     String idToken,
     String deviceId,
-    String deviceLabel,
-  ) =>
-      _guard(() async =>
-          _toAuthTokens(await _api.signInWithGoogle(GoogleSignInRequest(
-            idToken: idToken,
-            deviceId: deviceId,
-            deviceLabel: deviceLabel,
-          ))));
+    String deviceLabel, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async => _toAuthTokens(await _api.signInWithGoogle(
+            GoogleSignInRequest(
+              idToken: idToken,
+              deviceId: deviceId,
+              deviceLabel: deviceLabel,
+            ),
+            cancelToken: cancelToken,
+          )));
 
   /// POST /auth/apple
   Future<AuthTokens> signInWithApple(
     String idToken,
     String authCode,
     String deviceId,
-    String deviceLabel,
-  ) =>
-      _guard(() async =>
-          _toAuthTokens(await _api.signInWithApple(AppleSignInRequest(
-            idToken: idToken,
-            authorizationCode: authCode,
-            deviceId: deviceId,
-            deviceLabel: deviceLabel,
-          ))));
+    String deviceLabel, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async => _toAuthTokens(await _api.signInWithApple(
+            AppleSignInRequest(
+              idToken: idToken,
+              authorizationCode: authCode,
+              deviceId: deviceId,
+              deviceLabel: deviceLabel,
+            ),
+            cancelToken: cancelToken,
+          )));
 
   /// POST /auth/sign-out
-  Future<void> signOut() => _guard(() => _api.signOut());
+  Future<void> signOut({CancelToken? cancelToken}) =>
+      _guard(() => _api.signOut(cancelToken: cancelToken));
 
   /// POST /auth/refresh
-  Future<RefreshedTokens> refresh(String refreshToken, String deviceId) =>
+  Future<RefreshedTokens> refresh(String refreshToken, String deviceId,
+          {CancelToken? cancelToken}) =>
       _guard(() async {
-        final r = await _api.refresh(RefreshTokenRequest(
-          refreshToken: refreshToken,
-          deviceId: deviceId,
-        ));
+        final r = await _api.refresh(
+          RefreshTokenRequest(refreshToken: refreshToken, deviceId: deviceId),
+          cancelToken: cancelToken,
+        );
         return (accessToken: r.accessToken, refreshToken: r.refreshToken);
       });
 
@@ -91,15 +106,19 @@ class BalsmAuthAdapter {
     String recoveryToken,
     String newEmail,
     String deviceId,
-    String deviceLabel,
-  ) =>
+    String deviceLabel, {
+    CancelToken? cancelToken,
+  }) =>
       _guard(() async {
-        final r = await _api.recoveryClaim(RecoveryClaimRequest(
-          recoveryToken: recoveryToken,
-          newEmail: newEmail,
-          deviceId: deviceId,
-          deviceLabel: deviceLabel,
-        ));
+        final r = await _api.recoveryClaim(
+          RecoveryClaimRequest(
+            recoveryToken: recoveryToken,
+            newEmail: newEmail,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+          ),
+          cancelToken: cancelToken,
+        );
         return (accessToken: r.accessToken, refreshToken: r.refreshToken);
       });
 

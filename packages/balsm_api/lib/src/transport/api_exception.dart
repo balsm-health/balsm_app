@@ -33,7 +33,15 @@ class ApiException implements Exception {
 
   bool get isUnauthorized => statusCode == 401 || statusCode == 403;
 
+  /// True when the request was aborted via its [CancelToken].
+  bool get isCancelled => code == 'cancelled';
+
   factory ApiException.fromDioException(DioException e) {
+    // A caller-initiated cancellation is not a server error — surface it
+    // distinctly so callers can ignore it rather than show a failure.
+    if (e.type == DioExceptionType.cancel) {
+      return const ApiException(code: 'cancelled');
+    }
     final status = e.response?.statusCode;
     final data = e.response?.data;
     String? code;

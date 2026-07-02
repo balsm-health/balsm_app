@@ -11,9 +11,12 @@ class DioDeletionApi implements DeletionApi {
   final Dio _dio;
 
   @override
-  Future<DeletionIntakeResponse> requestIntake() async {
+  Future<DeletionIntakeResponse> requestIntake({CancelToken? cancelToken}) async {
     try {
-      final res = await _dio.post<Map<String, dynamic>>('/deletion/intake');
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/deletion/intake',
+        cancelToken: cancelToken,
+      );
       return DeletionIntakeResponse.fromJson(unwrapEnvelope(res));
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -21,9 +24,12 @@ class DioDeletionApi implements DeletionApi {
   }
 
   @override
-  Future<DeletionCancelResponse> cancel() async {
+  Future<DeletionCancelResponse> cancel({CancelToken? cancelToken}) async {
     try {
-      final res = await _dio.post<Map<String, dynamic>>('/deletion/cancel');
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/deletion/cancel',
+        cancelToken: cancelToken,
+      );
       return DeletionCancelResponse.fromJson(unwrapEnvelope(res));
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);

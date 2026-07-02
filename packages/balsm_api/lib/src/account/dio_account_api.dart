@@ -12,9 +12,12 @@ class DioAccountApi implements AccountApi {
   final Dio _dio;
 
   @override
-  Future<AccountSelfResponse?> getSelf() async {
+  Future<AccountSelfResponse?> getSelf({CancelToken? cancelToken}) async {
     try {
-      final res = await _dio.get<Map<String, dynamic>>('/account/self');
+      final res = await _dio.get<Map<String, dynamic>>(
+        '/account/self',
+        cancelToken: cancelToken,
+      );
       final data = unwrapEnvelope(res);
       if (data.isEmpty) return null;
       return AccountSelfResponse.fromJson(data);
@@ -25,11 +28,13 @@ class DioAccountApi implements AccountApi {
   }
 
   @override
-  Future<ClaimHandleResponse> claimHandle(ClaimHandleRequest request) async {
+  Future<ClaimHandleResponse> claimHandle(ClaimHandleRequest request,
+      {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/account/handle/claim',
         data: request.toJson(),
+        cancelToken: cancelToken,
       );
       return ClaimHandleResponse.fromJson(unwrapEnvelope(res));
     } on DioException catch (e) {
@@ -38,11 +43,13 @@ class DioAccountApi implements AccountApi {
   }
 
   @override
-  Future<void> changeLanguage(ChangeLanguageRequest request) async {
+  Future<void> changeLanguage(ChangeLanguageRequest request,
+      {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/account/language',
         data: request.toJson(),
+        cancelToken: cancelToken,
       );
       unwrapEnvelope(res);
     } on DioException catch (e) {
@@ -51,11 +58,13 @@ class DioAccountApi implements AccountApi {
   }
 
   @override
-  Future<void> changeCountry(ChangeCountryRequest request) async {
+  Future<void> changeCountry(ChangeCountryRequest request,
+      {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/account/country',
         data: request.toJson(),
+        cancelToken: cancelToken,
       );
       unwrapEnvelope(res);
     } on DioException catch (e) {
@@ -64,11 +73,13 @@ class DioAccountApi implements AccountApi {
   }
 
   @override
-  Future<HandleAvailabilityResponse> checkHandleAvailability(String handle) async {
+  Future<HandleAvailabilityResponse> checkHandleAvailability(String handle,
+      {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.get<Map<String, dynamic>>(
         '/account/handle/available',
         queryParameters: {'handle': handle},
+        cancelToken: cancelToken,
       );
       return HandleAvailabilityResponse.fromJson(unwrapEnvelope(res));
     } on DioException catch (e) {

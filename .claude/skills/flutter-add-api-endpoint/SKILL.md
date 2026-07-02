@@ -44,6 +44,11 @@ folder, same four-file shape.
 3. **Implementation** in `dio_<area>_api.dart`: wrap the dio call in
    `try { … } on DioException catch (e) { throw ApiException.fromDioException(e); }`.
    Implementations throw `ApiException` — never `DioException`.
+   - **Cancellation:** every method takes an optional `{CancelToken? cancelToken}`
+     (last param) and forwards it to the dio call. `CancelToken` is re-exported
+     from `balsm_api`, so callers never import dio. A cancelled request throws
+     `ApiException` with `isCancelled == true` (mapped from
+     `DioExceptionType.cancel`); callers should ignore it, not show a failure.
 4. **Export** all new files from `lib/balsm_api.dart`.
 5. **Test** in `packages/balsm_api/test/<area>/` using
    `test/helpers/fake_http_adapter.dart` — assert path, method, exact wire
@@ -76,8 +81,8 @@ folder, same four-file shape.
 ## Checklist
 
 - [ ] DTOs with exact wire keys (casing per area).
-- [ ] Interface method with route doc comment.
-- [ ] Dio impl throws only `ApiException`.
+- [ ] Interface method with route doc comment + optional `{CancelToken? cancelToken}`.
+- [ ] Dio impl throws only `ApiException` and forwards `cancelToken`.
 - [ ] Exports from `balsm_api.dart`.
 - [ ] Area test green: `(cd packages/balsm_api && dart test)`.
 - [ ] Core provider exists; module uses the abstraction.

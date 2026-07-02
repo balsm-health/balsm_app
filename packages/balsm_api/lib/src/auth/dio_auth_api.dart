@@ -10,9 +10,17 @@ class DioAuthApi implements AuthApi {
 
   final Dio _dio;
 
-  Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _post(
+    String path,
+    Map<String, dynamic> body, {
+    CancelToken? cancelToken,
+  }) async {
     try {
-      final response = await _dio.post<Map<String, dynamic>>(path, data: body);
+      final response = await _dio.post<Map<String, dynamic>>(
+        path,
+        data: body,
+        cancelToken: cancelToken,
+      );
       return response.data ?? {};
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -20,30 +28,40 @@ class DioAuthApi implements AuthApi {
   }
 
   @override
-  Future<void> requestOtp(RequestOtpRequest request) =>
-      _post('/auth/otp/request', request.toJson());
+  Future<void> requestOtp(RequestOtpRequest request, {CancelToken? cancelToken}) =>
+      _post('/auth/otp/request', request.toJson(), cancelToken: cancelToken);
 
   @override
-  Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request) async =>
-      AuthTokensResponse.fromJson(await _post('/auth/otp/verify', request.toJson()));
+  Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request,
+          {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(
+          await _post('/auth/otp/verify', request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request) async =>
-      AuthTokensResponse.fromJson(await _post('/auth/google', request.toJson()));
+  Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request,
+          {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(
+          await _post('/auth/google', request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<AuthTokensResponse> signInWithApple(AppleSignInRequest request) async =>
-      AuthTokensResponse.fromJson(await _post('/auth/apple', request.toJson()));
+  Future<AuthTokensResponse> signInWithApple(AppleSignInRequest request,
+          {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(
+          await _post('/auth/apple', request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<void> signOut() => _post('/auth/sign-out', {});
+  Future<void> signOut({CancelToken? cancelToken}) =>
+      _post('/auth/sign-out', {}, cancelToken: cancelToken);
 
   @override
-  Future<RefreshedTokensResponse> refresh(RefreshTokenRequest request) async =>
-      RefreshedTokensResponse.fromJson(await _post('/auth/refresh', request.toJson()));
-
-  @override
-  Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request) async =>
+  Future<RefreshedTokensResponse> refresh(RefreshTokenRequest request,
+          {CancelToken? cancelToken}) async =>
       RefreshedTokensResponse.fromJson(
-          await _post('/auth/recovery/claim', request.toJson()));
+          await _post('/auth/refresh', request.toJson(), cancelToken: cancelToken));
+
+  @override
+  Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request,
+          {CancelToken? cancelToken}) async =>
+      RefreshedTokensResponse.fromJson(await _post('/auth/recovery/claim',
+          request.toJson(), cancelToken: cancelToken));
 }

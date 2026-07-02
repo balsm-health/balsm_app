@@ -11,11 +11,13 @@ class DioDisclosureApi implements DisclosureApi {
   final Dio _dio;
 
   @override
-  Future<void> accept(AcceptDisclosureRequest request) async {
+  Future<void> accept(AcceptDisclosureRequest request,
+      {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/disclosure/accept',
         data: request.toJson(),
+        cancelToken: cancelToken,
       );
       unwrapEnvelope(res);
     } on DioException catch (e) {

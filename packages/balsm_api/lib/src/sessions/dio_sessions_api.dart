@@ -11,9 +11,12 @@ class DioSessionsApi implements SessionsApi {
   final Dio _dio;
 
   @override
-  Future<List<SessionResponse>> listSessions() async {
+  Future<List<SessionResponse>> listSessions({CancelToken? cancelToken}) async {
     try {
-      final res = await _dio.get<Map<String, dynamic>>('/sessions');
+      final res = await _dio.get<Map<String, dynamic>>(
+        '/sessions',
+        cancelToken: cancelToken,
+      );
       return unwrapEnvelopeList(res)
           .map((e) => SessionResponse.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);
@@ -23,9 +26,12 @@ class DioSessionsApi implements SessionsApi {
   }
 
   @override
-  Future<void> revokeSession(String sessionId) async {
+  Future<void> revokeSession(String sessionId, {CancelToken? cancelToken}) async {
     try {
-      final res = await _dio.delete<Map<String, dynamic>>('/sessions/$sessionId');
+      final res = await _dio.delete<Map<String, dynamic>>(
+        '/sessions/$sessionId',
+        cancelToken: cancelToken,
+      );
       unwrapEnvelope(res);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -33,9 +39,12 @@ class DioSessionsApi implements SessionsApi {
   }
 
   @override
-  Future<RevokeAllSessionsResponse> revokeAllSessions() async {
+  Future<RevokeAllSessionsResponse> revokeAllSessions({CancelToken? cancelToken}) async {
     try {
-      final res = await _dio.post<Map<String, dynamic>>('/sessions/revoke-all');
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/sessions/revoke-all',
+        cancelToken: cancelToken,
+      );
       return RevokeAllSessionsResponse.fromJson(unwrapEnvelope(res));
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);

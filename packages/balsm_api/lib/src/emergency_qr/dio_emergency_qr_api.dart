@@ -12,11 +12,12 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   final Dio _dio;
 
   @override
-  Future<MintQrResponse> mint(MintQrRequest request) async {
+  Future<MintQrResponse> mint(MintQrRequest request, {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/emergency-qr/mint',
         data: request.toJson(),
+        cancelToken: cancelToken,
       );
       return MintQrResponse.fromJson(unwrapEnvelope(res));
     } on DioException catch (e) {
@@ -25,10 +26,12 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   }
 
   @override
-  Future<ResolveQrResponse> resolve(String tokenId) async {
+  Future<ResolveQrResponse> resolve(String tokenId, {CancelToken? cancelToken}) async {
     try {
-      final res =
-          await _dio.get<Map<String, dynamic>>('/emergency-qr/resolve/$tokenId');
+      final res = await _dio.get<Map<String, dynamic>>(
+        '/emergency-qr/resolve/$tokenId',
+        cancelToken: cancelToken,
+      );
       return ResolveQrResponse.fromJson(unwrapEnvelope(res));
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
@@ -36,11 +39,12 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   }
 
   @override
-  Future<void> revoke(RevokeQrRequest request) async {
+  Future<void> revoke(RevokeQrRequest request, {CancelToken? cancelToken}) async {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/emergency-qr/revoke',
         data: request.toJson(),
+        cancelToken: cancelToken,
       );
       unwrapEnvelope(res);
     } on DioException catch (e) {
