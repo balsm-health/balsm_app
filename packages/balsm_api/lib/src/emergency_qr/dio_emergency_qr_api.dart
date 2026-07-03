@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../api_routes.dart';
 import '../transport/envelope.dart';
 import '../transport/network_manager.dart';
 import 'emergency_qr_api.dart';
@@ -14,7 +15,7 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   @override
   Future<MintQrResponse> mint(MintQrRequest request, {CancelToken? cancelToken}) async {
     final res = await _net.post(
-      '/emergency-qr/mint',
+      ApiRoutes.emergencyQrMint,
       data: request.toJson(),
       cancelToken: cancelToken,
     );
@@ -24,7 +25,7 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   @override
   Future<ResolveQrResponse> resolve(String tokenId, {CancelToken? cancelToken}) async {
     final res = await _net.get(
-      '/emergency-qr/resolve/$tokenId',
+      ApiRoutes.emergencyQrResolve(tokenId),
       cancelToken: cancelToken,
     );
     return ResolveQrResponse.fromJson(unwrapEnvelope(res));
@@ -33,7 +34,7 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   @override
   Future<void> revoke(RevokeQrRequest request, {CancelToken? cancelToken}) async {
     final res = await _net.post(
-      '/emergency-qr/revoke',
+      ApiRoutes.emergencyQrRevoke,
       data: request.toJson(),
       cancelToken: cancelToken,
     );

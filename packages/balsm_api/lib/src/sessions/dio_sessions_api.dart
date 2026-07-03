@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../api_routes.dart';
 import '../transport/envelope.dart';
 import '../transport/network_manager.dart';
 import 'responses.dart';
@@ -12,7 +13,7 @@ class DioSessionsApi implements SessionsApi {
 
   @override
   Future<List<SessionResponse>> listSessions({CancelToken? cancelToken}) async {
-    final res = await _net.get('/sessions', cancelToken: cancelToken);
+    final res = await _net.get(ApiRoutes.sessions, cancelToken: cancelToken);
     return unwrapEnvelopeList(res)
         .map((e) => SessionResponse.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
@@ -20,13 +21,13 @@ class DioSessionsApi implements SessionsApi {
 
   @override
   Future<void> revokeSession(String sessionId, {CancelToken? cancelToken}) async {
-    final res = await _net.delete('/sessions/$sessionId', cancelToken: cancelToken);
+    final res = await _net.delete(ApiRoutes.session(sessionId), cancelToken: cancelToken);
     unwrapEnvelope(res);
   }
 
   @override
   Future<RevokeAllSessionsResponse> revokeAllSessions({CancelToken? cancelToken}) async {
-    final res = await _net.post('/sessions/revoke-all', cancelToken: cancelToken);
+    final res = await _net.post(ApiRoutes.sessionsRevokeAll, cancelToken: cancelToken);
     return RevokeAllSessionsResponse.fromJson(unwrapEnvelope(res));
   }
 }

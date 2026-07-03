@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../api_routes.dart';
 import '../transport/network_manager.dart';
 import 'geofence_api.dart';
 import 'responses.dart';
@@ -12,7 +13,7 @@ class DioGeofenceApi implements GeofenceApi {
   @override
   Future<DeniedCountriesResponse> getDeniedCountries({CancelToken? cancelToken}) async {
     final res =
-        await _net.get('/geofence/denied-countries', cancelToken: cancelToken);
+        await _net.get(ApiRoutes.geofenceDeniedCountries, cancelToken: cancelToken);
     final body = res.data ?? const <String, dynamic>{};
     // Legacy tolerance: unwrap {data: {...}} but fall back to the flat body.
     final data = body['data'];

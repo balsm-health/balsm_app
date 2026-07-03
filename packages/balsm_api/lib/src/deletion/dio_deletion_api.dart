@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../api_routes.dart';
 import '../transport/envelope.dart';
 import '../transport/network_manager.dart';
 import 'deletion_api.dart';
@@ -12,13 +13,13 @@ class DioDeletionApi implements DeletionApi {
 
   @override
   Future<DeletionIntakeResponse> requestIntake({CancelToken? cancelToken}) async {
-    final res = await _net.post('/deletion/intake', cancelToken: cancelToken);
+    final res = await _net.post(ApiRoutes.deletionIntake, cancelToken: cancelToken);
     return DeletionIntakeResponse.fromJson(unwrapEnvelope(res));
   }
 
   @override
   Future<DeletionCancelResponse> cancel({CancelToken? cancelToken}) async {
-    final res = await _net.post('/deletion/cancel', cancelToken: cancelToken);
+    final res = await _net.post(ApiRoutes.deletionCancel, cancelToken: cancelToken);
     return DeletionCancelResponse.fromJson(unwrapEnvelope(res));
   }
 }

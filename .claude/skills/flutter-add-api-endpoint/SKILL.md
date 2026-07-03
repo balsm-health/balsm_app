@@ -43,6 +43,9 @@ folder, same four-file shape.
 
 ## When you add or change an endpoint
 
+0. **Route constant** in `ApiRoutes` (`lib/src/api_routes.dart`) — never a
+   `'/…'` literal at the call site. See the `flutter-use-api-route-constants`
+   skill.
 1. **DTOs** in the area's `requests.dart` / `responses.dart`.
 2. **Signature** on the abstract interface (`<area>_api.dart`) with a doc
    comment naming the route (`/// POST /sessions/revoke-all`).

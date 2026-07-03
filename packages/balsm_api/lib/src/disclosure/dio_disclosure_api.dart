@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../api_routes.dart';
 import '../transport/envelope.dart';
 import '../transport/network_manager.dart';
 import 'disclosure_api.dart';
@@ -14,7 +15,7 @@ class DioDisclosureApi implements DisclosureApi {
   Future<void> accept(AcceptDisclosureRequest request,
       {CancelToken? cancelToken}) async {
     final res = await _net.post(
-      '/disclosure/accept',
+      ApiRoutes.disclosureAccept,
       data: request.toJson(),
       cancelToken: cancelToken,
     );

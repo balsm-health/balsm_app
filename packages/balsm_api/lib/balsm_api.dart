@@ -9,6 +9,7 @@ library balsm_api;
 /// `token.cancel()` to abort in-flight requests.
 export 'package:dio/dio.dart' show CancelToken;
 
+export 'src/api_routes.dart';
 export 'src/transport/api_exception.dart';
 export 'src/transport/balsm_api_client.dart';
 export 'src/transport/envelope.dart';
