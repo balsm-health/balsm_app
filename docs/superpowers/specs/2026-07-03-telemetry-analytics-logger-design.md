@@ -1,7 +1,7 @@
 # Telemetry / Analytics Logger — Design
 
 **Date:** 2026-07-03
-**Status:** Approved (design review with Hossam)
+**Status:** Implemented — core package (2026-07-03); app wiring deferred (see below)
 **Scope:** `packages/core` (+ app wiring)
 
 ## Goal
@@ -89,9 +89,17 @@ PostHog/Amplitude backend = one more `AnalyticsLogger` impl, no call-site change
 | `providers.dart` | `analyticsLoggerProvider` (default Noop; app overrides) |
 
 Modified: `crash/sentry_init.dart` (real scrub via canonical allowlist),
-`core.dart` (exports). App: override `analyticsLoggerProvider` with
-`SentryAnalyticsLogger` after `initSentry()`; attach the route observer + start
-the forwarder at boot.
+`core.dart` (exports).
+
+**App wiring is deferred.** The app shell (`PatientApp`) still uses a custom
+`AppScope` — not a riverpod `ProviderScope`, not `MaterialApp.router` — so the
+core providers (including `balsmApiControllerProvider`) are not overridden yet.
+Telemetry integration lands with that same DI adoption: override
+`analyticsLoggerProvider` with `SentryAnalyticsLogger()` after `initSentry()`,
+add `AnalyticsRouteObserver` to the router's `observers`, and
+`EventBusAnalyticsForwarder(...).start()` at boot. Until then the default
+`NoopAnalyticsLogger` is active (no telemetry emitted) and the mechanism is
+fully unit-tested and ready.
 
 ## Testing
 
