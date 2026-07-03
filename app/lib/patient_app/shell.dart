@@ -21,10 +21,13 @@ import 'screens/report_flow.dart';
 /// Root of the patient app prototype. Owns [PatientAppState] and renders the
 /// auth flow or the main tabbed app depending on `route`.
 class PatientApp extends StatefulWidget {
-  const PatientApp({super.key, required this.state});
+  const PatientApp({super.key, required this.state, required this.navObserver});
 
   /// Pre-loaded state (persisted session + prefs). See [PatientAppState.load].
   final PatientAppState state;
+
+  /// Logs a `screen_view` analytics action on each navigation.
+  final NavigatorObserver navObserver;
 
   @override
   State<PatientApp> createState() => _PatientAppState();
@@ -53,6 +56,7 @@ class _PatientAppState extends State<PatientApp> {
         animation: state,
         builder: (context, _) => MaterialApp(
           debugShowCheckedModeBanner: false,
+          navigatorObservers: [widget.navObserver],
           theme: ThemeData(scaffoldBackgroundColor: Colors.white, useMaterial3: true),
           // Clamp Dynamic Type so large system text never breaks layouts.
           builder: (context, child) {
