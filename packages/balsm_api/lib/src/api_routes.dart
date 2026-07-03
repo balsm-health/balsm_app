@@ -1,9 +1,12 @@
+// ignore_for_file: constant_identifier_names
+
 /// Single source of truth for every Balsm API path.
 ///
 /// Keep this 1:1 with the .NET controllers so the wire contract stays
-/// diffable in one place. Fixed paths are `static const`; paths carrying a
-/// path parameter are `static String` builders. Never write a `'/…'` route
-/// literal at a call site — reference a member here.
+/// diffable in one place. Fixed paths are `static const` (snake_case); paths
+/// carrying a path parameter are `static String` builders (lowerCamelCase —
+/// they are methods, not constants). Never write a `'/…'` route literal at a
+/// call site — reference a member here.
 ///
 /// Grouped per backend module; each group builds its leaves from one base
 /// constant so the prefix lives in exactly one spot.
@@ -12,43 +15,43 @@ class ApiRoutes {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   static const _auth = '/auth';
-  static const authOtpRequest = '$_auth/otp/request';
-  static const authOtpVerify = '$_auth/otp/verify';
-  static const authGoogle = '$_auth/google';
-  static const authApple = '$_auth/apple';
-  static const authSignOut = '$_auth/sign-out';
-  static const authRefresh = '$_auth/refresh';
-  static const authRecoveryClaim = '$_auth/recovery/claim';
+  static const auth_otp_request = '$_auth/otp/request';
+  static const auth_otp_verify = '$_auth/otp/verify';
+  static const auth_google = '$_auth/google';
+  static const auth_apple = '$_auth/apple';
+  static const auth_sign_out = '$_auth/sign-out';
+  static const auth_refresh = '$_auth/refresh';
+  static const auth_recovery_claim = '$_auth/recovery/claim';
 
   // ── Account ───────────────────────────────────────────────────────────────
   static const _account = '/account';
-  static const accountSelf = '$_account/self';
-  static const accountHandleClaim = '$_account/handle/claim';
-  static const accountHandleAvailable = '$_account/handle/available';
-  static const accountLanguage = '$_account/language';
-  static const accountCountry = '$_account/country';
+  static const account_self = '$_account/self';
+  static const account_handle_claim = '$_account/handle/claim';
+  static const account_handle_available = '$_account/handle/available';
+  static const account_language = '$_account/language';
+  static const account_country = '$_account/country';
 
   // ── Emergency QR ──────────────────────────────────────────────────────────
-  static const _emergencyQr = '/emergency-qr';
-  static const emergencyQrMint = '$_emergencyQr/mint';
-  static const emergencyQrRevoke = '$_emergencyQr/revoke';
+  static const _emergency_qr = '/emergency-qr';
+  static const emergency_qr_mint = '$_emergency_qr/mint';
+  static const emergency_qr_revoke = '$_emergency_qr/revoke';
   static String emergencyQrResolve(String tokenId) =>
-      '$_emergencyQr/resolve/$tokenId';
+      '$_emergency_qr/resolve/$tokenId';
 
   // ── Sessions ──────────────────────────────────────────────────────────────
   static const _sessions = '/sessions';
   static const sessions = _sessions;
-  static const sessionsRevokeAll = '$_sessions/revoke-all';
+  static const sessions_revoke_all = '$_sessions/revoke-all';
   static String session(String sessionId) => '$_sessions/$sessionId';
 
   // ── Deletion ──────────────────────────────────────────────────────────────
   static const _deletion = '/deletion';
-  static const deletionIntake = '$_deletion/intake';
-  static const deletionCancel = '$_deletion/cancel';
+  static const deletion_intake = '$_deletion/intake';
+  static const deletion_cancel = '$_deletion/cancel';
 
   // ── Disclosure ────────────────────────────────────────────────────────────
-  static const disclosureAccept = '/disclosure/accept';
+  static const disclosure_accept = '/disclosure/accept';
 
   // ── Geofence ──────────────────────────────────────────────────────────────
-  static const geofenceDeniedCountries = '/geofence/denied-countries';
+  static const geofence_denied_countries = '/geofence/denied-countries';
 }

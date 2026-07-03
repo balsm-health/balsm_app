@@ -13,13 +13,13 @@ class DioDeletionApi implements DeletionApi {
 
   @override
   Future<DeletionIntakeResponse> requestIntake({CancelToken? cancelToken}) async {
-    final res = await _net.post(ApiRoutes.deletionIntake, cancelToken: cancelToken);
+    final res = await _net.post(ApiRoutes.deletion_intake, cancelToken: cancelToken);
     return DeletionIntakeResponse.fromJson(unwrapEnvelope(res));
   }
 
   @override
   Future<DeletionCancelResponse> cancel({CancelToken? cancelToken}) async {
-    final res = await _net.post(ApiRoutes.deletionCancel, cancelToken: cancelToken);
+    final res = await _net.post(ApiRoutes.deletion_cancel, cancelToken: cancelToken);
     return DeletionCancelResponse.fromJson(unwrapEnvelope(res));
   }
 }

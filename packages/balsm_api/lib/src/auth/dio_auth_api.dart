@@ -23,39 +23,39 @@ class DioAuthApi implements AuthApi {
 
   @override
   Future<void> requestOtp(RequestOtpRequest request, {CancelToken? cancelToken}) =>
-      _post(ApiRoutes.authOtpRequest, request.toJson(), cancelToken: cancelToken);
+      _post(ApiRoutes.auth_otp_request, request.toJson(), cancelToken: cancelToken);
 
   @override
   Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request,
           {CancelToken? cancelToken}) async =>
       AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.authOtpVerify, request.toJson(), cancelToken: cancelToken));
+          await _post(ApiRoutes.auth_otp_verify, request.toJson(), cancelToken: cancelToken));
 
   @override
   Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request,
           {CancelToken? cancelToken}) async =>
       AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.authGoogle, request.toJson(), cancelToken: cancelToken));
+          await _post(ApiRoutes.auth_google, request.toJson(), cancelToken: cancelToken));
 
   @override
   Future<AuthTokensResponse> signInWithApple(AppleSignInRequest request,
           {CancelToken? cancelToken}) async =>
       AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.authApple, request.toJson(), cancelToken: cancelToken));
+          await _post(ApiRoutes.auth_apple, request.toJson(), cancelToken: cancelToken));
 
   @override
   Future<void> signOut({CancelToken? cancelToken}) =>
-      _post(ApiRoutes.authSignOut, {}, cancelToken: cancelToken);
+      _post(ApiRoutes.auth_sign_out, {}, cancelToken: cancelToken);
 
   @override
   Future<RefreshedTokensResponse> refresh(RefreshTokenRequest request,
           {CancelToken? cancelToken}) async =>
       RefreshedTokensResponse.fromJson(
-          await _post(ApiRoutes.authRefresh, request.toJson(), cancelToken: cancelToken));
+          await _post(ApiRoutes.auth_refresh, request.toJson(), cancelToken: cancelToken));
 
   @override
   Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request,
           {CancelToken? cancelToken}) async =>
-      RefreshedTokensResponse.fromJson(await _post(ApiRoutes.authRecoveryClaim,
+      RefreshedTokensResponse.fromJson(await _post(ApiRoutes.auth_recovery_claim,
           request.toJson(), cancelToken: cancelToken));
 }

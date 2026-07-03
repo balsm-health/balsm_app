@@ -15,7 +15,7 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   @override
   Future<MintQrResponse> mint(MintQrRequest request, {CancelToken? cancelToken}) async {
     final res = await _net.post(
-      ApiRoutes.emergencyQrMint,
+      ApiRoutes.emergency_qr_mint,
       data: request.toJson(),
       cancelToken: cancelToken,
     );
@@ -34,7 +34,7 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   @override
   Future<void> revoke(RevokeQrRequest request, {CancelToken? cancelToken}) async {
     final res = await _net.post(
-      ApiRoutes.emergencyQrRevoke,
+      ApiRoutes.emergency_qr_revoke,
       data: request.toJson(),
       cancelToken: cancelToken,
     );

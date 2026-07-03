@@ -27,7 +27,7 @@ class DioSessionsApi implements SessionsApi {
 
   @override
   Future<RevokeAllSessionsResponse> revokeAllSessions({CancelToken? cancelToken}) async {
-    final res = await _net.post(ApiRoutes.sessionsRevokeAll, cancelToken: cancelToken);
+    final res = await _net.post(ApiRoutes.sessions_revoke_all, cancelToken: cancelToken);
     return RevokeAllSessionsResponse.fromJson(unwrapEnvelope(res));
   }
 }

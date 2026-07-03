@@ -15,7 +15,7 @@ class DioDisclosureApi implements DisclosureApi {
   Future<void> accept(AcceptDisclosureRequest request,
       {CancelToken? cancelToken}) async {
     final res = await _net.post(
-      ApiRoutes.disclosureAccept,
+      ApiRoutes.disclosure_accept,
       data: request.toJson(),
       cancelToken: cancelToken,
     );
