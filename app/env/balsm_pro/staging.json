@@ -1,5 +1,4 @@
 {
   "APP": "balsm_pro",
-  "FLAVOR": "staging",
-  "SENTRY_DSN": ""
+  "FLAVOR": "staging"
 }

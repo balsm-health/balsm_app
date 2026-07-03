@@ -1,5 +1,4 @@
 {
   "APP": "balsm",
-  "FLAVOR": "dev",
-  "SENTRY_DSN": ""
+  "FLAVOR": "dev"
 }
