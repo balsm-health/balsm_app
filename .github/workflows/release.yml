@@ -1,0 +1,334 @@
+name: Release
+
+# Tag-triggered channel releases:
+#   v1.2.0-alpha → alpha (staging backend, Firebase alpha-testers)
+#   v1.2.0-beta  → beta  (staging backend, Firebase beta-testers)
+#   v1.2.0       → production (prod backend, Firebase production)
+# Signing + Firebase steps are guarded on secrets — absent secrets skip the
+# step and still upload an unsigned artifact. See docs/ci-secrets.md.
+on:
+  push:
+    tags: ['v*']
+
+env:
+  FLUTTER_VERSION: '3.41.9'
+  ENTRY: lib/main_patient.dart
+
+jobs:
+  setup:
+    name: Derive channel
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.d.outputs.channel }}
+      env_file: ${{ steps.d.outputs.env_file }}
+      firebase_group: ${{ steps.d.outputs.firebase_group }}
+      build_name: ${{ steps.d.outputs.build_name }}
+      prerelease: ${{ steps.d.outputs.prerelease }}
+    steps:
+      - id: d
+        run: |
+          set -e
+          TAG="${GITHUB_REF_NAME}"        # e.g. v1.2.0-beta
+          VER="${TAG#v}"                  # 1.2.0-beta
+          case "$TAG" in
+            *-alpha) CH=alpha;      ENVF=staging; GRP=alpha-testers; PRE=true ;;
+            *-beta)  CH=beta;       ENVF=staging; GRP=beta-testers;  PRE=true ;;
+            *)       CH=production; ENVF=prod;     GRP=production;    PRE=false ;;
+          esac
+          BUILD_NAME="${VER%-*}"          # strip -alpha/-beta → 1.2.0
+          echo "channel=$CH"          >> "$GITHUB_OUTPUT"
+          echo "env_file=$ENVF"       >> "$GITHUB_OUTPUT"
+          echo "firebase_group=$GRP"  >> "$GITHUB_OUTPUT"
+          echo "build_name=$BUILD_NAME" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRE"      >> "$GITHUB_OUTPUT"
+          echo "Channel=$CH env=$ENVF build_name=$BUILD_NAME build_number=${{ github.run_number }}"
+
+  android:
+    name: Android APK (${{ needs.setup.outputs.channel }})
+    needs: setup
+    runs-on: ubuntu-latest
+    env:
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+      HAS_FIREBASE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && secrets.FIREBASE_APP_ID_ANDROID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Provision release keystore
+        if: env.HAS_ANDROID_SIGNING == 'true'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > app/android/keystore.jks
+          cat > app/android/key.properties <<EOF
+          storeFile=keystore.jks
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+      - name: Build APK
+        working-directory: app
+        run: |
+          flutter build apk --release --flavor balsm -t "$ENTRY" \
+            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
+            --dart-define-from-file=env/envs.json \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }}
+          mkdir -p ../dist
+          cp build/app/outputs/flutter-apk/*.apk "../dist/balsm-${{ needs.setup.outputs.channel }}.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dist/balsm-${{ needs.setup.outputs.channel }}.apk
+          if-no-files-found: error
+      - name: Firebase App Distribution
+        if: env.HAS_FIREBASE == 'true'
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: ${{ needs.setup.outputs.firebase_group }}
+          file: dist/balsm-${{ needs.setup.outputs.channel }}.apk
+          releaseNotes: "Balsm ${{ github.ref_name }} (build ${{ github.run_number }})"
+
+  ios:
+    name: iOS IPA (${{ needs.setup.outputs.channel }})
+    needs: setup
+    runs-on: macos-latest
+    env:
+      HAS_IOS_SIGNING: ${{ secrets.APPLE_CERT_P12 != '' && secrets.APPLE_PROVISIONING_PROFILE != '' }}
+      HAS_FIREBASE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' && secrets.FIREBASE_APP_ID_IOS != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Import signing certificate
+        if: env.HAS_IOS_SIGNING == 'true'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERT_P12 }}
+          p12-password: ${{ secrets.APPLE_CERT_PASSWORD }}
+      - name: Install provisioning profile
+        if: env.HAS_IOS_SIGNING == 'true'
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.APPLE_PROVISIONING_PROFILE }}" | base64 --decode \
+            > ~/Library/MobileDevice/Provisioning\ Profiles/balsm.mobileprovision
+      - name: Write ExportOptions.plist
+        if: env.HAS_IOS_SIGNING == 'true'
+        working-directory: app/ios
+        run: |
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>${{ secrets.IOS_EXPORT_METHOD || 'ad-hoc' }}</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>compileBitcode</key><false/>
+          </dict></plist>
+          EOF
+      - name: Build IPA (signed)
+        if: env.HAS_IOS_SIGNING == 'true'
+        working-directory: app
+        run: |
+          flutter build ipa --release -t "$ENTRY" \
+            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
+            --dart-define-from-file=env/envs.json \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }} \
+            --export-options-plist=ios/ExportOptions.plist
+          mkdir -p ../dist
+          cp build/ios/ipa/*.ipa "../dist/balsm-${{ needs.setup.outputs.channel }}.ipa"
+      - name: Build iOS (unsigned fallback)
+        if: env.HAS_IOS_SIGNING != 'true'
+        working-directory: app
+        run: |
+          flutter build ios --release --no-codesign -t "$ENTRY" \
+            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
+            --dart-define-from-file=env/envs.json \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }}
+          mkdir -p ../dist
+          (cd build/ios/iphoneos && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-ios-unsigned.zip" Runner.app)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: dist/*
+          if-no-files-found: error
+      - name: Firebase App Distribution
+        if: env.HAS_FIREBASE == 'true' && env.HAS_IOS_SIGNING == 'true'
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID_IOS }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: ${{ needs.setup.outputs.firebase_group }}
+          file: dist/balsm-${{ needs.setup.outputs.channel }}.ipa
+          releaseNotes: "Balsm ${{ github.ref_name }} (build ${{ github.run_number }})"
+
+  macos:
+    name: macOS
+    needs: setup
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Scaffold macOS platform (generated on runner, not committed)
+        working-directory: app
+        run: flutter config --enable-macos-desktop && flutter create --platforms=macos .
+      - name: Build macOS
+        working-directory: app
+        run: |
+          flutter build macos --release -t "$ENTRY" \
+            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
+            --dart-define-from-file=env/envs.json \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }}
+          mkdir -p ../dist
+          (cd build/macos/Build/Products/Release && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-macos.zip" *.app)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: dist/*.zip
+          if-no-files-found: error
+
+  windows:
+    name: Windows
+    needs: setup
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        shell: bash
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Scaffold Windows platform (generated on runner, not committed)
+        working-directory: app
+        shell: bash
+        run: flutter config --enable-windows-desktop && flutter create --platforms=windows .
+      - name: Build Windows
+        working-directory: app
+        shell: bash
+        run: |
+          flutter build windows --release -t "$ENTRY" \
+            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
+            --dart-define-from-file=env/envs.json \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }}
+          mkdir -p ../dist
+          (cd build/windows/x64/runner/Release && 7z a "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-windows.zip" ./*)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: dist/*.zip
+          if-no-files-found: error
+
+  linux:
+    name: Linux
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux desktop deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev clang cmake pkg-config liblzma-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Scaffold Linux platform (generated on runner, not committed)
+        working-directory: app
+        run: flutter config --enable-linux-desktop && flutter create --platforms=linux .
+      - name: Build Linux
+        working-directory: app
+        run: |
+          flutter build linux --release -t "$ENTRY" \
+            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
+            --dart-define-from-file=env/envs.json \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }}
+          mkdir -p ../dist
+          tar -C build/linux/x64/release/bundle -czf "dist/balsm-${{ needs.setup.outputs.channel }}-linux.tar.gz" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: app/dist/*.tar.gz
+          if-no-files-found: error
+
+  web:
+    name: Web
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Build Web
+        working-directory: app
+        run: |
+          flutter build web --release -t "$ENTRY" \
+            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
+            --dart-define-from-file=env/envs.json \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }}
+          mkdir -p ../dist
+          (cd build/web && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-web.zip" .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: dist/*.zip
+          if-no-files-found: error
+
+  github-release:
+    name: GitHub Release
+    needs: [setup, android, ios, macos, windows, linux, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: List assets
+        run: ls -R assets
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Balsm ${{ github.ref_name }}
+          prerelease: ${{ needs.setup.outputs.prerelease }}
+          generate_release_notes: true
+          files: assets/**/*
+          fail_on_unmatched_files: true

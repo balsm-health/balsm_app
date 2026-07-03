@@ -12,9 +12,10 @@ env:
   # app last (aggregates the tree). balsm_boundary_lint excluded — its analyzer
   # ^6.11 pin needs the `_macros` SDK pkg absent in Dart 3.11.
   PKGS: >-
-    packages/core packages/geofence_block packages/auth packages/disclosure
-    packages/profile packages/account packages/home packages/emergency_card
-    packages/medications packages/deletion packages/sessions app
+    packages/core packages/balsm_api packages/geofence_block packages/auth
+    packages/disclosure packages/profile packages/account packages/home
+    packages/emergency_card packages/medications packages/deletion
+    packages/sessions app
 
 jobs:
   analyze:
@@ -147,9 +148,61 @@ jobs:
           path: app/build/ios/iphoneos/Runner.app
           if-no-files-found: error
 
-# SIGNING (TODO before store release):
-#   Android — add a signingConfig in app/android/app/build.gradle.kts fed by
-#     secrets (KEYSTORE_BASE64, KEY_ALIAS, KEY_PASSWORD, STORE_PASSWORD), decode
-#     the keystore in a CI step, and switch the release build off the debug key.
-#   iOS — supply provisioning profile + cert via secrets (e.g. apple-actions/
-#     import-codesign-certs), drop --no-codesign, set the team/profile.
+  coverage:
+    name: Coverage → Codecov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: pub get (all packages)
+        run: |
+          set -e
+          for p in $PKGS; do
+            echo "::group::pub get $p"; (cd "$p" && flutter pub get); echo "::endgroup::"
+          done
+      - name: Generate drift code (core)
+        working-directory: packages/core
+        run: dart run build_runner build
+      - name: Flutter package + app coverage
+        # Loop packages that actually have tests; rewrite each lcov SF: path to
+        # be repo-root-relative and concatenate into one report.
+        run: |
+          set -e
+          mkdir -p coverage
+          : > coverage/lcov.info
+          for p in packages/core app; do
+            if [ -d "$p/test" ]; then
+              echo "::group::coverage $p"
+              (cd "$p" && flutter test --coverage --exclude-tags e2e) || true
+              if [ -f "$p/coverage/lcov.info" ]; then
+                sed "s|^SF:|SF:$p/|" "$p/coverage/lcov.info" >> coverage/lcov.info
+              fi
+              echo "::endgroup::"
+            fi
+          done
+      - name: Dart package coverage (balsm_api)
+        working-directory: packages/balsm_api
+        run: |
+          set -e
+          dart pub global activate coverage
+          dart test --coverage=coverage
+          dart pub global run coverage:format_coverage \
+            --lcov --in=coverage --out=coverage/lcov.info \
+            --packages=.dart_tool/package_config.json --report-on=lib
+      - name: Merge balsm_api coverage
+        run: |
+          sed "s|^SF:|SF:packages/balsm_api/|" \
+            packages/balsm_api/coverage/lcov.info >> coverage/lcov.info
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+# SIGNING is scaffolded in release.yml (guarded on secrets) and
+# app/android/app/build.gradle.kts (key.properties). See docs/ci-secrets.md.

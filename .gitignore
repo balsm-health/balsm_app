@@ -5,3 +5,11 @@
 **/build/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
+
+# Signing material — provisioned by CI from secrets, never committed
+**/key.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+**/coverage/

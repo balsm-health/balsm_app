@@ -1,0 +1,26 @@
+# Codecov config. Non-blocking to start — reports coverage on PRs without
+# failing merges. Ratchet `target`/`threshold` up as coverage grows.
+coverage:
+  status:
+    project:
+      default:
+        target: auto        # compare against the base commit
+        threshold: 1%       # allow a 1% drop without failing
+        informational: true # report only — do not block merges (yet)
+    patch:
+      default:
+        target: 80%
+        informational: true # new/changed lines reported, not gated (yet)
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: true
+
+# Generated + non-product code excluded from coverage math.
+ignore:
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "**/*.mocks.dart"
+  - "**/test/**"
+  - "app/lib/main_*.dart"
+  - "packages/balsm_boundary_lint/**"
