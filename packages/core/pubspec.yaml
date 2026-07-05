@@ -41,6 +41,12 @@ dependencies:
   googleapis_auth: ^1.6.0
   cryptography: ^2.7.0
   lucide_icons: ^0.257.0
+  # Typed i18n + remote runtime translation. Fork adds the `remote-source`
+  # runtime (`i69n.load`/`tr`) — remote value → compiled default → key.
+  i69n:
+    git:
+      url: https://github.com/hossameldinmi/i69n
+      ref: feature/remote-source
 
 dev_dependencies:
   flutter_test:
@@ -52,5 +58,4 @@ dev_dependencies:
 
 flutter:
   assets:
-    - assets/i18n/
     - assets/brand/

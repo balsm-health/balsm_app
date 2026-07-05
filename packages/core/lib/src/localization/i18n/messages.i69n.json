@@ -1,0 +1,145 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "common": {
+    "continue_": "Continue",
+    "back": "Back",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "next": "Next",
+    "done": "Done",
+    "retry": "Retry",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "auth": {
+    "country": {
+      "title": "Select your country",
+      "search": "Search countries"
+    },
+    "email": {
+      "title": "Enter your email",
+      "label": "Email address",
+      "cta": "Send code"
+    },
+    "otp": {
+      "title": "Enter verification code",
+      "subtitle": "We sent a code to your email",
+      "resend": "Resend code",
+      "error": {
+        "invalid": "Invalid code. Please try again.",
+        "expired": "This code has expired. Request a new one."
+      }
+    },
+    "social": {
+      "google": "Continue with Google",
+      "apple": "Continue with Apple",
+      "divider": "or"
+    },
+    "lockout": {
+      "title": "Too many attempts",
+      "body": "Your account is temporarily locked. Please try again later.",
+      "support": "Contact support"
+    }
+  },
+  "disclosure": {
+    "title": "Important notice",
+    "scroll": "Scroll to read the full notice",
+    "accept": "I have read and accept",
+    "authority": {
+      "eg": "Egyptian Ministry of Health and Population",
+      "sa": "Saudi Ministry of Health",
+      "ae": "UAE Ministry of Health and Prevention"
+    }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "nudge": {
+      "handle": "Set up your handle",
+      "emergency": "Create your emergency card",
+      "medications": "Add your medications"
+    },
+    "today": {
+      "title": "Today"
+    }
+  },
+  "profile": {
+    "title": "Health profile",
+    "bloodType": "Blood type",
+    "allergies": {
+      "label": "Allergies",
+      "add": "Add allergy"
+    },
+    "conditions": "Conditions",
+    "contacts": "Emergency contacts",
+    "severity": {
+      "mild": "Mild",
+      "moderate": "Moderate",
+      "severe": "Severe"
+    }
+  },
+  "handle": {
+    "title": "Choose your handle",
+    "available": "Available",
+    "taken": "Already taken",
+    "invalid": "Invalid handle"
+  },
+  "emergency": {
+    "title": "Emergency card",
+    "generate": "Generate card",
+    "ttl": "Expires in",
+    "revoke": "Revoke card",
+    "expired": "This card has expired"
+  },
+  "meds": {
+    "list": {
+      "empty": "No medications yet"
+    },
+    "add": "Add medication",
+    "today": {
+      "title": "Today's medications"
+    },
+    "outcome": {
+      "taken": "Taken",
+      "skipped": "Skipped",
+      "snoozed": "Snoozed",
+      "missed": "Missed"
+    },
+    "notification": {
+      "body": "Time to check your medications"
+    }
+  },
+  "deletion": {
+    "title": "Delete account",
+    "confirm": "Confirm deletion",
+    "cancelled": "Deletion cancelled",
+    "grace": "Your account will be deleted after the grace period"
+  },
+  "sessions": {
+    "title": "Active sessions",
+    "current": "Current session",
+    "revoke": "Sign out",
+    "signOutAll": "Sign out of all devices"
+  },
+  "account": {
+    "settings": "Settings",
+    "country": "Country",
+    "language": "Language"
+  },
+  "error": {
+    "network": "Network error. Please check your connection.",
+    "unknown": "Something went wrong. Please try again.",
+    "validation": "Please check the information you entered.",
+    "geofence": "This service is not available in your region."
+  },
+  "notfound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist.",
+    "cta": "Go home"
+  }
+}

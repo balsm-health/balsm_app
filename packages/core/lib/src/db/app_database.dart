@@ -1,8 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // Conditional executor: native (dart:ffi) on device, deferred-throw on web.
-import 'database_connection_web.dart'
-    if (dart.library.ffi) 'database_connection_io.dart';
+import 'database_connection_web.dart' if (dart.library.ffi) 'database_connection_io.dart';
 
 part 'app_database.g.dart';
 
