@@ -9,6 +9,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.7"
+  _fe_analyzer_shared:
+    dependency: transitive
+    description:
+      name: _fe_analyzer_shared
+      sha256: "8d7ff3948166b8ec5da0fbb5962000926b8e02f2ed9b3e51d1738905fbd4c98d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "93.0.0"
+  analyzer:
+    dependency: transitive
+    description:
+      name: analyzer
+      sha256: de7148ed2fcec579b19f122c1800933dfa028f6d9fd38a152b04b1516cec120b
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.0.1"
   ansi_styles:
     dependency: transitive
     description:
@@ -80,6 +96,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  build:
+    dependency: transitive
+    description:
+      name: build
+      sha256: a156715e7cd728130c592f30552575908aae5b100005fbc1f0fb16b3c03a3d10
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.6"
+  build_config:
+    dependency: transitive
+    description:
+      name: build_config
+      sha256: "4070d2a59f8eec34c97c86ceb44403834899075f66e8a9d59706f8e7834f6f71"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   characters:
     dependency: transitive
     description:
@@ -199,6 +231,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.9.0"
+  dart_style:
+    dependency: transitive
+    description:
+      name: dart_style
+      sha256: "29f7ecc274a86d32920b1d9cfc7502fa87220da41ec60b55f329559d5732e2b2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.7"
   dbus:
     dependency: transitive
     description:
@@ -231,6 +271,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.34.0"
+  equatable:
+    dependency: transitive
+    description:
+      name: equatable
+      sha256: "3bce007a596ff8b3119c45d68aaef631272537c03d30e5d4534dd24bf4c5eaa2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   fake_async:
     dependency: transitive
     description:
@@ -375,10 +423,10 @@ packages:
     dependency: transitive
     description:
       name: freezed_annotation
-      sha256: c2e2d632dd9b8a2b7751117abcfc2b4888ecfe181bd9fca7170d9ef02e595fe2
+      sha256: "7294967ff0a6d98638e7acb774aac3af2550777accd8149c90af5b014e6d44d8"
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.4"
+    version: "3.1.0"
   glob:
     dependency: transitive
     description:
@@ -507,6 +555,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  i69n:
+    dependency: transitive
+    description:
+      path: "."
+      ref: "feature/remote-source"
+      resolved-ref: a8ffd1c349659b945f847407deb372df80b586ca
+      url: "https://github.com/hossameldinmi/i69n"
+    source: git
+    version: "3.6.0"
   intl:
     dependency: transitive
     description:
@@ -1080,6 +1137,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.2.0"
+  watcher:
+    dependency: transitive
+    description:
+      name: watcher
+      sha256: "1398c9f081a753f9226febe8900fce8f7d0a67163334e1c94a2438339d79d635"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.1"
   web:
     dependency: transitive
     description:

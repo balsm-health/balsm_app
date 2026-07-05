@@ -5,18 +5,15 @@ packages:
   - modules/*
   - app
 
-# balsm_boundary_lint pins analyzer ^6.11 (needs the `_macros` SDK pkg absent in
-# Dart 3.11) and is not wired into any module — exclude it from all melos
-# commands so bootstrap/analyze stay green. Re-enable once its custom_lint /
-# analyzer deps are bumped to analyzer 7.
-ignore:
-  - packages/balsm_boundary_lint
-
 scripts:
   gen:
     run: melos exec --concurrency=6 -- "dart run build_runner build --delete-conflicting-outputs"
   analyze:
     run: melos exec --concurrency=6 -- "flutter analyze --no-fatal-infos"
+  # DDD boundary rules (balsm_boundary_lint via custom_lint). Runs per package;
+  # surfaces module→module imports, barrel-leak, aggregate-leak, etc.
+  boundaries:
+    run: melos exec --concurrency=4 --ignore=app -- "dart run custom_lint"
   test:
     run: melos exec --concurrency=4 -- "flutter test"
   e2e:

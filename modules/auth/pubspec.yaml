@@ -18,6 +18,9 @@ dependencies:
   sign_in_with_apple: ^6.1.0
   url_launcher: ^6.3.0
 dev_dependencies:
+  custom_lint: ^0.8.0
+  balsm_boundary_lint:
+    path: ../../packages/balsm_boundary_lint
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4

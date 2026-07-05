@@ -17,6 +17,9 @@ dependencies:
   qr_flutter: ^4.1.0
   cryptography: ^2.7.0
 dev_dependencies:
+  custom_lint: ^0.8.0
+  balsm_boundary_lint:
+    path: ../../packages/balsm_boundary_lint
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4
