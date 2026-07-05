@@ -2,6 +2,9 @@
 export 'src/domain/app_result.dart';
 export 'src/domain/app_failure.dart';
 export 'src/domain/events/app_event.dart';
+// Cross-module domain events (published by modules, consumed via the bus).
+export 'src/domain/events/country_changed.dart';
+export 'src/domain/events/language_changed.dart';
 export 'src/domain/value_objects/uuid_v7.dart';
 export 'src/domain/value_objects/country_code.dart';
 export 'src/domain/value_objects/bcp47_tag.dart';
@@ -20,6 +23,10 @@ export 'package:balsm_api/balsm_api.dart' show BalsmApiClient, PhiLeakIntercepto
 export 'src/network/balsm_api_controller.dart';
 export 'src/network/api_providers.dart';
 export 'src/auth_context/current_user.dart';
+// Cross-module read contracts (ports bound in the app composition root).
+export 'src/contracts/account_summary.dart';
+export 'src/contracts/read_account_repository.dart';
+export 'src/contracts/account_read_providers.dart';
 export 'src/localization/translation_catalog.dart';
 export 'src/localization/country_registry.dart';
 export 'src/crash/sentry_init.dart';

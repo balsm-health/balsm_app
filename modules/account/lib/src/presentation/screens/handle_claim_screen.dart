@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/claim_handle_use_case.dart';
-import '../../infrastructure/api/balsm_account_adapter.dart';
 
 /// Status of the live handle-availability check.
 enum _HandleStatus { idle, checking, available, taken, invalid }

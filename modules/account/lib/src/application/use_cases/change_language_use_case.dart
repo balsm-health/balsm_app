@@ -2,7 +2,6 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/events/language_changed.dart';
 
 /// Changes the signed-in user's preferred language (BCP-47 tag).
 ///

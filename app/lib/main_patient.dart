@@ -1,3 +1,4 @@
+import 'package:account/account.dart' show buildAccountAdapter;
 import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,9 @@ Future<void> main() async {
   await initSentry();
   final container = ProviderContainer(overrides: [
     analyticsLoggerProvider.overrideWithValue(const SentryAnalyticsLogger()),
+    // Bind the account module's adapter into core's cross-module read port so
+    // other modules (e.g. home) read the account summary without importing it.
+    readAccountRepositoryProvider.overrideWith(buildAccountAdapter),
   ]);
   final analytics = container.read(analyticsLoggerProvider);
 

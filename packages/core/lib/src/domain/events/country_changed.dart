@@ -1,4 +1,4 @@
-import 'package:core/core.dart';
+import 'app_event.dart';
 
 /// Emitted after the user's account country is successfully changed.
 ///

@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:balsm_api/balsm_api.dart';
+// AccountSummary + ReadAccountRepository now live in core (cross-module read
+// contract); the port + accountSummaryProvider are declared there too.
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../domain/repositories/read_account_repository.dart';
-import '../../domain/value_objects/account_summary.dart';
 
 /// .NET REST adapter for the account read-model.
 ///
@@ -46,17 +45,11 @@ class BalsmAccountAdapter implements ReadAccountRepository {
   void dispose() => _controller.close();
 }
 
-/// DI: the account read-repository backed by the typed account client.
-final readAccountRepositoryProvider = Provider<ReadAccountRepository>((ref) {
+/// Builds the account read-repository from the typed account client. The app
+/// composition root binds this into core's `readAccountRepositoryProvider`
+/// (see `bootstrap()`), so consumers depend on the core port, not this module.
+BalsmAccountAdapter buildAccountAdapter(Ref ref) {
   final adapter = BalsmAccountAdapter(ref.watch(accountApiProvider));
   ref.onDispose(adapter.dispose);
   return adapter;
-});
-
-/// GET /account/self → AccountSummary (null when the account is missing).
-final accountSummaryProvider = FutureProvider<AccountSummary?>((ref) async {
-  final repo = ref.watch(readAccountRepositoryProvider);
-  // 'self' is resolved server-side from the auth token; the id arg is unused
-  // by the /account/self endpoint but kept for the repository contract.
-  return repo.getAccount('self');
-});
+}

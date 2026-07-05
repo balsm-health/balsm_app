@@ -1,4 +1,4 @@
-import '../value_objects/account_summary.dart';
+import 'account_summary.dart';
 
 /// Read-side port for the signed-in user's account summary.
 ///

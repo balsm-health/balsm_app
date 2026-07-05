@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/change_country_use_case.dart';
-import '../../domain/value_objects/account_summary.dart';
-import '../../infrastructure/api/balsm_account_adapter.dart';
 
 /// Supported account countries (first-class jurisdictions).
 const _kCountries = <({String code, String name})>[

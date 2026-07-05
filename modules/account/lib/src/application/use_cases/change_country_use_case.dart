@@ -2,7 +2,6 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/events/country_changed.dart';
 import '../ports/denied_countries_port.dart';
 
 /// Changes the signed-in user's account country.
