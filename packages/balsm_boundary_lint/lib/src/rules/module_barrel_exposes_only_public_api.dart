@@ -8,8 +8,9 @@ class ModuleBarrelExposesOnlyPublicApi extends DartLintRule {
   @override
   void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
     final path = resolver.path;
-    // Only check the barrel file (packages/<mod>/lib/<mod>.dart).
-    final barrelPattern = RegExp(r'packages/\w+/lib/\w+\.dart$');
+    // Only check a feature-module barrel (modules/<mod>/lib/<mod>.dart).
+    // Scoped to modules/ so it never fires on core/libs under packages/.
+    final barrelPattern = RegExp(r'modules/\w+/lib/\w+\.dart$');
     if (!barrelPattern.hasMatch(path)) return;
     context.registry.addExportDirective((node) {
       final uri = node.uri.stringValue ?? '';
