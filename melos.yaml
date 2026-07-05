@@ -2,6 +2,7 @@ name: balsm_app
 
 packages:
   - packages/*
+  - modules/*
   - app
 
 # balsm_boundary_lint pins analyzer ^6.11 (needs the `_macros` SDK pkg absent in

@@ -13,25 +13,25 @@ dependencies:
   core:
     path: ../packages/core
   auth:
-    path: ../packages/auth
+    path: ../modules/auth
   disclosure:
-    path: ../packages/disclosure
+    path: ../modules/disclosure
   home:
-    path: ../packages/home
+    path: ../modules/home
   profile:
-    path: ../packages/profile
+    path: ../modules/profile
   emergency_card:
-    path: ../packages/emergency_card
+    path: ../modules/emergency_card
   medications:
-    path: ../packages/medications
+    path: ../modules/medications
   sessions:
-    path: ../packages/sessions
+    path: ../modules/sessions
   account:
-    path: ../packages/account
+    path: ../modules/account
   deletion:
-    path: ../packages/deletion
+    path: ../modules/deletion
   geofence_block:
-    path: ../packages/geofence_block
+    path: ../modules/geofence_block
   flutter_riverpod: ^2.6.1
   go_router: ^14.0.0
   app_links: ^6.3.0

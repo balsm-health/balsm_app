@@ -1,5 +1,5 @@
-name: emergency_card
-description: Balsm emergency card bounded context package
+name: medications
+description: Balsm medications bounded context package
 publish_to: none
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -8,16 +8,12 @@ dependencies:
   flutter:
     sdk: flutter
   core:
-    path: ../core
-  balsm_api:
-    path: ../balsm_api
-  profile:
-    path: ../profile
+    path: ../../packages/core
   flutter_riverpod: ^2.6.1
   go_router: ^14.0.0
   intl: ^0.20.0
-  qr_flutter: ^4.1.0
-  cryptography: ^2.7.0
+  timezone: ^0.9.4
+  drift: ^2.29.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

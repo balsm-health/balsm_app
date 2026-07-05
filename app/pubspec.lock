@@ -20,7 +20,7 @@ packages:
   account:
     dependency: "direct main"
     description:
-      path: "../packages/account"
+      path: "../modules/account"
       relative: true
     source: path
     version: "0.0.0"
@@ -83,7 +83,7 @@ packages:
   auth:
     dependency: "direct main"
     description:
-      path: "../packages/auth"
+      path: "../modules/auth"
       relative: true
     source: path
     version: "0.0.0"
@@ -232,7 +232,7 @@ packages:
   deletion:
     dependency: "direct main"
     description:
-      path: "../packages/deletion"
+      path: "../modules/deletion"
       relative: true
     source: path
     version: "0.0.0"
@@ -255,7 +255,7 @@ packages:
   disclosure:
     dependency: "direct main"
     description:
-      path: "../packages/disclosure"
+      path: "../modules/disclosure"
       relative: true
     source: path
     version: "0.0.0"
@@ -270,7 +270,7 @@ packages:
   emergency_card:
     dependency: "direct main"
     description:
-      path: "../packages/emergency_card"
+      path: "../modules/emergency_card"
       relative: true
     source: path
     version: "0.0.0"
@@ -459,7 +459,7 @@ packages:
   geofence_block:
     dependency: "direct main"
     description:
-      path: "../packages/geofence_block"
+      path: "../modules/geofence_block"
       relative: true
     source: path
     version: "0.0.0"
@@ -618,7 +618,7 @@ packages:
   home:
     dependency: "direct main"
     description:
-      path: "../packages/home"
+      path: "../modules/home"
       relative: true
     source: path
     version: "0.0.0"
@@ -783,7 +783,7 @@ packages:
   medications:
     dependency: "direct main"
     description:
-      path: "../packages/medications"
+      path: "../modules/medications"
       relative: true
     source: path
     version: "0.0.0"
@@ -1014,7 +1014,7 @@ packages:
   profile:
     dependency: "direct main"
     description:
-      path: "../packages/profile"
+      path: "../modules/profile"
       relative: true
     source: path
     version: "0.0.0"
@@ -1101,7 +1101,7 @@ packages:
   sessions:
     dependency: "direct main"
     description:
-      path: "../packages/sessions"
+      path: "../modules/sessions"
       relative: true
     source: path
     version: "0.0.0"

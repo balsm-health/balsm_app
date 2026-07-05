@@ -1,5 +1,5 @@
-name: deletion
-description: Balsm deletion bounded context package
+name: account
+description: Balsm account bounded context package
 publish_to: none
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -8,11 +8,9 @@ dependencies:
   flutter:
     sdk: flutter
   core:
-    path: ../core
+    path: ../../packages/core
   balsm_api:
-    path: ../balsm_api
-  auth:
-    path: ../auth
+    path: ../../packages/balsm_api
   flutter_riverpod: ^2.6.1
   go_router: ^14.0.0
   intl: ^0.20.0
