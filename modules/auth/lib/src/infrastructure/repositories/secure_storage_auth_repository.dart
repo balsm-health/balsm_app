@@ -47,7 +47,7 @@ class SecureStorageAuthRepository implements ReadAuthRepository {
     }
 
     return Authenticated(
-      userId: userId,
+      userId: UserId.value(userId),
       // Email is not stored separately; the server may return it in a future
       // /auth/me endpoint. For now use an empty placeholder — the session
       // aggregate is valid without it for routing purposes.

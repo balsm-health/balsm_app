@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart';
 import '../../application/use_cases/accept_disclosure_use_case.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/disclosure_dao.dart';
 
 /// Riverpod provider for [AcceptDisclosureUseCase].
@@ -91,7 +92,7 @@ class _ConsolidatedDisclosureScreenState
 
     final useCase = ref.read(acceptDisclosureUseCaseProvider);
     final result = await useCase.execute(
-      disclosureId: widget.disclosureId,
+      disclosureId: DisclosureId.value(widget.disclosureId),
       version: widget.version,
       countryCode: widget.countryCode,
       supervisoryAuthority: supervisoryAuthority,

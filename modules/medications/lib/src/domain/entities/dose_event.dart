@@ -1,4 +1,4 @@
-import 'package:core/core.dart';
+import '../value_objects/ids.dart';
 
 /// Outcome recorded for a single scheduled dose.
 ///
@@ -22,8 +22,8 @@ class DoseEvent {
     this.snoozeUntil,
   });
 
-  final UuidV7 id;
-  final UuidV7 medicationId;
+  final DoseEventId id;
+  final MedicationId medicationId;
 
   /// When this dose was scheduled to be taken.
   final DateTime scheduledAt;
@@ -34,7 +34,7 @@ class DoseEvent {
   final DoseOutcome outcome;
 
   /// For [DoseOutcome.correction], the id of the event being corrected.
-  final UuidV7? parentEventId;
+  final DoseEventId? parentEventId;
 
   /// For [DoseOutcome.snoozed], when the reminder should fire again.
   final DateTime? snoozeUntil;

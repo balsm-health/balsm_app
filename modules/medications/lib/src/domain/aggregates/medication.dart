@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 
 import '../entities/dose_event.dart';
+import '../value_objects/ids.dart';
 
 /// How a medication's reminder schedule repeats.
 enum ScheduleType { daily, weekly, custom }
@@ -72,8 +73,8 @@ class Medication {
     this.isControlled = false,
   });
 
-  final UuidV7 id;
-  final String userId;
+  final MedicationId id;
+  final UserId userId;
   final String name;
   final String? doseAmount;
   final ScheduleType scheduleType;

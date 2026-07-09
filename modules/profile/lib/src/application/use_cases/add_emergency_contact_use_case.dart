@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../../infrastructure/drift/profile_dao.dart';
 
@@ -27,7 +28,7 @@ class AddEmergencyContactUseCase {
 
   /// Validates input, persists the contact, and emits an event.
   Future<AppResult<HealthProfile>> execute({
-    required String userId,
+    required UserId userId,
     required String name,
     required String phone,
     String? relation,
@@ -51,7 +52,7 @@ class AddEmergencyContactUseCase {
 
       if (profile == null) {
         profile = HealthProfile(
-          id: UuidV7.generate(),
+          id: HealthProfileId.uuid(),
           userId: userId,
           bloodType: null,
           allergies: const [],
@@ -73,7 +74,7 @@ class AddEmergencyContactUseCase {
       await _dao.addContact(
         profile.id,
         EmergencyContact(
-          id: UuidV7.generate(),
+          id: EmergencyContactId.uuid(),
           healthProfileId: profile.id,
           name: trimmedName,
           phone: trimmedPhone,

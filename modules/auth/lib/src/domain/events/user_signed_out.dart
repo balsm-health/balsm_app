@@ -6,7 +6,7 @@ class UserSignedOut extends AppEvent {
   const UserSignedOut({required this.userId});
 
   /// UUIDv7 user identifier. Not serialised to logs.
-  final String userId;
+  final UserId userId;
 
   @override
   String get eventName => 'user_signed_out';

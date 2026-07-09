@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 import '../entities/dose_event.dart';
 
 /// Emitted when a previously recorded dose outcome is corrected.
@@ -16,9 +18,9 @@ class DoseCorrected extends AppEvent {
     required this.recordedAt,
   });
 
-  final UuidV7 doseEventId;
-  final UuidV7 medicationId;
-  final UuidV7 parentEventId;
+  final DoseEventId doseEventId;
+  final MedicationId medicationId;
+  final DoseEventId parentEventId;
   final DoseOutcome newOutcome;
   final DateTime scheduledAt;
   final DateTime recordedAt;

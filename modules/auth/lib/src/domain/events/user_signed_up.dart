@@ -11,7 +11,7 @@ class UserSignedUp extends AppEvent {
   });
 
   /// UUIDv7 user identifier. Not serialised to logs.
-  final String userId;
+  final UserId userId;
 
   /// Email address. Not serialised to logs.
   final String email;

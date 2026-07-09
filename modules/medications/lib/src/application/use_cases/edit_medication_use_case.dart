@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/medication.dart';
@@ -18,7 +19,7 @@ class EditMedicationUseCase {
 }
 
 final editMedicationUseCaseProvider =
-    Provider.family<EditMedicationUseCase, String>((ref, userId) {
+    Provider.family<EditMedicationUseCase, UserId>((ref, userId) {
   return EditMedicationUseCase(
     dao: ref.watch(medicationDaoProvider),
     scheduler: ref.watch(medicationSchedulerProvider(userId)),

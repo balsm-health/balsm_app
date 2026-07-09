@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/entities/dose_event.dart';
+import '../../domain/value_objects/ids.dart';
 import '../providers.dart';
 
 /// Timeline of a medication's dose history, colored by outcome:
@@ -12,7 +13,7 @@ import '../providers.dart';
 class DoseHistoryScreen extends ConsumerWidget {
   const DoseHistoryScreen({super.key, required this.medicationId});
 
-  final UuidV7 medicationId;
+  final MedicationId medicationId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

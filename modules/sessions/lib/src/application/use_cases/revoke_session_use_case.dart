@@ -2,6 +2,7 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/session_revoked.dart';
 
 /// Revokes a single device session via `DELETE /sessions/{id}`.
@@ -14,11 +15,11 @@ class RevokeSessionUseCase {
   final EventBus _bus;
 
   Future<AppResult<void>> call({
-    required String sessionId,
+    required SessionId sessionId,
     required String deviceLabel,
   }) async {
     try {
-      await _api.revokeSession(sessionId);
+      await _api.revokeSession(sessionId.value);
       _bus.publish(
         SessionRevoked(sessionId: sessionId, deviceLabel: deviceLabel),
       );

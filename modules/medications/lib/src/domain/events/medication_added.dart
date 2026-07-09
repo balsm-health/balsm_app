@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 /// Emitted when a new medication is added to a user's regimen.
 class MedicationAdded extends AppEvent {
   const MedicationAdded({
@@ -9,8 +11,8 @@ class MedicationAdded extends AppEvent {
     required this.occurredAt,
   });
 
-  final UuidV7 medicationId;
-  final String userId;
+  final MedicationId medicationId;
+  final UserId userId;
   final String name;
   final DateTime occurredAt;
 
@@ -20,7 +22,7 @@ class MedicationAdded extends AppEvent {
   @override
   Map<String, dynamic> toJson() => {
         'medicationId': medicationId.toString(),
-        'userId': userId,
+        'userId': userId.value,
         'name': name,
         'occurredAt': occurredAt.toIso8601String(),
       };

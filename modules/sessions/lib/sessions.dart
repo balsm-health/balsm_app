@@ -3,6 +3,7 @@
 // Domain
 export 'src/domain/aggregates/active_session.dart';
 export 'src/domain/events/session_revoked.dart';
+export 'src/domain/value_objects/ids.dart';
 
 // Application
 export 'src/application/use_cases/list_active_sessions_use_case.dart';

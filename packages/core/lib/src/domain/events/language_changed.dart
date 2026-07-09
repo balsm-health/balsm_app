@@ -1,3 +1,4 @@
+import '../value_objects/user_id.dart';
 import 'app_event.dart';
 
 /// Emitted after the user's preferred language is successfully changed.
@@ -5,7 +6,7 @@ import 'app_event.dart';
 /// Listeners use this to update Directionality / reload translations.
 /// Carries no PHI — only opaque user id and BCP-47 language tags.
 class LanguageChanged extends AppEvent {
-  final String userId;
+  final UserId userId;
   final String oldLanguage;
   final String newLanguage;
 
@@ -20,7 +21,7 @@ class LanguageChanged extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'userId': userId,
+        'userId': userId.value,
         'oldLanguage': oldLanguage,
         'newLanguage': newLanguage,
       };

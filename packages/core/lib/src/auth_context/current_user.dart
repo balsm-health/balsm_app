@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/value_objects/user_id.dart';
+
 /// The authenticated user's id (opaque cloud account id, non-PHI).
 ///
 /// Overridden in the app shell's `bootstrap()` with the value read from
@@ -8,6 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Modules read this instead of any auth/identity client so they stay
 /// decoupled from the auth package.
-final currentUserIdProvider = Provider<String?>(
+final currentUserIdProvider = Provider<UserId?>(
   (ref) => null,
 );

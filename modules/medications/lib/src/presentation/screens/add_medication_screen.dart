@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/use_cases/add_medication_use_case.dart';
 import '../../domain/aggregates/medication.dart';
+import '../../domain/value_objects/ids.dart';
 import '../providers.dart';
 
 /// Form to add a new medication: name, dose, schedule type (segmented),
@@ -202,7 +203,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       return;
     }
     final medication = Medication(
-      id: UuidV7.generate(),
+      id: MedicationId.uuid(),
       userId: userId,
       name: name,
       doseAmount: _doseCtrl.text.trim().isEmpty ? null : _doseCtrl.text.trim(),

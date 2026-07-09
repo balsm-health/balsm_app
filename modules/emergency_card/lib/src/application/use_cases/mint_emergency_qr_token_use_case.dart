@@ -6,6 +6,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/emergency_qr_token.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/emergency_qr_token_minted.dart';
 import '../emergency_snapshot_reader.dart';
 
@@ -79,7 +80,7 @@ class MintEmergencyQrTokenUseCase {
       return AppResult.failure(const NetworkFailure('Malformed mint response'));
     }
 
-    final jti = minted.tokenId;
+    final jti = QrTokenId.value(minted.tokenId);
     final expiresAt = minted.expiresAt;
 
     final token = EmergencyQrToken(
@@ -90,7 +91,7 @@ class MintEmergencyQrTokenUseCase {
 
     // 4. Build QR URL with key in the fragment (base64url, no padding).
     final keyB64Url = base64Url.encode(keyBytes).replaceAll('=', '');
-    final qrUrl = '$_qrBaseUrl/$jti#k=$keyB64Url';
+    final qrUrl = '$_qrBaseUrl/${jti.value}#k=$keyB64Url';
 
     // 5. Dispatch event (no PHI, no key).
     _eventBus.publish(EmergencyQrTokenMinted(jti: jti, expiresAt: expiresAt));

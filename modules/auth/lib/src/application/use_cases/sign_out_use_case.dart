@@ -56,7 +56,7 @@ class SignOutUseCase {
       return AppResult.failure(StorageFailure(e.toString()));
     }
 
-    _bus.publish(UserSignedOut(userId: userId));
+    _bus.publish(UserSignedOut(userId: UserId.value(userId)));
 
     return AppResult.success(null);
   }

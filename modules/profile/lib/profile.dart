@@ -7,6 +7,7 @@
 // Domain
 export 'src/domain/aggregates/health_profile.dart';
 export 'src/domain/events/health_profile_updated.dart';
+export 'src/domain/value_objects/ids.dart';
 
 // Application — use cases
 export 'src/application/use_cases/update_health_profile_use_case.dart';

@@ -1,10 +1,12 @@
+import '../domain/value_objects/user_id.dart';
+
 /// Immutable read-model summary of the signed-in user's account.
 ///
 /// PHI rule: this object carries no PHI. `displayName` and `handle` are
 /// user-chosen public-ish identifiers, never medical data. Do not add
 /// PHI fields (e.g. date_of_birth) to this summary.
 class AccountSummary {
-  final String id;
+  final UserId id;
   final String? handle;
   final String? displayName;
   final String countryCode;
@@ -23,7 +25,7 @@ class AccountSummary {
   });
 
   factory AccountSummary.fromJson(Map<String, dynamic> j) => AccountSummary(
-        id: j['id'] as String,
+        id: UserId.value(j['id'] as String),
         handle: j['handle'] as String?,
         displayName: j['displayName'] as String?,
         countryCode: j['countryCode'] as String,
@@ -32,7 +34,7 @@ class AccountSummary {
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
+        'id': id.value,
         'handle': handle,
         'displayName': displayName,
         'countryCode': countryCode,

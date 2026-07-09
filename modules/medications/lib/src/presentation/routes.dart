@@ -1,6 +1,6 @@
-import 'package:core/core.dart';
 import 'package:go_router/go_router.dart';
 
+import '../domain/value_objects/ids.dart';
 import 'screens/add_medication_screen.dart';
 import 'screens/dose_history_screen.dart';
 import 'screens/medication_list_screen.dart';
@@ -34,7 +34,7 @@ final medicationRoutes = <RouteBase>[
         path: ':id/history',
         name: 'medications.detail',
         builder: (_, s) => DoseHistoryScreen(
-          medicationId: UuidV7.fromString(s.pathParameters['id']!),
+          medicationId: MedicationId.value(s.pathParameters['id']!),
         ),
       ),
     ],

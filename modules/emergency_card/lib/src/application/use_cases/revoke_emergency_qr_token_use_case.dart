@@ -2,6 +2,7 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/emergency_qr_token_revoked.dart';
 
 /// FR: Revoke a previously minted emergency QR token so its public resolve
@@ -16,9 +17,9 @@ class RevokeEmergencyQrTokenUseCase {
   final EmergencyQrApi _api;
   final EventBus _eventBus;
 
-  Future<AppResult<void>> call({required String tokenId}) async {
+  Future<AppResult<void>> call({required QrTokenId tokenId}) async {
     try {
-      await _api.revoke(RevokeQrRequest(tokenId: tokenId));
+      await _api.revoke(RevokeQrRequest(tokenId: tokenId.value));
     } on ApiException catch (e) {
       if (e.isUnauthorized) {
         return AppResult.failure(const UnauthorizedFailure());

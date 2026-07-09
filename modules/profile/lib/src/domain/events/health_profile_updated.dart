@@ -9,7 +9,7 @@ class HealthProfileUpdated extends AppEvent {
   });
 
   /// Cloud user ID — non-PHI reference only.
-  final String userId;
+  final UserId userId;
 
   /// Coarse tag describing which field changed. One of:
   /// 'blood_type' | 'allergy_added' | 'allergy_removed' |
@@ -21,7 +21,7 @@ class HealthProfileUpdated extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'user_id': userId,
+        'user_id': userId.value,
         'field_changed': fieldChanged,
       };
 }

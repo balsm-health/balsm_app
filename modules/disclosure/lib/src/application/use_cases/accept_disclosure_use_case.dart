@@ -1,6 +1,7 @@
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import '../../domain/aggregates/disclosure_acceptance.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/disclosure_accepted.dart';
 import '../../infrastructure/drift/disclosure_dao.dart';
 
@@ -22,7 +23,7 @@ class AcceptDisclosureUseCase {
   final EventBus _eventBus;
 
   Future<AppResult<void>> execute({
-    required String disclosureId,
+    required DisclosureId disclosureId,
     required String version,
     required String countryCode,
     required String supervisoryAuthority,
@@ -49,7 +50,7 @@ class AcceptDisclosureUseCase {
     // Step 2: sync to cloud (best-effort; offline tolerance).
     try {
       await _api.accept(AcceptDisclosureRequest(
-        disclosureId: disclosureId,
+        disclosureId: disclosureId.value,
         version: version,
         countryCode: countryCode,
         supervisoryAuthority: supervisoryAuthority,

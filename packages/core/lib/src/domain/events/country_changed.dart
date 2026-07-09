@@ -1,3 +1,4 @@
+import '../value_objects/user_id.dart';
 import 'app_event.dart';
 
 /// Emitted after the user's account country is successfully changed.
@@ -5,7 +6,7 @@ import 'app_event.dart';
 /// Listeners (e.g. home) use this to refresh locale / re-run disclosure.
 /// Carries no PHI — only opaque user id and ISO country codes.
 class CountryChanged extends AppEvent {
-  final String userId;
+  final UserId userId;
   final String oldCountry;
   final String newCountry;
 
@@ -20,7 +21,7 @@ class CountryChanged extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'userId': userId,
+        'userId': userId.value,
         'oldCountry': oldCountry,
         'newCountry': newCountry,
       };

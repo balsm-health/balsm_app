@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/dose_event.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/dose_corrected.dart';
 import '../../domain/events/dose_skipped.dart';
 import '../../domain/events/dose_snoozed.dart';
@@ -20,11 +21,11 @@ class RecordDoseOutcomeUseCase {
   final EventBus bus;
 
   Future<DoseEvent> call({
-    required UuidV7 medicationId,
+    required MedicationId medicationId,
     required DateTime scheduledAt,
     required DoseOutcome outcome,
     DateTime? snoozeUntil,
-    UuidV7? parentEventId,
+    DoseEventId? parentEventId,
   }) async {
     if (outcome == DoseOutcome.correction && parentEventId == null) {
       throw ArgumentError('correction needs parent');
@@ -35,7 +36,7 @@ class RecordDoseOutcomeUseCase {
 
     final now = DateTime.now();
     final event = DoseEvent(
-      id: UuidV7.generate(),
+      id: DoseEventId.uuid(),
       medicationId: medicationId,
       scheduledAt: scheduledAt,
       recordedAt: now,

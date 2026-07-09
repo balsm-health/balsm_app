@@ -24,7 +24,7 @@ class BalsmAccountAdapter implements ReadAccountRepository {
     final res = await _api.getSelf();
     if (res == null) return null;
     final summary = AccountSummary(
-      id: res.id,
+      id: UserId.value(res.id),
       handle: res.handle,
       displayName: res.displayName,
       countryCode: res.countryCode,

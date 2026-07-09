@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 /// Emitted when a scheduled dose is detected as missed (no outcome recorded
 /// within the grace window).
 class DoseMissed extends AppEvent {
@@ -10,8 +12,8 @@ class DoseMissed extends AppEvent {
     required this.recordedAt,
   });
 
-  final UuidV7 doseEventId;
-  final UuidV7 medicationId;
+  final DoseEventId doseEventId;
+  final MedicationId medicationId;
   final DateTime scheduledAt;
   final DateTime recordedAt;
 

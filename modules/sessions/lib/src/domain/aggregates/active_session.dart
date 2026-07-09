@@ -1,3 +1,5 @@
+import '../value_objects/ids.dart';
+
 /// An authenticated device session for the current user.
 ///
 /// Revocation is one-way: once [revokedAt] is set the session cannot be
@@ -14,8 +16,8 @@ class ActiveSession {
     this.isCurrent = false,
   });
 
-  final String id;
-  final String deviceId;
+  final SessionId id;
+  final DeviceId deviceId;
   final String deviceLabel;
   final String deviceType;
   final DateTime firstSeenAt;
@@ -27,8 +29,8 @@ class ActiveSession {
 
   factory ActiveSession.fromJson(Map<String, dynamic> json) {
     return ActiveSession(
-      id: json['id'] as String,
-      deviceId: json['device_id'] as String,
+      id: SessionId.value(json['id'] as String),
+      deviceId: DeviceId.value(json['device_id'] as String),
       deviceLabel: json['device_label'] as String,
       deviceType: json['device_type'] as String,
       firstSeenAt: DateTime.parse(json['first_seen_at'] as String).toUtc(),

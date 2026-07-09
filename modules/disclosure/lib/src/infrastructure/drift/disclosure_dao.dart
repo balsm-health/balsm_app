@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import '../../domain/aggregates/disclosure_acceptance.dart';
+import '../../domain/value_objects/ids.dart';
 
 /// Drift DAO stub for disclosure_acceptance persistence.
 ///
@@ -27,7 +28,7 @@ class DisclosureDao {
   /// Returns a live stream of the stored acceptance for the given
   /// [disclosureId] and [version].  Emits `null` when no record exists.
   Stream<DisclosureAcceptance?> watchAcceptance(
-    String disclosureId,
+    DisclosureId disclosureId,
     String version,
   ) {
     // TODO(M002): replace with generated Drift watch query.

@@ -8,6 +8,7 @@ export 'src/domain/aggregates/emergency_qr_token.dart';
 // Domain — events
 export 'src/domain/events/emergency_qr_token_minted.dart';
 export 'src/domain/events/emergency_qr_token_revoked.dart';
+export 'src/domain/value_objects/ids.dart';
 
 // Application — snapshot reader port + use cases
 export 'src/application/emergency_snapshot_reader.dart';

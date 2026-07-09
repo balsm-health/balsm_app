@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 /// Aggregate root representing a patient's acceptance of a disclosure document.
 /// PHI-free: no health data stored.
 class DisclosureAcceptance {
@@ -12,7 +14,7 @@ class DisclosureAcceptance {
     required this.acceptedAt,
   });
 
-  final String disclosureId;
+  final DisclosureId disclosureId;
   final String version;
   final String countryCodeAtAccept;
   final String supervisoryAuthorityNameAtAccept;
@@ -20,7 +22,7 @@ class DisclosureAcceptance {
   final DateTime acceptedAt;
 
   Map<String, dynamic> toJson() => {
-        'disclosure_id': disclosureId,
+        'disclosure_id': disclosureId.value,
         'version': version,
         'country_code': countryCodeAtAccept,
         'supervisory_authority': supervisoryAuthorityNameAtAccept,
@@ -30,7 +32,7 @@ class DisclosureAcceptance {
 
   factory DisclosureAcceptance.fromJson(Map<String, dynamic> json) =>
       DisclosureAcceptance(
-        disclosureId: json['disclosure_id'] as String,
+        disclosureId: DisclosureId.value(json['disclosure_id'] as String),
         version: json['version'] as String,
         countryCodeAtAccept: json['country_code'] as String,
         supervisoryAuthorityNameAtAccept:

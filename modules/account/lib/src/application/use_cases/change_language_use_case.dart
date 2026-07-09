@@ -17,7 +17,7 @@ class ChangeLanguageUseCase {
   final EventBus _bus;
 
   Future<AppResult<String>> execute({
-    required String userId,
+    required UserId userId,
     required String oldLanguage,
     required String newLanguage,
   }) async {

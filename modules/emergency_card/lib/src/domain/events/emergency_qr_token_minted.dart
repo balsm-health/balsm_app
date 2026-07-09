@@ -1,12 +1,14 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 class EmergencyQrTokenMinted extends AppEvent {
   const EmergencyQrTokenMinted({
     required this.jti,
     required this.expiresAt,
   });
 
-  final String jti;
+  final QrTokenId jti;
   final DateTime expiresAt;
 
   @override
@@ -14,7 +16,7 @@ class EmergencyQrTokenMinted extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'jti': jti,
+        'jti': jti.value,
         'expiresAt': expiresAt.toUtc().toIso8601String(),
       };
 }

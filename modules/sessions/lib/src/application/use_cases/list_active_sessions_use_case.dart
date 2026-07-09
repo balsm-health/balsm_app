@@ -3,6 +3,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/active_session.dart';
+import '../../domain/value_objects/ids.dart';
 
 /// Lists the current user's active device sessions via `GET /sessions`.
 class ListActiveSessionsUseCase {
@@ -22,8 +23,8 @@ class ListActiveSessionsUseCase {
   }
 
   ActiveSession _toDomain(SessionResponse r) => ActiveSession(
-        id: r.id,
-        deviceId: r.deviceId,
+        id: SessionId.value(r.id),
+        deviceId: DeviceId.value(r.deviceId),
         deviceLabel: r.deviceLabel,
         deviceType: r.deviceType,
         firstSeenAt: r.firstSeenAt,

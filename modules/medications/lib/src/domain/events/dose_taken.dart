@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 /// Emitted when a scheduled dose is recorded as taken.
 class DoseTaken extends AppEvent {
   const DoseTaken({
@@ -9,8 +11,8 @@ class DoseTaken extends AppEvent {
     required this.recordedAt,
   });
 
-  final UuidV7 doseEventId;
-  final UuidV7 medicationId;
+  final DoseEventId doseEventId;
+  final MedicationId medicationId;
   final DateTime scheduledAt;
   final DateTime recordedAt;
 

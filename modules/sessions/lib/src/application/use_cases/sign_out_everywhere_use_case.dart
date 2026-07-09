@@ -2,6 +2,7 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/session_revoked.dart';
 
 /// Revokes every session via `POST /sessions/revoke-all`.
@@ -19,7 +20,7 @@ class SignOutEverywhereUseCase {
       final res = await _api.revokeAllSessions();
 
       _bus.publish(
-        const SessionRevoked(sessionId: '*', deviceLabel: 'All devices'),
+        const SessionRevoked(sessionId: SessionId.value('*'), deviceLabel: 'All devices'),
       );
 
       return AppResult.success(res.revokedCount);

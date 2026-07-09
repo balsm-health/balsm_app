@@ -31,7 +31,7 @@ class MedicationScheduler {
 
   final NotificationService notifications;
   final MedicationDao dao;
-  final String userId;
+  final UserId userId;
   final NotificationPermissionState Function() _readPermission;
 
   bool get _permissionGranted =>
@@ -134,7 +134,7 @@ class MedicationScheduler {
 
 /// Provider factory — caller supplies the active [userId].
 final medicationSchedulerProvider =
-    Provider.family<MedicationScheduler, String>((ref, userId) {
+    Provider.family<MedicationScheduler, UserId>((ref, userId) {
   return MedicationScheduler(
     notifications: ref.watch(notificationServiceProvider),
     dao: ref.watch(medicationDaoProvider),

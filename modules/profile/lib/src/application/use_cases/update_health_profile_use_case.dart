@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../../infrastructure/drift/profile_dao.dart';
 
@@ -22,7 +23,7 @@ class UpdateHealthProfileUseCase {
   /// Creates or updates the profile row and patches [bloodType].
   /// Pass [bloodType] as null to clear the field.
   Future<AppResult<HealthProfile>> execute({
-    required String userId,
+    required UserId userId,
     String? bloodType,
     bool clearBloodType = false,
   }) async {
@@ -38,7 +39,7 @@ class UpdateHealthProfileUseCase {
       if (profile == null) {
         // First save — create a new profile aggregate.
         profile = HealthProfile(
-          id: UuidV7.generate(),
+          id: HealthProfileId.uuid(),
           userId: userId,
           bloodType: bloodType,
           allergies: const [],

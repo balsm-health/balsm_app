@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/dose_event.dart';
@@ -10,7 +11,7 @@ class NotifyMissedDosesUseCase {
   final MissedDoseDetector detector;
 
   /// Runs missed-dose detection for [userId]; returns newly recorded misses.
-  Future<List<DoseEvent>> call(String userId) =>
+  Future<List<DoseEvent>> call(UserId userId) =>
       detector.detectMissed(userId);
 }
 

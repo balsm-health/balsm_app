@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 /// Main PHI aggregate for the profile bounded context.
 /// PHI is stored ON-DEVICE ONLY via drift/SQLCipher — never sent to the cloud.
 class HealthProfile {
@@ -13,11 +15,11 @@ class HealthProfile {
     required this.updatedAt,
   });
 
-  final UuidV7 id;
+  final HealthProfileId id;
 
   /// Cloud reference (non-PHI). Used to associate the on-device record
   /// with the authenticated Supabase user — never transmitted with PHI.
-  final String userId;
+  final UserId userId;
 
   /// Nullable ABO/Rh blood type. One of:
   /// 'A+'|'A-'|'B+'|'B-'|'AB+'|'AB-'|'O+'|'O-' or null (unknown).
@@ -37,8 +39,8 @@ class HealthProfile {
   bool get hasMinimalInfo => bloodType != null || allergies.isNotEmpty;
 
   HealthProfile copyWith({
-    UuidV7? id,
-    String? userId,
+    HealthProfileId? id,
+    UserId? userId,
     String? bloodType,
     bool clearBloodType = false,
     List<Allergy>? allergies,
@@ -69,8 +71,8 @@ class Allergy {
     required this.createdAt,
   });
 
-  final UuidV7 id;
-  final UuidV7 healthProfileId;
+  final AllergyId id;
+  final HealthProfileId healthProfileId;
 
   /// Free text, max 100 chars.
   final String name;
@@ -91,8 +93,8 @@ class ChronicCondition {
     required this.createdAt,
   });
 
-  final UuidV7 id;
-  final UuidV7 healthProfileId;
+  final ChronicConditionId id;
+  final HealthProfileId healthProfileId;
   final String name;
   final DateTime createdAt;
 }
@@ -109,8 +111,8 @@ class EmergencyContact {
     required this.createdAt,
   });
 
-  final UuidV7 id;
-  final UuidV7 healthProfileId;
+  final EmergencyContactId id;
+  final HealthProfileId healthProfileId;
   final String name;
 
   /// Phone stored in Western Arabic digits (FR-213 normalization applied on input).

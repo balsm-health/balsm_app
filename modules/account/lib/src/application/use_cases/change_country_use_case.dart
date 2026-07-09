@@ -28,7 +28,7 @@ class ChangeCountryUseCase {
   final EventBus _bus;
 
   Future<AppResult<String>> execute({
-    required String userId,
+    required UserId userId,
     required String oldCountry,
     required String newCountry,
   }) async {

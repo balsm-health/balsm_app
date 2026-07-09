@@ -67,7 +67,7 @@ class SignUpUseCase {
       );
 
       _bus.publish(UserSignedUp(
-        userId: tokens.userId,
+        userId: UserId.value(tokens.userId),
         email: email,
         provider: 'email',
         countryCode: countryCode,
@@ -103,7 +103,7 @@ class SignUpUseCase {
       );
 
       _bus.publish(UserSignedUp(
-        userId: tokens.userId,
+        userId: UserId.value(tokens.userId),
         email: email,
         provider: 'google',
         countryCode: countryCode,
@@ -140,7 +140,7 @@ class SignUpUseCase {
       );
 
       _bus.publish(UserSignedUp(
-        userId: tokens.userId,
+        userId: UserId.value(tokens.userId),
         email: email,
         provider: 'apple',
         countryCode: countryCode,

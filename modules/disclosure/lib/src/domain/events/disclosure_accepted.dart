@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 /// Domain event emitted after the patient successfully accepts a disclosure.
 class DisclosureAccepted extends AppEvent {
   const DisclosureAccepted({
@@ -11,7 +13,7 @@ class DisclosureAccepted extends AppEvent {
     required this.acceptedAt,
   });
 
-  final String disclosureId;
+  final DisclosureId disclosureId;
   final String version;
   final String countryCode;
   final String supervisoryAuthority;
@@ -23,7 +25,7 @@ class DisclosureAccepted extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'disclosure_id': disclosureId,
+        'disclosure_id': disclosureId.value,
         'version': version,
         'country_code': countryCode,
         'supervisory_authority': supervisoryAuthority,

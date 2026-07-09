@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../value_objects/ids.dart';
+
 /// Emitted when a scheduled dose is snoozed until [snoozeUntil].
 class DoseSnoozed extends AppEvent {
   const DoseSnoozed({
@@ -10,8 +12,8 @@ class DoseSnoozed extends AppEvent {
     required this.snoozeUntil,
   });
 
-  final UuidV7 doseEventId;
-  final UuidV7 medicationId;
+  final DoseEventId doseEventId;
+  final MedicationId medicationId;
   final DateTime scheduledAt;
   final DateTime recordedAt;
   final DateTime snoozeUntil;

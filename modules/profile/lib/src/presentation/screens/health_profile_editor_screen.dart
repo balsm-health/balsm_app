@@ -8,6 +8,7 @@ import '../../application/use_cases/add_emergency_contact_use_case.dart';
 import '../../application/use_cases/remove_allergy_use_case.dart';
 import '../../application/use_cases/update_health_profile_use_case.dart';
 import '../../domain/aggregates/health_profile.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/profile_dao.dart';
 
 /// FR-213: convert any Arabic-Indic digits (٠-٩) in [input] to Western Arabic.
@@ -43,7 +44,7 @@ class _HealthProfileEditorScreenState
     extends ConsumerState<HealthProfileEditorScreen> {
   String? _errorMessage;
 
-  String? get _userId => ref.read(currentUserIdProvider);
+  UserId? get _userId => ref.read(currentUserIdProvider);
 
   void _showError(AppFailure failure) {
     // PHI-safe: failure.message carries validation/storage text, never PHI values.
@@ -85,7 +86,7 @@ class _HealthProfileEditorScreenState
     if (!result.isSuccess) _showError(result.error);
   }
 
-  Future<void> _removeAllergy(UuidV7 allergyId) async {
+  Future<void> _removeAllergy(AllergyId allergyId) async {
     final userId = _userId;
     if (userId == null) return;
     _clearError();

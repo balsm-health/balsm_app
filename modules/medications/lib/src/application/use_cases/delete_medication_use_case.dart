@@ -1,4 +1,6 @@
 import 'package:core/core.dart';
+
+import '../../domain/value_objects/ids.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../infrastructure/drift/medication_dao.dart';
@@ -12,14 +14,14 @@ class DeleteMedicationUseCase {
   final MedicationDao dao;
   final MedicationScheduler scheduler;
 
-  Future<void> call(UuidV7 medicationId) async {
+  Future<void> call(MedicationId medicationId) async {
     await dao.deleteMedication(medicationId);
     await scheduler.rebuildSchedule();
   }
 }
 
 final deleteMedicationUseCaseProvider =
-    Provider.family<DeleteMedicationUseCase, String>((ref, userId) {
+    Provider.family<DeleteMedicationUseCase, UserId>((ref, userId) {
   return DeleteMedicationUseCase(
     dao: ref.watch(medicationDaoProvider),
     scheduler: ref.watch(medicationSchedulerProvider(userId)),

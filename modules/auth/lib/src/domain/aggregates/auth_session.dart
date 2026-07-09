@@ -1,3 +1,5 @@
+import 'package:core/core.dart';
+
 /// Auth session aggregate — represents the current authentication state.
 /// PHI constraint: no PII is logged; correlation IDs only.
 sealed class AuthSession {
@@ -20,7 +22,7 @@ class Authenticated extends AuthSession {
   });
 
   /// Opaque user ID (UUIDv7). Not logged per PHI constraint.
-  final String userId;
+  final UserId userId;
 
   /// Email address. Not logged per PHI constraint.
   final String email;
@@ -35,7 +37,7 @@ class Authenticated extends AuthSession {
   final String refreshToken;
 
   Authenticated copyWith({
-    String? userId,
+    UserId? userId,
     String? email,
     String? provider,
     String? accessToken,

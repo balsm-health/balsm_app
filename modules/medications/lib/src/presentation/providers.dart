@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/aggregates/medication.dart';
 import '../domain/entities/dose_event.dart';
+import '../domain/value_objects/ids.dart';
 import '../infrastructure/drift/medication_dao.dart';
 
 /// Reactive list of the current user's medications. Uses core's
@@ -75,7 +76,7 @@ final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
 
 /// Dose history for a single medication (most recent first).
 final doseHistoryProvider =
-    FutureProvider.family<List<DoseEvent>, UuidV7>((ref, medicationId) {
+    FutureProvider.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
   return ref.watch(medicationDaoProvider).getDoseEvents(medicationId);
 });
 

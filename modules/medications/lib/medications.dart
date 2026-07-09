@@ -11,6 +11,7 @@ export 'src/domain/events/dose_skipped.dart';
 export 'src/domain/events/dose_snoozed.dart';
 export 'src/domain/events/dose_missed.dart';
 export 'src/domain/events/dose_corrected.dart';
+export 'src/domain/value_objects/ids.dart';
 
 // Infrastructure
 export 'src/infrastructure/drift/medication_dao.dart';

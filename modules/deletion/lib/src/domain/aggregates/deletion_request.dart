@@ -1,3 +1,5 @@
+import 'package:core/core.dart';
+
 /// Lifecycle states for an account deletion request.
 ///
 /// FSM (one-way except cancel-back-to-cancelled):
@@ -17,7 +19,7 @@ class DeletionRequest {
     this.confirmedAt,
   });
 
-  final String userId;
+  final UserId userId;
   DeletionState state;
   final DateTime? graceUntil;
   final DateTime? confirmedAt;

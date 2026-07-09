@@ -1,3 +1,5 @@
+import '../value_objects/ids.dart';
+
 /// Represents a minted emergency QR token stored locally on the device.
 /// The QR URL is: https://app.balsm.health/emergency/{jti}#k={base64url_key}
 /// The fragment key is NEVER sent to the server — client-side decryption only.
@@ -10,7 +12,7 @@ class EmergencyQrToken {
   });
 
   /// Token ID returned by the server's mint endpoint.
-  final String jti;
+  final QrTokenId jti;
 
   final DateTime expiresAt;
 
@@ -25,7 +27,7 @@ class EmergencyQrToken {
   bool get isActive => !isExpired && !isRevoked;
 
   EmergencyQrToken copyWith({
-    String? jti,
+    QrTokenId? jti,
     DateTime? expiresAt,
     DateTime? revokedAt,
     int? ttlSeconds,
@@ -38,7 +40,7 @@ class EmergencyQrToken {
       );
 
   Map<String, dynamic> toJson() => {
-        'jti': jti,
+        'jti': jti.value,
         'expiresAt': expiresAt.toUtc().toIso8601String(),
         'revokedAt': revokedAt?.toUtc().toIso8601String(),
         'ttlSeconds': ttlSeconds,
@@ -46,7 +48,7 @@ class EmergencyQrToken {
 
   factory EmergencyQrToken.fromJson(Map<String, dynamic> json) =>
       EmergencyQrToken(
-        jti: json['jti'] as String,
+        jti: QrTokenId.value(json['jti'] as String),
         expiresAt: DateTime.parse(json['expiresAt'] as String),
         revokedAt: json['revokedAt'] == null
             ? null

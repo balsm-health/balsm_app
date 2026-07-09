@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/medication.dart';
 import '../../domain/entities/dose_event.dart';
+import '../../domain/value_objects/ids.dart';
 
 // TODO: drift table annotations + build_runner.
 // These tables are currently created/queried via raw SQL against AppDatabase.
@@ -49,21 +50,21 @@ class MedicationDao {
 
   // --- Medications ---------------------------------------------------------
 
-  Future<List<Medication>> getMedications(String userId) async {
+  Future<List<Medication>> getMedications(UserId userId) async {
     final rows = await _db.customSelect(
       'SELECT * FROM $_kMedicationsTable WHERE user_id = ? '
       'ORDER BY name COLLATE NOCASE ASC',
-      variables: [Variable<String>(userId)],
+      variables: [Variable<String>(userId.value)],
     ).get();
     return rows.map((r) => _medicationFromRow(r.data)).toList();
   }
 
   /// Reactive stream of a user's medications.
-  Stream<List<Medication>> watchMedications(String userId) {
+  Stream<List<Medication>> watchMedications(UserId userId) {
     return _db.customSelect(
       'SELECT * FROM $_kMedicationsTable WHERE user_id = ? '
       'ORDER BY name COLLATE NOCASE ASC',
-      variables: [Variable<String>(userId)],
+      variables: [Variable<String>(userId.value)],
       readsFrom: {/* TODO: medications table after build_runner */},
     ).watch().map((rows) => rows.map((r) => _medicationFromRow(r.data)).toList());
   }
@@ -75,8 +76,8 @@ class MedicationDao {
       'start_date, end_date, is_controlled) '
       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       variables: [
-        Variable<String>(m.id.toString()),
-        Variable<String>(m.userId),
+        Variable<String>(m.id.value),
+        Variable<String>(m.userId.value),
         Variable<String>(m.name),
         Variable<String>(m.doseAmount),
         Variable<String>(m.scheduleType.name),
@@ -102,7 +103,7 @@ class MedicationDao {
         Variable<String>(m.startDate.toIso8601String()),
         Variable<String>(m.endDate?.toIso8601String()),
         Variable<int>(m.isControlled ? 1 : 0),
-        Variable<String>(m.id.toString()),
+        Variable<String>(m.id.value),
       ],
       updateKind: UpdateKind.update,
     );
@@ -110,13 +111,13 @@ class MedicationDao {
 
   /// Soft delete: sets `end_date` to yesterday so the medication is treated as
   /// expired while its (append-only) dose history is preserved.
-  Future<void> deleteMedication(UuidV7 id) async {
+  Future<void> deleteMedication(MedicationId id) async {
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
     await _db.customUpdate(
       'UPDATE $_kMedicationsTable SET end_date = ? WHERE id = ?',
       variables: [
         Variable<String>(yesterday.toIso8601String()),
-        Variable<String>(id.toString()),
+        Variable<String>(id.value),
       ],
       updateKind: UpdateKind.update,
     );
@@ -132,12 +133,12 @@ class MedicationDao {
       'parent_event_id, snooze_until) '
       'VALUES (?, ?, ?, ?, ?, ?, ?)',
       variables: [
-        Variable<String>(e.id.toString()),
-        Variable<String>(e.medicationId.toString()),
+        Variable<String>(e.id.value),
+        Variable<String>(e.medicationId.value),
         Variable<String>(e.scheduledAt.toIso8601String()),
         Variable<String>(e.recordedAt.toIso8601String()),
         Variable<String>(e.outcome.name),
-        Variable<String>(e.parentEventId?.toString()),
+        Variable<String>(e.parentEventId?.value),
         Variable<String>(e.snoozeUntil?.toIso8601String()),
       ],
     );
@@ -146,12 +147,12 @@ class MedicationDao {
   /// Dose events for a medication, optionally bounded by [from]/[to]
   /// (inclusive of [from], exclusive of [to]) on `scheduled_at`.
   Future<List<DoseEvent>> getDoseEvents(
-    UuidV7 medicationId, {
+    MedicationId medicationId, {
     DateTime? from,
     DateTime? to,
   }) async {
     final where = StringBuffer('medication_id = ?');
-    final vars = <Variable>[Variable<String>(medicationId.toString())];
+    final vars = <Variable>[Variable<String>(medicationId.value)];
     if (from != null) {
       where.write(' AND scheduled_at >= ?');
       vars.add(Variable<String>(from.toIso8601String()));
@@ -182,8 +183,8 @@ class MedicationDao {
   // --- Mapping -------------------------------------------------------------
 
   Medication _medicationFromRow(Map<String, dynamic> row) => Medication(
-        id: UuidV7.fromString(row['id'] as String),
-        userId: row['user_id'] as String,
+        id: MedicationId.value(row['id'] as String),
+        userId: UserId.value(row['user_id'] as String),
         name: row['name'] as String,
         doseAmount: row['dose_amount'] as String?,
         scheduleType: ScheduleType.values
@@ -199,13 +200,13 @@ class MedicationDao {
       );
 
   DoseEvent _doseEventFromRow(Map<String, dynamic> row) => DoseEvent(
-        id: UuidV7.fromString(row['id'] as String),
-        medicationId: UuidV7.fromString(row['medication_id'] as String),
+        id: DoseEventId.value(row['id'] as String),
+        medicationId: MedicationId.value(row['medication_id'] as String),
         scheduledAt: DateTime.parse(row['scheduled_at'] as String),
         recordedAt: DateTime.parse(row['recorded_at'] as String),
         outcome: DoseOutcome.values.byName(row['outcome'] as String),
         parentEventId: (row['parent_event_id'] as String?) != null
-            ? UuidV7.fromString(row['parent_event_id'] as String)
+            ? DoseEventId.value(row['parent_event_id'] as String)
             : null,
         snoozeUntil: (row['snooze_until'] as String?) != null
             ? DateTime.parse(row['snooze_until'] as String)

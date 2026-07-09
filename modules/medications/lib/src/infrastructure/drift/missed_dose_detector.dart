@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/aggregates/medication.dart';
 import '../../domain/entities/dose_event.dart';
 import '../../domain/events/dose_missed.dart';
+import '../../domain/value_objects/ids.dart';
 import 'medication_dao.dart';
 
 /// Grace window after a scheduled time before a dose counts as missed.
@@ -47,7 +48,7 @@ class MissedDoseDetector {
   /// event, appends a `missed` event for each, and dispatches [DoseMissed].
   ///
   /// Returns the newly recorded missed events.
-  Future<List<DoseEvent>> detectMissed(String userId) async {
+  Future<List<DoseEvent>> detectMissed(UserId userId) async {
     final now = DateTime.now();
     if (!shouldRun(now)) return const [];
     _lastRunDay = DateTime(now.year, now.month, now.day);
@@ -73,7 +74,7 @@ class MissedDoseDetector {
         if (recordedScheduledAt.contains(scheduled.toIso8601String())) continue;
 
         final missed = DoseEvent(
-          id: UuidV7.generate(),
+          id: DoseEventId.uuid(),
           medicationId: med.id,
           scheduledAt: scheduled,
           recordedAt: now,

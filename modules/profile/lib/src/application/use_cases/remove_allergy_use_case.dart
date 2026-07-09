@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../../infrastructure/drift/profile_dao.dart';
 
@@ -22,8 +23,8 @@ class RemoveAllergyUseCase {
 
   /// Deletes the allergy [allergyId] belonging to [userId] and emits an event.
   Future<AppResult<HealthProfile>> execute({
-    required String userId,
-    required UuidV7 allergyId,
+    required UserId userId,
+    required AllergyId allergyId,
   }) async {
     try {
       final profile = await _dao.getProfile(userId);

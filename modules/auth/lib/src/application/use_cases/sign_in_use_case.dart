@@ -78,7 +78,7 @@ class SignInUseCase {
       );
 
       _bus.publish(UserSignedIn(
-        userId: tokens.userId,
+        userId: UserId.value(tokens.userId),
         email: email,
         provider: 'email',
       ));
@@ -113,7 +113,7 @@ class SignInUseCase {
       );
 
       _bus.publish(UserSignedIn(
-        userId: tokens.userId,
+        userId: UserId.value(tokens.userId),
         email: email,
         provider: 'google',
       ));
@@ -147,7 +147,7 @@ class SignInUseCase {
       );
 
       _bus.publish(UserSignedIn(
-        userId: tokens.userId,
+        userId: UserId.value(tokens.userId),
         email: email,
         provider: 'apple',
       ));
