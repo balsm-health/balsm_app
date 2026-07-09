@@ -6,12 +6,21 @@ export 'src/domain/events/app_event.dart';
 export 'src/domain/events/country_changed.dart';
 export 'src/domain/events/language_changed.dart';
 export 'src/domain/value_objects/uuid_v7.dart';
+export 'src/domain/value_objects/unique_id.dart';
+export 'src/domain/value_objects/user_id.dart';
+export 'src/domain/value_objects/entity_id.dart';
 export 'src/domain/value_objects/country_code.dart';
 export 'src/domain/value_objects/bcp47_tag.dart';
 export 'src/domain/value_objects/iso8601_timestamp.dart';
 export 'src/domain/value_objects/money.dart';
 export 'src/event_bus/event_bus.dart';
 export 'src/db/app_database.dart';
+export 'src/extensions/type_extensions.dart';
+export 'src/data_source/storage_exceptions.dart';
+export 'src/data_source/data_source.dart';
+export 'src/data_source/global_data_source.dart';
+export 'src/data_source/user_data_source.dart';
+export 'src/data_source/entity_data_source.dart';
 // TARGETED re-export — only the two transport symbols that unmigrated
 // callers (geofence, disclosure, settings screen) and the PHI fuzz test
 // still reach through `package:core/core.dart`. Do NOT re-export the whole
@@ -23,6 +32,7 @@ export 'package:balsm_api/balsm_api.dart' show BalsmApiClient, PhiLeakIntercepto
 export 'src/network/balsm_api_controller.dart';
 export 'src/network/api_providers.dart';
 export 'src/auth_context/current_user.dart';
+export 'src/auth_context/current_entity.dart';
 // Cross-module read contracts (ports bound in the app composition root).
 export 'src/contracts/account_summary.dart';
 export 'src/contracts/read_account_repository.dart';
@@ -68,10 +78,8 @@ export 'src/backup/drive_backup_adapter.dart';
 
 // Dev-only: compile-time excluded in staging/prod via --dart-define FLAVOR.
 // ignore: invalid_export_of_internal_element
-export 'src/dev/server_selector_screen.dart'
-    if (dart.library.io) 'src/dev/server_selector_screen.dart';
+export 'src/dev/server_selector_screen.dart' if (dart.library.io) 'src/dev/server_selector_screen.dart';
 
 // Test kit: gated by DEV environment flag.
-export 'src/test_kit/fakes.dart'
-    if (dart.library.html) 'src/test_kit/fakes.dart';
+export 'src/test_kit/fakes.dart' if (dart.library.html) 'src/test_kit/fakes.dart';
 export 'src/test_kit/golden_helpers.dart';
