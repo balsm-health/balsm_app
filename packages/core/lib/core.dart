@@ -38,6 +38,7 @@ export 'src/contracts/account_summary.dart';
 export 'src/contracts/read_account_repository.dart';
 export 'src/contracts/account_read_providers.dart';
 export 'src/localization/translation_catalog.dart';
+export 'src/localization/localization_util.dart';
 export 'src/localization/country_registry.dart';
 export 'src/crash/sentry_init.dart';
 export 'src/telemetry/analytics_logger.dart';
