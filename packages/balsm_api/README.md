@@ -1,10 +1,10 @@
 ---
 context: infrastructure
-plane: cross-plane
+plane: consumer
 features:
-  - "P001: BalsmApiClient (dio wrapper) + auth interceptor — extracted API layer"
+  - "P001: typed HTTP clients for the Balsm .NET API (auth, account, sessions, deletion, disclosure, emergency QR)"
 ---
 
 # balsm_api
 
-HTTP client layer for the Balsm backend APIs — infrastructure, not a bounded context. Wraps dio with auth interception; modules consume it through `core`'s abstractions. Convention: `Balsm-Core/architecture/bounded-contexts/README.md`.
+Transport layer: Dio-based BalsmApiClient, typed per-context clients, DTOs, ApiException, PhiLeakInterceptor. DTOs are Strings/primitives by design - domain modules wrap them into typed VOs (anti-corruption).

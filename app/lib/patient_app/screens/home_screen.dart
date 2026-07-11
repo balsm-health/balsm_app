@@ -10,6 +10,11 @@ import '../widgets/account_switcher.dart';
 import 'report_flow.dart';
 
 /// Home tab — faithful port of `home.jsx` HomeScreen.
+///
+/// TODO(app-shell): re-implement what the removed `modules/home` prototyped —
+/// T173 locale refresh (listen for [CountryChanged] on the EventBus and
+/// invalidate `accountSummaryProvider`) and the onboarding nudge cards
+/// (claim handle / emergency card / add medication, hidden when done).
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 

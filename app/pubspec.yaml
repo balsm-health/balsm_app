@@ -16,8 +16,6 @@ dependencies:
     path: ../modules/auth
   disclosure:
     path: ../modules/disclosure
-  home:
-    path: ../modules/home
   profile:
     path: ../modules/profile
   emergency_card:
