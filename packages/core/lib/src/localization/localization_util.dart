@@ -1,78 +1,65 @@
+import 'dart:async';
 import 'dart:ui' show Locale;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The app's active locale. Set by the app shell at bootstrap and whenever
-/// the user switches language (e.g. on `LanguageChanged`). Every
-/// [StringsProvider] re-emits its typed bundle when this changes, so business
-/// logic and UI react without touching `BuildContext`/`Localizations`.
-final currentLocaleProvider = StateProvider<Locale>(
-  (_) => const Locale('en'),
-);
-
-/// Locale-driven typed strings for business logic, one per module/package.
+/// Active-locale holder — **pure Dart, no riverpod**, so any layer (use
+/// cases, infrastructure, notification builders) may read it. The app shell
+/// is the only writer ([setLocale] at bootstrap and on language switch).
 ///
-/// Each module wraps its generated i69n bundles once, in its
-/// `presentation/i18n/i18n.dart`:
-///
-/// ```dart
-/// import 'messages_ar.i69n.dart' deferred as ar; // Arabic loads on demand
-///
-/// final authStringsProvider = LocalizationUtil.getProvider(
-///   LocalizedStrings.defaultLangs(
-///     en: LocaleFactory.sync(() => const Messages()),
-///     ar: LocaleFactory.deferred(ar.loadLibrary, () => ar.Messages_ar()),
-///   ),
-/// );
-/// ```
-///
-/// Consumers — use cases, notifiers, screens — just watch the typed bundle:
-///
-/// ```dart
-/// final m = ref.watch(authStringsProvider); // Messages
-/// m.lockout.title;                          // compile-time checked
-/// ```
+/// Memory note: the statics here are a [Locale], one broadcast controller,
+/// and canonicalized const bundles — app-lifetime by design, nothing worth
+/// evicting. The one obligation statics DO impose: every [stream] subscriber
+/// must cancel (the riverpod adapter below does; match it if you subscribe
+/// manually).
 abstract class LocalizationUtil {
   LocalizationUtil._();
 
-  /// Builds a locale-reactive provider around a module's [LocalizedStrings].
-  /// The emitted value tracks [currentLocaleProvider]; deferred locales emit
-  /// the fallback bundle first and re-emit once their library loads.
+  static Locale _current = const Locale('en');
+  // sync: listeners (StringsProviders) see the change in the same turn a
+  // widget calls setLocale — no one-microtask flash of the previous locale.
+  static final _controller = StreamController<Locale>.broadcast(sync: true);
+
+  static Locale get currentLocale => _current;
+
+  /// Locale changes (distinct). Cancel your subscription.
+  static Stream<Locale> get stream => _controller.stream;
+
+  static void setLocale(Locale locale) {
+    if (locale == _current) return;
+    _current = locale;
+    _controller.add(locale);
+  }
+
+  /// Presentation-layer adapter: a locale-reactive provider around a
+  /// module's [LocalizedStrings]. Business logic must NOT use this — read
+  /// `strings.current` (sync) or `strings.load()` (deferred-safe) instead.
   static StateNotifierProvider<StringsProvider<T>, T> getProvider<T>(
     LocalizedStrings<T> strings,
   ) {
-    return StateNotifierProvider<StringsProvider<T>, T>((ref) {
-      final notifier = StringsProvider<T>(
-        strings,
-        ref.read(currentLocaleProvider),
-      );
-      ref.listen<Locale>(
-        currentLocaleProvider,
-        (_, next) => notifier.setLocale(next),
-      );
-      return notifier;
-    });
+    return StateNotifierProvider<StringsProvider<T>, T>(
+      (ref) => StringsProvider<T>(strings),
+    );
   }
 }
 
-/// Emits the typed bundle for the active locale; re-emits on locale switch
-/// and when a deferred locale finishes loading.
+/// Locale-reactive [StateNotifier] emitting the typed bundle. Presentation
+/// only; subscribes to [LocalizationUtil.stream] and cancels on dispose.
 class StringsProvider<T> extends StateNotifier<T> {
-  StringsProvider(this._strings, Locale initial)
-      : super(_strings.resolveSync(initial)) {
-    // Kick the async path too: if `initial` is deferred and unloaded we start
-    // on the fallback bundle and swap in the real one when it arrives.
-    setLocale(initial);
+  StringsProvider(this._strings) : super(_strings.current) {
+    _subscription = LocalizationUtil.stream.listen(_apply);
+    _apply(LocalizationUtil.currentLocale); // kick deferred load if needed
   }
 
   final LocalizedStrings<T> _strings;
+  late final StreamSubscription<Locale> _subscription;
 
   /// Monotonic switch counter. A deferred load only applies its result if no
-  /// newer [setLocale] happened while it was in flight — otherwise a slow
+  /// newer switch happened while it was in flight — otherwise a slow
   /// `loadLibrary` would overwrite the locale the user switched to meanwhile.
   int _epoch = 0;
 
-  void setLocale(Locale locale) {
+  void _apply(Locale locale) {
     final epoch = ++_epoch;
     final sync = _strings.resolveSyncOrNull(locale);
     if (sync != null) {
@@ -80,15 +67,28 @@ class StringsProvider<T> extends StateNotifier<T> {
       return;
     }
     state = _strings.resolveSync(locale); // fallback while loading
-    _strings.load(locale).then((loaded) {
+    _strings.loadFor(locale).then((loaded) {
       if (mounted && epoch == _epoch) state = loaded;
     });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }
 
 /// A set of per-locale factories for one generated bundle type [T], with
 /// lazy construction, deferred-library support, and language-subtag fallback
 /// (`ar-EG` → `ar`) then first-registered-locale fallback.
+///
+/// Pure Dart — this is the object business logic touches:
+///
+/// ```dart
+/// final m = authStrings.current;          // sync, active locale
+/// final m = await authStrings.load();     // deferred-safe, active locale
+/// ```
 class LocalizedStrings<T> {
   LocalizedStrings(Map<Locale, LocaleFactory<T>> factories)
       : _factories = Map.of(factories),
@@ -109,13 +109,19 @@ class LocalizedStrings<T> {
 
   final Map<Locale, LocaleFactory<T>> _factories;
 
+  /// Best bundle for the ACTIVE locale available synchronously right now.
+  T get current => resolveSync(LocalizationUtil.currentLocale);
+
+  /// Bundle for the ACTIVE locale, awaiting its deferred library if needed.
+  Future<T> load() => loadFor(LocalizationUtil.currentLocale);
+
   LocaleFactory<T> _factoryFor(Locale locale) =>
       _factories[locale] ??
       _factories[Locale(locale.languageCode)] ??
       _factories.values.first;
 
   /// The bundle for [locale] if it can be produced without awaiting a
-  /// deferred library; null when that locale still needs [load].
+  /// deferred library; null when that locale still needs [loadFor].
   T? resolveSyncOrNull(Locale locale) {
     final f = _factoryFor(locale);
     if (f.isReady) return f.instance;
@@ -138,8 +144,6 @@ class LocalizedStrings<T> {
         return f.instance as T;
       }
     }
-    // Every locale is deferred and unloaded — force the first to load lazily
-    // is impossible synchronously; fail loudly rather than lie.
     throw StateError(
       'LocalizedStrings<$T>: no locale is loadable synchronously; '
       'register at least one non-deferred locale.',
@@ -147,7 +151,7 @@ class LocalizedStrings<T> {
   }
 
   /// Resolves [locale], awaiting its deferred library when needed.
-  Future<T> load(Locale locale) async {
+  Future<T> loadFor(Locale locale) async {
     final f = _factoryFor(locale);
     await f.ensureLoaded();
     return f.instance as T;
