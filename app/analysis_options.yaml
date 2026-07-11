@@ -9,6 +9,12 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # i69n-generated bundles — getters mirror the snake_case JSON keys, which
+    # trips non_constant_identifier_names. Generated, never hand-edited.
+    - lib/**/*.i69n.dart
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

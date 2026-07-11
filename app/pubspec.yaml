@@ -35,6 +35,12 @@ dependencies:
   app_links: ^6.3.0
   url_strategy: ^0.3.0
   lucide_icons: ^0.257.0
+  # Typed i18n codegen (same fork as core) — app-shell strings live in
+  # patient_app/i18n/*.i69n.json, generated via build_runner.
+  i69n:
+    git:
+      url: https://github.com/hossameldinmi/i69n
+      ref: feature/remote-source
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   qr_flutter: ^4.1.0
@@ -54,6 +60,7 @@ dev_dependencies:
   # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
   golden_toolkit: ^0.15.0
   flutter_lints: ^4.0.0
+  build_runner: ^2.4.13
 dependency_overrides:
   # path_provider_foundation 2.6.0 migrated to package:objective_c + the
   # experimental native-assets build, which mislinks on iOS (Foundation not

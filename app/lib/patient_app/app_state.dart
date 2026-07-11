@@ -81,23 +81,58 @@ class PatientAppState extends ChangeNotifier {
 
   FamilyAccount get account =>
       kFamilyAccounts.firstWhere((a) => a.id == activeAccountId, orElse: () => kFamilyAccounts.first);
-  Country get country =>
-      kCountries.firstWhere((c) => c.code == countryCode, orElse: () => kCountries.first);
+  Country get country => kCountries.firstWhere((c) => c.code == countryCode, orElse: () => kCountries.first);
 
-  void setLang(String l) { lang = l; _save(); notifyListeners(); }
-  void setAccent(Accent a) { accent = a; _save(); notifyListeners(); }
+  void setLang(String l) {
+    lang = l;
+    _save();
+    notifyListeners();
+  }
+
+  void setAccent(Accent a) {
+    accent = a;
+    _save();
+    notifyListeners();
+  }
+
   void go(String r) {
-    if (r == 'app') { tab = 'home'; today = null; }
+    if (r == 'app') {
+      tab = 'home';
+      today = null;
+    }
     if (r == 'welcome') today = null;
     route = r;
     _save(); // persist signed-in / signed-out
     notifyListeners();
   }
-  void setTab(String tb) { tab = tb; notifyListeners(); }
-  void switchAccount(String id) { activeAccountId = id; _save(); notifyListeners(); }
-  void switchCloudProvider(String to) { storageProvider = to; _save(); notifyListeners(); }
-  void setCountry(String code) { countryCode = code; _save(); notifyListeners(); }
-  void completeCheckin(CheckinResult r) { today = r; notifyListeners(); }
+
+  void setTab(String tb) {
+    tab = tb;
+    notifyListeners();
+  }
+
+  void switchAccount(String id) {
+    activeAccountId = id;
+    _save();
+    notifyListeners();
+  }
+
+  void switchCloudProvider(String to) {
+    storageProvider = to;
+    _save();
+    notifyListeners();
+  }
+
+  void setCountry(String code) {
+    countryCode = code;
+    _save();
+    notifyListeners();
+  }
+
+  void completeCheckin(CheckinResult r) {
+    today = r;
+    notifyListeners();
+  }
 }
 
 /// Result captured by the self-report flow.
@@ -111,8 +146,7 @@ class CheckinResult {
 
 /// InheritedNotifier exposing [PatientAppState] to the widget tree.
 class AppScope extends InheritedNotifier<PatientAppState> {
-  const AppScope({super.key, required PatientAppState state, required super.child})
-      : super(notifier: state);
+  const AppScope({super.key, required PatientAppState state, required super.child}) : super(notifier: state);
 
   static PatientAppState of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
