@@ -1,4 +1,6 @@
+import 'package:core/core.dart' show accountSummaryProvider;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../data.dart';
@@ -7,14 +9,16 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/mood_face.dart';
 import '../widgets/account_switcher.dart';
+import 'personal_details.dart';
+import 'profile_subscreens.dart';
 import 'report_flow.dart';
 
 /// Home tab — faithful port of `home.jsx` HomeScreen.
 ///
-/// TODO(app-shell): re-implement what the removed `modules/home` prototyped —
-/// T173 locale refresh (listen for [CountryChanged] on the EventBus and
-/// invalidate `accountSummaryProvider`) and the onboarding nudge cards
-/// (claim handle / emergency card / add medication, hidden when done).
+/// Carries the onboarding nudges from the folded `modules/home`: claim handle
+/// (real — hidden once the account summary has a handle), emergency card and
+/// first medication (placeholder-gated until sibling modules expose
+/// completion flags). T173 locale refresh lives in `main_patient.dart`.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -59,6 +63,11 @@ class HomeScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: checkedIn ? _HeroDone() : _HeroCheckin(),
         ),
+
+        // Onboarding nudges (from the folded modules/home). Handle nudge is
+        // driven by the real account summary; the other two are shown until
+        // sibling modules expose completion flags.
+        const _NudgeSection(),
 
         // Upcoming appointment strip
         if (nextAppt != null && apptDoc != null)
@@ -150,6 +159,55 @@ class HomeScreen extends StatelessWidget {
       ],
       ),
     );
+  }
+}
+
+/// Onboarding nudge cards. Rendered in the home's own `_Shortcut` language;
+/// gating logic ported from the folded `modules/home` dashboard.
+class _NudgeSection extends ConsumerWidget {
+  const _NudgeSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    // Real signal: hide the handle nudge once the account has one. While the
+    // summary is loading/errored, stay quiet rather than flash a wrong nudge.
+    final summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final needsHandle =
+        ref.watch(accountSummaryProvider).hasValue && summary?.handle == null;
+    // Owned by sibling modules; offered until they expose completion flags.
+    const needsEmergencyCard = true;
+    const needsFirstMedication = true;
+
+    return Column(children: [
+      if (needsHandle)
+        _Shortcut(
+          icon: LucideIcons.atSign,
+          iconBg: T.petalMint50,
+          iconFg: T.petalMint,
+          title: s.t('nudge_handle'),
+          subtitle: s.t('nudge_handle_sub'),
+          onTap: () => openPersonalDetails(context),
+        ),
+      if (needsEmergencyCard)
+        _Shortcut(
+          icon: LucideIcons.shieldAlert,
+          iconBg: T.petalAqua50,
+          iconFg: T.petalAqua,
+          title: s.t('nudge_ec'),
+          subtitle: s.t('nudge_ec_sub'),
+          onTap: () => openEmergency(context),
+        ),
+      if (needsFirstMedication)
+        _Shortcut(
+          icon: LucideIcons.pill,
+          iconBg: T.petalViolet50,
+          iconFg: T.petalViolet,
+          title: s.t('nudge_med'),
+          subtitle: s.t('nudge_med_sub'),
+          onTap: () => s.setTab('meds'),
+        ),
+    ]);
   }
 }
 

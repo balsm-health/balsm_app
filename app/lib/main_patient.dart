@@ -46,6 +46,13 @@ Future<void> main() async {
     analytics: analytics,
   ).start();
 
+  // T173: country change → refresh locale-derived state. Re-fetches the
+  // account summary so greeting/locale-dependent reads reflect the change.
+  // App-lifetime subscription, mirrors the forwarder above.
+  container.read(eventBusProvider).on<CountryChanged>().listen((_) {
+    container.invalidate(accountSummaryProvider);
+  });
+
   final state = await PatientAppState.load();
   runApp(
     UncontrolledProviderScope(

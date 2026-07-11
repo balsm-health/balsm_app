@@ -1,6 +1,14 @@
 /// Bilingual copy ported verbatim from the prototype `data.jsx` (STR).
 /// Access via `tr(key, lang)`.
 const Map<String, Map<String, String>> kStrings = {
+  // Home onboarding nudges (ported from the folded modules/home)
+  'nudge_handle': {'en': 'Claim your handle', 'ar': 'احجز معرّفك'},
+  'nudge_handle_sub': {'en': 'Get set up', 'ar': 'ابدأ الإعداد'},
+  'nudge_ec': {'en': 'Add emergency card', 'ar': 'أضف بطاقة الطوارئ'},
+  'nudge_ec_sub': {'en': 'Be prepared', 'ar': 'كن مستعداً'},
+  'nudge_med': {'en': 'Add a medication', 'ar': 'أضف دواءً'},
+  'nudge_med_sub': {'en': 'Stay on track', 'ar': 'واظب على المتابعة'},
+
   // Welcome
   'w_title': {'en': 'Your health, kept close.', 'ar': 'صحتك، دائماً قريبة.'},
   'w_sub': {
