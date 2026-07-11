@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../i18n/i18n.dart';
+
 /// T166 — Account lockout screen.
 ///
 /// Shown after too many failed sign-in attempts (HTTP 423). Displays a live
@@ -12,7 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// "Try again" button that pops back to the sign-in flow. Also surfaces a
 /// support section (mailto + status page).
 ///
-/// RTL-aware (countdown is LTR-isolated) and localized via [TranslationCatalog].
+/// RTL-aware (countdown is LTR-isolated) and localized via the module's i18n bundle.
 /// PHI constraint: no email/identifier is displayed or logged.
 class LockoutScreen extends ConsumerStatefulWidget {
   const LockoutScreen({super.key, required this.lockedUntil});
@@ -62,11 +64,14 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
     return '$minutes:$seconds';
   }
 
+  /// Module-owned strings (presentation/i18n). Missing keys fall back to the
+  /// inline default so unfinished copy never renders as a raw key.
   String _t(String key, String fallback, String locale) {
-    final catalog = ref.read(translationCatalogProvider);
-    return catalog.hasTranslation(key, locale)
-        ? catalog.translate(key, locale: locale)
-        : fallback;
+    try {
+      final value = authMessagesOf(locale)[key];
+      if (value is String) return value;
+    } catch (_) {}
+    return fallback;
   }
 
   Future<void> _emailSupport() async {
@@ -107,7 +112,7 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                _t('auth.lockout.title', 'Too many sign-in attempts', locale),
+                _t('lockout.title', 'Too many sign-in attempts', locale),
                 style: theme.textTheme.headlineMedium?.copyWith(
                   color: BalsmColors.ink900,
                   fontWeight: FontWeight.w700,
@@ -116,7 +121,7 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
               const SizedBox(height: 8),
               Text(
                 _t(
-                  'auth.lockout.body',
+                  'lockout.body',
                   'For your security, sign-in is paused. Please wait before trying again.',
                   locale,
                 ),
@@ -143,14 +148,14 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
                 ),
               const SizedBox(height: 32),
               BalsmButton(
-                label: _t('auth.lockout.retry', 'Try again', locale),
+                label: _t('lockout.retry', 'Try again', locale),
                 onPressed:
                     _expired ? () => Navigator.of(context).maybePop() : null,
               ),
               const Spacer(),
               // Support section
               Text(
-                _t('auth.lockout.needHelp', 'Need help?', locale),
+                _t('lockout.needHelp', 'Need help?', locale),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: BalsmColors.ink700,
                   fontWeight: FontWeight.w600,
@@ -159,14 +164,14 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
               const SizedBox(height: 8),
               _SupportRow(
                 icon: Icons.mail_outline,
-                label: _t('auth.lockout.contactSupport',
+                label: _t('lockout.contactSupport',
                     'Email $_supportEmail', locale),
                 onTap: _emailSupport,
               ),
               const SizedBox(height: 4),
               _SupportRow(
                 icon: Icons.public,
-                label: _t('auth.lockout.serviceStatus',
+                label: _t('lockout.serviceStatus',
                     'Check service status', locale),
                 onTap: _openStatus,
               ),

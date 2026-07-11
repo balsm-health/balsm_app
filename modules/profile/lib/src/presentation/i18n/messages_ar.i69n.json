@@ -1,0 +1,17 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "ar",
+  "title": "الملف الصحي",
+  "bloodType": "فصيلة الدم",
+  "allergies": {
+    "label": "الحساسية",
+    "add": "إضافة حساسية"
+  },
+  "conditions": "الحالات الصحية",
+  "contacts": "جهات اتصال الطوارئ",
+  "severity": {
+    "mild": "خفيفة",
+    "moderate": "متوسطة",
+    "severe": "شديدة"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "list": {
+    "empty": "No medications yet"
+  },
+  "add": "Add medication",
+  "today": {
+    "title": "Today's medications"
+  },
+  "outcome": {
+    "taken": "Taken",
+    "skipped": "Skipped",
+    "snoozed": "Snoozed",
+    "missed": "Missed"
+  },
+  "notification": {
+    "body": "Time to check your medications"
+  }
+}

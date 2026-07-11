@@ -4,6 +4,7 @@ import 'package:core/core.dart';
 import '../../application/use_cases/accept_disclosure_use_case.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/disclosure_dao.dart';
+import '../i18n/i18n.dart';
 
 /// Riverpod provider for [AcceptDisclosureUseCase].
 final acceptDisclosureUseCaseProvider =
@@ -24,7 +25,7 @@ final acceptDisclosureUseCaseProvider =
 /// - Scroll-based; CTA is pinned at the bottom and becomes enabled only
 ///   after the user has scrolled to the end of the content.
 /// - Shows the supervisory authority for the patient's country.
-/// - Fully localized via [TranslationCatalog].
+/// - Fully localized via the module's i18n bundle.
 /// - RTL-aware: wraps content in [Directionality] based on [preferredLanguage].
 class ConsolidatedDisclosureScreen extends ConsumerStatefulWidget {
   const ConsolidatedDisclosureScreen({
@@ -116,9 +117,17 @@ class _ConsolidatedDisclosureScreenState
 
   @override
   Widget build(BuildContext context) {
-    final catalog = ref.watch(translationCatalogProvider);
+    // Module-owned strings (presentation/i18n); unknown keys fall back to the
+    // key itself, matching the old catalog behavior.
     final locale = widget.preferredLanguage;
-    final t = (String key) => catalog.translate(key, locale: locale);
+    final messages = disclosureMessagesOf(locale);
+    String t(String key) {
+      try {
+        final value = messages[key];
+        if (value is String) return value;
+      } catch (_) {}
+      return key;
+    }
 
     final registry = ref.watch(countryRegistryProvider);
     final supervisoryAuthority =
@@ -138,7 +147,7 @@ class _ConsolidatedDisclosureScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      t('disclosure.title'),
+                      t('title'),
                       style: Theme.of(context)
                           .textTheme
                           .headlineMedium
@@ -146,7 +155,7 @@ class _ConsolidatedDisclosureScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      t('disclosure.subtitle'),
+                      t('subtitle'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: BalsmColors.ink600,
                           ),
@@ -163,46 +172,46 @@ class _ConsolidatedDisclosureScreenState
                   children: [
                     _SectionCard(
                       icon: Icons.storage_outlined,
-                      title: t('disclosure.section.data_collected.title'),
-                      body: t('disclosure.section.data_collected.body'),
+                      title: t('section.data_collected.title'),
+                      body: t('section.data_collected.body'),
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.lock_outline,
-                      title: t('disclosure.section.how_protected.title'),
-                      body: t('disclosure.section.how_protected.body'),
+                      title: t('section.how_protected.title'),
+                      body: t('section.how_protected.body'),
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.gavel_outlined,
-                      title: t('disclosure.section.your_rights.title'),
-                      body: t('disclosure.section.your_rights.body'),
+                      title: t('section.your_rights.title'),
+                      body: t('section.your_rights.body'),
                     ),
                     const SizedBox(height: 12),
                     // Supervisory authority card
                     _SectionCard(
                       icon: Icons.account_balance_outlined,
-                      title: t('disclosure.section.supervisory.title'),
-                      body: t('disclosure.section.supervisory.body')
+                      title: t('section.supervisory.title'),
+                      body: t('section.supervisory.body')
                           .replaceAll('{authority}', supervisoryAuthority),
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.share_outlined,
-                      title: t('disclosure.section.sharing.title'),
-                      body: t('disclosure.section.sharing.body'),
+                      title: t('section.sharing.title'),
+                      body: t('section.sharing.body'),
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.delete_outline,
-                      title: t('disclosure.section.deletion.title'),
-                      body: t('disclosure.section.deletion.body'),
+                      title: t('section.deletion.title'),
+                      body: t('section.deletion.body'),
                     ),
                     const SizedBox(height: 24),
                     if (!_scrolledToEnd)
                       Center(
                         child: Text(
-                          t('disclosure.scroll_to_continue'),
+                          t('scroll_to_continue'),
                           style: const TextStyle(
                             color: BalsmColors.ink500,
                             fontSize: 13,
@@ -236,7 +245,7 @@ class _ConsolidatedDisclosureScreenState
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 child: BalsmButton(
-                  label: t('disclosure.accept'),
+                  label: t('accept'),
                   onPressed: _scrolledToEnd && !_loading ? _accept : null,
                   loading: _loading,
                 ),

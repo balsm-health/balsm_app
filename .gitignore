@@ -13,3 +13,4 @@
 *.p12
 *.mobileprovision
 **/coverage/
+*.log

@@ -1,0 +1,15 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "account": {
+    "settings": "Settings",
+    "country": "Country",
+    "language": "Language"
+  },
+  "handle": {
+    "title": "Choose your handle",
+    "available": "Available",
+    "taken": "Already taken",
+    "invalid": "Invalid handle"
+  }
+}

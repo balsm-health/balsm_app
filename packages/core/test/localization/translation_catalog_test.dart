@@ -6,12 +6,11 @@ void main() {
 
   test('resolves the English default bundle', () {
     expect(c.translate('common.done', locale: 'en'), 'Done');
-    expect(c.translate('auth.email.title', locale: 'en'), 'Enter your email');
   });
 
   test('resolves an Arabic locale', () {
     expect(c.translate('common.done', locale: 'ar'), isNotEmpty);
-    expect(c.translate('auth.email.title', locale: 'ar-EG'), isNotEmpty);
+    expect(c.translate('common.done', locale: 'ar-EG'), isNotEmpty);
   });
 
   test('all ar-* regions resolve to the single Arabic bundle', () {
@@ -34,10 +33,6 @@ void main() {
     expect(c.translate('common.continue', locale: 'en'), 'Continue');
   });
 
-  test('aliased leaf-vs-namespace key resolves (profile.allergies)', () {
-    expect(c.translate('profile.allergies', locale: 'en'), isNotEmpty);
-    expect(c.translate('profile.allergies', locale: 'en'), isNot('profile.allergies'));
-  });
 
   test('unknown locale falls back to the English bundle', () {
     expect(c.translate('common.done', locale: 'fr'), 'Done');

@@ -1,0 +1,9 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "title": "Emergency card",
+  "generate": "Generate card",
+  "ttl": "Expires in",
+  "revoke": "Revoke card",
+  "expired": "This card has expired"
+}

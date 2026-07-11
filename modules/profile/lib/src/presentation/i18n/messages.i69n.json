@@ -1,0 +1,17 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "title": "Health profile",
+  "bloodType": "Blood type",
+  "allergies": {
+    "label": "Allergies",
+    "add": "Add allergy"
+  },
+  "conditions": "Conditions",
+  "contacts": "Emergency contacts",
+  "severity": {
+    "mild": "Mild",
+    "moderate": "Moderate",
+    "severe": "Severe"
+  }
+}

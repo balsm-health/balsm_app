@@ -5,6 +5,10 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
 dependencies:
+  i69n:
+    git:
+      url: https://github.com/hossameldinmi/i69n
+      ref: feature/remote-source
   flutter:
     sdk: flutter
   core:
@@ -15,6 +19,7 @@ dependencies:
   timezone: ^0.9.4
   drift: ^2.29.0
 dev_dependencies:
+  build_runner: ^2.4.13
   custom_lint: ^0.8.0
   balsm_boundary_lint:
     path: ../../packages/balsm_boundary_lint

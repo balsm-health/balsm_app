@@ -1,0 +1,32 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "country": {
+    "title": "Select your country",
+    "search": "Search countries"
+  },
+  "email": {
+    "title": "Enter your email",
+    "label": "Email address",
+    "cta": "Send code"
+  },
+  "otp": {
+    "title": "Enter verification code",
+    "subtitle": "We sent a code to your email",
+    "resend": "Resend code",
+    "error": {
+      "invalid": "Invalid code. Please try again.",
+      "expired": "This code has expired. Request a new one."
+    }
+  },
+  "social": {
+    "google": "Continue with Google",
+    "apple": "Continue with Apple",
+    "divider": "or"
+  },
+  "lockout": {
+    "title": "Too many attempts",
+    "body": "Your account is temporarily locked. Please try again later.",
+    "support": "Contact support"
+  }
+}

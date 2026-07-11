@@ -1,0 +1,15 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "ar",
+  "account": {
+    "settings": "الإعدادات",
+    "country": "الدولة",
+    "language": "اللغة"
+  },
+  "handle": {
+    "title": "اختر المعرّف الخاص بك",
+    "available": "متاح",
+    "taken": "مستخدم بالفعل",
+    "invalid": "معرّف غير صالح"
+  }
+}
