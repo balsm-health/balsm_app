@@ -67,7 +67,13 @@ class StringsProvider<T> extends StateNotifier<T> {
 
   final LocalizedStrings<T> _strings;
 
+  /// Monotonic switch counter. A deferred load only applies its result if no
+  /// newer [setLocale] happened while it was in flight — otherwise a slow
+  /// `loadLibrary` would overwrite the locale the user switched to meanwhile.
+  int _epoch = 0;
+
   void setLocale(Locale locale) {
+    final epoch = ++_epoch;
     final sync = _strings.resolveSyncOrNull(locale);
     if (sync != null) {
       state = sync;
@@ -75,7 +81,7 @@ class StringsProvider<T> extends StateNotifier<T> {
     }
     state = _strings.resolveSync(locale); // fallback while loading
     _strings.load(locale).then((loaded) {
-      if (mounted) state = loaded;
+      if (mounted && epoch == _epoch) state = loaded;
     });
   }
 }

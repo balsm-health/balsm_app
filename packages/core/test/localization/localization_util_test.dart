@@ -65,6 +65,24 @@ void main() {
     expect(built, 1);
   });
 
+  test('stale deferred load does not overwrite a newer locale switch', () async {
+    final gate = Completer<void>();
+    final p = LocalizationUtil.getProvider(LocalizedStrings.defaultLangs(
+      en: LocaleFactory.sync(() => const _Msgs('en')),
+      ar: LocaleFactory.deferred(() => gate.future, () => const _Msgs('ar')),
+    ));
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+
+    c.read(currentLocaleProvider.notifier).state = const Locale('ar');
+    expect(c.read(p).tag, 'en'); // ar still loading
+    // User switches back before the Arabic library finishes loading.
+    c.read(currentLocaleProvider.notifier).state = const Locale('en');
+    gate.complete();
+    await Future<void>.delayed(Duration.zero);
+    expect(c.read(p).tag, 'en'); // late ar completion must NOT win
+  });
+
   test('all-deferred registry fails loudly on sync resolve', () {
     final strings = LocalizedStrings<_Msgs>({
       const Locale('ar'): LocaleFactory.deferred(
