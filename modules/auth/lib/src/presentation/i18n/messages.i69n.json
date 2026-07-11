@@ -27,6 +27,10 @@
   "lockout": {
     "title": "Too many attempts",
     "body": "Your account is temporarily locked. Please try again later.",
-    "support": "Contact support"
+    "support": "Contact support",
+    "retry": "Try again",
+    "needHelp": "Need help?",
+    "contactSupport(String email)": "Email $email",
+    "serviceStatus": "Check service status"
   }
 }

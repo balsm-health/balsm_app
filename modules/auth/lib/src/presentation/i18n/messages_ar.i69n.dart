@@ -165,6 +165,10 @@ class LockoutMessages_ar extends LockoutMessages {
   String get title => "محاولات كثيرة جدًا";
   String get body => "تم قفل حسابك مؤقتًا. حاول مرة أخرى لاحقًا.";
   String get support => "تواصل مع الدعم";
+  String get retry => "حاول مرة أخرى";
+  String get needHelp => "تحتاج مساعدة؟";
+  String contactSupport(String email) => "راسل $email";
+  String get serviceStatus => "تحقق من حالة الخدمة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -178,6 +182,14 @@ class LockoutMessages_ar extends LockoutMessages {
         return body;
       case 'support':
         return support;
+      case 'retry':
+        return retry;
+      case 'needHelp':
+        return needHelp;
+      case 'contactSupport':
+        return contactSupport;
+      case 'serviceStatus':
+        return serviceStatus;
       default:
         return super[key];
     }

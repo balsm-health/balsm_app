@@ -2,8 +2,36 @@
   "_i69n": "nothrow",
   "_i69n_language": "en",
   "title": "Important notice",
+  "subtitle": "How Balsm handles your health data",
   "scroll": "Scroll to read the full notice",
+  "scrollToContinue": "Scroll to the end to continue",
   "accept": "I have read and accept",
+  "section": {
+    "dataCollected": {
+      "title": "What we collect",
+      "body": "Your health profile, medications, and dose history stay on this device. Balsm's cloud stores only your account identity — never your medical data."
+    },
+    "howProtected": {
+      "title": "How it's protected",
+      "body": "Everything on this device is encrypted. Backups are encrypted with a key that only you hold."
+    },
+    "yourRights": {
+      "title": "Your rights",
+      "body": "You can export, back up, or permanently delete your data at any time from Settings."
+    },
+    "supervisory": {
+      "title": "Supervisory authority",
+      "body(String authority)": "Data protection complaints may be raised with $authority."
+    },
+    "sharing": {
+      "title": "Sharing",
+      "body": "Nothing is shared without your explicit action. Emergency-card data is shared only through QR links you create and can revoke."
+    },
+    "deletion": {
+      "title": "Deletion",
+      "body": "Requesting account deletion removes your cloud account after a grace period; data on this device is wiped at sign-out."
+    }
+  },
   "authority": {
     "eg": "Egyptian Ministry of Health and Population",
     "sa": "Saudi Ministry of Health",

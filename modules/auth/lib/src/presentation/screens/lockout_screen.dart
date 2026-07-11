@@ -64,16 +64,6 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
     return '$minutes:$seconds';
   }
 
-  /// Module-owned strings (presentation/i18n). Missing keys fall back to the
-  /// inline default so unfinished copy never renders as a raw key.
-  String _t(String key, String fallback, String locale) {
-    try {
-      final value = authMessagesOf(locale)[key];
-      if (value is String) return value;
-    } catch (_) {}
-    return fallback;
-  }
-
   Future<void> _emailSupport() async {
     final uri = Uri(scheme: 'mailto', path: _supportEmail);
     await _launch(uri);
@@ -94,7 +84,9 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final locale = Localizations.localeOf(context).languageCode;
+    // Typed, module-owned strings — compile-time checked; Messages_ar extends
+    // Messages, so untranslated Arabic keys fall back to English.
+    final m = authMessagesOf(Localizations.localeOf(context).languageCode).lockout;
 
     return Scaffold(
       backgroundColor: BalsmColors.cream50,
@@ -112,7 +104,7 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                _t('lockout.title', 'Too many sign-in attempts', locale),
+                m.title,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   color: BalsmColors.ink900,
                   fontWeight: FontWeight.w700,
@@ -120,11 +112,7 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                _t(
-                  'lockout.body',
-                  'For your security, sign-in is paused. Please wait before trying again.',
-                  locale,
-                ),
+                m.body,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: BalsmColors.ink600,
                 ),
@@ -148,14 +136,14 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
                 ),
               const SizedBox(height: 32),
               BalsmButton(
-                label: _t('lockout.retry', 'Try again', locale),
+                label: m.retry,
                 onPressed:
                     _expired ? () => Navigator.of(context).maybePop() : null,
               ),
               const Spacer(),
               // Support section
               Text(
-                _t('lockout.needHelp', 'Need help?', locale),
+                m.needHelp,
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: BalsmColors.ink700,
                   fontWeight: FontWeight.w600,
@@ -164,15 +152,13 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
               const SizedBox(height: 8),
               _SupportRow(
                 icon: Icons.mail_outline,
-                label: _t('lockout.contactSupport',
-                    'Email $_supportEmail', locale),
+                label: m.contactSupport(_supportEmail),
                 onTap: _emailSupport,
               ),
               const SizedBox(height: 4),
               _SupportRow(
                 icon: Icons.public,
-                label: _t('lockout.serviceStatus',
-                    'Check service status', locale),
+                label: m.serviceStatus,
                 onTap: _openStatus,
               ),
               const SizedBox(height: 8),

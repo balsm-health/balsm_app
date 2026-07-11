@@ -165,6 +165,10 @@ class LockoutMessages implements i69n.I69nMessageBundle {
   String get body =>
       "Your account is temporarily locked. Please try again later.";
   String get support => "Contact support";
+  String get retry => "Try again";
+  String get needHelp => "Need help?";
+  String contactSupport(String email) => "Email $email";
+  String get serviceStatus => "Check service status";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -178,6 +182,14 @@ class LockoutMessages implements i69n.I69nMessageBundle {
         return body;
       case 'support':
         return support;
+      case 'retry':
+        return retry;
+      case 'needHelp':
+        return needHelp;
+      case 'contactSupport':
+        return contactSupport;
+      case 'serviceStatus':
+        return serviceStatus;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

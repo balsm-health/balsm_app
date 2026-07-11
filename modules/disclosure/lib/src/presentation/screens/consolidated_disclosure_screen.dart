@@ -117,17 +117,9 @@ class _ConsolidatedDisclosureScreenState
 
   @override
   Widget build(BuildContext context) {
-    // Module-owned strings (presentation/i18n); unknown keys fall back to the
-    // key itself, matching the old catalog behavior.
-    final locale = widget.preferredLanguage;
-    final messages = disclosureMessagesOf(locale);
-    String t(String key) {
-      try {
-        final value = messages[key];
-        if (value is String) return value;
-      } catch (_) {}
-      return key;
-    }
+    // Typed, module-owned strings — compile-time checked; Messages_ar extends
+    // Messages, so untranslated Arabic keys fall back to English.
+    final m = disclosureMessagesOf(widget.preferredLanguage);
 
     final registry = ref.watch(countryRegistryProvider);
     final supervisoryAuthority =
@@ -147,7 +139,7 @@ class _ConsolidatedDisclosureScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      t('title'),
+                      m.title,
                       style: Theme.of(context)
                           .textTheme
                           .headlineMedium
@@ -155,7 +147,7 @@ class _ConsolidatedDisclosureScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      t('subtitle'),
+                      m.subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: BalsmColors.ink600,
                           ),
@@ -172,46 +164,45 @@ class _ConsolidatedDisclosureScreenState
                   children: [
                     _SectionCard(
                       icon: Icons.storage_outlined,
-                      title: t('section.data_collected.title'),
-                      body: t('section.data_collected.body'),
+                      title: m.section.dataCollected.title,
+                      body: m.section.dataCollected.body,
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.lock_outline,
-                      title: t('section.how_protected.title'),
-                      body: t('section.how_protected.body'),
+                      title: m.section.howProtected.title,
+                      body: m.section.howProtected.body,
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.gavel_outlined,
-                      title: t('section.your_rights.title'),
-                      body: t('section.your_rights.body'),
+                      title: m.section.yourRights.title,
+                      body: m.section.yourRights.body,
                     ),
                     const SizedBox(height: 12),
                     // Supervisory authority card
                     _SectionCard(
                       icon: Icons.account_balance_outlined,
-                      title: t('section.supervisory.title'),
-                      body: t('section.supervisory.body')
-                          .replaceAll('{authority}', supervisoryAuthority),
+                      title: m.section.supervisory.title,
+                      body: m.section.supervisory.body(supervisoryAuthority),
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.share_outlined,
-                      title: t('section.sharing.title'),
-                      body: t('section.sharing.body'),
+                      title: m.section.sharing.title,
+                      body: m.section.sharing.body,
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
                       icon: Icons.delete_outline,
-                      title: t('section.deletion.title'),
-                      body: t('section.deletion.body'),
+                      title: m.section.deletion.title,
+                      body: m.section.deletion.body,
                     ),
                     const SizedBox(height: 24),
                     if (!_scrolledToEnd)
                       Center(
                         child: Text(
-                          t('scroll_to_continue'),
+                          m.scrollToContinue,
                           style: const TextStyle(
                             color: BalsmColors.ink500,
                             fontSize: 13,
@@ -245,7 +236,7 @@ class _ConsolidatedDisclosureScreenState
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 child: BalsmButton(
-                  label: t('accept'),
+                  label: m.accept,
                   onPressed: _scrolledToEnd && !_loading ? _accept : null,
                   loading: _loading,
                 ),

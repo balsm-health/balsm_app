@@ -27,6 +27,10 @@
   "lockout": {
     "title": "محاولات كثيرة جدًا",
     "body": "تم قفل حسابك مؤقتًا. حاول مرة أخرى لاحقًا.",
-    "support": "تواصل مع الدعم"
+    "support": "تواصل مع الدعم",
+    "retry": "حاول مرة أخرى",
+    "needHelp": "تحتاج مساعدة؟",
+    "contactSupport(String email)": "راسل $email",
+    "serviceStatus": "تحقق من حالة الخدمة"
   }
 }
