@@ -58,7 +58,10 @@ Future<void> main() async {
     container.invalidate(accountSummaryProvider);
   });
 
-  final state = await PatientAppState.load(PatientAppPrefs(globalKV));
+  // Migrate the app-shell preference group before its first read.
+  final paPrefs = PatientAppPrefs(globalKV);
+  await paPrefs.migrate();
+  final state = await PatientAppState.load(paPrefs);
   runApp(
     UncontrolledProviderScope(
       container: container,
