@@ -24,6 +24,8 @@ export 'src/data_source/entity_data_source.dart';
 export 'src/data_source/key_value_data_source.dart';
 export 'src/data_source/data_source_providers.dart';
 export 'src/data_source/module_preferences.dart';
+export 'src/data_source/file_store.dart';
+export 'src/data_source/impl/encrypted_file_store.dart';
 export 'src/data_source/impl/shared_prefs_kv_data_source.dart';
 // TARGETED re-export — only the two transport symbols that unmigrated
 // callers (geofence, disclosure, settings screen) and the PHI fuzz test
