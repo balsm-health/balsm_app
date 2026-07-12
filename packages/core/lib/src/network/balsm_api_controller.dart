@@ -47,7 +47,8 @@ class BalsmApiController {
     required EventBus bus,
   }) {
     return BalsmApiController(
-      client: BalsmApiClient.create(baseUrl: FlavorConfig.current.apiBaseUrl),
+      client: BalsmApiClient.create(
+          baseUrl: FlavorConfig.current.defaultServer.apiBaseUrl),
       store: ActiveServerStore(storage),
       bus: bus,
     );

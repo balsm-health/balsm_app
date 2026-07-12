@@ -22,6 +22,6 @@ class ActiveServerStore {
 
   Future<void> clear() async => _storage.delete(key: _key);
 
-  ServerPreset get defaultPreset =>
-      ServerPreset(label: 'Default', apiBaseUrl: FlavorConfig.current.apiBaseUrl);
+  /// Boot default when nothing was saved: the first configured server.
+  ServerPreset get defaultPreset => FlavorConfig.current.defaultServer;
 }

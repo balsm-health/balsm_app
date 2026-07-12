@@ -118,7 +118,7 @@ class SettingsScreen extends ConsumerWidget {
     try {
       return ref.read(balsmApiClientProvider).dio.options.baseUrl;
     } catch (_) {
-      return FlavorConfig.current.apiBaseUrl;
+      return FlavorConfig.current.defaultServer.apiBaseUrl;
     }
   }
 

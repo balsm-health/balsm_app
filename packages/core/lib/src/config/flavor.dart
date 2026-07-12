@@ -15,14 +15,19 @@ class FlavorConfig {
   final AppBrand brand;
   final Flavor flavor;
 
-  /// The API base URL the app boots against — the [servers] entry matching the
-  /// current [flavor] (dev→Local, staging→Staging, prod→Production).
-  final String apiBaseUrl;
-
   /// The switchable API servers, sourced from the shared `ENVS` define
   /// (`env/envs.json`). The dev server selector lets the user switch between
   /// them.
   final List<ServerPreset> servers;
+
+  /// The server the app boots against when no preset was saved: the FIRST
+  /// [servers] entry. Runtime resolution is `saved preset ?? defaultServer`
+  /// (see `BalsmApiController.init`).
+  ///
+  /// ⚠️ Ordering contract: the first `ENVS` entry must be the correct default
+  /// for the build being shipped — a prod build whose env list starts with a
+  /// Local entry would boot against localhost.
+  ServerPreset get defaultServer => servers.first;
 
   final String? sentryDsn;
   final String appName;
@@ -32,7 +37,6 @@ class FlavorConfig {
   const FlavorConfig({
     required this.brand,
     required this.flavor,
-    required this.apiBaseUrl,
     required this.servers,
     this.sentryDsn,
     required this.appName,
@@ -86,21 +90,6 @@ class FlavorConfig {
     return servers;
   }
 
-  /// The server the given [flavor] boots against: the [servers] entry whose
-  /// label matches the flavor (dev→Local, staging→Staging, prod→Production),
-  /// falling back to the first entry.
-  static ServerPreset _defaultServerFor(Flavor flavor, List<ServerPreset> servers) {
-    final want = switch (flavor) {
-      Flavor.dev => 'local',
-      Flavor.staging => 'staging',
-      Flavor.prod => 'production',
-    };
-    for (final s in servers) {
-      if (s.label.toLowerCase() == want) return s;
-    }
-    return servers.first;
-  }
-
   /// Resolve from `--dart-define`s (`APP`, `FLAVOR`/`ENV`, `ENVS`,
   /// `SENTRY_DSN`). This is the single source of truth — call once at startup.
   static void initFromEnvironment() {
@@ -122,7 +111,6 @@ class FlavorConfig {
     _current = FlavorConfig(
       brand: brand,
       flavor: flavor,
-      apiBaseUrl: _defaultServerFor(flavor, servers).apiBaseUrl,
       servers: servers,
       sentryDsn: sentryDsn.isEmpty ? null : sentryDsn,
       appName: '$base$envSuffix',
