@@ -8,7 +8,7 @@ import 'data_source.dart';
 ///
 /// HOLDS ONLY facility-level, user-independent data: formulary caches,
 /// doctors list, opening hours, per-facility config/flags. It may survive
-/// logout (purged by TTL, not by sign-out).
+/// logout (evicted by the cache implementation, not by sign-out).
 ///
 /// MUST NOT hold PHI or anything derived from a user's interaction with the
 /// facility — that is user-scoped ([UserDataSource]) so logout-wipe covers

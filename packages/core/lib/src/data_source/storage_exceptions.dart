@@ -1,6 +1,6 @@
 /// Fail-loud error model for local persistence (see storage design spec).
 ///
-/// | op      | no active scope        | backend failure          | corrupt value             | absent/expired |
+/// | op      | no active scope        | backend failure          | corrupt value             | absent |
 /// |---------|------------------------|--------------------------|---------------------------|----------------|
 /// | find    | return `null`          | [StorageWriteException]* | [StorageDecodeException]  | return `null`  |
 /// | put     | [NoActiveUserException]/[NoActiveEntityException] | [StorageWriteException] | — | — |

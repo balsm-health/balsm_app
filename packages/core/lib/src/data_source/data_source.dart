@@ -9,25 +9,21 @@ abstract class DataSourceBase<K, V> {}
 
 /// Unscoped (partition-free) CRUD data source.
 ///
-/// `put` accepts per-record persistence options:
-/// - `durable`: record participates in encrypted backup/export
-///   (`SnapshotService`); non-durable records are pure local cache, dropped on
-///   device loss.
-/// - `ttl`: record expires after this duration; expired records read as
-///   `null` and are removed by [purgeExpired].
-///
-/// Error semantics are fail-loud — see [StorageException].
+/// Deliberately policy-free: persistence policies (backup participation,
+/// expiry) are NOT part of the generic contract — an implementation that
+/// needs them owns them (e.g. a cache-tier source may add a policy'd `put`
+/// via a capability interface later). Error semantics are fail-loud — see
+/// [StorageException].
 abstract class DataSource<K, V> extends DataSourceBase<K, V> {
   Future<V?> find(K key);
   Future<List<V>> findAll();
   Future<List<V>> findMany(Iterable<K> keys);
   Future<bool> exists(K key);
-  Future<void> put(K key, V value, {bool durable = false, Duration? ttl});
-  Future<void> putBulk(Map<K, V> values, {bool durable = false, Duration? ttl});
+  Future<void> put(K key, V value);
+  Future<void> putBulk(Map<K, V> values);
   Future<void> delete(K key);
   Future<void> deleteMany(Iterable<K> keys);
   Future<void> clear();
-  Future<void> purgeExpired();
 }
 
 /// Partitioned CRUD data source. `S` is the scope (partition) type — e.g.
@@ -47,10 +43,8 @@ abstract class ScopedDataSource<K, V, S> extends DataSourceBase<K, V> {
   Future<List<V>> findAll({S? scope});
   Future<List<V>> findMany(Iterable<K> keys, {S? scope});
   Future<bool> exists(K key, {S? scope});
-  Future<void> put(K key, V value,
-      {S? scope, bool durable = false, Duration? ttl});
-  Future<void> putBulk(Map<K, V> values,
-      {S? scope, bool durable = false, Duration? ttl});
+  Future<void> put(K key, V value, {S? scope});
+  Future<void> putBulk(Map<K, V> values, {S? scope});
   Future<void> delete(K key, {S? scope});
   Future<void> deleteMany(Iterable<K> keys, {S? scope});
 
@@ -60,12 +54,10 @@ abstract class ScopedDataSource<K, V, S> extends DataSourceBase<K, V> {
   /// Clears EVERY partition — e.g. wiping all entity caches on account
   /// deletion.
   Future<void> clearAll();
-
-  Future<void> purgeExpired();
 }
 
 /// Reactive-read capability for unscoped sources. Implementations emit the
-/// current value on every write/delete, and `null` on expiry of a watched key.
+/// current value on every write, and `null` when a watched key is deleted.
 abstract class WatchableDataSource<K, V> {
   Stream<V?> watch(K key);
   Stream<List<V>> watchAll();
