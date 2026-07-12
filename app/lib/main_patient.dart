@@ -10,7 +10,7 @@ import 'patient_app/shell.dart';
 /// Restores the persisted session so a signed-in user skips the auth flow.
 /// Run: flutter run -t lib/main_patient.dart --flavor dev \
 ///        --dart-define-from-file=env/balsm/dev.json \
-///        --dart-define-from-file=env/envs.json
+///        --dart-define-from-file=env/shared.json
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlavorConfig.initFromEnvironment();

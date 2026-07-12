@@ -78,7 +78,7 @@ jobs:
         run: |
           flutter build apk --release --flavor balsm -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/envs.json \
+            --dart-define-from-file=env/shared.json \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p ../dist
@@ -146,7 +146,7 @@ jobs:
         run: |
           flutter build ipa --release -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/envs.json \
+            --dart-define-from-file=env/shared.json \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }} \
             --export-options-plist=ios/ExportOptions.plist
@@ -158,7 +158,7 @@ jobs:
         run: |
           flutter build ios --release --no-codesign -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/envs.json \
+            --dart-define-from-file=env/shared.json \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p ../dist
@@ -199,7 +199,7 @@ jobs:
         run: |
           flutter build macos --release -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/envs.json \
+            --dart-define-from-file=env/shared.json \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p ../dist
@@ -234,7 +234,7 @@ jobs:
         run: |
           flutter build windows --release -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/envs.json \
+            --dart-define-from-file=env/shared.json \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p ../dist
@@ -270,7 +270,7 @@ jobs:
         run: |
           flutter build linux --release -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/envs.json \
+            --dart-define-from-file=env/shared.json \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p ../dist
@@ -299,7 +299,7 @@ jobs:
         run: |
           flutter build web --release -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/envs.json \
+            --dart-define-from-file=env/shared.json \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p ../dist

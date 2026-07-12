@@ -16,7 +16,7 @@ class FlavorConfig {
   final Flavor flavor;
 
   /// The switchable API servers, sourced from the shared `ENVS` define
-  /// (`env/envs.json`). The dev server selector lets the user switch between
+  /// (`env/shared.json`). The dev server selector lets the user switch between
   /// them.
   final List<ServerPreset> servers;
 
@@ -52,8 +52,7 @@ class FlavorConfig {
 
   bool get isPro => brand == AppBrand.balsm_pro;
 
-  static AppBrand brandFromString(String? s) =>
-      s == 'balsm_pro' ? AppBrand.balsm_pro : AppBrand.balsm;
+  static AppBrand brandFromString(String? s) => s == 'balsm_pro' ? AppBrand.balsm_pro : AppBrand.balsm;
   static Flavor flavorFromString(String? s) => switch (s) {
         'prod' => Flavor.prod,
         'staging' || 'stg' => Flavor.staging,
@@ -62,7 +61,7 @@ class FlavorConfig {
 
   /// Parse the `ENVS` define into the switchable server list.
   ///
-  /// `ENVS` lives in the shared `env/envs.json` as a plain JSON array, e.g.
+  /// `ENVS` lives in the shared `env/shared.json` as a plain JSON array, e.g.
   /// `[{ "name": "Local", "url": "http://localhost:5000" }]`. Because
   /// `--dart-define-from-file` stringifies non-primitive values with Dart's
   /// `toString()` (not JSON), the value reaches us looking like

@@ -12,7 +12,7 @@
         "--flavor",
         "balsm",
         "--dart-define-from-file=env/balsm/dev.json",
-        "--dart-define-from-file=env/envs.json"
+        "--dart-define-from-file=env/shared.json"
       ]
     }
   ],
