@@ -100,4 +100,21 @@ const _phiSchema = <String>[
   CREATE TRIGGER IF NOT EXISTS dose_events_no_delete
   BEFORE DELETE ON dose_events
   BEGIN SELECT RAISE(ABORT, 'dose_events is append-only'); END''',
+  // Health-record vault metadata (records module). The document bytes live in
+  // the app documents dir (file_path); this row is the searchable index.
+  '''
+  CREATE TABLE IF NOT EXISTS health_record (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    tags TEXT NOT NULL,
+    source TEXT NOT NULL,
+    file_type TEXT,
+    file_path TEXT,
+    pages INTEGER,
+    result_note TEXT,
+    taken_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )''',
 ];
