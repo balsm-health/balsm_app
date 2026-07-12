@@ -1,10 +1,11 @@
+// ignore_for_file: constant_identifier_names
 import 'server_preset.dart';
 
 /// Environment axis (a.k.a. build env).
 enum Flavor { dev, staging, prod }
 
-/// Brand axis. `balsm` is the consumer app; `balsmPro` the professional build.
-enum AppBrand { balsm, balsmPro }
+/// Brand axis. `balsm` is the consumer app; `balsm_pro` the professional build.
+enum AppBrand { balsm, balsm_pro }
 
 /// Runtime build configuration, resolved from two independent axes — the
 /// [brand] (Balsm / Balsm-Pro) and the [flavor] (dev / staging / prod) — so a
@@ -45,10 +46,10 @@ class FlavorConfig {
     return _current!;
   }
 
-  bool get isPro => brand == AppBrand.balsmPro;
+  bool get isPro => brand == AppBrand.balsm_pro;
 
   static AppBrand brandFromString(String? s) =>
-      s == 'balsm_pro' || s == 'balsmPro' ? AppBrand.balsmPro : AppBrand.balsm;
+      s == 'balsm_pro' ? AppBrand.balsm_pro : AppBrand.balsm;
   static Flavor flavorFromString(String? s) => switch (s) {
         'prod' => Flavor.prod,
         'staging' || 'stg' => Flavor.staging,
@@ -116,7 +117,7 @@ class FlavorConfig {
     const serversRaw = String.fromEnvironment('ENVS', defaultValue: '');
     const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
     final servers = _parseServers(serversRaw);
-    final base = brand == AppBrand.balsmPro ? 'Balsm Pro' : 'Balsm';
+    final base = brand == AppBrand.balsm_pro ? 'Balsm Pro' : 'Balsm';
     final envSuffix = switch (flavor) { Flavor.dev => ' Dev', Flavor.staging => ' Staging', Flavor.prod => '' };
     _current = FlavorConfig(
       brand: brand,
