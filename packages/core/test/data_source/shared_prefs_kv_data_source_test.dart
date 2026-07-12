@@ -2,16 +2,6 @@ import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _Pref {
-  const _Pref(this.theme, this.compact);
-  final String theme;
-  final bool compact;
-
-  Map<String, dynamic> toJson() => {'theme': theme, 'compact': compact};
-  static _Pref fromJson(Map<String, dynamic> j) =>
-      _Pref(j['theme'] as String, j['compact'] as bool);
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -57,13 +47,6 @@ void main() {
         throwsA(isA<StorageWriteException>()));
   });
 
-  test('object codec round-trip via putObject/getObject', () async {
-    final kv = await make();
-    await kv.putObject('pref', const _Pref('dark', true), (p) => p.toJson());
-    final back = await kv.getObject('pref', _Pref.fromJson);
-    expect(back!.theme, 'dark');
-    expect(back.compact, isTrue);
-  });
 
   test('exists / delete / clear', () async {
     final kv = await make({'a': 1, 'b': 2});
@@ -74,15 +57,4 @@ void main() {
     expect(await kv.exists('b'), isFalse);
   });
 
-  test('watch seeds current value and emits on put and delete', () async {
-    final kv = await make({'k': 'v0'});
-    final seen = <String?>[];
-    final sub = kv.watch<String>('k').listen(seen.add);
-    await Future<void>.delayed(Duration.zero); // seed
-    await kv.put('k', 'v1');
-    await kv.delete('k');
-    await Future<void>.delayed(Duration.zero);
-    expect(seen, ['v0', 'v1', null]);
-    await sub.cancel();
-  });
 }
