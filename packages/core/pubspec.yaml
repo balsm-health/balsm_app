@@ -31,6 +31,9 @@ dependencies:
   permission_handler: ^11.3.0
   flutter_secure_storage: ^9.2.2
   connectivity_plus: ^6.0.5
+  # Plaintext KV backend for GlobalKVDataSource (flags/UI prefs only — never
+  # PHI or secrets). See src/data_source/impl/shared_prefs_kv_data_source.dart.
+  shared_preferences: ^2.3.0
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
   # RFC 9562 UUIDv7 generation (time-ordered, web-safe, monotonic within a ms).
