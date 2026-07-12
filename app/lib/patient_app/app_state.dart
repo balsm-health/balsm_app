@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'data.dart';
+import 'prefs.dart';
 import 'strings.dart';
 import 'tokens.dart';
 
@@ -28,21 +28,21 @@ class PatientAppState extends ChangeNotifier {
   /// Today's completed check-in (null until the report flow finishes).
   CheckinResult? today;
 
-  SharedPreferences? _prefs;
+  PatientAppPrefs? _prefs;
 
-  /// Loads the persisted session + preferences. Returns a ready state whose
-  /// `route` is `app` when a session was saved, else `welcome`.
-  static Future<PatientAppState> load() async {
+  /// Loads the persisted session + preferences from the app-shell preference
+  /// group. Returns a ready state whose `route` is `app` when a session was
+  /// saved, else `welcome`.
+  static Future<PatientAppState> load(PatientAppPrefs prefs) async {
     final s = PatientAppState();
+    s._prefs = prefs;
     try {
-      final p = await SharedPreferences.getInstance();
-      s._prefs = p;
-      s.lang = p.getString('pa.lang') ?? 'en';
-      s.accent = _accentFromKey(p.getString('pa.accent'));
-      s.countryCode = p.getString('pa.country') ?? 'EG';
-      s.activeAccountId = p.getString('pa.account') ?? 'layla';
-      s.storageProvider = p.getString('pa.storage') ?? 'local';
-      s.route = (p.getBool('pa.signedIn') ?? false) ? 'app' : 'welcome';
+      s.lang = await prefs.lang();
+      s.accent = _accentFromKey(await prefs.accent());
+      s.countryCode = await prefs.country();
+      s.activeAccountId = await prefs.account();
+      s.storageProvider = await prefs.storage();
+      s.route = await prefs.signedIn() ? 'app' : 'welcome';
     } catch (_) {
       s.route = 'welcome';
     }
@@ -64,15 +64,17 @@ class PatientAppState extends ChangeNotifier {
         _ => 'blue',
       };
 
+  /// Fire-and-forget persistence (matches the previous SharedPreferences
+  /// behavior — setters are not awaited on the UI path).
   void _save() {
     final p = _prefs;
     if (p == null) return;
-    p.setBool('pa.signedIn', route == 'app');
-    p.setString('pa.lang', lang);
-    p.setString('pa.accent', _accentKey);
-    p.setString('pa.country', countryCode);
-    p.setString('pa.account', activeAccountId);
-    p.setString('pa.storage', storageProvider);
+    p.setSignedIn(route == 'app');
+    p.setLang(lang);
+    p.setAccent(_accentKey);
+    p.setCountry(countryCode);
+    p.setAccount(activeAccountId);
+    p.setStorage(storageProvider);
   }
 
   bool get rtl => lang == 'ar';

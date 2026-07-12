@@ -29,6 +29,11 @@ import '../storage_exceptions.dart';
 class SharedPrefsKVDataSource extends GlobalKVDataSource {
   SharedPrefsKVDataSource(this._prefs);
 
+  /// Composition-root factory — keeps `SharedPreferences` fully inside this
+  /// file; no other code references the package directly.
+  static Future<SharedPrefsKVDataSource> create() async =>
+      SharedPrefsKVDataSource(await SharedPreferences.getInstance());
+
   final SharedPreferences _prefs;
 
   @override

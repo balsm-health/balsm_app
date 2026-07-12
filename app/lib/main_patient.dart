@@ -3,6 +3,7 @@ import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'patient_app/app_state.dart';
+import 'patient_app/prefs.dart';
 import 'patient_app/shell.dart';
 
 /// Entrypoint for the claude.ai/design "Patient App" Flutter port.
@@ -17,11 +18,15 @@ Future<void> main() async {
   // Telemetry: crash reporting + user-action analytics via the AnalyticsLogger
   // facade (Sentry backend). See docs/superpowers/specs/2026-07-03-telemetry-*.
   await initSentry();
+  // Global KV store (shared_preferences behind the interface) — the only
+  // place that constructs it; everything else sees KeyValueDataSource.
+  final globalKV = await SharedPrefsKVDataSource.create();
   final container = ProviderContainer(overrides: [
     analyticsLoggerProvider.overrideWithValue(const SentryAnalyticsLogger()),
     // Bind the account module's adapter into core's cross-module read port so
     // other modules (e.g. home) read the account summary without importing it.
     readAccountRepositoryProvider.overrideWith(buildAccountAdapter),
+    globalKVDataSourceProvider.overrideWithValue(globalKV),
   ]);
   final analytics = container.read(analyticsLoggerProvider);
 
@@ -53,7 +58,7 @@ Future<void> main() async {
     container.invalidate(accountSummaryProvider);
   });
 
-  final state = await PatientAppState.load();
+  final state = await PatientAppState.load(PatientAppPrefs(globalKV));
   runApp(
     UncontrolledProviderScope(
       container: container,
