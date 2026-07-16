@@ -11,6 +11,8 @@ class Messages implements i69n.I69nMessageBundle {
   CommonMessages get common => CommonMessages(this);
   ErrorMessages get error => ErrorMessages(this);
   NotfoundMessages get notfound => NotfoundMessages(this);
+  CountryMessages get country => CountryMessages(this);
+  LanguageMessages get language => LanguageMessages(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -24,6 +26,10 @@ class Messages implements i69n.I69nMessageBundle {
         return error;
       case 'notfound':
         return notfound;
+      case 'country':
+        return country;
+      case 'language':
+        return language;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -123,6 +129,470 @@ class NotfoundMessages implements i69n.I69nMessageBundle {
         return body;
       case 'cta':
         return cta;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class CountryMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const CountryMessages(this._parent);
+  EgCountryMessages get eg => EgCountryMessages(this);
+  SaCountryMessages get sa => SaCountryMessages(this);
+  AeCountryMessages get ae => AeCountryMessages(this);
+  QaCountryMessages get qa => QaCountryMessages(this);
+  KwCountryMessages get kw => KwCountryMessages(this);
+  BhCountryMessages get bh => BhCountryMessages(this);
+  OmCountryMessages get om => OmCountryMessages(this);
+  JoCountryMessages get jo => JoCountryMessages(this);
+  LbCountryMessages get lb => LbCountryMessages(this);
+  MaCountryMessages get ma => MaCountryMessages(this);
+  UsCountryMessages get us => UsCountryMessages(this);
+  GbCountryMessages get gb => GbCountryMessages(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eg':
+        return eg;
+      case 'sa':
+        return sa;
+      case 'ae':
+        return ae;
+      case 'qa':
+        return qa;
+      case 'kw':
+        return kw;
+      case 'bh':
+        return bh;
+      case 'om':
+        return om;
+      case 'jo':
+        return jo;
+      case 'lb':
+        return lb;
+      case 'ma':
+        return ma;
+      case 'us':
+        return us;
+      case 'gb':
+        return gb;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class EgCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const EgCountryMessages(this._parent);
+  String get name => "Egypt";
+  String get demonym => "Egyptian";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class SaCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const SaCountryMessages(this._parent);
+  String get name => "Saudi Arabia";
+  String get demonym => "Saudi";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class AeCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const AeCountryMessages(this._parent);
+  String get name => "United Arab Emirates";
+  String get demonym => "Emirati";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class QaCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const QaCountryMessages(this._parent);
+  String get name => "Qatar";
+  String get demonym => "Qatari";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class KwCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const KwCountryMessages(this._parent);
+  String get name => "Kuwait";
+  String get demonym => "Kuwaiti";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class BhCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const BhCountryMessages(this._parent);
+  String get name => "Bahrain";
+  String get demonym => "Bahraini";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class OmCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const OmCountryMessages(this._parent);
+  String get name => "Oman";
+  String get demonym => "Omani";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class JoCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const JoCountryMessages(this._parent);
+  String get name => "Jordan";
+  String get demonym => "Jordanian";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class LbCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const LbCountryMessages(this._parent);
+  String get name => "Lebanon";
+  String get demonym => "Lebanese";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class MaCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const MaCountryMessages(this._parent);
+  String get name => "Morocco";
+  String get demonym => "Moroccan";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class UsCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const UsCountryMessages(this._parent);
+  String get name => "United States";
+  String get demonym => "American";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class GbCountryMessages implements i69n.I69nMessageBundle {
+  final CountryMessages _parent;
+  const GbCountryMessages(this._parent);
+  String get name => "United Kingdom";
+  String get demonym => "British";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      case 'demonym':
+        return demonym;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class LanguageMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const LanguageMessages(this._parent);
+  ArLanguageMessages get ar => ArLanguageMessages(this);
+  EnLanguageMessages get en => EnLanguageMessages(this);
+  FrLanguageMessages get fr => FrLanguageMessages(this);
+  UrLanguageMessages get ur => UrLanguageMessages(this);
+  FaLanguageMessages get fa => FaLanguageMessages(this);
+  TrLanguageMessages get tr => TrLanguageMessages(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'ar':
+        return ar;
+      case 'en':
+        return en;
+      case 'fr':
+        return fr;
+      case 'ur':
+        return ur;
+      case 'fa':
+        return fa;
+      case 'tr':
+        return tr;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class ArLanguageMessages implements i69n.I69nMessageBundle {
+  final LanguageMessages _parent;
+  const ArLanguageMessages(this._parent);
+  String get name => "Arabic";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class EnLanguageMessages implements i69n.I69nMessageBundle {
+  final LanguageMessages _parent;
+  const EnLanguageMessages(this._parent);
+  String get name => "English";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class FrLanguageMessages implements i69n.I69nMessageBundle {
+  final LanguageMessages _parent;
+  const FrLanguageMessages(this._parent);
+  String get name => "French";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class UrLanguageMessages implements i69n.I69nMessageBundle {
+  final LanguageMessages _parent;
+  const UrLanguageMessages(this._parent);
+  String get name => "Urdu";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class FaLanguageMessages implements i69n.I69nMessageBundle {
+  final LanguageMessages _parent;
+  const FaLanguageMessages(this._parent);
+  String get name => "Persian";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class TrLanguageMessages implements i69n.I69nMessageBundle {
+  final LanguageMessages _parent;
+  const TrLanguageMessages(this._parent);
+  String get name => "Turkish";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'name':
+        return name;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

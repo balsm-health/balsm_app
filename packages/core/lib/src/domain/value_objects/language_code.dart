@@ -4,15 +4,13 @@ import 'value_object.dart';
 /// ISO 639-1 language (the base subtag only — pair with a region via
 /// [toTag] to get a [Bcp47Tag] like `ar-EG`).
 ///
-/// Carries the display metadata a language picker needs: [nativeName],
-/// [englishName], and [isRtl].
+/// [nativeName] (the endonym) and [isRtl] are **facts** — a language's own
+/// name and directionality don't change with the app's locale — so they stay
+/// const. The language's name *in the current UI locale* is a translation and
+/// lives in the core i69n bundle (`language.<code>.name`); resolve it via the
+/// `LanguageCodeL10n` extension.
 class LanguageCode extends ValueObject {
-  const LanguageCode._(
-    this.value,
-    this.nativeName,
-    this.englishName,
-    this.isRtl,
-  );
+  const LanguageCode._(this.value, this.nativeName, this.isRtl);
 
   /// Look up a known language, or accept any well-formed 2-letter code.
   /// Throws [ArgumentError] on malformed input.
@@ -23,16 +21,14 @@ class LanguageCode extends ValueObject {
     if (lower.length != 2 || !_isAlpha(lower)) {
       throw ArgumentError('Invalid ISO 639-1 language code: $code');
     }
-    return LanguageCode._(lower, lower, lower, _rtlByDefault.contains(lower));
+    return LanguageCode._(lower, lower, _rtlByDefault.contains(lower));
   }
 
   /// The 2-letter ISO 639-1 code, e.g. `ar`.
   final String value;
 
-  /// Endonym — the language's name in itself, e.g. `العربية`.
+  /// Endonym — the language's name in itself, e.g. `العربية`. A fixed fact.
   final String nativeName;
-
-  final String englishName;
 
   final bool isRtl;
 
@@ -43,12 +39,12 @@ class LanguageCode extends ValueObject {
             : '$value-${region.toUpperCase()}',
       );
 
-  static const ar = LanguageCode._('ar', 'العربية', 'Arabic', true);
-  static const en = LanguageCode._('en', 'English', 'English', false);
-  static const fr = LanguageCode._('fr', 'Français', 'French', false);
-  static const ur = LanguageCode._('ur', 'اردو', 'Urdu', true);
-  static const fa = LanguageCode._('fa', 'فارسی', 'Persian', true);
-  static const tr = LanguageCode._('tr', 'Türkçe', 'Turkish', false);
+  static const ar = LanguageCode._('ar', 'العربية', true);
+  static const en = LanguageCode._('en', 'English', false);
+  static const fr = LanguageCode._('fr', 'Français', false);
+  static const ur = LanguageCode._('ur', 'اردو', true);
+  static const fa = LanguageCode._('fa', 'فارسی', true);
+  static const tr = LanguageCode._('tr', 'Türkçe', false);
 
   /// Languages the app has UI support for (used by the language picker).
   static const supported = [ar, en, fr, ur, fa, tr];

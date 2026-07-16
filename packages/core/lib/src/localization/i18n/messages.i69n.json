@@ -23,5 +23,75 @@
     "title": "Page not found",
     "body": "The page you are looking for does not exist.",
     "cta": "Go home"
+  },
+  "country": {
+    "eg": {
+      "name": "Egypt",
+      "demonym": "Egyptian"
+    },
+    "sa": {
+      "name": "Saudi Arabia",
+      "demonym": "Saudi"
+    },
+    "ae": {
+      "name": "United Arab Emirates",
+      "demonym": "Emirati"
+    },
+    "qa": {
+      "name": "Qatar",
+      "demonym": "Qatari"
+    },
+    "kw": {
+      "name": "Kuwait",
+      "demonym": "Kuwaiti"
+    },
+    "bh": {
+      "name": "Bahrain",
+      "demonym": "Bahraini"
+    },
+    "om": {
+      "name": "Oman",
+      "demonym": "Omani"
+    },
+    "jo": {
+      "name": "Jordan",
+      "demonym": "Jordanian"
+    },
+    "lb": {
+      "name": "Lebanon",
+      "demonym": "Lebanese"
+    },
+    "ma": {
+      "name": "Morocco",
+      "demonym": "Moroccan"
+    },
+    "us": {
+      "name": "United States",
+      "demonym": "American"
+    },
+    "gb": {
+      "name": "United Kingdom",
+      "demonym": "British"
+    }
+  },
+  "language": {
+    "ar": {
+      "name": "Arabic"
+    },
+    "en": {
+      "name": "English"
+    },
+    "fr": {
+      "name": "French"
+    },
+    "ur": {
+      "name": "Urdu"
+    },
+    "fa": {
+      "name": "Persian"
+    },
+    "tr": {
+      "name": "Turkish"
+    }
   }
 }

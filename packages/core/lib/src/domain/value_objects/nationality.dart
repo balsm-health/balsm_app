@@ -3,7 +3,11 @@ import 'value_object.dart';
 
 /// A person's nationality — distinct from residence country: someone may hold
 /// Egyptian [Nationality] while living in Saudi Arabia. Backed by a
-/// [CountryCode] so it reuses the same curated demonym/name data.
+/// [CountryCode].
+///
+/// The localized demonym ("Egyptian" / "مصري") is a translation — resolve it
+/// via the `NationalityL10n` extension (`localization/reference_l10n.dart`),
+/// not a const field.
 class Nationality extends ValueObject {
   const Nationality(this.country);
 
@@ -12,15 +16,9 @@ class Nationality extends ValueObject {
 
   final CountryCode country;
 
-  /// English demonym, e.g. `Egyptian`.
-  String get demonymEn => country.demonymEn;
-
-  /// Arabic demonym, e.g. `مصري`.
-  String get demonymAr => country.demonymAr;
-
   @override
   List<Object?> get props => [country];
 
   @override
-  String toString() => demonymEn;
+  String toString() => 'Nationality(${country.value})';
 }

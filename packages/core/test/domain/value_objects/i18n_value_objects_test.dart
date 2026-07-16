@@ -54,8 +54,8 @@ void main() {
   });
 
   group('LanguageCode', () {
-    test('known languages carry native name + rtl', () {
-      expect(LanguageCode.ar.nativeName, 'العربية');
+    test('keeps facts const: endonym + rtl', () {
+      expect(LanguageCode.ar.nativeName, 'العربية'); // endonym = fact
       expect(LanguageCode.ar.isRtl, isTrue);
       expect(LanguageCode.en.isRtl, isFalse);
     });
@@ -66,13 +66,12 @@ void main() {
     });
   });
 
-  group('CountryCode reference hub', () {
-    test('exposes dial code, currency, demonyms', () {
+  group('CountryCode reference hub (structural facts only)', () {
+    test('exposes dial code + currency, no localized strings', () {
       final eg = CountryCode('eg');
       expect(eg.dialCode, '+20');
       expect(eg.currency, CurrencyCode.egp);
-      expect(eg.demonymEn, 'Egyptian');
-      expect(eg.demonymAr, 'مصري');
+      expect(eg.defaultTimezone, 'Africa/Cairo');
       expect(eg.isKnown, isTrue);
     });
 
@@ -84,12 +83,31 @@ void main() {
     });
   });
 
-  group('Nationality', () {
-    test('demonym distinct from residence country', () {
+  group('localized names resolve from the i69n bundle (extension)', () {
+    const catalog = TranslationCatalog();
+
+    test('country name + demonym per locale', () {
+      final eg = CountryCode('EG');
+      expect(eg.name(catalog, locale: 'en'), 'Egypt');
+      expect(eg.name(catalog, locale: 'ar'), 'مصر');
+      expect(eg.demonym(catalog, locale: 'en'), 'Egyptian');
+      expect(eg.demonym(catalog, locale: 'ar'), 'مصري');
+    });
+
+    test('language name in the UI locale (distinct from endonym)', () {
+      expect(LanguageCode.ar.name(catalog, locale: 'en'), 'Arabic');
+      expect(LanguageCode.ar.name(catalog, locale: 'ar'), 'العربية');
+    });
+
+    test('nationality demonym', () {
       final n = Nationality.ofCode('EG');
-      expect(n.demonymEn, 'Egyptian');
-      expect(n.toString(), 'Egyptian');
+      expect(n.demonym(catalog, locale: 'en'), 'Egyptian');
       expect(n, Nationality.ofCode('eg'));
+    });
+
+    test('unlisted country falls back to the ISO code, not a bare key', () {
+      final zz = CountryCode('ZZ');
+      expect(zz.name(catalog, locale: 'en'), 'ZZ');
     });
   });
 
