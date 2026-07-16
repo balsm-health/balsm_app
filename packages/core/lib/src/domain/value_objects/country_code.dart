@@ -1,3 +1,4 @@
+// ignore_for_file: constant_identifier_names
 import 'bcp47_tag.dart';
 import 'currency_code.dart';
 import 'value_object.dart';
@@ -11,7 +12,7 @@ import 'value_object.dart';
 /// bundle (`country.<code>.name` / `.demonym`); resolve them via the
 /// `CountryCodeL10n` extension (see `localization/reference_l10n.dart`).
 ///
-/// Curated countries are exposed as full-name consts ([egypt], [saudiArabia],
+/// Curated countries are exposed as full-name consts ([egypt], [saudi_arabia],
 /// …) and gathered in [known]; the `String` factory resolves via [known] and
 /// returns neutral defaults for any other well-formed 2-letter code, so the
 /// type never blocks an unlisted country.
@@ -52,8 +53,8 @@ class CountryCode extends ValueObject {
   bool get isKnown => _meta != null;
 
   static const egypt = CountryCode._('EG', _CountryMeta('+20', CurrencyCode.egp, 'Africa/Cairo', Bcp47Tag.arEG));
-  static const saudiArabia = CountryCode._('SA', _CountryMeta('+966', CurrencyCode.sar, 'Asia/Riyadh', Bcp47Tag.arSA));
-  static const unitedArabEmirates = CountryCode._('AE', _CountryMeta('+971', CurrencyCode.aed, 'Asia/Dubai', Bcp47Tag.arAE));
+  static const saudi_arabia = CountryCode._('SA', _CountryMeta('+966', CurrencyCode.sar, 'Asia/Riyadh', Bcp47Tag.arSA));
+  static const united_arab_emirates = CountryCode._('AE', _CountryMeta('+971', CurrencyCode.aed, 'Asia/Dubai', Bcp47Tag.arAE));
   static const qatar = CountryCode._('QA', _CountryMeta('+974', CurrencyCode.qar, 'Asia/Qatar', Bcp47Tag.arEG));
   static const kuwait = CountryCode._('KW', _CountryMeta('+965', CurrencyCode.kwd, 'Asia/Kuwait', Bcp47Tag.arEG));
   static const bahrain = CountryCode._('BH', _CountryMeta('+973', CurrencyCode.bhd, 'Asia/Bahrain', Bcp47Tag.arEG));
@@ -61,13 +62,13 @@ class CountryCode extends ValueObject {
   static const jordan = CountryCode._('JO', _CountryMeta('+962', CurrencyCode.jod, 'Asia/Amman', Bcp47Tag.arEG));
   static const lebanon = CountryCode._('LB', _CountryMeta('+961', CurrencyCode.usd, 'Asia/Beirut', Bcp47Tag.arEG));
   static const morocco = CountryCode._('MA', _CountryMeta('+212', CurrencyCode.usd, 'Africa/Casablanca', Bcp47Tag.arEG));
-  static const unitedStates = CountryCode._('US', _CountryMeta('+1', CurrencyCode.usd, 'America/New_York', Bcp47Tag.en));
-  static const unitedKingdom = CountryCode._('GB', _CountryMeta('+44', CurrencyCode.gbp, 'Europe/London', Bcp47Tag.en));
+  static const united_states = CountryCode._('US', _CountryMeta('+1', CurrencyCode.usd, 'America/New_York', Bcp47Tag.en));
+  static const united_kingdom = CountryCode._('GB', _CountryMeta('+44', CurrencyCode.gbp, 'Europe/London', Bcp47Tag.en));
 
   /// The curated countries, in reference order.
   static const known = [
-    egypt, saudiArabia, unitedArabEmirates, qatar, kuwait, bahrain,
-    oman, jordan, lebanon, morocco, unitedStates, unitedKingdom,
+    egypt, saudi_arabia, united_arab_emirates, qatar, kuwait, bahrain,
+    oman, jordan, lebanon, morocco, united_states, united_kingdom,
   ];
 
   /// Derived string index for the [CountryCode.new] factory.
