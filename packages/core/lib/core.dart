@@ -11,7 +11,7 @@ export 'src/domain/value_objects/user_id.dart';
 export 'src/domain/value_objects/entity_id.dart';
 export 'src/domain/value_objects/value_object.dart';
 export 'src/domain/value_objects/country_code.dart';
-export 'src/domain/value_objects/bcp47_tag.dart';
+export 'src/domain/value_objects/app_locale.dart';
 export 'src/domain/value_objects/language_code.dart';
 export 'src/domain/value_objects/currency_code.dart';
 export 'src/domain/value_objects/phone_number.dart';

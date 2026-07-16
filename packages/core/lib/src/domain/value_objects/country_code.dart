@@ -1,12 +1,15 @@
 // ignore_for_file: constant_identifier_names
-import 'bcp47_tag.dart';
 import 'currency_code.dart';
 import 'value_object.dart';
 
 /// ISO 3166-1 alpha-2 country — the reference hub for country-derived
-/// **structural** i18n facts: [dialCode], [currency], [defaultTimezone],
-/// [defaultLocale]. These never change and are needed synchronously in pure
-/// logic (e.g. phone validation), so they stay compile-time const.
+/// **structural** i18n facts: [dialCode], [currency], [defaultTimezone].
+/// These never change and are needed synchronously in pure logic (e.g. phone
+/// validation), so they stay compile-time const.
+///
+/// Locale is deliberately NOT here — it is a user preference (any country
+/// hosts speakers of many languages), resolved from device locale + user
+/// setting, not derived from country.
 ///
 /// Localized names and demonyms are NOT here — they live in the core i69n
 /// bundle (`country.<code>.name` / `.demonym`); resolve them via the
@@ -47,23 +50,21 @@ class CountryCode extends ValueObject {
 
   String get defaultTimezone => _meta?.timezone ?? 'UTC';
 
-  Bcp47Tag get defaultLocale => _meta?.locale ?? Bcp47Tag.en;
-
   /// True for the curated set (has full metadata).
   bool get isKnown => _meta != null;
 
-  static const egypt = CountryCode._('EG', _CountryMeta('+20', CurrencyCode.egp, 'Africa/Cairo', Bcp47Tag.arEG));
-  static const saudi_arabia = CountryCode._('SA', _CountryMeta('+966', CurrencyCode.sar, 'Asia/Riyadh', Bcp47Tag.arSA));
-  static const united_arab_emirates = CountryCode._('AE', _CountryMeta('+971', CurrencyCode.aed, 'Asia/Dubai', Bcp47Tag.arAE));
-  static const qatar = CountryCode._('QA', _CountryMeta('+974', CurrencyCode.qar, 'Asia/Qatar', Bcp47Tag.arEG));
-  static const kuwait = CountryCode._('KW', _CountryMeta('+965', CurrencyCode.kwd, 'Asia/Kuwait', Bcp47Tag.arEG));
-  static const bahrain = CountryCode._('BH', _CountryMeta('+973', CurrencyCode.bhd, 'Asia/Bahrain', Bcp47Tag.arEG));
-  static const oman = CountryCode._('OM', _CountryMeta('+968', CurrencyCode.omr, 'Asia/Muscat', Bcp47Tag.arEG));
-  static const jordan = CountryCode._('JO', _CountryMeta('+962', CurrencyCode.jod, 'Asia/Amman', Bcp47Tag.arEG));
-  static const lebanon = CountryCode._('LB', _CountryMeta('+961', CurrencyCode.usd, 'Asia/Beirut', Bcp47Tag.arEG));
-  static const morocco = CountryCode._('MA', _CountryMeta('+212', CurrencyCode.usd, 'Africa/Casablanca', Bcp47Tag.arEG));
-  static const united_states = CountryCode._('US', _CountryMeta('+1', CurrencyCode.usd, 'America/New_York', Bcp47Tag.en));
-  static const united_kingdom = CountryCode._('GB', _CountryMeta('+44', CurrencyCode.gbp, 'Europe/London', Bcp47Tag.en));
+  static const egypt = CountryCode._('EG', _CountryMeta('+20', CurrencyCode.egp, 'Africa/Cairo'));
+  static const saudi_arabia = CountryCode._('SA', _CountryMeta('+966', CurrencyCode.sar, 'Asia/Riyadh'));
+  static const united_arab_emirates = CountryCode._('AE', _CountryMeta('+971', CurrencyCode.aed, 'Asia/Dubai'));
+  static const qatar = CountryCode._('QA', _CountryMeta('+974', CurrencyCode.qar, 'Asia/Qatar'));
+  static const kuwait = CountryCode._('KW', _CountryMeta('+965', CurrencyCode.kwd, 'Asia/Kuwait'));
+  static const bahrain = CountryCode._('BH', _CountryMeta('+973', CurrencyCode.bhd, 'Asia/Bahrain'));
+  static const oman = CountryCode._('OM', _CountryMeta('+968', CurrencyCode.omr, 'Asia/Muscat'));
+  static const jordan = CountryCode._('JO', _CountryMeta('+962', CurrencyCode.jod, 'Asia/Amman'));
+  static const lebanon = CountryCode._('LB', _CountryMeta('+961', CurrencyCode.usd, 'Asia/Beirut'));
+  static const morocco = CountryCode._('MA', _CountryMeta('+212', CurrencyCode.usd, 'Africa/Casablanca'));
+  static const united_states = CountryCode._('US', _CountryMeta('+1', CurrencyCode.usd, 'America/New_York'));
+  static const united_kingdom = CountryCode._('GB', _CountryMeta('+44', CurrencyCode.gbp, 'Europe/London'));
 
   /// The curated countries, in reference order.
   static const known = [
@@ -86,9 +87,8 @@ class CountryCode extends ValueObject {
 }
 
 class _CountryMeta {
-  const _CountryMeta(this.dialCode, this.currency, this.timezone, this.locale);
+  const _CountryMeta(this.dialCode, this.currency, this.timezone);
   final String dialCode;
   final CurrencyCode currency;
   final String timezone;
-  final Bcp47Tag locale;
 }

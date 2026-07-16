@@ -13,14 +13,12 @@ class _LangOption {
 
 const _kLanguages = <_LangOption>[
   _LangOption('en', 'English'),
-  _LangOption('ar-EG', 'عربي (مصر)'),
-  _LangOption('ar-SA', 'عربي (السعودية)'),
-  _LangOption('ar-AE', 'عربي (الإمارات)'),
+  _LangOption('ar', 'العربية'),
 ];
 
-/// Language settings: a 4-option segmented control. Selecting a language
-/// dispatches ChangeLanguageUseCase and applies an immediate Directionality
-/// update (<=200ms) for instant LTR/RTL feedback.
+/// Language settings: a 2-option segmented control (English / Arabic).
+/// Selecting a language dispatches ChangeLanguageUseCase and applies an
+/// immediate Directionality update (<=200ms) for instant LTR/RTL feedback.
 class LanguageSettingsScreen extends ConsumerStatefulWidget {
   const LanguageSettingsScreen({super.key});
 
@@ -97,7 +95,7 @@ class _LanguageSettingsScreenState
           (o) => o.tag == selectedTag,
           orElse: () => _kLanguages.first,
         );
-        final dir = Bcp47Tag(selectedTag).isRtl
+        final dir = (AppLocale.tryParse(selectedTag) ?? AppLocale.en).isRtl
             ? TextDirection.rtl
             : TextDirection.ltr;
 

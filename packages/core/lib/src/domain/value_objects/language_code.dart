@@ -1,8 +1,7 @@
-import 'bcp47_tag.dart';
 import 'value_object.dart';
 
 /// ISO 639-1 language (the base subtag only — pair with a region via
-/// [toTag] to get a [Bcp47Tag] like `ar-EG`).
+/// [toTag] to get a BCP-47 tag string like `ar-EG`).
 ///
 /// [nativeName] (the endonym) and [isRtl] are **facts** — a language's own
 /// name and directionality don't change with the app's locale — so they stay
@@ -32,12 +31,11 @@ class LanguageCode extends ValueObject {
 
   final bool isRtl;
 
-  /// Combine with a region to form a BCP-47 tag (`ar` + `EG` → `ar-EG`).
-  Bcp47Tag toTag([String? region]) => Bcp47Tag(
-        region == null || region.isEmpty
-            ? value
-            : '$value-${region.toUpperCase()}',
-      );
+  /// Combine with a region to form a BCP-47 tag string (`ar` + `EG` → `ar-EG`).
+  String toTag([String? region]) =>
+      region == null || region.isEmpty
+          ? value
+          : '$value-${region.toUpperCase()}';
 
   static const ar = LanguageCode._('ar', 'العربية', true);
   static const en = LanguageCode._('en', 'English', false);

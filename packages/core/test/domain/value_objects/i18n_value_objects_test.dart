@@ -61,8 +61,8 @@ void main() {
     });
 
     test('toTag composes a BCP-47 tag', () {
-      expect(LanguageCode.ar.toTag('eg').value, 'ar-EG');
-      expect(LanguageCode.ar.toTag().value, 'ar');
+      expect(LanguageCode.ar.toTag('eg'), 'ar-EG');
+      expect(LanguageCode.ar.toTag(), 'ar');
     });
   });
 

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/value_objects/bcp47_tag.dart';
+import '../domain/value_objects/app_locale.dart';
 
 final countryRegistryProvider = Provider<CountryRegistry>((_) => CountryRegistry());
 
@@ -13,7 +13,7 @@ class CountryMeta {
   });
   final String isoCode;
   final String defaultTimezone;
-  final List<Bcp47Tag> firstClassTags;
+  final List<AppLocale> firstClassTags;
   final String supervisoryAuthority;
   final bool gregorianOnly;
 }
@@ -23,19 +23,19 @@ class CountryRegistry {
     'EG': CountryMeta(
       isoCode: 'EG',
       defaultTimezone: 'Africa/Cairo',
-      firstClassTags: [Bcp47Tag.arEG, Bcp47Tag.en],
+      firstClassTags: [AppLocale.ar, AppLocale.en],
       supervisoryAuthority: 'Egypt PDPC',
     ),
     'SA': CountryMeta(
       isoCode: 'SA',
       defaultTimezone: 'Asia/Riyadh',
-      firstClassTags: [Bcp47Tag.arSA, Bcp47Tag.en],
+      firstClassTags: [AppLocale.ar, AppLocale.en],
       supervisoryAuthority: 'Saudi SDAIA',
     ),
     'AE': CountryMeta(
       isoCode: 'AE',
       defaultTimezone: 'Asia/Dubai',
-      firstClassTags: [Bcp47Tag.arAE, Bcp47Tag.en],
+      firstClassTags: [AppLocale.ar, AppLocale.en],
       supervisoryAuthority: 'UAE Data Office',
     ),
   };
