@@ -35,9 +35,9 @@ class CountryCode extends ValueObject {
 
   final _CountryMeta? _meta;
 
-  static const _deniedDefault = {'CU', 'IR', 'KP', 'SY'};
-
-  bool isDenied({Set<String>? deniedList}) => (deniedList ?? _deniedDefault).contains(value);
+  // Denied/geofenced countries are NOT modelled here — that list is
+  // server-driven (geofence_block's DeniedCountriesPort, GET
+  // /geofence/denied-countries), never a hardcoded const.
 
   /// International calling code including `+`, e.g. `+20`. Empty when unknown.
   String get dialCode => _meta?.dialCode ?? '';
