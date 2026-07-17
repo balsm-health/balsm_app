@@ -24,4 +24,9 @@ class PatientAppPrefs extends ModulePreferences {
 
   Future<bool> signedIn() async => await read<bool>('signedIn') ?? false;
   Future<void> setSignedIn(bool v) => write('signedIn', v);
+
+  /// Last device timezone marker seen on app foreground (FR-023 / gap G9).
+  /// Null until first recorded. Non-PHI — a coarse zone name/abbreviation only.
+  Future<String?> lastTimezone() => read<String>('lastTz');
+  Future<void> setLastTimezone(String v) => write('lastTz', v);
 }
