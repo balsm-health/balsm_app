@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'app_state.dart';
 import 'kit.dart';
@@ -50,6 +51,27 @@ class _PatientAppState extends State<PatientApp> {
         builder: (context, _) => MaterialApp(
           debugShowCheckedModeBanner: false,
           navigatorObservers: [widget.navObserver],
+          // G2: wire Flutter's Material/Cupertino/widget localizations so date
+          // pickers, semantics and default tooltips localize. The app's own
+          // string system (i69n `tr()`) is unchanged; these delegates only
+          // cover framework-provided widgets.
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          // Four first-class locales (FR-207): English + the three Arabic
+          // regions. `state.lang` only tracks 'en' | 'ar' (no region), so an
+          // 'ar' locale resolves to the first supported Arabic entry (ar-EG)
+          // for framework localization; all render Arabic. RTL stays driven by
+          // the manual Directionality below.
+          supportedLocales: const [
+            Locale('en'),
+            Locale('ar', 'EG'),
+            Locale('ar', 'SA'),
+            Locale('ar', 'AE'),
+          ],
+          locale: state.lang == 'ar' ? const Locale('ar') : const Locale('en'),
           theme: ThemeData(scaffoldBackgroundColor: Colors.white, useMaterial3: true),
           // Clamp Dynamic Type so large system text never breaks layouts.
           builder: (context, child) {
