@@ -65,5 +65,7 @@ final signOutUseCaseProvider = Provider<SignOutUseCase>((ref) {
 final recoveryClaimUseCaseProvider = Provider<RecoveryClaimUseCase>((ref) {
   return RecoveryClaimUseCase(
     adapter: ref.watch(balsmAuthAdapterProvider),
+    storage: ref.watch(secureStorageProvider),
+    eventBus: ref.watch(eventBusProvider),
   );
 });
