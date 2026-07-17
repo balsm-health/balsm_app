@@ -6,7 +6,7 @@ import 'package:auth/auth.dart'
         signInUseCaseProvider,
         SignInSuccess,
         SignInLockout;
-import 'package:core/core.dart' show countryRegistryProvider;
+import 'package:core/core.dart' show countryRegistryProvider, StatusScreen;
 import 'package:disclosure/disclosure.dart'
     show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
@@ -248,6 +248,22 @@ class _UnderEighteenScreen extends StatelessWidget {
                   accent: s.accent,
                   ar: s.rtl,
                   onTap: () => Navigator.of(context).maybePop(),
+                ),
+                const SizedBox(height: 8),
+                // G6 / SC-011a: a hard-blocking screen must expose a no-auth
+                // support channel + the public status page. Opens the in-app
+                // PUBLIC status page (`{BASE_URL}/status`), which carries the
+                // mailto support link — reachable in ≤2 taps, no auth.
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const StatusScreen(),
+                    ),
+                  ),
+                  icon: const Icon(LucideIcons.lifeBuoy, size: 18),
+                  label: Text(
+                    s.rtl ? 'حالة الخدمة والدعم' : 'Service status & support',
+                  ),
                 ),
               ]),
             ),

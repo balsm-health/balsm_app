@@ -28,7 +28,6 @@ class LockoutScreen extends ConsumerStatefulWidget {
 
 class _LockoutScreenState extends ConsumerState<LockoutScreen> {
   static const _supportEmail = 'support@balsm.health';
-  static const _statusUrl = 'https://status.balsm.health';
 
   Timer? _timer;
   Duration _remaining = Duration.zero;
@@ -69,8 +68,13 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
     await _launch(uri);
   }
 
-  Future<void> _openStatus() async {
-    await _launch(Uri.parse(_statusUrl));
+  // G6 fix: link to the in-app PUBLIC status page (`{BASE_URL}/status`) instead
+  // of the old hardcoded external `https://status.balsm.health`. Reachable
+  // without auth; support (mailto) is one further tap away there (SC-011a).
+  void _openStatus() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const StatusScreen()),
+    );
   }
 
   Future<void> _launch(Uri uri) async {

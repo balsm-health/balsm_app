@@ -19,6 +19,9 @@ class DeeplinkRouter {
       final token = path.split('/emergency/').last.replaceFirst('public/', '');
       final key = uri.fragment.replaceFirst('k=', '');
       router.go('/emergency/public/$token', extra: {'key': key});
+    } else if (path == '/status') {
+      // PUBLIC status page — no auth. See statusRoutes / StatusScreen.
+      router.go('/status');
     } else if (path == '/account/delete') {
       router.go('/account/delete');
     } else if (path == '/account/delete-cancelled') {
