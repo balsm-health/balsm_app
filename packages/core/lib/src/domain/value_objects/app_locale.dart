@@ -7,12 +7,12 @@
 /// returns null for anything unsupported. It matches on the base language
 /// subtag, so a legacy regional tag like `ar-EG` resolves to [ar].
 class AppLocale {
-  const AppLocale._(this.value, this.isRtl=false);
+  const AppLocale._(this.value, {this.isRtl = false});
 
   final String value;
   final bool isRtl;
 
-  static const ar = AppLocale._('ar',true);
+  static const ar = AppLocale._('ar', isRtl: true);
   static const en = AppLocale._('en');
 
   /// Locales the app has UI support for (used by the language picker).
