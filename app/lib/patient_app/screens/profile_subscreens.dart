@@ -504,7 +504,7 @@ class CareTeamScreen extends StatelessWidget {
             child: Column(children: [
               const Icon(LucideIcons.stethoscope, size: 36, color: T.ink300),
               const SizedBox(height: 12),
-              Text(s.rtl ? 'لا يوجد فريق رعاية بعد' : 'No care team yet',
+              Text(s.t('care_empty'),
                   textAlign: TextAlign.center,
                   style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
               const SizedBox(height: 4),

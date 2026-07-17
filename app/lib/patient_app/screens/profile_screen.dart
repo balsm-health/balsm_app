@@ -99,13 +99,13 @@ class ProfileScreen extends ConsumerWidget {
       _ListCard(children: [
         _ListRow(
           icon: LucideIcons.smartphone,
-          label: s.rtl ? 'الأجهزة والجلسات' : 'Devices & sessions',
+          label: s.t('gov_sessions'),
           first: true,
           onTap: () => _pushSessionsRouted(context),
         ),
         _ListRow(
           icon: LucideIcons.activity,
-          label: s.rtl ? 'حالة الخدمة' : 'Service status',
+          label: s.t('gov_status'),
           onTap: () => _pushGovernance(context, const StatusScreen()),
         ),
         // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
@@ -114,7 +114,7 @@ class ProfileScreen extends ConsumerWidget {
         // every go('/') resolves — see [_pushDeletionRouted].
         _ListRow(
           icon: LucideIcons.trash2,
-          label: s.rtl ? 'حذف الحساب' : 'Delete account',
+          label: s.t('gov_delete'),
           iconBg: T.dangerBg, iconFg: T.danger, labelColor: T.danger,
           onTap: () => _pushDeletionRouted(context),
         ),

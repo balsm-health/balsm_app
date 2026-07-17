@@ -338,6 +338,49 @@ class Strings implements i69n.I69nMessageBundle {
   String get map_found => "places nearby";
   String get map_your_loc => "Your location";
   String get map_no_results => "No places found";
+  String get na_not_available => "Not available yet";
+  String get na_notify_me => "Notify me when available";
+  String get na_status_support => "Service status & support";
+  String get pv_title => "Your privacy & data";
+  String get pv_collect => "What we collect";
+  String get pv_protect => "How we protect it";
+  String get pv_rights => "Your rights";
+  String get pv_authority => "Supervisory authority";
+  String get pv_sharing2 => "Sharing";
+  String get pv_deletion => "Deletion";
+  String get pv_saving => "Saving…";
+  String get pv_agree => "I agree & continue";
+  String get gov_sessions => "Devices & sessions";
+  String get gov_status => "Service status";
+  String get gov_delete => "Delete account";
+  String get dose_skipped => "Skipped";
+  String get dose_snoozed => "Snoozed";
+  String get dose_missed => "Missed";
+  String get med_scheduled => "Scheduled";
+  String get med_snooze15 => "Snooze 15 min";
+  String get med_skip => "Skip";
+  String get tz_changed => "Time zone changed";
+  String get tz_recompute => "Recompute reminders";
+  String get tz_keep => "Keep as is";
+  String get med_add_title => "Add medication";
+  String get med_field_name => "Name";
+  String get med_ph_name => "Medication name";
+  String get med_field_dose => "Dose (optional)";
+  String get med_ph_dose => "e.g. 500 mg";
+  String get med_reminder_time => "Daily reminder time";
+  String get med_add_btn => "Add medication";
+  String get med_time_morning => "Morning";
+  String get med_time_midday => "Midday";
+  String get med_time_evening => "Evening";
+  String get med_time_night => "Night";
+  String get care_empty => "No care team yet";
+  String get pd_primary => "Primary";
+  String get pd_basic_info => "Basic info";
+  String get pd_contact_section => "Contact";
+  String get pd_add_contact => "Add contact";
+  String get acc_active => "Active account";
+  String get acc_not_signed_in => "Not signed in";
+  String get pd_change_photo => "Change photo";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -989,6 +1032,92 @@ class Strings implements i69n.I69nMessageBundle {
         return map_your_loc;
       case 'map_no_results':
         return map_no_results;
+      case 'na_not_available':
+        return na_not_available;
+      case 'na_notify_me':
+        return na_notify_me;
+      case 'na_status_support':
+        return na_status_support;
+      case 'pv_title':
+        return pv_title;
+      case 'pv_collect':
+        return pv_collect;
+      case 'pv_protect':
+        return pv_protect;
+      case 'pv_rights':
+        return pv_rights;
+      case 'pv_authority':
+        return pv_authority;
+      case 'pv_sharing2':
+        return pv_sharing2;
+      case 'pv_deletion':
+        return pv_deletion;
+      case 'pv_saving':
+        return pv_saving;
+      case 'pv_agree':
+        return pv_agree;
+      case 'gov_sessions':
+        return gov_sessions;
+      case 'gov_status':
+        return gov_status;
+      case 'gov_delete':
+        return gov_delete;
+      case 'dose_skipped':
+        return dose_skipped;
+      case 'dose_snoozed':
+        return dose_snoozed;
+      case 'dose_missed':
+        return dose_missed;
+      case 'med_scheduled':
+        return med_scheduled;
+      case 'med_snooze15':
+        return med_snooze15;
+      case 'med_skip':
+        return med_skip;
+      case 'tz_changed':
+        return tz_changed;
+      case 'tz_recompute':
+        return tz_recompute;
+      case 'tz_keep':
+        return tz_keep;
+      case 'med_add_title':
+        return med_add_title;
+      case 'med_field_name':
+        return med_field_name;
+      case 'med_ph_name':
+        return med_ph_name;
+      case 'med_field_dose':
+        return med_field_dose;
+      case 'med_ph_dose':
+        return med_ph_dose;
+      case 'med_reminder_time':
+        return med_reminder_time;
+      case 'med_add_btn':
+        return med_add_btn;
+      case 'med_time_morning':
+        return med_time_morning;
+      case 'med_time_midday':
+        return med_time_midday;
+      case 'med_time_evening':
+        return med_time_evening;
+      case 'med_time_night':
+        return med_time_night;
+      case 'care_empty':
+        return care_empty;
+      case 'pd_primary':
+        return pd_primary;
+      case 'pd_basic_info':
+        return pd_basic_info;
+      case 'pd_contact_section':
+        return pd_contact_section;
+      case 'pd_add_contact':
+        return pd_add_contact;
+      case 'acc_active':
+        return acc_active;
+      case 'acc_not_signed_in':
+        return acc_not_signed_in;
+      case 'pd_change_photo':
+        return pd_change_photo;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

@@ -372,9 +372,9 @@ class _MedDoseRow extends StatelessWidget {
     final outcome = dose.event?.outcome;
     final (label, kind) = switch (outcome) {
       DoseOutcome.taken => (s.t('taken'), PillKind.success),
-      DoseOutcome.skipped => (s.rtl ? 'تم التخطي' : 'Skipped', PillKind.neutral),
-      DoseOutcome.snoozed => (s.rtl ? 'مؤجل' : 'Snoozed', PillKind.neutral),
-      DoseOutcome.missed => (s.rtl ? 'فائت' : 'Missed', PillKind.neutral),
+      DoseOutcome.skipped => (s.t('dose_skipped'), PillKind.neutral),
+      DoseOutcome.snoozed => (s.t('dose_snoozed'), PillKind.neutral),
+      DoseOutcome.missed => (s.t('dose_missed'), PillKind.neutral),
       _ => (s.t('due'), PillKind.neutral),
     };
     final subtitle = [
@@ -567,7 +567,7 @@ class _DoseActionSheet extends StatelessWidget {
         Align(
           alignment: AlignmentDirectional.centerStart,
           child: Text(
-              '${s.rtl ? 'الموعد' : 'Scheduled'} · ${_hhmm(dose.scheduledAt)}',
+              '${s.t('med_scheduled')} · ${_hhmm(dose.scheduledAt)}',
               style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
         ),
         const SizedBox(height: 16),
@@ -581,13 +581,13 @@ class _DoseActionSheet extends StatelessWidget {
         const SizedBox(height: 10),
         _SheetButton(
             s: s,
-            label: s.rtl ? 'تأجيل 15 دقيقة' : 'Snooze 15 min',
+            label: s.t('med_snooze15'),
             icon: LucideIcons.clock,
             onTap: () => Navigator.pop(context, DoseOutcome.snoozed)),
         const SizedBox(height: 10),
         _SheetButton(
             s: s,
-            label: s.rtl ? 'تخطّي' : 'Skip',
+            label: s.t('med_skip'),
             icon: LucideIcons.x,
             onTap: () => Navigator.pop(context, DoseOutcome.skipped)),
       ]),
@@ -607,7 +607,7 @@ class _TimezoneConfirmSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SheetChrome(
       s: s,
-      title: s.rtl ? 'تغيّرت المنطقة الزمنية' : 'Time zone changed',
+      title: s.t('tz_changed'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
@@ -631,13 +631,13 @@ class _TimezoneConfirmSheet extends StatelessWidget {
         const SizedBox(height: 20),
         _SheetButton(
             s: s,
-            label: s.rtl ? 'إعادة الحساب' : 'Recompute reminders',
+            label: s.t('tz_recompute'),
             primary: true,
             onTap: () => Navigator.pop(context, true)),
         const SizedBox(height: 10),
         _SheetButton(
             s: s,
-            label: s.rtl ? 'الإبقاء كما هي' : 'Keep as is',
+            label: s.t('tz_keep'),
             onTap: () => Navigator.pop(context, false)),
       ]),
     );
@@ -668,11 +668,11 @@ class _AddMedSheetState extends State<_AddMedSheet> {
 
   PatientAppState get s => widget.s;
 
-  static const _timeOptions = <(String, String, String)>[
-    ('08:00', 'Morning', 'صباحاً'),
-    ('13:00', 'Midday', 'ظهراً'),
-    ('20:00', 'Evening', 'مساءً'),
-    ('22:00', 'Night', 'ليلاً'),
+  static const _timeOptions = <(String, String)>[
+    ('08:00', 'med_time_morning'),
+    ('13:00', 'med_time_midday'),
+    ('20:00', 'med_time_evening'),
+    ('22:00', 'med_time_night'),
   ];
 
   @override
@@ -717,26 +717,26 @@ class _AddMedSheetState extends State<_AddMedSheet> {
   Widget build(BuildContext context) {
     return _SheetChrome(
       s: s,
-      title: s.rtl ? 'إضافة دواء' : 'Add medication',
+      title: s.t('med_add_title'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(s.rtl ? 'الاسم' : 'Name',
+        Text(s.t('med_field_name'),
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 8),
-        _field(_name, s.rtl ? 'اسم الدواء' : 'Medication name'),
+        _field(_name, s.t('med_ph_name')),
         const SizedBox(height: 16),
-        Text(s.rtl ? 'الجرعة (اختياري)' : 'Dose (optional)',
+        Text(s.t('med_field_dose'),
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 8),
-        _field(_dose, s.rtl ? 'مثال: 500 ملجم' : 'e.g. 500 mg'),
+        _field(_dose, s.t('med_ph_dose')),
         const SizedBox(height: 16),
-        Text(s.rtl ? 'وقت التذكير اليومي' : 'Daily reminder time',
+        Text(s.t('med_reminder_time'),
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final (value, en, ar) in _timeOptions)
+          for (final (value, key) in _timeOptions)
             Pressable(
               onTap: () => setState(() => _time = value),
               scale: 0.96,
@@ -753,7 +753,7 @@ class _AddMedSheetState extends State<_AddMedSheet> {
                       width: 1.5),
                 ),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(s.rtl ? ar : en,
+                  Text(s.t(key),
                       style: Typo.body(ar: s.rtl).copyWith(
                           fontSize: FS.xs,
                           fontWeight: FontWeight.w700,
@@ -771,7 +771,7 @@ class _AddMedSheetState extends State<_AddMedSheet> {
         const SizedBox(height: 22),
         _SheetButton(
             s: s,
-            label: s.rtl ? 'إضافة الدواء' : 'Add medication',
+            label: s.t('med_add_btn'),
             icon: LucideIcons.plus,
             primary: true,
             onTap: _submit),

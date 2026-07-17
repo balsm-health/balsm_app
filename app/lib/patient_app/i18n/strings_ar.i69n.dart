@@ -336,6 +336,49 @@ class Strings_ar extends Strings {
   String get map_found => "مكان بالقرب منك";
   String get map_your_loc => "موقعك";
   String get map_no_results => "لا توجد أماكن";
+  String get na_not_available => "غير متاح بعد";
+  String get na_notify_me => "أبلغني عند التوفر";
+  String get na_status_support => "حالة الخدمة والدعم";
+  String get pv_title => "خصوصيتك وبياناتك";
+  String get pv_collect => "ما الذي نجمعه";
+  String get pv_protect => "كيف نحميها";
+  String get pv_rights => "حقوقك";
+  String get pv_authority => "الجهة الرقابية";
+  String get pv_sharing2 => "المشاركة";
+  String get pv_deletion => "الحذف";
+  String get pv_saving => "جارٍ الحفظ…";
+  String get pv_agree => "أوافق وأتابع";
+  String get gov_sessions => "الأجهزة والجلسات";
+  String get gov_status => "حالة الخدمة";
+  String get gov_delete => "حذف الحساب";
+  String get dose_skipped => "تم التخطي";
+  String get dose_snoozed => "مؤجل";
+  String get dose_missed => "فائت";
+  String get med_scheduled => "الموعد";
+  String get med_snooze15 => "تأجيل 15 دقيقة";
+  String get med_skip => "تخطّي";
+  String get tz_changed => "تغيّرت المنطقة الزمنية";
+  String get tz_recompute => "إعادة الحساب";
+  String get tz_keep => "الإبقاء كما هي";
+  String get med_add_title => "إضافة دواء";
+  String get med_field_name => "الاسم";
+  String get med_ph_name => "اسم الدواء";
+  String get med_field_dose => "الجرعة (اختياري)";
+  String get med_ph_dose => "مثال: 500 ملجم";
+  String get med_reminder_time => "وقت التذكير اليومي";
+  String get med_add_btn => "إضافة الدواء";
+  String get med_time_morning => "صباحاً";
+  String get med_time_midday => "ظهراً";
+  String get med_time_evening => "مساءً";
+  String get med_time_night => "ليلاً";
+  String get care_empty => "لا يوجد فريق رعاية بعد";
+  String get pd_primary => "أساسي";
+  String get pd_basic_info => "المعلومات الأساسية";
+  String get pd_contact_section => "معلومات الاتصال";
+  String get pd_add_contact => "إضافة جهة اتصال";
+  String get acc_active => "الحساب النشط";
+  String get acc_not_signed_in => "لم يتم تسجيل الدخول";
+  String get pd_change_photo => "تغيير الصورة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -987,6 +1030,92 @@ class Strings_ar extends Strings {
         return map_your_loc;
       case 'map_no_results':
         return map_no_results;
+      case 'na_not_available':
+        return na_not_available;
+      case 'na_notify_me':
+        return na_notify_me;
+      case 'na_status_support':
+        return na_status_support;
+      case 'pv_title':
+        return pv_title;
+      case 'pv_collect':
+        return pv_collect;
+      case 'pv_protect':
+        return pv_protect;
+      case 'pv_rights':
+        return pv_rights;
+      case 'pv_authority':
+        return pv_authority;
+      case 'pv_sharing2':
+        return pv_sharing2;
+      case 'pv_deletion':
+        return pv_deletion;
+      case 'pv_saving':
+        return pv_saving;
+      case 'pv_agree':
+        return pv_agree;
+      case 'gov_sessions':
+        return gov_sessions;
+      case 'gov_status':
+        return gov_status;
+      case 'gov_delete':
+        return gov_delete;
+      case 'dose_skipped':
+        return dose_skipped;
+      case 'dose_snoozed':
+        return dose_snoozed;
+      case 'dose_missed':
+        return dose_missed;
+      case 'med_scheduled':
+        return med_scheduled;
+      case 'med_snooze15':
+        return med_snooze15;
+      case 'med_skip':
+        return med_skip;
+      case 'tz_changed':
+        return tz_changed;
+      case 'tz_recompute':
+        return tz_recompute;
+      case 'tz_keep':
+        return tz_keep;
+      case 'med_add_title':
+        return med_add_title;
+      case 'med_field_name':
+        return med_field_name;
+      case 'med_ph_name':
+        return med_ph_name;
+      case 'med_field_dose':
+        return med_field_dose;
+      case 'med_ph_dose':
+        return med_ph_dose;
+      case 'med_reminder_time':
+        return med_reminder_time;
+      case 'med_add_btn':
+        return med_add_btn;
+      case 'med_time_morning':
+        return med_time_morning;
+      case 'med_time_midday':
+        return med_time_midday;
+      case 'med_time_evening':
+        return med_time_evening;
+      case 'med_time_night':
+        return med_time_night;
+      case 'care_empty':
+        return care_empty;
+      case 'pd_primary':
+        return pd_primary;
+      case 'pd_basic_info':
+        return pd_basic_info;
+      case 'pd_contact_section':
+        return pd_contact_section;
+      case 'pd_add_contact':
+        return pd_add_contact;
+      case 'acc_active':
+        return acc_active;
+      case 'acc_not_signed_in':
+        return acc_not_signed_in;
+      case 'pd_change_photo':
+        return pd_change_photo;
       default:
         return super[key];
     }

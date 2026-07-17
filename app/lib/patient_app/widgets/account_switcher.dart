@@ -77,7 +77,7 @@ class _AccountRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sub = (handle != null && handle!.isNotEmpty)
         ? '@$handle'
-        : (s.rtl ? 'الحساب النشط' : 'Active account');
+        : (s.t('acc_active'));
     return PressHighlight(
       onTap: onTap,
       child: Container(
@@ -113,7 +113,7 @@ class _EmptyAccount extends StatelessWidget {
           const Icon(LucideIcons.userCircle2, size: 22, color: T.fg3),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(s.rtl ? 'لم يتم تسجيل الدخول' : 'Not signed in',
+            child: Text(s.t('acc_not_signed_in'),
                 style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ),
         ]),

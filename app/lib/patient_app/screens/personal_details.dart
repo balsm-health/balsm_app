@@ -172,7 +172,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                               fontWeight: FontWeight.w700, color: T.fg1))),
                   if (c.isPrimary) ...[
                     const SizedBox(width: 7),
-                    Pill(s.rtl ? 'أساسي' : 'Primary',
+                    Pill(s.t('pd_primary'),
                         kind: PillKind.info,
                         dot: false,
                         ar: s.rtl,
@@ -247,7 +247,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             Center(child: Column(children: [
               Avatar(initials: '${first.text.isEmpty ? '' : first.text[0]}${last.text.isEmpty ? '' : last.text[0]}', color: T.petalAqua, size: 72),
               const SizedBox(height: 10),
-              PButton(s.rtl ? 'تغيير الصورة' : 'Change photo', icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
+              PButton(s.t('pd_change_photo'), icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
             ])),
             // Account (handle + QR share)
             _section(LucideIcons.atSign, s.t('pd_account')),
@@ -317,7 +317,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             _ConnCard(s: s, apple: connApple, google: connGoogle,
                 onApple: () => setState(() => connApple = !connApple), onGoogle: () => setState(() => connGoogle = !connGoogle)),
             // Basic info
-            _section(LucideIcons.user, s.rtl ? 'المعلومات الأساسية' : 'Basic info'),
+            _section(LucideIcons.user, s.t('pd_basic_info')),
             _card([
               Row(children: [
                 Expanded(child: _field(s.t('pf_fname'), first)),
@@ -330,7 +330,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               _labeled(s.t('pf_gender'), _genderSeg()),
             ]),
             // Contact
-            _section(LucideIcons.phone, s.rtl ? 'معلومات الاتصال' : 'Contact'),
+            _section(LucideIcons.phone, s.t('pd_contact_section')),
             _card([
               _field(s.t('pd_phone'), phone, mono: true),
               const SizedBox(height: 14),
@@ -355,7 +355,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                   Expanded(child: _field(s.t('pd_em_phone'), emPhone, mono: true)),
                 ]),
                 const SizedBox(height: 14),
-                PButton(s.rtl ? 'إضافة جهة اتصال' : 'Add contact',
+                PButton(s.t('pd_add_contact'),
                     icon: LucideIcons.plus, variant: BtnVariant.secondary,
                     block: true, accent: s.accent, ar: s.rtl,
                     onTap: _addEmergencyContact),

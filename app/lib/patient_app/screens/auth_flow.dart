@@ -227,7 +227,7 @@ class _UnderEighteenScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 22),
                 Text(
-                  s.rtl ? 'غير متاح بعد' : 'Not available yet',
+                  s.t('na_not_available'),
                   textAlign: TextAlign.center,
                   style: Typo.display(ar: s.rtl),
                 ),
@@ -241,7 +241,7 @@ class _UnderEighteenScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
                 PButton(
-                  s.rtl ? 'أبلغني عند التوفر' : 'Notify me when available',
+                  s.t('na_notify_me'),
                   variant: BtnVariant.primary,
                   large: true,
                   block: true,
@@ -262,7 +262,7 @@ class _UnderEighteenScreen extends StatelessWidget {
                   ),
                   icon: const Icon(LucideIcons.lifeBuoy, size: 18),
                   label: Text(
-                    s.rtl ? 'حالة الخدمة والدعم' : 'Service status & support',
+                    s.t('na_status_support'),
                   ),
                 ),
               ]),
@@ -865,7 +865,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        s.rtl ? 'خصوصيتك وبياناتك' : 'Your privacy & data',
+                        s.t('pv_title'),
                         style: Typo.display(ar: s.rtl),
                       ),
                       const SizedBox(height: 10),
@@ -879,7 +879,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.database,
-                        s.rtl ? 'ما الذي نجمعه' : 'What we collect',
+                        s.t('pv_collect'),
                         s.rtl
                             ? 'حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.'
                             : 'A minimal non-health account (email, country, language). Health records stay encrypted on your device.',
@@ -887,7 +887,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.lock,
-                        s.rtl ? 'كيف نحميها' : 'How we protect it',
+                        s.t('pv_protect'),
                         s.rtl
                             ? 'تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.'
                             : 'On-device encryption, secure transport, and least-privilege access.',
@@ -895,7 +895,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.scale,
-                        s.rtl ? 'حقوقك' : 'Your rights',
+                        s.t('pv_rights'),
                         s.rtl
                             ? 'يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.'
                             : 'Access, correct, or delete your data at any time from account settings.',
@@ -903,7 +903,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.landmark,
-                        s.rtl ? 'الجهة الرقابية' : 'Supervisory authority',
+                        s.t('pv_authority'),
                         s.rtl
                             ? 'الجهة المشرفة على حماية بياناتك في بلدك: $authority.'
                             : 'The authority overseeing your data protection in your country: $authority.',
@@ -911,7 +911,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.share2,
-                        s.rtl ? 'المشاركة' : 'Sharing',
+                        s.t('pv_sharing2'),
                         s.rtl
                             ? 'لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.'
                             : 'We never sell your data. Sharing happens only with your explicit consent or a legal obligation.',
@@ -919,7 +919,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.trash2,
-                        s.rtl ? 'الحذف' : 'Deletion',
+                        s.t('pv_deletion'),
                         s.rtl
                             ? 'يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.'
                             : 'Deleting your account removes your non-health cloud data and wipes on-device records.',
@@ -952,8 +952,8 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                   opacity: _readToEnd && !_submitting ? 1 : 0.4,
                   child: PButton(
                     _submitting
-                        ? (s.rtl ? 'جارٍ الحفظ…' : 'Saving…')
-                        : (s.rtl ? 'أوافق وأتابع' : 'I agree & continue'),
+                        ? (s.t('pv_saving'))
+                        : (s.t('pv_agree')),
                     variant: BtnVariant.primary,
                     large: true,
                     block: true,
