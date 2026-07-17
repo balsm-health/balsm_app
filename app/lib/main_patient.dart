@@ -143,6 +143,13 @@ Future<void> main() async {
     container.invalidate(accountSummaryProvider);
   });
 
+  // Apply the persisted server preset BEFORE the first API call: init() reads
+  // the saved preset (`saved ?? defaultServer`) and sets the client base URL.
+  // Without this the dev server-selector choice (Local / Staging) is dropped on
+  // every relaunch and the app silently reverts to the default server. Must run
+  // before runApp — no API request is issued before this point.
+  await container.read(balsmApiControllerProvider).init();
+
   // Migrate the app-shell preference group before its first read.
   final paPrefs = PatientAppPrefs(globalKV);
   await paPrefs.migrate();

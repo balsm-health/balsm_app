@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:core/core.dart' show StatusScreen, accountSummaryProvider;
+import 'package:core/core.dart'
+    show
+        StatusScreen,
+        accountSummaryProvider,
+        FlavorConfig,
+        balsmApiControllerProvider,
+        ServerSelectorScreen;
 import 'package:sessions/sessions.dart' show SessionsScreen;
 import 'package:deletion/deletion.dart'
     show DeleteAccountScreen, DeletionConfirmScreen, DeletionCancelledScreen;
@@ -118,6 +124,22 @@ class ProfileScreen extends ConsumerWidget {
           iconBg: T.dangerBg, iconFg: T.danger, labelColor: T.danger,
           onTap: () => _pushDeletionRouted(context),
         ),
+        // Dev-only API server switcher (Local / Staging / Prod / custom). Gated
+        // on serverSelectorEnabled (dev flavor), so it never renders in prod.
+        // The choice persists (reconfigure) and survives relaunch (init() in
+        // main). ServerSelectorScreen owns its Scaffold + Navigator.pop, so the
+        // plain _pushGovernance push is sufficient.
+        if (FlavorConfig.current.serverSelectorEnabled)
+          _ListRow(
+            icon: LucideIcons.server,
+            label: 'Switch server (dev)',
+            onTap: () => _pushGovernance(
+              context,
+              ServerSelectorScreen(
+                controller: ref.read(balsmApiControllerProvider),
+              ),
+            ),
+          ),
       ]),
 
       // Sign out
