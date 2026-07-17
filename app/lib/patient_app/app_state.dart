@@ -97,6 +97,14 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Records the verified sign-up contact (method + email) so the OTP step can
+  /// display it and call the real verify use-case with the right address.
+  void setAuthContact({required String method, required String email}) {
+    authMethod = method;
+    authEmail = email;
+    notifyListeners();
+  }
+
   void go(String r) {
     if (r == 'app') {
       tab = 'home';

@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/use_cases/age_gate_use_case.dart';
 import '../../application/use_cases/sign_in_use_case.dart';
 import '../../application/use_cases/sign_out_use_case.dart';
 import '../../application/use_cases/sign_up_use_case.dart';
@@ -28,6 +29,11 @@ final authSessionProvider = StreamProvider<AuthSession>((ref) {
 });
 
 // ── Use case providers ────────────────────────────────────────────────────────
+
+/// Fail-closed age gate (PDPL / G3). Pure/local — no dependencies.
+final ageGateUseCaseProvider = Provider<AgeGateUseCase>((ref) {
+  return AgeGateUseCase();
+});
 
 final signUpUseCaseProvider = Provider<SignUpUseCase>((ref) {
   return SignUpUseCase(

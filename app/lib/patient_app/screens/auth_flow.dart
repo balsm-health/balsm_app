@@ -1,6 +1,14 @@
 import 'dart:async';
+import 'package:auth/auth.dart'
+    show
+        ageGateUseCaseProvider,
+        signUpUseCaseProvider,
+        signInUseCaseProvider,
+        SignInSuccess,
+        SignInLockout;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
@@ -64,9 +72,12 @@ class _WelcomeScreen extends StatelessWidget {
                 const Expanded(child: Divider(color: T.ink200)),
               ]),
               const SizedBox(height: 14),
-              _SocialButton(label: s.t('w_apple'), dark: true, icon: Icons.apple, onTap: () => s.go('profile')),
+              // Social sign-in has no real backend wired here (no google_sign_in /
+              // sign_in_with_apple tokens available), and must NOT bypass the
+              // fail-closed DOB/age gate. Funnel into the real email sign-up flow.
+              _SocialButton(label: s.t('w_apple'), dark: true, icon: Icons.apple, onTap: () => s.go('phone')),
               const SizedBox(height: 12),
-              _SocialButton(label: s.t('w_google'), dark: false, googleG: true, onTap: () => s.go('profile')),
+              _SocialButton(label: s.t('w_google'), dark: false, googleG: true, onTap: () => s.go('phone')),
               const SizedBox(height: 14),
               GestureDetector(
                 onTap: () => s.go('phone'),
@@ -177,19 +188,178 @@ class _AuthHeader extends StatelessWidget {
   }
 }
 
-// ── Phone / email ────────────────────────────────────────────
-class _PhoneScreen extends StatefulWidget {
-  const _PhoneScreen();
+// ── Under-18 soft block ──────────────────────────────────────
+// Destination when the fail-closed age gate rejects (< 18). Prototype-native
+// styling (kit widgets / tokens) so it matches the rest of the auth flow; the
+// real module's screen uses the core design system, so we mirror it here. Pushed
+// as a route — its back/CTA simply return to the sign-up step. No session is
+// ever created for an under-18 user.
+class _UnderEighteenScreen extends StatelessWidget {
+  const _UnderEighteenScreen();
   @override
-  State<_PhoneScreen> createState() => _PhoneScreenState();
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Scaffold(
+      backgroundColor: T.cream50,
+      body: SafeArea(
+        child: ContentColumn(
+          maxWidth: 440,
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+              child: Row(children: [
+                RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.of(context).maybePop()),
+              ]),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(children: [
+                Container(
+                  width: 84,
+                  height: 84,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
+                  child: Icon(LucideIcons.shieldAlert, size: 38, color: s.accent.main),
+                ),
+                const SizedBox(height: 22),
+                Text(
+                  s.rtl ? 'غير متاح بعد' : 'Not available yet',
+                  textAlign: TextAlign.center,
+                  style: Typo.display(ar: s.rtl),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  s.rtl
+                      ? 'بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.'
+                      : 'Balsm is currently available for ages 18 and older. We\'re working on a version for younger users with parental consent.',
+                  textAlign: TextAlign.center,
+                  style: Typo.body(ar: s.rtl).copyWith(color: T.fg2),
+                ),
+                const SizedBox(height: 28),
+                PButton(
+                  s.rtl ? 'أبلغني عند التوفر' : 'Notify me when available',
+                  variant: BtnVariant.primary,
+                  large: true,
+                  block: true,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+              ]),
+            ),
+            const Spacer(),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
-class _PhoneScreenState extends State<_PhoneScreen> {
-  bool email = false;
+// ── Phone / email ────────────────────────────────────────────
+// Sign-up step (real auth). Collects the contact + date of birth, runs the
+// fail-closed age gate BEFORE any session can exist, and — on the email path —
+// requests a real OTP via [signUpUseCaseProvider]. The phone path has no OTP
+// backend (email + social only) so it is blocked rather than faked.
+class _PhoneScreen extends ConsumerStatefulWidget {
+  const _PhoneScreen();
+  @override
+  ConsumerState<_PhoneScreen> createState() => _PhoneScreenState();
+}
+
+class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
+  bool email = true; // Email is the only path with a real OTP backend.
   final ctrl = TextEditingController();
+  final dobCtrl = TextEditingController();
+  DateTime? _dob;
+  String? _error;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    ctrl.dispose();
+    dobCtrl.dispose();
+    super.dispose();
+  }
+
   bool get ok {
     final v = ctrl.text.trim();
-    return email ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v) : v.replaceAll(RegExp(r'\D'), '').length >= 10;
+    final contactOk = email
+        ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)
+        : v.replaceAll(RegExp(r'\D'), '').length >= 10;
+    // DOB is REQUIRED — no continue without it (fail-closed).
+    return contactOk && _dob != null;
+  }
+
+  String _fmtDob(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}';
+
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year - 18, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _dob = picked;
+      dobCtrl.text = _fmtDob(picked);
+      _error = null;
+    });
+  }
+
+  Future<void> _continue() async {
+    final s = AppScope.of(context);
+
+    // Fail-closed gate #1 — DOB missing/invalid → do NOT proceed.
+    final dob = _dob;
+    if (dob == null) {
+      setState(() => _error = s.rtl
+          ? 'من فضلك اختر تاريخ ميلاد صالح.'
+          : 'Please choose a valid date of birth.');
+      return;
+    }
+
+    // Fail-closed gate #2 — age gate (PDPL / G3). Under-18 → soft-block screen,
+    // no OTP, no session. AgeGateUseCase.validate() is synchronous.
+    final ageResult = ref.read(ageGateUseCaseProvider).validate(dob);
+    if (ageResult.isFailure) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const _UnderEighteenScreen(),
+        ),
+      );
+      return;
+    }
+
+    // Phone OTP is not backed by the real API (email + Google/Apple only).
+    if (!email) {
+      setState(() => _error = s.rtl
+          ? 'تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.'
+          : 'Phone sign-in isn\'t available yet — please use email.');
+      return;
+    }
+
+    // Email path — request a real OTP via the auth module.
+    final address = ctrl.text.trim();
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    final result = await ref
+        .read(signUpUseCaseProvider)
+        .requestEmailOtp(address, s.countryCode);
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    result.fold(
+      (_) {
+        s.setAuthContact(method: 'email', email: address);
+        s.go('otp');
+      },
+      (failure) => setState(() => _error = failure.message),
+    );
   }
 
   @override
@@ -216,6 +386,7 @@ class _PhoneScreenState extends State<_PhoneScreen> {
                 onChanged: (r) => setState(() {
                   email = r;
                   ctrl.clear();
+                  _error = null;
                 }),
               ),
               const SizedBox(height: 24),
@@ -259,20 +430,47 @@ class _PhoneScreenState extends State<_PhoneScreen> {
                           accent: s.accent,
                           onChanged: (_) => setState(() {}))),
                 ]),
+              // Date of birth — REQUIRED. Tapping opens a date picker (guarantees
+              // a valid DateTime); feeds the fail-closed age gate on continue.
+              const SizedBox(height: 20),
+              _Field(
+                label: s.t('pf_dob'),
+                ar: s.rtl,
+                child: GestureDetector(
+                  onTap: _submitting ? null : _pickDob,
+                  child: AbsorbPointer(
+                    child: _Input(
+                        controller: dobCtrl,
+                        hint: 'DD / MM / YYYY',
+                        mono: true,
+                        forceLtr: true,
+                        accent: s.accent,
+                        prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
+                        suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4)),
+                  ),
+                ),
+              ),
             ]),
           )),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
             child: Column(children: [
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(_error!,
+                      textAlign: TextAlign.center,
+                      style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                ),
               Opacity(
-                  opacity: ok ? 1 : 0.4,
+                  opacity: ok && !_submitting ? 1 : 0.4,
                   child: PButton(s.t('continue'),
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,
                       accent: s.accent,
                       ar: s.rtl,
-                      onTap: ok ? () => s.go('otp') : null)),
+                      onTap: ok && !_submitting ? () { _continue(); } : null)),
               const SizedBox(height: 14),
               Text(s.t('ph_terms'), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
             ]),
@@ -285,22 +483,65 @@ class _PhoneScreenState extends State<_PhoneScreen> {
 }
 
 // ── OTP ──────────────────────────────────────────────────────
-class _OtpScreen extends StatefulWidget {
+class _OtpScreen extends ConsumerStatefulWidget {
   const _OtpScreen();
   @override
-  State<_OtpScreen> createState() => _OtpScreenState();
+  ConsumerState<_OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends State<_OtpScreen> {
+class _OtpScreenState extends ConsumerState<_OtpScreen> {
   final ctrl = TextEditingController();
   final focus = FocusNode();
   int secs = 28;
   Timer? timer;
+  String? _error;
+  bool _verifying = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => focus.requestFocus());
     _tick();
+  }
+
+  /// Verifies the 6-digit code against the real auth module. On success the
+  /// use-case has already persisted tokens + `balsm.user_id` to secure storage;
+  /// we then transition to the app. Lockout (423) / invalid / geofence (403)
+  /// surface inline and reset the boxes.
+  Future<void> _verify(String code) async {
+    if (_verifying) return;
+    final s = AppScope.of(context);
+    setState(() {
+      _verifying = true;
+      _error = null;
+    });
+    final result = await ref
+        .read(signInUseCaseProvider)
+        .verifyEmailOtp(email: s.authEmail, code: code);
+    if (!mounted) return;
+    setState(() => _verifying = false);
+    result.fold(
+      (signInResult) {
+        switch (signInResult) {
+          case SignInSuccess():
+            // Session persisted by the use-case — grant access.
+            s.go('app');
+          case SignInLockout(:final session):
+            final secsLeft =
+                session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
+            setState(() {
+              _error = s.rtl
+                  ? 'الحساب مقفل مؤقتًا. حاول بعد $secsLeft ثانية.'
+                  : 'Account temporarily locked. Try again in ${secsLeft}s.';
+              ctrl.clear();
+            });
+        }
+      },
+      (failure) => setState(() {
+        _error = failure.message;
+        ctrl.clear();
+      }),
+    );
   }
 
   void _tick() {
@@ -372,13 +613,16 @@ class _OtpScreenState extends State<_OtpScreen> {
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
                         onChanged: (v) {
                           setState(() {});
-                          if (v.length == 6) {
-                            Future.delayed(const Duration(milliseconds: 280), () {
-                              if (mounted) s.go('profile');
-                            });
-                          }
+                          if (v.length == 6) _verify(v);
                         },
                       ))),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(_error!,
+                      textAlign: TextAlign.center,
+                      style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                ),
               const SizedBox(height: 24),
               Center(
                   child: secs > 0
@@ -397,14 +641,14 @@ class _OtpScreenState extends State<_OtpScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
             child: Opacity(
-                opacity: code.length == 6 ? 1 : 0.4,
+                opacity: code.length == 6 && !_verifying ? 1 : 0.4,
                 child: PButton(s.t('verify'),
                     variant: BtnVariant.primary,
                     large: true,
                     block: true,
                     accent: s.accent,
                     ar: s.rtl,
-                    onTap: code.length == 6 ? () => s.go('profile') : null)),
+                    onTap: code.length == 6 && !_verifying ? () { _verify(code); } : null)),
           ),
         ]),
         ),
