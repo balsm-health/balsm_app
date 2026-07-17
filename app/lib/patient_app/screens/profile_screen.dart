@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:core/core.dart' show StatusScreen;
+import 'package:sessions/sessions.dart' show SessionsScreen;
+import 'package:deletion/deletion.dart' show DeleteAccountScreen;
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../shell.dart' show AdaptiveFrame;
 import 'personal_details.dart';
 import 'profile_subscreens.dart';
 import 'storage_sheet.dart';
@@ -22,7 +26,6 @@ class ProfileScreen extends StatelessWidget {
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'p_cond', () => openMedicalProfile(context), false),
-      (LucideIcons.calendar, 'appts', () => s.setTab('appts'), false),
       (LucideIcons.stethoscope, 'p_care', () => openCareTeam(context), false),
       (LucideIcons.phoneCall, 'p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'p_notif', null, false),
@@ -82,6 +85,30 @@ class ProfileScreen extends StatelessWidget {
           ),
       ]),
 
+      // Account & security — real governance screens (sessions, service status,
+      // account deletion). These push the REAL module screens (their own design
+      // system + re-auth), same MaterialPageRoute pattern as the lockout / 404
+      // → StatusScreen hop.
+      _ListCard(children: [
+        _ListRow(
+          icon: LucideIcons.smartphone,
+          label: s.rtl ? 'الأجهزة والجلسات' : 'Devices & sessions',
+          first: true,
+          onTap: () => _pushGovernance(context, const SessionsScreen()),
+        ),
+        _ListRow(
+          icon: LucideIcons.activity,
+          label: s.rtl ? 'حالة الخدمة' : 'Service status',
+          onTap: () => _pushGovernance(context, const StatusScreen()),
+        ),
+        _ListRow(
+          icon: LucideIcons.trash2,
+          label: s.rtl ? 'حذف الحساب' : 'Delete account',
+          iconBg: T.dangerBg, iconFg: T.danger, labelColor: T.danger,
+          onTap: () => _pushGovernance(context, const DeleteAccountScreen()),
+        ),
+      ]),
+
       // Sign out
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -90,6 +117,19 @@ class ProfileScreen extends StatelessWidget {
       ),
     ]));
   }
+}
+
+/// Pushes a real governance module screen (sessions / deletion / status) as a
+/// full-screen route on the root navigator, wrapped in the app's [Directionality]
+/// and [AdaptiveFrame] so it width-caps on tablet/desktop. Mirrors the
+/// lockout / 404 → [StatusScreen] hop. The pushed screens carry their own
+/// design system (BalsmAppBar / BalsmColors) and, for deletion, their own
+/// re-auth — none of which is touched here.
+void _pushGovernance(BuildContext context, Widget screen) {
+  final s = AppScope.of(context);
+  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(
+    builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: screen)),
+  ));
 }
 
 class _ListCard extends StatelessWidget {

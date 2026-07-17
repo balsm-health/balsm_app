@@ -7,16 +7,9 @@ import 'responsive.dart';
 import 'tokens.dart';
 import 'widgets/balsm_flower.dart';
 import 'screens/home_screen.dart';
-import 'screens/trends_screen.dart';
 import 'screens/meds_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/map_screen.dart';
 import 'screens/auth_flow.dart';
-import 'screens/records_screen.dart';
-import 'screens/appointments_screen.dart';
-import 'screens/prescriptions_screen.dart';
-import 'screens/quicklog_sheet.dart';
-import 'screens/report_flow.dart';
 
 /// Root of the patient app prototype. Owns [PatientAppState] and renders the
 /// auth flow or the main tabbed app depending on `route`.
@@ -151,15 +144,14 @@ class _MainAppState extends State<_MainApp> {
       WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _flashNav(); });
     }
 
+    // P001 patient-MVP slice ships only the home / medications / profile tabs.
+    // Later-phase screens (trends, map, records, appointments, prescriptions,
+    // quick-log / self-report) are gated out of navigation; any stale tab id
+    // resolves to the "coming next" placeholder rather than crashing.
     final screen = switch (s.tab) {
       'home' => const HomeScreen(),
-      'trends' => const TrendsScreen(),
       'meds' => const MedsScreen(),
       'profile' => const ProfileScreen(),
-      'map' => const MapScreen(),
-      'records' => const RecordsScreen(),
-      'appts' => const AppointmentsScreen(),
-      'rx' => const PrescriptionsScreen(),
       _ => _Placeholder(title: s.tab),
     };
 
@@ -173,11 +165,10 @@ class _MainAppState extends State<_MainApp> {
           Expanded(child: screen),
         ]);
       }
-      // Phone: full-bleed screen + bottom tab bar (hidden on pushed sub-screens).
-      final hideTabBar = const {'trends', 'records', 'appts', 'rx'}.contains(s.tab);
+      // Phone: full-bleed screen + bottom tab bar.
       return Column(children: [
         Expanded(child: screen),
-        if (!hideTabBar) const _TabBar(),
+        const _TabBar(),
       ]);
     });
 
@@ -205,8 +196,6 @@ class _TabBar extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 22 + MediaQuery.of(context).padding.bottom.clamp(0, 12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _Tab(id: 'home', icon: LucideIcons.home, label: s.t('tab_home')),
-        _Tab(id: 'map', icon: LucideIcons.mapPin, label: s.t('tab_map')),
-        const _FabTab(),
         _Tab(id: 'meds', icon: LucideIcons.pill, label: s.t('tab_meds')),
         _Tab(id: 'profile', icon: LucideIcons.user, label: s.t('tab_profile')),
       ]),
@@ -242,34 +231,6 @@ class _Tab extends StatelessWidget {
   }
 }
 
-/// Center FAB tab — the daily check-in trigger (opens quick log).
-class _FabTab extends StatelessWidget {
-  const _FabTab();
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return Expanded(
-      child: Center(
-        child: GestureDetector(
-          onTap: () => showQuickLog(context, onFullCheckin: () => openCheckin(context), onAddRecord: (type) => showAddRecordSheet(context, initialType: type)),
-          child: Transform.translate(
-            offset: const Offset(0, -22),
-            child: Container(
-              width: 58, height: 58,
-              decoration: BoxDecoration(
-                color: s.accent.main, shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
-                boxShadow: s.accent.boxShadow,
-              ),
-              child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Tablet / desktop side rail ───────────────────────────────
 class _SideNav extends StatelessWidget {
   const _SideNav();
@@ -284,22 +245,8 @@ class _SideNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Column(children: [
-          const SizedBox(height: Space.s4),
-          // Daily check-in — prominent accent action at the top of the rail.
-          GestureDetector(
-            onTap: () => showQuickLog(context, onFullCheckin: () => openCheckin(context), onAddRecord: (type) => showAddRecordSheet(context, initialType: type)),
-            child: Container(
-              width: 56, height: 56,
-              decoration: BoxDecoration(
-                color: s.accent.main, shape: BoxShape.circle,
-                boxShadow: s.accent.boxShadow,
-              ),
-              child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
-            ),
-          ),
           const SizedBox(height: Space.s5),
           _RailItem(id: 'home', icon: LucideIcons.home, label: s.t('tab_home')),
-          _RailItem(id: 'map', icon: LucideIcons.mapPin, label: s.t('tab_map')),
           _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.t('tab_meds')),
           _RailItem(id: 'profile', icon: LucideIcons.user, label: s.t('tab_profile')),
           const Spacer(),
