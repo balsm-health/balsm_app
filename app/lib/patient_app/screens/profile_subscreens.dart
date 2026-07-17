@@ -14,7 +14,6 @@ import 'package:profile/profile.dart'
         removeAllergyUseCaseProvider,
         addChronicConditionUseCaseProvider;
 import '../app_state.dart';
-import '../data.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -497,9 +496,26 @@ class CareTeamScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
             child: Text(s.t('care_intro'), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ),
-          AdaptiveGrid(colMin: 300, gap: Space.s3, children: [
-            for (var i = 0; i < kDoctors.length; i++) _doctorCard(context, kDoctors[i], i == 0),
-          ]),
+          // P001 has no care-team backend yet, so this shows a neutral empty
+          // state (no fabricated doctors). The "find care" CTA below routes to
+          // the map where a real care team is built in a later phase.
+          PCard(
+            padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+            child: Column(children: [
+              const Icon(LucideIcons.stethoscope, size: 36, color: T.ink300),
+              const SizedBox(height: 12),
+              Text(s.rtl ? 'لا يوجد فريق رعاية بعد' : 'No care team yet',
+                  textAlign: TextAlign.center,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+              const SizedBox(height: 4),
+              Text(
+                  s.rtl
+                      ? 'أضف طبيبك من الخريطة لبناء فريق الرعاية.'
+                      : 'Add a doctor from the map to build your care team.',
+                  textAlign: TextAlign.center,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            ]),
+          ),
           const SizedBox(height: 16),
           Pressable(
             onTap: () { Navigator.pop(context); s.setTab('map'); },
@@ -518,41 +534,6 @@ class CareTeamScreen extends StatelessWidget {
           ),
         ],
       );
-
-  Widget _doctorCard(BuildContext context, Doctor d, bool primary) => PCard(padding: const EdgeInsets.all(16), child: Column(children: [
-        Row(children: [
-          Avatar(initials: d.initials, color: d.color, size: 52, ar: s.rtl),
-          const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Flexible(child: Text(d.name.of(s.lang), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1))),
-              if (primary) ...[
-                const SizedBox(width: 7),
-                Pill(s.t('care_primary'), kind: PillKind.info, dot: false, ar: s.rtl, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2)),
-              ],
-            ]),
-            const SizedBox(height: 2),
-            Text(d.specialty.of(s.lang), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            const SizedBox(height: 4),
-            Row(children: [
-              const Icon(LucideIcons.star, size: 12, color: T.sun500),
-              const SizedBox(width: 3),
-              Text(d.rating, style: Typo.num(size: FS.xs, color: T.fg3)),
-              const SizedBox(width: 10),
-              const Icon(LucideIcons.briefcase, size: 12, color: T.fg3),
-              const SizedBox(width: 3),
-              Flexible(child: Text(d.experience.of(s.lang), style: Typo.meta(ar: s.rtl))),
-            ]),
-          ])),
-        ]),
-        const SizedBox(height: 14),
-        Row(children: [
-          Expanded(child: PButton(s.t('care_message'), icon: LucideIcons.messageCircle, variant: BtnVariant.secondary, block: true, ar: s.rtl)),
-          const SizedBox(width: 8),
-          Expanded(child: PButton(s.t('care_book'), icon: LucideIcons.calendar, variant: BtnVariant.primary, block: true, accent: s.accent, ar: s.rtl,
-              onTap: () { Navigator.pop(context); s.setTab('appts'); })),
-        ]),
-      ]));
 }
 
 // ── Privacy & data ───────────────────────────────────────────

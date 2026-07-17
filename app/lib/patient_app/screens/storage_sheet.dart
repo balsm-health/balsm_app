@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
-import '../data.dart';
+import '../data.dart' show LocalizedMap; // `.of(lang)` on storageCfg labels
 import '../kit.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
@@ -133,14 +133,11 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     );
   }
 
-  // ── IDLE: provider selector + usage breakdown ──────────────
+  // ── IDLE: provider selector ────────────────────────────────
+  // The fabricated per-category storage-usage breakdown was removed — P001 has
+  // no real storage-metering provider, so only the (real) active-target picker
+  // is shown. Reintroduce a breakdown here only when it is backed by real data.
   Widget _idle() {
-    final breakdown = [
-      (ar ? 'المتابعات' : 'Check-ins', 12.4, LucideIcons.activity, T.petalAqua),
-      (ar ? 'السجلات' : 'Records', 38.7, LucideIcons.folder, T.petalBlue),
-      (ar ? 'الوصفات' : 'Prescriptions', 4.1, LucideIcons.fileText, T.petalViolet),
-    ];
-    final totalUsed = breakdown.fold<double>(0, (a, b) => a + b.$2);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
@@ -148,32 +145,6 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             style: Typo.meta(ar: ar).copyWith(height: 1.5)),
       ),
       for (final p in const ['local', 'icloud', 'gdrive']) _providerCard(p),
-      const SizedBox(height: 20),
-      Text(ar ? 'تفصيل التخزين' : 'Storage breakdown',
-          style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-      const SizedBox(height: 12),
-      for (final b in breakdown) Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(b.$3, size: 14, color: b.$4),
-            const SizedBox(width: 8),
-            Expanded(child: Text(b.$1, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w500, color: T.fg2))),
-            Text('${b.$2.toStringAsFixed(1)} MB', style: Typo.num(size: FS.sm, color: T.fg3)),
-          ]),
-          const SizedBox(height: 5),
-          LinearProgress(value: b.$2 / 5120, color: b.$4, height: 5),
-        ]),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Row(children: [
-          Expanded(child: Text(ar ? 'الإجمالي المستخدم' : 'Total used',
-              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1))),
-          Text('${totalUsed.toStringAsFixed(1)} MB ${ar ? 'من' : 'of'} 5 GB',
-              style: Typo.num(size: FS.sm, color: T.fg2)),
-        ]),
-      ),
     ]);
   }
 

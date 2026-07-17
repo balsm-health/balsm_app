@@ -8,7 +8,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:medications/medications.dart'
     show DoseOutcome, TodayDose, medicationListProvider, todayDosesProvider;
 import '../app_state.dart';
-import '../data.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -35,7 +34,8 @@ class HomeScreen extends ConsumerWidget {
     // Real account summary → greeting name. Null while loading / signed out;
     // the greeting label still renders, just without a name.
     final summary = ref.watch(accountSummaryProvider).valueOrNull;
-    final firstName = (summary?.displayName ?? '').trim().split(' ').first;
+    final displayName = (summary?.displayName ?? '').trim();
+    final firstName = displayName.split(' ').first;
 
     return ContentColumn(
       maxWidth: 720,
@@ -46,7 +46,9 @@ class HomeScreen extends ConsumerWidget {
 
           // App bar: avatar (account switcher) + greeting + bell.
           AppBarRow(children: [
-            _AvatarButton(onTap: () => showAccountSwitcher(context)),
+            _AvatarButton(
+                initials: accountInitials(displayName),
+                onTap: () => showAccountSwitcher(context)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -218,28 +220,18 @@ class _HomeDoseRow extends StatelessWidget {
 }
 
 class _AvatarButton extends StatelessWidget {
-  const _AvatarButton({required this.onTap});
+  const _AvatarButton({required this.initials, required this.onTap});
+  final String initials;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // P001 is single-account, so no multi-account badge dot. Initials come from
+    // the real account summary; empty while loading / signed out.
     return Pressable(
       onTap: onTap,
       scale: 0.95,
-      child: Stack(clipBehavior: Clip.none, children: [
-        Avatar(initials: s.account.initials, color: s.account.color, ar: s.rtl),
-        if (kFamilyAccounts.length > 1)
-          Positioned(
-            right: -1, bottom: -1,
-            child: Container(
-              width: 14, height: 14,
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-              child: Center(
-                child: Container(width: 8, height: 8, decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle)),
-              ),
-            ),
-          ),
-      ]),
+      child: Avatar(initials: initials, color: T.petalAqua, ar: s.rtl),
     );
   }
 }

@@ -5,7 +5,9 @@ import 'strings.dart';
 import 'tokens.dart';
 
 /// Global app context — mirrors the React `AppCtx`. Holds language, accent,
-/// current tab/route, active family account, country, and today's check-in.
+/// current tab/route, country, and the active backup target. The signed-in
+/// user's identity/PHI is NOT held here — screens read it from real providers
+/// (`accountSummaryProvider`, `profileDaoProvider`).
 class PatientAppState extends ChangeNotifier {
   String lang = 'en';
   Accent accent = Accent.blue;
@@ -19,14 +21,10 @@ class PatientAppState extends ChangeNotifier {
   String authMethod = 'phone'; // phone | email
   String authEmail = '';
 
-  String activeAccountId = 'layla';
   String countryCode = 'EG';
 
   /// Active backup target: local | icloud | gdrive (single active cloud).
   String storageProvider = 'local';
-
-  /// Today's completed check-in (null until the report flow finishes).
-  CheckinResult? today;
 
   PatientAppPrefs? _prefs;
 
@@ -40,7 +38,6 @@ class PatientAppState extends ChangeNotifier {
       s.lang = await prefs.lang();
       s.accent = _accentFromKey(await prefs.accent());
       s.countryCode = await prefs.country();
-      s.activeAccountId = await prefs.account();
       s.storageProvider = await prefs.storage();
       s.route = await prefs.signedIn() ? 'app' : 'welcome';
     } catch (_) {
@@ -73,7 +70,6 @@ class PatientAppState extends ChangeNotifier {
     p.setLang(lang);
     p.setAccent(_accentKey);
     p.setCountry(countryCode);
-    p.setAccount(activeAccountId);
     p.setStorage(storageProvider);
   }
 
@@ -81,8 +77,6 @@ class PatientAppState extends ChangeNotifier {
   TextDirection get dir => rtl ? TextDirection.rtl : TextDirection.ltr;
   String t(String key) => tr(key, lang);
 
-  FamilyAccount get account =>
-      kFamilyAccounts.firstWhere((a) => a.id == activeAccountId, orElse: () => kFamilyAccounts.first);
   Country get country => kCountries.firstWhere((c) => c.code == countryCode, orElse: () => kCountries.first);
 
   void setLang(String l) {
@@ -106,11 +100,7 @@ class PatientAppState extends ChangeNotifier {
   }
 
   void go(String r) {
-    if (r == 'app') {
-      tab = 'home';
-      today = null;
-    }
-    if (r == 'welcome') today = null;
+    if (r == 'app') tab = 'home';
     route = r;
     _save(); // persist signed-in / signed-out
     notifyListeners();
@@ -118,12 +108,6 @@ class PatientAppState extends ChangeNotifier {
 
   void setTab(String tb) {
     tab = tb;
-    notifyListeners();
-  }
-
-  void switchAccount(String id) {
-    activeAccountId = id;
-    _save();
     notifyListeners();
   }
 
@@ -138,20 +122,21 @@ class PatientAppState extends ChangeNotifier {
     _save();
     notifyListeners();
   }
-
-  void completeCheckin(CheckinResult r) {
-    today = r;
-    notifyListeners();
-  }
 }
 
-/// Result captured by the self-report flow.
-class CheckinResult {
-  const CheckinResult({this.bp, this.glu, this.mood, this.pain});
-  final String? bp;
-  final int? glu;
-  final int? mood;
-  final int? pain;
+/// Derives up-to-two-letter avatar initials from a display name. Returns an
+/// empty string when the name is blank (loading / signed out) so the avatar
+/// renders neutrally rather than showing fabricated initials.
+String accountInitials(String displayName) {
+  final parts = displayName
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+      .toUpperCase();
 }
 
 /// InheritedNotifier exposing [PatientAppState] to the widget tree.

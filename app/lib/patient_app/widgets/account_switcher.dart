@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:core/core.dart' show accountSummaryProvider;
 import '../app_state.dart';
-import '../data.dart';
 import '../kit.dart';
 import '../tokens.dart';
 
-/// Bottom sheet to switch between family accounts (home.jsx AccountSwitcherSheet).
+/// Account sheet (home.jsx AccountSwitcherSheet look).
+///
+/// P001 is a SINGLE-account app — multi-account / family members are a P002
+/// concern — so this shows the one real signed-in account from
+/// [accountSummaryProvider] (never fabricated family accounts). Signed-out or
+/// still-loading renders a neutral empty state rather than crashing. There is
+/// no "add member" affordance yet (that arrives with family accounts in P002).
 Future<void> showAccountSwitcher(BuildContext context) {
   final s = AppScope.of(context);
   return showModalBottomSheet(
@@ -19,11 +26,13 @@ Future<void> showAccountSwitcher(BuildContext context) {
   );
 }
 
-class _AccountSwitcherSheet extends StatelessWidget {
+class _AccountSwitcherSheet extends ConsumerWidget {
   const _AccountSwitcherSheet(this.s);
   final PatientAppState s;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final displayName = (summary?.displayName ?? '').trim();
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -43,52 +52,70 @@ class _AccountSwitcherSheet extends StatelessWidget {
           ]),
         ),
         const Divider(height: 1, color: T.ink100),
-        for (var i = 0; i < kFamilyAccounts.length; i++)
-          _AccountRow(s, kFamilyAccounts[i], last: i == kFamilyAccounts.length - 1, onTap: () {
-            s.switchAccount(kFamilyAccounts[i].id);
-            Navigator.pop(context);
-          }),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: PButton(s.t('add_member'), icon: LucideIcons.userPlus, variant: BtnVariant.secondary, block: true, ar: s.rtl),
-        ),
+        if (summary == null)
+          _EmptyAccount(s)
+        else
+          _AccountRow(
+            s,
+            name: displayName,
+            handle: summary.handle,
+            onTap: () => Navigator.pop(context),
+          ),
       ]),
     );
   }
 }
 
+/// The single, active, signed-in account row.
 class _AccountRow extends StatelessWidget {
-  const _AccountRow(this.s, this.acc, {required this.last, required this.onTap});
+  const _AccountRow(this.s, {required this.name, required this.handle, required this.onTap});
   final PatientAppState s;
-  final FamilyAccount acc;
-  final bool last;
+  final String name;
+  final String? handle;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    final active = acc.id == s.activeAccountId;
-    final sub = StringBuffer('${acc.relation.of(s.lang)} · ${acc.age} ${s.rtl ? 'سنة' : 'yrs'}');
-    if (acc.conditions.isNotEmpty) sub.write(' · ${acc.conditions.first.of(s.lang)}');
+    final sub = (handle != null && handle!.isNotEmpty)
+        ? '@$handle'
+        : (s.rtl ? 'الحساب النشط' : 'Active account');
     return PressHighlight(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink50))),
         child: Row(children: [
-          Avatar(
-            initials: acc.initials, color: acc.color, size: 48, ar: s.rtl,
-          ),
+          Avatar(initials: accountInitials(name), color: T.petalAqua, size: 48, ar: s.rtl),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(acc.name.of(s.lang), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+              if (name.isNotEmpty)
+                Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               const SizedBox(height: 3),
-              Text(sub.toString(), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+              Text(sub, textDirection: handle != null && handle!.isNotEmpty ? TextDirection.ltr : s.dir,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),
           ),
-          if (active) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
+          Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
         ]),
       ),
     );
   }
+}
+
+/// Signed-out / loading placeholder — no fabricated account.
+class _EmptyAccount extends StatelessWidget {
+  const _EmptyAccount(this.s);
+  final PatientAppState s;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+        child: Row(children: [
+          const Icon(LucideIcons.userCircle2, size: 22, color: T.fg3),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(s.rtl ? 'لم يتم تسجيل الدخول' : 'Not signed in',
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          ),
+        ]),
+      );
 }

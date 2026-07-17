@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:core/core.dart' show StatusScreen;
+import 'package:core/core.dart' show StatusScreen, accountSummaryProvider;
 import 'package:sessions/sessions.dart' show SessionsScreen;
 import 'package:deletion/deletion.dart' show DeleteAccountScreen;
 import '../app_state.dart';
@@ -16,11 +17,15 @@ import 'storage_sheet.dart';
 import '../widgets/badges.dart';
 
 /// Profile tab (home.jsx ProfileScreen) — main screen + language/country sheets.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
+    // Real account summary → profile head (name + handle). Null while loading /
+    // signed out, in which case the head renders neutrally.
+    final summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final displayName = (summary?.displayName ?? '').trim();
     final curLang = kLanguages.firstWhere((l) => l.code == s.lang, orElse: () => kLanguages[1]);
     // Reflects the active backup target (local | icloud | gdrive).
     final stCfg = storageCfg(s.storageProvider);
@@ -39,21 +44,21 @@ class ProfileScreen extends StatelessWidget {
         Expanded(child: Text(s.t('profile'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
       ]),
 
-      // Profile head
+      // Profile head — real account summary (name + handle). No fabricated
+      // "member since" / conditions strip; conditions live on the medical
+      // profile sub-screen (real on-device PHI).
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
         child: Column(children: [
-          Avatar(initials: s.account.initials, color: s.account.color, size: 84, ar: s.rtl),
-          const SizedBox(height: 14),
-          Text(s.account.name.of(s.lang), style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
-          const SizedBox(height: 2),
-          Text('${s.t('since')} ${s.account.since.of(s.lang)}', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          if (s.account.conditions.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(spacing: 10, runSpacing: 8, alignment: WrapAlignment.center, children: [
-              for (final c in s.account.conditions)
-                Pill(c.of(s.lang), kind: PillKind.neutral, dot: false, ar: s.rtl),
-            ]),
+          Avatar(initials: accountInitials(displayName), color: T.petalAqua, size: 84, ar: s.rtl),
+          if (displayName.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
+          ],
+          if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text('@${summary.handle}', textDirection: TextDirection.ltr,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ],
         ]),
       ),

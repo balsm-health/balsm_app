@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../data.dart';
-import '../kit.dart';
 import '../tokens.dart';
 
 ({IconData icon, Color color, Color bg, Color border, L label}) storageCfg(String which) => switch (which) {
@@ -23,13 +22,4 @@ class StorageBadge extends StatelessWidget {
       child: Icon(c.icon, size: 14, color: c.color),
     );
   }
-}
-
-/// Doctor initials avatar.
-class DoctorAvatar extends StatelessWidget {
-  const DoctorAvatar({super.key, required this.doctor, this.size = 44});
-  final Doctor doctor;
-  final double size;
-  @override
-  Widget build(BuildContext context) => Avatar(initials: doctor.initials, color: doctor.color, size: size);
 }
