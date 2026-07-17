@@ -9,7 +9,16 @@ import '../../application/use_cases/sign_out_everywhere_use_case.dart';
 import '../../domain/aggregates/active_session.dart';
 
 /// Loads the current user's active device sessions.
+///
+/// Watches core's [currentUserIdProvider] (overridden in the app shell at
+/// bootstrap, invalidated on sign-out) so the surface is signed-out-safe:
+/// when no user is authenticated it resolves to an empty list — the list shows
+/// its empty state and the "sign out everywhere" action hides. Same pattern as
+/// the meds / profile ports (FutureProvider watching currentUserId +
+/// invalidate-after-write).
 final sessionsProvider = FutureProvider<List<ActiveSession>>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return const <ActiveSession>[];
   final result = await ref.watch(listActiveSessionsUseCaseProvider).call();
   return result.fold(
     (sessions) => sessions,
@@ -227,8 +236,55 @@ class _SessionsList extends ConsumerWidget {
     }
   }
 
+  // G11: surface real device metadata per row — device type, when the session
+  // was first seen and when it was last active — instead of a bare
+  // "Active <time>". The approximate location is appended only when the API
+  // supplies it (never fabricated on-device); it stays omitted until then.
   static String _subtitleFor(ActiveSession session) {
-    return 'Active ${_relativeTime(session.lastActivityAt)}';
+    final parts = <String>[
+      _deviceTypeLabel(session.deviceType),
+      'First seen ${_shortDate(session.firstSeenAt)}',
+      'Active ${_relativeTime(session.lastActivityAt)}',
+      if (session.approxLocation != null &&
+          session.approxLocation!.trim().isNotEmpty)
+        session.approxLocation!.trim(),
+    ];
+    return parts.join(' · ');
+  }
+
+  static String _deviceTypeLabel(String deviceType) {
+    switch (deviceType.toLowerCase()) {
+      case 'ios':
+        return 'iOS';
+      case 'ipados':
+        return 'iPadOS';
+      case 'android':
+        return 'Android';
+      case 'web':
+      case 'browser':
+        return 'Web';
+      case 'desktop':
+        return 'Desktop';
+      case 'macos':
+      case 'mac':
+        return 'macOS';
+      case 'windows':
+        return 'Windows';
+      case '':
+        return 'Device';
+      default:
+        return deviceType[0].toUpperCase() + deviceType.substring(1);
+    }
+  }
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  static String _shortDate(DateTime when) {
+    final d = when.toLocal();
+    return '${d.day} ${_months[d.month - 1]} ${d.year}';
   }
 
   static String _relativeTime(DateTime when) {

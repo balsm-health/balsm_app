@@ -31,6 +31,7 @@ class ListActiveSessionsUseCase {
         lastActivityAt: r.lastActivityAt,
         revokedAt: r.revokedAt,
         isCurrent: r.isCurrent,
+        approxLocation: r.approxLocation, // G11: null until the API returns it
       );
 
   AppFailure _failureFor(ApiException e) {

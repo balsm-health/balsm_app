@@ -8,6 +8,7 @@ class SessionResponse {
     required this.lastActivityAt,
     this.revokedAt,
     this.isCurrent = false,
+    this.approxLocation,
   });
 
   final String id;
@@ -18,6 +19,9 @@ class SessionResponse {
   final DateTime lastActivityAt;
   final DateTime? revokedAt;
   final bool isCurrent;
+
+  /// G11: coarse (city/region) location string, or null when the API omits it.
+  final String? approxLocation;
 
   factory SessionResponse.fromJson(Map<String, dynamic> json) => SessionResponse(
         id: json['id'] as String,
@@ -31,6 +35,7 @@ class SessionResponse {
             ? DateTime.parse(json['revoked_at'] as String).toUtc()
             : null,
         isCurrent: json['is_current'] as bool? ?? false,
+        approxLocation: json['approx_location'] as String?,
       );
 }
 
