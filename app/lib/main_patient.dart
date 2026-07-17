@@ -1,5 +1,6 @@
 import 'package:account/account.dart'
     show buildAccountAdapter, DeniedCountriesPort, deniedCountriesPortProvider;
+import 'package:auth/auth.dart' show UserSignedIn, UserSignedOut;
 import 'package:core/core.dart';
 import 'package:emergency_card/emergency_card.dart'
     show
@@ -15,6 +16,12 @@ import 'package:profile/profile.dart' show EmergencyContact, profileDaoProvider;
 import 'patient_app/app_state.dart';
 import 'patient_app/prefs.dart';
 import 'patient_app/shell.dart';
+
+/// In-session holder for the signed-in user id. `currentUserIdProvider` reads
+/// this, so an in-session sign-in / sign-out is reflected immediately (the
+/// boot-time secure-storage value only seeds it). Updated by the
+/// UserSignedIn / UserSignedOut bus listeners in [main].
+final _sessionUserIdProvider = StateProvider<UserId?>((ref) => null);
 
 /// Entrypoint for the claude.ai/design "Patient App" Flutter port.
 /// Restores the persisted session so a signed-in user skips the auth flow.
@@ -47,7 +54,9 @@ Future<void> main() async {
     globalKVDataSourceProvider.overrideWithValue(globalKV),
     // ── Real P001 module provider seams (recovered from bootstrap.dart) ─────
     appDatabaseProvider.overrideWithValue(db),
-    currentUserIdProvider.overrideWithValue(UserId.fromString(userId)),
+    // Reactive: reads the in-session holder (seeded from storage below), so
+    // sign-in/out updates every PHI reader without an app restart.
+    currentUserIdProvider.overrideWith((ref) => ref.watch(_sessionUserIdProvider)),
     // Flutter-side API controller owns the shared BalsmApiClient; the derived
     // balsmApiClientProvider reads `.client` off it.
     balsmApiControllerProvider.overrideWith(
@@ -112,6 +121,20 @@ Future<void> main() async {
     bus: container.read(eventBusProvider),
     analytics: analytics,
   ).start();
+
+  // Seed the in-session user id from the boot-time secure-storage value.
+  container.read(_sessionUserIdProvider.notifier).state =
+      UserId.fromString(userId);
+
+  // Keep the in-session user id live: sign-in sets it, sign-out clears it, so
+  // every PHI reader (profile/meds/emergency/backup) sees the current user
+  // without an app restart.
+  container.read(eventBusProvider).on<UserSignedIn>().listen((e) {
+    container.read(_sessionUserIdProvider.notifier).state = e.userId;
+  });
+  container.read(eventBusProvider).on<UserSignedOut>().listen((_) {
+    container.read(_sessionUserIdProvider.notifier).state = null;
+  });
 
   // T173: country change → refresh locale-derived state. Re-fetches the
   // account summary so greeting/locale-dependent reads reflect the change.
