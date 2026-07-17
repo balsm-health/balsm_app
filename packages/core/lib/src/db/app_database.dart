@@ -23,8 +23,24 @@ class AppDatabase extends _$AppDatabase {
           for (final stmt in _phiSchema) {
             await customStatement(stmt);
           }
+          // Idempotent column patches for PHI tables that gained columns after
+          // their initial CREATE. `CREATE TABLE IF NOT EXISTS` above does not
+          // alter a pre-existing table, so add any missing columns for dev DBs.
+          await _ensureColumn('chronic_condition', 'icd10_code', 'TEXT');
+          await _ensureColumn('chronic_condition', 'onset_year', 'INTEGER');
         },
       );
+
+  /// Idempotently adds [column] (with SQL [ddlType]) to [table] when it is not
+  /// already present. Evolves the raw-SQL PHI schema (see [_phiSchema]) without
+  /// a full drift migration; safe to run on every open.
+  Future<void> _ensureColumn(String table, String column, String ddlType) async {
+    final info = await customSelect('PRAGMA table_info($table)').get();
+    final hasColumn = info.any((r) => r.read<String>('name') == column);
+    if (!hasColumn) {
+      await customStatement('ALTER TABLE $table ADD COLUMN $column $ddlType');
+    }
+  }
 
   static Future<AppDatabase> open() async => AppDatabase(openExecutor());
 }
@@ -57,6 +73,8 @@ const _phiSchema = <String>[
     id TEXT PRIMARY KEY,
     health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
+    icd10_code TEXT,
+    onset_year INTEGER,
     created_at TEXT NOT NULL
   )''',
   '''
@@ -116,5 +134,19 @@ const _phiSchema = <String>[
     result_note TEXT,
     taken_at TEXT NOT NULL,
     created_at TEXT NOT NULL
+  )''',
+  // Disclosure/consent acceptance ledger (disclosure module). PHI-free —
+  // records which disclosure version the user accepted and the jurisdiction
+  // context at accept time. One row per (disclosure_id, version).
+  '''
+  CREATE TABLE IF NOT EXISTS disclosure_acceptance (
+    id TEXT PRIMARY KEY,
+    disclosure_id TEXT NOT NULL,
+    version TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    supervisory_authority_name TEXT NOT NULL,
+    preferred_language TEXT NOT NULL,
+    accepted_at INTEGER NOT NULL,
+    UNIQUE(disclosure_id, version)
   )''',
 ];

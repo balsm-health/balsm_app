@@ -90,12 +90,21 @@ class ChronicCondition {
     required this.id,
     required this.healthProfileId,
     required this.name,
+    this.icd10Code,
+    this.onsetYear,
     required this.createdAt,
   });
 
   final ChronicConditionId id;
   final HealthProfileId healthProfileId;
   final String name;
+
+  /// Optional ICD-10 diagnosis code (e.g. 'E11.9'). Null when uncoded.
+  final String? icd10Code;
+
+  /// Optional year of onset (e.g. 2018). Null when unknown.
+  final int? onsetYear;
+
   final DateTime createdAt;
 }
 

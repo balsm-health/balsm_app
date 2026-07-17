@@ -173,6 +173,8 @@ class ProfileDao {
               healthProfileId:
                   HealthProfileId.value(r.read<String>('health_profile_id')),
               name: r.read<String>('name'),
+              icd10Code: r.readNullable<String>('icd10_code'),
+              onsetYear: r.readNullable<int>('onset_year'),
               createdAt: DateTime.fromMillisecondsSinceEpoch(
                 r.read<int>('created_at'),
                 isUtc: true,
@@ -190,13 +192,19 @@ class ProfileDao {
     await _db.customInsert(
       '''
       INSERT INTO chronic_condition
-        (id, health_profile_id, name, created_at)
-      VALUES (?, ?, ?, ?)
+        (id, health_profile_id, name, icd10_code, onset_year, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
       ''',
       variables: [
         Variable.withString(id.value),
         Variable.withString(profileId.value),
         Variable.withString(condition.name),
+        condition.icd10Code != null
+            ? Variable.withString(condition.icd10Code!)
+            : const Variable(null),
+        condition.onsetYear != null
+            ? Variable.withInt(condition.onsetYear!)
+            : const Variable(null),
         Variable.withInt(now),
       ],
     );
