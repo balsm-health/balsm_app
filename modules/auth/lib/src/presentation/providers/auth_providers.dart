@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/age_gate_use_case.dart';
+import '../../application/use_cases/recovery_claim_use_case.dart';
 import '../../application/use_cases/sign_in_use_case.dart';
 import '../../application/use_cases/sign_out_use_case.dart';
 import '../../application/use_cases/sign_up_use_case.dart';
@@ -56,5 +57,13 @@ final signOutUseCaseProvider = Provider<SignOutUseCase>((ref) {
     adapter: ref.watch(balsmAuthAdapterProvider),
     storage: ref.watch(secureStorageProvider),
     eventBus: ref.watch(eventBusProvider),
+  );
+});
+
+/// Claims a support-issued recovery token (FR-046c/d/e). Consumed by
+/// [AuthRecoveryClaimScreen].
+final recoveryClaimUseCaseProvider = Provider<RecoveryClaimUseCase>((ref) {
+  return RecoveryClaimUseCase(
+    adapter: ref.watch(balsmAuthAdapterProvider),
   );
 });
