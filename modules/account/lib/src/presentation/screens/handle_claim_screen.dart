@@ -15,7 +15,8 @@ enum _HandleStatus { idle, checking, available, taken, invalid }
 /// - `@`-prefixed input, lowercased.
 /// - Debounced 500ms live validation (format + availability).
 /// - Green check when available, red X when taken/invalid.
-/// - Up to 3 suggestions derived from displayName.
+/// - On a taken/reserved conflict, shows up to 3 conflict-aware alternatives
+///   derived from the attempted handle (FR-008). Hidden otherwise.
 /// - Submit -> ClaimHandleUseCase; 409 surfaces "Handle taken".
 class HandleClaimScreen extends ConsumerStatefulWidget {
   const HandleClaimScreen({super.key});
@@ -93,19 +94,23 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
     }
   }
 
-  List<String> _suggestions(String? displayName) {
-    if (displayName == null || displayName.trim().isEmpty) return const [];
-    final base = displayName
+  /// Conflict-aware alternatives for a taken/reserved [handle]. The attempted
+  /// handle is already valid, so append short suffixes while keeping each
+  /// suggestion within the 3-30 char handle format. Never suggests the
+  /// attempted handle verbatim (it is unavailable).
+  List<String> _conflictSuggestions(String handle) {
+    final base = handle
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9_.]+'), '')
         .replaceAll(RegExp(r'^[._]+|[._]+$'), '');
     if (base.isEmpty) return const [];
-    final trimmed = base.length > 24 ? base.substring(0, 24) : base;
-    return [
-      trimmed,
-      '$trimmed.1',
+    // Leave room for a short suffix within the 30-char cap.
+    final trimmed = base.length > 28 ? base.substring(0, 28) : base;
+    return <String>[
+      '${trimmed}1',
       '${trimmed}_',
-    ].where((s) => kHandleFormat.hasMatch(s)).take(3).toList();
+      '$trimmed.1',
+    ].where(kHandleFormat.hasMatch).take(3).toList();
   }
 
   Future<void> _submit() async {
@@ -136,9 +141,11 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summaryAsync = ref.watch(accountSummaryProvider);
-    final displayName = summaryAsync.asData?.value?.displayName;
-    final suggestions = _suggestions(displayName);
+    // Only surface suggestions on a taken/reserved conflict, derived from the
+    // attempted handle (not the unrelated display name).
+    final suggestions = _status == _HandleStatus.taken
+        ? _conflictSuggestions(_controller.text.trim())
+        : const <String>[];
 
     return Scaffold(
       backgroundColor: BalsmColors.cream50,
