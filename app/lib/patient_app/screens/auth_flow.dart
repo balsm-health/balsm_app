@@ -6,6 +6,9 @@ import 'package:auth/auth.dart'
         signInUseCaseProvider,
         SignInSuccess,
         SignInLockout;
+import 'package:core/core.dart' show countryRegistryProvider;
+import 'package:disclosure/disclosure.dart'
+    show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -482,6 +485,14 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   }
 }
 
+// ── Disclosure gate identity ─────────────────────────────────
+// The consolidated privacy disclosure the post-sign-in gate enforces. Matches
+// the id/version the disclosure module's routes default to (`consolidated` /
+// `1`). Acceptance is tracked per (id, version), so bumping the version here
+// re-gates every user until they accept the new notice (fail-closed).
+const String _kDisclosureId = 'consolidated';
+const String _kDisclosureVersion = '1';
+
 // ── OTP ──────────────────────────────────────────────────────
 class _OtpScreen extends ConsumerStatefulWidget {
   const _OtpScreen();
@@ -524,8 +535,9 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
       (signInResult) {
         switch (signInResult) {
           case SignInSuccess():
-            // Session persisted by the use-case — grant access.
-            s.go('app');
+            // Session persisted by the use-case — but do NOT grant access yet.
+            // Interpose the fail-closed disclosure gate before reaching 'app'.
+            unawaited(_enterAfterSignIn(s));
           case SignInLockout(:final session):
             final secsLeft =
                 session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
@@ -542,6 +554,41 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
         ctrl.clear();
       }),
     );
+  }
+
+  /// Disclosure-acceptance GATE — interposed between a successful sign-in and
+  /// reaching 'app'. Fail-closed: a user who has not accepted the CURRENT
+  /// consolidated-disclosure version never reaches the app. A returning user
+  /// who already accepted this version skips straight through.
+  ///
+  /// The check reads the real on-device acceptance store (Tier-1
+  /// `DisclosureDao.watchAcceptance`); presentation goes through
+  /// [_DisclosureGateScreen], which — on accept — runs the real
+  /// `AcceptDisclosureUseCase` (persist + cloud sync + domain event) and pops
+  /// `true`. Only a persisted acceptance unlocks 'app'.
+  Future<void> _enterAfterSignIn(PatientAppState s) async {
+    // Already accepted this disclosure version on-device? → straight in.
+    final accepted = await ref
+        .read(disclosureDaoProvider)
+        .watchAcceptance(
+          const DisclosureId.value(_kDisclosureId),
+          _kDisclosureVersion,
+        )
+        .first;
+    if (!mounted) return;
+    if (accepted != null) {
+      s.go('app');
+      return;
+    }
+    // Not accepted → present the gate. Pushed over the OTP screen so backing
+    // out (without accepting) simply returns here — no 'app' access is granted.
+    final didAccept = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => _DisclosureGateScreen(state: s),
+      ),
+    );
+    if (!mounted) return;
+    if (didAccept == true) s.go('app');
   }
 
   void _tick() {
@@ -680,6 +727,257 @@ class _OtpBox extends StatelessWidget {
         boxShadow: active ? [BoxShadow(color: accent.bg, blurRadius: 0, spreadRadius: 4)] : null,
       ),
       child: Text(char, style: Typo.num(size: FS.xl2, weight: FontWeight.w600)),
+    );
+  }
+}
+
+// ── Disclosure gate ──────────────────────────────────────────
+// Governance step interposed AFTER a successful sign-in and BEFORE the app.
+// The consumer-app design never covered this flow, so it is rendered in the
+// prototype's own kit (cream surface, PButton, tokens) rather than the
+// module's core-design-system ConsolidatedDisclosureScreen — whose success
+// path hard-codes a `pushReplacementNamed('/home')` the prototype's
+// route-state Navigator does not provide. ACCEPTANCE STILL RUNS THE REAL
+// use-case: AcceptDisclosureUseCase → DisclosureDao.insert persists the
+// country / supervisory-authority / language snapshots on-device (FR-040) and
+// best-effort syncs to the cloud + publishes the domain event. Fail-closed:
+// pops `true` only after the acceptance persists; backing out grants nothing.
+class _DisclosureGateScreen extends ConsumerStatefulWidget {
+  const _DisclosureGateScreen({required this.state});
+  final PatientAppState state;
+  @override
+  ConsumerState<_DisclosureGateScreen> createState() =>
+      _DisclosureGateScreenState();
+}
+
+class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
+  final _scroll = ScrollController();
+  bool _readToEnd = false;
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+    // Content shorter than the viewport can never scroll — treat as read once
+    // laid out so the CTA is reachable.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_scroll.hasClients || _scroll.position.maxScrollExtent <= 0) {
+        setState(() => _readToEnd = true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_onScroll);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Enable the CTA only once the patient has scrolled to the end of the
+    // notice (mirrors the real screen's scroll-to-accept requirement).
+    if (!_readToEnd &&
+        _scroll.hasClients &&
+        _scroll.position.pixels >= _scroll.position.maxScrollExtent - 4) {
+      setState(() => _readToEnd = true);
+    }
+  }
+
+  Future<void> _accept() async {
+    final s = widget.state;
+    final registry = ref.read(countryRegistryProvider);
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    // Real use-case: on-device persist (FR-040 snapshots) + cloud sync + event.
+    final result = await ref.read(acceptDisclosureUseCaseProvider).execute(
+          disclosureId: const DisclosureId.value(_kDisclosureId),
+          version: _kDisclosureVersion,
+          countryCode: s.countryCode,
+          supervisoryAuthority: registry.supervisoryAuthority(s.countryCode),
+          preferredLanguage: s.lang,
+        );
+    if (!mounted) return;
+    result.fold(
+      (_) => Navigator.of(context).pop(true), // persisted → unlock 'app'
+      (failure) => setState(() {
+        _submitting = false;
+        _error = failure.message;
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.state;
+    final authority =
+        ref.watch(countryRegistryProvider).supervisoryAuthority(s.countryCode);
+    return Scaffold(
+      backgroundColor: T.cream50,
+      body: SafeArea(
+        child: ContentColumn(
+          maxWidth: 440,
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
+              child: Row(children: [
+                RoundBtn(
+                    icon: LucideIcons.arrowLeft,
+                    onTap: () => Navigator.of(context).maybePop()),
+              ]),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scroll,
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                            color: s.accent.bg, shape: BoxShape.circle),
+                        child: Icon(LucideIcons.shieldCheck,
+                            size: 34, color: s.accent.main),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        s.rtl ? 'خصوصيتك وبياناتك' : 'Your privacy & data',
+                        style: Typo.display(ar: s.rtl),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        s.rtl
+                            ? 'قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.'
+                            : 'Before you continue, please review how we handle your data. Your health data stays on your device.',
+                        style: Typo.body(ar: s.rtl).copyWith(color: T.fg2),
+                      ),
+                      const SizedBox(height: 20),
+                      _gateSection(
+                        s,
+                        LucideIcons.database,
+                        s.rtl ? 'ما الذي نجمعه' : 'What we collect',
+                        s.rtl
+                            ? 'حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.'
+                            : 'A minimal non-health account (email, country, language). Health records stay encrypted on your device.',
+                      ),
+                      _gateSection(
+                        s,
+                        LucideIcons.lock,
+                        s.rtl ? 'كيف نحميها' : 'How we protect it',
+                        s.rtl
+                            ? 'تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.'
+                            : 'On-device encryption, secure transport, and least-privilege access.',
+                      ),
+                      _gateSection(
+                        s,
+                        LucideIcons.scale,
+                        s.rtl ? 'حقوقك' : 'Your rights',
+                        s.rtl
+                            ? 'يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.'
+                            : 'Access, correct, or delete your data at any time from account settings.',
+                      ),
+                      _gateSection(
+                        s,
+                        LucideIcons.landmark,
+                        s.rtl ? 'الجهة الرقابية' : 'Supervisory authority',
+                        s.rtl
+                            ? 'الجهة المشرفة على حماية بياناتك في بلدك: $authority.'
+                            : 'The authority overseeing your data protection in your country: $authority.',
+                      ),
+                      _gateSection(
+                        s,
+                        LucideIcons.share2,
+                        s.rtl ? 'المشاركة' : 'Sharing',
+                        s.rtl
+                            ? 'لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.'
+                            : 'We never sell your data. Sharing happens only with your explicit consent or a legal obligation.',
+                      ),
+                      _gateSection(
+                        s,
+                        LucideIcons.trash2,
+                        s.rtl ? 'الحذف' : 'Deletion',
+                        s.rtl
+                            ? 'يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.'
+                            : 'Deleting your account removes your non-health cloud data and wipes on-device records.',
+                      ),
+                      const SizedBox(height: 8),
+                      if (!_readToEnd)
+                        Center(
+                          child: Text(
+                            s.rtl
+                                ? 'مرّر للأسفل للمتابعة'
+                                : 'Scroll down to continue',
+                            style: Typo.meta(ar: s.rtl),
+                          ),
+                        ),
+                    ]),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: Column(children: [
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(_error!,
+                        textAlign: TextAlign.center,
+                        style: Typo.meta(ar: s.rtl)
+                            .copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                  ),
+                Opacity(
+                  opacity: _readToEnd && !_submitting ? 1 : 0.4,
+                  child: PButton(
+                    _submitting
+                        ? (s.rtl ? 'جارٍ الحفظ…' : 'Saving…')
+                        : (s.rtl ? 'أوافق وأتابع' : 'I agree & continue'),
+                    variant: BtnVariant.primary,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _readToEnd && !_submitting ? () { _accept(); } : null,
+                  ),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _gateSection(
+      PatientAppState s, IconData icon, String title, String body) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(T.rLg),
+        border: Border.all(color: T.border),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, size: 20, color: s.accent.main),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title,
+                style: Typo.subhead(ar: s.rtl)
+                    .copyWith(fontSize: FS.base, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(body,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+          ]),
+        ),
+      ]),
     );
   }
 }

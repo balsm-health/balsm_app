@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/disclosure_acceptance.dart';
 import '../../domain/value_objects/ids.dart';
@@ -78,3 +79,12 @@ class DisclosureDao {
         ),
       );
 }
+
+/// Riverpod provider — requires [appDatabaseProvider] to be overridden at
+/// bootstrap. Exposes on-device disclosure-acceptance reads to app-shell seams
+/// (e.g. the post-sign-in disclosure gate, which checks [watchAcceptance] to
+/// decide whether the consolidated disclosure must be shown). Acceptance rows
+/// are PHI-free regardless of who reads the DAO.
+final disclosureDaoProvider = Provider<DisclosureDao>((ref) {
+  return DisclosureDao(ref.watch(appDatabaseProvider));
+});
