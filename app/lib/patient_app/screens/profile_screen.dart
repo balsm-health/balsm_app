@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show StatusScreen;
 import 'package:sessions/sessions.dart' show SessionsScreen;
@@ -94,13 +95,19 @@ class ProfileScreen extends StatelessWidget {
           icon: LucideIcons.smartphone,
           label: s.rtl ? 'الأجهزة والجلسات' : 'Devices & sessions',
           first: true,
-          onTap: () => _pushGovernance(context, const SessionsScreen()),
+          onTap: () => _pushSessionsRouted(context),
         ),
         _ListRow(
           icon: LucideIcons.activity,
           label: s.rtl ? 'حالة الخدمة' : 'Service status',
           onTap: () => _pushGovernance(context, const StatusScreen()),
         ),
+        // NOTE: deletion still hard-depends on the app's real GoRouter — its
+        // flow uses declarative context.goNamed('deletion.confirm'|'.cancelled')
+        // and context.go('/') across flat sibling routes, which a per-push
+        // scoped router cannot host without reshaping deletionRoutes / touching
+        // the re-auth flow. Left on _pushGovernance until this surface is mounted
+        // under the real router. See _pushSessionsRouted for the scoped pattern.
         _ListRow(
           icon: LucideIcons.trash2,
           label: s.rtl ? 'حذف الحساب' : 'Delete account',
@@ -130,6 +137,86 @@ void _pushGovernance(BuildContext context, Widget screen) {
   Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(
     builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: screen)),
   ));
+}
+
+/// Pushes the real [SessionsScreen] wrapped in a SMALL, SCOPED [GoRouter] so its
+/// AppBar back button (`context.pop()`) resolves.
+///
+/// The prototype shell has NO GoRouter mounted (it navigates via plain
+/// [Navigator] + `PatientAppState.route`), so pushing [SessionsScreen] raw makes
+/// its `context.pop()` throw at runtime ("no GoRouter"). Here it is hosted in a
+/// throwaway [GoRouter] whose navigator holds an invisible exit-base BENEATH the
+/// screen — so `context.pop()` has something to pop to (go_router 14.x throws
+/// `GoError('There is nothing to pop')` on a single-page stack). Popping the
+/// screen reveals the base; [_ScopedShellExitObserver] then dismisses the outer
+/// route, returning to the prototype shell. Look is unchanged
+/// (Directionality + [AdaptiveFrame]), matching [_pushGovernance].
+///
+/// Sessions is the only governance surface that can be hosted this way: it has a
+/// single route and its ONLY navigation is `context.pop()`. Deletion CANNOT —
+/// its flow drives `context.goNamed('deletion.confirm' | 'deletion.cancelled')`
+/// and `context.go('/')`, all declarative jumps across flat sibling routes that
+/// reset a scoped stack to one page (so the next `context.pop()` would throw)
+/// and reference an app-root route absent from `deletionRoutes`. Deletion needs
+/// the app's real router, so its row still uses [_pushGovernance] (see below).
+void _pushSessionsRouted(BuildContext context) {
+  final s = AppScope.of(context);
+  final theme = Theme.of(context);
+  final rootNav = Navigator.of(context, rootNavigator: true);
+  final router = GoRouter(
+    initialLocation: '/sessions',
+    observers: [
+      _ScopedShellExitObserver(() {
+        // Defer to avoid re-entrant navigation during the scoped pop.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (rootNav.canPop()) rootNav.pop();
+        });
+      }),
+    ],
+    routes: [
+      GoRoute(
+        // Invisible exit-base: the page revealed when SessionsScreen pops.
+        path: '/',
+        builder: (_, __) => const SizedBox.shrink(),
+        routes: [
+          // Relative child so the initial stack is [base, SessionsScreen] and
+          // `context.pop()` from the screen lands on the base (then exits).
+          GoRoute(
+            path: 'sessions',
+            builder: (_, __) => const SessionsScreen(),
+          ),
+        ],
+      ),
+    ],
+  );
+  rootNav.push(MaterialPageRoute<void>(
+    builder: (_) => MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: theme,
+      routerConfig: router,
+      builder: (_, child) => Directionality(
+        textDirection: s.dir,
+        child: AdaptiveFrame(child: child ?? const SizedBox.shrink()),
+      ),
+    ),
+  ));
+}
+
+/// One-shot observer for the scoped sessions router. The only pop its navigator
+/// can see is [SessionsScreen] → exit-base (the back button) — its confirm
+/// dialogs use the root navigator — so the first pop means "leave sessions":
+/// dismiss the outer route back to the prototype shell. One-shot so the pops
+/// fired while the scoped router is torn down are ignored.
+class _ScopedShellExitObserver extends NavigatorObserver {
+  _ScopedShellExitObserver(this.onExit);
+  final VoidCallback onExit;
+  bool _done = false;
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (_done) return;
+    _done = true;
+    onExit();
+  }
 }
 
 class _ListCard extends StatelessWidget {
