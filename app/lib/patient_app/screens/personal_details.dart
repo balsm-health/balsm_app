@@ -5,6 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:core/core.dart' show currentUserIdProvider;
+import 'package:emergency_card/emergency_card.dart'
+    show
+        EmergencyCardSnapshot,
+        emergencySnapshotReaderProvider,
+        mintEmergencyQrTokenUseCaseProvider,
+        revokeEmergencyQrTokenUseCaseProvider,
+        MintResult;
 import 'package:profile/profile.dart'
     show
         EmergencyContact,
@@ -37,6 +44,25 @@ final _emergencyContactsProvider =
   final profile = await ref.watch(profileDaoProvider).getProfile(userId);
   return profile?.emergencyContacts ?? const [];
 });
+
+/// Reads the on-device [EmergencyCardSnapshot] via the Tier-0
+/// `emergencySnapshotReaderProvider` seam (the same PHI the mint use-case
+/// encrypts). Used only to gate the QR-share sheet's mint affordance: `null`
+/// when signed out or when there is no profile yet. Never leaves the device.
+final _emergencySnapshotProvider =
+    FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return null;
+  return ref.watch(emergencySnapshotReaderProvider).readSnapshot();
+});
+
+/// TTL choices offered before minting the emergency QR token (FR-017).
+const _emergencyTtlOptions = <({String en, String ar, int seconds})>[
+  (en: '1h', ar: 'ساعة', seconds: 3600),
+  (en: '6h', ar: '٦ س', seconds: 21600),
+  (en: '24h', ar: '٢٤ س', seconds: 86400),
+  (en: '7d', ar: '٧ أيام', seconds: 604800),
+];
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
   const PersonalDetailsScreen({super.key, required this.s});
@@ -361,7 +387,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
-            child: _QrShareSheet(s: s, handle: handle.text, name: '${first.text} ${last.text}'.trim()),
+            child: _QrShareSheet(s: s, name: '${first.text} ${last.text}'.trim()),
           ),
         ),
       ),
@@ -469,45 +495,160 @@ class _ConnCard extends StatelessWidget {
   }
 }
 
-/// Shareable patient QR (qrshare.jsx `QRShareSheet`): a rounded-dot QR with the
-/// Balsm flower in its center, the patient name + handle, a copyable link row,
-/// and Save / Share actions. Slides up; in-sheet toast confirms copy/save.
-class _QrShareSheet extends StatefulWidget {
-  const _QrShareSheet({required this.s, required this.handle, required this.name});
+/// Emergency-card QR share (qrshare.jsx `QRShareSheet` look, real data): mints
+/// an AES-256-GCM-encrypted emergency token via [mintEmergencyQrTokenUseCase]
+/// and renders a rounded-dot QR of `{BASE_URL}/emergency/{jti}#k={key}` with the
+/// Balsm flower in its center. The decryption key lives ONLY in the URL fragment
+/// (`#k=`) — it is embedded in the QR / clipboard locally and is NEVER sent to
+/// the server (FR-013/FR-014). Before minting, the user picks a TTL (FR-017);
+/// an active token shows its expiry + a Revoke action. Slides up; in-sheet toast
+/// confirms copy/save/revoke.
+class _QrShareSheet extends ConsumerStatefulWidget {
+  const _QrShareSheet({required this.s, required this.name});
   final PatientAppState s;
-  final String handle;
   final String name;
   @override
-  State<_QrShareSheet> createState() => _QrShareSheetState();
+  ConsumerState<_QrShareSheet> createState() => _QrShareSheetState();
 }
 
-class _QrShareSheetState extends State<_QrShareSheet> {
+class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   String? toast;
   Timer? _toastTimer;
 
+  // Minted-token state. `_mint` holds the real token + its `#k=` fragment URL;
+  // null until a token is minted (or after it is revoked / re-generated).
+  MintResult? _mint;
+  int _ttlSeconds = 86400; // default 24h (FR-017)
+  bool _minting = false;
+  bool _revoking = false;
+  String? _error;
+  Timer? _ticker;
+  Duration _remaining = Duration.zero;
+
   PatientAppState get s => widget.s;
   bool get ar => s.rtl;
-  String get url => 'balsm.health/@${widget.handle}';
+
+  bool get _isExpired =>
+      _mint == null || _remaining.isNegative || _remaining == Duration.zero;
 
   @override
   void dispose() {
     _toastTimer?.cancel();
+    _ticker?.cancel();
     super.dispose();
   }
 
   void _showToast(String msg) {
     setState(() => toast = msg);
     _toastTimer?.cancel();
-    _toastTimer = Timer(const Duration(milliseconds: 1800), () { if (mounted) setState(() => toast = null); });
+    _toastTimer = Timer(const Duration(milliseconds: 1800),
+        () { if (mounted) setState(() => toast = null); });
   }
 
+  /// Mints the real emergency token. The use-case reads the on-device snapshot
+  /// via the Tier-0 seam, client-side AES-256-GCM encrypts it, POSTs ONLY the
+  /// ciphertext, and returns the full QR URL with the key in the `#k=` fragment.
+  Future<void> _mintToken() async {
+    setState(() { _minting = true; _error = null; });
+    final result = await ref
+        .read(mintEmergencyQrTokenUseCaseProvider)
+        .call(ttlSeconds: _ttlSeconds);
+    if (!mounted) return;
+    result.fold(
+      (m) {
+        setState(() {
+          _mint = m;
+          _minting = false;
+          _remaining = m.token.expiresAt.difference(DateTime.now());
+        });
+        _startTicker();
+      },
+      // Mint failures — incl. the age gate (FR-301b) — surface in the error
+      // style below the mint affordance.
+      (f) => setState(() { _minting = false; _error = f.message; }),
+    );
+  }
+
+  void _startTicker() {
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final m = _mint;
+      if (m == null) { _ticker?.cancel(); return; }
+      setState(() => _remaining = m.token.expiresAt.difference(DateTime.now()));
+    });
+  }
+
+  /// Revokes the active token → the public resolve endpoint returns 410. On
+  /// success the QR clears and the sheet returns to the mint affordance.
+  Future<void> _revoke() async {
+    final m = _mint;
+    if (m == null) return;
+    setState(() => _revoking = true);
+    final result = await ref
+        .read(revokeEmergencyQrTokenUseCaseProvider)
+        .call(tokenId: m.token.jti);
+    if (!mounted) return;
+    result.fold(
+      (_) {
+        _ticker?.cancel();
+        setState(() { _mint = null; _revoking = false; _error = null; });
+        _showToast(ar ? 'تم إلغاء الرمز' : 'QR revoked');
+      },
+      (f) => setState(() { _revoking = false; _error = f.message; }),
+    );
+  }
+
+  /// Copies the full QR URL (incl. the `#k=` fragment) to the clipboard. This is
+  /// a local share only — the key still never reaches the server.
   void _copy() {
-    Clipboard.setData(ClipboardData(text: 'https://$url'));
+    final m = _mint;
+    if (m == null) return;
+    Clipboard.setData(ClipboardData(text: m.qrUrl));
     _showToast(ar ? 'تم نسخ الرابط' : 'Link copied');
+  }
+
+  String get _countdownLabel {
+    if (_isExpired) return ar ? 'منتهي' : 'Expired';
+    final d = _remaining;
+    final days = d.inDays;
+    final hours = d.inHours % 24;
+    final minutes = d.inMinutes % 60;
+    final seconds = d.inSeconds % 60;
+    if (days > 0) return '${days}d ${hours}h ${minutes}m';
+    if (hours > 0) return '${hours}h ${minutes}m ${seconds}s';
+    return '${minutes}m ${seconds}s';
   }
 
   @override
   Widget build(BuildContext context) {
+    // Gate: can we mint? Need a signed-in user AND on-device health data.
+    final userId = ref.watch(currentUserIdProvider);
+    final snapAsync = ref.watch(_emergencySnapshotProvider);
+    final snapshot = snapAsync.valueOrNull;
+    final canShare = userId != null && snapshot != null && snapshot.hasAnyData;
+    final loadingSnapshot = userId != null && snapAsync.isLoading;
+    final hasToken = _mint != null;
+
+    final String desc;
+    if (hasToken) {
+      desc = ar
+          ? 'اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.'
+          : 'Show this encrypted code to emergency staff. It expires automatically; the decryption key travels only inside the link.';
+    } else if (userId == null) {
+      desc = ar
+          ? 'سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.'
+          : 'Sign in to share your emergency health card.';
+    } else if (!canShare) {
+      desc = ar
+          ? 'أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.'
+          : 'Add your blood type, allergies, conditions or an emergency contact to share an emergency card.';
+    } else {
+      desc = ar
+          ? 'أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.'
+          : 'Generate a secure, encrypted QR of your emergency health profile. The decryption key stays on your device.';
+    }
+
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
       decoration: const BoxDecoration(color: T.cream50, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
@@ -522,7 +663,7 @@ class _QrShareSheetState extends State<_QrShareSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
-                  Expanded(child: Text(ar ? 'رمز المشاركة' : 'My QR code',
+                  Expanded(child: Text(ar ? 'رمز الطوارئ' : 'Emergency QR',
                       style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                   RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
                 ]),
@@ -535,73 +676,16 @@ class _QrShareSheetState extends State<_QrShareSheet> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Padding(
                   padding: const EdgeInsets.only(bottom: 18),
-                  child: Text(
-                    ar ? 'امسح هذا الرمز لمشاركة ملفك الصحي بأمان مع طبيبك أو عائلتك.'
-                       : 'Scan this code to securely share your health profile with a doctor or family member.',
-                    style: Typo.bodySm(ar: ar).copyWith(color: T.fg3, height: 1.5)),
+                  child: Text(desc, style: Typo.bodySm(ar: ar).copyWith(color: T.fg3, height: 1.5)),
                 ),
-                // QR card
-                Container(
-                  padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
-                  decoration: BoxDecoration(
-                    color: Colors.white, borderRadius: BorderRadius.circular(T.rXl),
-                    border: Border.all(color: T.ink100), boxShadow: T.shadowMd),
-                  child: Column(children: [
-                    SizedBox(
-                      width: 240, height: 240,
-                      child: Stack(alignment: Alignment.center, children: [
-                        QrImageView(
-                          data: 'https://$url',
-                          version: QrVersions.auto,
-                          size: 240,
-                          padding: EdgeInsets.zero,
-                          backgroundColor: Colors.white,
-                          // High EC so the centered flower stays scannable.
-                          errorCorrectionLevel: QrErrorCorrectLevel.H,
-                          eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: T.ink900),
-                          dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: T.ink900),
-                        ),
-                        // Center flower mark with white halo (clears QR dots).
-                        Container(
-                          width: 58, height: 58, alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.white, borderRadius: BorderRadius.circular(14),
-                            boxShadow: const [BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: 5)]),
-                          child: const BalsmFlower(size: 42),
-                        ),
-                      ]),
-                    ),
-                    const SizedBox(height: 18),
-                    if (widget.name.isNotEmpty)
-                      Text(widget.name, textAlign: TextAlign.center,
-                          style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
-                    Text('@${widget.handle}', textDirection: TextDirection.ltr,
-                        style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: s.accent.main)),
-                  ]),
-                ),
-                const SizedBox(height: 16),
-                // Link row + copy
-                Container(
-                  padding: const EdgeInsetsDirectional.only(start: 14, end: 6, top: 6, bottom: 6),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.ink100)),
-                  child: Row(children: [
-                    const Icon(LucideIcons.link, size: 16, color: T.fg3),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(url, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: Typo.num(size: FS.sm, color: T.fg2))),
-                    PButton(ar ? 'نسخ' : 'Copy', icon: LucideIcons.copy, variant: BtnVariant.ghost, accent: s.accent, ar: ar, onTap: _copy),
-                  ]),
-                ),
-                const SizedBox(height: 16),
-                // Actions
-                Row(children: [
-                  Expanded(child: PButton(ar ? 'حفظ' : 'Save', icon: LucideIcons.download, variant: BtnVariant.secondary, large: true, block: true, ar: ar,
-                      onTap: () => _showToast(ar ? 'تم حفظ الصورة' : 'Saved to Photos'))),
-                  const SizedBox(width: 10),
-                  Expanded(child: PButton(ar ? 'مشاركة' : 'Share', icon: LucideIcons.share2, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
-                      onTap: _copy)),
-                ]),
+                if (hasToken)
+                  ..._activeToken()
+                else if (loadingSnapshot)
+                  ..._loadingState()
+                else if (!canShare)
+                  ..._disabledState(signedOut: userId == null)
+                else
+                  ..._mintAffordance(),
               ]),
             ),
           ),
@@ -623,4 +707,220 @@ class _QrShareSheetState extends State<_QrShareSheet> {
       ]),
     );
   }
+
+  /// The rounded-dot QR card with the flower center (prototype look). [dim]
+  /// greys it once the token has expired.
+  Widget _qrCard(String data, {bool dim = false}) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
+        decoration: BoxDecoration(
+          color: Colors.white, borderRadius: BorderRadius.circular(T.rXl),
+          border: Border.all(color: T.ink100), boxShadow: T.shadowMd),
+        child: Column(children: [
+          Opacity(
+            opacity: dim ? 0.3 : 1,
+            child: SizedBox(
+              width: 240, height: 240,
+              child: Stack(alignment: Alignment.center, children: [
+                QrImageView(
+                  data: data,
+                  version: QrVersions.auto,
+                  size: 240,
+                  padding: EdgeInsets.zero,
+                  backgroundColor: Colors.white,
+                  // High EC so the centered flower stays scannable.
+                  errorCorrectionLevel: QrErrorCorrectLevel.H,
+                  eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: T.ink900),
+                  dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: T.ink900),
+                ),
+                // Center flower mark with white halo (clears QR dots).
+                Container(
+                  width: 58, height: 58, alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white, borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: 5)]),
+                  child: const BalsmFlower(size: 42),
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (widget.name.isNotEmpty)
+            Text(widget.name, textAlign: TextAlign.center,
+                style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          // Expiry chip (replaces the prototype's static @handle line).
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: _isExpired ? T.dangerBg : s.accent.bg,
+              borderRadius: BorderRadius.circular(T.rPill)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(_isExpired ? LucideIcons.timerOff : LucideIcons.timer,
+                  size: 15, color: _isExpired ? T.danger : s.accent.d),
+              const SizedBox(width: 6),
+              Text(
+                _isExpired
+                    ? _countdownLabel
+                    : '${ar ? 'ينتهي خلال' : 'Expires in'} $_countdownLabel',
+                style: Typo.num(size: FS.xs, weight: FontWeight.w700,
+                    color: _isExpired ? T.danger : s.accent.d),
+              ),
+            ]),
+          ),
+        ]),
+      );
+
+  /// Active-token view: live QR, copyable link, Save/Share + Revoke.
+  List<Widget> _activeToken() {
+    final m = _mint!;
+    final expired = _isExpired;
+    return [
+      _qrCard(m.qrUrl, dim: expired),
+      const SizedBox(height: 16),
+      // Link row + copy. Shows the token path (key fragment elided from view).
+      Container(
+        padding: const EdgeInsetsDirectional.only(start: 14, end: 6, top: 6, bottom: 6),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.ink100)),
+        child: Row(children: [
+          const Icon(LucideIcons.link, size: 16, color: T.fg3),
+          const SizedBox(width: 10),
+          Expanded(child: Text(m.qrUrl.split('#').first, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: Typo.num(size: FS.sm, color: T.fg2))),
+          PButton(ar ? 'نسخ' : 'Copy', icon: LucideIcons.copy, variant: BtnVariant.ghost, accent: s.accent, ar: ar,
+              onTap: expired ? null : _copy),
+        ]),
+      ),
+      const SizedBox(height: 16),
+      if (expired)
+        // Token lapsed → offer a fresh mint (returns to the affordance).
+        PButton(ar ? 'إنشاء رمز جديد' : 'Generate new code', icon: LucideIcons.refreshCw,
+            variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
+            onTap: () { _ticker?.cancel(); setState(() => _mint = null); })
+      else ...[
+        Row(children: [
+          Expanded(child: PButton(ar ? 'حفظ' : 'Save', icon: LucideIcons.download, variant: BtnVariant.secondary, large: true, block: true, ar: ar,
+              onTap: () => _showToast(ar ? 'تم حفظ الصورة' : 'Saved to Photos'))),
+          const SizedBox(width: 10),
+          Expanded(child: PButton(ar ? 'مشاركة' : 'Share', icon: LucideIcons.share2, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
+              onTap: _copy)),
+        ]),
+        const SizedBox(height: 10),
+        _revoking
+            ? _busyButton()
+            : PButton(ar ? 'إلغاء الرمز' : 'Revoke code', icon: LucideIcons.ban,
+                variant: BtnVariant.ghost, block: true, ar: ar, color: T.danger, onTap: _revoke),
+      ],
+    ];
+  }
+
+  /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
+  List<Widget> _mintAffordance() => [
+        Text((ar ? 'مدة الصلاحية' : 'Valid for').toUpperCase(),
+            style: Typo.meta(ar: ar).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
+        const SizedBox(height: 8),
+        _ttlControl(),
+        if (_error != null) ...[
+          const SizedBox(height: 14),
+          _errorBox(_error!),
+        ],
+        const SizedBox(height: 16),
+        _minting
+            ? _busyButton(primary: true)
+            : PButton(ar ? 'إنشاء رمز QR' : 'Generate QR', icon: LucideIcons.qrCode,
+                variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
+                onTap: _mintToken),
+      ];
+
+  /// Segmented TTL selector (mirrors the prototype's `.segmented` control).
+  Widget _ttlControl() => Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
+        child: Row(children: [
+          for (var i = 0; i < _emergencyTtlOptions.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(child: _ttlSeg(_emergencyTtlOptions[i])),
+          ],
+        ]),
+      );
+
+  Widget _ttlSeg(({String en, String ar, int seconds}) opt) {
+    final active = _ttlSeconds == opt.seconds;
+    return GestureDetector(
+      onTap: () => setState(() => _ttlSeconds = opt.seconds),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: Motion.base,
+        curve: Motion.easeOut,
+        height: 42, alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+          boxShadow: active ? T.shadowXs : null),
+        child: Text(ar ? opt.ar : opt.en,
+            style: Typo.num(size: FS.sm, weight: FontWeight.w700,
+                color: active ? s.accent.d : T.fg3)),
+      ),
+    );
+  }
+
+  /// Disabled/empty state — signed out or no health data (never crashes).
+  List<Widget> _disabledState({required bool signedOut}) => [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 44, horizontal: 24),
+          decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(T.rXl),
+            border: Border.all(color: T.ink100), boxShadow: T.shadowSm),
+          child: Column(children: [
+            Icon(signedOut ? LucideIcons.lock : LucideIcons.heartPulse,
+                size: 40, color: T.ink300),
+            const SizedBox(height: 14),
+            Text(
+              signedOut
+                  ? (ar ? 'يلزم تسجيل الدخول' : 'Sign in required')
+                  : (ar ? 'لا توجد بيانات صحية بعد' : 'No health data yet'),
+              textAlign: TextAlign.center,
+              style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+          ]),
+        ),
+        const SizedBox(height: 16),
+        // Disabled Generate button (0.4 opacity, non-tappable) — prototype style.
+        Opacity(
+          opacity: 0.4,
+          child: PButton(ar ? 'إنشاء رمز QR' : 'Generate QR', icon: LucideIcons.qrCode,
+              variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar, onTap: null),
+        ),
+      ];
+
+  List<Widget> _loadingState() => [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 60),
+          alignment: Alignment.center,
+          child: Spinner(size: 26, stroke: 2.5, color: s.accent.main),
+        ),
+      ];
+
+  /// Mint/revoke error surfaced in the prototype's error style (danger wash).
+  Widget _errorBox(String msg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: T.dangerBg, borderRadius: BorderRadius.circular(T.rMd)),
+        child: Row(children: [
+          const Icon(LucideIcons.alertCircle, size: 18, color: T.danger),
+          const SizedBox(width: 10),
+          Expanded(child: Text(msg,
+              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.danger))),
+        ]),
+      );
+
+  /// Button-shaped busy indicator (PButton has no loading prop).
+  Widget _busyButton({bool primary = false}) => Container(
+        height: primary ? 56 : 52,
+        width: double.infinity,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: primary ? s.accent.main : Colors.white,
+          borderRadius: BorderRadius.circular(primary ? T.rLg : T.rMd),
+          border: primary ? null : Border.all(color: T.borderStrong),
+          boxShadow: primary ? s.accent.boxShadow : null),
+        child: Spinner(size: 22, stroke: 2.5, color: primary ? Colors.white : s.accent.main),
+      );
 }
