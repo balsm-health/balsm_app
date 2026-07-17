@@ -1,8 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:core/core.dart' show currentUserIdProvider;
+import 'package:profile/profile.dart'
+    show
+        EmergencyContact,
+        profileDaoProvider,
+        addEmergencyContactUseCaseProvider,
+        AddEmergencyContactUseCase,
+        normalizeArabicNumerals;
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -18,23 +27,37 @@ void openPersonalDetails(BuildContext context) {
   ));
 }
 
-class PersonalDetailsScreen extends StatefulWidget {
+/// Reads the current user's emergency contacts from the on-device HealthProfile
+/// (SQLCipher PHI). Re-runs on sign-in/out; empty when signed out. Adding a
+/// contact via AddEmergencyContactUseCase invalidates this provider.
+final _emergencyContactsProvider =
+    FutureProvider.autoDispose<List<EmergencyContact>>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return const [];
+  final profile = await ref.watch(profileDaoProvider).getProfile(userId);
+  return profile?.emergencyContacts ?? const [];
+});
+
+class PersonalDetailsScreen extends ConsumerStatefulWidget {
   const PersonalDetailsScreen({super.key, required this.s});
   final PatientAppState s;
   @override
-  State<PersonalDetailsScreen> createState() => _PersonalDetailsScreenState();
+  ConsumerState<PersonalDetailsScreen> createState() =>
+      _PersonalDetailsScreenState();
 }
 
-class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
+class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   final handle = TextEditingController(text: 'layla_hassan58');
   final first = TextEditingController(text: 'Layla');
   final last = TextEditingController(text: 'Hassan');
   final dob = TextEditingController(text: '14 / 03 / 1967');
   final phone = TextEditingController(text: '+20 10 1234 5678');
   final nid = TextEditingController(text: '2 6703 14 12345 6');
-  final emName = TextEditingController(text: 'Ahmed Hassan');
-  final emRel = TextEditingController(text: 'Son');
-  final emPhone = TextEditingController(text: '+20 10 9876 5432');
+  // Emergency-contact fields now feed the real AddEmergencyContactUseCase, so
+  // they start empty (an "add new contact" form) rather than seeded sample PHI.
+  final emName = TextEditingController();
+  final emRel = TextEditingController();
+  final emPhone = TextEditingController();
   String gender = 'female';
   bool connApple = false;
   bool connGoogle = false;
@@ -79,6 +102,70 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => saved = false); });
   }
 
+  /// Persists the emergency-contact form via AddEmergencyContactUseCase
+  /// (on-device PHI only). FR-213: normalize Arabic-Indic phone digits first.
+  Future<void> _addEmergencyContact() async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final name = emName.text.trim();
+    final contactPhone = normalizeArabicNumerals(emPhone.text).trim();
+    if (name.isEmpty || contactPhone.isEmpty) return;
+    final relation = emRel.text.trim();
+    final result = await ref.read(addEmergencyContactUseCaseProvider).execute(
+          userId: userId,
+          name: name,
+          phone: contactPhone,
+          relation: relation.isEmpty ? null : relation,
+        );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      emName.clear();
+      emRel.clear();
+      emPhone.clear();
+      ref.invalidate(_emergencyContactsProvider);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(result.error.message)));
+    }
+  }
+
+  /// Read-only styled row for an existing emergency contact (prototype look).
+  Widget _contactRow(EmergencyContact c) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+            color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+        child: Row(children: [
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Row(children: [
+                  Flexible(
+                      child: Text(c.name,
+                          style: Typo.body(ar: s.rtl).copyWith(
+                              fontWeight: FontWeight.w700, color: T.fg1))),
+                  if (c.isPrimary) ...[
+                    const SizedBox(width: 7),
+                    Pill(s.rtl ? 'أساسي' : 'Primary',
+                        kind: PillKind.info,
+                        dot: false,
+                        ar: s.rtl,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2)),
+                  ],
+                ]),
+                const SizedBox(height: 3),
+                Text(
+                  c.relation == null || c.relation!.isEmpty
+                      ? c.phone
+                      : '${c.relation} · ${c.phone}',
+                  textDirection: TextDirection.ltr,
+                  style: Typo.meta(ar: s.rtl),
+                ),
+              ])),
+        ]),
+      );
+
   Color get _handleStatusColor => switch (unStatus) {
         'available' => T.petalMint600,
         'taken' => T.danger,
@@ -110,6 +197,11 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Real on-device emergency contacts (PHI). Empty while loading / signed out.
+    final contacts = ref.watch(_emergencyContactsProvider).valueOrNull ??
+        const <EmergencyContact>[];
+    final atMaxContacts =
+        contacts.length >= AddEmergencyContactUseCase.maxContacts;
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(children: [
@@ -220,16 +312,28 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
               const SizedBox(height: 14),
               _labeled(s.t('pd_nationality'), _selectField(s.t('nat_egyptian'))),
             ]),
-            // Emergency contact
+            // Emergency contact (real on-device PHI; up to 3 contacts).
             _section(LucideIcons.phoneCall, s.t('pd_emergency')),
             _card([
-              _field(s.t('pd_em_name'), emName),
-              const SizedBox(height: 14),
-              Row(children: [
-                Expanded(child: _field(s.t('pd_em_rel'), emRel)),
-                const SizedBox(width: 12),
-                Expanded(child: _field(s.t('pd_em_phone'), emPhone, mono: true)),
-              ]),
+              for (var i = 0; i < contacts.length; i++) ...[
+                _contactRow(contacts[i]),
+                if (i < contacts.length - 1 || !atMaxContacts)
+                  const SizedBox(height: 12),
+              ],
+              if (!atMaxContacts) ...[
+                _field(s.t('pd_em_name'), emName),
+                const SizedBox(height: 14),
+                Row(children: [
+                  Expanded(child: _field(s.t('pd_em_rel'), emRel)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _field(s.t('pd_em_phone'), emPhone, mono: true)),
+                ]),
+                const SizedBox(height: 14),
+                PButton(s.rtl ? 'إضافة جهة اتصال' : 'Add contact',
+                    icon: LucideIcons.plus, variant: BtnVariant.secondary,
+                    block: true, accent: s.accent, ar: s.rtl,
+                    onTap: _addEmergencyContact),
+              ],
             ]),
             const SizedBox(height: 24),
             // Disabled until the handle is verified available (or unchanged).

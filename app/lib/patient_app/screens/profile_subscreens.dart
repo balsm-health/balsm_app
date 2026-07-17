@@ -1,5 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:core/core.dart' show currentUserIdProvider;
+import 'package:profile/profile.dart'
+    show
+        HealthProfile,
+        Allergy,
+        ChronicCondition,
+        AllergyId,
+        profileDaoProvider,
+        updateHealthProfileUseCaseProvider,
+        addAllergyUseCaseProvider,
+        removeAllergyUseCaseProvider,
+        addChronicConditionUseCaseProvider;
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
@@ -70,23 +83,117 @@ class _SectionHead extends StatelessWidget {
 }
 
 // ── Medical profile ──────────────────────────────────────────
-class MedicalProfileScreen extends StatefulWidget {
+
+/// Reads the current user's on-device [HealthProfile] (SQLCipher-backed PHI).
+/// Re-runs when the signed-in user changes; emits `null` when signed out.
+/// Writes go through the profile use-cases, which invalidate this provider.
+final _medProfileProvider =
+    FutureProvider.autoDispose<HealthProfile?>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return null;
+  return ref.watch(profileDaoProvider).getProfile(userId);
+});
+
+class MedicalProfileScreen extends ConsumerStatefulWidget {
   const MedicalProfileScreen({super.key, required this.s});
   final PatientAppState s;
   @override
-  State<MedicalProfileScreen> createState() => _MedicalProfileScreenState();
+  ConsumerState<MedicalProfileScreen> createState() =>
+      _MedicalProfileScreenState();
 }
 
-class _MedicalProfileScreenState extends State<MedicalProfileScreen> {
+class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   PatientAppState get s => widget.s;
-  late List<String> conds = s.account.conditions.map((c) => c.of(s.lang)).toList();
-  late List<String> allergies = s.rtl ? ['البنسلين', 'حبوب اللقاح'] : ['Penicillin', 'Pollen'];
-  final condInput = TextEditingController();
   final algInput = TextEditingController();
-  String blood = 'B+';
+  // Measurements are local-only (no on-device schema for weight/height/BMI).
   final weight = TextEditingController(text: '78');
   final height = TextEditingController(text: '162');
   bool saving = false, saved = false;
+
+  @override
+  void dispose() {
+    algInput.dispose();
+    weight.dispose();
+    height.dispose();
+    super.dispose();
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  // ── Real PHI writes (on-device only; nothing sent to the cloud) ──────────
+
+  /// Toggle blood type via UpdateHealthProfileUseCase. Tapping the currently
+  /// selected type clears it (back to unknown).
+  Future<void> _setBloodType(String bt) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final current = ref.read(_medProfileProvider).valueOrNull?.bloodType;
+    final toClear = current == bt;
+    final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
+          userId: userId,
+          bloodType: toClear ? null : bt,
+          clearBloodType: toClear,
+        );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(_medProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  /// Add an allergy. The prototype chip captures a name only, so severity
+  /// defaults to 'mild' (real model requires a severity).
+  Future<void> _addAllergy(String name) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref.read(addAllergyUseCaseProvider).execute(
+          userId: userId,
+          name: name,
+          severity: 'mild',
+        );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(_medProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  Future<void> _removeAllergy(AllergyId id) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref
+        .read(removeAllergyUseCaseProvider)
+        .execute(userId: userId, allergyId: id);
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(_medProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  /// G7: add a chronic condition with optional ICD-10 code + onset year.
+  Future<void> _addCondition(String name, String? icd10Code, int? onsetYear) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref.read(addChronicConditionUseCaseProvider).execute(
+          userId: userId,
+          name: name,
+          icd10Code: icd10Code,
+          onsetYear: onsetYear,
+        );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(_medProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
 
   void _save() {
     if (saving) return;
@@ -118,6 +225,11 @@ class _MedicalProfileScreenState extends State<MedicalProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final bmi = _bmi;
+    // Real on-device PHI. `null` while loading or when signed out (empty state).
+    final profile = ref.watch(_medProfileProvider).valueOrNull;
+    final allergyList = profile?.allergies ?? const <Allergy>[];
+    final conditionList = profile?.conditions ?? const <ChronicCondition>[];
+    final selectedBlood = profile?.bloodType;
     return _SubScreen(
       s: s,
       title: s.t('p_cond'),
@@ -125,27 +237,28 @@ class _MedicalProfileScreenState extends State<MedicalProfileScreen> {
       trailing: saved ? Pill(s.t('pd_saved'), kind: PillKind.success, ar: s.rtl) : null,
       children: [
         _SectionHead(LucideIcons.clipboardList, s.t('pd_conditions'), s: s),
-        _ChipEditor(s: s, items: conds, ctrl: condInput, hint: s.t('pd_add_cond'),
-            bg: s.accent.bg, fg: s.accent.d, onChanged: () => setState(() {})),
+        _ConditionEditor(s: s, conditions: conditionList,
+            bg: s.accent.bg, fg: s.accent.d, onAdd: _addCondition),
         _SectionHead(LucideIcons.alertOctagon, s.t('pd_allergies'), s: s),
-        _ChipEditor(s: s, items: allergies, ctrl: algInput, hint: s.t('pd_add_alg'),
-            bg: const Color(0xFFFBEBE7), fg: T.danger, onChanged: () => setState(() {})),
+        _ChipEditor(s: s, labels: [for (final a in allergyList) a.name], ctrl: algInput,
+            hint: s.t('pd_add_alg'), bg: const Color(0xFFFBEBE7), fg: T.danger,
+            onAdd: _addAllergy, onRemoveAt: (i) => _removeAllergy(allergyList[i].id)),
         _SectionHead(LucideIcons.droplet, s.t('pd_blood'), s: s),
         PCard(padding: const EdgeInsets.all(16), child: Wrap(spacing: 8, runSpacing: 8, children: [
           for (final bt in const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'])
             Pressable(
-              onTap: () => setState(() => blood = bt),
+              onTap: () => _setBloodType(bt),
               scale: 0.96,
               child: AnimatedContainer(
                 duration: Motion.base,
                 curve: Motion.easeOut,
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                 decoration: BoxDecoration(
-                  color: blood == bt ? s.accent.bg : Colors.white,
+                  color: selectedBlood == bt ? s.accent.bg : Colors.white,
                   borderRadius: BorderRadius.circular(T.rMd),
-                  border: Border.all(color: blood == bt ? s.accent.main : T.border, width: 1.5),
+                  border: Border.all(color: selectedBlood == bt ? s.accent.main : T.border, width: 1.5),
                 ),
-                child: Text(bt, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: blood == bt ? s.accent.d : T.fg2)),
+                child: Text(bt, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: selectedBlood == bt ? s.accent.d : T.fg2)),
               ),
             ),
         ])),
@@ -209,36 +322,43 @@ class _MedicalProfileScreenState extends State<MedicalProfileScreen> {
       ]);
 }
 
+/// Chip list + single-line add field. Backed by real data: [labels] render the
+/// current items, [onAdd] persists a new one, and [onRemoveAt] (when provided)
+/// deletes item `i`. No local list mutation.
 class _ChipEditor extends StatelessWidget {
-  const _ChipEditor({required this.s, required this.items, required this.ctrl, required this.hint, required this.bg, required this.fg, required this.onChanged});
+  const _ChipEditor({required this.s, required this.labels, required this.ctrl, required this.hint, required this.bg, required this.fg, required this.onAdd, this.onRemoveAt});
   final PatientAppState s;
-  final List<String> items;
+  final List<String> labels;
   final TextEditingController ctrl;
   final String hint;
   final Color bg, fg;
-  final VoidCallback onChanged;
+  final void Function(String value) onAdd;
+  final void Function(int index)? onRemoveAt;
   void _add() {
     final v = ctrl.text.trim();
     if (v.isEmpty) return;
-    items.add(v);
     ctrl.clear();
-    onChanged();
+    onAdd(v);
   }
   @override
   Widget build(BuildContext context) => PCard(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (items.isNotEmpty)
+        if (labels.isNotEmpty)
           Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: [
-            for (var i = 0; i < items.length; i++)
+            for (var i = 0; i < labels.length; i++)
               Container(
-                padding: const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
+                padding: onRemoveAt == null
+                    ? const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6)
+                    : const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
                 decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rPill)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(items[i], style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () { items.removeAt(i); onChanged(); },
-                    child: Icon(LucideIcons.x, size: 13, color: fg),
-                  ),
+                  Text(labels[i], style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
+                  if (onRemoveAt != null) ...[
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => onRemoveAt!(i),
+                      child: Icon(LucideIcons.x, size: 13, color: fg),
+                    ),
+                  ],
                 ]),
               ),
           ])),
@@ -264,6 +384,104 @@ class _ChipEditor extends StatelessWidget {
           ),
         ]),
       ]));
+}
+
+/// Chronic-condition editor (G7). Renders existing conditions as chips showing
+/// name + optional ICD-10 code + onset year, and an add form with a name field
+/// plus optional ICD-10 code / onset-year fields. Add persists via
+/// AddChronicConditionUseCase. (No remove: the module exposes no remove-condition
+/// use-case yet, so condition chips are display-only.) Prototype field styling.
+class _ConditionEditor extends StatefulWidget {
+  const _ConditionEditor({required this.s, required this.conditions, required this.bg, required this.fg, required this.onAdd});
+  final PatientAppState s;
+  final List<ChronicCondition> conditions;
+  final Color bg, fg;
+  final Future<void> Function(String name, String? icd10Code, int? onsetYear) onAdd;
+  @override
+  State<_ConditionEditor> createState() => _ConditionEditorState();
+}
+
+class _ConditionEditorState extends State<_ConditionEditor> {
+  final _name = TextEditingController();
+  final _icd10 = TextEditingController();
+  final _year = TextEditingController();
+
+  PatientAppState get s => widget.s;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _icd10.dispose();
+    _year.dispose();
+    super.dispose();
+  }
+
+  void _add() {
+    final name = _name.text.trim();
+    if (name.isEmpty) return;
+    final icd10 = _icd10.text.trim();
+    final year = int.tryParse(_year.text.trim());
+    widget.onAdd(name, icd10.isEmpty ? null : icd10, year);
+    _name.clear();
+    _icd10.clear();
+    _year.clear();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) => PCard(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (widget.conditions.isNotEmpty)
+          Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final c in widget.conditions) _chip(c),
+          ])),
+        _field(_name, s.t('pd_add_cond'), s.dir),
+        const SizedBox(height: 8),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: _field(_icd10, s.rtl ? 'رمز ICD-10 (اختياري)' : 'ICD-10 (optional)', TextDirection.ltr)),
+          const SizedBox(width: 8),
+          SizedBox(width: 92, child: _field(_year, s.rtl ? 'سنة البدء' : 'Onset yr', TextDirection.ltr, number: true)),
+          const SizedBox(width: 8),
+          Pressable(
+            onTap: _add,
+            scale: 0.94,
+            child: Container(width: 44, height: 44, alignment: Alignment.center,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.borderStrong)),
+                child: const Icon(LucideIcons.plus, size: 18, color: T.fg1)),
+          ),
+        ]),
+      ]));
+
+  Widget _chip(ChronicCondition c) {
+    final meta = [
+      if (c.icd10Code != null && c.icd10Code!.isNotEmpty) c.icd10Code!,
+      if (c.onsetYear != null) c.onsetYear!.toString(),
+    ].join(' · ');
+    return Container(
+      padding: const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6),
+      decoration: BoxDecoration(color: widget.bg, borderRadius: BorderRadius.circular(T.rPill)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(c.name, style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: widget.fg)),
+        if (meta.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          Text(meta, textDirection: TextDirection.ltr,
+              style: Typo.num(size: FS.xs2, weight: FontWeight.w700, color: widget.fg)),
+        ],
+      ]),
+    );
+  }
+
+  Widget _field(TextEditingController c, String hint, TextDirection dir, {bool number = false}) => TextField(
+        controller: c, textDirection: dir, onSubmitted: (_) => _add(),
+        keyboardType: number ? TextInputType.number : TextInputType.text,
+        style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
+        decoration: InputDecoration(
+          hintText: hint, hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+          isDense: true, filled: true, fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+        ),
+      );
 }
 
 // ── Care team ────────────────────────────────────────────────

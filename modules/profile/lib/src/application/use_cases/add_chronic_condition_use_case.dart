@@ -22,9 +22,14 @@ class AddChronicConditionUseCase {
   final EventBus _bus;
 
   /// Validates input, persists the condition, and emits an event.
+  ///
+  /// G7: [icd10Code] and [onsetYear] are optional. When present they are
+  /// persisted alongside the condition name (on-device PHI only).
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
     required String name,
+    String? icd10Code,
+    int? onsetYear,
   }) async {
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) {
@@ -38,6 +43,24 @@ class AddChronicConditionUseCase {
           'Condition name must be 100 characters or fewer',
         ),
       );
+    }
+
+    // G7: normalize + validate the optional ICD-10 code / onset year.
+    final trimmedIcd10 = icd10Code?.trim();
+    final normalizedIcd10 =
+        (trimmedIcd10 == null || trimmedIcd10.isEmpty) ? null : trimmedIcd10;
+    if (normalizedIcd10 != null && normalizedIcd10.length > 10) {
+      return AppResult.failure(
+        const ValidationFailure('ICD-10 code must be 10 characters or fewer'),
+      );
+    }
+    if (onsetYear != null) {
+      final currentYear = DateTime.now().year;
+      if (onsetYear < 1900 || onsetYear > currentYear) {
+        return AppResult.failure(
+          ValidationFailure('Onset year must be between 1900 and $currentYear'),
+        );
+      }
     }
 
     try {
@@ -62,6 +85,8 @@ class AddChronicConditionUseCase {
           id: ChronicConditionId.uuid(),
           healthProfileId: profile.id,
           name: trimmedName,
+          icd10Code: normalizedIcd10,
+          onsetYear: onsetYear,
           createdAt: DateTime.now().toUtc(),
         ),
       );
