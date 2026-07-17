@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show StatusScreen, accountSummaryProvider;
 import 'package:sessions/sessions.dart' show SessionsScreen;
-import 'package:deletion/deletion.dart' show DeleteAccountScreen;
+import 'package:deletion/deletion.dart'
+    show DeleteAccountScreen, DeletionConfirmScreen, DeletionCancelledScreen;
 import '../app_state.dart';
 import '../data.dart';
 import '../kit.dart';
@@ -107,17 +108,15 @@ class ProfileScreen extends ConsumerWidget {
           label: s.rtl ? 'حالة الخدمة' : 'Service status',
           onTap: () => _pushGovernance(context, const StatusScreen()),
         ),
-        // NOTE: deletion still hard-depends on the app's real GoRouter — its
-        // flow uses declarative context.goNamed('deletion.confirm'|'.cancelled')
-        // and context.go('/') across flat sibling routes, which a per-push
-        // scoped router cannot host without reshaping deletionRoutes / touching
-        // the re-auth flow. Left on _pushGovernance until this surface is mounted
-        // under the real router. See _pushSessionsRouted for the scoped pattern.
+        // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
+        // '.cancelled') + go('/')). It is hosted in a scoped GoRouter whose
+        // deletion screens nest under an invisible exit-base, so every pop and
+        // every go('/') resolves — see [_pushDeletionRouted].
         _ListRow(
           icon: LucideIcons.trash2,
           label: s.rtl ? 'حذف الحساب' : 'Delete account',
           iconBg: T.dangerBg, iconFg: T.danger, labelColor: T.danger,
-          onTap: () => _pushGovernance(context, const DeleteAccountScreen()),
+          onTap: () => _pushDeletionRouted(context),
         ),
       ]),
 
@@ -157,13 +156,9 @@ void _pushGovernance(BuildContext context, Widget screen) {
 /// route, returning to the prototype shell. Look is unchanged
 /// (Directionality + [AdaptiveFrame]), matching [_pushGovernance].
 ///
-/// Sessions is the only governance surface that can be hosted this way: it has a
-/// single route and its ONLY navigation is `context.pop()`. Deletion CANNOT —
-/// its flow drives `context.goNamed('deletion.confirm' | 'deletion.cancelled')`
-/// and `context.go('/')`, all declarative jumps across flat sibling routes that
-/// reset a scoped stack to one page (so the next `context.pop()` would throw)
-/// and reference an app-root route absent from `deletionRoutes`. Deletion needs
-/// the app's real router, so its row still uses [_pushGovernance] (see below).
+/// Sessions has a single route whose ONLY navigation is `context.pop()`, so the
+/// one-shot exit observer suffices. Deletion drives a multi-screen declarative
+/// flow (`goNamed` + `go('/')`); it uses the richer [_pushDeletionRouted] host.
 void _pushSessionsRouted(BuildContext context) {
   final s = AppScope.of(context);
   final theme = Theme.of(context);
@@ -221,6 +216,126 @@ class _ScopedShellExitObserver extends NavigatorObserver {
     if (_done) return;
     _done = true;
     onExit();
+  }
+}
+
+/// Pushes the real deletion flow (request → confirm → cancelled) hosted in a
+/// scoped [GoRouter], so its declarative navigation resolves without the
+/// prototype shell owning a router.
+///
+/// The deletion screens nest under an invisible exit-base at `/`:
+///
+///     /                       (SizedBox.shrink — the exit sentinel)
+///       deletion/request      DeleteAccountScreen   [deletion.request]
+///         confirm             DeletionConfirmScreen [deletion.confirm]
+///         cancelled           DeletionCancelledScreen [deletion.cancelled]
+///
+/// so every stack always carries the base beneath the visible screen. Each
+/// screen's `context.pop()` therefore has a target; `goNamed('deletion.confirm'
+/// | 'deletion.cancelled')` resolve by name; and `context.go('/')` (or a back
+/// out of the first screen) lands on the base — [_ScopedDeletionHost] watches
+/// the router and, the moment the location returns to `/`, dismisses the outer
+/// route back to the prototype shell.
+void _pushDeletionRouted(BuildContext context) {
+  final s = AppScope.of(context);
+  final theme = Theme.of(context);
+  final rootNav = Navigator.of(context, rootNavigator: true);
+  rootNav.push(MaterialPageRoute<void>(
+    builder: (_) => _ScopedDeletionHost(
+      dir: s.dir,
+      theme: theme,
+      onExit: () {
+        // Defer to avoid re-entrant navigation during the scoped route change.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (rootNav.canPop()) rootNav.pop();
+        });
+      },
+    ),
+  ));
+}
+
+/// Owns the throwaway [GoRouter] for the deletion flow and exits back to the
+/// shell when the scoped location returns to the invisible base (`/`). Stateful
+/// so the router + its delegate listener live and die with the pushed route.
+class _ScopedDeletionHost extends StatefulWidget {
+  const _ScopedDeletionHost({
+    required this.dir,
+    required this.theme,
+    required this.onExit,
+  });
+  final TextDirection dir;
+  final ThemeData theme;
+  final VoidCallback onExit;
+  @override
+  State<_ScopedDeletionHost> createState() => _ScopedDeletionHostState();
+}
+
+class _ScopedDeletionHostState extends State<_ScopedDeletionHost> {
+  late final GoRouter _router;
+  bool _exited = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = GoRouter(
+      initialLocation: '/deletion/request',
+      routes: [
+        GoRoute(
+          // Invisible exit sentinel: reaching `/` means "leave deletion".
+          path: '/',
+          builder: (_, __) => const SizedBox.shrink(),
+          routes: [
+            GoRoute(
+              path: 'deletion/request',
+              name: 'deletion.request',
+              builder: (_, __) => const DeleteAccountScreen(),
+              // Nested so the stack is [base, request, …] and each pop resolves.
+              routes: [
+                GoRoute(
+                  path: 'confirm',
+                  name: 'deletion.confirm',
+                  builder: (_, __) => const DeletionConfirmScreen(),
+                ),
+                GoRoute(
+                  path: 'cancelled',
+                  name: 'deletion.cancelled',
+                  builder: (_, __) => const DeletionCancelledScreen(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    _router.routerDelegate.addListener(_onRouteChanged);
+  }
+
+  void _onRouteChanged() {
+    if (_exited) return;
+    if (_router.routerDelegate.currentConfiguration.uri.path == '/') {
+      _exited = true;
+      widget.onExit();
+    }
+  }
+
+  @override
+  void dispose() {
+    _router.routerDelegate.removeListener(_onRouteChanged);
+    _router.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: widget.theme,
+      routerConfig: _router,
+      builder: (_, child) => Directionality(
+        textDirection: widget.dir,
+        child: AdaptiveFrame(child: child ?? const SizedBox.shrink()),
+      ),
+    );
   }
 }
 
