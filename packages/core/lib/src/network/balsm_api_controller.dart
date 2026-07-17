@@ -6,6 +6,7 @@ import '../config/flavor.dart';
 import '../config/server_preset.dart';
 import '../domain/events/app_event.dart';
 import '../event_bus/event_bus.dart';
+import 'auth_interceptor.dart';
 
 class ServerReconfigured extends AppEvent {
   final ServerPreset preset;
@@ -46,9 +47,15 @@ class BalsmApiController {
     required FlutterSecureStorage storage,
     required EventBus bus,
   }) {
+    final client = BalsmApiClient.create(
+        baseUrl: FlavorConfig.current.defaultServer.apiBaseUrl);
+    // Attach the bearer token to authenticated requests + refresh-on-401.
+    // Without this, no request carries a token and every authenticated
+    // endpoint returns 401.
+    client.dio.interceptors
+        .add(AuthInterceptor(client: client, storage: storage, bus: bus));
     return BalsmApiController(
-      client: BalsmApiClient.create(
-          baseUrl: FlavorConfig.current.defaultServer.apiBaseUrl),
+      client: client,
       store: ActiveServerStore(storage),
       bus: bus,
     );

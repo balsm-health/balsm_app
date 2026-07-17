@@ -153,6 +153,16 @@ Future<void> main() async {
   // Migrate the app-shell preference group before its first read.
   final paPrefs = PatientAppPrefs(globalKV);
   await paPrefs.migrate();
+
+  // A dead API session (token refresh failed) — the transport has already
+  // cleared the stored tokens; mirror that in-app: drop the in-session user id
+  // so every PHI reader goes null, and persist signed-out so the shell returns
+  // to the auth flow on next resolution / relaunch.
+  container.read(eventBusProvider).on<SessionExpired>().listen((_) {
+    container.read(_sessionUserIdProvider.notifier).state = null;
+    paPrefs.setSignedIn(false);
+  });
+
   final state = await PatientAppState.load(paPrefs);
   runApp(
     UncontrolledProviderScope(

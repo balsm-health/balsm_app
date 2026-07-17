@@ -5,6 +5,7 @@ export 'src/domain/events/app_event.dart';
 // Cross-module domain events (published by modules, consumed via the bus).
 export 'src/domain/events/country_changed.dart';
 export 'src/domain/events/language_changed.dart';
+export 'src/domain/events/session_expired.dart';
 export 'src/domain/value_objects/uuid_v7.dart';
 export 'src/domain/value_objects/unique_id.dart';
 export 'src/domain/value_objects/user_id.dart';
