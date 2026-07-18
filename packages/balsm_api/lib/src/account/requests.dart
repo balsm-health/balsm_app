@@ -6,8 +6,9 @@ class ClaimHandleRequest {
 
 class ChangeLanguageRequest {
   const ChangeLanguageRequest({required this.preferredLanguage});
+  // Server binds `language` (Account PATCH /account/language → req.Language).
   final String preferredLanguage;
-  Map<String, dynamic> toJson() => {'preferred_language': preferredLanguage};
+  Map<String, dynamic> toJson() => {'language': preferredLanguage};
 }
 
 class ChangeCountryRequest {

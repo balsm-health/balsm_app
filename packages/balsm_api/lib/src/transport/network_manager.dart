@@ -59,6 +59,21 @@ class NetworkManager {
             onSendProgress: onSendProgress,
           ));
 
+  Future<Response<Map<String, dynamic>>> patch(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    CancelToken? cancelToken,
+    ProgressCallback? onSendProgress,
+  }) =>
+      _guard(() => _dio.patch<Map<String, dynamic>>(
+            path,
+            data: data,
+            queryParameters: queryParameters,
+            cancelToken: cancelToken,
+            onSendProgress: onSendProgress,
+          ));
+
   Future<Response<Map<String, dynamic>>> delete(
     String path, {
     Object? data,

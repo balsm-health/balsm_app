@@ -27,7 +27,8 @@ class ApiRoutes {
   static const _account = '/account';
   static const account_self = '$_account/self';
   static const account_handle_claim = '$_account/handle/claim';
-  static const account_handle_available = '$_account/handle/available';
+  // Availability probe is a POST with a `{handle}` body (server: handle/check).
+  static const account_handle_check = '$_account/handle/check';
   static const account_language = '$_account/language';
   static const account_country = '$_account/country';
 

@@ -105,17 +105,13 @@ void main() {
       if (accessToken == null) fail('no access token');
       await auth.signOut();
       bearer(null);
-    },
-        // Backend: /auth/sign-out throws InvalidOperationException →
-        // ExceptionHandlingMiddleware maps it to 409 for every request (empty
-        // body or with device_id). Enable once the sign-out handler is fixed.
-        skip: skip ?? 'blocked by backend sign-out 409 (InvalidOperationException)');
+    }, skip: skip);
 
     // ── Authenticated read endpoints ────────────────────────────────────────
     // These require a signed-in session; they run after a fresh verify so they
     // are independent of the sign-out above.
 
-    test('authenticated GET endpoints are reachable', () async {
+    test('authenticated account + sessions endpoints', () async {
       final res = await auth.verifyOtp(VerifyOtpRequest(
         email: email,
         code: otp,
@@ -125,18 +121,24 @@ void main() {
       bearer(res.accessToken);
       addTearDown(() => bearer(null));
 
-      // GET /sessions — list active sessions for this user.
+      // GET /account/self — profile summary for the signed-in user.
+      final self = await account.getSelf();
+      expect(self, isNotNull);
+      expect(self!.id, isNotEmpty);
+
+      // GET /sessions — active sessions for this user.
       final list = await sessions.listSessions();
       expect(list, isA<List<SessionResponse>>());
 
-      // GET /account/self — profile summary.
-      final self = await account.getSelf();
-      expect(self, isNotNull);
-    },
-        // Backend: GetSelfHandler returns 409 ("Account not found") for a
-        // freshly-created account — the account is written under one
-        // AccountDbContext and read under another (dual balsm_dev/balsm-cloud
-        // SQLite split). Enable once the backend reads/writes one store.
-        skip: skip ?? 'blocked by backend account/self 409 (dual-DB split)');
+      // GET /account/handle/available — availability probe.
+      final avail = await account.checkHandleAvailability('e2e_handle_probe');
+      expect(avail.available, isA<bool>());
+
+      // PUT /account/language — write, then read back to confirm it persisted.
+      await account.changeLanguage(
+          const ChangeLanguageRequest(preferredLanguage: 'en'));
+      final after = await account.getSelf();
+      expect(after!.preferredLanguage, 'en');
+    }, skip: skip);
   });
 }

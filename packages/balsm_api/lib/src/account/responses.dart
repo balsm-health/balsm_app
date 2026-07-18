@@ -21,7 +21,8 @@ class AccountSelfResponse {
 
   factory AccountSelfResponse.fromJson(Map<String, dynamic> json) =>
       AccountSelfResponse(
-        id: json['id'] as String,
+        // Server sends `user_id` (consistent with verify / the rest of the API).
+        id: json['user_id'] as String,
         handle: json['handle'] as String?,
         displayName: json['display_name'] as String?,
         countryCode: json['country_code'] as String,

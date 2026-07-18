@@ -40,7 +40,7 @@ class DioAccountApi implements AccountApi {
   @override
   Future<void> changeLanguage(ChangeLanguageRequest request,
       {CancelToken? cancelToken}) async {
-    final res = await _net.post(
+    final res = await _net.patch(
       ApiRoutes.account_language,
       data: request.toJson(),
       cancelToken: cancelToken,
@@ -51,7 +51,7 @@ class DioAccountApi implements AccountApi {
   @override
   Future<void> changeCountry(ChangeCountryRequest request,
       {CancelToken? cancelToken}) async {
-    final res = await _net.post(
+    final res = await _net.patch(
       ApiRoutes.account_country,
       data: request.toJson(),
       cancelToken: cancelToken,
@@ -62,9 +62,9 @@ class DioAccountApi implements AccountApi {
   @override
   Future<HandleAvailabilityResponse> checkHandleAvailability(String handle,
       {CancelToken? cancelToken}) async {
-    final res = await _net.get(
-      ApiRoutes.account_handle_available,
-      queryParameters: {'handle': handle},
+    final res = await _net.post(
+      ApiRoutes.account_handle_check,
+      data: {'handle': handle},
       cancelToken: cancelToken,
     );
     return HandleAvailabilityResponse.fromJson(unwrapEnvelope(res));
