@@ -110,7 +110,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
               child: Row(children: [
                 const Icon(LucideIcons.hardDrive, size: 20, color: T.fg3),
                 const SizedBox(width: 10),
-                Expanded(child: Text(s.t('storage'), style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
+                Expanded(child: Text(s.strings.storage, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                 if (canClose) RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
               ]),
             ),
@@ -194,7 +194,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                 ],
                 Text(
                   isActive
-                      ? (isLocal ? s.t('store_local_only') : s.t('store_backed'))
+                      ? (isLocal ? s.strings.store_local_only : s.strings.store_backed)
                       : (isLocal ? (ar ? 'لا نسخة احتياطية' : 'No backup') : (ar ? 'اضغط للربط' : 'Tap to connect')),
                   style: Typo.meta(ar: ar).copyWith(
                       fontSize: FS.xs, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
@@ -371,7 +371,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
         const SizedBox(height: 14),
         _DangerButton(label: ar ? 'إيقاف النسخ الاحتياطي' : 'Remove cloud backup', onTap: () => _runPhase('local', 'connecting')),
         const SizedBox(height: 10),
-        PButton(s.t('cancel'), variant: BtnVariant.secondary, block: true, ar: ar,
+        PButton(s.strings.cancel, variant: BtnVariant.secondary, block: true, ar: ar,
             onTap: () => setState(() { phase = 'idle'; target = null; })),
       ]),
     ));

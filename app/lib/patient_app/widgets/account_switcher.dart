@@ -46,7 +46,7 @@ class _AccountSwitcherSheet extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
           child: Row(children: [
-            Expanded(child: Text(s.t('your_accounts'),
+            Expanded(child: Text(s.strings.your_accounts,
                 style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
             RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
           ]),
@@ -77,7 +77,7 @@ class _AccountRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final sub = (handle != null && handle!.isNotEmpty)
         ? '@$handle'
-        : (s.t('acc_active'));
+        : (s.strings.acc_active);
     return PressHighlight(
       onTap: onTap,
       child: Container(
@@ -113,7 +113,7 @@ class _EmptyAccount extends StatelessWidget {
           const Icon(LucideIcons.userCircle2, size: 22, color: T.fg3),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(s.t('acc_not_signed_in'),
+            child: Text(s.strings.acc_not_signed_in,
                 style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ),
         ]),

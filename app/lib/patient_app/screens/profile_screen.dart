@@ -48,7 +48,7 @@ class ProfileScreen extends ConsumerWidget {
     return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
       AppBarRow(children: [
-        Expanded(child: Text(s.t('profile'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+        Expanded(child: Text(s.strings.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
       ]),
 
       // Profile head — real account summary (name + handle). No fabricated
@@ -72,9 +72,9 @@ class ProfileScreen extends ConsumerWidget {
 
       // Language + country
       _ListCard(children: [
-        _ListRow(icon: LucideIcons.languages, label: s.t('p_lang'), trailing: curLang.native,
+        _ListRow(icon: LucideIcons.languages, label: s.strings.p_lang, trailing: curLang.native,
             first: true, onTap: () => _showLanguageSheet(context)),
-        _ListRow(icon: s.country.home ? LucideIcons.mapPin : LucideIcons.plane, label: s.t('p_country'),
+        _ListRow(icon: s.country.home ? LucideIcons.mapPin : LucideIcons.plane, label: s.strings.p_country,
             trailing: s.country.name.of(s.lang),
             iconBg: s.country.home ? null : T.sun500, iconFg: s.country.home ? null : Colors.white,
             onTap: () => _showCountrySheet(context)),
@@ -82,7 +82,7 @@ class ProfileScreen extends ConsumerWidget {
 
       // Storage — opens the backup/sync sheet (connect iCloud / Google Drive).
       _ListCard(children: [
-        _ListRow(icon: stCfg.icon, label: s.t('storage'), iconBg: stCfg.bg, iconFg: stCfg.color,
+        _ListRow(icon: stCfg.icon, label: s.strings.storage, iconBg: stCfg.bg, iconFg: stCfg.color,
             trailingWidget: Pill(stCfg.label.of(s.lang), kind: PillKind.neutral, dot: false, ar: s.rtl),
             first: true, onTap: () => showStorageSync(context)),
       ]),
@@ -105,13 +105,13 @@ class ProfileScreen extends ConsumerWidget {
       _ListCard(children: [
         _ListRow(
           icon: LucideIcons.smartphone,
-          label: s.t('gov_sessions'),
+          label: s.strings.gov_sessions,
           first: true,
           onTap: () => _pushSessionsRouted(context),
         ),
         _ListRow(
           icon: LucideIcons.activity,
-          label: s.t('gov_status'),
+          label: s.strings.gov_status,
           onTap: () => _pushGovernance(context, const StatusScreen()),
         ),
         // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
@@ -120,7 +120,7 @@ class ProfileScreen extends ConsumerWidget {
         // every go('/') resolves — see [_pushDeletionRouted].
         _ListRow(
           icon: LucideIcons.trash2,
-          label: s.t('gov_delete'),
+          label: s.strings.gov_delete,
           iconBg: T.dangerBg, iconFg: T.danger, labelColor: T.danger,
           onTap: () => _pushDeletionRouted(context),
         ),
@@ -145,7 +145,7 @@ class ProfileScreen extends ConsumerWidget {
       // Sign out
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        child: PButton(s.t('p_signout'), icon: LucideIcons.logOut, variant: BtnVariant.secondary,
+        child: PButton(s.strings.p_signout, icon: LucideIcons.logOut, variant: BtnVariant.secondary,
             block: true, ar: s.rtl, color: T.danger),
       ),
     ]));
@@ -418,11 +418,11 @@ void _showLanguageSheet(BuildContext context) {
     barrierColor: const Color(0x5C2B2B25),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
-      child: _SheetShell(title: s.t('choose_lang'), children: [
+      child: _SheetShell(title: s.strings.choose_lang, children: [
         for (final l in kLanguages)
           _SelectRow(
             label: l.native, sub: l.en, selected: l.code == s.lang,
-            badge: l.full ? s.t('lang_full') : s.t('lang_beta'), badgeOk: l.full,
+            badge: l.full ? s.strings.lang_full : s.strings.lang_beta, badgeOk: l.full,
             enabled: l.full,
             onTap: l.full ? () { s.setLang(l.code); Navigator.pop(ctx); } : null,
           ),
@@ -439,12 +439,12 @@ void _showCountrySheet(BuildContext context) {
     barrierColor: const Color(0x5C2B2B25),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
-      child: _SheetShell(title: s.t('choose_country'), subtitle: s.t('travel_help'), children: [
+      child: _SheetShell(title: s.strings.choose_country, subtitle: s.strings.travel_help, children: [
         for (final c in kCountries)
           _SelectRow(
-            label: c.name.of(s.lang), sub: '${s.t('emergency')} ${c.emergency}',
+            label: c.name.of(s.lang), sub: '${s.strings.emergency} ${c.emergency}',
             selected: c.code == s.countryCode,
-            badge: c.home ? s.t('home_country') : null, badgeOk: true,
+            badge: c.home ? s.strings.home_country : null, badgeOk: true,
             onTap: () { s.setCountry(c.code); Navigator.pop(ctx); },
           ),
       ]),

@@ -55,11 +55,11 @@ class _WelcomeScreen extends StatelessWidget {
             child: Column(children: [
               const BalsmFlower(size: 84),
               const SizedBox(height: 22),
-              Text(s.t('w_title'), textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
+              Text(s.strings.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
               const SizedBox(height: 12),
-              Text(s.t('w_sub'), textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+              Text(s.strings.w_sub, textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
               const SizedBox(height: 28),
-              PButton(s.t('w_start'),
+              PButton(s.strings.w_start,
                   variant: BtnVariant.primary,
                   large: true,
                   block: true,
@@ -71,23 +71,23 @@ class _WelcomeScreen extends StatelessWidget {
                 const Expanded(child: Divider(color: T.ink200)),
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(s.t('w_or'), style: Typo.meta(ar: s.rtl))),
+                    child: Text(s.strings.w_or, style: Typo.meta(ar: s.rtl))),
                 const Expanded(child: Divider(color: T.ink200)),
               ]),
               const SizedBox(height: 14),
               // Social sign-in has no real backend wired here (no google_sign_in /
               // sign_in_with_apple tokens available), and must NOT bypass the
               // fail-closed DOB/age gate. Funnel into the real email sign-up flow.
-              _SocialButton(label: s.t('w_apple'), dark: true, icon: Icons.apple, onTap: () => s.go('phone')),
+              _SocialButton(label: s.strings.w_apple, dark: true, icon: Icons.apple, onTap: () => s.go('phone')),
               const SizedBox(height: 12),
-              _SocialButton(label: s.t('w_google'), dark: false, googleG: true, onTap: () => s.go('phone')),
+              _SocialButton(label: s.strings.w_google, dark: false, googleG: true, onTap: () => s.go('phone')),
               const SizedBox(height: 14),
               GestureDetector(
                 onTap: () => s.go('phone'),
                 child: RichText(
                     text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
-                  TextSpan(text: '${s.t('w_have')} '),
-                  TextSpan(text: s.t('w_signin'), style: TextStyle(color: s.accent.main, fontWeight: FontWeight.w700)),
+                  TextSpan(text: '${s.strings.w_have} '),
+                  TextSpan(text: s.strings.w_signin, style: TextStyle(color: s.accent.main, fontWeight: FontWeight.w700)),
                 ])),
               ),
             ]),
@@ -96,9 +96,9 @@ class _WelcomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-              _trust(s, LucideIcons.smartphone, s.t('trust_device')),
-              _trust(s, LucideIcons.lock, s.t('trust_private')),
-              _trust(s, LucideIcons.cloudOff, s.t('trust_offline')),
+              _trust(s, LucideIcons.smartphone, s.strings.trust_device),
+              _trust(s, LucideIcons.lock, s.strings.trust_private),
+              _trust(s, LucideIcons.cloudOff, s.strings.trust_offline),
             ]),
           ),
           const SizedBox(height: 26),
@@ -227,7 +227,7 @@ class _UnderEighteenScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 22),
                 Text(
-                  s.t('na_not_available'),
+                  s.strings.na_not_available,
                   textAlign: TextAlign.center,
                   style: Typo.display(ar: s.rtl),
                 ),
@@ -241,7 +241,7 @@ class _UnderEighteenScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
                 PButton(
-                  s.t('na_notify_me'),
+                  s.strings.na_notify_me,
                   variant: BtnVariant.primary,
                   large: true,
                   block: true,
@@ -262,7 +262,7 @@ class _UnderEighteenScreen extends StatelessWidget {
                   ),
                   icon: const Icon(LucideIcons.lifeBuoy, size: 18),
                   label: Text(
-                    s.t('na_status_support'),
+                    s.strings.na_status_support,
                   ),
                 ),
               ]),
@@ -397,9 +397,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const SizedBox(height: 10),
               _Segmented(
-                left: s.t('ph_label'),
+                left: s.strings.ph_label,
                 leftIcon: LucideIcons.phone,
-                right: s.t('em_label'),
+                right: s.strings.em_label,
                 rightIcon: LucideIcons.mail,
                 rightActive: email,
                 onChanged: (r) => setState(() {
@@ -409,16 +409,16 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 }),
               ),
               const SizedBox(height: 24),
-              Text(email ? s.t('em_title') : s.t('ph_title'), style: Typo.title(ar: s.rtl)),
+              Text(email ? s.strings.em_title : s.strings.ph_title, style: Typo.title(ar: s.rtl)),
               const SizedBox(height: 8),
-              Text(email ? s.t('em_help') : s.t('ph_help'), style: Typo.body(ar: s.rtl)),
+              Text(email ? s.strings.em_help : s.strings.ph_help, style: Typo.body(ar: s.rtl)),
               const SizedBox(height: 24),
-              _Label(email ? s.t('em_label') : s.t('ph_label'), ar: s.rtl),
+              _Label(email ? s.strings.em_label : s.strings.ph_label, ar: s.rtl),
               const SizedBox(height: 8),
               if (email)
                 _Input(
                     controller: ctrl,
-                    hint: s.t('em_ph'),
+                    hint: s.strings.em_ph,
                     keyboard: TextInputType.emailAddress,
                     forceLtr: true,
                     accent: s.accent,
@@ -453,7 +453,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
               // a valid DateTime); feeds the fail-closed age gate on continue.
               const SizedBox(height: 20),
               _Field(
-                label: s.t('pf_dob'),
+                label: s.strings.pf_dob,
                 ar: s.rtl,
                 child: GestureDetector(
                   onTap: _submitting ? null : _pickDob,
@@ -483,7 +483,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 ),
               Opacity(
                   opacity: ok && !_submitting ? 1 : 0.4,
-                  child: PButton(s.t('continue'),
+                  child: PButton(s.strings.continue_,
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,
@@ -491,7 +491,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                       ar: s.rtl,
                       onTap: ok && !_submitting ? () { _continue(); } : null)),
               const SizedBox(height: 14),
-              Text(s.t('ph_terms'), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+              Text(s.strings.ph_terms, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
             ]),
           ),
         ]),
@@ -644,11 +644,11 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const SizedBox(height: 8),
-              Text(s.t('otp_title'), style: Typo.title(ar: s.rtl)),
+              Text(s.strings.otp_title, style: Typo.title(ar: s.rtl)),
               const SizedBox(height: 8),
               RichText(
                   text: TextSpan(style: Typo.body(ar: s.rtl), children: [
-                TextSpan(text: '${s.t('otp_help')} '),
+                TextSpan(text: '${s.strings.otp_help} '),
                 TextSpan(text: contact, style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
               ])),
               const SizedBox(height: 28),
@@ -691,11 +691,11 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                   child: secs > 0
                       ? RichText(
                           text: TextSpan(style: Typo.meta(ar: s.rtl), children: [
-                          TextSpan(text: '${s.t('otp_in')} '),
+                          TextSpan(text: '${s.strings.otp_in} '),
                           TextSpan(
                               text: '${secs}s', style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg3)),
                         ]))
-                      : PButton(s.t('otp_resend'), variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl, onTap: () {
+                      : PButton(s.strings.otp_resend, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl, onTap: () {
                           setState(() => secs = 28);
                           _tick();
                         })),
@@ -705,7 +705,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
             child: Opacity(
                 opacity: code.length == 6 && !_verifying ? 1 : 0.4,
-                child: PButton(s.t('verify'),
+                child: PButton(s.strings.verify,
                     variant: BtnVariant.primary,
                     large: true,
                     block: true,
@@ -865,7 +865,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        s.t('pv_title'),
+                        s.strings.pv_title,
                         style: Typo.display(ar: s.rtl),
                       ),
                       const SizedBox(height: 10),
@@ -879,7 +879,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.database,
-                        s.t('pv_collect'),
+                        s.strings.pv_collect,
                         s.rtl
                             ? 'حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.'
                             : 'A minimal non-health account (email, country, language). Health records stay encrypted on your device.',
@@ -887,7 +887,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.lock,
-                        s.t('pv_protect'),
+                        s.strings.pv_protect,
                         s.rtl
                             ? 'تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.'
                             : 'On-device encryption, secure transport, and least-privilege access.',
@@ -895,7 +895,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.scale,
-                        s.t('pv_rights'),
+                        s.strings.pv_rights,
                         s.rtl
                             ? 'يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.'
                             : 'Access, correct, or delete your data at any time from account settings.',
@@ -903,7 +903,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.landmark,
-                        s.t('pv_authority'),
+                        s.strings.pv_authority,
                         s.rtl
                             ? 'الجهة المشرفة على حماية بياناتك في بلدك: $authority.'
                             : 'The authority overseeing your data protection in your country: $authority.',
@@ -911,7 +911,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.share2,
-                        s.t('pv_sharing2'),
+                        s.strings.pv_sharing2,
                         s.rtl
                             ? 'لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.'
                             : 'We never sell your data. Sharing happens only with your explicit consent or a legal obligation.',
@@ -919,7 +919,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       _gateSection(
                         s,
                         LucideIcons.trash2,
-                        s.t('pv_deletion'),
+                        s.strings.pv_deletion,
                         s.rtl
                             ? 'يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.'
                             : 'Deleting your account removes your non-health cloud data and wipes on-device records.',
@@ -952,8 +952,8 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                   opacity: _readToEnd && !_submitting ? 1 : 0.4,
                   child: PButton(
                     _submitting
-                        ? (s.t('pv_saving'))
-                        : (s.t('pv_agree')),
+                        ? (s.strings.pv_saving)
+                        : (s.strings.pv_agree),
                     variant: BtnVariant.primary,
                     large: true,
                     block: true,
@@ -1063,28 +1063,28 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const SizedBox(height: 8),
-              Text(s.t('pf_title'), style: Typo.title(ar: s.rtl)),
+              Text(s.strings.pf_title, style: Typo.title(ar: s.rtl)),
               const SizedBox(height: 8),
-              Text(s.t('pf_help'), style: Typo.body(ar: s.rtl)),
+              Text(s.strings.pf_help, style: Typo.body(ar: s.rtl)),
               const SizedBox(height: 24),
               Row(children: [
                 Expanded(
                     child: _Field(
-                        label: s.t('pf_fname'),
+                        label: s.strings.pf_fname,
                         ar: s.rtl,
                         child: _Input(
                             controller: first,
-                            hint: s.t('pf_fname_ph'),
+                            hint: s.strings.pf_fname_ph,
                             accent: s.accent,
                             onChanged: (_) => setState(() {})))),
                 const SizedBox(width: 12),
                 Expanded(
                     child: _Field(
-                        label: s.t('pf_lname'),
+                        label: s.strings.pf_lname,
                         ar: s.rtl,
                         child: _Input(
                             controller: last,
-                            hint: s.t('pf_lname_ph'),
+                            hint: s.strings.pf_lname_ph,
                             accent: s.accent,
                             onChanged: (_) => setState(() {})))),
               ]),
@@ -1092,7 +1092,7 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
               _UsernameField(controller: handle, status: unStatus, onChanged: _setHandle, s: s),
               const SizedBox(height: 16),
               _Field(
-                  label: s.t('pf_dob'),
+                  label: s.strings.pf_dob,
                   ar: s.rtl,
                   child: _Input(
                       controller: dob,
@@ -1105,11 +1105,11 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
                       suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4))),
               const SizedBox(height: 16),
               _Field(
-                  label: s.t('pf_gender'),
+                  label: s.strings.pf_gender,
                   ar: s.rtl,
                   child: _Segmented(
-                    left: s.t('pf_female'),
-                    right: s.t('pf_male'),
+                    left: s.strings.pf_female,
+                    right: s.strings.pf_male,
                     rightActive: gender == 'male',
                     onChanged: (r) => setState(() => gender = r ? 'male' : 'female'),
                   )),
@@ -1120,7 +1120,7 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
             child: Column(children: [
               Opacity(
                   opacity: ok ? 1 : 0.4,
-                  child: PButton(s.t('pf_create'),
+                  child: PButton(s.strings.pf_create,
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,
@@ -1131,7 +1131,7 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),
                 const SizedBox(width: 6),
-                Text(s.t('pf_secure'), style: Typo.meta(ar: s.rtl)),
+                Text(s.strings.pf_secure, style: Typo.meta(ar: s.rtl)),
               ]),
             ]),
           ),
@@ -1151,20 +1151,20 @@ class _UsernameField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, col, msg) = switch (status) {
-      'checking' => (LucideIcons.loader, T.fg3, s.t('un_checking')),
-      'available' => (LucideIcons.checkCircle2, T.petalMint600, s.t('un_avail')),
-      'taken' => (LucideIcons.xCircle, T.danger, s.t('un_taken')),
-      'invalid' => (LucideIcons.alertCircle, T.sun500, s.t('un_invalid')),
+      'checking' => (LucideIcons.loader, T.fg3, s.strings.un_checking),
+      'available' => (LucideIcons.checkCircle2, T.petalMint600, s.strings.un_avail),
+      'taken' => (LucideIcons.xCircle, T.danger, s.strings.un_taken),
+      'invalid' => (LucideIcons.alertCircle, T.sun500, s.strings.un_invalid),
       _ => (null, T.fg4, ''),
     };
     return _Field(
-        label: s.t('un_label'),
+        label: s.strings.un_label,
         ar: s.rtl,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Stack(alignment: Alignment.centerLeft, children: [
             _Input(
                 controller: controller,
-                hint: s.t('un_ph'),
+                hint: s.strings.un_ph,
                 mono: true,
                 forceLtr: true,
                 accent: s.accent,

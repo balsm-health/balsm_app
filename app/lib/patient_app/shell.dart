@@ -217,9 +217,9 @@ class _TabBar extends StatelessWidget {
       ),
       padding: EdgeInsets.only(bottom: 22 + MediaQuery.of(context).padding.bottom.clamp(0, 12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _Tab(id: 'home', icon: LucideIcons.home, label: s.t('tab_home')),
-        _Tab(id: 'meds', icon: LucideIcons.pill, label: s.t('tab_meds')),
-        _Tab(id: 'profile', icon: LucideIcons.user, label: s.t('tab_profile')),
+        _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.tab_home),
+        _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.tab_meds),
+        _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.tab_profile),
       ]),
     );
   }
@@ -268,9 +268,9 @@ class _SideNav extends StatelessWidget {
       child: SafeArea(
         child: Column(children: [
           const SizedBox(height: Space.s5),
-          _RailItem(id: 'home', icon: LucideIcons.home, label: s.t('tab_home')),
-          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.t('tab_meds')),
-          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.t('tab_profile')),
+          _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.tab_home),
+          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.tab_meds),
+          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.tab_profile),
           const Spacer(),
         ]),
       ),

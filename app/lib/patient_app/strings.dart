@@ -12,6 +12,8 @@ library;
 import 'i18n/strings.i69n.dart';
 import 'i18n/strings_ar.i69n.dart';
 
+export 'i18n/strings.i69n.dart' show Strings;
+
 /// Compiled bundles. `Strings_ar` extends `Strings`, so any key missing from
 /// Arabic falls back to English at the class level.
 const _bundles = <String, Strings>{
@@ -24,6 +26,13 @@ const _bundles = <String, Strings>{
 const _alias = <String, String>{
   'continue': 'continue_',
 };
+
+/// The typed message bundle for [lang] — locale-correct (Arabic falls back to
+/// English at the class level) and null-safe. Prefer `state.strings.<key>` over
+/// [tr] / `state.t()` for STATIC keys: a typo fails to compile instead of
+/// silently returning the key string at runtime. Use [tr] only when the key is
+/// computed at runtime.
+Strings stringsFor(String lang) => _bundles[lang] ?? _bundles['en']!;
 
 /// Translate [key] for [lang], falling back to English then the key itself.
 String tr(String key, String lang) {

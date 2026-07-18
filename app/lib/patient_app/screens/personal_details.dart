@@ -172,7 +172,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                               fontWeight: FontWeight.w700, color: T.fg1))),
                   if (c.isPrimary) ...[
                     const SizedBox(width: 7),
-                    Pill(s.t('pd_primary'),
+                    Pill(s.strings.pd_primary,
                         kind: PillKind.info,
                         dot: false,
                         ar: s.rtl,
@@ -200,10 +200,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       };
 
   String? get _handleMsg => switch (unStatus) {
-        'checking' => s.t('un_checking'),
-        'available' => s.t('un_avail'),
-        'taken' => s.t('un_taken'),
-        'invalid' => s.t('un_invalid'),
+        'checking' => s.strings.un_checking,
+        'available' => s.strings.un_avail,
+        'taken' => s.strings.un_taken,
+        'invalid' => s.strings.un_invalid,
         _ => null,
       };
 
@@ -235,8 +235,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         AppBarRow(
           leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.pop(context)),
           children: [
-            Expanded(child: Text(s.t('p_personal'), style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-            if (saved) ...[Pill(s.t('pd_saved'), kind: PillKind.success, ar: s.rtl), const SizedBox(width: 8)],
+            Expanded(child: Text(s.strings.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+            if (saved) ...[Pill(s.strings.pd_saved, kind: PillKind.success, ar: s.rtl), const SizedBox(width: 8)],
             RoundBtn(icon: LucideIcons.qrCode, iconSize: 19, onTap: () => _showQr(context)),
           ],
         ),
@@ -247,12 +247,12 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             Center(child: Column(children: [
               Avatar(initials: '${first.text.isEmpty ? '' : first.text[0]}${last.text.isEmpty ? '' : last.text[0]}', color: T.petalAqua, size: 72),
               const SizedBox(height: 10),
-              PButton(s.t('pd_change_photo'), icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
+              PButton(s.strings.pd_change_photo, icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
             ])),
             // Account (handle + QR share)
-            _section(LucideIcons.atSign, s.t('pd_account')),
+            _section(LucideIcons.atSign, s.strings.pd_account),
             _card([
-              _labeled(s.t('un_label'), TextField(
+              _labeled(s.strings.un_label, TextField(
                 controller: handle, textDirection: TextDirection.ltr,
                 onChanged: _setHandle,
                 style: Typo.num(size: FS.lg),
@@ -304,8 +304,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         child: Icon(LucideIcons.qrCode, size: 20, color: s.accent.d)),
                     const SizedBox(width: 13),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(s.t('pd_share_qr'), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
-                      Text(s.t('pd_share_qr_h'), style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.d)),
+                      Text(s.strings.pd_share_qr, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
+                      Text(s.strings.pd_share_qr_h, style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.d)),
                     ])),
                     Chevron(rtl: s.rtl, color: s.accent.d),
                   ]),
@@ -313,33 +313,33 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               ),
             ]),
             // Connected accounts
-            _section(LucideIcons.link, s.t('conn_accounts')),
+            _section(LucideIcons.link, s.strings.conn_accounts),
             _ConnCard(s: s, apple: connApple, google: connGoogle,
                 onApple: () => setState(() => connApple = !connApple), onGoogle: () => setState(() => connGoogle = !connGoogle)),
             // Basic info
-            _section(LucideIcons.user, s.t('pd_basic_info')),
+            _section(LucideIcons.user, s.strings.pd_basic_info),
             _card([
               Row(children: [
-                Expanded(child: _field(s.t('pf_fname'), first)),
+                Expanded(child: _field(s.strings.pf_fname, first)),
                 const SizedBox(width: 12),
-                Expanded(child: _field(s.t('pf_lname'), last)),
+                Expanded(child: _field(s.strings.pf_lname, last)),
               ]),
               const SizedBox(height: 14),
-              _field(s.t('pf_dob'), dob, mono: true),
+              _field(s.strings.pf_dob, dob, mono: true),
               const SizedBox(height: 14),
-              _labeled(s.t('pf_gender'), _genderSeg()),
+              _labeled(s.strings.pf_gender, _genderSeg()),
             ]),
             // Contact
-            _section(LucideIcons.phone, s.t('pd_contact_section')),
+            _section(LucideIcons.phone, s.strings.pd_contact_section),
             _card([
-              _field(s.t('pd_phone'), phone, mono: true),
+              _field(s.strings.pd_phone, phone, mono: true),
               const SizedBox(height: 14),
-              _field(s.t('pd_nid'), nid, mono: true),
+              _field(s.strings.pd_nid, nid, mono: true),
               const SizedBox(height: 14),
-              _labeled(s.t('pd_nationality'), _selectField(s.t('nat_egyptian'))),
+              _labeled(s.strings.pd_nationality, _selectField(s.strings.nat_egyptian)),
             ]),
             // Emergency contact (real on-device PHI; up to 3 contacts).
-            _section(LucideIcons.phoneCall, s.t('pd_emergency')),
+            _section(LucideIcons.phoneCall, s.strings.pd_emergency),
             _card([
               for (var i = 0; i < contacts.length; i++) ...[
                 _contactRow(contacts[i]),
@@ -347,15 +347,15 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                   const SizedBox(height: 12),
               ],
               if (!atMaxContacts) ...[
-                _field(s.t('pd_em_name'), emName),
+                _field(s.strings.pd_em_name, emName),
                 const SizedBox(height: 14),
                 Row(children: [
-                  Expanded(child: _field(s.t('pd_em_rel'), emRel)),
+                  Expanded(child: _field(s.strings.pd_em_rel, emRel)),
                   const SizedBox(width: 12),
-                  Expanded(child: _field(s.t('pd_em_phone'), emPhone, mono: true)),
+                  Expanded(child: _field(s.strings.pd_em_phone, emPhone, mono: true)),
                 ]),
                 const SizedBox(height: 14),
-                PButton(s.t('pd_add_contact'),
+                PButton(s.strings.pd_add_contact,
                     icon: LucideIcons.plus, variant: BtnVariant.secondary,
                     block: true, accent: s.accent, ar: s.rtl,
                     onTap: _addEmergencyContact),
@@ -365,7 +365,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             // Disabled until the handle is verified available (or unchanged).
             Opacity(
               opacity: _canSave ? 1 : 0.4,
-              child: PButton(saved ? s.t('pd_saved') : s.t('pd_save'), icon: saved ? LucideIcons.check : LucideIcons.save,
+              child: PButton(saved ? s.strings.pd_saved : s.strings.pd_save, icon: saved ? LucideIcons.check : LucideIcons.save,
                   variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl,
                   onTap: _canSave ? _save : null),
             ),
@@ -443,9 +443,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
         child: Row(children: [
-          _seg(s.t('pf_female'), gender == 'female', () => setState(() => gender = 'female')),
+          _seg(s.strings.pf_female, gender == 'female', () => setState(() => gender = 'female')),
           const SizedBox(width: 6),
-          _seg(s.t('pf_male'), gender == 'male', () => setState(() => gender = 'male')),
+          _seg(s.strings.pf_male, gender == 'male', () => setState(() => gender = 'male')),
         ]),
       );
 
@@ -479,7 +479,7 @@ class _ConnCard extends StatelessWidget {
             Container(width: 38, height: 38, alignment: Alignment.center, decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(T.rMd), border: iconBg == Colors.white ? Border.all(color: T.ink100) : null), child: Icon(icon, size: 19, color: iconColor)),
             const SizedBox(width: 14),
             Expanded(child: Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1))),
-            PButton(connected ? s.t('conn_remove') : s.t('conn_connect'), variant: connected ? BtnVariant.secondary : BtnVariant.soft, accent: s.accent, ar: s.rtl, onTap: onTap),
+            PButton(connected ? s.strings.conn_remove : s.strings.conn_connect, variant: connected ? BtnVariant.secondary : BtnVariant.soft, accent: s.accent, ar: s.rtl, onTap: onTap),
           ]),
         );
     return Container(
@@ -487,8 +487,8 @@ class _ConnCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(T.rLg),
         child: Column(children: [
-          row(Icons.apple, const Color(0xFF1A1A17), Colors.white, s.t('conn_apple'), apple, onApple, false),
-          row(LucideIcons.chrome, Colors.white, const Color(0xFF4285F4), s.t('conn_google'), google, onGoogle, true),
+          row(Icons.apple, const Color(0xFF1A1A17), Colors.white, s.strings.conn_apple, apple, onApple, false),
+          row(LucideIcons.chrome, Colors.white, const Color(0xFF4285F4), s.strings.conn_google, google, onGoogle, true),
         ]),
       ),
     );

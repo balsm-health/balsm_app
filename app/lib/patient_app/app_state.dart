@@ -75,7 +75,15 @@ class PatientAppState extends ChangeNotifier {
 
   bool get rtl => lang == 'ar';
   TextDirection get dir => rtl ? TextDirection.rtl : TextDirection.ltr;
+
+  /// Stringly-typed lookup — keep only for keys computed at runtime
+  /// (e.g. `t(rows[i].key)`). For static keys prefer [strings].
   String t(String key) => tr(key, lang);
+
+  /// Locale-aware, compile-time-checked message bundle:
+  /// `s.strings.med_snooze15` fails to compile on a typo, whereas
+  /// `s.t('med_snooze15')` silently returns the key at runtime.
+  Strings get strings => stringsFor(lang);
 
   Country get country => kCountries.firstWhere((c) => c.code == countryCode, orElse: () => kCountries.first);
 
