@@ -4,9 +4,9 @@ import 'package:test/test.dart';
 import '../helpers/fake_http_adapter.dart';
 
 void main() {
-  test('getSelf parses camelCase payload', () async {
+  test('getSelf parses snake_case payload', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
-        '{"data": {"id": "u1", "handle": "hoss", "displayName": "Hossam", "countryCode": "EG", "preferredLanguage": "ar", "deletionState": "ACTIVE"}}'));
+        '{"data": {"id": "u1", "handle": "hoss", "display_name": "Hossam", "country_code": "EG", "preferred_language": "ar", "deletion_state": "ACTIVE"}}'));
     final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
     expect(adapter.requests.single.path, '/account/self');
     expect(res!.id, 'u1');
@@ -22,7 +22,7 @@ void main() {
 
   test('getSelf deletionState defaults to ACTIVE', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
-        '{"data": {"id": "u1", "countryCode": "EG", "preferredLanguage": "en"}}'));
+        '{"data": {"id": "u1", "country_code": "EG", "preferred_language": "en"}}'));
     final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
     expect(res!.deletionState, 'ACTIVE');
   });
@@ -37,13 +37,13 @@ void main() {
     expect(res.handle, 'hoss');
   });
 
-  test('changeLanguage/changeCountry send camelCase keys', () async {
+  test('changeLanguage/changeCountry send snake_case keys', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": null}'));
     final api = DioAccountApi(net: fakeNet(adapter));
     await api.changeLanguage(const ChangeLanguageRequest(preferredLanguage: 'ar'));
     await api.changeCountry(const ChangeCountryRequest(countryCode: 'EG'));
-    expect(adapter.requests[0].data, {'preferredLanguage': 'ar'});
-    expect(adapter.requests[1].data, {'countryCode': 'EG'});
+    expect(adapter.requests[0].data, {'preferred_language': 'ar'});
+    expect(adapter.requests[1].data, {'country_code': 'EG'});
   });
 
   test('checkHandleAvailability sends query param, default false', () async {

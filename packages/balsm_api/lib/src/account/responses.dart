@@ -23,10 +23,10 @@ class AccountSelfResponse {
       AccountSelfResponse(
         id: json['id'] as String,
         handle: json['handle'] as String?,
-        displayName: json['displayName'] as String?,
-        countryCode: json['countryCode'] as String,
-        preferredLanguage: json['preferredLanguage'] as String,
-        deletionState: (json['deletionState'] as String?) ?? 'ACTIVE',
+        displayName: json['display_name'] as String?,
+        countryCode: json['country_code'] as String,
+        preferredLanguage: json['preferred_language'] as String,
+        deletionState: (json['deletion_state'] as String?) ?? 'ACTIVE',
       );
 }
 

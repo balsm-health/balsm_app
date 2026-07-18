@@ -8,7 +8,7 @@ import '../ports/denied_countries_port.dart';
 ///
 /// Flow:
 /// 1. Reject if the target country is geofence-denied (GeofenceFailure).
-/// 2. POST /account/country  body: { "countryCode": "<ISO>" }.
+/// 2. POST /account/country  body: { "country_code": "<ISO>" }.
 /// 3. On success, dispatch [CountryChanged] on the [EventBus].
 ///
 /// RR-001: changing the account country does NOT migrate DOB residency.

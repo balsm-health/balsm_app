@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Changes the signed-in user's preferred language (BCP-47 tag).
 ///
-/// POST /account/language  body: { "preferredLanguage": "<bcp47>" }.
+/// POST /account/language  body: { "preferred_language": "<bcp47>" }.
 /// On success, dispatches [LanguageChanged] so the UI can flip
 /// Directionality / reload translations.
 class ChangeLanguageUseCase {
