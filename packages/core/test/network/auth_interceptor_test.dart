@@ -90,7 +90,7 @@ void main() {
     });
     final h = harness(storage, (o) {
       if (o.path == ApiRoutes.auth_refresh) {
-        return _json('{"access_token":"ATnew","refresh_token":"RT2"}');
+        return _json('{"data":{"access_token":"ATnew","refresh_token":"RT2"}}');
       }
       // Protected endpoint: 401 for the stale token, 200 once refreshed.
       return o.headers['Authorization'] == 'Bearer ATnew'

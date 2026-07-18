@@ -4,9 +4,10 @@ import 'package:test/test.dart';
 import '../helpers/fake_http_adapter.dart';
 
 void main() {
-  test('verifyOtp posts snake_case body and parses FLAT token response', () async {
+  test('verifyOtp posts snake_case body and parses the enveloped token response',
+      () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
-        '{"access_token": "at", "refresh_token": "rt", "user_id": "u1", "is_new_user": true}'));
+        '{"data": {"access_token": "at", "refresh_token": "rt", "user_id": "u1", "is_new_user": true}}'));
     final api = DioAuthApi(net: fakeNet(adapter));
 
     final res = await api.verifyOtp(const VerifyOtpRequest(
@@ -26,7 +27,7 @@ void main() {
 
   test('is_new_user defaults to false', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
-        '{"access_token": "at", "refresh_token": "rt", "user_id": "u1"}'));
+        '{"data": {"access_token": "at", "refresh_token": "rt", "user_id": "u1"}}'));
     final res = await DioAuthApi(net: fakeNet(adapter)).signInWithGoogle(
         const GoogleSignInRequest(idToken: 't', deviceId: 'd', deviceLabel: 'l'));
     expect(res.isNewUser, isFalse);
@@ -57,9 +58,9 @@ void main() {
     );
   });
 
-  test('refresh and recoveryClaim parse flat refreshed tokens', () async {
+  test('refresh and recoveryClaim parse the enveloped refreshed tokens', () async {
     final adapter = FakeHttpAdapter(
-        (_) => jsonResponse('{"access_token": "at2", "refresh_token": "rt2"}'));
+        (_) => jsonResponse('{"data": {"access_token": "at2", "refresh_token": "rt2"}}'));
     final api = DioAuthApi(net: fakeNet(adapter));
 
     final r1 = await api.refresh(

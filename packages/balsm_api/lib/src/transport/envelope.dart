@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 
 import 'api_exception.dart';
 
-/// Unwraps the `{data, error}` envelope used by most Balsm endpoints
-/// (auth is the exception — it returns flat bodies).
+/// Unwraps the `{data, error}` envelope used by every Balsm endpoint,
+/// auth included.
 ///
 /// Throws [ApiException] when `error` is non-null. Returns `{}` when the
 /// body carries no map `data`.

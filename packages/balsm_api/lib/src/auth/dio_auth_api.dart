@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show CancelToken;
 
 import '../api_routes.dart';
+import '../transport/envelope.dart';
 import '../transport/network_manager.dart';
 import 'auth_api.dart';
 import 'requests.dart';
@@ -11,14 +12,17 @@ class DioAuthApi implements AuthApi {
 
   final NetworkManager _net;
 
-  /// Auth bodies are FLAT (no `{data, error}` envelope) — return them as-is.
+  /// Auth responses use the same `{data, error}` envelope as the rest of the
+  /// API — the .NET AuthController wraps every token payload in `{ data: … }`
+  /// and every failure in `{ error: { code } }`. [unwrapEnvelope] returns the
+  /// inner `data` map and throws [ApiException] on `error`.
   Future<Map<String, dynamic>> _post(
     String path,
     Map<String, dynamic> body, {
     CancelToken? cancelToken,
   }) async {
     final res = await _net.post(path, data: body, cancelToken: cancelToken);
-    return res.data ?? {};
+    return unwrapEnvelope(res);
   }
 
   @override

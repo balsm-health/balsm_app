@@ -110,13 +110,16 @@ class AuthInterceptor extends Interceptor {
       return null;
     }
     try {
-      // /auth/refresh is FLAT (no envelope): body is {access_token, refresh_token}.
+      // /auth/refresh is enveloped: `{ data: { access_token, refresh_token } }`.
       // Bootstrap path → onRequest attaches no token, onError ignores its 401.
       final res = await _client.dio.post<Map<String, dynamic>>(
         ApiRoutes.auth_refresh,
         data: {'refresh_token': refresh, 'device_id': deviceId},
       );
-      final data = res.data ?? const <String, dynamic>{};
+      final body = res.data ?? const <String, dynamic>{};
+      final data = body['data'] is Map<String, dynamic>
+          ? body['data'] as Map<String, dynamic>
+          : const <String, dynamic>{};
       final access = data['access_token'] as String?;
       final rotated = data['refresh_token'] as String?;
       if (access == null ||

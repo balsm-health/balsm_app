@@ -1,5 +1,6 @@
-/// Auth endpoints return FLAT bodies — token fields at the top level,
-/// no {data, error} envelope.
+/// Auth token payloads. The wire body is enveloped (`{ data: { access_token,
+/// … } }`); `DioAuthApi` unwraps the envelope, so these `fromJson` factories
+/// receive the inner `data` map with the token fields at the top level.
 class AuthTokensResponse {
   const AuthTokensResponse({
     required this.accessToken,
