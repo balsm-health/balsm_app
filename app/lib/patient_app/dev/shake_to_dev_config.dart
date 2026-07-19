@@ -11,7 +11,15 @@ import 'package:sensors_plus/sensors_plus.dart';
 /// The screen itself is read-only in prod (server switching is dev/staging
 /// only), so exposing the shake everywhere is safe.
 class ShakeToDevConfig extends ConsumerStatefulWidget {
-  const ShakeToDevConfig({super.key, required this.child});
+  const ShakeToDevConfig({
+    super.key,
+    required this.navigatorKey,
+    required this.child,
+  });
+
+  /// The app's root navigator — this widget lives ABOVE it (in
+  /// MaterialApp.builder), so `Navigator.of(context)` can't reach it.
+  final GlobalKey<NavigatorState> navigatorKey;
   final Widget child;
 
   @override
@@ -24,7 +32,7 @@ class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
   bool _open = false;
 
   // userAccelerometer excludes gravity → ~0 at rest, spikes high on a shake.
-  static const _thresholdMs2 = 18.0;
+  static const _thresholdMs2 = 14.0;
 
   @override
   void initState() {
@@ -42,9 +50,10 @@ class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
   }
 
   void _openDevConfig() {
-    if (_open || !mounted) return;
+    final nav = widget.navigatorKey.currentState;
+    if (_open || nav == null) return;
     _open = true;
-    Navigator.of(context)
+    nav
         .push(MaterialPageRoute<void>(
           builder: (_) => ServerSelectorScreen(
             controller: ref.read(balsmApiControllerProvider),

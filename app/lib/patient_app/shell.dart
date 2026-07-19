@@ -30,6 +30,7 @@ class PatientApp extends StatefulWidget {
 
 class _PatientAppState extends State<PatientApp> {
   late final PatientAppState state = widget.state;
+  final _navKey = GlobalKey<NavigatorState>();
 
   // Boot splash (app.jsx `DSLoadingOverlay open={booting}`) — branded petal
   // spinner shown for ~1.7s on cold start, then fades out.
@@ -51,6 +52,7 @@ class _PatientAppState extends State<PatientApp> {
         animation: state,
         builder: (context, _) => MaterialApp(
           debugShowCheckedModeBanner: false,
+          navigatorKey: _navKey,
           navigatorObservers: [widget.navObserver],
           // G2: wire Flutter's Material/Cupertino/widget localizations so date
           // pickers, semantics and default tooltips localize. The app's own
@@ -82,7 +84,7 @@ class _PatientAppState extends State<PatientApp> {
                 textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3),
               ),
               // Shake anywhere → Dev Config (read-only in prod).
-              child: ShakeToDevConfig(child: child!),
+              child: ShakeToDevConfig(navigatorKey: _navKey, child: child!),
             );
           },
           home: Directionality(
