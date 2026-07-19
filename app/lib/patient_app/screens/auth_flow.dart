@@ -66,7 +66,10 @@ class _WelcomeScreen extends StatelessWidget {
                   block: true,
                   accent: s.accent,
                   ar: s.rtl,
-                  onTap: () => s.go('phone')),
+                  onTap: () {
+                    s.setAuthIntent('signup');
+                    s.go('phone');
+                  }),
               const SizedBox(height: 14),
               Row(children: [
                 const Expanded(child: Divider(color: T.ink200)),
@@ -79,12 +82,21 @@ class _WelcomeScreen extends StatelessWidget {
               // Social sign-in has no real backend wired here (no google_sign_in /
               // sign_in_with_apple tokens available), and must NOT bypass the
               // fail-closed DOB/age gate. Funnel into the real email sign-up flow.
-              _SocialButton(label: s.strings.w_apple, dark: true, icon: Icons.apple, onTap: () => s.go('phone')),
+              _SocialButton(label: s.strings.w_apple, dark: true, icon: Icons.apple, onTap: () {
+                s.setAuthIntent('signup');
+                s.go('phone');
+              }),
               const SizedBox(height: 12),
-              _SocialButton(label: s.strings.w_google, dark: false, googleG: true, onTap: () => s.go('phone')),
+              _SocialButton(label: s.strings.w_google, dark: false, googleG: true, onTap: () {
+                s.setAuthIntent('signup');
+                s.go('phone');
+              }),
               const SizedBox(height: 14),
               GestureDetector(
-                onTap: () => s.go('phone'),
+                onTap: () {
+                  s.setAuthIntent('signin');
+                  s.go('phone');
+                },
                 child: RichText(
                     text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
                   TextSpan(text: '${s.strings.w_have} '),
@@ -368,11 +380,13 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 
   Future<void> _continue() async {
     final s = AppScope.of(context);
+    final isSignup = s.authIntent == 'signup';
 
     // ── Email + password → sign IN a returning user. No DOB / age gate here
     // (the account passed it at sign-up); still routed through the shared
-    // fail-closed disclosure gate before 'app'.
-    if (isPw) {
+    // fail-closed disclosure gate before 'app'. Sign-UP with a password takes
+    // the OTP path below, then applies setPassword after verify.
+    if (isPw && !isSignup) {
       final address = ctrl.text.trim();
       setState(() {
         _submitting = true;
@@ -431,6 +445,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     result.fold(
       (_) {
         s.setAuthContact(method: 'email', email: address);
+        // Password sign-up: stash the chosen password; applied via setPassword
+        // once OTP verify establishes the session.
+        s.setAuthPassword(isPw ? pwCtrl.text : null);
         s.go('otp');
       },
       (failure) => setState(() => _error = failure.message),
@@ -513,14 +530,16 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 const SizedBox(height: 20),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   _Label(s.strings.pw_label, ar: s.rtl),
-                  GestureDetector(
-                    onTap: _submitting
-                        ? null
-                        : () => _showForgotPassword(ctrl.text.trim()),
-                    child: Text(s.strings.forgot_pw,
-                        style: Typo.meta(ar: s.rtl)
-                            .copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
-                  ),
+                  // No "forgot password" on sign-up — nothing to recover yet.
+                  if (s.authIntent != 'signup')
+                    GestureDetector(
+                      onTap: _submitting
+                          ? null
+                          : () => _showForgotPassword(ctrl.text.trim()),
+                      child: Text(s.strings.forgot_pw,
+                          style: Typo.meta(ar: s.rtl)
+                              .copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                    ),
                 ]),
                 const SizedBox(height: 8),
                 _Input(
@@ -568,7 +587,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 ),
               Opacity(
                   opacity: ok && !_submitting ? 1 : 0.4,
-                  child: PButton(isPw ? s.strings.pw_signin : s.strings.continue_,
+                  child: PButton(isPw && s.authIntent != 'signup' ? s.strings.pw_signin : s.strings.continue_,
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,
@@ -671,13 +690,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
       (signInResult) {
         switch (signInResult) {
           case SignInSuccess(:final isNewUser):
-            // New account → profile setup (name/handle/DOB + the fail-closed
-            // age gate). Returning user → straight to the disclosure gate.
-            if (isNewUser) {
-              s.go('profile');
-            } else {
-              unawaited(enterAfterSignIn(context, ref, s));
-            }
+            unawaited(_afterVerify(s, isNewUser: isNewUser));
           case SignInLockout(:final session):
             final secsLeft =
                 session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
@@ -694,6 +707,25 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
         ctrl.clear();
       }),
     );
+  }
+
+  /// Post-verify navigation. On the password sign-up path a password was stashed
+  /// on the app state — the session now exists, so apply it via setPassword
+  /// (best-effort: the account is already usable regardless) before routing.
+  Future<void> _afterVerify(PatientAppState s, {required bool isNewUser}) async {
+    final pw = s.authPassword;
+    if (pw != null && pw.isNotEmpty) {
+      await ref.read(signInUseCaseProvider).setPassword(password: pw);
+      s.setAuthPassword(null); // clear the transient password
+    }
+    if (!mounted) return;
+    // New account → profile setup (name/handle/DOB + the fail-closed age gate).
+    // Returning user → straight to the disclosure gate.
+    if (isNewUser) {
+      s.go('profile');
+    } else {
+      unawaited(enterAfterSignIn(context, ref, s));
+    }
   }
 
   void _tick() {

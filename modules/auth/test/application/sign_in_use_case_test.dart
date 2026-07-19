@@ -137,4 +137,26 @@ void main() {
       expect(events.whereType<UserSignedIn>().single.provider, 'google');
     });
   });
+
+  group('setPassword', () {
+    test('success forwards the password', () async {
+      when(() => adapter.setPassword('secret123')).thenAnswer((_) async {});
+
+      final r = await usecase.setPassword(password: 'secret123');
+
+      expect(r.isSuccess, isTrue);
+      verify(() => adapter.setPassword('secret123')).called(1);
+    });
+
+    test('AuthException maps to NetworkFailure', () async {
+      when(() => adapter.setPassword(any())).thenThrow(
+        const AuthException(code: 'unauthorized', message: 'x'),
+      );
+
+      final r = await usecase.setPassword(password: 'secret123');
+
+      expect(r.isFailure, isTrue);
+      expect(r.error, isA<NetworkFailure>());
+    });
+  });
 }

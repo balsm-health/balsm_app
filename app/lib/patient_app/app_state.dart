@@ -21,6 +21,15 @@ class PatientAppState extends ChangeNotifier {
   String authMethod = 'phone'; // phone | email
   String authEmail = '';
 
+  /// 'signup' (Get started / social) | 'signin' (Sign in link). Decides whether
+  /// the email+password form registers (OTP → setPassword) or signs in.
+  String authIntent = 'signin';
+
+  /// Transient — password captured on the password sign-up screen, applied via
+  /// setPassword once OTP verify establishes the session. In-memory only (never
+  /// persisted); cleared after use.
+  String? authPassword;
+
   String countryCode = 'EG';
 
   /// Active backup target: local | icloud | gdrive (single active cloud).
@@ -106,6 +115,15 @@ class PatientAppState extends ChangeNotifier {
     authEmail = email;
     notifyListeners();
   }
+
+  /// Set the auth intent (called from the welcome screen before go('phone')).
+  void setAuthIntent(String intent) {
+    authIntent = intent;
+    notifyListeners();
+  }
+
+  /// Stash/clear the transient sign-up password (not UI-bound, no notify).
+  void setAuthPassword(String? pw) => authPassword = pw;
 
   void go(String r) {
     if (r == 'app') tab = 'home';

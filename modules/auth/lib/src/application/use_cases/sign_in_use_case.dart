@@ -152,6 +152,20 @@ class SignInUseCase {
     }
   }
 
+  /// Set the account password once a session exists — e.g. right after OTP
+  /// verify on the password sign-up path. Authenticated request (the bearer is
+  /// attached by the auth interceptor).
+  Future<AppResult<void>> setPassword({required String password}) async {
+    try {
+      await _adapter.setPassword(password);
+      return AppResult.success(null);
+    } on AuthException catch (e) {
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
   // ── Google ────────────────────────────────────────────────────────────────
 
   Future<AppResult<SignInResult>> signInWithGoogle({
