@@ -14,3 +14,4 @@
 *.mobileprovision
 **/coverage/
 *.log
+app/ios/Runner/Runner.entitlements.prod.bak

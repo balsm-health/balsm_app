@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  FREE personal-team signing (run on your own iPhone, no paid Apple Developer
+  account). The prod Runner.entitlements declares associated-domains + App
+  Groups, which free signing rejects. This stripped copy has neither.
+  Apply with: scripts/ios_personal_signing.sh on   (revert: ... off)
+  Universal-link deep links + App Groups won't work in a build using this.
+-->
+<plist version="1.0">
+<dict>
+</dict>
+</plist>
