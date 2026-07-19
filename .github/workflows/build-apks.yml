@@ -1,0 +1,59 @@
+name: Build APKs (all apps)
+
+# Release APK artifacts for every buildable app (brand), across environments.
+# Manual (workflow_dispatch) or on a version tag. Kept separate from CI so it
+# doesn't run on every push.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+env:
+  FLUTTER_VERSION: '3.41.9'
+
+jobs:
+  build-apk:
+    name: APK · ${{ matrix.brand }} · ${{ matrix.env }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # One `brand` per app. Android flavor == brand; entrypoint lives at
+        # lib/brands/<brand>/main_<brand>.dart; env dart-defines at
+        # env/<brand>/<env>.json. Add balsm_pro here once it has an entrypoint
+        # AND an Android productFlavor (currently only `balsm` exists).
+        brand: [balsm]
+        env: [dev, staging, prod]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # core owns the drift schema the whole app tree depends on.
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+
+      # NDK is pinned in app/android/app/build.gradle.kts; AGP installs it on the
+      # runner if missing. Release uses the debug signing fallback until a prod
+      # keystore is wired.
+      - name: Build APK (release)
+        working-directory: app
+        run: >-
+          flutter build apk --release
+          --flavor ${{ matrix.brand }}
+          -t lib/brands/${{ matrix.brand }}/main_${{ matrix.brand }}.dart
+          --dart-define-from-file=env/${{ matrix.brand }}/${{ matrix.env }}.json
+          --dart-define-from-file=env/shared.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.brand }}-${{ matrix.env }}-apk
+          path: app/build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error

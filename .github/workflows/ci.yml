@@ -117,9 +117,9 @@ jobs:
       # NDK is pinned in app/android/app/build.gradle.kts; AGP installs it on the
       # runner if missing. Release uses the debug signing fallback until a prod
       # keystore is wired (see SIGNING below).
-      - name: Build APK (release, prod flavor)
+      - name: Build APK (release, balsm · prod)
         working-directory: app
-        run: flutter build apk --release --flavor prod -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
+        run: flutter build apk --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
       - uses: actions/upload-artifact@v4
         with:
           name: android-prod-apk
@@ -139,9 +139,9 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
-      - name: Build iOS (release, no codesign, prod)
+      - name: Build iOS (release, no codesign, balsm · prod)
         working-directory: app
-        run: flutter build ios --release --no-codesign -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
+        run: flutter build ios --release --no-codesign --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
       - uses: actions/upload-artifact@v4
         with:
           name: ios-prod-app
