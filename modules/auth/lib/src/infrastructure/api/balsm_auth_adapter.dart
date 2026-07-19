@@ -122,6 +122,44 @@ class BalsmAuthAdapter {
         return (accessToken: r.accessToken, refreshToken: r.refreshToken);
       });
 
+  /// POST /auth/password/sign-in
+  Future<AuthTokens> passwordSignIn(
+    String email,
+    String password,
+    String deviceId,
+    String deviceLabel, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async => _toAuthTokens(await _api.passwordSignIn(
+            PasswordSignInRequest(
+              email: email,
+              password: password,
+              deviceId: deviceId,
+              deviceLabel: deviceLabel,
+            ),
+            cancelToken: cancelToken,
+          )));
+
+  /// POST /auth/password — set/change the signed-in user's password.
+  Future<void> setPassword(String password, {CancelToken? cancelToken}) =>
+      _guard(() => _api.setPassword(
+            SetPasswordRequest(password: password),
+            cancelToken: cancelToken,
+          ));
+
+  /// POST /auth/password/reset
+  Future<void> resetPassword(
+    String email,
+    String code,
+    String newPassword, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() => _api.resetPassword(
+            ResetPasswordRequest(
+                email: email, code: code, newPassword: newPassword),
+            cancelToken: cancelToken,
+          ));
+
   // ── Internals ─────────────────────────────────────────────────────────────
 
   Future<T> _guard<T>(Future<T> Function() run) async {

@@ -87,3 +87,41 @@ class RecoveryClaimRequest {
         'device_label': deviceLabel,
       };
 }
+
+class PasswordSignInRequest {
+  const PasswordSignInRequest({
+    required this.email,
+    required this.password,
+    required this.deviceId,
+    required this.deviceLabel,
+  });
+  final String email;
+  final String password;
+  final String deviceId;
+  final String deviceLabel;
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'password': password,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+      };
+}
+
+class SetPasswordRequest {
+  const SetPasswordRequest({required this.password});
+  final String password;
+  Map<String, dynamic> toJson() => {'password': password};
+}
+
+class ResetPasswordRequest {
+  const ResetPasswordRequest({
+    required this.email,
+    required this.code,
+    required this.newPassword,
+  });
+  final String email;
+  final String code;
+  final String newPassword;
+  Map<String, dynamic> toJson() =>
+      {'email': email, 'code': code, 'new_password': newPassword};
+}

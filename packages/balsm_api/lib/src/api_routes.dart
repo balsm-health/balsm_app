@@ -22,6 +22,9 @@ class ApiRoutes {
   static const auth_sign_out = '$_auth/sign-out';
   static const auth_refresh = '$_auth/refresh';
   static const auth_recovery_claim = '$_auth/recovery/claim';
+  static const auth_password_sign_in = '$_auth/password/sign-in';
+  static const auth_password = '$_auth/password';
+  static const auth_password_reset = '$_auth/password/reset';
 
   // ── Account ───────────────────────────────────────────────────────────────
   static const _account = '/account';

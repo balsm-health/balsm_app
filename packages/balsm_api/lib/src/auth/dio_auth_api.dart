@@ -62,4 +62,22 @@ class DioAuthApi implements AuthApi {
           {CancelToken? cancelToken}) async =>
       RefreshedTokensResponse.fromJson(await _post(ApiRoutes.auth_recovery_claim,
           request.toJson(), cancelToken: cancelToken));
+
+  @override
+  Future<AuthTokensResponse> passwordSignIn(PasswordSignInRequest request,
+          {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(await _post(
+          ApiRoutes.auth_password_sign_in, request.toJson(),
+          cancelToken: cancelToken));
+
+  @override
+  Future<void> setPassword(SetPasswordRequest request,
+          {CancelToken? cancelToken}) =>
+      _post(ApiRoutes.auth_password, request.toJson(), cancelToken: cancelToken);
+
+  @override
+  Future<void> resetPassword(ResetPasswordRequest request,
+          {CancelToken? cancelToken}) =>
+      _post(ApiRoutes.auth_password_reset, request.toJson(),
+          cancelToken: cancelToken);
 }

@@ -94,6 +94,59 @@ class SignInUseCase {
     }
   }
 
+  // ── Email + password ──────────────────────────────────────────────────────
+
+  /// Sign in with email + password. A `401` surfaces as a generic failure (no
+  /// account-enumeration); `423` fires [LockoutTriggered] + [SignInLockout].
+  Future<AppResult<SignInResult>> passwordSignIn({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final deviceId = await _ensureDeviceId();
+      final deviceLabel = _deviceLabel();
+
+      final tokens =
+          await _adapter.passwordSignIn(email, password, deviceId, deviceLabel);
+
+      await _persistTokens(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        userId: tokens.userId,
+      );
+
+      _bus.publish(UserSignedIn(
+        userId: UserId.value(tokens.userId),
+        email: email,
+        provider: 'email',
+      ));
+
+      return AppResult.success(const SignInSuccess());
+    } on AuthException catch (e) {
+      if (e.code == 'account_locked') return _handleLockout(e, email);
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
+  /// Reset a forgotten password. Send the code first via [requestEmailOtp]
+  /// (forgot-password reuses the OTP-request endpoint).
+  Future<AppResult<void>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      await _adapter.resetPassword(email, code, newPassword);
+      return AppResult.success(null);
+    } on AuthException catch (e) {
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
   // ── Google ────────────────────────────────────────────────────────────────
 
   Future<AppResult<SignInResult>> signInWithGoogle({

@@ -35,4 +35,17 @@ abstract class AuthApi {
   /// POST /auth/recovery/claim
   Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request,
       {CancelToken? cancelToken});
+
+  /// POST /auth/password/sign-in — email + password. Uniform 401 (code
+  /// 'unauthorized') on unknown account / no password / wrong password.
+  Future<AuthTokensResponse> passwordSignIn(PasswordSignInRequest request,
+      {CancelToken? cancelToken});
+
+  /// POST /auth/password — set/change the signed-in user's password (auth'd).
+  Future<void> setPassword(SetPasswordRequest request, {CancelToken? cancelToken});
+
+  /// POST /auth/password/reset — reset with the emailed OTP code as the reset
+  /// token (send it first via [requestOtp]).
+  Future<void> resetPassword(ResetPasswordRequest request,
+      {CancelToken? cancelToken});
 }
