@@ -379,6 +379,34 @@ class Strings_ar extends Strings {
   String get acc_active => "الحساب النشط";
   String get acc_not_signed_in => "لم يتم تسجيل الدخول";
   String get pd_change_photo => "تغيير الصورة";
+  String get em_pw_title => "مرحبًا بعودتك";
+  String get em_pw_help => "سجّل الدخول ببريدك الإلكتروني وكلمة المرور.";
+  String get pw_label => "كلمة المرور";
+  String get pw_ph => "أدخل كلمة المرور";
+  String get pw_show => "إظهار كلمة المرور";
+  String get pw_hide => "إخفاء كلمة المرور";
+  String get forgot_pw => "نسيت؟";
+  String get use_code => "استخدم رمزًا لمرة واحدة بدلاً من ذلك";
+  String get use_password => "استخدم كلمة مرور بدلاً من ذلك";
+  String get pw_signin => "تسجيل الدخول";
+  String get pw_min => "٨ أحرف على الأقل";
+  String get pw_invalid_creds => "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+  String get fp_title => "إعادة تعيين كلمة المرور";
+  String get fp_help =>
+      "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
+  String get fp_send => "إرسال رمز إعادة التعيين";
+  String get fp_code_label => "رمز إعادة التعيين";
+  String get fp_new_pw => "كلمة المرور الجديدة";
+  String get fp_reset => "إعادة تعيين كلمة المرور";
+  String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
+  String get fp_done => "تم";
+  String get fp_success =>
+      "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
+  String get dial_title => "رمز الدولة";
+  String get dial_search => "ابحث عن دولة";
+  String get dob_title => "تاريخ الميلاد";
+  String get dob_confirm => "تأكيد";
+  String get dob_select => "اختر تاريخاً";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1116,6 +1144,58 @@ class Strings_ar extends Strings {
         return acc_not_signed_in;
       case 'pd_change_photo':
         return pd_change_photo;
+      case 'em_pw_title':
+        return em_pw_title;
+      case 'em_pw_help':
+        return em_pw_help;
+      case 'pw_label':
+        return pw_label;
+      case 'pw_ph':
+        return pw_ph;
+      case 'pw_show':
+        return pw_show;
+      case 'pw_hide':
+        return pw_hide;
+      case 'forgot_pw':
+        return forgot_pw;
+      case 'use_code':
+        return use_code;
+      case 'use_password':
+        return use_password;
+      case 'pw_signin':
+        return pw_signin;
+      case 'pw_min':
+        return pw_min;
+      case 'pw_invalid_creds':
+        return pw_invalid_creds;
+      case 'fp_title':
+        return fp_title;
+      case 'fp_help':
+        return fp_help;
+      case 'fp_send':
+        return fp_send;
+      case 'fp_code_label':
+        return fp_code_label;
+      case 'fp_new_pw':
+        return fp_new_pw;
+      case 'fp_reset':
+        return fp_reset;
+      case 'fp_sent_help':
+        return fp_sent_help;
+      case 'fp_done':
+        return fp_done;
+      case 'fp_success':
+        return fp_success;
+      case 'dial_title':
+        return dial_title;
+      case 'dial_search':
+        return dial_search;
+      case 'dob_title':
+        return dob_title;
+      case 'dob_confirm':
+        return dob_confirm;
+      case 'dob_select':
+        return dob_select;
       default:
         return super[key];
     }

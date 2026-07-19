@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
+import '../data.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -101,7 +102,31 @@ class _WelcomeScreen extends StatelessWidget {
               _trust(s, LucideIcons.cloudOff, s.strings.trust_offline),
             ]),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 16),
+          // Language toggle pill (AR ⇄ EN) — updated design.
+          Center(
+            child: GestureDetector(
+              onTap: () => s.setLang(s.lang == 'ar' ? 'en' : 'ar'),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: T.border),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(LucideIcons.languages, size: 17, color: T.fg2),
+                  const SizedBox(width: 7),
+                  Text(s.lang == 'ar' ? 'English' : 'العربية',
+                      style: Typo.bodySm(ar: s.lang != 'ar')
+                          .copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
         ]),
         ),
       ),
@@ -287,16 +312,27 @@ class _PhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
-  bool email = true; // Email is the only path with a real OTP backend.
+  bool email = true; // Email is the only path with a real OTP/password backend.
+  String emailAuth = 'password'; // email sub-mode: 'password' | 'code'
   final ctrl = TextEditingController();
+  final pwCtrl = TextEditingController();
   final dobCtrl = TextEditingController();
+  bool _showPw = false;
   DateTime? _dob;
   String? _error;
   bool _submitting = false;
+  // Selected phone dial-code country; defaults to the home country (EG).
+  Country _dialCountry =
+      kCountries.firstWhere((c) => c.home, orElse: () => kCountries.first);
+
+  /// Email + password sign-in sub-mode (returning users). Phone + the email
+  /// one-time-code path are NOT password mode.
+  bool get isPw => email && emailAuth == 'password';
 
   @override
   void dispose() {
     ctrl.dispose();
+    pwCtrl.dispose();
     dobCtrl.dispose();
     super.dispose();
   }
@@ -306,7 +342,10 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     final contactOk = email
         ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)
         : v.replaceAll(RegExp(r'\D'), '').length >= 10;
-    // DOB is REQUIRED — no continue without it (fail-closed).
+    // Password sign-in: email + password (>=8). No DOB — the account already
+    // passed the age gate at sign-up.
+    if (isPw) return contactOk && pwCtrl.text.length >= 8;
+    // OTP / sign-up path: DOB is REQUIRED (fail-closed age gate).
     return contactOk && _dob != null;
   }
 
@@ -314,12 +353,13 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}';
 
   Future<void> _pickDob() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
+    final s = AppScope.of(context);
+    final picked = await showModalBottomSheet<DateTime>(
       context: context,
-      initialDate: DateTime(now.year - 18, now.month, now.day),
-      firstDate: DateTime(1900),
-      lastDate: now,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x5C2B2B25),
+      isScrollControlled: true,
+      builder: (_) => _DobCalendarSheet(initial: _dob, s: s),
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -329,8 +369,66 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     });
   }
 
+  Future<void> _pickDialCode(PatientAppState s) async {
+    final picked = await showModalBottomSheet<Country>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x5C2B2B25),
+      isScrollControlled: true,
+      builder: (_) => _DialCodeSheet(current: _dialCountry, s: s),
+    );
+    if (picked != null && mounted) setState(() => _dialCountry = picked);
+  }
+
+  void _showForgotPassword(String email) {
+    final s = AppScope.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x5C2B2B25),
+      isScrollControlled: true,
+      builder: (_) => _ForgotPasswordSheet(initialEmail: email, s: s),
+    );
+  }
+
   Future<void> _continue() async {
     final s = AppScope.of(context);
+
+    // ── Email + password → sign IN a returning user. No DOB / age gate here
+    // (the account passed it at sign-up); still routed through the shared
+    // fail-closed disclosure gate before 'app'.
+    if (isPw) {
+      final address = ctrl.text.trim();
+      setState(() {
+        _submitting = true;
+        _error = null;
+      });
+      final result = await ref
+          .read(signInUseCaseProvider)
+          .passwordSignIn(email: address, password: pwCtrl.text);
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      result.fold(
+        (signIn) {
+          switch (signIn) {
+            case SignInSuccess():
+              s.setAuthContact(method: 'email', email: address);
+              unawaited(enterAfterSignIn(context, ref, s));
+            case SignInLockout(:final session):
+              final secsLeft = session.until
+                  .difference(DateTime.now())
+                  .inSeconds
+                  .clamp(0, 3600);
+              setState(() => _error = s.rtl
+                  ? 'الحساب مقفل مؤقتًا. حاول بعد $secsLeft ثانية.'
+                  : 'Account temporarily locked. Try again in ${secsLeft}s.');
+          }
+        },
+        // Uniform message — never reveal whether the account or password is wrong.
+        (_) => setState(() => _error = s.strings.pw_invalid_creds),
+      );
+      return;
+    }
 
     // Fail-closed gate #1 — DOB missing/invalid → do NOT proceed.
     final dob = _dob;
@@ -405,13 +503,22 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 onChanged: (r) => setState(() {
                   email = r;
                   ctrl.clear();
+                  pwCtrl.clear();
                   _error = null;
                 }),
               ),
               const SizedBox(height: 24),
-              Text(email ? s.strings.em_title : s.strings.ph_title, style: Typo.title(ar: s.rtl)),
+              Text(
+                  isPw
+                      ? s.strings.em_pw_title
+                      : (email ? s.strings.em_title : s.strings.ph_title),
+                  style: Typo.title(ar: s.rtl)),
               const SizedBox(height: 8),
-              Text(email ? s.strings.em_help : s.strings.ph_help, style: Typo.body(ar: s.rtl)),
+              Text(
+                  isPw
+                      ? s.strings.em_pw_help
+                      : (email ? s.strings.em_help : s.strings.ph_help),
+                  style: Typo.body(ar: s.rtl)),
               const SizedBox(height: 24),
               _Label(email ? s.strings.em_label : s.strings.ph_label, ar: s.rtl),
               const SizedBox(height: 8),
@@ -425,18 +532,11 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     onChanged: (_) => setState(() {}))
               else
                 Row(children: [
-                  Container(
-                    height: 54,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(T.rMd),
-                        border: Border.all(color: T.border, width: 1.5)),
-                    child: Row(children: [
-                      const Text('🇪🇬', style: TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Text('+20', style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600))
-                    ]),
+                  _DialCodeButton(
+                    country: _dialCountry,
+                    onTap: _submitting
+                        ? null
+                        : () => _pickDialCode(s),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -449,26 +549,75 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                           accent: s.accent,
                           onChanged: (_) => setState(() {}))),
                 ]),
-              // Date of birth — REQUIRED. Tapping opens a date picker (guarantees
-              // a valid DateTime); feeds the fail-closed age gate on continue.
-              const SizedBox(height: 20),
-              _Field(
-                label: s.strings.pf_dob,
-                ar: s.rtl,
-                child: GestureDetector(
-                  onTap: _submitting ? null : _pickDob,
-                  child: AbsorbPointer(
-                    child: _Input(
-                        controller: dobCtrl,
-                        hint: 'DD / MM / YYYY',
-                        mono: true,
-                        forceLtr: true,
-                        accent: s.accent,
-                        prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
-                        suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4)),
+
+              // Email + password → password field + forgot link.
+              if (isPw) ...[
+                const SizedBox(height: 20),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  _Label(s.strings.pw_label, ar: s.rtl),
+                  GestureDetector(
+                    onTap: _submitting
+                        ? null
+                        : () => _showForgotPassword(ctrl.text.trim()),
+                    child: Text(s.strings.forgot_pw,
+                        style: Typo.meta(ar: s.rtl)
+                            .copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                _Input(
+                    controller: pwCtrl,
+                    hint: s.strings.pw_ph,
+                    obscure: !_showPw,
+                    forceLtr: true,
+                    accent: s.accent,
+                    suffixIcon: GestureDetector(
+                      onTap: () => setState(() => _showPw = !_showPw),
+                      child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye,
+                          size: 18, color: T.fg3),
+                    ),
+                    onChanged: (_) => setState(() {})),
+              ],
+
+              // OTP / sign-up path → date of birth (REQUIRED, fail-closed age gate).
+              if (!isPw) ...[
+                const SizedBox(height: 20),
+                _Field(
+                  label: s.strings.pf_dob,
+                  ar: s.rtl,
+                  child: GestureDetector(
+                    onTap: _submitting ? null : _pickDob,
+                    child: AbsorbPointer(
+                      child: _Input(
+                          controller: dobCtrl,
+                          hint: 'DD / MM / YYYY',
+                          mono: true,
+                          forceLtr: true,
+                          accent: s.accent,
+                          prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
+                          suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4)),
+                    ),
                   ),
                 ),
-              ),
+              ],
+
+              // Email: switch between password sign-in and one-time-code sign-up.
+              if (email) ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: GestureDetector(
+                    onTap: _submitting
+                        ? null
+                        : () => setState(() {
+                              emailAuth = isPw ? 'code' : 'password';
+                              _error = null;
+                            }),
+                    child: Text(isPw ? s.strings.use_code : s.strings.use_password,
+                        style: Typo.bodySm(ar: s.rtl)
+                            .copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
             ]),
           )),
           Padding(
@@ -483,7 +632,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 ),
               Opacity(
                   opacity: ok && !_submitting ? 1 : 0.4,
-                  child: PButton(s.strings.continue_,
+                  child: PButton(isPw ? s.strings.pw_signin : s.strings.continue_,
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,
@@ -508,6 +657,41 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 // re-gates every user until they accept the new notice (fail-closed).
 const String _kDisclosureId = 'consolidated';
 const String _kDisclosureVersion = '1';
+
+/// Fail-closed disclosure GATE — interposed between a successful sign-in and
+/// reaching 'app'. Shared by BOTH the OTP-verify and the email+password
+/// sign-in paths so neither can bypass it. A user who has not accepted the
+/// CURRENT consolidated-disclosure version never reaches the app; a returning
+/// user who already accepted this version skips straight through.
+///
+/// Reads the real on-device acceptance store (`DisclosureDao.watchAcceptance`);
+/// presentation goes through [_DisclosureGateScreen], which — on accept — runs
+/// the real `AcceptDisclosureUseCase` (persist + cloud sync + domain event) and
+/// pops `true`. Only a persisted acceptance unlocks 'app'.
+Future<void> enterAfterSignIn(
+    BuildContext context, WidgetRef ref, PatientAppState s) async {
+  final accepted = await ref
+      .read(disclosureDaoProvider)
+      .watchAcceptance(
+        const DisclosureId.value(_kDisclosureId),
+        _kDisclosureVersion,
+      )
+      .first;
+  if (!context.mounted) return;
+  if (accepted != null) {
+    s.go('app');
+    return;
+  }
+  // Not accepted → present the gate. Pushed over the current screen so backing
+  // out (without accepting) simply returns here — no 'app' access is granted.
+  final didAccept = await Navigator.of(context).push<bool>(
+    MaterialPageRoute<bool>(
+      builder: (_) => _DisclosureGateScreen(state: s),
+    ),
+  );
+  if (!context.mounted) return;
+  if (didAccept == true) s.go('app');
+}
 
 // ── OTP ──────────────────────────────────────────────────────
 class _OtpScreen extends ConsumerStatefulWidget {
@@ -553,7 +737,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
           case SignInSuccess():
             // Session persisted by the use-case — but do NOT grant access yet.
             // Interpose the fail-closed disclosure gate before reaching 'app'.
-            unawaited(_enterAfterSignIn(s));
+            unawaited(enterAfterSignIn(context, ref, s));
           case SignInLockout(:final session):
             final secsLeft =
                 session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
@@ -570,41 +754,6 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
         ctrl.clear();
       }),
     );
-  }
-
-  /// Disclosure-acceptance GATE — interposed between a successful sign-in and
-  /// reaching 'app'. Fail-closed: a user who has not accepted the CURRENT
-  /// consolidated-disclosure version never reaches the app. A returning user
-  /// who already accepted this version skips straight through.
-  ///
-  /// The check reads the real on-device acceptance store (Tier-1
-  /// `DisclosureDao.watchAcceptance`); presentation goes through
-  /// [_DisclosureGateScreen], which — on accept — runs the real
-  /// `AcceptDisclosureUseCase` (persist + cloud sync + domain event) and pops
-  /// `true`. Only a persisted acceptance unlocks 'app'.
-  Future<void> _enterAfterSignIn(PatientAppState s) async {
-    // Already accepted this disclosure version on-device? → straight in.
-    final accepted = await ref
-        .read(disclosureDaoProvider)
-        .watchAcceptance(
-          const DisclosureId.value(_kDisclosureId),
-          _kDisclosureVersion,
-        )
-        .first;
-    if (!mounted) return;
-    if (accepted != null) {
-      s.go('app');
-      return;
-    }
-    // Not accepted → present the gate. Pushed over the OTP screen so backing
-    // out (without accepting) simply returns here — no 'app' access is granted.
-    final didAccept = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => _DisclosureGateScreen(state: s),
-      ),
-    );
-    if (!mounted) return;
-    if (didAccept == true) s.go('app');
   }
 
   void _tick() {
@@ -1267,6 +1416,323 @@ class _Field extends StatelessWidget {
       ]);
 }
 
+// ── Dial-code picker (phone) ─────────────────────────────────
+/// Regional-indicator flag emoji from a 2-letter ISO country code.
+String _flagEmoji(String code) {
+  if (code.length != 2) return '🏳️';
+  return String.fromCharCodes(
+      code.toUpperCase().codeUnits.map((c) => 0x1F1E6 + (c - 0x41)));
+}
+
+class _DialCodeButton extends StatelessWidget {
+  const _DialCodeButton({required this.country, required this.onTap});
+  final Country country;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 54,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rMd),
+            border: Border.all(color: T.border, width: 1.5)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(_flagEmoji(country.code), style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 6),
+          Text(country.dial,
+              textDirection: TextDirection.ltr,
+              style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600)),
+          const SizedBox(width: 2),
+          const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
+        ]),
+      ),
+    );
+  }
+}
+
+class _DialCodeSheet extends StatelessWidget {
+  const _DialCodeSheet({required this.current, required this.s});
+  final Country current;
+  final PatientAppState s;
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: s.dir,
+      child: Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+        decoration: const BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 10),
+          Container(width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+          const SizedBox(height: 12),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(s.strings.dial_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)))),
+          const SizedBox(height: 8),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                for (final c in kCountries)
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context, c),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      child: Row(children: [
+                        Text(_flagEmoji(c.code), style: const TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(c.name.of(s.lang), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                        Text(c.dial, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3)),
+                        if (c.code == current.code)
+                          Padding(padding: const EdgeInsetsDirectional.only(start: 8), child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
+                      ]),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Forgot-password (email-only reset via OTP code) ──────────
+class _ForgotPasswordSheet extends ConsumerStatefulWidget {
+  const _ForgotPasswordSheet({required this.initialEmail, required this.s});
+  final String initialEmail;
+  final PatientAppState s;
+  @override
+  ConsumerState<_ForgotPasswordSheet> createState() => _ForgotPasswordSheetState();
+}
+
+class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
+  late final TextEditingController _email =
+      TextEditingController(text: widget.initialEmail);
+  final _code = TextEditingController();
+  final _newPw = TextEditingController();
+  String _step = 'email'; // email | code | done
+  bool _busy = false;
+  bool _showPw = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _code.dispose();
+    _newPw.dispose();
+    super.dispose();
+  }
+
+  bool get _emailOk =>
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_email.text.trim());
+  bool get _resetOk => _code.text.trim().length >= 4 && _newPw.text.length >= 8;
+
+  Future<void> _sendCode() async {
+    if (!_emailOk || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    // Forgot-password reuses the OTP-request endpoint to send the reset code.
+    final r = await ref
+        .read(signInUseCaseProvider)
+        .requestEmailOtp(_email.text.trim(), widget.s.countryCode);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    r.fold((_) => setState(() => _step = 'code'),
+        (f) => setState(() => _error = f.message));
+  }
+
+  Future<void> _reset() async {
+    if (!_resetOk || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final r = await ref.read(signInUseCaseProvider).resetPassword(
+          email: _email.text.trim(),
+          code: _code.text.trim(),
+          newPassword: _newPw.text,
+        );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    r.fold((_) => setState(() => _step = 'done'),
+        (f) => setState(() => _error = f.message));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    return Directionality(
+      textDirection: s.dir,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          decoration: const BoxDecoration(
+              color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999)))),
+            const SizedBox(height: 16),
+            Text(_step == 'done' ? s.strings.fp_success : s.strings.fp_title,
+                style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            if (_step == 'email') ...[
+              Text(s.strings.fp_help, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+              const SizedBox(height: 16),
+              _Input(controller: _email, hint: s.strings.em_ph, keyboard: TextInputType.emailAddress, forceLtr: true, accent: s.accent, onChanged: (_) => setState(() {})),
+            ] else if (_step == 'code') ...[
+              RichText(text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
+                TextSpan(text: '${s.strings.fp_sent_help} '),
+                TextSpan(text: _email.text.trim(), style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
+              ])),
+              const SizedBox(height: 16),
+              _Label(s.strings.fp_code_label, ar: s.rtl),
+              const SizedBox(height: 8),
+              _Input(controller: _code, hint: '••••••', keyboard: TextInputType.number, mono: true, forceLtr: true, accent: s.accent, onChanged: (_) => setState(() {})),
+              const SizedBox(height: 14),
+              _Label(s.strings.fp_new_pw, ar: s.rtl),
+              const SizedBox(height: 8),
+              _Input(controller: _newPw, hint: s.strings.pw_ph, obscure: !_showPw, forceLtr: true, accent: s.accent,
+                  suffixIcon: GestureDetector(onTap: () => setState(() => _showPw = !_showPw), child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3)),
+                  onChanged: (_) => setState(() {})),
+            ],
+            if (_error != null)
+              Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+            const SizedBox(height: 20),
+            if (_step == 'email')
+              Opacity(opacity: _emailOk && !_busy ? 1 : 0.4, child: PButton(s.strings.fp_send, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _emailOk && !_busy ? () { _sendCode(); } : null))
+            else if (_step == 'code')
+              Opacity(opacity: _resetOk && !_busy ? 1 : 0.4, child: PButton(s.strings.fp_reset, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _resetOk && !_busy ? () { _reset(); } : null))
+            else
+              PButton(s.strings.fp_done, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () => Navigator.pop(context)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Date-of-birth calendar sheet ─────────────────────────────
+class _DobCalendarSheet extends StatefulWidget {
+  const _DobCalendarSheet({required this.initial, required this.s});
+  final DateTime? initial;
+  final PatientAppState s;
+  @override
+  State<_DobCalendarSheet> createState() => _DobCalendarSheetState();
+}
+
+class _DobCalendarSheetState extends State<_DobCalendarSheet> {
+  late int _y;
+  late int _m; // 0-based
+  DateTime? _sel;
+  bool _yearMode = false;
+
+  static const _mEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  static const _mAr = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  static const _wdEn = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  static const _wdAr = ['أحد','إثن','ثلا','أرب','خمي','جمع','سبت'];
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    final init = widget.initial ?? DateTime(now.year - 25, now.month);
+    _y = init.year;
+    _m = init.month - 1;
+    _sel = widget.initial;
+  }
+
+  void _prev() => setState(() {
+        if (_m == 0) { _m = 11; _y--; } else { _m--; }
+      });
+  void _next() => setState(() {
+        if (_m == 11) { _m = 0; _y++; } else { _m++; }
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    final rtl = s.rtl;
+    final months = rtl ? _mAr : _mEn;
+    final wd = rtl ? _wdAr : _wdEn;
+    final now = DateTime.now();
+    final firstWeekday = DateTime(_y, _m + 1, 1).weekday % 7; // Sun=0
+    final daysIn = DateTime(_y, _m + 2, 0).day;
+    final years = [for (var y = now.year; y >= 1920; y--) y];
+
+    return Directionality(
+      textDirection: s.dir,
+      child: Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.82),
+        decoration: const BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 10),
+          Container(width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+          const SizedBox(height: 12),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Row(children: [
+            Expanded(child: Text(s.strings.dob_title, style: Typo.subhead(ar: rtl).copyWith(fontWeight: FontWeight.w700))),
+            RoundBtn(icon: LucideIcons.x, onTap: () => Navigator.pop(context)),
+          ])),
+          const SizedBox(height: 8),
+          Flexible(child: SingleChildScrollView(padding: const EdgeInsets.symmetric(horizontal: 20), child: Column(children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              RoundBtn(icon: rtl ? LucideIcons.chevronRight : LucideIcons.chevronLeft, onTap: _prev),
+              GestureDetector(onTap: () => setState(() => _yearMode = !_yearMode), child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text('${months[_m]} $_y', style: Typo.subhead(ar: rtl).copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(width: 4), const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
+              ])),
+              RoundBtn(icon: rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, onTap: _next),
+            ]),
+            const SizedBox(height: 12),
+            if (_yearMode)
+              GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 4, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 1.9, children: [
+                for (final y in years)
+                  GestureDetector(onTap: () => setState(() { _y = y; _yearMode = false; }), child: Container(alignment: Alignment.center, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: y == _y ? s.accent.main : T.border, width: 1.5), color: y == _y ? s.accent.main : Colors.white), child: Text('$y', style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: y == _y ? Colors.white : T.fg1)))),
+              ])
+            else ...[
+              Row(children: [for (final w in wd) Expanded(child: Center(child: Text(w, style: Typo.meta(ar: rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg3))))]),
+              const SizedBox(height: 6),
+              GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 7, mainAxisSpacing: 2, crossAxisSpacing: 2, children: [
+                for (var i = 0; i < firstWeekday; i++) const SizedBox(),
+                for (var d = 1; d <= daysIn; d++)
+                  Builder(builder: (_) {
+                    final date = DateTime(_y, _m + 1, d);
+                    final disabled = date.isAfter(now);
+                    final active = _sel != null && _sel!.year == _y && _sel!.month == _m + 1 && _sel!.day == d;
+                    return GestureDetector(
+                      onTap: disabled ? null : () => setState(() => _sel = date),
+                      child: Container(alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: active ? s.accent.main : Colors.transparent),
+                          child: Text('$d', style: Typo.num(size: FS.sm, weight: active ? FontWeight.w700 : FontWeight.w500, color: disabled ? T.ink200 : active ? Colors.white : T.fg1))),
+                    );
+                  }),
+              ]),
+            ],
+            const SizedBox(height: 16),
+          ]))),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).padding.bottom + 20),
+            child: Opacity(opacity: _sel != null ? 1 : 0.4, child: PButton(_sel != null ? s.strings.dob_confirm : s.strings.dob_select, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: rtl, onTap: _sel != null ? () => Navigator.pop(context, _sel) : null)),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
 class _Input extends StatelessWidget {
   const _Input(
       {required this.controller,
@@ -1274,6 +1740,7 @@ class _Input extends StatelessWidget {
       this.keyboard,
       this.mono = false,
       this.forceLtr = false,
+      this.obscure = false,
       this.prefix,
       this.prefixIcon,
       this.suffixIcon,
@@ -1284,6 +1751,7 @@ class _Input extends StatelessWidget {
   final TextInputType? keyboard;
   final bool mono;
   final bool forceLtr;
+  final bool obscure;
   final String? prefix;
   final Widget? prefixIcon;
   final Widget? suffixIcon;
@@ -1296,6 +1764,7 @@ class _Input extends StatelessWidget {
       controller: controller,
       keyboardType: keyboard,
       onChanged: onChanged,
+      obscureText: obscure,
       textDirection: forceLtr ? TextDirection.ltr : null,
       style: style,
       decoration: InputDecoration(

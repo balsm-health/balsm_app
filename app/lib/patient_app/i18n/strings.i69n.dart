@@ -381,6 +381,33 @@ class Strings implements i69n.I69nMessageBundle {
   String get acc_active => "Active account";
   String get acc_not_signed_in => "Not signed in";
   String get pd_change_photo => "Change photo";
+  String get em_pw_title => "Welcome back";
+  String get em_pw_help => "Sign in with your email and password.";
+  String get pw_label => "Password";
+  String get pw_ph => "Enter your password";
+  String get pw_show => "Show password";
+  String get pw_hide => "Hide password";
+  String get forgot_pw => "Forgot?";
+  String get use_code => "Use a one-time code instead";
+  String get use_password => "Use a password instead";
+  String get pw_signin => "Sign in";
+  String get pw_min => "At least 8 characters";
+  String get pw_invalid_creds => "Invalid email or password.";
+  String get fp_title => "Reset your password";
+  String get fp_help =>
+      "Enter your email — we'll send a code to reset your password.";
+  String get fp_send => "Send reset code";
+  String get fp_code_label => "Reset code";
+  String get fp_new_pw => "New password";
+  String get fp_reset => "Reset password";
+  String get fp_sent_help => "We sent a reset code to";
+  String get fp_done => "Done";
+  String get fp_success => "Password updated. Sign in with your new password.";
+  String get dial_title => "Country code";
+  String get dial_search => "Search country";
+  String get dob_title => "Date of birth";
+  String get dob_confirm => "Confirm";
+  String get dob_select => "Select a date";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1118,6 +1145,58 @@ class Strings implements i69n.I69nMessageBundle {
         return acc_not_signed_in;
       case 'pd_change_photo':
         return pd_change_photo;
+      case 'em_pw_title':
+        return em_pw_title;
+      case 'em_pw_help':
+        return em_pw_help;
+      case 'pw_label':
+        return pw_label;
+      case 'pw_ph':
+        return pw_ph;
+      case 'pw_show':
+        return pw_show;
+      case 'pw_hide':
+        return pw_hide;
+      case 'forgot_pw':
+        return forgot_pw;
+      case 'use_code':
+        return use_code;
+      case 'use_password':
+        return use_password;
+      case 'pw_signin':
+        return pw_signin;
+      case 'pw_min':
+        return pw_min;
+      case 'pw_invalid_creds':
+        return pw_invalid_creds;
+      case 'fp_title':
+        return fp_title;
+      case 'fp_help':
+        return fp_help;
+      case 'fp_send':
+        return fp_send;
+      case 'fp_code_label':
+        return fp_code_label;
+      case 'fp_new_pw':
+        return fp_new_pw;
+      case 'fp_reset':
+        return fp_reset;
+      case 'fp_sent_help':
+        return fp_sent_help;
+      case 'fp_done':
+        return fp_done;
+      case 'fp_success':
+        return fp_success;
+      case 'dial_title':
+        return dial_title;
+      case 'dial_search':
+        return dial_search;
+      case 'dob_title':
+        return dob_title;
+      case 'dob_confirm':
+        return dob_confirm;
+      case 'dob_select':
+        return dob_select;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

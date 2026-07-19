@@ -140,5 +140,29 @@ void main() {
       final after = await account.getSelf();
       expect(after!.preferredLanguage, 'en');
     }, skip: skip);
+
+    test('password: set (authenticated) then sign in', () async {
+      const pw = 'E2ePassw0rd!';
+      // Establish a session, set a password on it.
+      final v = await auth.verifyOtp(VerifyOtpRequest(
+        email: email,
+        code: otp,
+        deviceId: deviceId,
+        deviceLabel: deviceLabel,
+      ));
+      bearer(v.accessToken);
+      await auth.setPassword(const SetPasswordRequest(password: pw));
+      bearer(null);
+
+      // Sign in with email + password → fresh tokens.
+      final signedIn = await auth.passwordSignIn(PasswordSignInRequest(
+        email: email,
+        password: pw,
+        deviceId: deviceId,
+        deviceLabel: deviceLabel,
+      ));
+      expect(signedIn.accessToken, isNotEmpty);
+      expect(signedIn.userId, isNotEmpty);
+    }, skip: skip);
   });
 }
