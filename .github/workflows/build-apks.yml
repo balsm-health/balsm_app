@@ -44,7 +44,7 @@ jobs:
       # runner if missing. Release uses the debug signing fallback until a prod
       # keystore is wired.
       - name: Build APK (release)
-        run: scripts/flutter.sh apk ${{ matrix.brand }} ${{ matrix.env }}
+        run: dart run tool/build.dart apk ${{ matrix.brand }} ${{ matrix.env }}
 
       - uses: actions/upload-artifact@v4
         with:

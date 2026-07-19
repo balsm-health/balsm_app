@@ -18,23 +18,23 @@ scripts:
     run: melos exec --concurrency=4 -- "flutter test"
   e2e:
     run: melos exec --scope=app -- "flutter test integration_test"
-  # run/build wiring lives in scripts/flutter.sh (single source of truth,
+  # run/build wiring lives in tool/build.dart (single typed source of truth,
   # shared with VS Code tasks + CI). Args: <action> <brand> <env>.
   run:dev:
-    run: scripts/flutter.sh run balsm dev
+    run: dart run tool/build.dart run balsm dev
   run:patient:
-    run: scripts/flutter.sh run balsm dev
+    run: dart run tool/build.dart run balsm dev
   run:staging:
-    run: scripts/flutter.sh run balsm staging
+    run: dart run tool/build.dart run balsm staging
   run:prod:
-    run: scripts/flutter.sh run balsm prod
+    run: dart run tool/build.dart run balsm prod
   build:android:dev:
-    run: scripts/flutter.sh apk balsm dev
+    run: dart run tool/build.dart apk balsm dev
   build:android:staging:
-    run: scripts/flutter.sh apk balsm staging
+    run: dart run tool/build.dart apk balsm staging
   build:android:prod:
-    run: scripts/flutter.sh apk balsm prod
+    run: dart run tool/build.dart apk balsm prod
   build:web:dev:
-    run: scripts/flutter.sh web balsm dev
+    run: dart run tool/build.dart web balsm dev
   build:web:prod:
-    run: scripts/flutter.sh web balsm prod
+    run: dart run tool/build.dart web balsm prod

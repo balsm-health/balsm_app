@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Run all patient-app UI tests: widget tests + the integration_test UI walk.
-# Delegates to scripts/flutter.sh (single source of truth for the wiring).
+# Delegates to tool/build.dart (single source of truth for the wiring); this
+# wrapper only adds booted-simulator auto-detection.
 # Usage: scripts/ui_test.sh [device-id]
-#   device-id defaults to a booted iOS simulator if one is found.
 set -euo pipefail
-HERE="$(cd "$(dirname "$0")" && pwd)"
+cd "$(cd "$(dirname "$0")/.." && pwd)"   # repo root (so tool/build.dart resolves)
 
 DEVICE="${1:-}"
 if [ -z "$DEVICE" ]; then
@@ -12,13 +12,13 @@ if [ -z "$DEVICE" ]; then
 fi
 
 echo "▶ Widget tests"
-"$HERE/flutter.sh" test
+dart run tool/build.dart test
 
 echo "▶ Integration tests${DEVICE:+ (device: $DEVICE)}"
 if [ -n "$DEVICE" ]; then
-  "$HERE/flutter.sh" integration balsm dev -d "$DEVICE"
+  dart run tool/build.dart integration balsm dev -d "$DEVICE"
 else
-  "$HERE/flutter.sh" integration balsm dev
+  dart run tool/build.dart integration balsm dev
 fi
 
 echo "✓ All UI tests passed"

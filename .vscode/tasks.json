@@ -4,8 +4,8 @@
     {
       "label": "Flutter: widget tests",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flutter.sh",
-      "args": ["test"],
+      "command": "dart",
+      "args": ["run", "tool/build.dart", "test"],
       "group": { "kind": "test", "isDefault": true },
       "problemMatcher": []
     },
@@ -19,24 +19,24 @@
     {
       "label": "Flutter: build APK (balsm · dev)",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flutter.sh",
-      "args": ["apk", "balsm", "dev"],
+      "command": "dart",
+      "args": ["run", "tool/build.dart", "apk", "balsm", "dev"],
       "group": "build",
       "problemMatcher": []
     },
     {
       "label": "Flutter: build APK (balsm · prod)",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flutter.sh",
-      "args": ["apk", "balsm", "prod"],
+      "command": "dart",
+      "args": ["run", "tool/build.dart", "apk", "balsm", "prod"],
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": []
     },
     {
       "label": "Flutter: build web (balsm · prod)",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flutter.sh",
-      "args": ["web", "balsm", "prod"],
+      "command": "dart",
+      "args": ["run", "tool/build.dart", "web", "balsm", "prod"],
       "group": "build",
       "problemMatcher": []
     }
