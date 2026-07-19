@@ -125,11 +125,12 @@ class ProfileScreen extends ConsumerWidget {
           onTap: () => _pushDeletionRouted(context),
         ),
         // Dev-only API server switcher (Local / Staging / Prod / custom). Gated
-        // on serverSelectorEnabled (dev flavor), so it never renders in prod.
+        // on serverSwitchingEnabled (dev/staging), so it never renders in prod.
+        // (Prod can still reach the read-only Dev Config via the shake gesture.)
         // The choice persists (reconfigure) and survives relaunch (init() in
         // main). ServerSelectorScreen owns its Scaffold + Navigator.pop, so the
         // plain _pushGovernance push is sufficient.
-        if (FlavorConfig.current.serverSelectorEnabled)
+        if (FlavorConfig.current.serverSwitchingEnabled)
           _ListRow(
             icon: LucideIcons.server,
             label: 'Switch server (dev)',

@@ -32,7 +32,10 @@ class FlavorConfig {
   final String? sentryDsn;
   final String appName;
   final String appNameSuffix;
-  final bool serverSelectorEnabled;
+  /// Whether the Dev Config screen may REPOINT the API server (dev + staging).
+  /// The screen itself is reachable in every flavor (shake gesture) — in prod it
+  /// renders read-only diagnostics with switching disabled.
+  final bool serverSwitchingEnabled;
 
   const FlavorConfig({
     required this.brand,
@@ -41,7 +44,7 @@ class FlavorConfig {
     this.sentryDsn,
     required this.appName,
     required this.appNameSuffix,
-    required this.serverSelectorEnabled,
+    required this.serverSwitchingEnabled,
   });
 
   static FlavorConfig? _current;
@@ -114,7 +117,7 @@ class FlavorConfig {
       sentryDsn: sentryDsn.isEmpty ? null : sentryDsn,
       appName: '$base$envSuffix',
       appNameSuffix: envSuffix,
-      serverSelectorEnabled: flavor == Flavor.dev,
+      serverSwitchingEnabled: flavor == Flavor.dev || flavor == Flavor.staging,
     );
   }
 }

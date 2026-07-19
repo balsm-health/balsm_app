@@ -11,6 +11,7 @@ import 'screens/home_screen.dart';
 import 'screens/meds_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/auth_flow.dart';
+import 'dev/shake_to_dev_config.dart';
 
 /// Root of the patient app prototype. Owns [PatientAppState] and renders the
 /// auth flow or the main tabbed app depending on `route`.
@@ -80,7 +81,8 @@ class _PatientAppState extends State<PatientApp> {
               data: mq.copyWith(
                 textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3),
               ),
-              child: child!,
+              // Shake anywhere → Dev Config (read-only in prod).
+              child: ShakeToDevConfig(child: child!),
             );
           },
           home: Directionality(
