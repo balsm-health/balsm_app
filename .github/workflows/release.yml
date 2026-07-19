@@ -12,7 +12,7 @@ on:
 
 env:
   FLUTTER_VERSION: '3.41.9'
-  ENTRY: lib/main_patient.dart
+  ENTRY: lib/brands/balsm/main_balsm.dart
 
 jobs:
   setup:

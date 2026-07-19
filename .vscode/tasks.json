@@ -11,19 +11,6 @@
       "problemMatcher": []
     },
     {
-      "label": "Flutter: UI driver tests",
-      "type": "shell",
-      "command": "flutter",
-      "args": [
-        "drive",
-        "--target=test_driver/main_patient_driver.dart",
-        "--driver=test_driver/main_patient_driver_test.dart"
-      ],
-      "options": { "cwd": "${workspaceFolder}/app" },
-      "group": "test",
-      "problemMatcher": []
-    },
-    {
       "label": "Flutter: all UI tests",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/ui_test.sh",

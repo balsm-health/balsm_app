@@ -9,7 +9,7 @@ i18n, sample data, and design kit so it can be iterated on independently.
 ## Run
 
 ```
-flutter run -t lib/main_patient.dart --flavor dev --dart-define-from-file=env/dev.json -d <device>
+flutter run -t lib/brands/balsm/main_balsm.dart --flavor dev --dart-define-from-file=env/dev.json -d <device>
 ```
 
 or `melos run run:patient`, or the **"Balsm Patient App (design)"** VS Code launch config.

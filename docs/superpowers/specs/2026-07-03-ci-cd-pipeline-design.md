@@ -26,7 +26,7 @@ artifacts to a GitHub Release.
 | `v*-beta` | beta | `env/balsm/staging.json` | `beta-testers` | prerelease |
 | `v*` (no suffix) | production | `env/balsm/prod.json` | `production` | full release |
 
-- App: **balsm** patient flavor, entry `lib/main_patient.dart`. `balsm_pro` is
+- App: **balsm** patient flavor, entry `lib/brands/balsm/main_balsm.dart`. `balsm_pro` is
   out of scope.
 - `build-name` = tag minus leading `v` and any `-alpha`/`-beta` suffix.
 - `build-number` = `github.run_number` (monotonic; required by Firebase/stores).

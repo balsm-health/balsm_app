@@ -13,9 +13,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geofence_block/geofence_block.dart'
     show ReadDeniedCountriesRepository, deniedCountriesRepositoryProvider;
 import 'package:profile/profile.dart' show EmergencyContact, profileDaoProvider;
-import 'patient_app/app_state.dart';
-import 'patient_app/prefs.dart';
-import 'patient_app/shell.dart';
+import 'package:app/patient_app/app_state.dart';
+import 'package:app/patient_app/prefs.dart';
+import 'package:app/patient_app/shell.dart';
 
 /// In-session holder for the signed-in user id. `currentUserIdProvider` reads
 /// this, so an in-session sign-in / sign-out is reflected immediately (the
@@ -25,7 +25,7 @@ final _sessionUserIdProvider = StateProvider<UserId?>((ref) => null);
 
 /// Entrypoint for the claude.ai/design "Patient App" Flutter port.
 /// Restores the persisted session so a signed-in user skips the auth flow.
-/// Run: flutter run -t lib/main_patient.dart --flavor dev \
+/// Run: flutter run -t lib/brands/balsm/main_balsm.dart --flavor balsm \
 ///        --dart-define-from-file=env/balsm/dev.json \
 ///        --dart-define-from-file=env/shared.json
 Future<void> main() async {
