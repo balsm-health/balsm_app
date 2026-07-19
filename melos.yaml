@@ -18,39 +18,23 @@ scripts:
     run: melos exec --concurrency=4 -- "flutter test"
   e2e:
     run: melos exec --scope=app -- "flutter test integration_test"
+  # run/build wiring lives in scripts/flutter.sh (single source of truth,
+  # shared with VS Code tasks + CI). Args: <action> <brand> <env>.
   run:dev:
-    run: flutter run -t lib/brands/balsm/main_balsm.dart --flavor dev --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh run balsm dev
   run:patient:
-    run: flutter run -t lib/brands/balsm/main_balsm.dart --flavor dev --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh run balsm dev
   run:staging:
-    run: flutter run -t lib/brands/balsm/main_balsm.dart --flavor staging --dart-define-from-file=env/balsm/staging.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh run balsm staging
   run:prod:
-    run: flutter run -t lib/brands/balsm/main_balsm.dart --flavor prod --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh run balsm prod
   build:android:dev:
-    run: flutter build apk --flavor dev -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh apk balsm dev
   build:android:staging:
-    run: flutter build apk --flavor staging -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/staging.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh apk balsm staging
   build:android:prod:
-    run: flutter build apk --flavor prod -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh apk balsm prod
   build:web:dev:
-    run: flutter build web --flavor dev -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/dev.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh web balsm dev
   build:web:prod:
-    run: flutter build web --flavor prod -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
-    exec:
-      scope: app
+    run: scripts/flutter.sh web balsm prod

@@ -89,8 +89,7 @@ jobs:
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Build web (release, prod)
-        working-directory: app
-        run: flutter build web --release -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
+        run: scripts/flutter.sh web balsm prod
       - uses: actions/upload-artifact@v4
         with:
           name: web-prod
@@ -118,8 +117,7 @@ jobs:
       # runner if missing. Release uses the debug signing fallback until a prod
       # keystore is wired (see SIGNING below).
       - name: Build APK (release, balsm · prod)
-        working-directory: app
-        run: flutter build apk --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
+        run: scripts/flutter.sh apk balsm prod
       - uses: actions/upload-artifact@v4
         with:
           name: android-prod-apk
@@ -140,8 +138,7 @@ jobs:
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
       - name: Build iOS (release, no codesign, balsm · prod)
-        working-directory: app
-        run: flutter build ios --release --no-codesign --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/prod.json --dart-define-from-file=env/shared.json
+        run: scripts/flutter.sh ios balsm prod
       - uses: actions/upload-artifact@v4
         with:
           name: ios-prod-app

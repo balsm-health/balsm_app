@@ -4,9 +4,8 @@
     {
       "label": "Flutter: widget tests",
       "type": "shell",
-      "command": "flutter",
+      "command": "${workspaceFolder}/scripts/flutter.sh",
       "args": ["test"],
-      "options": { "cwd": "${workspaceFolder}/app" },
       "group": { "kind": "test", "isDefault": true },
       "problemMatcher": []
     },
@@ -15,6 +14,30 @@
       "type": "shell",
       "command": "${workspaceFolder}/scripts/ui_test.sh",
       "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: build APK (balsm · dev)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/flutter.sh",
+      "args": ["apk", "balsm", "dev"],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: build APK (balsm · prod)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/flutter.sh",
+      "args": ["apk", "balsm", "prod"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: build web (balsm · prod)",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/flutter.sh",
+      "args": ["web", "balsm", "prod"],
+      "group": "build",
       "problemMatcher": []
     }
   ]

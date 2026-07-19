@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Run all patient-app UI tests: widget tests + the integration_test UI walk.
+# Delegates to scripts/flutter.sh (single source of truth for the wiring).
 # Usage: scripts/ui_test.sh [device-id]
 #   device-id defaults to a booted iOS simulator if one is found.
 set -euo pipefail
-
-cd "$(dirname "$0")/../app"
+HERE="$(cd "$(dirname "$0")" && pwd)"
 
 DEVICE="${1:-}"
 if [ -z "$DEVICE" ]; then
@@ -12,11 +12,13 @@ if [ -z "$DEVICE" ]; then
 fi
 
 echo "▶ Widget tests"
-flutter test
+"$HERE/flutter.sh" test
 
 echo "▶ Integration tests${DEVICE:+ (device: $DEVICE)}"
-INT_ARGS=(integration_test --flavor balsm)
-[ -n "$DEVICE" ] && INT_ARGS+=(-d "$DEVICE")
-flutter test "${INT_ARGS[@]}"
+if [ -n "$DEVICE" ]; then
+  "$HERE/flutter.sh" integration balsm dev -d "$DEVICE"
+else
+  "$HERE/flutter.sh" integration balsm dev
+fi
 
 echo "✓ All UI tests passed"
