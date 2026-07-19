@@ -316,9 +316,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   String emailAuth = 'password'; // email sub-mode: 'password' | 'code'
   final ctrl = TextEditingController();
   final pwCtrl = TextEditingController();
-  final dobCtrl = TextEditingController();
   bool _showPw = false;
-  DateTime? _dob;
   String? _error;
   bool _submitting = false;
   // Selected phone dial-code country; defaults to the home country (EG).
@@ -333,7 +331,6 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   void dispose() {
     ctrl.dispose();
     pwCtrl.dispose();
-    dobCtrl.dispose();
     super.dispose();
   }
 
@@ -342,31 +339,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     final contactOk = email
         ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)
         : v.replaceAll(RegExp(r'\D'), '').length >= 10;
-    // Password sign-in: email + password (>=8). No DOB — the account already
-    // passed the age gate at sign-up.
-    if (isPw) return contactOk && pwCtrl.text.length >= 8;
-    // OTP / sign-up path: DOB is REQUIRED (fail-closed age gate).
-    return contactOk && _dob != null;
-  }
-
-  String _fmtDob(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}';
-
-  Future<void> _pickDob() async {
-    final s = AppScope.of(context);
-    final picked = await showModalBottomSheet<DateTime>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C2B2B25),
-      isScrollControlled: true,
-      builder: (_) => _DobCalendarSheet(initial: _dob, s: s),
-    );
-    if (picked == null || !mounted) return;
-    setState(() {
-      _dob = picked;
-      dobCtrl.text = _fmtDob(picked);
-      _error = null;
-    });
+    // Password sign-in also needs a password (>=8). The one-time-code path
+    // needs only a valid contact — the age gate runs at profile setup.
+    return isPw ? contactOk && pwCtrl.text.length >= 8 : contactOk;
   }
 
   Future<void> _pickDialCode(PatientAppState s) async {
@@ -430,26 +405,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       return;
     }
 
-    // Fail-closed gate #1 — DOB missing/invalid → do NOT proceed.
-    final dob = _dob;
-    if (dob == null) {
-      setState(() => _error = s.rtl
-          ? 'من فضلك اختر تاريخ ميلاد صالح.'
-          : 'Please choose a valid date of birth.');
-      return;
-    }
-
-    // Fail-closed gate #2 — age gate (PDPL / G3). Under-18 → soft-block screen,
-    // no OTP, no session. AgeGateUseCase.validate() is synchronous.
-    final ageResult = ref.read(ageGateUseCaseProvider).validate(dob);
-    if (ageResult.isFailure) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const _UnderEighteenScreen(),
-        ),
-      );
-      return;
-    }
+    // One-time-code path (email or phone). No age gate here — it runs at
+    // profile setup for a NEW account (design-aligned): a returning user
+    // signing in with a code isn't asked for DOB.
 
     // Phone OTP is not backed by the real API (email + Google/Apple only).
     if (!email) {
@@ -577,28 +535,6 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                           size: 18, color: T.fg3),
                     ),
                     onChanged: (_) => setState(() {})),
-              ],
-
-              // OTP / sign-up path → date of birth (REQUIRED, fail-closed age gate).
-              if (!isPw) ...[
-                const SizedBox(height: 20),
-                _Field(
-                  label: s.strings.pf_dob,
-                  ar: s.rtl,
-                  child: GestureDetector(
-                    onTap: _submitting ? null : _pickDob,
-                    child: AbsorbPointer(
-                      child: _Input(
-                          controller: dobCtrl,
-                          hint: 'DD / MM / YYYY',
-                          mono: true,
-                          forceLtr: true,
-                          accent: s.accent,
-                          prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
-                          suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4)),
-                    ),
-                  ),
-                ),
               ],
 
               // Email: switch between password sign-in and one-time-code sign-up.
@@ -734,10 +670,14 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
     result.fold(
       (signInResult) {
         switch (signInResult) {
-          case SignInSuccess():
-            // Session persisted by the use-case — but do NOT grant access yet.
-            // Interpose the fail-closed disclosure gate before reaching 'app'.
-            unawaited(enterAfterSignIn(context, ref, s));
+          case SignInSuccess(:final isNewUser):
+            // New account → profile setup (name/handle/DOB + the fail-closed
+            // age gate). Returning user → straight to the disclosure gate.
+            if (isNewUser) {
+              s.go('profile');
+            } else {
+              unawaited(enterAfterSignIn(context, ref, s));
+            }
           case SignInLockout(:final session):
             final secsLeft =
                 session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
@@ -1148,17 +1088,18 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
 }
 
 // ── Profile setup ────────────────────────────────────────────
-class _ProfileSetupScreen extends StatefulWidget {
+class _ProfileSetupScreen extends ConsumerStatefulWidget {
   const _ProfileSetupScreen();
   @override
-  State<_ProfileSetupScreen> createState() => _ProfileSetupScreenState();
+  ConsumerState<_ProfileSetupScreen> createState() => _ProfileSetupScreenState();
 }
 
-class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
+class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   final first = TextEditingController();
   final last = TextEditingController();
   final handle = TextEditingController();
   final dob = TextEditingController();
+  DateTime? _dobDate;
   String gender = 'female';
   String unStatus = 'idle'; // idle | checking | available | taken | invalid
   Timer? debounce;
@@ -1195,7 +1136,46 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
         const Duration(milliseconds: 700), () => setState(() => unStatus = _taken.contains(v) ? 'taken' : 'available'));
   }
 
-  bool get ok => '${first.text} ${last.text}'.trim().length > 1 && (unStatus == 'available' || unStatus == 'idle');
+  bool get ok =>
+      '${first.text} ${last.text}'.trim().length > 1 &&
+      _dobDate != null &&
+      (unStatus == 'available' || unStatus == 'idle');
+
+  String _fmtDob(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}';
+
+  Future<void> _pickDob() async {
+    final s = AppScope.of(context);
+    final picked = await showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x5C2B2B25),
+      isScrollControlled: true,
+      builder: (_) => _DobCalendarSheet(initial: _dobDate, s: s),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _dobDate = picked;
+      dob.text = _fmtDob(picked);
+    });
+  }
+
+  /// Design-aligned age gate: it runs HERE, on a NEW account, not before the
+  /// OTP. Under-18 → soft-block screen; otherwise complete sign-up through the
+  /// shared fail-closed disclosure gate.
+  void _createAccount() {
+    final s = AppScope.of(context);
+    final d = _dobDate;
+    if (d == null) return;
+    final ageResult = ref.read(ageGateUseCaseProvider).validate(d);
+    if (ageResult.isFailure) {
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const _UnderEighteenScreen(),
+      ));
+      return;
+    }
+    unawaited(enterAfterSignIn(context, ref, s));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1243,15 +1223,19 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
               _Field(
                   label: s.strings.pf_dob,
                   ar: s.rtl,
-                  child: _Input(
-                      controller: dob,
-                      hint: 'DD / MM / YYYY',
-                      keyboard: TextInputType.number,
-                      mono: true,
-                      forceLtr: true,
-                      accent: s.accent,
-                      prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
-                      suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4))),
+                  child: GestureDetector(
+                    onTap: _pickDob,
+                    child: AbsorbPointer(
+                      child: _Input(
+                          controller: dob,
+                          hint: 'DD / MM / YYYY',
+                          mono: true,
+                          forceLtr: true,
+                          accent: s.accent,
+                          prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
+                          suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4)),
+                    ),
+                  )),
               const SizedBox(height: 16),
               _Field(
                   label: s.strings.pf_gender,
@@ -1275,7 +1259,7 @@ class _ProfileSetupScreenState extends State<_ProfileSetupScreen> {
                       block: true,
                       accent: s.accent,
                       ar: s.rtl,
-                      onTap: ok ? () => s.go('app') : null)),
+                      onTap: ok ? _createAccount : null)),
               const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),

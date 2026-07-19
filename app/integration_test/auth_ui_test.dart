@@ -48,15 +48,16 @@ void main() {
     expect(find.text('Use a one-time code instead'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget); // primary button label
 
-    // 3. Switch to the one-time-code path → DOB field appears (fail-closed age
-    //    gate), password field goes away. The toggle sits below the fold, so
-    //    scroll it into view before tapping.
+    // 3. Switch to the one-time-code path → password field goes away, and DOB
+    //    is NOT asked here (design-aligned: the age gate + DOB live on profile
+    //    setup for new accounts). The toggle sits below the fold, so scroll it
+    //    into view before tapping.
     await tester.ensureVisible(find.text('Use a one-time code instead'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Use a one-time code instead'));
     await tester.pumpAndSettle();
-    expect(find.text('Date of birth'), findsOneWidget);
     expect(find.text('Use a password instead'), findsOneWidget);
+    expect(find.text('Date of birth'), findsNothing);
   });
 
   testWidgets('welcome shows the language pill and toggles AR ⇄ EN',

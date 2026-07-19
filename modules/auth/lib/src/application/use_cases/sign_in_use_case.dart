@@ -17,7 +17,12 @@ sealed class SignInResult {
 }
 
 class SignInSuccess extends SignInResult {
-  const SignInSuccess();
+  const SignInSuccess({this.isNewUser = false});
+
+  /// True when this sign-in created the account (first OTP verify / social
+  /// sign-up). The UI routes new users to profile setup (where the age gate
+  /// runs); returning users skip it.
+  final bool isNewUser;
 }
 
 class SignInLockout extends SignInResult {
@@ -83,7 +88,7 @@ class SignInUseCase {
         provider: 'email',
       ));
 
-      return AppResult.success(const SignInSuccess());
+      return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') {
         return _handleLockout(e, email);
@@ -121,7 +126,7 @@ class SignInUseCase {
         provider: 'email',
       ));
 
-      return AppResult.success(const SignInSuccess());
+      return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
       return AppResult.failure(NetworkFailure(e.message));
@@ -171,7 +176,7 @@ class SignInUseCase {
         provider: 'google',
       ));
 
-      return AppResult.success(const SignInSuccess());
+      return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
       return AppResult.failure(NetworkFailure(e.message));
@@ -205,7 +210,7 @@ class SignInUseCase {
         provider: 'apple',
       ));
 
-      return AppResult.success(const SignInSuccess());
+      return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
       if (e.code == 'account_locked') return _handleLockout(e, email);
       return AppResult.failure(NetworkFailure(e.message));
