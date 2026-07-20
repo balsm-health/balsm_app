@@ -7,6 +7,7 @@ import 'package:emergency_card/emergency_card.dart'
         EmergencyCardSnapshot,
         EmergencySnapshotReader,
         emergencySnapshotReaderProvider;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -35,6 +36,14 @@ Future<void> main() async {
   // Telemetry: crash reporting + user-action analytics via the AnalyticsLogger
   // facade (Sentry backend). See docs/superpowers/specs/2026-07-03-telemetry-*.
   await initSentry();
+
+  // Dev Config log capture: hook debugPrint + framework/async errors into the
+  // in-memory ring buffer surfaced by the Dev Config Logs tab. Installed AFTER
+  // Sentry so our handler chains on top (Sentry still receives every error).
+  // Gated to dev/staging — never hold app logs in prod memory.
+  if (FlavorConfig.current.serverSwitchingEnabled) {
+    DevLogBuffer.instance.install();
+  }
   // Global KV store (shared_preferences behind the interface) — the only
   // place that constructs it; everything else sees KeyValueDataSource.
   final globalKV = await SharedPrefsKVDataSource.create();
@@ -47,7 +56,14 @@ Future<void> main() async {
   final userId = await secureStorage.read(key: 'balsm.user_id');
 
   final container = ProviderContainer(overrides: [
-    analyticsLoggerProvider.overrideWithValue(const SentryAnalyticsLogger()),
+    // Fan out telemetry to a list of providers: Sentry always, plus a console
+    // sink (scrubbed) added only in debug builds.
+    analyticsLoggerProvider.overrideWithValue(
+      const MultiAnalyticsLogger([
+        SentryAnalyticsLogger(),
+        if (kDebugMode) ConsoleAnalyticsLogger(),
+      ]),
+    ),
     // Bind the account module's adapter into core's cross-module read port so
     // other modules (e.g. home) read the account summary without importing it.
     readAccountRepositoryProvider.overrideWith(buildAccountAdapter),

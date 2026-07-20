@@ -58,6 +58,8 @@ export 'src/telemetry/analytics_logger.dart';
 export 'src/telemetry/allowlist.dart';
 export 'src/telemetry/telemetry_scrubber.dart';
 export 'src/telemetry/sentry_analytics_logger.dart';
+export 'src/telemetry/console_analytics_logger.dart';
+export 'src/telemetry/multi_analytics_logger.dart';
 export 'src/telemetry/event_bus_forwarder.dart';
 export 'src/telemetry/analytics_route_observer.dart';
 export 'src/telemetry/providers.dart';
@@ -94,6 +96,7 @@ export 'src/backup/drive_backup_adapter.dart';
 // Dev-only: compile-time excluded in staging/prod via --dart-define FLAVOR.
 // ignore: invalid_export_of_internal_element
 export 'src/dev/server_selector_screen.dart' if (dart.library.io) 'src/dev/server_selector_screen.dart';
+export 'src/dev/dev_log_buffer.dart' show DevLogBuffer;
 
 // Test kit: gated by DEV environment flag.
 export 'src/test_kit/fakes.dart' if (dart.library.html) 'src/test_kit/fakes.dart';
