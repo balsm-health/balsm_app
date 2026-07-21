@@ -16,3 +16,36 @@ class ChangeCountryRequest {
   final String countryCode;
   Map<String, dynamic> toJson() => {'country_code': countryCode};
 }
+
+/// PATCH /account/profile. A null field is omitted from the body, so the server
+/// leaves it unchanged; pass an empty string to clear a field. `dateOfBirth` is
+/// `yyyy-MM-dd`. `dateOfBirth` + `nationalId` are PHI/PII (encrypted at rest).
+class UpdateProfileRequest {
+  const UpdateProfileRequest({
+    this.displayName,
+    this.bio,
+    this.gender,
+    this.nationality,
+    this.phone,
+    this.dateOfBirth,
+    this.nationalId,
+  });
+
+  final String? displayName;
+  final String? bio;
+  final String? gender;
+  final String? nationality;
+  final String? phone;
+  final String? dateOfBirth;
+  final String? nationalId;
+
+  Map<String, dynamic> toJson() => {
+        if (displayName != null) 'display_name': displayName,
+        if (bio != null) 'bio': bio,
+        if (gender != null) 'gender': gender,
+        if (nationality != null) 'nationality': nationality,
+        if (phone != null) 'phone': phone,
+        if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
+        if (nationalId != null) 'national_id': nationalId,
+      };
+}

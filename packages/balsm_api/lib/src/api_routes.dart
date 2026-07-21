@@ -34,6 +34,7 @@ class ApiRoutes {
   static const account_handle_check = '$_account/handle/check';
   static const account_language = '$_account/language';
   static const account_country = '$_account/country';
+  static const account_profile = '$_account/profile';
 
   // ── Emergency QR ──────────────────────────────────────────────────────────
   static const _emergency_qr = '/emergency-qr';

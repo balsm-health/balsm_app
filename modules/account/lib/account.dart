@@ -7,6 +7,7 @@
 // Application
 export 'src/application/ports/denied_countries_port.dart';
 export 'src/application/use_cases/claim_handle_use_case.dart';
+export 'src/application/use_cases/account_profile_use_case.dart';
 export 'src/application/use_cases/change_country_use_case.dart';
 export 'src/application/use_cases/change_language_use_case.dart';
 

@@ -38,6 +38,17 @@ class DioAccountApi implements AccountApi {
   }
 
   @override
+  Future<void> updateProfile(UpdateProfileRequest request,
+      {CancelToken? cancelToken}) async {
+    final res = await _net.patch(
+      ApiRoutes.account_profile,
+      data: request.toJson(),
+      cancelToken: cancelToken,
+    );
+    unwrapEnvelope(res);
+  }
+
+  @override
   Future<void> changeLanguage(ChangeLanguageRequest request,
       {CancelToken? cancelToken}) async {
     final res = await _net.patch(

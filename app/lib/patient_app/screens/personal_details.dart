@@ -6,7 +6,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:core/core.dart'
     show currentUserIdProvider, accountSummaryProvider, accountApiProvider;
-import 'package:account/account.dart' show claimHandleUseCaseProvider;
+import 'package:account/account.dart'
+    show
+        claimHandleUseCaseProvider,
+        accountProfileUseCaseProvider,
+        ProfileDetails,
+        UpdateProfileInput;
 import 'package:emergency_card/emergency_card.dart'
     show
         EmergencyCardSnapshot,
@@ -58,6 +63,15 @@ final _emergencySnapshotProvider =
   return ref.watch(emergencySnapshotReaderProvider).readSnapshot();
 });
 
+/// The signed-in user's full editable profile (PHI-carrying: DOB, national ID).
+/// Screen-local — the PHI never enters the app-wide AccountSummary. Re-fetched
+/// after a save so the head + fields reflect the server.
+final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return null;
+  return ref.watch(accountProfileUseCaseProvider).load();
+});
+
 /// TTL choices offered before minting the emergency QR token (FR-017).
 const _emergencyTtlOptions = <({String en, String ar, int seconds})>[
   (en: '1h', ar: 'ساعة', seconds: 3600),
@@ -75,24 +89,33 @@ class PersonalDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
-  // Real account handle, seeded from accountSummaryProvider on first load —
-  // no more prototype sample identity. Display name is read-only (the server
-  // exposes no update endpoint), so it lives in a plain field, not a controller.
+  // Profile fields — all seeded ONCE from the real /account/self on first load
+  // (no prototype sample identity). display name, phone, national ID, etc. are
+  // now editable and persisted via PATCH /account/profile.
   final handle = TextEditingController();
+  // Server stores a single display_name; the screen edits it as first + last
+  // (design layout) and joins/splits on save/load.
+  final _firstCtrl = TextEditingController();
+  final _lastCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _nidCtrl = TextEditingController(); // national ID (PHI/PII)
+  final _natCtrl = TextEditingController(); // nationality
+  String _gender = ''; // '' | 'female' | 'male' | 'other'
+  DateTime? _dob; // PHI
+
   // Emergency-contact fields feed the real AddEmergencyContactUseCase, so
   // they start empty (an "add new contact" form) rather than seeded sample PHI.
   final emName = TextEditingController();
   final emRel = TextEditingController();
   final emPhone = TextEditingController();
+
   bool saved = false;
   bool _saving = false;
+  bool _loaded = false; // controllers seeded from the profile fetch
 
-  // Handle availability — validated against the real /handle/check endpoint
-  // before a claim. `_origHandle` is the currently-claimed handle; an unchanged
-  // handle is 'idle' (nothing to save).
-  bool _seeded = false;
+  // Handle availability — validated against the real /handle/check endpoint.
+  // `_origHandle` is the currently-claimed handle; an unchanged handle is 'idle'.
   String _origHandle = '';
-  String _displayName = '';
   // Backend handle format: 3–30 chars, a–z 0–9 _ or . (mirrors kHandleFormat).
   static final _handleFormat = RegExp(r'^[a-z0-9_.]{3,30}$');
   String unStatus = 'idle'; // idle | checking | available | taken | invalid
@@ -100,8 +123,15 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
   PatientAppState get s => widget.s;
 
-  /// Only an unchanged ('idle') or verified-'available' handle may be claimed.
-  bool get _canSave => unStatus == 'available';
+  /// Block save only while the handle is mid-check or resolved bad — other
+  /// profile fields are always saveable. A changed+available handle also claims.
+  bool get _canSave => unStatus == 'idle' || unStatus == 'available';
+
+  String? _fmtDob() => _dob == null
+      ? null
+      : '${_dob!.year.toString().padLeft(4, '0')}-'
+          '${_dob!.month.toString().padLeft(2, '0')}-'
+          '${_dob!.day.toString().padLeft(2, '0')}';
 
   void _setHandle(String raw) {
     final v = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_.]'), '');
@@ -134,35 +164,65 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   void dispose() {
     _debounce?.cancel();
     handle.dispose();
+    _firstCtrl.dispose();
+    _lastCtrl.dispose();
+    _phoneCtrl.dispose();
+    _nidCtrl.dispose();
+    _natCtrl.dispose();
     emName.dispose();
     emRel.dispose();
     emPhone.dispose();
     super.dispose();
   }
 
-  /// Claims the new handle via the real ClaimHandleUseCase, then refreshes the
-  /// account summary so the change propagates app-wide.
+  void _snack(String msg) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(msg)));
+
+  /// Persists the profile via PATCH /account/profile, then — if the handle was
+  /// changed and verified available — claims it. Refreshes both the screen-local
+  /// profile and the app-wide account summary so every screen reflects the edit.
   Future<void> _save() async {
-    if (!_canSave || _saving) return;
+    // Never submit before the profile has loaded — empty controllers would
+    // clear the user's data server-side.
+    if (!_canSave || _saving || !_loaded) return;
     setState(() => _saving = true);
-    final result = await ref.read(claimHandleUseCaseProvider).execute(handle.text.trim());
+
+    // 1) Profile fields (display name, bio, gender, nationality, phone, DOB,
+    //    national ID). Empty string clears a field; DOB is 18+ gated server-side.
+    final profileResult =
+        await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
+              displayName: '${_firstCtrl.text.trim()} ${_lastCtrl.text.trim()}'.trim(),
+              gender: _gender,
+              nationality: _natCtrl.text.trim(),
+              phone: _phoneCtrl.text.trim(),
+              dateOfBirth: _fmtDob(),
+              nationalId: _nidCtrl.text.trim(),
+            ));
     if (!mounted) return;
-    setState(() => _saving = false);
-    result.fold(
-      (_) {
-        _origHandle = handle.text.trim();
-        ref.invalidate(accountSummaryProvider);
-        setState(() { unStatus = 'idle'; saved = true; });
-        Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => saved = false); });
-      },
-      (failure) {
-        setState(() {
-          unStatus = 'taken';
-        });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(failure.message)));
-      },
-    );
+    if (profileResult.isFailure) {
+      setState(() => _saving = false);
+      _snack(profileResult.error.message);
+      return;
+    }
+
+    // 2) Handle claim, only when the handle actually changed and is available.
+    final newHandle = handle.text.trim();
+    if (newHandle != _origHandle && unStatus == 'available') {
+      final claim = await ref.read(claimHandleUseCaseProvider).execute(newHandle);
+      if (!mounted) return;
+      final claimFailed = claim.isFailure;
+      if (claimFailed) {
+        setState(() { _saving = false; unStatus = 'taken'; });
+        _snack(claim.error.message);
+        return;
+      }
+      _origHandle = newHandle;
+    }
+
+    ref.invalidate(accountSummaryProvider);
+    ref.invalidate(_profileProvider);
+    setState(() { _saving = false; unStatus = 'idle'; saved = true; });
+    Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => saved = false); });
   }
 
   /// Persists the emergency-contact form via AddEmergencyContactUseCase
@@ -266,14 +326,24 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     final atMaxContacts =
         contacts.length >= AddEmergencyContactUseCase.maxContacts;
 
-    // Seed the editable handle + read-only display name from the REAL account
-    // (accountSummaryProvider) on first load — no prototype sample identity.
-    final summary = ref.watch(accountSummaryProvider).valueOrNull;
-    if (!_seeded && summary != null) {
-      _seeded = true;
-      _origHandle = summary.handle ?? '';
-      _displayName = (summary.displayName ?? '').trim();
+    // Seed every editable field ONCE from the real /account/self on first load
+    // (no prototype sample identity). display_name is split into first/last.
+    final profile = ref.watch(_profileProvider).valueOrNull;
+    if (!_loaded && profile != null) {
+      _loaded = true;
+      _origHandle = profile.handle ?? '';
       handle.text = _origHandle;
+      final name = (profile.displayName ?? '').trim();
+      final sp = name.indexOf(' ');
+      _firstCtrl.text = sp < 0 ? name : name.substring(0, sp);
+      _lastCtrl.text = sp < 0 ? '' : name.substring(sp + 1).trim();
+      _phoneCtrl.text = profile.phone ?? '';
+      _nidCtrl.text = profile.nationalId ?? '';
+      _natCtrl.text = profile.nationality ?? '';
+      _gender = profile.gender ?? '';
+      _dob = (profile.dateOfBirth?.isNotEmpty ?? false)
+          ? DateTime.tryParse(profile.dateOfBirth!)
+          : null;
     }
 
     return Scaffold(
@@ -291,14 +361,12 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         Expanded(child: ContentColumn(maxWidth: 560, child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
           children: [
-            // Avatar + real display name (read-only — server exposes no
-            // display-name update endpoint).
+            // Avatar (initials from the live name fields).
             Center(child: Column(children: [
-              Avatar(initials: _initials(_displayName), color: T.petalAqua, size: 72),
-              if (_displayName.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(_displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl)),
-              ],
+              Avatar(
+                  initials: _initials('${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
+                  color: T.petalAqua,
+                  size: 72),
               const SizedBox(height: 10),
               PButton(s.strings.pd_change_photo, icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
             ])),
@@ -365,11 +433,29 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                 ),
               ),
             ]),
-            // NOTE: Basic info (name/DOB/gender), Contact (phone/national ID/
-            // nationality) and Connected accounts are intentionally omitted —
-            // none has a server or on-device data source yet, and seeding them
-            // with sample values was the prototype-mock bug. Re-add each field
-            // when its real backing lands.
+            // Basic info — name (→ display_name), date of birth (PHI, 18+),
+            // gender. All persisted via PATCH /account/profile.
+            _section(LucideIcons.user, s.strings.pd_basic_info),
+            _card([
+              Row(children: [
+                Expanded(child: _field(s.strings.pf_fname, _firstCtrl)),
+                const SizedBox(width: 12),
+                Expanded(child: _field(s.strings.pf_lname, _lastCtrl)),
+              ]),
+              const SizedBox(height: 14),
+              _labeled(s.strings.pf_dob, _dobField()),
+              const SizedBox(height: 14),
+              _labeled(s.strings.pf_gender, _genderSeg()),
+            ]),
+            // Contact — phone, national ID (PHI/PII, encrypted), nationality.
+            _section(LucideIcons.phone, s.strings.pd_contact_section),
+            _card([
+              _field(s.strings.pd_phone, _phoneCtrl, mono: true),
+              const SizedBox(height: 14),
+              _field(s.strings.pd_nid, _nidCtrl, mono: true),
+              const SizedBox(height: 14),
+              _field(s.strings.pd_nationality, _natCtrl),
+            ]),
 
             // Emergency contact (real on-device PHI; up to 3 contacts).
             _section(LucideIcons.phoneCall, s.strings.pd_emergency),
@@ -395,14 +481,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               ],
             ]),
             const SizedBox(height: 24),
-            // Claims the new @handle — the one account write that exists.
-            // Enabled only once a CHANGED handle verifies available.
+            // Saves the profile (and claims a changed+available handle).
+            // Disabled until loaded and while a handle is mid-check / bad.
             Opacity(
-              opacity: _canSave && !_saving ? 1 : 0.4,
+              opacity: _canSave && !_saving && _loaded ? 1 : 0.4,
               child: PButton(saved ? s.strings.pd_saved : s.strings.pd_save,
                   icon: saved ? LucideIcons.check : LucideIcons.save,
                   variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl,
-                  onTap: _canSave && !_saving ? _save : null),
+                  onTap: _canSave && !_saving && _loaded ? _save : null),
             ),
           ],
         ))),
@@ -422,7 +508,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
-            child: _QrShareSheet(s: s, name: _displayName),
+            child: _QrShareSheet(s: s, name: '${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
           ),
         ),
       ),
@@ -460,6 +546,78 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       ));
+
+  /// Date-of-birth field — opens a date picker; shows dd / mm / yyyy.
+  Widget _dobField() => GestureDetector(
+        onTap: _pickDob,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 52,
+          padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rMd),
+            border: Border.all(color: T.border, width: 1.5),
+          ),
+          child: Row(children: [
+            Expanded(
+              child: Text(
+                _dob == null
+                    ? '—'
+                    : '${_dob!.day.toString().padLeft(2, '0')} / '
+                        '${_dob!.month.toString().padLeft(2, '0')} / ${_dob!.year}',
+                textDirection: TextDirection.ltr,
+                style: Typo.num(size: FS.lg, color: _dob == null ? T.fg4 : T.fg1),
+              ),
+            ),
+            const Icon(LucideIcons.calendar, size: 18, color: T.fg4),
+          ]),
+        ),
+      );
+
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dob ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: DateTime(now.year - 120),
+      lastDate: now,
+    );
+    if (picked != null && mounted) setState(() => _dob = picked);
+  }
+
+  Widget _genderSeg() => Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+            color: T.ink50,
+            borderRadius: BorderRadius.circular(T.rMd),
+            border: Border.all(color: T.border)),
+        child: Row(children: [
+          _seg(s.strings.pf_female, _gender == 'female', () => setState(() => _gender = 'female')),
+          const SizedBox(width: 6),
+          _seg(s.strings.pf_male, _gender == 'male', () => setState(() => _gender = 'male')),
+        ]),
+      );
+
+  Widget _seg(String label, bool active, VoidCallback onTap) => Expanded(
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: Motion.base,
+            curve: Motion.easeOut,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: active ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(7),
+                boxShadow: active ? T.shadowXs : null),
+            child: Text(label,
+                style: Typo.bodySm(ar: s.rtl)
+                    .copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
+          ),
+        ),
+      );
 
   /// Two-letter initials from the display name (first letters of up to two
   /// words); '?' when the name is unknown.

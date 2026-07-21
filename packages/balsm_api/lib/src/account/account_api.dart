@@ -16,6 +16,10 @@ abstract class AccountApi {
   Future<ClaimHandleResponse> claimHandle(ClaimHandleRequest request,
       {CancelToken? cancelToken});
 
+  /// PATCH /account/profile — partial update of the self profile.
+  Future<void> updateProfile(UpdateProfileRequest request,
+      {CancelToken? cancelToken});
+
   /// POST /account/language
   Future<void> changeLanguage(ChangeLanguageRequest request,
       {CancelToken? cancelToken});
