@@ -28,6 +28,18 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Balsm uses your location to show nearby clinics, pharmacies, and hospitals.</string>
+	<!-- Dev convenience: allow cleartext HTTP to LOCAL-network hosts only
+	     (.local, private IPs like 192.168.x.x). This does NOT permit arbitrary
+	     internet HTTP — production traffic is HTTPS to the real API domain — so
+	     it is safe to ship, and it lets a same-WiFi iPhone reach a laptop dev
+	     server at http://<mac-lan-ip>:5050 without a tunnel. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Balsm connects to a Balsm development API server on your local network.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
