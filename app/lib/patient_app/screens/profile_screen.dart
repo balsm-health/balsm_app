@@ -8,12 +8,15 @@ import 'package:core/core.dart'
         accountSummaryProvider,
         FlavorConfig,
         balsmApiControllerProvider,
-        ServerSelectorScreen;
+        ServerSelectorScreen,
+        CountryCode,
+        CountryCodeL10n,
+        LanguageCode,
+        LanguageCodeL10n;
 import 'package:sessions/sessions.dart' show SessionsScreen;
 import 'package:deletion/deletion.dart'
     show DeleteAccountScreen, DeletionConfirmScreen, DeletionCancelledScreen;
 import '../app_state.dart';
-import '../data.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -33,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
     // signed out, in which case the head renders neutrally.
     final summary = ref.watch(accountSummaryProvider).valueOrNull;
     final displayName = (summary?.displayName ?? '').trim();
-    final curLang = kLanguages.firstWhere((l) => l.code == s.lang, orElse: () => kLanguages[1]);
+    final curLang = s.language;
     // Reflects the active backup target (local | icloud | gdrive).
     final stCfg = storageCfg(s.storageProvider);
     final rows = <(IconData, String, VoidCallback?, bool)>[
@@ -72,18 +75,18 @@ class ProfileScreen extends ConsumerWidget {
 
       // Language + country
       _ListCard(children: [
-        _ListRow(icon: LucideIcons.languages, label: s.strings.p_lang, trailing: curLang.native,
+        _ListRow(icon: LucideIcons.languages, label: s.strings.p_lang, trailing: curLang.nativeName,
             first: true, onTap: () => _showLanguageSheet(context)),
-        _ListRow(icon: s.country.home ? LucideIcons.mapPin : LucideIcons.plane, label: s.strings.p_country,
-            trailing: s.country.name.of(s.lang),
-            iconBg: s.country.home ? null : T.sun500, iconFg: s.country.home ? null : Colors.white,
+        _ListRow(icon: s.isHomeCountry ? LucideIcons.mapPin : LucideIcons.plane, label: s.strings.p_country,
+            trailing: s.country.name(kCatalog, locale: s.lang),
+            iconBg: s.isHomeCountry ? null : T.sun500, iconFg: s.isHomeCountry ? null : Colors.white,
             onTap: () => _showCountrySheet(context)),
       ]),
 
       // Storage — opens the backup/sync sheet (connect iCloud / Google Drive).
       _ListCard(children: [
         _ListRow(icon: stCfg.icon, label: s.strings.storage, iconBg: stCfg.bg, iconFg: stCfg.color,
-            trailingWidget: Pill(stCfg.label.of(s.lang), kind: PillKind.neutral, dot: false, ar: s.rtl),
+            trailingWidget: Pill(s.t(stCfg.label), kind: PillKind.neutral, dot: false, ar: s.rtl),
             first: true, onTap: () => showStorageSync(context)),
       ]),
 
@@ -420,12 +423,13 @@ void _showLanguageSheet(BuildContext context) {
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.choose_lang, children: [
-        for (final l in kLanguages)
+        for (final l in LanguageCode.supported)
           _SelectRow(
-            label: l.native, sub: l.en, selected: l.code == s.lang,
-            badge: l.full ? s.strings.lang_full : s.strings.lang_beta, badgeOk: l.full,
-            enabled: l.full,
-            onTap: l.full ? () { s.setLang(l.code); Navigator.pop(ctx); } : null,
+            label: l.nativeName, sub: l.name(kCatalog), selected: l.value == s.lang,
+            badge: l.isFullySupported ? s.strings.lang_full : s.strings.lang_beta,
+            badgeOk: l.isFullySupported,
+            enabled: l.isFullySupported,
+            onTap: l.isFullySupported ? () { s.setLang(l.value); Navigator.pop(ctx); } : null,
           ),
       ]),
     ),
@@ -441,12 +445,12 @@ void _showCountrySheet(BuildContext context) {
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.choose_country, subtitle: s.strings.travel_help, children: [
-        for (final c in kCountries)
+        for (final c in CountryCode.known)
           _SelectRow(
-            label: c.name.of(s.lang), sub: '${s.strings.emergency} ${c.emergency}',
-            selected: c.code == s.countryCode,
-            badge: c.home ? s.strings.home_country : null, badgeOk: true,
-            onTap: () { s.setCountry(c.code); Navigator.pop(ctx); },
+            label: c.name(kCatalog, locale: s.lang), sub: '${s.strings.emergency} ${c.emergencyNumber}',
+            selected: c.value == s.countryCode,
+            badge: c == kHomeCountry ? s.strings.home_country : null, badgeOk: true,
+            onTap: () { s.setCountry(c.value); Navigator.pop(ctx); },
           ),
       ]),
     ),

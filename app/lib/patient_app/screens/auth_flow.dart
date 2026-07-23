@@ -6,7 +6,8 @@ import 'package:auth/auth.dart'
         signInUseCaseProvider,
         SignInSuccess,
         SignInLockout;
-import 'package:core/core.dart' show countryRegistryProvider, StatusScreen;
+import 'package:core/core.dart'
+    show countryRegistryProvider, StatusScreen, CountryCode, CountryCodeL10n;
 import 'package:disclosure/disclosure.dart'
     show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
@@ -14,7 +15,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
-import '../data.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -332,8 +332,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   String? _error;
   bool _submitting = false;
   // Selected phone dial-code country; defaults to the home country (EG).
-  Country _dialCountry =
-      kCountries.firstWhere((c) => c.home, orElse: () => kCountries.first);
+  CountryCode _dialCountry = kHomeCountry;
 
   /// Email + password sign-in sub-mode (returning users). Phone + the email
   /// one-time-code path are NOT password mode.
@@ -357,7 +356,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   }
 
   Future<void> _pickDialCode(PatientAppState s) async {
-    final picked = await showModalBottomSheet<Country>(
+    final picked = await showModalBottomSheet<CountryCode>(
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: const Color(0x5C2B2B25),
@@ -1442,7 +1441,7 @@ String _flagEmoji(String code) {
 
 class _DialCodeButton extends StatelessWidget {
   const _DialCodeButton({required this.country, required this.onTap});
-  final Country country;
+  final CountryCode country;
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
@@ -1458,9 +1457,9 @@ class _DialCodeButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(T.rMd),
             border: Border.all(color: T.border, width: 1.5)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(_flagEmoji(country.code), style: const TextStyle(fontSize: 20)),
+          Text(_flagEmoji(country.value), style: const TextStyle(fontSize: 20)),
           const SizedBox(width: 6),
-          Text(country.dial,
+          Text(country.dialCode,
               textDirection: TextDirection.ltr,
               style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600)),
           const SizedBox(width: 2),
@@ -1473,7 +1472,7 @@ class _DialCodeButton extends StatelessWidget {
 
 class _DialCodeSheet extends StatelessWidget {
   const _DialCodeSheet({required this.current, required this.s});
-  final Country current;
+  final CountryCode current;
   final PatientAppState s;
   @override
   Widget build(BuildContext context) {
@@ -1499,18 +1498,18 @@ class _DialCodeSheet extends StatelessWidget {
               shrinkWrap: true,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               children: [
-                for (final c in kCountries)
+                for (final c in CountryCode.known)
                   GestureDetector(
                     onTap: () => Navigator.pop(context, c),
                     behavior: HitTestBehavior.opaque,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       child: Row(children: [
-                        Text(_flagEmoji(c.code), style: const TextStyle(fontSize: 22)),
+                        Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
                         const SizedBox(width: 12),
-                        Expanded(child: Text(c.name.of(s.lang), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
-                        Text(c.dial, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3)),
-                        if (c.code == current.code)
+                        Expanded(child: Text(c.name(kCatalog, locale: s.lang), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                        Text(c.dialCode, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3)),
+                        if (c == current)
                           Padding(padding: const EdgeInsetsDirectional.only(start: 8), child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
                       ]),
                     ),

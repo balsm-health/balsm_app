@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../data.dart';
 import '../tokens.dart';
 
-({IconData icon, Color color, Color bg, Color border, L label}) storageCfg(String which) => switch (which) {
-      'icloud' => (icon: LucideIcons.cloud, color: T.petalBlue, bg: T.petalBlue50, border: const Color(0xFFB8D4FF), label: const {'en': 'iCloud', 'ar': 'آي كلاود'}),
-      'gdrive' => (icon: LucideIcons.cloud, color: T.petalMint600, bg: T.petalMint50, border: const Color(0xFFA8ECD8), label: const {'en': 'Google Drive', 'ar': 'جوجل درايف'}),
-      _ => (icon: LucideIcons.smartphone, color: T.ink600, bg: T.ink100, border: T.ink200, label: const {'en': 'On this device', 'ar': 'على هذا الجهاز'}),
+/// `label` is an app i69n key — resolve with `s.t(cfg.label)` (or
+/// `tr(cfg.label, lang)` for an explicit locale).
+({IconData icon, Color color, Color bg, Color border, String label}) storageCfg(String which) => switch (which) {
+      'icloud' => (icon: LucideIcons.cloud, color: T.petalBlue, bg: T.petalBlue50, border: const Color(0xFFB8D4FF), label: 'storage_icloud'),
+      'gdrive' => (icon: LucideIcons.cloud, color: T.petalMint600, bg: T.petalMint50, border: const Color(0xFFA8ECD8), label: 'storage_gdrive'),
+      _ => (icon: LucideIcons.smartphone, color: T.ink600, bg: T.ink100, border: T.ink200, label: 'storage_device'),
     };
 
 /// Small storage indicator chip.

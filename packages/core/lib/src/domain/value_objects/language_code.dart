@@ -9,7 +9,8 @@ import 'value_object.dart';
 /// lives in the core i69n bundle (`language.<code>.name`); resolve it via the
 /// `LanguageCodeL10n` extension.
 class LanguageCode extends ValueObject {
-  const LanguageCode._(this.value, this.nativeName, this.isRtl);
+  const LanguageCode._(this.value, this.nativeName, this.isRtl,
+      {this.isFullySupported = false});
 
   /// Look up a known language, or accept any well-formed 2-letter code.
   /// Throws [ArgumentError] on malformed input.
@@ -31,14 +32,19 @@ class LanguageCode extends ValueObject {
 
   final bool isRtl;
 
+  /// True when the app ships a complete UI translation for this language;
+  /// the rest of [supported] appears in the picker as "beta" and can't be
+  /// selected yet.
+  final bool isFullySupported;
+
   /// Combine with a region to form a BCP-47 tag string (`ar` + `EG` → `ar-EG`).
   String toTag([String? region]) =>
       region == null || region.isEmpty
           ? value
           : '$value-${region.toUpperCase()}';
 
-  static const ar = LanguageCode._('ar', 'العربية', true);
-  static const en = LanguageCode._('en', 'English', false);
+  static const ar = LanguageCode._('ar', 'العربية', true, isFullySupported: true);
+  static const en = LanguageCode._('en', 'English', false, isFullySupported: true);
   static const fr = LanguageCode._('fr', 'Français', false);
   static const ur = LanguageCode._('ur', 'اردو', true);
   static const fa = LanguageCode._('fa', 'فارسی', true);

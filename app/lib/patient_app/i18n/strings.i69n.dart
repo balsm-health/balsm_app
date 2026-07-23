@@ -319,6 +319,9 @@ class Strings implements i69n.I69nMessageBundle {
   String get add_calendar => "Add to calendar";
   String get storage => "Storage & sync";
   String get storage_short => "Storage";
+  String get storage_icloud => "iCloud";
+  String get storage_gdrive => "Google Drive";
+  String get storage_device => "On this device";
   String get store_local => "On this device";
   String get store_icloud => "iCloud";
   String get store_gdrive => "Google Drive";
@@ -1021,6 +1024,12 @@ class Strings implements i69n.I69nMessageBundle {
         return storage;
       case 'storage_short':
         return storage_short;
+      case 'storage_icloud':
+        return storage_icloud;
+      case 'storage_gdrive':
+        return storage_gdrive;
+      case 'storage_device':
+        return storage_device;
       case 'store_local':
         return store_local;
       case 'store_icloud':

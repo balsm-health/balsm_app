@@ -1,8 +1,17 @@
+import 'package:core/core.dart'
+    show CountryCode, LanguageCode, TranslationCatalog;
 import 'package:flutter/widgets.dart';
-import 'data.dart';
 import 'prefs.dart';
 import 'strings.dart';
 import 'tokens.dart';
+
+/// Shared-kernel reference translations (localized country/language names) —
+/// resolved via the `CountryCodeL10n`/`LanguageCodeL10n` extensions.
+const kCatalog = TranslationCatalog();
+
+/// Balsm's home market — drives the "home country" badge and the default
+/// dial-code country.
+const kHomeCountry = CountryCode.egypt;
 
 /// Global app context — mirrors the React `AppCtx`. Holds language, accent,
 /// current tab/route, country, and the active backup target. The signed-in
@@ -94,7 +103,12 @@ class PatientAppState extends ChangeNotifier {
   /// `s.t('med_snooze15')` silently returns the key at runtime.
   Strings get strings => stringsFor(lang);
 
-  Country get country => kCountries.firstWhere((c) => c.code == countryCode, orElse: () => kCountries.first);
+  CountryCode get country => CountryCode(countryCode);
+
+  bool get isHomeCountry => country == kHomeCountry;
+
+  /// The active UI language as a core value object.
+  LanguageCode get language => LanguageCode(lang);
 
   void setLang(String l) {
     lang = l;

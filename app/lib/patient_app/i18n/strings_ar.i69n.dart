@@ -317,6 +317,9 @@ class Strings_ar extends Strings {
   String get add_calendar => "أضف للتقويم";
   String get storage => "التخزين والمزامنة";
   String get storage_short => "التخزين";
+  String get storage_icloud => "آي كلاود";
+  String get storage_gdrive => "جوجل درايف";
+  String get storage_device => "على هذا الجهاز";
   String get store_local => "على هذا الجهاز";
   String get store_icloud => "آي كلاود";
   String get store_gdrive => "جوجل درايف";
@@ -1020,6 +1023,12 @@ class Strings_ar extends Strings {
         return storage;
       case 'storage_short':
         return storage_short;
+      case 'storage_icloud':
+        return storage_icloud;
+      case 'storage_gdrive':
+        return storage_gdrive;
+      case 'storage_device':
+        return storage_device;
       case 'store_local':
         return store_local;
       case 'store_icloud':

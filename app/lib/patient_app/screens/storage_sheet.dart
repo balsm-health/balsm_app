@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
-import '../data.dart' show LocalizedMap; // `.of(lang)` on storageCfg labels
 import '../kit.dart';
+import '../strings.dart' show tr; // explicit-locale storageCfg label lookups
 import '../tokens.dart';
 import '../widgets/badges.dart';
 
@@ -179,7 +179,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Text(cfg.label.of(s.lang), style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                Text(s.t(cfg.label), style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                 if (isLocal) ...[
                   const SizedBox(width: 8),
                   Pill(ar ? 'دائمًا' : 'Always on', kind: PillKind.neutral, dot: false, ar: ar,
@@ -223,7 +223,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           child: Spinner(size: 34, stroke: 3, color: cfg.color),
         ),
         const SizedBox(height: 18),
-        Text(ar ? 'جارٍ الربط بـ ${cfg.label.of('ar')}…' : 'Connecting to ${cfg.label.of('en')}…',
+        Text(ar ? 'جارٍ الربط بـ ${tr(cfg.label, 'ar')}…' : 'Connecting to ${tr(cfg.label, 'en')}…',
             textAlign: TextAlign.center, style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl)),
         const SizedBox(height: 6),
         Text(ar ? 'سيبدأ النسخ الاحتياطي تلقائياً.' : 'Backup will start automatically.',
@@ -253,7 +253,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(ar ? 'جارٍ النقل' : 'Migrating', style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              Text('${from.label.of(s.lang)} → ${cfg.label.of(s.lang)}', style: Typo.meta(ar: ar)),
+              Text('${s.t(from.label)} → ${s.t(cfg.label)}', style: Typo.meta(ar: ar)),
             ])),
             Text('$pct%', style: Typo.num(size: FS.md, weight: FontWeight.w700, color: cfg.color)),
           ]),
@@ -334,7 +334,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             Flexible(child: Text(
               toLocal
                   ? (ar ? 'محفوظ على هذا الجهاز فقط' : 'Saved on this device only')
-                  : (ar ? 'مزامن مع ${cfg.label.of('ar')}' : 'Synced with ${cfg.label.of('en')}'),
+                  : (ar ? 'مزامن مع ${tr(cfg.label, 'ar')}' : 'Synced with ${tr(cfg.label, 'en')}'),
               style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1))),
           ]),
         ),
@@ -362,8 +362,8 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                   style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               const SizedBox(height: 4),
               Text(
-                ar ? 'ستُحذف بياناتك من ${cur.label.of('ar')} وتبقى على جهازك فقط.'
-                   : 'Your data will be removed from ${cur.label.of('en')} and kept on this device only.',
+                ar ? 'ستُحذف بياناتك من ${tr(cur.label, 'ar')} وتبقى على جهازك فقط.'
+                   : 'Your data will be removed from ${tr(cur.label, 'en')} and kept on this device only.',
                 style: Typo.meta(ar: ar).copyWith(height: 1.5)),
             ])),
           ]),
