@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:balsm_api/balsm_api.dart';
@@ -33,6 +34,15 @@ ResponseBody _json(String body, {int status = 200}) => ResponseBody.fromString(
     );
 
 class _MockStorage extends Mock implements FlutterSecureStorage {}
+
+/// Minimal unsigned JWT whose `exp` is [d] from now — enough for the
+/// interceptor's proactive expiry check (it never verifies the signature).
+String jwtExpiringIn(Duration d) {
+  final exp = DateTime.now().toUtc().add(d).millisecondsSinceEpoch ~/ 1000;
+  String seg(Map<String, dynamic> m) =>
+      base64Url.encode(utf8.encode(jsonEncode(m))).replaceAll('=', '');
+  return '${seg({'alg': 'HS256'})}.${seg({'exp': exp})}.sig';
+}
 
 void main() {
   setUpAll(() => FlavorConfig.init(brand: AppBrand.balsm, flavor: Flavor.dev));
@@ -132,6 +142,49 @@ void main() {
     await expired;
     verify(() => storage.delete(key: 'balsm.access_token')).called(1);
     verify(() => storage.delete(key: 'balsm.refresh_token')).called(1);
+  });
+
+  test('proactively refreshes a near-expiry access token BEFORE sending (no 401)',
+      () async {
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(seconds: 5)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    // Protected endpoint always 200 — proactive means the 401 path is never used.
+    final h = harness(storage, (o) {
+      if (o.path == ApiRoutes.auth_refresh) {
+        return _json('{"data":{"access_token":"ATnew","refresh_token":"RT2"}}');
+      }
+      return _json('{"data":{"ok":true}}');
+    });
+
+    final res =
+        await h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self);
+
+    expect(res.statusCode, 200);
+    // Refresh fired FIRST (before the protected call), and the protected call
+    // carried the freshly-minted token — no 401 round-trip.
+    expect(h.adapter.requests.first.path, ApiRoutes.auth_refresh);
+    final protectedReq =
+        h.adapter.requests.firstWhere((r) => r.path == ApiRoutes.account_self);
+    expect(protectedReq.headers['Authorization'], 'Bearer ATnew');
+    verify(() => storage.write(key: 'balsm.access_token', value: 'ATnew')).called(1);
+  });
+
+  test('does NOT refresh an access token that is far from expiry', () async {
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(hours: 1)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    final h = harness(storage, (o) => _json('{"data":{}}'));
+
+    await h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self);
+
+    // No proactive refresh; the still-valid token was attached as-is.
+    expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse);
+    expect(h.adapter.requests.single.path, ApiRoutes.account_self);
   });
 
   test('bootstrap endpoints carry no token and are not refresh-retried', () async {

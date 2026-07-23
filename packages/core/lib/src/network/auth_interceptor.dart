@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:balsm_api/balsm_api.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -46,6 +48,12 @@ class AuthInterceptor extends Interceptor {
   static const _kDeviceId = 'balsm.device_id';
   static const _retriedFlag = '__balsm_auth_retried';
 
+  /// Refresh proactively once the access token is within this window of its
+  /// `exp`, so a request near the boundary renews ahead of time instead of
+  /// paying a 401 round-trip (and it covers tokens that expired while the app
+  /// was backgrounded — the first request after resume renews).
+  static const _proactiveWindow = Duration(seconds: 30);
+
   Future<String?>? _inFlightRefresh;
 
   /// Token-issuing endpoints: they must never carry a (possibly stale) bearer
@@ -62,12 +70,36 @@ class AuthInterceptor extends Interceptor {
   Future<void> onRequest(
       RequestOptions options, RequestInterceptorHandler handler) async {
     if (!_isBootstrap(options.path)) {
-      final token = await _storage.read(key: _kAccess);
+      var token = await _storage.read(key: _kAccess);
+      // Proactive refresh: renew at/near expiry before sending, so most requests
+      // never hit a 401. If refresh is impossible we fall back to the stored
+      // token and let the reactive onError path handle the 401.
+      if (token != null && token.isNotEmpty && _isExpiringSoon(token)) {
+        token = await _refresh() ?? token;
+      }
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
     }
     handler.next(options);
+  }
+
+  /// True when the JWT's `exp` is within [_proactiveWindow] of now (or already
+  /// past). Unparseable tokens return false — the reactive 401 path covers them.
+  bool _isExpiringSoon(String jwt) {
+    try {
+      final parts = jwt.split('.');
+      if (parts.length != 3) return false;
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      payload = payload.padRight(payload.length + (4 - payload.length % 4) % 4, '=');
+      final map = jsonDecode(utf8.decode(base64.decode(payload)));
+      if (map is! Map || map['exp'] is! int) return false;
+      final expiry =
+          DateTime.fromMillisecondsSinceEpoch((map['exp'] as int) * 1000, isUtc: true);
+      return expiry.difference(DateTime.now().toUtc()) <= _proactiveWindow;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
