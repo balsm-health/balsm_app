@@ -70,13 +70,19 @@ class MedicationDao {
   }
 
   Future<void> addMedication(Medication m) async {
+    // health_profile_id: dependants seam — anchor to the user's (self) profile
+    // row when it exists; NULL otherwise (the app_database convergent backfill
+    // fills it on a later open). Queries still filter on user_id until F1.
     await _db.customInsert(
       'INSERT INTO $_kMedicationsTable '
-      '(id, user_id, name, dose_amount, schedule_type, schedule_config, '
-      'start_date, end_date, is_controlled) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      '(id, user_id, health_profile_id, name, dose_amount, schedule_type, '
+      'schedule_config, start_date, end_date, is_controlled) '
+      'VALUES (?, ?, '
+      '(SELECT id FROM health_profile WHERE user_id = ?), '
+      '?, ?, ?, ?, ?, ?, ?)',
       variables: [
         Variable<String>(m.id.value),
+        Variable<String>(m.userId.value),
         Variable<String>(m.userId.value),
         Variable<String>(m.name),
         Variable<String>(m.doseAmount),

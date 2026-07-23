@@ -134,13 +134,19 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
       );
     }
     try {
+      // health_profile_id: dependants seam — anchor to the user's (self)
+      // profile row when it exists; NULL otherwise (convergent backfill on a
+      // later open fills it). Queries still filter on user_id until F1.
       await _db.customInsert(
         'INSERT OR REPLACE INTO $_table '
-        '(id, user_id, type, title, tags, source, file_type, file_path, '
-        'pages, result_note, taken_at, created_at) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        '(id, user_id, health_profile_id, type, title, tags, source, '
+        'file_type, file_path, pages, result_note, taken_at, created_at) '
+        'VALUES (?, ?, '
+        '(SELECT id FROM health_profile WHERE user_id = ?), '
+        '?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         variables: [
           Variable<String>(key.value),
+          Variable<String>(user.value),
           Variable<String>(user.value),
           Variable<String>(value.type.name),
           Variable<String>(value.title),

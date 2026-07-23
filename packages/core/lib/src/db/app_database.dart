@@ -28,6 +28,20 @@ class AppDatabase extends _$AppDatabase {
           // alter a pre-existing table, so add any missing columns for dev DBs.
           await _ensureColumn('chronic_condition', 'icd10_code', 'TEXT');
           await _ensureColumn('chronic_condition', 'onset_year', 'INTEGER');
+          // Dependants seam (P00X forward-compat): medications + health_record
+          // anchor to health_profile, not just user_id. Nullable until a self
+          // profile row is guaranteed at sign-in (F1); the convergent backfill
+          // below fills it as profile rows appear. Queries still filter on
+          // user_id — re-keying the DAOs lands with the dependants feature.
+          await _ensureColumn('medications', 'health_profile_id', 'TEXT');
+          await _ensureColumn('health_record', 'health_profile_id', 'TEXT');
+          for (final table in ['medications', 'health_record']) {
+            await customStatement('''
+              UPDATE $table SET health_profile_id =
+                (SELECT hp.id FROM health_profile hp
+                  WHERE hp.user_id = $table.user_id)
+              WHERE health_profile_id IS NULL''');
+          }
         },
       );
 
@@ -91,6 +105,7 @@ const _phiSchema = <String>[
   CREATE TABLE IF NOT EXISTS medications (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
+    health_profile_id TEXT,
     name TEXT NOT NULL,
     dose_amount TEXT,
     schedule_type TEXT NOT NULL,
@@ -124,6 +139,7 @@ const _phiSchema = <String>[
   CREATE TABLE IF NOT EXISTS health_record (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
+    health_profile_id TEXT,
     type TEXT NOT NULL,
     title TEXT NOT NULL,
     tags TEXT NOT NULL,
@@ -135,6 +151,10 @@ const _phiSchema = <String>[
     taken_at TEXT NOT NULL,
     created_at TEXT NOT NULL
   )''',
+  // Profile-anchor indexes (dependants seam) — cheap now, required once
+  // queries re-key from user_id to health_profile_id.
+  'CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)',
+  'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)',
   // Disclosure/consent acceptance ledger (disclosure module). PHI-free —
   // records which disclosure version the user accepted and the jurisdiction
   // context at accept time. One row per (disclosure_id, version).
