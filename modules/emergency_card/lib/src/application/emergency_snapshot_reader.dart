@@ -4,7 +4,7 @@ import '../domain/aggregates/emergency_card_snapshot.dart';
 
 /// Reads the current patient's [EmergencyCardSnapshot] from the on-device
 /// HealthProfile (PHI). The implementation lives in app wiring and is backed by
-/// the `profile` package's read repository / DriftProfileDataSource; this keeps the
+/// the `profile` package's read repository / HealthProfilesDataSource port; this keeps the
 /// emergency_card bounded context decoupled from profile internals.
 ///
 /// The returned snapshot contains PHI and MUST NOT be logged or sent to Sentry.

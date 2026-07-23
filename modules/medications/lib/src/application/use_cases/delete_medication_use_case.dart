@@ -3,7 +3,8 @@ import 'package:core/core.dart';
 import '../../domain/value_objects/ids.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../infrastructure/drift/medications_data_source.dart';
+import '../ports/medications_data_source.dart';
+import '../../infrastructure/drift/drift_medications_data_source.dart';
 import '../../infrastructure/drift/medication_scheduler.dart';
 
 /// Soft-deletes a medication (sets end date to yesterday) and rebuilds the OS
@@ -11,7 +12,7 @@ import '../../infrastructure/drift/medication_scheduler.dart';
 class DeleteMedicationUseCase {
   DeleteMedicationUseCase({required this.dao, required this.scheduler});
 
-  final DriftMedicationsDataSource dao;
+  final MedicationsDataSource dao;
   final MedicationScheduler scheduler;
 
   Future<void> call(MedicationId medicationId) async {

@@ -4,6 +4,7 @@ import 'package:core/core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/ports/medications_data_source.dart';
 import '../../domain/aggregates/medication.dart';
 import '../../domain/entities/dose_event.dart';
 import '../../domain/value_objects/ids.dart';
@@ -28,10 +29,7 @@ const _kDoseEventsTable = 'dose_events';
 /// - [clear]/[clearAll] soft-retire for the same reason. Physical PHI wipe is
 ///   a database-file-level operation owned by the deletion flow, not a
 ///   row-level contract op.
-class DriftMedicationsDataSource
-    extends ProfileDataSource<MedicationId, Medication>
-    implements
-        WatchableScopedDataSource<MedicationId, Medication, HealthProfileId> {
+class DriftMedicationsDataSource extends MedicationsDataSource {
   DriftMedicationsDataSource(this._db, this.activeProfile);
 
   final AppDatabase _db;
@@ -222,6 +220,7 @@ class DriftMedicationsDataSource
   // --- Dose events (APPEND-ONLY, keyed by medication FK — unscoped) --------
 
   /// Appends a dose event. Never updates or deletes existing rows.
+  @override
   Future<void> insertDoseEvent(DoseEvent e) async {
     await _db.customInsert(
       'INSERT INTO $_kDoseEventsTable '
@@ -242,6 +241,7 @@ class DriftMedicationsDataSource
 
   /// Dose events for a medication, optionally bounded by [from]/[to]
   /// (inclusive of [from], exclusive of [to]) on `scheduled_at`.
+  @override
   Future<List<DoseEvent>> getDoseEvents(
     MedicationId medicationId, {
     DateTime? from,
@@ -266,6 +266,7 @@ class DriftMedicationsDataSource
   }
 
   /// Dose events recorded with the `missed` outcome scheduled before [cutoff].
+  @override
   Future<List<DoseEvent>> getMissedEvents(DateTime cutoff) async {
     final rows = await _db.customSelect(
       "SELECT * FROM $_kDoseEventsTable "
@@ -312,7 +313,7 @@ class DriftMedicationsDataSource
 
 /// Bound to the active profile via core's `currentProfileIdProvider` (which
 /// ensures the self health-profile row at session start).
-final medicationsDataSourceProvider = Provider<DriftMedicationsDataSource>(
+final medicationsDataSourceProvider = Provider<MedicationsDataSource>(
   (ref) => DriftMedicationsDataSource(
     ref.watch(appDatabaseProvider),
     () => ref.read(currentProfileIdProvider),

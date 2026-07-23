@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/aggregates/medication.dart';
 import '../domain/entities/dose_event.dart';
 import '../domain/value_objects/ids.dart';
-import '../infrastructure/drift/medications_data_source.dart';
+import '../infrastructure/drift/drift_medications_data_source.dart';
 
 /// Reactive list of the active profile's medications. Uses core's
 /// [currentProfileIdProvider] (self profile, ensured at session start).

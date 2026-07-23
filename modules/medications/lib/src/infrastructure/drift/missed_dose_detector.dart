@@ -5,7 +5,8 @@ import '../../domain/aggregates/medication.dart';
 import '../../domain/entities/dose_event.dart';
 import '../../domain/events/dose_missed.dart';
 import '../../domain/value_objects/ids.dart';
-import 'medications_data_source.dart';
+import '../../application/ports/medications_data_source.dart';
+import 'drift_medications_data_source.dart';
 
 /// Grace window after a scheduled time before a dose counts as missed.
 const Duration kMissedGrace = Duration(minutes: 30);
@@ -25,7 +26,7 @@ class MissedDoseDetector {
     required NotificationPermissionState Function() readPermission,
   }) : _readPermission = readPermission;
 
-  final DriftMedicationsDataSource dao;
+  final MedicationsDataSource dao;
   final EventBus bus;
   final NotificationPermissionState Function() _readPermission;
 

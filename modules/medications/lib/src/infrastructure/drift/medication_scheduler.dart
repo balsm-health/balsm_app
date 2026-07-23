@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/aggregates/medication.dart';
-import 'medications_data_source.dart';
+import '../../application/ports/medications_data_source.dart';
+import 'drift_medications_data_source.dart';
 
 /// Generic reminder copy. Per FR-018 the notification body MUST never contain a
 /// drug name (PHI). Title is always "Balsm".
@@ -30,7 +31,7 @@ class MedicationScheduler {
   }) : _readPermission = readPermission;
 
   final NotificationService notifications;
-  final DriftMedicationsDataSource dao;
+  final MedicationsDataSource dao;
   final UserId userId;
   final NotificationPermissionState Function() _readPermission;
 

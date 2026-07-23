@@ -9,7 +9,7 @@ import '../../application/use_cases/remove_allergy_use_case.dart';
 import '../../application/use_cases/update_health_profile_use_case.dart';
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
-import '../../infrastructure/drift/profile_data_source.dart';
+import '../../infrastructure/drift/drift_profile_data_source.dart';
 
 /// FR-213: convert any Arabic-Indic digits (٠-٩) in [input] to Western Arabic.
 /// PHI-safe: pure local transform, never logged or transmitted.

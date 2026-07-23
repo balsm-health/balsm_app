@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/medication.dart';
 import '../../domain/events/medication_added.dart';
-import '../../infrastructure/drift/medications_data_source.dart';
+import '../ports/medications_data_source.dart';
+import '../../infrastructure/drift/drift_medications_data_source.dart';
 import '../../infrastructure/drift/medication_scheduler.dart';
 
 /// Adds a medication, then rebuilds the OS reminder schedule.
@@ -14,7 +15,7 @@ class AddMedicationUseCase {
     required this.scheduler,
   });
 
-  final DriftMedicationsDataSource dao;
+  final MedicationsDataSource dao;
   final EventBus bus;
   final MedicationScheduler scheduler;
 

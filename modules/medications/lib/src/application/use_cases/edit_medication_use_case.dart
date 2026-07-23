@@ -2,14 +2,15 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/medication.dart';
-import '../../infrastructure/drift/medications_data_source.dart';
+import '../ports/medications_data_source.dart';
+import '../../infrastructure/drift/drift_medications_data_source.dart';
 import '../../infrastructure/drift/medication_scheduler.dart';
 
 /// Updates a medication, then rebuilds the OS reminder schedule.
 class EditMedicationUseCase {
   EditMedicationUseCase({required this.dao, required this.scheduler});
 
-  final DriftMedicationsDataSource dao;
+  final MedicationsDataSource dao;
   final MedicationScheduler scheduler;
 
   Future<void> call(Medication medication) async {

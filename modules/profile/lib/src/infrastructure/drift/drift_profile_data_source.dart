@@ -4,6 +4,7 @@ import 'package:core/core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/ports/health_profiles_data_source.dart';
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
 
@@ -23,10 +24,7 @@ import '../../domain/value_objects/ids.dart';
 /// Scope semantics (per `ScopedDataSource`): `scope == null` resolves the
 /// active user from [activeUser]; signed out → reads return null/empty,
 /// mutations throw [NoActiveUserException], [clear] is an idempotent no-op.
-class DriftProfileDataSource
-    extends UserDataSource<HealthProfileId, HealthProfile>
-    implements
-        WatchableScopedDataSource<HealthProfileId, HealthProfile, UserId> {
+class DriftProfileDataSource extends HealthProfilesDataSource {
   DriftProfileDataSource({required AppDatabase db, required this.activeUser})
       : _db = db;
 
@@ -208,15 +206,18 @@ class DriftProfileDataSource
   // --- Aggregate conveniences (pre-contract API, kept for callers) ---------
 
   /// The user's (self) profile, or null if none exists yet.
+  @override
   Future<HealthProfile?> getProfile(UserId userId) async =>
       (await findAll(scope: userId)).firstOrNull;
 
   /// Emits the current profile and updates whenever the row changes.
+  @override
   Stream<HealthProfile?> watchProfile(UserId userId) =>
       watchAll(scope: userId).map((profiles) => profiles.firstOrNull);
 
   /// Inserts or updates the head row for [profile]. Does NOT persist child
   /// collections — use the individual add*/remove* methods.
+  @override
   Future<void> upsertProfile(HealthProfile profile) =>
       put(profile.id, profile, scope: profile.userId);
 
@@ -269,6 +270,7 @@ class DriftProfileDataSource
   }
 
   /// Inserts [allergy] under [profileId]. Returns the generated [AllergyId].
+  @override
   Future<AllergyId> addAllergy(HealthProfileId profileId, Allergy allergy) async {
     final id = AllergyId.uuid();
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -291,6 +293,7 @@ class DriftProfileDataSource
   }
 
   /// Deletes the allergy row with the given [allergyId].
+  @override
   Future<void> removeAllergy(AllergyId allergyId) async {
     await _db.customUpdate(
       'DELETE FROM allergy WHERE id = ?',
@@ -326,6 +329,7 @@ class DriftProfileDataSource
 
   /// Inserts [condition] under [profileId]. Returns the generated
   /// [ChronicConditionId].
+  @override
   Future<ChronicConditionId> addCondition(
       HealthProfileId profileId, ChronicCondition condition) async {
     final id = ChronicConditionId.uuid();
@@ -381,6 +385,7 @@ class DriftProfileDataSource
 
   /// Inserts [contact] under [profileId]. Returns the generated
   /// [EmergencyContactId].
+  @override
   Future<EmergencyContactId> addContact(
       HealthProfileId profileId, EmergencyContact contact) async {
     final id = EmergencyContactId.uuid();
@@ -409,7 +414,7 @@ class DriftProfileDataSource
 
 /// Bound to the authenticated user via core's `currentUserIdProvider`;
 /// requires [appDatabaseProvider] to be overridden at bootstrap.
-final profileDataSourceProvider = Provider<DriftProfileDataSource>((ref) {
+final profileDataSourceProvider = Provider<HealthProfilesDataSource>((ref) {
   return DriftProfileDataSource(
     db: ref.watch(appDatabaseProvider),
     activeUser: () => ref.read(currentUserIdProvider),

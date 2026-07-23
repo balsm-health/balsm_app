@@ -18,7 +18,8 @@ export 'src/application/use_cases/add_emergency_contact_use_case.dart';
 
 // Infrastructure — read access for app-shell seams (e.g. emergency snapshot).
 // PHI stays on-device regardless of who reads the DAO.
-export 'src/infrastructure/drift/profile_data_source.dart';
+export 'src/application/ports/health_profiles_data_source.dart';
+export 'src/infrastructure/drift/drift_profile_data_source.dart';
 
 // Presentation
 export 'src/presentation/screens/health_profile_editor_screen.dart';
