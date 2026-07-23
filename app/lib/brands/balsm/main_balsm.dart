@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geofence_block/geofence_block.dart'
     show ReadDeniedCountriesRepository, deniedCountriesRepositoryProvider;
-import 'package:profile/profile.dart' show EmergencyContact, profileDaoProvider;
+import 'package:profile/profile.dart' show EmergencyContact, profileDataSourceProvider;
 import 'package:app/patient_app/app_state.dart';
 import 'package:app/patient_app/prefs.dart';
 import 'package:app/patient_app/shell.dart';
@@ -202,7 +202,7 @@ class _ProfileEmergencySnapshotReader implements EmergencySnapshotReader {
   Future<EmergencyCardSnapshot?> readSnapshot() async {
     final userId = _ref.read(currentUserIdProvider);
     if (userId == null) return null;
-    final profile = await _ref.read(profileDaoProvider).getProfile(userId);
+    final profile = await _ref.read(profileDataSourceProvider).getProfile(userId);
     if (profile == null) return null;
 
     final primary = profile.emergencyContacts

@@ -8,7 +8,7 @@ import 'package:profile/profile.dart'
         Allergy,
         ChronicCondition,
         AllergyId,
-        profileDaoProvider,
+        profileDataSourceProvider,
         updateHealthProfileUseCaseProvider,
         addAllergyUseCaseProvider,
         removeAllergyUseCaseProvider,
@@ -90,7 +90,7 @@ final _medProfileProvider =
     FutureProvider.autoDispose<HealthProfile?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
-  return ref.watch(profileDaoProvider).getProfile(userId);
+  return ref.watch(profileDataSourceProvider).getProfile(userId);
 });
 
 class MedicalProfileScreen extends ConsumerStatefulWidget {

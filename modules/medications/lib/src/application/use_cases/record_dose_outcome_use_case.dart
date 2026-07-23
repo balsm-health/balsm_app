@@ -7,7 +7,7 @@ import '../../domain/events/dose_corrected.dart';
 import '../../domain/events/dose_skipped.dart';
 import '../../domain/events/dose_snoozed.dart';
 import '../../domain/events/dose_taken.dart';
-import '../../infrastructure/drift/medication_dao.dart';
+import '../../infrastructure/drift/medications_data_source.dart';
 
 /// Records a dose outcome by appending a new (immutable) dose event and
 /// dispatching the matching domain event.
@@ -17,7 +17,7 @@ import '../../infrastructure/drift/medication_dao.dart';
 class RecordDoseOutcomeUseCase {
   RecordDoseOutcomeUseCase({required this.dao, required this.bus});
 
-  final MedicationDao dao;
+  final DriftMedicationsDataSource dao;
   final EventBus bus;
 
   Future<DoseEvent> call({
@@ -95,7 +95,7 @@ class RecordDoseOutcomeUseCase {
 final recordDoseOutcomeUseCaseProvider =
     Provider<RecordDoseOutcomeUseCase>((ref) {
   return RecordDoseOutcomeUseCase(
-    dao: ref.watch(medicationDaoProvider),
+    dao: ref.watch(medicationsDataSourceProvider),
     bus: ref.watch(eventBusProvider),
   );
 });

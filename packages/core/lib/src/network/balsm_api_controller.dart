@@ -1,4 +1,5 @@
 import 'package:balsm_api/balsm_api.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/active_server.dart';
@@ -48,7 +49,9 @@ class BalsmApiController {
     required EventBus bus,
   }) {
     final client = BalsmApiClient.create(
-        baseUrl: FlavorConfig.current.defaultServer.apiBaseUrl);
+      baseUrl: FlavorConfig.current.defaultServer.apiBaseUrl,
+      logRequests: kDebugMode,
+    );
     // Attach the bearer token to authenticated requests + refresh-on-401.
     // Without this, no request carries a token and every authenticated
     // endpoint returns 401.

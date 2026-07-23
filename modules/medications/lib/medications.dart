@@ -14,7 +14,7 @@ export 'src/domain/events/dose_corrected.dart';
 export 'src/domain/value_objects/ids.dart';
 
 // Infrastructure
-export 'src/infrastructure/drift/medication_dao.dart';
+export 'src/infrastructure/drift/medications_data_source.dart';
 export 'src/infrastructure/drift/medication_scheduler.dart';
 export 'src/infrastructure/drift/missed_dose_detector.dart';
 

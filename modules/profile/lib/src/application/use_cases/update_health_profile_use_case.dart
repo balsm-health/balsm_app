@@ -2,9 +2,8 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
-import '../../infrastructure/drift/profile_dao.dart';
+import '../../infrastructure/drift/profile_data_source.dart';
 
 /// Updates the blood_type on an existing [HealthProfile] and publishes
 /// [HealthProfileUpdated] on the [EventBus].
@@ -12,12 +11,12 @@ import '../../infrastructure/drift/profile_dao.dart';
 /// PHI is written to the on-device SQLite/SQLCipher store only — no network call.
 class UpdateHealthProfileUseCase {
   const UpdateHealthProfileUseCase({
-    required ProfileDao dao,
+    required DriftProfileDataSource dao,
     required EventBus eventBus,
   })  : _dao = dao,
         _bus = eventBus;
 
-  final ProfileDao _dao;
+  final DriftProfileDataSource _dao;
   final EventBus _bus;
 
   /// Creates or updates the profile row and patches [bloodType].
@@ -71,7 +70,7 @@ class UpdateHealthProfileUseCase {
 final updateHealthProfileUseCaseProvider =
     Provider<UpdateHealthProfileUseCase>((ref) {
   return UpdateHealthProfileUseCase(
-    dao: ref.watch(profileDaoProvider),
+    dao: ref.watch(profileDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

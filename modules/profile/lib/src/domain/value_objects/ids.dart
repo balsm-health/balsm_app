@@ -1,14 +1,9 @@
 import 'package:core/core.dart';
 
-/// Typed id of the [HealthProfile] aggregate (one per user, on-device PHI).
-class HealthProfileId extends UniqueId {
-  const HealthProfileId.value(super.value) : super.value();
-  const HealthProfileId.empty() : super.empty();
-  HealthProfileId.uuid() : super.uuid('hp-');
-
-  static HealthProfileId? fromString(String? value) =>
-      value?.mapNotNull((v) => HealthProfileId.value(v));
-}
+// HealthProfileId moved to core — it is the scope type of ProfileDataSource,
+// shared by every PHI store. Re-exported so module-internal imports of
+// `ids.dart` keep resolving it.
+export 'package:core/core.dart' show HealthProfileId;
 
 /// Typed id of an [Allergy] entity within the health profile.
 class AllergyId extends UniqueId {

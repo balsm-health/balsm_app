@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../domain/aggregates/medication.dart';
-import 'medication_dao.dart';
+import 'medications_data_source.dart';
 
 /// Generic reminder copy. Per FR-018 the notification body MUST never contain a
 /// drug name (PHI). Title is always "Balsm".
@@ -30,7 +30,7 @@ class MedicationScheduler {
   }) : _readPermission = readPermission;
 
   final NotificationService notifications;
-  final MedicationDao dao;
+  final DriftMedicationsDataSource dao;
   final UserId userId;
   final NotificationPermissionState Function() _readPermission;
 
@@ -51,7 +51,7 @@ class MedicationScheduler {
     if (!_permissionGranted) return;
     await notifications.cancelAll();
 
-    final meds = await dao.getMedications(userId);
+    final meds = await dao.findAll();
     final now = DateTime.now();
     final horizonEnd = now.add(const Duration(days: kScheduleHorizonDays));
 
@@ -137,7 +137,7 @@ final medicationSchedulerProvider =
     Provider.family<MedicationScheduler, UserId>((ref, userId) {
   return MedicationScheduler(
     notifications: ref.watch(notificationServiceProvider),
-    dao: ref.watch(medicationDaoProvider),
+    dao: ref.watch(medicationsDataSourceProvider),
     userId: userId,
     readPermission: () => ref.read(notificationPermissionStateProvider),
   );

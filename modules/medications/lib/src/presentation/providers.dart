@@ -4,14 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/aggregates/medication.dart';
 import '../domain/entities/dose_event.dart';
 import '../domain/value_objects/ids.dart';
-import '../infrastructure/drift/medication_dao.dart';
+import '../infrastructure/drift/medications_data_source.dart';
 
-/// Reactive list of the current user's medications. Uses core's
-/// [currentUserIdProvider] (overridden in the app shell at bootstrap).
+/// Reactive list of the active profile's medications. Uses core's
+/// [currentProfileIdProvider] (self profile, ensured at session start).
 final medicationListProvider = StreamProvider<List<Medication>>((ref) {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return Stream.value(const <Medication>[]);
-  return ref.watch(medicationDaoProvider).watchMedications(userId);
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return Stream.value(const <Medication>[]);
+  return ref
+      .watch(medicationsDataSourceProvider)
+      .watchAll(scope: profileId);
 });
 
 /// A scheduled dose for "today" plus its recorded outcome (if any).
@@ -38,10 +40,10 @@ class TodayDose {
 /// Today's scheduled doses (across all active medications), sorted by time,
 /// joined with the latest recorded outcome per slot.
 final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return const <TodayDose>[];
-  final dao = ref.watch(medicationDaoProvider);
-  final meds = await dao.getMedications(userId);
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return const <TodayDose>[];
+  final dao = ref.watch(medicationsDataSourceProvider);
+  final meds = await dao.findAll(scope: profileId);
 
   final now = DateTime.now();
   final dayStart = DateTime(now.year, now.month, now.day);
@@ -77,7 +79,7 @@ final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
 /// Dose history for a single medication (most recent first).
 final doseHistoryProvider =
     FutureProvider.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
-  return ref.watch(medicationDaoProvider).getDoseEvents(medicationId);
+  return ref.watch(medicationsDataSourceProvider).getDoseEvents(medicationId);
 });
 
 Iterable<DateTime> _todayOccurrences(

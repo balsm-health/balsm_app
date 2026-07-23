@@ -5,7 +5,7 @@ import '../../domain/aggregates/medication.dart';
 import '../../domain/entities/dose_event.dart';
 import '../../domain/events/dose_missed.dart';
 import '../../domain/value_objects/ids.dart';
-import 'medication_dao.dart';
+import 'medications_data_source.dart';
 
 /// Grace window after a scheduled time before a dose counts as missed.
 const Duration kMissedGrace = Duration(minutes: 30);
@@ -25,7 +25,7 @@ class MissedDoseDetector {
     required NotificationPermissionState Function() readPermission,
   }) : _readPermission = readPermission;
 
-  final MedicationDao dao;
+  final DriftMedicationsDataSource dao;
   final EventBus bus;
   final NotificationPermissionState Function() _readPermission;
 
@@ -57,7 +57,7 @@ class MissedDoseDetector {
     // Look back over the schedule horizon for un-acted scheduled doses.
     final lookbackStart = now.subtract(const Duration(days: 7));
 
-    final meds = await dao.getMedications(userId);
+    final meds = await dao.findAll();
     final newlyMissed = <DoseEvent>[];
 
     for (final med in meds) {
@@ -143,7 +143,7 @@ class MissedDoseDetector {
 
 final missedDoseDetectorProvider = Provider<MissedDoseDetector>((ref) {
   return MissedDoseDetector(
-    dao: ref.watch(medicationDaoProvider),
+    dao: ref.watch(medicationsDataSourceProvider),
     bus: ref.watch(eventBusProvider),
     readPermission: () => ref.read(notificationPermissionStateProvider),
   );

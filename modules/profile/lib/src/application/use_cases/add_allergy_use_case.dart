@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
-import '../../infrastructure/drift/profile_dao.dart';
+import '../../infrastructure/drift/profile_data_source.dart';
 
 /// Adds an [Allergy] to the user's [HealthProfile] and publishes
 /// [HealthProfileUpdated] on the [EventBus].
@@ -13,12 +13,12 @@ import '../../infrastructure/drift/profile_dao.dart';
 /// SQLite/SQLCipher store only — no network call, no PHI in logs.
 class AddAllergyUseCase {
   const AddAllergyUseCase({
-    required ProfileDao dao,
+    required DriftProfileDataSource dao,
     required EventBus eventBus,
   })  : _dao = dao,
         _bus = eventBus;
 
-  final ProfileDao _dao;
+  final DriftProfileDataSource _dao;
   final EventBus _bus;
 
   /// Maximum number of allergies a profile may hold.
@@ -115,7 +115,7 @@ class AddAllergyUseCase {
 
 final addAllergyUseCaseProvider = Provider<AddAllergyUseCase>((ref) {
   return AddAllergyUseCase(
-    dao: ref.watch(profileDaoProvider),
+    dao: ref.watch(profileDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

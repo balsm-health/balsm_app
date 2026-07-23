@@ -1,5 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../domain/value_objects/health_profile_id.dart';
+import '../domain/value_objects/user_id.dart';
 // Conditional executor: native (dart:ffi) on device, deferred-throw on web.
 import 'database_connection_web.dart' if (dart.library.ffi) 'database_connection_io.dart';
 
@@ -35,13 +38,7 @@ class AppDatabase extends _$AppDatabase {
           // user_id — re-keying the DAOs lands with the dependants feature.
           await _ensureColumn('medications', 'health_profile_id', 'TEXT');
           await _ensureColumn('health_record', 'health_profile_id', 'TEXT');
-          for (final table in ['medications', 'health_record']) {
-            await customStatement('''
-              UPDATE $table SET health_profile_id =
-                (SELECT hp.id FROM health_profile hp
-                  WHERE hp.user_id = $table.user_id)
-              WHERE health_profile_id IS NULL''');
-          }
+          await runProfileAnchorBackfill();
         },
       );
 
@@ -54,6 +51,45 @@ class AppDatabase extends _$AppDatabase {
     if (!hasColumn) {
       await customStatement('ALTER TABLE $table ADD COLUMN $column $ddlType');
     }
+  }
+
+  /// Anchors any NULL `health_profile_id` rows to their user's profile row
+  /// (convergent, idempotent). Runs on every open and again after
+  /// [ensureSelfHealthProfile] creates a profile row mid-session.
+  Future<void> runProfileAnchorBackfill() async {
+    for (final table in ['medications', 'health_record']) {
+      await customStatement('''
+        UPDATE $table SET health_profile_id =
+          (SELECT hp.id FROM health_profile hp
+            WHERE hp.user_id = $table.user_id)
+        WHERE health_profile_id IS NULL''');
+    }
+  }
+
+  /// Returns [userId]'s self health-profile id, creating the (empty) row on
+  /// first call — the guarantee behind `currentProfileIdProvider`: every
+  /// signed-in session has an active profile scope. Also re-runs the anchor
+  /// backfill so rows written before the profile existed converge immediately.
+  Future<HealthProfileId> ensureSelfHealthProfile(UserId userId) async {
+    final existing = await customSelect(
+      'SELECT id FROM health_profile WHERE user_id = ? LIMIT 1',
+      variables: [Variable.withString(userId.value)],
+    ).get();
+    if (existing.isNotEmpty) {
+      return HealthProfileId.value(existing.first.read<String>('id'));
+    }
+    final id = HealthProfileId.uuid();
+    // updated_at is epoch-millis (matches the profile DAO's hydration).
+    await customInsert(
+      'INSERT INTO health_profile (id, user_id, updated_at) VALUES (?, ?, ?)',
+      variables: [
+        Variable.withString(id.value),
+        Variable.withString(userId.value),
+        Variable.withInt(DateTime.now().millisecondsSinceEpoch),
+      ],
+    );
+    await runProfileAnchorBackfill();
+    return id;
   }
 
   static Future<AppDatabase> open() async => AppDatabase(openExecutor());

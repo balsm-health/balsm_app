@@ -31,6 +31,12 @@ final class NoActiveEntityException extends StorageException {
   const NoActiveEntityException([super.message = 'no active entity selected']);
 }
 
+/// A profile-scoped operation ran with no active health profile (signed out,
+/// or the self profile is not yet ensured) and no explicit scope override.
+final class NoActiveProfileException extends StorageException {
+  const NoActiveProfileException([super.message = 'no active health profile']);
+}
+
 /// The backend rejected or failed a mutation (or an encode failed).
 final class StorageWriteException extends StorageException {
   const StorageWriteException(super.message, [this.cause]);

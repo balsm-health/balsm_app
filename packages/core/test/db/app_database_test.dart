@@ -56,6 +56,37 @@ void main() {
     expect(row.read<String>('health_profile_id'), 'hp1');
   });
 
+  test(
+      'ensureSelfHealthProfile creates once, is idempotent, and anchors '
+      'orphan rows immediately', () async {
+    // Orphan row written before any profile existed.
+    await db.customStatement('''
+      INSERT INTO medications (id, user_id, health_profile_id, name,
+        schedule_type, schedule_config, start_date)
+      VALUES ('m1', 'u1', NULL, 'A', 'daily', '{}', 't')''');
+
+    final id = await db.ensureSelfHealthProfile(UserId.value('u1'));
+    expect(id.value, isNotEmpty);
+
+    // Idempotent — same id on every later call, no duplicate rows.
+    final again = await db.ensureSelfHealthProfile(UserId.value('u1'));
+    expect(again.value, id.value);
+    final rows = await db
+        .customSelect("SELECT id FROM health_profile WHERE user_id = 'u1'")
+        .get();
+    expect(rows.length, 1);
+
+    // The orphan medication got anchored by the post-ensure backfill.
+    final med = await db
+        .customSelect('SELECT health_profile_id FROM medications').getSingle();
+    expect(med.read<String>('health_profile_id'), id.value);
+
+    // The row hydrates through the profile DAO shape (updated_at is int).
+    final hp = await db
+        .customSelect('SELECT updated_at FROM health_profile').getSingle();
+    expect(hp.read<int>('updated_at'), isA<int>());
+  });
+
   test('backfill statement anchors NULL rows and never overwrites', () async {
     await db.customStatement(
         "INSERT INTO health_profile (id, user_id, updated_at) VALUES ('hp1','u1','t')");

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/medication.dart';
 import '../../domain/events/medication_added.dart';
-import '../../infrastructure/drift/medication_dao.dart';
+import '../../infrastructure/drift/medications_data_source.dart';
 import '../../infrastructure/drift/medication_scheduler.dart';
 
 /// Adds a medication, then rebuilds the OS reminder schedule.
@@ -14,12 +14,12 @@ class AddMedicationUseCase {
     required this.scheduler,
   });
 
-  final MedicationDao dao;
+  final DriftMedicationsDataSource dao;
   final EventBus bus;
   final MedicationScheduler scheduler;
 
   Future<void> call(Medication medication) async {
-    await dao.addMedication(medication);
+    await dao.put(medication.id, medication);
     bus.publish(MedicationAdded(
       medicationId: medication.id,
       userId: medication.userId,
@@ -33,7 +33,7 @@ class AddMedicationUseCase {
 final addMedicationUseCaseProvider =
     Provider.family<AddMedicationUseCase, UserId>((ref, userId) {
   return AddMedicationUseCase(
-    dao: ref.watch(medicationDaoProvider),
+    dao: ref.watch(medicationsDataSourceProvider),
     bus: ref.watch(eventBusProvider),
     scheduler: ref.watch(medicationSchedulerProvider(userId)),
   );

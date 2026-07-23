@@ -16,7 +16,7 @@ const kHomeCountry = CountryCode.egypt;
 /// Global app context — mirrors the React `AppCtx`. Holds language, accent,
 /// current tab/route, country, and the active backup target. The signed-in
 /// user's identity/PHI is NOT held here — screens read it from real providers
-/// (`accountSummaryProvider`, `profileDaoProvider`).
+/// (`accountSummaryProvider`, `profileDataSourceProvider`).
 class PatientAppState extends ChangeNotifier {
   String lang = 'en';
   Accent accent = Accent.blue;

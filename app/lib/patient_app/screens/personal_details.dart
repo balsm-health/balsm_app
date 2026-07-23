@@ -22,7 +22,7 @@ import 'package:emergency_card/emergency_card.dart'
 import 'package:profile/profile.dart'
     show
         EmergencyContact,
-        profileDaoProvider,
+        profileDataSourceProvider,
         addEmergencyContactUseCaseProvider,
         AddEmergencyContactUseCase,
         normalizeArabicNumerals;
@@ -48,7 +48,7 @@ final _emergencyContactsProvider =
     FutureProvider.autoDispose<List<EmergencyContact>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return const [];
-  final profile = await ref.watch(profileDaoProvider).getProfile(userId);
+  final profile = await ref.watch(profileDataSourceProvider).getProfile(userId);
   return profile?.emergencyContacts ?? const [];
 });
 
