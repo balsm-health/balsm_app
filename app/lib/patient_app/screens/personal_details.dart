@@ -73,11 +73,12 @@ final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async
 });
 
 /// TTL choices offered before minting the emergency QR token (FR-017).
-const _emergencyTtlOptions = <({String en, String ar, int seconds})>[
-  (en: '1h', ar: 'ساعة', seconds: 3600),
-  (en: '6h', ar: '٦ س', seconds: 21600),
-  (en: '24h', ar: '٢٤ س', seconds: 86400),
-  (en: '7d', ar: '٧ أيام', seconds: 604800),
+/// `key` is an app i69n label key.
+const _emergencyTtlOptions = <({String key, int seconds})>[
+  (key: 'eqr_ttl_1h', seconds: 3600),
+  (key: 'eqr_ttl_6h', seconds: 21600),
+  (key: 'eqr_ttl_24h', seconds: 86400),
+  (key: 'eqr_ttl_7d', seconds: 604800),
 ];
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
@@ -728,7 +729,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       (_) {
         _ticker?.cancel();
         setState(() { _mint = null; _revoking = false; _error = null; });
-        _showToast(ar ? 'تم إلغاء الرمز' : 'QR revoked');
+        _showToast(s.strings.eqr_revoked_toast);
       },
       (f) => setState(() { _revoking = false; _error = f.message; }),
     );
@@ -740,11 +741,11 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     final m = _mint;
     if (m == null) return;
     Clipboard.setData(ClipboardData(text: m.qrUrl));
-    _showToast(ar ? 'تم نسخ الرابط' : 'Link copied');
+    _showToast(s.strings.eqr_link_copied);
   }
 
   String get _countdownLabel {
-    if (_isExpired) return ar ? 'منتهي' : 'Expired';
+    if (_isExpired) return s.strings.eqr_expired;
     final d = _remaining;
     final days = d.inDays;
     final hours = d.inHours % 24;
@@ -767,21 +768,13 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
     final String desc;
     if (hasToken) {
-      desc = ar
-          ? 'اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.'
-          : 'Show this encrypted code to emergency staff. It expires automatically; the decryption key travels only inside the link.';
+      desc = s.strings.eqr_help_active;
     } else if (userId == null) {
-      desc = ar
-          ? 'سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.'
-          : 'Sign in to share your emergency health card.';
+      desc = s.strings.eqr_help_signin;
     } else if (!canShare) {
-      desc = ar
-          ? 'أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.'
-          : 'Add your blood type, allergies, conditions or an emergency contact to share an emergency card.';
+      desc = s.strings.eqr_help_incomplete;
     } else {
-      desc = ar
-          ? 'أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.'
-          : 'Generate a secure, encrypted QR of your emergency health profile. The decryption key stays on your device.';
+      desc = s.strings.eqr_help_create;
     }
 
     return Container(
@@ -798,7 +791,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
-                  Expanded(child: Text(ar ? 'رمز الطوارئ' : 'Emergency QR',
+                  Expanded(child: Text(s.strings.eqr_title,
                       style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                   RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
                 ]),
@@ -896,7 +889,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
               Text(
                 _isExpired
                     ? _countdownLabel
-                    : '${ar ? 'ينتهي خلال' : 'Expires in'} $_countdownLabel',
+                    : s.strings.eqr_expires_in(_countdownLabel),
                 style: Typo.num(size: FS.xs, weight: FontWeight.w700,
                     color: _isExpired ? T.danger : s.accent.d),
               ),
@@ -921,28 +914,28 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           const SizedBox(width: 10),
           Expanded(child: Text(m.qrUrl.split('#').first, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: Typo.num(size: FS.sm, color: T.fg2))),
-          PButton(ar ? 'نسخ' : 'Copy', icon: LucideIcons.copy, variant: BtnVariant.ghost, accent: s.accent, ar: ar,
+          PButton(s.strings.eqr_copy, icon: LucideIcons.copy, variant: BtnVariant.ghost, accent: s.accent, ar: ar,
               onTap: expired ? null : _copy),
         ]),
       ),
       const SizedBox(height: 16),
       if (expired)
         // Token lapsed → offer a fresh mint (returns to the affordance).
-        PButton(ar ? 'إنشاء رمز جديد' : 'Generate new code', icon: LucideIcons.refreshCw,
+        PButton(s.strings.eqr_generate_new, icon: LucideIcons.refreshCw,
             variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
             onTap: () { _ticker?.cancel(); setState(() => _mint = null); })
       else ...[
         Row(children: [
-          Expanded(child: PButton(ar ? 'حفظ' : 'Save', icon: LucideIcons.download, variant: BtnVariant.secondary, large: true, block: true, ar: ar,
-              onTap: () => _showToast(ar ? 'تم حفظ الصورة' : 'Saved to Photos'))),
+          Expanded(child: PButton(s.strings.eqr_save, icon: LucideIcons.download, variant: BtnVariant.secondary, large: true, block: true, ar: ar,
+              onTap: () => _showToast(s.strings.eqr_saved_toast))),
           const SizedBox(width: 10),
-          Expanded(child: PButton(ar ? 'مشاركة' : 'Share', icon: LucideIcons.share2, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
+          Expanded(child: PButton(s.strings.eqr_share, icon: LucideIcons.share2, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
               onTap: _copy)),
         ]),
         const SizedBox(height: 10),
         _revoking
             ? _busyButton()
-            : PButton(ar ? 'إلغاء الرمز' : 'Revoke code', icon: LucideIcons.ban,
+            : PButton(s.strings.eqr_revoke, icon: LucideIcons.ban,
                 variant: BtnVariant.ghost, block: true, ar: ar, color: T.danger, onTap: _revoke),
       ],
     ];
@@ -950,7 +943,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
   /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
-        Text((ar ? 'مدة الصلاحية' : 'Valid for').toUpperCase(),
+        Text(s.strings.eqr_valid_for.toUpperCase(),
             style: Typo.meta(ar: ar).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
         const SizedBox(height: 8),
         _ttlControl(),
@@ -961,7 +954,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         const SizedBox(height: 16),
         _minting
             ? _busyButton(primary: true)
-            : PButton(ar ? 'إنشاء رمز QR' : 'Generate QR', icon: LucideIcons.qrCode,
+            : PButton(s.strings.eqr_generate, icon: LucideIcons.qrCode,
                 variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
                 onTap: _mintToken),
       ];
@@ -978,7 +971,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         ]),
       );
 
-  Widget _ttlSeg(({String en, String ar, int seconds}) opt) {
+  Widget _ttlSeg(({String key, int seconds}) opt) {
     final active = _ttlSeconds == opt.seconds;
     return GestureDetector(
       onTap: () => setState(() => _ttlSeconds = opt.seconds),
@@ -991,7 +984,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           color: active ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
           boxShadow: active ? T.shadowXs : null),
-        child: Text(ar ? opt.ar : opt.en,
+        child: Text(s.t(opt.key),
             style: Typo.num(size: FS.sm, weight: FontWeight.w700,
                 color: active ? s.accent.d : T.fg3)),
       ),
@@ -1011,8 +1004,8 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             const SizedBox(height: 14),
             Text(
               signedOut
-                  ? (ar ? 'يلزم تسجيل الدخول' : 'Sign in required')
-                  : (ar ? 'لا توجد بيانات صحية بعد' : 'No health data yet'),
+                  ? s.strings.eqr_signin_required
+                  : s.strings.eqr_no_data,
               textAlign: TextAlign.center,
               style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
           ]),
@@ -1021,7 +1014,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         // Disabled Generate button (0.4 opacity, non-tappable) — prototype style.
         Opacity(
           opacity: 0.4,
-          child: PButton(ar ? 'إنشاء رمز QR' : 'Generate QR', icon: LucideIcons.qrCode,
+          child: PButton(s.strings.eqr_generate, icon: LucideIcons.qrCode,
               variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar, onTap: null),
         ),
       ];

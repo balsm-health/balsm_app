@@ -7,7 +7,12 @@ import 'package:auth/auth.dart'
         SignInSuccess,
         SignInLockout;
 import 'package:core/core.dart'
-    show countryRegistryProvider, StatusScreen, CountryCode, CountryCodeL10n;
+    show
+        countryRegistryProvider,
+        StatusScreen,
+        CountryCode,
+        CountryCodeL10n,
+        LanguageCode;
 import 'package:disclosure/disclosure.dart'
     show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
@@ -131,7 +136,8 @@ class _WelcomeScreen extends StatelessWidget {
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   const Icon(LucideIcons.languages, size: 17, color: T.fg2),
                   const SizedBox(width: 7),
-                  Text(s.lang == 'ar' ? 'English' : 'العربية',
+                  // Endonym of the OTHER language — the toggle's target.
+                  Text((s.lang == 'ar' ? LanguageCode.en : LanguageCode.ar).nativeName,
                       style: Typo.bodySm(ar: s.lang != 'ar')
                           .copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                 ]),
@@ -270,9 +276,7 @@ class _UnderEighteenScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  s.rtl
-                      ? 'بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.'
-                      : 'Balsm is currently available for ages 18 and older. We\'re working on a version for younger users with parental consent.',
+                  s.strings.age_gate_body,
                   textAlign: TextAlign.center,
                   style: Typo.body(ar: s.rtl).copyWith(color: T.fg2),
                 ),
@@ -407,9 +411,8 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                   .difference(DateTime.now())
                   .inSeconds
                   .clamp(0, 3600);
-              setState(() => _error = s.rtl
-                  ? 'الحساب مقفل مؤقتًا. حاول بعد $secsLeft ثانية.'
-                  : 'Account temporarily locked. Try again in ${secsLeft}s.');
+              setState(() =>
+                  _error = s.strings.auth_locked_retry(secsLeft.toString()));
           }
         },
         // Uniform message — never reveal whether the account or password is wrong.
@@ -424,9 +427,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 
     // Phone OTP is not backed by the real API (email + Google/Apple only).
     if (!email) {
-      setState(() => _error = s.rtl
-          ? 'تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.'
-          : 'Phone sign-in isn\'t available yet — please use email.');
+      setState(() => _error = s.strings.auth_phone_soon);
       return;
     }
 
@@ -694,9 +695,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
             final secsLeft =
                 session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
             setState(() {
-              _error = s.rtl
-                  ? 'الحساب مقفل مؤقتًا. حاول بعد $secsLeft ثانية.'
-                  : 'Account temporarily locked. Try again in ${secsLeft}s.';
+              _error = s.strings.auth_locked_retry(secsLeft.toString());
               ctrl.clear();
             });
         }
@@ -990,9 +989,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        s.rtl
-                            ? 'قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.'
-                            : 'Before you continue, please review how we handle your data. Your health data stays on your device.',
+                        s.strings.pv_intro_body,
                         style: Typo.body(ar: s.rtl).copyWith(color: T.fg2),
                       ),
                       const SizedBox(height: 20),
@@ -1000,57 +997,43 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                         s,
                         LucideIcons.database,
                         s.strings.pv_collect,
-                        s.rtl
-                            ? 'حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.'
-                            : 'A minimal non-health account (email, country, language). Health records stay encrypted on your device.',
+                        s.strings.pv_collect_body,
                       ),
                       _gateSection(
                         s,
                         LucideIcons.lock,
                         s.strings.pv_protect,
-                        s.rtl
-                            ? 'تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.'
-                            : 'On-device encryption, secure transport, and least-privilege access.',
+                        s.strings.pv_protect_body,
                       ),
                       _gateSection(
                         s,
                         LucideIcons.scale,
                         s.strings.pv_rights,
-                        s.rtl
-                            ? 'يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.'
-                            : 'Access, correct, or delete your data at any time from account settings.',
+                        s.strings.pv_rights_body,
                       ),
                       _gateSection(
                         s,
                         LucideIcons.landmark,
                         s.strings.pv_authority,
-                        s.rtl
-                            ? 'الجهة المشرفة على حماية بياناتك في بلدك: $authority.'
-                            : 'The authority overseeing your data protection in your country: $authority.',
+                        s.strings.pv_authority_body(authority),
                       ),
                       _gateSection(
                         s,
                         LucideIcons.share2,
                         s.strings.pv_sharing2,
-                        s.rtl
-                            ? 'لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.'
-                            : 'We never sell your data. Sharing happens only with your explicit consent or a legal obligation.',
+                        s.strings.pv_sharing_body,
                       ),
                       _gateSection(
                         s,
                         LucideIcons.trash2,
                         s.strings.pv_deletion,
-                        s.rtl
-                            ? 'يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.'
-                            : 'Deleting your account removes your non-health cloud data and wipes on-device records.',
+                        s.strings.pv_deletion_body,
                       ),
                       const SizedBox(height: 8),
                       if (!_readToEnd)
                         Center(
                           child: Text(
-                            s.rtl
-                                ? 'مرّر للأسفل للمتابعة'
-                                : 'Scroll down to continue',
+                            s.strings.pv_scroll_hint,
                             style: Typo.meta(ar: s.rtl),
                           ),
                         ),
@@ -1655,10 +1638,6 @@ class _DobCalendarSheetState extends State<_DobCalendarSheet> {
   DateTime? _sel;
   bool _yearMode = false;
 
-  static const _mEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  static const _mAr = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-  static const _wdEn = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-  static const _wdAr = ['أحد','إثن','ثلا','أرب','خمي','جمع','سبت'];
 
   @override
   void initState() {
@@ -1681,8 +1660,9 @@ class _DobCalendarSheetState extends State<_DobCalendarSheet> {
   Widget build(BuildContext context) {
     final s = widget.s;
     final rtl = s.rtl;
-    final months = rtl ? _mAr : _mEn;
-    final wd = rtl ? _wdAr : _wdEn;
+    // Pipe-separated lists in the i69n bundle (`cal_months`/`cal_weekdays`).
+    final months = s.strings.cal_months.split('|');
+    final wd = s.strings.cal_weekdays.split('|');
     final now = DateTime.now();
     final firstWeekday = DateTime(_y, _m + 1, 1).weekday % 7; // Sun=0
     final daysIn = DateTime(_y, _m + 2, 0).day;

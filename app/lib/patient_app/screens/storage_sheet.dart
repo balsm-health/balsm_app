@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
-import '../strings.dart' show tr; // explicit-locale storageCfg label lookups
 import '../tokens.dart';
 import '../widgets/badges.dart';
 
@@ -32,13 +31,13 @@ void showStorageSync(BuildContext context) {
   );
 }
 
-// (en, ar) migration step labels.
+// Migration step labels — app i69n keys.
 const _migrateSteps = [
-  ('Preparing…', 'جارٍ التحضير…'),
-  ('Transferring check-ins…', 'نقل المتابعات…'),
-  ('Transferring records…', 'نقل السجلات…'),
-  ('Transferring prescriptions…', 'نقل الوصفات…'),
-  ('Verifying & finishing…', 'التحقق والإنهاء…'),
+  'store_step_prepare',
+  'store_step_checkins',
+  'store_step_records',
+  'store_step_rx',
+  'store_step_verify',
 ];
 
 class _StorageSyncSheet extends StatefulWidget {
@@ -141,7 +140,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
-        child: Text(ar ? 'اختر مكان حفظ نسخة احتياطية من بياناتك.' : 'Choose where to keep a backup of your data.',
+        child: Text(s.strings.store_choose_help,
             style: Typo.meta(ar: ar).copyWith(height: 1.5)),
       ),
       for (final p in const ['local', 'icloud', 'gdrive']) _providerCard(p),
@@ -182,7 +181,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                 Text(s.t(cfg.label), style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                 if (isLocal) ...[
                   const SizedBox(width: 8),
-                  Pill(ar ? 'دائمًا' : 'Always on', kind: PillKind.neutral, dot: false, ar: ar,
+                  Pill(s.strings.store_always_on, kind: PillKind.neutral, dot: false, ar: ar,
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
                 ],
               ]),
@@ -195,7 +194,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                 Text(
                   isActive
                       ? (isLocal ? s.strings.store_local_only : s.strings.store_backed)
-                      : (isLocal ? (ar ? 'لا نسخة احتياطية' : 'No backup') : (ar ? 'اضغط للربط' : 'Tap to connect')),
+                      : (isLocal ? s.strings.store_no_backup : s.strings.store_tap_connect),
                   style: Typo.meta(ar: ar).copyWith(
                       fontSize: FS.xs, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                       color: isActive ? cfg.color : T.fg4)),
@@ -223,10 +222,10 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           child: Spinner(size: 34, stroke: 3, color: cfg.color),
         ),
         const SizedBox(height: 18),
-        Text(ar ? 'جارٍ الربط بـ ${tr(cfg.label, 'ar')}…' : 'Connecting to ${tr(cfg.label, 'en')}…',
+        Text(s.strings.store_connecting(s.t(cfg.label)),
             textAlign: TextAlign.center, style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl)),
         const SizedBox(height: 6),
-        Text(ar ? 'سيبدأ النسخ الاحتياطي تلقائياً.' : 'Backup will start automatically.',
+        Text(s.strings.store_auto_start,
             textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
       ]),
     ));
@@ -252,7 +251,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             _miniIco(cfg),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(ar ? 'جارٍ النقل' : 'Migrating', style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+              Text(s.strings.store_migrating, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               Text('${s.t(from.label)} → ${s.t(cfg.label)}', style: Typo.meta(ar: ar)),
             ])),
             Text('$pct%', style: Typo.num(size: FS.md, weight: FontWeight.w700, color: cfg.color)),
@@ -297,7 +296,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                   : const Icon(LucideIcons.circle, size: 17, color: T.ink200),
         ),
         const SizedBox(width: 10),
-        Text(_migrateSteps[i].$1 == _migrateSteps[i].$2 ? _migrateSteps[i].$1 : (ar ? _migrateSteps[i].$2 : _migrateSteps[i].$1),
+        Text(s.t(_migrateSteps[i]),
             style: Typo.bodySm(ar: ar).copyWith(
                 fontWeight: act ? FontWeight.w600 : FontWeight.w400,
                 color: done ? T.fg4 : (act ? T.fg1 : T.fg4))),
@@ -320,8 +319,8 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
         const SizedBox(height: 16),
         Text(
           toLocal
-              ? (ar ? 'تم إيقاف النسخ الاحتياطي' : 'Cloud backup removed')
-              : (ar ? 'تمت المزامنة بنجاح' : 'All synced'),
+              ? s.strings.store_removed_done
+              : s.strings.store_synced_done,
           textAlign: TextAlign.center, style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl),
         ),
         const SizedBox(height: 16),
@@ -333,13 +332,13 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             const SizedBox(width: 10),
             Flexible(child: Text(
               toLocal
-                  ? (ar ? 'محفوظ على هذا الجهاز فقط' : 'Saved on this device only')
-                  : (ar ? 'مزامن مع ${tr(cfg.label, 'ar')}' : 'Synced with ${tr(cfg.label, 'en')}'),
+                  ? s.strings.store_device_only
+                  : s.strings.store_synced_with(s.t(cfg.label)),
               style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1))),
           ]),
         ),
         const SizedBox(height: 16),
-        PButton(ar ? 'تم' : 'Done', variant: BtnVariant.primary, large: true, block: true,
+        PButton(s.strings.store_done, variant: BtnVariant.primary, large: true, block: true,
             accent: s.accent, ar: ar, onTap: () => Navigator.pop(context)),
       ]),
     ));
@@ -358,18 +357,17 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             const Icon(LucideIcons.cloudOff, size: 22, color: T.danger),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(ar ? 'إيقاف النسخ الاحتياطي؟' : 'Remove cloud backup?',
+              Text(s.strings.store_remove_q,
                   style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               const SizedBox(height: 4),
               Text(
-                ar ? 'ستُحذف بياناتك من ${tr(cur.label, 'ar')} وتبقى على جهازك فقط.'
-                   : 'Your data will be removed from ${tr(cur.label, 'en')} and kept on this device only.',
+                s.strings.store_remove_help(s.t(cur.label)),
                 style: Typo.meta(ar: ar).copyWith(height: 1.5)),
             ])),
           ]),
         ),
         const SizedBox(height: 14),
-        _DangerButton(label: ar ? 'إيقاف النسخ الاحتياطي' : 'Remove cloud backup', onTap: () => _runPhase('local', 'connecting')),
+        _DangerButton(label: s.strings.store_remove_cta, onTap: () => _runPhase('local', 'connecting')),
         const SizedBox(height: 10),
         PButton(s.strings.cancel, variant: BtnVariant.secondary, block: true, ar: ar,
             onTap: () => setState(() { phase = 'idle'; target = null; })),

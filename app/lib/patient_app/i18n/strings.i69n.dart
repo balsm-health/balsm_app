@@ -411,6 +411,88 @@ class Strings implements i69n.I69nMessageBundle {
   String get dob_title => "Date of birth";
   String get dob_confirm => "Confirm";
   String get dob_select => "Select a date";
+  String get eqr_title => "Emergency QR";
+  String get eqr_ttl_1h => "1h";
+  String get eqr_ttl_6h => "6h";
+  String get eqr_ttl_24h => "24h";
+  String get eqr_ttl_7d => "7d";
+  String get eqr_help_active =>
+      "Show this encrypted code to emergency staff. It expires automatically; the decryption key travels only inside the link.";
+  String get eqr_help_signin => "Sign in to share your emergency health card.";
+  String get eqr_help_incomplete =>
+      "Add your blood type, allergies, conditions or an emergency contact to share an emergency card.";
+  String get eqr_help_create =>
+      "Generate a secure, encrypted QR of your emergency health profile. The decryption key stays on your device.";
+  String get eqr_expired => "Expired";
+  String eqr_expires_in(String t) => "Expires in $t";
+  String get eqr_copy => "Copy";
+  String get eqr_share => "Share";
+  String get eqr_save => "Save";
+  String get eqr_saved_toast => "Saved to Photos";
+  String get eqr_link_copied => "Link copied";
+  String get eqr_revoke => "Revoke code";
+  String get eqr_revoked_toast => "QR revoked";
+  String get eqr_generate => "Generate QR";
+  String get eqr_generate_new => "Generate new code";
+  String get eqr_valid_for => "Valid for";
+  String get eqr_signin_required => "Sign in required";
+  String get eqr_no_data => "No health data yet";
+  String get store_step_prepare => "Preparing…";
+  String get store_step_checkins => "Transferring check-ins…";
+  String get store_step_records => "Transferring records…";
+  String get store_step_rx => "Transferring prescriptions…";
+  String get store_step_verify => "Verifying & finishing…";
+  String get store_choose_help => "Choose where to keep a backup of your data.";
+  String get store_always_on => "Always on";
+  String get store_no_backup => "No backup";
+  String get store_tap_connect => "Tap to connect";
+  String store_connecting(String target) => "Connecting to $target…";
+  String get store_auto_start => "Backup will start automatically.";
+  String get store_migrating => "Migrating";
+  String get store_removed_done => "Cloud backup removed";
+  String get store_synced_done => "All synced";
+  String get store_device_only => "Saved on this device only";
+  String store_synced_with(String target) => "Synced with $target";
+  String get store_done => "Done";
+  String get store_remove_q => "Remove cloud backup?";
+  String store_remove_help(String target) =>
+      "Your data will be removed from $target and kept on this device only.";
+  String get store_remove_cta => "Remove cloud backup";
+  String get age_gate_body =>
+      "Balsm is currently available for ages 18 and older. We're working on a version for younger users with parental consent.";
+  String auth_locked_retry(String secs) =>
+      "Account temporarily locked. Try again in ${secs}s.";
+  String get auth_phone_soon =>
+      "Phone sign-in isn't available yet — please use email.";
+  String get pv_intro_body =>
+      "Before you continue, please review how we handle your data. Your health data stays on your device.";
+  String get pv_collect_body =>
+      "A minimal non-health account (email, country, language). Health records stay encrypted on your device.";
+  String get pv_protect_body =>
+      "On-device encryption, secure transport, and least-privilege access.";
+  String get pv_rights_body =>
+      "Access, correct, or delete your data at any time from account settings.";
+  String pv_authority_body(String authority) =>
+      "The authority overseeing your data protection in your country: $authority.";
+  String get pv_sharing_body =>
+      "We never sell your data. Sharing happens only with your explicit consent or a legal obligation.";
+  String get pv_deletion_body =>
+      "Deleting your account removes your non-health cloud data and wipes on-device records.";
+  String get pv_scroll_hint => "Scroll down to continue";
+  String get cal_months =>
+      "January|February|March|April|May|June|July|August|September|October|November|December";
+  String get cal_weekdays => "Su|Mo|Tu|We|Th|Fr|Sa";
+  String get meds_signin_help => "Sign in to view your medications.";
+  String get meds_empty_help => "No medications yet. Add one to get started.";
+  String get meds_none_today => "Nothing scheduled today.";
+  String meds_tz_moved(String from, String to) =>
+      "You moved from $from to $to. Recompute your medication reminder times for the new local time?";
+  String get cond_icd10_hint => "ICD-10 (optional)";
+  String get cond_onset_hint => "Onset yr";
+  String get care_add_help =>
+      "Add a doctor from the map to build your care team.";
+  String get boot_preparing => "Preparing your health record";
+  String get boot_tagline => "On your device, by design.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1206,6 +1288,136 @@ class Strings implements i69n.I69nMessageBundle {
         return dob_confirm;
       case 'dob_select':
         return dob_select;
+      case 'eqr_title':
+        return eqr_title;
+      case 'eqr_ttl_1h':
+        return eqr_ttl_1h;
+      case 'eqr_ttl_6h':
+        return eqr_ttl_6h;
+      case 'eqr_ttl_24h':
+        return eqr_ttl_24h;
+      case 'eqr_ttl_7d':
+        return eqr_ttl_7d;
+      case 'eqr_help_active':
+        return eqr_help_active;
+      case 'eqr_help_signin':
+        return eqr_help_signin;
+      case 'eqr_help_incomplete':
+        return eqr_help_incomplete;
+      case 'eqr_help_create':
+        return eqr_help_create;
+      case 'eqr_expired':
+        return eqr_expired;
+      case 'eqr_expires_in':
+        return eqr_expires_in;
+      case 'eqr_copy':
+        return eqr_copy;
+      case 'eqr_share':
+        return eqr_share;
+      case 'eqr_save':
+        return eqr_save;
+      case 'eqr_saved_toast':
+        return eqr_saved_toast;
+      case 'eqr_link_copied':
+        return eqr_link_copied;
+      case 'eqr_revoke':
+        return eqr_revoke;
+      case 'eqr_revoked_toast':
+        return eqr_revoked_toast;
+      case 'eqr_generate':
+        return eqr_generate;
+      case 'eqr_generate_new':
+        return eqr_generate_new;
+      case 'eqr_valid_for':
+        return eqr_valid_for;
+      case 'eqr_signin_required':
+        return eqr_signin_required;
+      case 'eqr_no_data':
+        return eqr_no_data;
+      case 'store_step_prepare':
+        return store_step_prepare;
+      case 'store_step_checkins':
+        return store_step_checkins;
+      case 'store_step_records':
+        return store_step_records;
+      case 'store_step_rx':
+        return store_step_rx;
+      case 'store_step_verify':
+        return store_step_verify;
+      case 'store_choose_help':
+        return store_choose_help;
+      case 'store_always_on':
+        return store_always_on;
+      case 'store_no_backup':
+        return store_no_backup;
+      case 'store_tap_connect':
+        return store_tap_connect;
+      case 'store_connecting':
+        return store_connecting;
+      case 'store_auto_start':
+        return store_auto_start;
+      case 'store_migrating':
+        return store_migrating;
+      case 'store_removed_done':
+        return store_removed_done;
+      case 'store_synced_done':
+        return store_synced_done;
+      case 'store_device_only':
+        return store_device_only;
+      case 'store_synced_with':
+        return store_synced_with;
+      case 'store_done':
+        return store_done;
+      case 'store_remove_q':
+        return store_remove_q;
+      case 'store_remove_help':
+        return store_remove_help;
+      case 'store_remove_cta':
+        return store_remove_cta;
+      case 'age_gate_body':
+        return age_gate_body;
+      case 'auth_locked_retry':
+        return auth_locked_retry;
+      case 'auth_phone_soon':
+        return auth_phone_soon;
+      case 'pv_intro_body':
+        return pv_intro_body;
+      case 'pv_collect_body':
+        return pv_collect_body;
+      case 'pv_protect_body':
+        return pv_protect_body;
+      case 'pv_rights_body':
+        return pv_rights_body;
+      case 'pv_authority_body':
+        return pv_authority_body;
+      case 'pv_sharing_body':
+        return pv_sharing_body;
+      case 'pv_deletion_body':
+        return pv_deletion_body;
+      case 'pv_scroll_hint':
+        return pv_scroll_hint;
+      case 'cal_months':
+        return cal_months;
+      case 'cal_weekdays':
+        return cal_weekdays;
+      case 'meds_signin_help':
+        return meds_signin_help;
+      case 'meds_empty_help':
+        return meds_empty_help;
+      case 'meds_none_today':
+        return meds_none_today;
+      case 'meds_tz_moved':
+        return meds_tz_moved;
+      case 'cond_icd10_hint':
+        return cond_icd10_hint;
+      case 'cond_onset_hint':
+        return cond_onset_hint;
+      case 'care_add_help':
+        return care_add_help;
+      case 'boot_preparing':
+        return boot_preparing;
+      case 'boot_tagline':
+        return boot_tagline;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

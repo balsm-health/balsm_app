@@ -436,9 +436,9 @@ class _ConditionEditorState extends State<_ConditionEditor> {
         _field(_name, s.strings.pd_add_cond, s.dir),
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: _field(_icd10, s.rtl ? 'رمز ICD-10 (اختياري)' : 'ICD-10 (optional)', TextDirection.ltr)),
+          Expanded(child: _field(_icd10, s.strings.cond_icd10_hint, TextDirection.ltr)),
           const SizedBox(width: 8),
-          SizedBox(width: 92, child: _field(_year, s.rtl ? 'سنة البدء' : 'Onset yr', TextDirection.ltr, number: true)),
+          SizedBox(width: 92, child: _field(_year, s.strings.cond_onset_hint, TextDirection.ltr, number: true)),
           const SizedBox(width: 8),
           Pressable(
             onTap: _add,
@@ -508,10 +508,7 @@ class CareTeamScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
               const SizedBox(height: 4),
-              Text(
-                  s.rtl
-                      ? 'أضف طبيبك من الخريطة لبناء فريق الرعاية.'
-                      : 'Add a doctor from the map to build your care team.',
+              Text(s.strings.care_add_help,
                   textAlign: TextAlign.center,
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),

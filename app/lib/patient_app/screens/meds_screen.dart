@@ -302,19 +302,13 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
         if (userId == null)
           _EmptyState(
               s: s,
-              text: s.rtl
-                  ? 'سجّل الدخول لعرض أدويتك.'
-                  : 'Sign in to view your medications.')
+              text: s.strings.meds_signin_help)
         else if (doses.isEmpty)
           _EmptyState(
               s: s,
               text: medCount == 0
-                  ? (s.rtl
-                      ? 'لا توجد أدوية بعد. أضف دواءً للبدء.'
-                      : 'No medications yet. Add one to get started.')
-                  : (s.rtl
-                      ? 'لا جرعات مجدولة اليوم.'
-                      : 'Nothing scheduled today.'))
+                  ? s.strings.meds_empty_help
+                  : s.strings.meds_none_today)
         else
           for (final (key, icon, list) in groups) ...[
             if (list.isNotEmpty) ...[
@@ -624,10 +618,7 @@ class _TimezoneConfirmSheet extends StatelessWidget {
                   size: 22, color: T.petalBlue)),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(
-                s.rtl
-                    ? 'انتقلت من $previous إلى $current. هل نعيد حساب مواعيد تذكير الأدوية لتوقيتك المحلي الجديد؟'
-                    : 'You moved from $previous to $current. Recompute your medication reminder times for the new local time?',
+            child: Text(s.strings.meds_tz_moved(previous, current),
                 style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
           ),
         ]),

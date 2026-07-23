@@ -349,11 +349,11 @@ class _BootSplash extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const PetalSpinner(size: 72),
             const SizedBox(height: 28),
-            Text(ar ? 'نُجهّز سجلّك الصحي' : 'Preparing your health record',
+            Text(state.strings.boot_preparing,
                 textAlign: TextAlign.center,
                 style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text(ar ? 'على جهازك، بالتصميم.' : 'On your device, by design.',
+            Text(state.strings.boot_tagline,
                 textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
           ]),
         ),

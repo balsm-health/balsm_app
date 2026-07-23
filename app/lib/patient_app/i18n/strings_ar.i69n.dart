@@ -410,6 +410,88 @@ class Strings_ar extends Strings {
   String get dob_title => "تاريخ الميلاد";
   String get dob_confirm => "تأكيد";
   String get dob_select => "اختر تاريخاً";
+  String get eqr_title => "رمز الطوارئ";
+  String get eqr_ttl_1h => "ساعة";
+  String get eqr_ttl_6h => "٦ س";
+  String get eqr_ttl_24h => "٢٤ س";
+  String get eqr_ttl_7d => "٧ أيام";
+  String get eqr_help_active =>
+      "اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.";
+  String get eqr_help_signin =>
+      "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
+  String get eqr_help_incomplete =>
+      "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
+  String get eqr_help_create =>
+      "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
+  String get eqr_expired => "منتهي";
+  String eqr_expires_in(String t) => "ينتهي خلال $t";
+  String get eqr_copy => "نسخ";
+  String get eqr_share => "مشاركة";
+  String get eqr_save => "حفظ";
+  String get eqr_saved_toast => "تم حفظ الصورة";
+  String get eqr_link_copied => "تم نسخ الرابط";
+  String get eqr_revoke => "إلغاء الرمز";
+  String get eqr_revoked_toast => "تم إلغاء الرمز";
+  String get eqr_generate => "إنشاء رمز QR";
+  String get eqr_generate_new => "إنشاء رمز جديد";
+  String get eqr_valid_for => "مدة الصلاحية";
+  String get eqr_signin_required => "يلزم تسجيل الدخول";
+  String get eqr_no_data => "لا توجد بيانات صحية بعد";
+  String get store_step_prepare => "جارٍ التحضير…";
+  String get store_step_checkins => "نقل المتابعات…";
+  String get store_step_records => "نقل السجلات…";
+  String get store_step_rx => "نقل الوصفات…";
+  String get store_step_verify => "التحقق والإنهاء…";
+  String get store_choose_help => "اختر مكان حفظ نسخة احتياطية من بياناتك.";
+  String get store_always_on => "دائمًا";
+  String get store_no_backup => "لا نسخة احتياطية";
+  String get store_tap_connect => "اضغط للربط";
+  String store_connecting(String target) => "جارٍ الربط بـ $target…";
+  String get store_auto_start => "سيبدأ النسخ الاحتياطي تلقائياً.";
+  String get store_migrating => "جارٍ النقل";
+  String get store_removed_done => "تم إيقاف النسخ الاحتياطي";
+  String get store_synced_done => "تمت المزامنة بنجاح";
+  String get store_device_only => "محفوظ على هذا الجهاز فقط";
+  String store_synced_with(String target) => "مزامن مع $target";
+  String get store_done => "تم";
+  String get store_remove_q => "إيقاف النسخ الاحتياطي؟";
+  String store_remove_help(String target) =>
+      "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
+  String get store_remove_cta => "إيقاف النسخ الاحتياطي";
+  String get age_gate_body =>
+      "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
+  String auth_locked_retry(String secs) =>
+      "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
+  String get auth_phone_soon =>
+      "تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.";
+  String get pv_intro_body =>
+      "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
+  String get pv_collect_body =>
+      "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
+  String get pv_protect_body =>
+      "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
+  String get pv_rights_body =>
+      "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
+  String pv_authority_body(String authority) =>
+      "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
+  String get pv_sharing_body =>
+      "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
+  String get pv_deletion_body =>
+      "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
+  String get pv_scroll_hint => "مرّر للأسفل للمتابعة";
+  String get cal_months =>
+      "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
+  String get cal_weekdays => "أحد|إثن|ثلا|أرب|خمي|جمع|سبت";
+  String get meds_signin_help => "سجّل الدخول لعرض أدويتك.";
+  String get meds_empty_help => "لا توجد أدوية بعد. أضف دواءً للبدء.";
+  String get meds_none_today => "لا جرعات مجدولة اليوم.";
+  String meds_tz_moved(String from, String to) =>
+      "انتقلت من $from إلى $to. هل نعيد حساب مواعيد تذكير الأدوية لتوقيتك المحلي الجديد؟";
+  String get cond_icd10_hint => "رمز ICD-10 (اختياري)";
+  String get cond_onset_hint => "سنة البدء";
+  String get care_add_help => "أضف طبيبك من الخريطة لبناء فريق الرعاية.";
+  String get boot_preparing => "نُجهّز سجلّك الصحي";
+  String get boot_tagline => "على جهازك، بالتصميم.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1205,6 +1287,136 @@ class Strings_ar extends Strings {
         return dob_confirm;
       case 'dob_select':
         return dob_select;
+      case 'eqr_title':
+        return eqr_title;
+      case 'eqr_ttl_1h':
+        return eqr_ttl_1h;
+      case 'eqr_ttl_6h':
+        return eqr_ttl_6h;
+      case 'eqr_ttl_24h':
+        return eqr_ttl_24h;
+      case 'eqr_ttl_7d':
+        return eqr_ttl_7d;
+      case 'eqr_help_active':
+        return eqr_help_active;
+      case 'eqr_help_signin':
+        return eqr_help_signin;
+      case 'eqr_help_incomplete':
+        return eqr_help_incomplete;
+      case 'eqr_help_create':
+        return eqr_help_create;
+      case 'eqr_expired':
+        return eqr_expired;
+      case 'eqr_expires_in':
+        return eqr_expires_in;
+      case 'eqr_copy':
+        return eqr_copy;
+      case 'eqr_share':
+        return eqr_share;
+      case 'eqr_save':
+        return eqr_save;
+      case 'eqr_saved_toast':
+        return eqr_saved_toast;
+      case 'eqr_link_copied':
+        return eqr_link_copied;
+      case 'eqr_revoke':
+        return eqr_revoke;
+      case 'eqr_revoked_toast':
+        return eqr_revoked_toast;
+      case 'eqr_generate':
+        return eqr_generate;
+      case 'eqr_generate_new':
+        return eqr_generate_new;
+      case 'eqr_valid_for':
+        return eqr_valid_for;
+      case 'eqr_signin_required':
+        return eqr_signin_required;
+      case 'eqr_no_data':
+        return eqr_no_data;
+      case 'store_step_prepare':
+        return store_step_prepare;
+      case 'store_step_checkins':
+        return store_step_checkins;
+      case 'store_step_records':
+        return store_step_records;
+      case 'store_step_rx':
+        return store_step_rx;
+      case 'store_step_verify':
+        return store_step_verify;
+      case 'store_choose_help':
+        return store_choose_help;
+      case 'store_always_on':
+        return store_always_on;
+      case 'store_no_backup':
+        return store_no_backup;
+      case 'store_tap_connect':
+        return store_tap_connect;
+      case 'store_connecting':
+        return store_connecting;
+      case 'store_auto_start':
+        return store_auto_start;
+      case 'store_migrating':
+        return store_migrating;
+      case 'store_removed_done':
+        return store_removed_done;
+      case 'store_synced_done':
+        return store_synced_done;
+      case 'store_device_only':
+        return store_device_only;
+      case 'store_synced_with':
+        return store_synced_with;
+      case 'store_done':
+        return store_done;
+      case 'store_remove_q':
+        return store_remove_q;
+      case 'store_remove_help':
+        return store_remove_help;
+      case 'store_remove_cta':
+        return store_remove_cta;
+      case 'age_gate_body':
+        return age_gate_body;
+      case 'auth_locked_retry':
+        return auth_locked_retry;
+      case 'auth_phone_soon':
+        return auth_phone_soon;
+      case 'pv_intro_body':
+        return pv_intro_body;
+      case 'pv_collect_body':
+        return pv_collect_body;
+      case 'pv_protect_body':
+        return pv_protect_body;
+      case 'pv_rights_body':
+        return pv_rights_body;
+      case 'pv_authority_body':
+        return pv_authority_body;
+      case 'pv_sharing_body':
+        return pv_sharing_body;
+      case 'pv_deletion_body':
+        return pv_deletion_body;
+      case 'pv_scroll_hint':
+        return pv_scroll_hint;
+      case 'cal_months':
+        return cal_months;
+      case 'cal_weekdays':
+        return cal_weekdays;
+      case 'meds_signin_help':
+        return meds_signin_help;
+      case 'meds_empty_help':
+        return meds_empty_help;
+      case 'meds_none_today':
+        return meds_none_today;
+      case 'meds_tz_moved':
+        return meds_tz_moved;
+      case 'cond_icd10_hint':
+        return cond_icd10_hint;
+      case 'cond_onset_hint':
+        return cond_onset_hint;
+      case 'care_add_help':
+        return care_add_help;
+      case 'boot_preparing':
+        return boot_preparing;
+      case 'boot_tagline':
+        return boot_tagline;
       default:
         return super[key];
     }
