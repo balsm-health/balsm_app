@@ -496,8 +496,11 @@ class _SheetChrome extends StatelessWidget {
           ]),
         ),
         Flexible(
+          // Add the keyboard inset to the bottom padding so the focused field
+          // and the sheet's buttons scroll ABOVE the native keyboard.
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 38),
+            padding: EdgeInsets.fromLTRB(
+                20, 14, 20, 38 + MediaQuery.of(context).viewInsets.bottom),
             child: child,
           ),
         ),
