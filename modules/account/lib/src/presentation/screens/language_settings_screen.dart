@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/change_language_use_case.dart';
 
-/// Selectable account languages — the fully-supported subset of core's
-/// [LanguageCode.supported] (beta languages are pickable in the app-shell
-/// language sheet only, not as the account's preferred language).
-final _languages = List<LanguageCode>.unmodifiable(
-  LanguageCode.supported.where((l) => l.isFullySupported),
-);
+/// Selectable account languages — the closed set of fully-supported UI
+/// locales (beta languages are picker-visible in the app-shell language
+/// sheet only, not selectable as the account's preferred language).
+const _languages = LanguageCode.uiSupported;
 
 /// Language settings: a 2-option segmented control (English / Arabic).
 /// Selecting a language dispatches ChangeLanguageUseCase and applies an
@@ -93,7 +91,7 @@ class _LanguageSettingsScreenState
           (l) => l.value == selectedBase,
           orElse: () => _languages.first,
         );
-        final dir = (AppLocale.tryParse(selectedTag) ?? AppLocale.en).isRtl
+        final dir = (LanguageCode.tryParseUi(selectedTag) ?? LanguageCode.en).isRtl
             ? TextDirection.rtl
             : TextDirection.ltr;
 

@@ -21,7 +21,7 @@ class ChangeLanguageUseCase {
     required String oldLanguage,
     required String newLanguage,
   }) async {
-    final tag = AppLocale.tryParse(newLanguage);
+    final tag = LanguageCode.tryParseUi(newLanguage);
     if (tag == null) {
       return AppResult.failure(
         const ValidationFailure('Unsupported language'),

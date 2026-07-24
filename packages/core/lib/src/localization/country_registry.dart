@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/value_objects/app_locale.dart';
+import '../domain/value_objects/language_code.dart';
 
 final countryRegistryProvider = Provider<CountryRegistry>((_) => CountryRegistry());
 
@@ -13,7 +13,7 @@ class CountryMeta {
   });
   final String isoCode;
   final String defaultTimezone;
-  final List<AppLocale> firstClassTags;
+  final List<LanguageCode> firstClassTags;
   final String supervisoryAuthority;
   final bool gregorianOnly;
 }
@@ -23,19 +23,19 @@ class CountryRegistry {
     'EG': CountryMeta(
       isoCode: 'EG',
       defaultTimezone: 'Africa/Cairo',
-      firstClassTags: [AppLocale.ar, AppLocale.en],
+      firstClassTags: [LanguageCode.ar, LanguageCode.en],
       supervisoryAuthority: 'Egypt PDPC',
     ),
     'SA': CountryMeta(
       isoCode: 'SA',
       defaultTimezone: 'Asia/Riyadh',
-      firstClassTags: [AppLocale.ar, AppLocale.en],
+      firstClassTags: [LanguageCode.ar, LanguageCode.en],
       supervisoryAuthority: 'Saudi SDAIA',
     ),
     'AE': CountryMeta(
       isoCode: 'AE',
       defaultTimezone: 'Asia/Dubai',
-      firstClassTags: [AppLocale.ar, AppLocale.en],
+      firstClassTags: [LanguageCode.ar, LanguageCode.en],
       supervisoryAuthority: 'UAE Data Office',
     ),
   };

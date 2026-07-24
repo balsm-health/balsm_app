@@ -53,6 +53,23 @@ class LanguageCode extends ValueObject {
   /// Languages the app has UI support for (used by the language picker).
   static const supported = [ar, en, fr, ur, fa, tr];
 
+  /// The fully-supported UI locales — the closed set the app renders in
+  /// (absorbs the former `AppLocale` type). Holding one of these means the
+  /// app can fully render in it; the rest of [supported] are picker-visible
+  /// betas.
+  static const uiSupported = [en, ar];
+
+  /// Resolve an arbitrary BCP-47 tag to a fully-supported UI language, or
+  /// null for anything unsupported. Base-subtag match: `ar`, `AR`, `ar-EG`,
+  /// `ar_SA` all resolve to [ar].
+  static LanguageCode? tryParseUi(String tag) {
+    final base = tag.trim().toLowerCase().split(RegExp('[-_]')).first;
+    for (final language in uiSupported) {
+      if (language.value == base) return language;
+    }
+    return null;
+  }
+
   static final Map<String, LanguageCode> _byCode = {
     for (final l in supported) l.value: l,
   };
