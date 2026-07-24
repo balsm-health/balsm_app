@@ -18,7 +18,7 @@ const kHomeCountry = CountryCode.egypt;
 /// user's identity/PHI is NOT held here — screens read it from real providers
 /// (`accountSummaryProvider`, `profileDataSourceProvider`).
 class PatientAppState extends ChangeNotifier {
-  String lang = 'en';
+  LanguageCode lang = LanguageCode.en;
   Accent accent = Accent.blue;
 
   /// Auth route: welcome | phone | otp | profile | app
@@ -53,7 +53,8 @@ class PatientAppState extends ChangeNotifier {
     final s = PatientAppState();
     s._prefs = prefs;
     try {
-      s.lang = await prefs.lang();
+      // Persisted as the bare code; anything unsupported falls back to en.
+      s.lang = LanguageCode.tryParseUi(await prefs.lang()) ?? LanguageCode.en;
       s.accent = _accentFromKey(await prefs.accent());
       s.countryCode = await prefs.country();
       s.storageProvider = await prefs.storage();
@@ -85,32 +86,29 @@ class PatientAppState extends ChangeNotifier {
     final p = _prefs;
     if (p == null) return;
     p.setSignedIn(route == 'app');
-    p.setLang(lang);
+    p.setLang(lang.value);
     p.setAccent(_accentKey);
     p.setCountry(countryCode);
     p.setStorage(storageProvider);
   }
 
-  bool get rtl => lang == 'ar';
+  bool get rtl => lang.isRtl;
   TextDirection get dir => rtl ? TextDirection.rtl : TextDirection.ltr;
 
   /// Stringly-typed lookup — keep only for keys computed at runtime
   /// (e.g. `t(rows[i].key)`). For static keys prefer [strings].
-  String t(String key) => tr(key, lang);
+  String t(String key) => tr(key, lang.value);
 
   /// Locale-aware, compile-time-checked message bundle:
   /// `s.strings.med_snooze15` fails to compile on a typo, whereas
   /// `s.t('med_snooze15')` silently returns the key at runtime.
-  Strings get strings => stringsFor(lang);
+  Strings get strings => stringsFor(lang.value);
 
   CountryCode get country => CountryCode(countryCode);
 
   bool get isHomeCountry => country == kHomeCountry;
 
-  /// The active UI language as a core value object.
-  LanguageCode get language => LanguageCode.fromCode(lang);
-
-  void setLang(String l) {
+  void setLang(LanguageCode l) {
     lang = l;
     _save();
     notifyListeners();

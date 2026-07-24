@@ -123,7 +123,8 @@ class _WelcomeScreen extends StatelessWidget {
           // Language toggle pill (AR ⇄ EN) — updated design.
           Center(
             child: GestureDetector(
-              onTap: () => s.setLang(s.lang == 'ar' ? 'en' : 'ar'),
+              onTap: () => s.setLang(
+                  s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
               behavior: HitTestBehavior.opaque,
               child: Container(
                 height: 38,
@@ -137,8 +138,8 @@ class _WelcomeScreen extends StatelessWidget {
                   const Icon(LucideIcons.languages, size: 17, color: T.fg2),
                   const SizedBox(width: 7),
                   // Endonym of the OTHER language — the toggle's target.
-                  Text((s.lang == 'ar' ? LanguageCode.en : LanguageCode.ar).nativeName,
-                      style: Typo.bodySm(ar: s.lang != 'ar')
+                  Text((s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar).nativeName,
+                      style: Typo.bodySm(ar: s.lang != LanguageCode.ar)
                           .copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                 ]),
               ),
@@ -935,7 +936,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
           version: _kDisclosureVersion,
           countryCode: s.countryCode,
           supervisoryAuthority: registry.supervisoryAuthority(s.countryCode),
-          preferredLanguage: s.lang,
+          preferredLanguage: s.lang.value,
         );
     if (!mounted) return;
     result.fold(
@@ -1490,7 +1491,7 @@ class _DialCodeSheet extends StatelessWidget {
                       child: Row(children: [
                         Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
                         const SizedBox(width: 12),
-                        Expanded(child: Text(c.name(kCatalog, locale: s.lang), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                        Expanded(child: Text(c.name(kCatalog, locale: s.lang.value), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
                         Text(c.dialCode, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3)),
                         if (c == current)
                           Padding(padding: const EdgeInsetsDirectional.only(start: 8), child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),

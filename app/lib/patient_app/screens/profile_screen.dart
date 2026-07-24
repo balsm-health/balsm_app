@@ -36,7 +36,7 @@ class ProfileScreen extends ConsumerWidget {
     // signed out, in which case the head renders neutrally.
     final summary = ref.watch(accountSummaryProvider).valueOrNull;
     final displayName = (summary?.displayName ?? '').trim();
-    final curLang = s.language;
+    final curLang = s.lang;
     // Reflects the active backup target (local | icloud | gdrive).
     final stCfg = storageCfg(s.storageProvider);
     final rows = <(IconData, String, VoidCallback?, bool)>[
@@ -78,7 +78,7 @@ class ProfileScreen extends ConsumerWidget {
         _ListRow(icon: LucideIcons.languages, label: s.strings.p_lang, trailing: curLang.nativeName,
             first: true, onTap: () => _showLanguageSheet(context)),
         _ListRow(icon: s.isHomeCountry ? LucideIcons.mapPin : LucideIcons.plane, label: s.strings.p_country,
-            trailing: s.country.name(kCatalog, locale: s.lang),
+            trailing: s.country.name(kCatalog, locale: s.lang.value),
             iconBg: s.isHomeCountry ? null : T.sun500, iconFg: s.isHomeCountry ? null : Colors.white,
             onTap: () => _showCountrySheet(context)),
       ]),
@@ -425,11 +425,11 @@ void _showLanguageSheet(BuildContext context) {
       child: _SheetShell(title: s.strings.choose_lang, children: [
         for (final l in LanguageCode.supported)
           _SelectRow(
-            label: l.nativeName, sub: l.name(kCatalog), selected: l.value == s.lang,
+            label: l.nativeName, sub: l.name(kCatalog), selected: l == s.lang,
             badge: l.isFullySupported ? s.strings.lang_full : s.strings.lang_beta,
             badgeOk: l.isFullySupported,
             enabled: l.isFullySupported,
-            onTap: l.isFullySupported ? () { s.setLang(l.value); Navigator.pop(ctx); } : null,
+            onTap: l.isFullySupported ? () { s.setLang(l); Navigator.pop(ctx); } : null,
           ),
       ]),
     ),
@@ -447,7 +447,7 @@ void _showCountrySheet(BuildContext context) {
       child: _SheetShell(title: s.strings.choose_country, subtitle: s.strings.travel_help, children: [
         for (final c in CountryCode.known)
           _SelectRow(
-            label: c.name(kCatalog, locale: s.lang), sub: '${s.strings.emergency} ${c.emergencyNumber}',
+            label: c.name(kCatalog, locale: s.lang.value), sub: '${s.strings.emergency} ${c.emergencyNumber}',
             selected: c.value == s.countryCode,
             badge: c == kHomeCountry ? s.strings.home_country : null, badgeOk: true,
             onTap: () { s.setCountry(c.value); Navigator.pop(ctx); },

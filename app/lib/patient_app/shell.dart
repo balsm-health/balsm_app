@@ -64,17 +64,17 @@ class _PatientAppState extends State<PatientApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
           // Four first-class locales (FR-207): English + the three Arabic
-          // regions. `state.lang` only tracks 'en' | 'ar' (no region), so an
-          // 'ar' locale resolves to the first supported Arabic entry (ar-EG)
-          // for framework localization; all render Arabic. RTL stays driven by
-          // the manual Directionality below.
+          // regions. `state.lang` only tracks the base language (no region),
+          // so an 'ar' locale resolves to the first supported Arabic entry
+          // (ar-EG) for framework localization; all render Arabic. RTL stays
+          // driven by the manual Directionality below.
           supportedLocales: const [
             Locale('en'),
             Locale('ar', 'EG'),
             Locale('ar', 'SA'),
             Locale('ar', 'AE'),
           ],
-          locale: state.lang == 'ar' ? const Locale('ar') : const Locale('en'),
+          locale: Locale(state.lang.value),
           theme: ThemeData(scaffoldBackgroundColor: Colors.white, useMaterial3: true),
           // Clamp Dynamic Type so large system text never breaks layouts.
           builder: (context, child) {
