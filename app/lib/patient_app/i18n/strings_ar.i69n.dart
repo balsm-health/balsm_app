@@ -492,6 +492,60 @@ class Strings_ar extends Strings {
   String get care_add_help => "أضف طبيبك من الخريطة لبناء فريق الرعاية.";
   String get boot_preparing => "نُجهّز سجلّك الصحي";
   String get boot_tagline => "على جهازك، بالتصميم.";
+  String get q_vitals_t => "مؤشراتك الحيوية";
+  String get q_vitals_h => "أدخل أي قياسات أخذتها اليوم — كلها اختيارية.";
+  String get vital_hr => "معدل النبض";
+  String get unit_hr => "نبضة/د";
+  String get vital_temp => "درجة الحرارة";
+  String get unit_temp => "°م";
+  String get vital_spo2 => "الأكسجين (SpO₂)";
+  String get unit_spo2 => "%";
+  String get sym_headache => "صداع";
+  String get sym_dizzy => "دوخة";
+  String get sym_fatigue => "إرهاق";
+  String get sym_blurred_vision => "تشوش الرؤية";
+  String get sym_swelling => "تورّم";
+  String get sym_chest_tightness => "ضيق بالصدر";
+  String get sym_nausea => "غثيان";
+  String get sym_thirst => "عطش زائد";
+  String get body_head => "الرأس";
+  String get body_neck => "الرقبة";
+  String get body_l_shoulder => "كتف أيسر";
+  String get body_r_shoulder => "كتف أيمن";
+  String get body_chest => "الصدر";
+  String get body_l_upper_arm => "عضد أيسر";
+  String get body_r_upper_arm => "عضد أيمن";
+  String get body_abdomen => "البطن";
+  String get body_l_elbow => "مرفق أيسر";
+  String get body_r_elbow => "مرفق أيمن";
+  String get body_l_forearm => "ساعد أيسر";
+  String get body_r_forearm => "ساعد أيمن";
+  String get body_pelvis => "الحوض";
+  String get body_l_hand => "يد يسرى";
+  String get body_r_hand => "يد يمنى";
+  String get body_l_thigh => "فخذ أيسر";
+  String get body_r_thigh => "فخذ أيمن";
+  String get body_l_knee => "ركبة يسرى";
+  String get body_r_knee => "ركبة يمنى";
+  String get body_l_shin => "ساق يسرى";
+  String get body_r_shin => "ساق يمنى";
+  String get body_l_foot => "قدم يسرى";
+  String get body_r_foot => "قدم يمنى";
+  String get body_bk_head => "الرأس";
+  String get body_bk_neck => "الرقبة";
+  String get body_bk_l_shoulder => "كتف أيسر";
+  String get body_bk_r_shoulder => "كتف أيمن";
+  String get body_bk_upper => "أعلى الظهر";
+  String get body_bk_mid => "وسط الظهر";
+  String get body_bk_lower => "أسفل الظهر";
+  String get body_bk_l_glute => "أرداف أيسر";
+  String get body_bk_r_glute => "أرداف أيمن";
+  String get body_bk_l_hamstr => "أوتار ركبة يسرى";
+  String get body_bk_r_hamstr => "أوتار ركبة يمنى";
+  String get body_bk_l_calf => "بطة ساق يسرى";
+  String get body_bk_r_calf => "بطة ساق يمنى";
+  String get body_bk_l_heel => "كعب أيسر";
+  String get body_bk_r_heel => "كعب أيمن";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1417,6 +1471,114 @@ class Strings_ar extends Strings {
         return boot_preparing;
       case 'boot_tagline':
         return boot_tagline;
+      case 'q_vitals_t':
+        return q_vitals_t;
+      case 'q_vitals_h':
+        return q_vitals_h;
+      case 'vital_hr':
+        return vital_hr;
+      case 'unit_hr':
+        return unit_hr;
+      case 'vital_temp':
+        return vital_temp;
+      case 'unit_temp':
+        return unit_temp;
+      case 'vital_spo2':
+        return vital_spo2;
+      case 'unit_spo2':
+        return unit_spo2;
+      case 'sym_headache':
+        return sym_headache;
+      case 'sym_dizzy':
+        return sym_dizzy;
+      case 'sym_fatigue':
+        return sym_fatigue;
+      case 'sym_blurred_vision':
+        return sym_blurred_vision;
+      case 'sym_swelling':
+        return sym_swelling;
+      case 'sym_chest_tightness':
+        return sym_chest_tightness;
+      case 'sym_nausea':
+        return sym_nausea;
+      case 'sym_thirst':
+        return sym_thirst;
+      case 'body_head':
+        return body_head;
+      case 'body_neck':
+        return body_neck;
+      case 'body_l_shoulder':
+        return body_l_shoulder;
+      case 'body_r_shoulder':
+        return body_r_shoulder;
+      case 'body_chest':
+        return body_chest;
+      case 'body_l_upper_arm':
+        return body_l_upper_arm;
+      case 'body_r_upper_arm':
+        return body_r_upper_arm;
+      case 'body_abdomen':
+        return body_abdomen;
+      case 'body_l_elbow':
+        return body_l_elbow;
+      case 'body_r_elbow':
+        return body_r_elbow;
+      case 'body_l_forearm':
+        return body_l_forearm;
+      case 'body_r_forearm':
+        return body_r_forearm;
+      case 'body_pelvis':
+        return body_pelvis;
+      case 'body_l_hand':
+        return body_l_hand;
+      case 'body_r_hand':
+        return body_r_hand;
+      case 'body_l_thigh':
+        return body_l_thigh;
+      case 'body_r_thigh':
+        return body_r_thigh;
+      case 'body_l_knee':
+        return body_l_knee;
+      case 'body_r_knee':
+        return body_r_knee;
+      case 'body_l_shin':
+        return body_l_shin;
+      case 'body_r_shin':
+        return body_r_shin;
+      case 'body_l_foot':
+        return body_l_foot;
+      case 'body_r_foot':
+        return body_r_foot;
+      case 'body_bk_head':
+        return body_bk_head;
+      case 'body_bk_neck':
+        return body_bk_neck;
+      case 'body_bk_l_shoulder':
+        return body_bk_l_shoulder;
+      case 'body_bk_r_shoulder':
+        return body_bk_r_shoulder;
+      case 'body_bk_upper':
+        return body_bk_upper;
+      case 'body_bk_mid':
+        return body_bk_mid;
+      case 'body_bk_lower':
+        return body_bk_lower;
+      case 'body_bk_l_glute':
+        return body_bk_l_glute;
+      case 'body_bk_r_glute':
+        return body_bk_r_glute;
+      case 'body_bk_l_hamstr':
+        return body_bk_l_hamstr;
+      case 'body_bk_r_hamstr':
+        return body_bk_r_hamstr;
+      case 'body_bk_l_calf':
+        return body_bk_l_calf;
+      case 'body_bk_r_calf':
+        return body_bk_r_calf;
+      case 'body_bk_l_heel':
+        return body_bk_l_heel;
+      case 'body_bk_r_heel':
+        return body_bk_r_heel;
       default:
         return super[key];
     }

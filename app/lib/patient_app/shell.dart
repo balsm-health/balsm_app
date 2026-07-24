@@ -10,6 +10,7 @@ import 'widgets/balsm_flower.dart';
 import 'screens/home_screen.dart';
 import 'screens/meds_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/report_flow.dart' show openCheckin;
 import 'screens/auth_flow.dart';
 import 'dev/shake_to_dev_config.dart';
 
@@ -223,6 +224,8 @@ class _TabBar extends StatelessWidget {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.tab_home),
         _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.tab_meds),
+        // Quick-log "+" — opens the daily check-in flow as a route.
+        const _QuickLog(),
         _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.tab_profile),
       ]),
     );
@@ -257,6 +260,45 @@ class _Tab extends StatelessWidget {
   }
 }
 
+/// Quick-log "+" action — the design's center FAB. Rendered as a raised accent
+/// circle in the bottom tab bar (and the side rail), it opens the daily
+/// check-in flow ([openCheckin]) as a Directionality-wrapped route.
+class _QuickLog extends StatelessWidget {
+  const _QuickLog({this.rail = false});
+  final bool rail;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final button = Pressable(
+      onTap: () => openCheckin(context),
+      scale: 0.94,
+      child: Container(
+        width: 48,
+        height: 48,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: s.accent.main,
+          shape: BoxShape.circle,
+          boxShadow: s.accent.boxShadow,
+        ),
+        child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
+      ),
+    );
+    if (rail) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: Space.s2),
+        child: button,
+      );
+    }
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Center(child: button),
+      ),
+    );
+  }
+}
+
 // ── Tablet / desktop side rail ───────────────────────────────
 class _SideNav extends StatelessWidget {
   const _SideNav();
@@ -274,6 +316,7 @@ class _SideNav extends StatelessWidget {
           const SizedBox(height: Space.s5),
           _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.tab_home),
           _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.tab_meds),
+          const _QuickLog(rail: true),
           _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.tab_profile),
           const Spacer(),
         ]),

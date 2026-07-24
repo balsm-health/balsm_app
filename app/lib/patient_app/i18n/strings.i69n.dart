@@ -493,6 +493,60 @@ class Strings implements i69n.I69nMessageBundle {
       "Add a doctor from the map to build your care team.";
   String get boot_preparing => "Preparing your health record";
   String get boot_tagline => "On your device, by design.";
+  String get q_vitals_t => "Your vitals";
+  String get q_vitals_h => "Enter any readings you took today — all optional.";
+  String get vital_hr => "Heart rate";
+  String get unit_hr => "bpm";
+  String get vital_temp => "Temperature";
+  String get unit_temp => "°C";
+  String get vital_spo2 => "Oxygen (SpO₂)";
+  String get unit_spo2 => "%";
+  String get sym_headache => "Headache";
+  String get sym_dizzy => "Dizziness";
+  String get sym_fatigue => "Fatigue";
+  String get sym_blurred_vision => "Blurred vision";
+  String get sym_swelling => "Swelling";
+  String get sym_chest_tightness => "Chest tightness";
+  String get sym_nausea => "Nausea";
+  String get sym_thirst => "Excess thirst";
+  String get body_head => "Head";
+  String get body_neck => "Neck";
+  String get body_l_shoulder => "L. Shoulder";
+  String get body_r_shoulder => "R. Shoulder";
+  String get body_chest => "Chest";
+  String get body_l_upper_arm => "L. Upper arm";
+  String get body_r_upper_arm => "R. Upper arm";
+  String get body_abdomen => "Abdomen";
+  String get body_l_elbow => "L. Elbow";
+  String get body_r_elbow => "R. Elbow";
+  String get body_l_forearm => "L. Forearm";
+  String get body_r_forearm => "R. Forearm";
+  String get body_pelvis => "Pelvis";
+  String get body_l_hand => "L. Hand";
+  String get body_r_hand => "R. Hand";
+  String get body_l_thigh => "L. Thigh";
+  String get body_r_thigh => "R. Thigh";
+  String get body_l_knee => "L. Knee";
+  String get body_r_knee => "R. Knee";
+  String get body_l_shin => "L. Shin";
+  String get body_r_shin => "R. Shin";
+  String get body_l_foot => "L. Foot";
+  String get body_r_foot => "R. Foot";
+  String get body_bk_head => "Head";
+  String get body_bk_neck => "Neck";
+  String get body_bk_l_shoulder => "L. Shoulder";
+  String get body_bk_r_shoulder => "R. Shoulder";
+  String get body_bk_upper => "Upper back";
+  String get body_bk_mid => "Mid back";
+  String get body_bk_lower => "Lower back";
+  String get body_bk_l_glute => "L. Glute";
+  String get body_bk_r_glute => "R. Glute";
+  String get body_bk_l_hamstr => "L. Hamstring";
+  String get body_bk_r_hamstr => "R. Hamstring";
+  String get body_bk_l_calf => "L. Calf";
+  String get body_bk_r_calf => "R. Calf";
+  String get body_bk_l_heel => "L. Heel";
+  String get body_bk_r_heel => "R. Heel";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1418,6 +1472,114 @@ class Strings implements i69n.I69nMessageBundle {
         return boot_preparing;
       case 'boot_tagline':
         return boot_tagline;
+      case 'q_vitals_t':
+        return q_vitals_t;
+      case 'q_vitals_h':
+        return q_vitals_h;
+      case 'vital_hr':
+        return vital_hr;
+      case 'unit_hr':
+        return unit_hr;
+      case 'vital_temp':
+        return vital_temp;
+      case 'unit_temp':
+        return unit_temp;
+      case 'vital_spo2':
+        return vital_spo2;
+      case 'unit_spo2':
+        return unit_spo2;
+      case 'sym_headache':
+        return sym_headache;
+      case 'sym_dizzy':
+        return sym_dizzy;
+      case 'sym_fatigue':
+        return sym_fatigue;
+      case 'sym_blurred_vision':
+        return sym_blurred_vision;
+      case 'sym_swelling':
+        return sym_swelling;
+      case 'sym_chest_tightness':
+        return sym_chest_tightness;
+      case 'sym_nausea':
+        return sym_nausea;
+      case 'sym_thirst':
+        return sym_thirst;
+      case 'body_head':
+        return body_head;
+      case 'body_neck':
+        return body_neck;
+      case 'body_l_shoulder':
+        return body_l_shoulder;
+      case 'body_r_shoulder':
+        return body_r_shoulder;
+      case 'body_chest':
+        return body_chest;
+      case 'body_l_upper_arm':
+        return body_l_upper_arm;
+      case 'body_r_upper_arm':
+        return body_r_upper_arm;
+      case 'body_abdomen':
+        return body_abdomen;
+      case 'body_l_elbow':
+        return body_l_elbow;
+      case 'body_r_elbow':
+        return body_r_elbow;
+      case 'body_l_forearm':
+        return body_l_forearm;
+      case 'body_r_forearm':
+        return body_r_forearm;
+      case 'body_pelvis':
+        return body_pelvis;
+      case 'body_l_hand':
+        return body_l_hand;
+      case 'body_r_hand':
+        return body_r_hand;
+      case 'body_l_thigh':
+        return body_l_thigh;
+      case 'body_r_thigh':
+        return body_r_thigh;
+      case 'body_l_knee':
+        return body_l_knee;
+      case 'body_r_knee':
+        return body_r_knee;
+      case 'body_l_shin':
+        return body_l_shin;
+      case 'body_r_shin':
+        return body_r_shin;
+      case 'body_l_foot':
+        return body_l_foot;
+      case 'body_r_foot':
+        return body_r_foot;
+      case 'body_bk_head':
+        return body_bk_head;
+      case 'body_bk_neck':
+        return body_bk_neck;
+      case 'body_bk_l_shoulder':
+        return body_bk_l_shoulder;
+      case 'body_bk_r_shoulder':
+        return body_bk_r_shoulder;
+      case 'body_bk_upper':
+        return body_bk_upper;
+      case 'body_bk_mid':
+        return body_bk_mid;
+      case 'body_bk_lower':
+        return body_bk_lower;
+      case 'body_bk_l_glute':
+        return body_bk_l_glute;
+      case 'body_bk_r_glute':
+        return body_bk_r_glute;
+      case 'body_bk_l_hamstr':
+        return body_bk_l_hamstr;
+      case 'body_bk_r_hamstr':
+        return body_bk_r_hamstr;
+      case 'body_bk_l_calf':
+        return body_bk_l_calf;
+      case 'body_bk_r_calf':
+        return body_bk_r_calf;
+      case 'body_bk_l_heel':
+        return body_bk_l_heel;
+      case 'body_bk_r_heel':
+        return body_bk_r_heel;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
