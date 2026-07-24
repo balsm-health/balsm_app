@@ -31,6 +31,9 @@ class SnapshotService implements SnapshotPort {
     'emergency_contact',
     'medications',
     'dose_events',
+    'check_in',
+    'check_in_symptom',
+    'check_in_pain_region',
   ];
 
   /// Reads every PHI table into a JSON-serializable snapshot.

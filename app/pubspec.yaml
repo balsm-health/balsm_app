@@ -22,6 +22,8 @@ dependencies:
     path: ../modules/emergency_card
   medications:
     path: ../modules/medications
+  self_report:
+    path: ../modules/self_report
   sessions:
     path: ../modules/sessions
   account:

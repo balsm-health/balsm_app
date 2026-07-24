@@ -191,6 +191,41 @@ const _phiSchema = <String>[
   // queries re-key from user_id to health_profile_id.
   'CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)',
   'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)',
+  // Self-report / check-in (self_report module). PHI, on-device only,
+  // partitioned by health_profile_id (the person). Vitals are nullable
+  // columns; symptoms and pain regions are child rows.
+  '''
+  CREATE TABLE IF NOT EXISTS check_in (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL,
+    recorded_at TEXT NOT NULL,
+    mood INTEGER NOT NULL,
+    pain_level INTEGER NOT NULL DEFAULT 0,
+    note TEXT,
+    photo_record_id TEXT,
+    systolic INTEGER,
+    diastolic INTEGER,
+    heart_rate INTEGER,
+    temperature REAL,
+    weight_kg REAL,
+    spo2 INTEGER,
+    glucose_fasting INTEGER,
+    glucose_post_meal INTEGER,
+    glucose_random INTEGER
+  )''',
+  '''
+  CREATE TABLE IF NOT EXISTS check_in_symptom (
+    check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE,
+    symptom_id TEXT NOT NULL,
+    PRIMARY KEY (check_in_id, symptom_id)
+  )''',
+  '''
+  CREATE TABLE IF NOT EXISTS check_in_pain_region (
+    check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE,
+    region_id TEXT NOT NULL,
+    PRIMARY KEY (check_in_id, region_id)
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_check_in_profile ON check_in(health_profile_id)',
   // Disclosure/consent acceptance ledger (disclosure module). PHI-free —
   // records which disclosure version the user accepted and the jurisdiction
   // context at accept time. One row per (disclosure_id, version).
