@@ -57,7 +57,7 @@ class PatientAppState extends ChangeNotifier {
       s.lang = LanguageCode.tryParseUi(await prefs.lang()) ?? LanguageCode.en;
       s.accent = _accentFromKey(await prefs.accent());
       // Persisted as the bare ISO code; malformed values fall back to home.
-      s.country = _countryOr(await prefs.country(), kHomeCountry);
+      s.country = CountryCode.tryFromCode(await prefs.country()) ?? kHomeCountry;
       s.storageProvider = await prefs.storage();
       s.route = await prefs.signedIn() ? 'app' : 'welcome';
     } catch (_) {
@@ -158,15 +158,6 @@ class PatientAppState extends ChangeNotifier {
     country = c;
     _save();
     notifyListeners();
-  }
-}
-
-/// Parse a stored ISO code, falling back to [fallback] on malformed input.
-CountryCode _countryOr(String code, CountryCode fallback) {
-  try {
-    return CountryCode(code);
-  } on ArgumentError {
-    return fallback;
   }
 }
 

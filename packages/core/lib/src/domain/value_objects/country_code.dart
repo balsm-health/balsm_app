@@ -24,12 +24,21 @@ class CountryCode extends ValueObject {
 
   /// Resolve an arbitrary ISO code (from JSON/API/DB/route params) to a
   /// curated instance, or a bare one with neutral defaults. Throws
-  /// [ArgumentError] on malformed input.
-  factory CountryCode(String code) {
+  /// [ArgumentError] on malformed input; for a non-throwing parse of
+  /// untrusted input use [tryFromCode].
+  factory CountryCode.fromCode(String code) {
     final upper = code.trim().toUpperCase();
     if (upper.length != 2 || !_isAlpha(upper)) {
       throw ArgumentError('Invalid ISO 3166-1 country code: $code');
     }
+    return _byCode[upper] ?? CountryCode._(upper, null);
+  }
+
+  /// Like [CountryCode.fromCode] but returns null on malformed input —
+  /// for stored/external values where the caller supplies a fallback.
+  static CountryCode? tryFromCode(String code) {
+    final upper = code.trim().toUpperCase();
+    if (upper.length != 2 || !_isAlpha(upper)) return null;
     return _byCode[upper] ?? CountryCode._(upper, null);
   }
 

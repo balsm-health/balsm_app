@@ -7,7 +7,7 @@ void main() {
       expect(CurrencyCode('EGP'), CurrencyCode.egp);
       expect(CurrencyCode('EGP').hashCode, CurrencyCode.egp.hashCode);
       // A CurrencyCode and a CountryCode both "EG"-ish are never equal.
-      expect(CurrencyCode('EGP') == CountryCode('EG'), isFalse);
+      expect(CurrencyCode('EGP') == CountryCode.fromCode('EG'), isFalse);
     });
   });
 
@@ -68,7 +68,7 @@ void main() {
 
   group('CountryCode reference hub (structural facts only)', () {
     test('exposes dial code + currency, no localized strings', () {
-      final eg = CountryCode('eg');
+      final eg = CountryCode.fromCode('eg');
       expect(eg.dialCode, '+20');
       expect(eg.currency, CurrencyCode.egp);
       expect(eg.defaultTimezone, 'Africa/Cairo');
@@ -76,7 +76,7 @@ void main() {
     });
 
     test('unlisted country gets neutral defaults', () {
-      final zz = CountryCode('ZZ');
+      final zz = CountryCode.fromCode('ZZ');
       expect(zz.isKnown, isFalse);
       expect(zz.dialCode, '');
       expect(zz.currency, CurrencyCode.usd);
@@ -87,7 +87,7 @@ void main() {
     const catalog = TranslationCatalog();
 
     test('country name + demonym per locale', () {
-      final eg = CountryCode('EG');
+      final eg = CountryCode.fromCode('EG');
       expect(eg.name(catalog, locale: 'en'), 'Egypt');
       expect(eg.name(catalog, locale: 'ar'), 'مصر');
       expect(eg.demonym(catalog, locale: 'en'), 'Egyptian');
@@ -106,13 +106,13 @@ void main() {
     });
 
     test('unlisted country falls back to the ISO code, not a bare key', () {
-      final zz = CountryCode('ZZ');
+      final zz = CountryCode.fromCode('ZZ');
       expect(zz.name(catalog, locale: 'en'), 'ZZ');
     });
   });
 
   group('PhoneNumber', () {
-    final eg = CountryCode('EG');
+    final eg = CountryCode.fromCode('EG');
 
     test('normalizes formatting and leading zero', () {
       final r = PhoneNumber.create(country: eg, raw: '0100 123 4567');

@@ -146,7 +146,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                             .all
                             .map(
                               (c) => BalsmListRow(
-                                label: CountryCode(c.isoCode).name(
+                                label: CountryCode.fromCode(c.isoCode).name(
                                   ref.watch(translationCatalogProvider),
                                   locale: summary.preferredLanguage,
                                 ),
