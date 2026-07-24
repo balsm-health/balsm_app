@@ -4,17 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/change_language_use_case.dart';
 
-/// One selectable language option.
-class _LangOption {
-  const _LangOption(this.tag, this.label);
-  final String tag; // BCP-47
-  final String label;
-}
-
-const _kLanguages = <_LangOption>[
-  _LangOption('en', 'English'),
-  _LangOption('ar', 'العربية'),
-];
+/// Selectable account languages — the fully-supported subset of core's
+/// [LanguageCode.supported] (beta languages are pickable in the app-shell
+/// language sheet only, not as the account's preferred language).
+final _languages = List<LanguageCode>.unmodifiable(
+  LanguageCode.supported.where((l) => l.isFullySupported),
+);
 
 /// Language settings: a 2-option segmented control (English / Arabic).
 /// Selecting a language dispatches ChangeLanguageUseCase and applies an
@@ -91,9 +86,12 @@ class _LanguageSettingsScreenState
           return const Scaffold(body: Center(child: Text('No account.')));
         }
         final selectedTag = _pending ?? summary.preferredLanguage;
-        final selected = _kLanguages.firstWhere(
-          (o) => o.tag == selectedTag,
-          orElse: () => _kLanguages.first,
+        // Match on the base subtag so a regioned tag (`ar-SA`) still
+        // highlights Arabic.
+        final selectedBase = selectedTag.split('-').first.toLowerCase();
+        final selected = _languages.firstWhere(
+          (l) => l.value == selectedBase,
+          orElse: () => _languages.first,
         );
         final dir = (AppLocale.tryParse(selectedTag) ?? AppLocale.en).isRtl
             ? TextDirection.rtl
@@ -125,11 +123,11 @@ class _LanguageSettingsScreenState
                           ),
                         ),
                         const SizedBox(height: 16),
-                        BalsmSegmented<_LangOption>(
-                          options: _kLanguages,
-                          labelOf: (o) => o.label,
+                        BalsmSegmented<LanguageCode>(
+                          options: _languages,
+                          labelOf: (l) => l.nativeName,
                           selected: selected,
-                          onChanged: (o) => _onSelect(summary, o.tag),
+                          onChanged: (l) => _onSelect(summary, l.value),
                         ),
                         if (_error != null) ...[
                           const SizedBox(height: 16),

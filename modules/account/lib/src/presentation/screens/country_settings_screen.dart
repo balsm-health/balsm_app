@@ -4,12 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/change_country_use_case.dart';
 
-/// Supported account countries (first-class jurisdictions).
-const _kCountries = <({String code, String name})>[
-  (code: 'EG', name: 'Egypt'),
-  (code: 'SA', name: 'Saudi Arabia'),
-  (code: 'AE', name: 'United Arab Emirates'),
-];
+// Account countries come from core's CountryRegistry (the first-class
+// jurisdictions with a supervisory authority) — NOT CountryCode.known,
+// which is the wider structural set used by dial-code/travel pickers.
 
 /// Country settings: lists countries, highlights the current one, and warns
 /// that changing country requires confirming identity. On confirm it triggers
@@ -144,12 +141,17 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                       ],
                       const SizedBox(height: 16),
                       BalsmListCard(
-                        children: _kCountries
+                        children: ref
+                            .watch(countryRegistryProvider)
+                            .all
                             .map(
                               (c) => BalsmListRow(
-                                label: c.name,
+                                label: CountryCode(c.isoCode).name(
+                                  ref.watch(translationCatalogProvider),
+                                  locale: summary.preferredLanguage,
+                                ),
                                 showChevron: false,
-                                trailing: c.code == summary.countryCode
+                                trailing: c.isoCode == summary.countryCode
                                     ? const Icon(
                                         Icons.check_circle,
                                         color: BalsmColors.appAccent,
@@ -160,7 +162,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                                         : null),
                                 onTap: _busy
                                     ? null
-                                    : () => _onSelect(summary, c.code),
+                                    : () => _onSelect(summary, c.isoCode),
                               ),
                             )
                             .toList(),

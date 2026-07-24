@@ -40,6 +40,11 @@ class CountryRegistry {
     ),
   };
 
+  /// The first-class jurisdictions (account countries), in reference order.
+  /// Distinct from `CountryCode.known` — that is the wider structural set
+  /// (dial codes, travel mode); THIS list gates where an account may reside.
+  List<CountryMeta> get all => _data.values.toList(growable: false);
+
   CountryMeta? lookup(String isoCode) => _data[isoCode.toUpperCase()];
 
   String supervisoryAuthority(String isoCode) =>
