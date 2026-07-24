@@ -1,6 +1,6 @@
 # Claude Code Instructions
 
-Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm-Core/agents/rules/AGENTS.md), including the Dart rules in [CODING_STANDARDS.md](../Balsm-Core/agents/rules/CODING_STANDARDS.md) §2.2 (`.map` over collection-`for`; typed value objects in state; `fromCode`/`tryFromCode` boundary parsing; `snake_case` static consts).
+Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm-Core/agents/rules/AGENTS.md), the shared standards in [Balsm-Core/agents/rules/CODING_STANDARDS.md](../Balsm-Core/agents/rules/CODING_STANDARDS.md), and this repo's own [CODING_STANDARDS.md](./CODING_STANDARDS.md) (Dart style, melos structure, localization, performance).
 
 ## Patient-App-Specific Notes
 
