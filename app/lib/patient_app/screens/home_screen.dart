@@ -159,10 +159,9 @@ class _TodayMedsCard extends ConsumerWidget {
           action: s.strings.see_all, onAction: () => s.setTab('meds'), ar: s.rtl),
       PCard(
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(children: [
-          for (var i = 0; i < doses.length; i++)
-            _HomeDoseRow(dose: doses[i], first: i == 0),
-        ]),
+        child: Column(children: doses.indexed
+            .map((e) => _HomeDoseRow(dose: e.$2, first: e.$1 == 0))
+            .toList()),
       ),
     ]);
   }

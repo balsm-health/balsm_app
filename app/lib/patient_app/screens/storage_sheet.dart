@@ -143,7 +143,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
         child: Text(s.strings.store_choose_help,
             style: Typo.meta(ar: ar).copyWith(height: 1.5)),
       ),
-      for (final p in const ['local', 'icloud', 'gdrive']) _providerCard(p),
+      ...const ['local', 'icloud', 'gdrive'].map(_providerCard),
     ]);
   }
 
@@ -263,7 +263,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             label: '$pct%', labelStyle: Typo.num(size: FS.md, weight: FontWeight.w700)),
         const SizedBox(height: 20),
         // Step checklist
-        for (var i = 0; i < _migrateSteps.length; i++) _stepRow(i, cfg),
+        ..._migrateSteps.indexed.map((e) => _stepRow(e.$1, cfg)),
       ]),
     ));
   }

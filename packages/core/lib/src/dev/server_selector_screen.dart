@@ -781,8 +781,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             ),
             child: Column(
               children: [
-                for (var i = 0; i < kDevFlags.length; i++)
-                  _flagRow(kDevFlags[i], first: i == 0),
+                ...kDevFlags.indexed
+                    .map((e) => _flagRow(e.$2, first: e.$1 == 0)),
               ],
             ),
           ),
@@ -1164,13 +1164,12 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         _fieldLabel('Severity'),
         Row(
           children: [
-            for (final s in const [
+            ...const [
               ['low', 'Low'],
               ['medium', 'Medium'],
               ['high', 'High'],
               ['critical', 'Critical'],
-            ])
-              Expanded(child: _sevButton(s[0], s[1])),
+            ].map((s) => Expanded(child: _sevButton(s[0], s[1]))),
           ],
         ),
         const SizedBox(height: 16),

@@ -216,8 +216,8 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
     final medCount = ref.watch(medicationListProvider).valueOrNull?.length ?? 0;
 
     // Group today's doses into morning (< 12:00) / evening for the two cards.
-    final morning = [for (final d in doses) if (d.scheduledAt.hour < 12) d];
-    final evening = [for (final d in doses) if (d.scheduledAt.hour >= 12) d];
+    final morning = doses.where((d) => d.scheduledAt.hour < 12).toList();
+    final evening = doses.where((d) => d.scheduledAt.hour >= 12).toList();
     final groups = [
       ('morning', LucideIcons.sunrise, morning),
       ('evening', LucideIcons.moon, evening),
@@ -315,16 +315,15 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
               RowHead.icon(s.t(key), icon: icon, ar: s.rtl),
               PCard(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(children: [
-                  for (var i = 0; i < list.length; i++)
-                    _MedDoseRow(
+                child: Column(children: list.indexed
+                    .map((e) => _MedDoseRow(
                         s: s,
-                        dose: list[i],
-                        first: i == 0,
-                        onTap: list[i].isPending
-                            ? () => _openDoseActions(list[i])
-                            : null),
-                ]),
+                        dose: e.$2,
+                        first: e.$1 == 0,
+                        onTap: e.$2.isPending
+                            ? () => _openDoseActions(e.$2)
+                            : null))
+                    .toList()),
               ),
             ],
           ],

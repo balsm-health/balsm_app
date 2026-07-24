@@ -239,28 +239,27 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         _ConditionEditor(s: s, conditions: conditionList,
             bg: s.accent.bg, fg: s.accent.d, onAdd: _addCondition),
         _SectionHead(LucideIcons.alertOctagon, s.strings.pd_allergies, s: s),
-        _ChipEditor(s: s, labels: [for (final a in allergyList) a.name], ctrl: algInput,
+        _ChipEditor(s: s, labels: allergyList.map((a) => a.name).toList(), ctrl: algInput,
             hint: s.strings.pd_add_alg, bg: const Color(0xFFFBEBE7), fg: T.danger,
             onAdd: _addAllergy, onRemoveAt: (i) => _removeAllergy(allergyList[i].id)),
         _SectionHead(LucideIcons.droplet, s.strings.pd_blood, s: s),
-        PCard(padding: const EdgeInsets.all(16), child: Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final bt in const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'])
-            Pressable(
-              onTap: () => _setBloodType(bt),
-              scale: 0.96,
-              child: AnimatedContainer(
-                duration: Motion.base,
-                curve: Motion.easeOut,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                decoration: BoxDecoration(
-                  color: selectedBlood == bt ? s.accent.bg : Colors.white,
-                  borderRadius: BorderRadius.circular(T.rMd),
-                  border: Border.all(color: selectedBlood == bt ? s.accent.main : T.border, width: 1.5),
-                ),
-                child: Text(bt, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: selectedBlood == bt ? s.accent.d : T.fg2)),
-              ),
-            ),
-        ])),
+        PCard(padding: const EdgeInsets.all(16), child: Wrap(spacing: 8, runSpacing: 8, children: const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
+            .map((bt) => Pressable(
+                  onTap: () => _setBloodType(bt),
+                  scale: 0.96,
+                  child: AnimatedContainer(
+                    duration: Motion.base,
+                    curve: Motion.easeOut,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                    decoration: BoxDecoration(
+                      color: selectedBlood == bt ? s.accent.bg : Colors.white,
+                      borderRadius: BorderRadius.circular(T.rMd),
+                      border: Border.all(color: selectedBlood == bt ? s.accent.main : T.border, width: 1.5),
+                    ),
+                    child: Text(bt, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: selectedBlood == bt ? s.accent.d : T.fg2)),
+                  ),
+                ))
+            .toList())),
         _SectionHead(LucideIcons.ruler, s.strings.pd_measurements, s: s),
         PCard(padding: const EdgeInsets.all(16), child: Column(children: [
           Row(children: [
@@ -342,25 +341,24 @@ class _ChipEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PCard(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (labels.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: [
-            for (var i = 0; i < labels.length; i++)
-              Container(
-                padding: onRemoveAt == null
-                    ? const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6)
-                    : const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
-                decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rPill)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(labels[i], style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
-                  if (onRemoveAt != null) ...[
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () => onRemoveAt!(i),
-                      child: Icon(LucideIcons.x, size: 13, color: fg),
-                    ),
-                  ],
-                ]),
-              ),
-          ])),
+          Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: labels.indexed
+              .map((e) => Container(
+                    padding: onRemoveAt == null
+                        ? const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6)
+                        : const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
+                    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rPill)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(e.$2, style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
+                      if (onRemoveAt != null) ...[
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => onRemoveAt!(e.$1),
+                          child: Icon(LucideIcons.x, size: 13, color: fg),
+                        ),
+                      ],
+                    ]),
+                  ))
+              .toList())),
         Row(children: [
           Expanded(child: TextField(
             controller: ctrl, textDirection: s.dir, onSubmitted: (_) => _add(),
@@ -430,9 +428,7 @@ class _ConditionEditorState extends State<_ConditionEditor> {
   @override
   Widget build(BuildContext context) => PCard(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (widget.conditions.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final c in widget.conditions) _chip(c),
-          ])),
+          Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: widget.conditions.map(_chip).toList())),
         _field(_name, s.strings.pd_add_cond, s.dir),
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -668,7 +664,7 @@ class EmergencyScreen extends StatelessWidget {
             return GridView.count(
               crossAxisCount: cols, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.0,
-              children: [for (final ct in _contacts) _tile(ct)],
+              children: _contacts.map(_tile).toList(),
             );
           }),
           Padding(

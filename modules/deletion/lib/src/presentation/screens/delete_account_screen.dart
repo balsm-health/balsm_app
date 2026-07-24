@@ -154,15 +154,15 @@ class _DisclosureColumn extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          for (final item in items) ...[
-            Padding(
+          ...items.map(
+            (item) => Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: Text(
                 item,
                 style: const TextStyle(fontSize: 12, color: BalsmColors.fg2),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );

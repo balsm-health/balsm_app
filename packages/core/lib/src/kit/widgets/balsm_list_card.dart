@@ -19,20 +19,18 @@ class BalsmListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Remove divider on last row
-    final rows = <Widget>[];
-    for (var i = 0; i < children.length; i++) {
-      final row = children[i];
-      rows.add(BalsmListRow(
-        key: row.key,
-        leading: row.leading,
-        label: row.label,
-        sublabel: row.sublabel,
-        trailing: row.trailing,
-        onTap: row.onTap,
-        showChevron: row.showChevron,
-        showDivider: i < children.length - 1,
-      ));
-    }
+    final rows = children.indexed
+        .map<Widget>((e) => BalsmListRow(
+              key: e.$2.key,
+              leading: e.$2.leading,
+              label: e.$2.label,
+              sublabel: e.$2.sublabel,
+              trailing: e.$2.trailing,
+              onTap: e.$2.onTap,
+              showChevron: e.$2.showChevron,
+              showDivider: e.$1 < children.length - 1,
+            ))
+        .toList();
 
     return Container(
       margin: margin,

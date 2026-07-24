@@ -174,8 +174,9 @@ class _ResolvedView extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final a in snapshot.allergyNames)
-                BalsmPill(label: a, variant: BalsmPillVariant.danger),
+              ...snapshot.allergyNames.map(
+                (a) => BalsmPill(label: a, variant: BalsmPillVariant.danger),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -187,8 +188,9 @@ class _ResolvedView extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final c in snapshot.conditionNames)
-                BalsmPill(label: c, variant: BalsmPillVariant.info),
+              ...snapshot.conditionNames.map(
+                (c) => BalsmPill(label: c, variant: BalsmPillVariant.info),
+              ),
             ],
           ),
           const SizedBox(height: 24),

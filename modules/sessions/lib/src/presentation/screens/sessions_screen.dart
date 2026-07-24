@@ -140,8 +140,8 @@ class _SessionsList extends ConsumerWidget {
       children: [
         BalsmListCard(
           children: [
-            for (final session in sessions)
-              BalsmListRow(
+            ...sessions.map(
+              (session) => BalsmListRow(
                 leading: Icon(_iconFor(session.deviceType)),
                 label: session.deviceLabel,
                 sublabel: _subtitleFor(session),
@@ -160,6 +160,7 @@ class _SessionsList extends ConsumerWidget {
                         color: BalsmColors.fg4,
                       ),
               ),
+            ),
           ],
         ),
       ],

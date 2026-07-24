@@ -103,12 +103,13 @@ class _ReauthFormState extends State<ReauthForm> {
         Wrap(
           spacing: 8,
           children: [
-            for (final channel in ReauthChannel.values)
-              ChoiceChip(
+            ...ReauthChannel.values.map(
+              (channel) => ChoiceChip(
                 label: Text(channel.label),
                 selected: _channel == channel,
                 onSelected: (_) => setState(() => _channel = channel),
               ),
+            ),
           ],
         ),
         const SizedBox(height: 16),

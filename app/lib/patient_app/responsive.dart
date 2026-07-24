@@ -209,9 +209,8 @@ class AdaptiveGrid extends StatelessWidget {
       return Wrap(
         spacing: gap,
         runSpacing: runGap ?? gap,
-        children: [
-          for (final child in children) SizedBox(width: itemW, child: child),
-        ],
+        children:
+            children.map((child) => SizedBox(width: itemW, child: child)).toList(),
       );
     });
   }

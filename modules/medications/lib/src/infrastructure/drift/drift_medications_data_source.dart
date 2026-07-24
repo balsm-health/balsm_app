@@ -87,7 +87,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
       'WHERE health_profile_id = ? AND id IN ($placeholders)',
       variables: [
         Variable<String>(profile.value),
-        for (final id in ids) Variable<String>(id),
+        ...ids.map((id) => Variable<String>(id)),
       ],
     ).get();
     return rows.map((r) => _medicationFromRow(r.data)).toList();

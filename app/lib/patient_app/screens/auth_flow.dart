@@ -1481,24 +1481,23 @@ class _DialCodeSheet extends StatelessWidget {
             child: ListView(
               shrinkWrap: true,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                for (final c in CountryCode.known)
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context, c),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      child: Row(children: [
-                        Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(c.name(kCatalog, locale: s.lang.value), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
-                        Text(c.dialCode, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3)),
-                        if (c == current)
-                          Padding(padding: const EdgeInsetsDirectional.only(start: 8), child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
-                      ]),
-                    ),
-                  ),
-              ],
+              children: CountryCode.known
+                  .map((c) => GestureDetector(
+                        onTap: () => Navigator.pop(context, c),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          child: Row(children: [
+                            Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(c.name(kCatalog, locale: s.lang.value), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                            Text(c.dialCode, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3)),
+                            if (c == current)
+                              Padding(padding: const EdgeInsetsDirectional.only(start: 8), child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
+                          ]),
+                        ),
+                      ))
+                  .toList(),
             ),
           ),
         ]),
@@ -1695,12 +1694,11 @@ class _DobCalendarSheetState extends State<_DobCalendarSheet> {
             ]),
             const SizedBox(height: 12),
             if (_yearMode)
-              GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 4, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 1.9, children: [
-                for (final y in years)
-                  GestureDetector(onTap: () => setState(() { _y = y; _yearMode = false; }), child: Container(alignment: Alignment.center, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: y == _y ? s.accent.main : T.border, width: 1.5), color: y == _y ? s.accent.main : Colors.white), child: Text('$y', style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: y == _y ? Colors.white : T.fg1)))),
-              ])
+              GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 4, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 1.9, children: years
+                  .map((y) => GestureDetector(onTap: () => setState(() { _y = y; _yearMode = false; }), child: Container(alignment: Alignment.center, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: y == _y ? s.accent.main : T.border, width: 1.5), color: y == _y ? s.accent.main : Colors.white), child: Text('$y', style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: y == _y ? Colors.white : T.fg1)))))
+                  .toList())
             else ...[
-              Row(children: [for (final w in wd) Expanded(child: Center(child: Text(w, style: Typo.meta(ar: rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg3))))]),
+              Row(children: wd.map((w) => Expanded(child: Center(child: Text(w, style: Typo.meta(ar: rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg3))))).toList()),
               const SizedBox(height: 6),
               GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 7, mainAxisSpacing: 2, crossAxisSpacing: 2, children: [
                 for (var i = 0; i < firstWeekday; i++) const SizedBox(),

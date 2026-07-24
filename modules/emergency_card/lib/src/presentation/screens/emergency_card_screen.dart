@@ -63,12 +63,13 @@ class _EmergencyCardScreenState extends ConsumerState<EmergencyCardScreen> {
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
             ),
-            for (final opt in _ttlOptions)
-              ListTile(
+            ..._ttlOptions.map(
+              (opt) => ListTile(
                 leading: const Icon(Icons.timer_outlined),
                 title: Text(opt.label),
                 onTap: () => Navigator.pop(ctx, opt.seconds),
               ),
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -199,8 +200,9 @@ class _CardBody extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final a in snapshot.allergyNames)
-                BalsmPill(label: a, variant: BalsmPillVariant.danger),
+              ...snapshot.allergyNames.map(
+                (a) => BalsmPill(label: a, variant: BalsmPillVariant.danger),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -212,8 +214,9 @@ class _CardBody extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final c in snapshot.conditionNames)
-                BalsmPill(label: c, variant: BalsmPillVariant.info),
+              ...snapshot.conditionNames.map(
+                (c) => BalsmPill(label: c, variant: BalsmPillVariant.info),
+              ),
             ],
           ),
           const SizedBox(height: 24),

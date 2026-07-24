@@ -195,8 +195,8 @@ class _HealthProfileEditorScreenState
         else
           BalsmListCard(
             children: [
-              for (final a in allergies)
-                BalsmListRow(
+              ...allergies.map(
+                (a) => BalsmListRow(
                   label: a.name,
                   showChevron: false,
                   trailing: Row(
@@ -223,6 +223,7 @@ class _HealthProfileEditorScreenState
                     ],
                   ),
                 ),
+              ),
             ],
           ),
         const SizedBox(height: 24),
@@ -238,8 +239,9 @@ class _HealthProfileEditorScreenState
         else
           BalsmListCard(
             children: [
-              for (final c in conditions)
-                BalsmListRow(label: c.name, showChevron: false),
+              ...conditions.map(
+                (c) => BalsmListRow(label: c.name, showChevron: false),
+              ),
             ],
           ),
         const SizedBox(height: 24),
@@ -257,8 +259,8 @@ class _HealthProfileEditorScreenState
         else
           BalsmListCard(
             children: [
-              for (final c in contacts)
-                BalsmListRow(
+              ...contacts.map(
+                (c) => BalsmListRow(
                   label: c.name,
                   sublabel: c.relation == null
                       ? c.phone
@@ -271,6 +273,7 @@ class _HealthProfileEditorScreenState
                         )
                       : null,
                 ),
+              ),
             ],
           ),
       ],
@@ -394,8 +397,9 @@ class _BloodTypeDropdown extends StatelessWidget {
               value: null,
               child: Text('Unknown', style: TextStyle(color: BalsmColors.fg3)),
             ),
-            for (final bt in kBloodTypes)
-              DropdownMenuItem<String?>(value: bt, child: Text(bt)),
+            ...kBloodTypes.map(
+              (bt) => DropdownMenuItem<String?>(value: bt, child: Text(bt)),
+            ),
           ],
           onChanged: onChanged,
         ),
@@ -457,12 +461,13 @@ class _AddAllergySheetState extends State<_AddAllergySheet> {
         Wrap(
           spacing: 8,
           children: [
-            for (final s in kAllergySeverities)
-              ChoiceChip(
+            ...kAllergySeverities.map(
+              (s) => ChoiceChip(
                 label: Text(s[0].toUpperCase() + s.substring(1)),
                 selected: _severity == s,
                 onSelected: (_) => setState(() => _severity = s),
               ),
+            ),
           ],
         ),
         const SizedBox(height: 8),

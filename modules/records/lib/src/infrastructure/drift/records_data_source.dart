@@ -85,7 +85,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
       'ORDER BY taken_at DESC',
       variables: [
         Variable<String>(user.value),
-        for (final id in ids) Variable<String>(id),
+        ...ids.map((id) => Variable<String>(id)),
       ],
     ).get();
     return rows.map((r) => _fromRow(r.data)).toList();
@@ -201,7 +201,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
       'DELETE FROM $_table WHERE user_id = ? AND id IN ($placeholders)',
       variables: [
         Variable<String>(user.value),
-        for (final id in ids) Variable<String>(id),
+        ...ids.map((id) => Variable<String>(id)),
       ],
       updateKind: UpdateKind.delete,
     );
