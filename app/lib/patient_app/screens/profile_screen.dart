@@ -91,15 +91,17 @@ class ProfileScreen extends ConsumerWidget {
       ]),
 
       // Menu
-      _ListCard(children: [
-        for (var i = 0; i < rows.length; i++)
-          _ListRow(
-            icon: rows[i].$1, label: s.t(rows[i].$2), first: i == 0, onTap: rows[i].$3 ?? () {},
-            iconBg: rows[i].$4 ? T.dangerBg : null,
-            iconFg: rows[i].$4 ? T.danger : null,
-            labelColor: rows[i].$4 ? T.danger : null,
-          ),
-      ]),
+      _ListCard(
+        children: rows.indexed
+            .map((entry) => _ListRow(
+                  icon: entry.$2.$1, label: s.t(entry.$2.$2),
+                  first: entry.$1 == 0, onTap: entry.$2.$3 ?? () {},
+                  iconBg: entry.$2.$4 ? T.dangerBg : null,
+                  iconFg: entry.$2.$4 ? T.danger : null,
+                  labelColor: entry.$2.$4 ? T.danger : null,
+                ))
+            .toList(),
+      ),
 
       // Account & security — real governance screens (sessions, service status,
       // account deletion). These push the REAL module screens (their own design
@@ -423,14 +425,13 @@ void _showLanguageSheet(BuildContext context) {
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.choose_lang, children: [
-        for (final l in LanguageCode.supported)
-          _SelectRow(
-            label: l.nativeName, sub: l.name(kCatalog), selected: l == s.lang,
-            badge: l.isFullySupported ? s.strings.lang_full : s.strings.lang_beta,
-            badgeOk: l.isFullySupported,
-            enabled: l.isFullySupported,
-            onTap: l.isFullySupported ? () { s.setLang(l); Navigator.pop(ctx); } : null,
-          ),
+        ...LanguageCode.supported.map((l) => _SelectRow(
+              label: l.nativeName, sub: l.name(kCatalog), selected: l == s.lang,
+              badge: l.isFullySupported ? s.strings.lang_full : s.strings.lang_beta,
+              badgeOk: l.isFullySupported,
+              enabled: l.isFullySupported,
+              onTap: l.isFullySupported ? () { s.setLang(l); Navigator.pop(ctx); } : null,
+            )),
       ]),
     ),
   );
@@ -445,13 +446,12 @@ void _showCountrySheet(BuildContext context) {
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.choose_country, subtitle: s.strings.travel_help, children: [
-        for (final c in CountryCode.known)
-          _SelectRow(
-            label: c.name(kCatalog, locale: s.lang.value), sub: '${s.strings.emergency} ${c.emergencyNumber}',
-            selected: c == s.country,
-            badge: c == kHomeCountry ? s.strings.home_country : null, badgeOk: true,
-            onTap: () { s.setCountry(c); Navigator.pop(ctx); },
-          ),
+        ...CountryCode.known.map((c) => _SelectRow(
+              label: c.name(kCatalog, locale: s.lang.value), sub: '${s.strings.emergency} ${c.emergencyNumber}',
+              selected: c == s.country,
+              badge: c == kHomeCountry ? s.strings.home_country : null, badgeOk: true,
+              onTap: () { s.setCountry(c); Navigator.pop(ctx); },
+            )),
       ]),
     ),
   );
