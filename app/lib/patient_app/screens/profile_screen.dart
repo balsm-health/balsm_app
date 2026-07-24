@@ -448,9 +448,9 @@ void _showCountrySheet(BuildContext context) {
         for (final c in CountryCode.known)
           _SelectRow(
             label: c.name(kCatalog, locale: s.lang.value), sub: '${s.strings.emergency} ${c.emergencyNumber}',
-            selected: c.value == s.countryCode,
+            selected: c == s.country,
             badge: c == kHomeCountry ? s.strings.home_country : null, badgeOk: true,
-            onTap: () { s.setCountry(c.value); Navigator.pop(ctx); },
+            onTap: () { s.setCountry(c); Navigator.pop(ctx); },
           ),
       ]),
     ),

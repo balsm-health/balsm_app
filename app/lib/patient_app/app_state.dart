@@ -39,7 +39,7 @@ class PatientAppState extends ChangeNotifier {
   /// persisted); cleared after use.
   String? authPassword;
 
-  String countryCode = 'EG';
+  CountryCode country = kHomeCountry;
 
   /// Active backup target: local | icloud | gdrive (single active cloud).
   String storageProvider = 'local';
@@ -56,7 +56,8 @@ class PatientAppState extends ChangeNotifier {
       // Persisted as the bare code; anything unsupported falls back to en.
       s.lang = LanguageCode.tryParseUi(await prefs.lang()) ?? LanguageCode.en;
       s.accent = _accentFromKey(await prefs.accent());
-      s.countryCode = await prefs.country();
+      // Persisted as the bare ISO code; malformed values fall back to home.
+      s.country = _countryOr(await prefs.country(), kHomeCountry);
       s.storageProvider = await prefs.storage();
       s.route = await prefs.signedIn() ? 'app' : 'welcome';
     } catch (_) {
@@ -88,7 +89,7 @@ class PatientAppState extends ChangeNotifier {
     p.setSignedIn(route == 'app');
     p.setLang(lang.value);
     p.setAccent(_accentKey);
-    p.setCountry(countryCode);
+    p.setCountry(country.value);
     p.setStorage(storageProvider);
   }
 
@@ -103,8 +104,6 @@ class PatientAppState extends ChangeNotifier {
   /// `s.strings.med_snooze15` fails to compile on a typo, whereas
   /// `s.t('med_snooze15')` silently returns the key at runtime.
   Strings get strings => stringsFor(lang.value);
-
-  CountryCode get country => CountryCode(countryCode);
 
   bool get isHomeCountry => country == kHomeCountry;
 
@@ -155,10 +154,19 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setCountry(String code) {
-    countryCode = code;
+  void setCountry(CountryCode c) {
+    country = c;
     _save();
     notifyListeners();
+  }
+}
+
+/// Parse a stored ISO code, falling back to [fallback] on malformed input.
+CountryCode _countryOr(String code, CountryCode fallback) {
+  try {
+    return CountryCode(code);
+  } on ArgumentError {
+    return fallback;
   }
 }
 

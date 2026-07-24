@@ -440,7 +440,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     });
     final result = await ref
         .read(signUpUseCaseProvider)
-        .requestEmailOtp(address, s.countryCode);
+        .requestEmailOtp(address, s.country.value);
     if (!mounted) return;
     setState(() => _submitting = false);
     result.fold(
@@ -934,8 +934,8 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
     final result = await ref.read(acceptDisclosureUseCaseProvider).execute(
           disclosureId: const DisclosureId.value(_kDisclosureId),
           version: _kDisclosureVersion,
-          countryCode: s.countryCode,
-          supervisoryAuthority: registry.supervisoryAuthority(s.countryCode),
+          countryCode: s.country.value,
+          supervisoryAuthority: registry.supervisoryAuthority(s.country.value),
           preferredLanguage: s.lang.value,
         );
     if (!mounted) return;
@@ -952,7 +952,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
   Widget build(BuildContext context) {
     final s = widget.state;
     final authority =
-        ref.watch(countryRegistryProvider).supervisoryAuthority(s.countryCode);
+        ref.watch(countryRegistryProvider).supervisoryAuthority(s.country.value);
     return Scaffold(
       backgroundColor: T.cream50,
       body: SafeArea(
@@ -1547,7 +1547,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
     // Forgot-password reuses the OTP-request endpoint to send the reset code.
     final r = await ref
         .read(signInUseCaseProvider)
-        .requestEmailOtp(_email.text.trim(), widget.s.countryCode);
+        .requestEmailOtp(_email.text.trim(), widget.s.country.value);
     if (!mounted) return;
     setState(() => _busy = false);
     r.fold((_) => setState(() => _step = 'code'),
