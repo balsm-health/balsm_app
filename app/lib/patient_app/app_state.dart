@@ -108,7 +108,7 @@ class PatientAppState extends ChangeNotifier {
   bool get isHomeCountry => country == kHomeCountry;
 
   /// The active UI language as a core value object.
-  LanguageCode get language => LanguageCode(lang);
+  LanguageCode get language => LanguageCode.fromCode(lang);
 
   void setLang(String l) {
     lang = l;

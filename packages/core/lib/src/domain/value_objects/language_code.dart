@@ -14,7 +14,7 @@ class LanguageCode extends ValueObject {
 
   /// Look up a known language, or accept any well-formed 2-letter code.
   /// Throws [ArgumentError] on malformed input.
-  factory LanguageCode(String code) {
+  factory LanguageCode.fromCode(String code) {
     final lower = code.trim().toLowerCase();
     final known = _byCode[lower];
     if (known != null) return known;
