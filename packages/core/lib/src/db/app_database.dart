@@ -38,6 +38,14 @@ class AppDatabase extends _$AppDatabase {
           // user_id — re-keying the DAOs lands with the dependants feature.
           await _ensureColumn('medications', 'health_profile_id', 'TEXT');
           await _ensureColumn('health_record', 'health_profile_id', 'TEXT');
+          // These indexes must be created AFTER the column patches above — on a
+          // pre-existing DB the `medications`/`health_record` tables predate
+          // `health_profile_id`, so indexing it inside `_phiSchema` (which runs
+          // before the patches) would fail with "no such column".
+          await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
+          await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)');
           await runProfileAnchorBackfill();
         },
       );
@@ -187,10 +195,9 @@ const _phiSchema = <String>[
     taken_at TEXT NOT NULL,
     created_at TEXT NOT NULL
   )''',
-  // Profile-anchor indexes (dependants seam) — cheap now, required once
-  // queries re-key from user_id to health_profile_id.
-  'CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)',
-  'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)',
+  // NOTE: the medications/health_record profile-anchor indexes are created in
+  // `beforeOpen` AFTER `_ensureColumn`, not here — on a pre-existing DB the
+  // column doesn't exist yet when `_phiSchema` runs.
   // Self-report / check-in (self_report module). PHI, on-device only,
   // partitioned by health_profile_id (the person). Vitals are nullable
   // columns; symptoms and pain regions are child rows.

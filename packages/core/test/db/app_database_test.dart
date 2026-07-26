@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   // The PHI schema + column patches + convergent backfill all run in
@@ -9,6 +12,36 @@ void main() {
 
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
+
+  test('opens a legacy DB whose medications table predates health_profile_id',
+      () async {
+    // Reproduces the crash: a pre-existing file DB with the OLD medications
+    // schema (no health_profile_id). beforeOpen must ADD the column before
+    // indexing it — indexing a missing column raised "no such column".
+    final dir = await Directory.systemTemp.createTemp('balsm_legacy_db');
+    final file = File('${dir.path}/legacy.db');
+    addTearDown(() => dir.delete(recursive: true));
+
+    // Seed the legacy table with a raw sqlite3 connection, then close it.
+    final seed = sqlite3.open(file.path);
+    seed.execute(
+      'CREATE TABLE medications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, '
+      'name TEXT NOT NULL, schedule_type TEXT NOT NULL, '
+      'schedule_config TEXT NOT NULL, start_date TEXT NOT NULL)',
+    );
+    seed.dispose();
+
+    // Opening AppDatabase over the legacy file must not throw.
+    final legacy = AppDatabase(NativeDatabase(file));
+    addTearDown(legacy.close);
+    final cols = await legacy.customSelect('PRAGMA table_info(medications)').get();
+    expect(cols.map((r) => r.read<String>('name')), contains('health_profile_id'));
+    final idx = await legacy
+        .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_medications_profile'")
+        .get();
+    expect(idx, isNotEmpty, reason: 'index created after the column patch');
+  });
 
   test('PHI schema creates the profile-anchor columns and indexes', () async {
     for (final table in ['medications', 'health_record']) {
