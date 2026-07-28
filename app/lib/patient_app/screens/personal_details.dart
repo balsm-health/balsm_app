@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:core/core.dart'
-    show currentUserIdProvider, accountSummaryProvider, accountApiProvider;
+    show currentUserIdProvider, accountSummaryProvider, accountApiProvider, Gender;
 import 'package:account/account.dart'
     show
         claimHandleUseCaseProvider,
@@ -342,6 +342,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       _nidCtrl.text = profile.nationalId ?? '';
       _natCtrl.text = profile.nationality ?? '';
       _gender = profile.gender ?? '';
+      s.setGender(Gender.fromString(profile.gender));
       _dob = (profile.dateOfBirth?.isNotEmpty ?? false)
           ? DateTime.tryParse(profile.dateOfBirth!)
           : null;

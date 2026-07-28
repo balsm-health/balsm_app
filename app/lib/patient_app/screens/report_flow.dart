@@ -309,7 +309,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   Widget _stepBody() => switch (cur) {
         'mood' =>
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _title('checkin.q_mood_t', 'checkin.q_mood_h'),
+            _title(s.strings.checkin.q_mood_t(s.gender), 'checkin.q_mood_h'),
             Row(
                 children: List.generate(
                     5,
@@ -419,7 +419,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   Widget _symptomsStep() {
     final pinfo = _painInfo(s, pain.round());
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _title('checkin.q_sym_t', 'checkin.q_sym_h'),
+      _title('checkin.q_sym_t', s.strings.checkin.q_sym_h(s.gender)),
       Center(
           child: Column(children: [
         Text('${pain.round()}',

@@ -3,9 +3,13 @@
 // dart format off
 import 'package:i69n/i69n.dart' as i69n;
 import 'strings.i69n.dart';
+import 'package:core/core.dart';
 
 String get _languageCode => 'ar';
 String get _localeName => 'ar';
+
+String _select(Object? value, Map<String, String> cases) =>
+    i69n.select(value, cases);
 
 class Strings_ar extends Strings {
   const Strings_ar();
@@ -341,7 +345,6 @@ class CheckinStrings_ar extends CheckinStrings {
   String get unit_glu => "مجم/دل";
   String get bp_normal => "ضمن المعدل";
   String get bp_high => "أعلى قليلاً";
-  String get q_mood_t => "كيف تشعرين اليوم؟";
   String get q_mood_h => "اختاري الوجه الأقرب لحالتك.";
   String get mood_1 => "متعبة";
   String get mood_2 => "ضعيفة";
@@ -360,7 +363,6 @@ class CheckinStrings_ar extends CheckinStrings {
   String get q_med_t => "هل أخذتِ أدويتك؟";
   String get q_med_h => "اضغطي على كل دواء أخذتِه اليوم.";
   String get q_sym_t => "هل لديك ألم أو أعراض؟";
-  String get q_sym_h => "حرّكي المؤشر لمستوى الألم، ثم اختاري ما تشعرين به.";
   String get pain_0 => "لا ألم";
   String get pain_mild => "خفيف";
   String get pain_mod => "متوسط";
@@ -445,6 +447,16 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_bk_r_calf => "بطة ساق يمنى";
   String get body_bk_l_heel => "كعب أيسر";
   String get body_bk_r_heel => "كعب أيمن";
+  String q_mood_t(Gender gender) => "${_select(gender, {
+            'male': 'كيف تشعر اليوم؟',
+            'female': 'كيف تشعرين اليوم؟',
+            'other': 'كيف تشعر اليوم؟'
+          })}";
+  String q_sym_h(Gender gender) => "${_select(gender, {
+            'male': 'حرّك المؤشر لمستوى الألم، ثم اختر ما تشعر به.',
+            'female': 'حرّكي المؤشر لمستوى الألم، ثم اختاري ما تشعرين به.',
+            'other': 'حرّك المؤشر لمستوى الألم، ثم اختر ما تشعر به.'
+          })}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -462,8 +474,6 @@ class CheckinStrings_ar extends CheckinStrings {
         return bp_normal;
       case 'bp_high':
         return bp_high;
-      case 'q_mood_t':
-        return q_mood_t;
       case 'q_mood_h':
         return q_mood_h;
       case 'mood_1':
@@ -500,8 +510,6 @@ class CheckinStrings_ar extends CheckinStrings {
         return q_med_h;
       case 'q_sym_t':
         return q_sym_t;
-      case 'q_sym_h':
-        return q_sym_h;
       case 'pain_0':
         return pain_0;
       case 'pain_mild':
@@ -670,6 +678,10 @@ class CheckinStrings_ar extends CheckinStrings {
         return body_bk_l_heel;
       case 'body_bk_r_heel':
         return body_bk_r_heel;
+      case 'q_mood_t':
+        return q_mood_t;
+      case 'q_sym_h':
+        return q_sym_h;
       default:
         return super[key];
     }
@@ -900,14 +912,22 @@ class HomeStrings_ar extends HomeStrings {
   String get nudge_med => "أضف دواءً";
   String get nudge_med_sub => "واظب على المتابعة";
   String get greet => "صباح الخير";
-  String get hero_q => "كيف تشعرين اليوم؟";
-  String get hero_cta => "ابدأ المتابعة";
   String get hero_time => "حوالي دقيقتين";
   String get streak => "يوم متتالٍ";
   String get streak_help => "تابعتِ 6 من آخر 7 أيام";
   String get on_track => "ملتزمة";
   String get experience => "خبرة";
   String get away_banner => "أنت خارج بلدك";
+  String hero_q(Gender gender) => "${_select(gender, {
+            'male': 'كيف تشعر اليوم؟',
+            'female': 'كيف تشعرين اليوم؟',
+            'other': 'كيف تشعر اليوم؟'
+          })}";
+  String hero_cta(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ المتابعة',
+            'female': 'ابدئي المتابعة',
+            'other': 'ابدأ المتابعة'
+          })}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -929,10 +949,6 @@ class HomeStrings_ar extends HomeStrings {
         return nudge_med_sub;
       case 'greet':
         return greet;
-      case 'hero_q':
-        return hero_q;
-      case 'hero_cta':
-        return hero_cta;
       case 'hero_time':
         return hero_time;
       case 'streak':
@@ -945,6 +961,10 @@ class HomeStrings_ar extends HomeStrings {
         return experience;
       case 'away_banner':
         return away_banner;
+      case 'hero_q':
+        return hero_q;
+      case 'hero_cta':
+        return hero_cta;
       default:
         return super[key];
     }
@@ -1134,7 +1154,6 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get w_title => "صحتك، دائماً قريبة.";
   String get w_sub =>
       "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
-  String get w_start => "ابدأ الآن";
   String get w_have => "لديّ حساب بالفعل";
   String get w_signin => "تسجيل الدخول";
   String get w_or => "أو";
@@ -1158,6 +1177,11 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get dob_select => "اختر تاريخاً";
   String get age_gate_body =>
       "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
+  String w_start(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ الآن',
+            'female': 'ابدئي الآن',
+            'other': 'ابدأ الآن'
+          })}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1169,8 +1193,6 @@ class OnboardingStrings_ar extends OnboardingStrings {
         return w_title;
       case 'w_sub':
         return w_sub;
-      case 'w_start':
-        return w_start;
       case 'w_have':
         return w_have;
       case 'w_signin':
@@ -1215,6 +1237,8 @@ class OnboardingStrings_ar extends OnboardingStrings {
         return dob_select;
       case 'age_gate_body':
         return age_gate_body;
+      case 'w_start':
+        return w_start;
       default:
         return super[key];
     }

@@ -1,5 +1,5 @@
 import 'package:core/core.dart'
-    show CountryCode, LanguageCode, TranslationCatalog;
+    show CountryCode, Gender, LanguageCode, TranslationCatalog;
 import 'package:flutter/widgets.dart';
 import 'prefs.dart';
 import 'strings.dart';
@@ -40,6 +40,11 @@ class PatientAppState extends ChangeNotifier {
   String? authPassword;
 
   CountryCode country = kHomeCountry;
+
+  /// User gender — drives grammatically-gendered copy (Arabic). Passed to i69n
+  /// `_select` message methods, e.g. `s.strings.home.hero_q(s.gender)`.
+  /// Defaults to [Gender.other] (masculine) until the profile loads.
+  Gender gender = Gender.other;
 
   /// Active backup target: local | icloud | gdrive (single active cloud).
   String storageProvider = 'local';
@@ -106,6 +111,12 @@ class PatientAppState extends ChangeNotifier {
   Strings get strings => stringsFor(lang.value);
 
   bool get isHomeCountry => country == kHomeCountry;
+
+  void setGender(Gender g) {
+    if (g == gender) return;
+    gender = g;
+    notifyListeners();
+  }
 
   void setLang(LanguageCode l) {
     lang = l;

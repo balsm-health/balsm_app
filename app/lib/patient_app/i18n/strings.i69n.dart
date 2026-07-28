@@ -2,6 +2,7 @@
 // GENERATED FILE, do not edit!
 // dart format off
 import 'package:i69n/i69n.dart' as i69n;
+import 'package:core/core.dart';
 
 String get _languageCode => 'en';
 String get _localeName => 'en';
@@ -342,7 +343,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get unit_glu => "mg/dL";
   String get bp_normal => "In range";
   String get bp_high => "A little high";
-  String get q_mood_t => "How are you feeling today?";
   String get q_mood_h => "Pick the face that fits best.";
   String get mood_1 => "Rough";
   String get mood_2 => "Low";
@@ -361,7 +361,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get q_med_t => "Did you take your medications?";
   String get q_med_h => "Tap each one you've taken today.";
   String get q_sym_t => "Any pain or symptoms?";
-  String get q_sym_h => "Slide to your pain level, then tap anything you feel.";
   String get pain_0 => "No pain";
   String get pain_mild => "Mild";
   String get pain_mod => "Moderate";
@@ -446,6 +445,9 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get body_bk_r_calf => "R. Calf";
   String get body_bk_l_heel => "L. Heel";
   String get body_bk_r_heel => "R. Heel";
+  String q_mood_t(Gender gender) => "How are you feeling today?";
+  String q_sym_h(Gender gender) =>
+      "Slide to your pain level, then tap anything you feel.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -463,8 +465,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return bp_normal;
       case 'bp_high':
         return bp_high;
-      case 'q_mood_t':
-        return q_mood_t;
       case 'q_mood_h':
         return q_mood_h;
       case 'mood_1':
@@ -501,8 +501,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return q_med_h;
       case 'q_sym_t':
         return q_sym_t;
-      case 'q_sym_h':
-        return q_sym_h;
       case 'pain_0':
         return pain_0;
       case 'pain_mild':
@@ -671,6 +669,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return body_bk_l_heel;
       case 'body_bk_r_heel':
         return body_bk_r_heel;
+      case 'q_mood_t':
+        return q_mood_t;
+      case 'q_sym_h':
+        return q_sym_h;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -900,14 +902,14 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get nudge_med => "Add a medication";
   String get nudge_med_sub => "Stay on track";
   String get greet => "Good morning";
-  String get hero_q => "How are you feeling today?";
-  String get hero_cta => "Start check-in";
   String get hero_time => "About 2 minutes";
   String get streak => "day streak";
   String get streak_help => "Checked in 6 of the last 7 days";
   String get on_track => "On track";
   String get experience => "experience";
   String get away_banner => "You're away from home";
+  String hero_q(Gender gender) => "How are you feeling today?";
+  String hero_cta(Gender gender) => "Start check-in";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -929,10 +931,6 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return nudge_med_sub;
       case 'greet':
         return greet;
-      case 'hero_q':
-        return hero_q;
-      case 'hero_cta':
-        return hero_cta;
       case 'hero_time':
         return hero_time;
       case 'streak':
@@ -945,6 +943,10 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return experience;
       case 'away_banner':
         return away_banner;
+      case 'hero_q':
+        return hero_q;
+      case 'hero_cta':
+        return hero_cta;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -1134,7 +1136,6 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   String get w_title => "Your health, kept close.";
   String get w_sub =>
       "Daily check-ins, medication reminders, and trends — saved on your phone, synced when you're ready.";
-  String get w_start => "Get started";
   String get w_have => "I already have an account";
   String get w_signin => "Sign in";
   String get w_or => "or";
@@ -1159,6 +1160,7 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   String get dob_select => "Select a date";
   String get age_gate_body =>
       "Balsm is currently available for ages 18 and older. We're working on a version for younger users with parental consent.";
+  String w_start(Gender gender) => "Get started";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1170,8 +1172,6 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
         return w_title;
       case 'w_sub':
         return w_sub;
-      case 'w_start':
-        return w_start;
       case 'w_have':
         return w_have;
       case 'w_signin':
@@ -1216,6 +1216,8 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
         return dob_select;
       case 'age_gate_body':
         return age_gate_body;
+      case 'w_start':
+        return w_start;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
