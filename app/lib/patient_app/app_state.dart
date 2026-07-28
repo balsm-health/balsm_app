@@ -101,8 +101,8 @@ class PatientAppState extends ChangeNotifier {
   String t(String key) => tr(key, lang.value);
 
   /// Locale-aware, compile-time-checked message bundle:
-  /// `s.strings.med_snooze15` fails to compile on a typo, whereas
-  /// `s.t('med_snooze15')` silently returns the key at runtime.
+  /// `s.strings.meds.med_snooze15` fails to compile on a typo, whereas
+  /// `s.t('meds.med_snooze15')` silently returns the key at runtime.
   Strings get strings => stringsFor(lang.value);
 
   bool get isHomeCountry => country == kHomeCountry;

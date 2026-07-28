@@ -24,7 +24,7 @@ const _bundles = <String, Strings>{
 /// Legacy keys that collide with Dart keywords — remapped during codegen
 /// (same sanitization core applied to `common.continue`).
 const _alias = <String, String>{
-  'continue': 'continue_',
+  'continue': 'common.continue_',
 };
 
 /// The typed message bundle for [lang] — locale-correct (Arabic falls back to

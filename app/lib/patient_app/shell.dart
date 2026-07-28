@@ -222,11 +222,11 @@ class _TabBar extends StatelessWidget {
       ),
       padding: EdgeInsets.only(bottom: 22 + MediaQuery.of(context).padding.bottom.clamp(0, 12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.tab_home),
-        _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.tab_meds),
+        _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
+        _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
         // Quick-log "+" — opens the daily check-in flow as a route.
         const _QuickLog(),
-        _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.tab_profile),
+        _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
       ]),
     );
   }
@@ -314,10 +314,10 @@ class _SideNav extends StatelessWidget {
       child: SafeArea(
         child: Column(children: [
           const SizedBox(height: Space.s5),
-          _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.tab_home),
-          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.tab_meds),
+          _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
+          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
           const _QuickLog(rail: true),
-          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.tab_profile),
+          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
           const Spacer(),
         ]),
       ),
@@ -392,11 +392,11 @@ class _BootSplash extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const PetalSpinner(size: 72),
             const SizedBox(height: 28),
-            Text(state.strings.boot_preparing,
+            Text(state.strings.boot.boot_preparing,
                 textAlign: TextAlign.center,
                 style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text(state.strings.boot_tagline,
+            Text(state.strings.boot.boot_tagline,
                 textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
           ]),
         ),

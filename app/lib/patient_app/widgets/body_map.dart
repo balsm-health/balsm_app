@@ -9,7 +9,7 @@ import '../tokens.dart';
 /// (`l-shoulder`, `bk-l-glute`); the app's flat snake keys replace the hyphens
 /// (`body_l_shoulder`). The label itself lives only in the i69n bundle — the
 /// [BodyRegion] value object intentionally carries no copy.
-String regionLabelKey(String id) => 'body_${id.replaceAll('-', '_')}';
+String regionLabelKey(String id) => 'checkin.body_${id.replaceAll('-', '_')}';
 
 /// Tappable anatomical body figure (bodymap.jsx, surface layer).
 ///

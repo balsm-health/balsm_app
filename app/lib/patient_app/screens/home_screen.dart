@@ -52,7 +52,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.strings.greet, style: Typo.meta(ar: s.rtl)),
+                Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
                 if (firstName.isNotEmpty)
                   Text(firstName,
                       style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
@@ -116,8 +116,8 @@ class _NudgeSection extends ConsumerWidget {
           icon: LucideIcons.atSign,
           iconBg: T.petalMint50,
           iconFg: T.petalMint,
-          title: s.strings.nudge_handle,
-          subtitle: s.strings.nudge_handle_sub,
+          title: s.strings.home.nudge_handle,
+          subtitle: s.strings.home.nudge_handle_sub,
           onTap: () => openPersonalDetails(context),
         ),
       if (needsEmergencyCard)
@@ -125,8 +125,8 @@ class _NudgeSection extends ConsumerWidget {
           icon: LucideIcons.shieldAlert,
           iconBg: T.petalAqua50,
           iconFg: T.petalAqua,
-          title: s.strings.nudge_ec,
-          subtitle: s.strings.nudge_ec_sub,
+          title: s.strings.home.nudge_ec,
+          subtitle: s.strings.home.nudge_ec_sub,
           onTap: () => openEmergency(context),
         ),
       if (needsFirstMedication)
@@ -134,8 +134,8 @@ class _NudgeSection extends ConsumerWidget {
           icon: LucideIcons.pill,
           iconBg: T.petalViolet50,
           iconFg: T.petalViolet,
-          title: s.strings.nudge_med,
-          subtitle: s.strings.nudge_med_sub,
+          title: s.strings.home.nudge_med,
+          subtitle: s.strings.home.nudge_med_sub,
           onTap: () => s.setTab('meds'),
         ),
     ]);
@@ -155,8 +155,8 @@ class _TodayMedsCard extends ConsumerWidget {
         ref.watch(todayDosesProvider).valueOrNull ?? const <TodayDose>[];
     if (doses.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      RowHead(s.strings.meds_today,
-          action: s.strings.see_all, onAction: () => s.setTab('meds'), ar: s.rtl),
+      RowHead(s.strings.meds.meds_today,
+          action: s.strings.common.see_all, onAction: () => s.setTab('meds'), ar: s.rtl),
       PCard(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(children: doses.indexed
@@ -206,9 +206,9 @@ class _HomeDoseRow extends StatelessWidget {
           ]),
         ),
         if (taken)
-          Pill(s.strings.taken, kind: PillKind.success, ar: s.rtl)
+          Pill(s.strings.meds.taken, kind: PillKind.success, ar: s.rtl)
         else
-          PButton(s.strings.take,
+          PButton(s.strings.meds.take,
               variant: BtnVariant.soft,
               accent: s.accent,
               ar: s.rtl,

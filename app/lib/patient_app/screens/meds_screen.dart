@@ -236,7 +236,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
         const PadTop(),
         AppBarRow(children: [
           Expanded(
-              child: Text(s.strings.medications,
+              child: Text(s.strings.meds.medications,
                   style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
           // Add medication — disabled (hidden) when signed out.
           if (userId != null)
@@ -260,10 +260,10 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
                 radius: T.rSm),
             const SizedBox(width: 14),
             Expanded(
-                child: Text(s.strings.prescriptions,
+                child: Text(s.strings.records.prescriptions,
                     style: Typo.body(ar: s.rtl)
                         .copyWith(fontWeight: FontWeight.w500, color: T.fg1))),
-            Pill('$medCount ${s.strings.rx_active.toLowerCase()}',
+            Pill('$medCount ${s.strings.meds.rx_active.toLowerCase()}',
                 kind: PillKind.success, ar: s.rtl),
             const SizedBox(width: 8),
             Chevron(rtl: s.rtl),
@@ -288,12 +288,12 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
                     Row(children: [
                       Text('$adherencePct%',
                           style: Typo.num(size: FS.md, weight: FontWeight.w700)),
-                      Text(' · ${s.strings.adherence}',
+                      Text(' · ${s.strings.meds.adherence}',
                           style:
                               Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
                     ]),
                     const SizedBox(height: 6),
-                    Pill(s.strings.on_track, kind: PillKind.success, ar: s.rtl),
+                    Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
                   ]),
             ),
           ]),
@@ -302,13 +302,13 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
         if (userId == null)
           _EmptyState(
               s: s,
-              text: s.strings.meds_signin_help)
+              text: s.strings.meds.meds_signin_help)
         else if (doses.isEmpty)
           _EmptyState(
               s: s,
               text: medCount == 0
-                  ? s.strings.meds_empty_help
-                  : s.strings.meds_none_today)
+                  ? s.strings.meds.meds_empty_help
+                  : s.strings.meds.meds_none_today)
         else
           for (final (key, icon, list) in groups) ...[
             if (list.isNotEmpty) ...[
@@ -364,11 +364,11 @@ class _MedDoseRow extends StatelessWidget {
     final tone = _toneFor(med.id);
     final outcome = dose.event?.outcome;
     final (label, kind) = switch (outcome) {
-      DoseOutcome.taken => (s.strings.taken, PillKind.success),
-      DoseOutcome.skipped => (s.strings.dose_skipped, PillKind.neutral),
-      DoseOutcome.snoozed => (s.strings.dose_snoozed, PillKind.neutral),
-      DoseOutcome.missed => (s.strings.dose_missed, PillKind.neutral),
-      _ => (s.strings.due, PillKind.neutral),
+      DoseOutcome.taken => (s.strings.meds.taken, PillKind.success),
+      DoseOutcome.skipped => (s.strings.meds.dose_skipped, PillKind.neutral),
+      DoseOutcome.snoozed => (s.strings.meds.dose_snoozed, PillKind.neutral),
+      DoseOutcome.missed => (s.strings.meds.dose_missed, PillKind.neutral),
+      _ => (s.strings.meds.due, PillKind.neutral),
     };
     final subtitle = [
       if (med.doseAmount != null && med.doseAmount!.isNotEmpty) med.doseAmount!,
@@ -563,13 +563,13 @@ class _DoseActionSheet extends StatelessWidget {
         Align(
           alignment: AlignmentDirectional.centerStart,
           child: Text(
-              '${s.strings.med_scheduled} · ${_hhmm(dose.scheduledAt)}',
+              '${s.strings.meds.med_scheduled} · ${_hhmm(dose.scheduledAt)}',
               style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
         ),
         const SizedBox(height: 16),
         _SheetButton(
             s: s,
-            label: s.strings.taken,
+            label: s.strings.meds.taken,
             icon: LucideIcons.check,
             primary: true,
             tone: T.petalMint600,
@@ -577,13 +577,13 @@ class _DoseActionSheet extends StatelessWidget {
         const SizedBox(height: 10),
         _SheetButton(
             s: s,
-            label: s.strings.med_snooze15,
+            label: s.strings.meds.med_snooze15,
             icon: LucideIcons.clock,
             onTap: () => Navigator.pop(context, DoseOutcome.snoozed)),
         const SizedBox(height: 10),
         _SheetButton(
             s: s,
-            label: s.strings.med_skip,
+            label: s.strings.meds.med_skip,
             icon: LucideIcons.x,
             onTap: () => Navigator.pop(context, DoseOutcome.skipped)),
       ]),
@@ -603,7 +603,7 @@ class _TimezoneConfirmSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SheetChrome(
       s: s,
-      title: s.strings.tz_changed,
+      title: s.strings.meds.tz_changed,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
@@ -617,20 +617,20 @@ class _TimezoneConfirmSheet extends StatelessWidget {
                   size: 22, color: T.petalBlue)),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(s.strings.meds_tz_moved(previous, current),
+            child: Text(s.strings.meds.meds_tz_moved(previous, current),
                 style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
           ),
         ]),
         const SizedBox(height: 20),
         _SheetButton(
             s: s,
-            label: s.strings.tz_recompute,
+            label: s.strings.meds.tz_recompute,
             primary: true,
             onTap: () => Navigator.pop(context, true)),
         const SizedBox(height: 10),
         _SheetButton(
             s: s,
-            label: s.strings.tz_keep,
+            label: s.strings.meds.tz_keep,
             onTap: () => Navigator.pop(context, false)),
       ]),
     );
@@ -662,10 +662,10 @@ class _AddMedSheetState extends State<_AddMedSheet> {
   PatientAppState get s => widget.s;
 
   static const _timeOptions = <(String, String)>[
-    ('08:00', 'med_time_morning'),
-    ('13:00', 'med_time_midday'),
-    ('20:00', 'med_time_evening'),
-    ('22:00', 'med_time_night'),
+    ('08:00', 'meds.med_time_morning'),
+    ('13:00', 'meds.med_time_midday'),
+    ('20:00', 'meds.med_time_evening'),
+    ('22:00', 'meds.med_time_night'),
   ];
 
   @override
@@ -710,21 +710,21 @@ class _AddMedSheetState extends State<_AddMedSheet> {
   Widget build(BuildContext context) {
     return _SheetChrome(
       s: s,
-      title: s.strings.med_add_title,
+      title: s.strings.meds.med_add_title,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(s.strings.med_field_name,
+        Text(s.strings.meds.med_field_name,
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 8),
-        _field(_name, s.strings.med_ph_name),
+        _field(_name, s.strings.meds.med_ph_name),
         const SizedBox(height: 16),
-        Text(s.strings.med_field_dose,
+        Text(s.strings.meds.med_field_dose,
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 8),
-        _field(_dose, s.strings.med_ph_dose),
+        _field(_dose, s.strings.meds.med_ph_dose),
         const SizedBox(height: 16),
-        Text(s.strings.med_reminder_time,
+        Text(s.strings.meds.med_reminder_time,
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 10),
@@ -764,7 +764,7 @@ class _AddMedSheetState extends State<_AddMedSheet> {
         const SizedBox(height: 22),
         _SheetButton(
             s: s,
-            label: s.strings.med_add_btn,
+            label: s.strings.meds.med_add_btn,
             icon: LucideIcons.plus,
             primary: true,
             onTap: _submit),

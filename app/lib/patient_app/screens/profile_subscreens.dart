@@ -211,12 +211,12 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     final v = w / (h * h);
     if (!v.isFinite) return null;
     final (key, color, bg) = v < 18.5
-        ? ('bmi_under', T.petalBlue, T.petalBlue50)
+        ? ('profile.bmi_under', T.petalBlue, T.petalBlue50)
         : v < 25
-            ? ('bmi_normal', T.petalMint600, T.petalMint50)
+            ? ('profile.bmi_normal', T.petalMint600, T.petalMint50)
             : v < 30
-                ? ('bmi_over', const Color(0xFFD97A20), const Color(0xFFFBF0E2))
-                : ('bmi_obese', T.danger, const Color(0xFFFBEBE7));
+                ? ('profile.bmi_over', const Color(0xFFD97A20), const Color(0xFFFBF0E2))
+                : ('profile.bmi_obese', T.danger, const Color(0xFFFBEBE7));
     final pct = (((v - 15) / 20) * 100).clamp(2.0, 98.0);
     return (value: v.toStringAsFixed(1), pct: pct, color: color, bg: bg, key: key);
   }
@@ -231,18 +231,18 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     final selectedBlood = profile?.bloodType;
     return _SubScreen(
       s: s,
-      title: s.strings.p_cond,
+      title: s.strings.profile.p_cond,
       maxWidth: 560,
-      trailing: saved ? Pill(s.strings.pd_saved, kind: PillKind.success, ar: s.rtl) : null,
+      trailing: saved ? Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl) : null,
       children: [
-        _SectionHead(LucideIcons.clipboardList, s.strings.pd_conditions, s: s),
+        _SectionHead(LucideIcons.clipboardList, s.strings.profile.pd_conditions, s: s),
         _ConditionEditor(s: s, conditions: conditionList,
             bg: s.accent.bg, fg: s.accent.d, onAdd: _addCondition),
-        _SectionHead(LucideIcons.alertOctagon, s.strings.pd_allergies, s: s),
+        _SectionHead(LucideIcons.alertOctagon, s.strings.profile.pd_allergies, s: s),
         _ChipEditor(s: s, labels: allergyList.map((a) => a.name).toList(), ctrl: algInput,
-            hint: s.strings.pd_add_alg, bg: const Color(0xFFFBEBE7), fg: T.danger,
+            hint: s.strings.profile.pd_add_alg, bg: const Color(0xFFFBEBE7), fg: T.danger,
             onAdd: _addAllergy, onRemoveAt: (i) => _removeAllergy(allergyList[i].id)),
-        _SectionHead(LucideIcons.droplet, s.strings.pd_blood, s: s),
+        _SectionHead(LucideIcons.droplet, s.strings.profile.pd_blood, s: s),
         PCard(padding: const EdgeInsets.all(16), child: Wrap(spacing: 8, runSpacing: 8, children: const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
             .map((bt) => Pressable(
                   onTap: () => _setBloodType(bt),
@@ -260,18 +260,18 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                   ),
                 ))
             .toList())),
-        _SectionHead(LucideIcons.ruler, s.strings.pd_measurements, s: s),
+        _SectionHead(LucideIcons.ruler, s.strings.profile.pd_measurements, s: s),
         PCard(padding: const EdgeInsets.all(16), child: Column(children: [
           Row(children: [
-            Expanded(child: _numField('${s.strings.pd_weight} (${s.strings.pd_kg})', weight)),
+            Expanded(child: _numField('${s.strings.profile.pd_weight} (${s.strings.profile.pd_kg})', weight)),
             const SizedBox(width: 12),
-            Expanded(child: _numField('${s.strings.pd_height} (${s.strings.pd_cm})', height)),
+            Expanded(child: _numField('${s.strings.profile.pd_height} (${s.strings.profile.pd_cm})', height)),
           ]),
           if (bmi != null) ...[
             const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Divider(height: 1, color: T.ink100)),
             Row(children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.strings.bmi_label.toUpperCase(), style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
+                Text(s.strings.profile.bmi_label.toUpperCase(), style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
                 Text(bmi.value, style: Typo.display().copyWith(fontSize: FS.xl2)),
               ]),
               const SizedBox(width: 14),
@@ -295,7 +295,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
           ],
         ])),
         const SizedBox(height: 22),
-        PButton(saving ? '…' : (saved ? s.strings.pd_saved : s.strings.pd_save),
+        PButton(saving ? '…' : (saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save),
             icon: saved ? LucideIcons.check : LucideIcons.save,
             variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl,
             onTap: saving ? null : _save),
@@ -429,12 +429,12 @@ class _ConditionEditorState extends State<_ConditionEditor> {
   Widget build(BuildContext context) => PCard(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (widget.conditions.isNotEmpty)
           Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: widget.conditions.map(_chip).toList())),
-        _field(_name, s.strings.pd_add_cond, s.dir),
+        _field(_name, s.strings.profile.pd_add_cond, s.dir),
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: _field(_icd10, s.strings.cond_icd10_hint, TextDirection.ltr)),
+          Expanded(child: _field(_icd10, s.strings.checkin.cond_icd10_hint, TextDirection.ltr)),
           const SizedBox(width: 8),
-          SizedBox(width: 92, child: _field(_year, s.strings.cond_onset_hint, TextDirection.ltr, number: true)),
+          SizedBox(width: 92, child: _field(_year, s.strings.checkin.cond_onset_hint, TextDirection.ltr, number: true)),
           const SizedBox(width: 8),
           Pressable(
             onTap: _add,
@@ -486,11 +486,11 @@ class CareTeamScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _SubScreen(
         s: s,
-        title: s.strings.p_care,
+        title: s.strings.profile.p_care,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
-            child: Text(s.strings.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            child: Text(s.strings.care.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ),
           // P001 has no care-team backend yet, so this shows a neutral empty
           // state (no fabricated doctors). The "find care" CTA below routes to
@@ -500,11 +500,11 @@ class CareTeamScreen extends StatelessWidget {
             child: Column(children: [
               const Icon(LucideIcons.stethoscope, size: 36, color: T.ink300),
               const SizedBox(height: 12),
-              Text(s.strings.care_empty,
+              Text(s.strings.care.care_empty,
                   textAlign: TextAlign.center,
                   style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
               const SizedBox(height: 4),
-              Text(s.strings.care_add_help,
+              Text(s.strings.care.care_add_help,
                   textAlign: TextAlign.center,
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),
@@ -521,7 +521,7 @@ class CareTeamScreen extends StatelessWidget {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
                 const Icon(LucideIcons.userPlus, size: 17, color: T.fg1),
                 const SizedBox(width: 8),
-                Text(s.strings.care_find, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                Text(s.strings.care.care_find, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
               ]),
             ),
           ),
@@ -544,35 +544,35 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
   @override
   Widget build(BuildContext context) => _SubScreen(
         s: s,
-        title: s.strings.p_privacy,
+        title: s.strings.profile.p_privacy,
         children: [
-          _SectionHead(LucideIcons.share2, s.strings.pv_sharing, s: s),
+          _SectionHead(LucideIcons.share2, s.strings.privacy.pv_sharing, s: s),
           _listCard([
-            _toggle(s.strings.pv_share_team, s.strings.pv_share_team_h, shareTeam, (v) => setState(() => shareTeam = v)),
-            _toggle(s.strings.pv_analytics, s.strings.pv_analytics_h, analytics, (v) => setState(() => analytics = v)),
-            _toggle(s.strings.pv_research, s.strings.pv_research_h, research, (v) => setState(() => research = v), last: true),
+            _toggle(s.strings.privacy.pv_share_team, s.strings.privacy.pv_share_team_h, shareTeam, (v) => setState(() => shareTeam = v)),
+            _toggle(s.strings.privacy.pv_analytics, s.strings.privacy.pv_analytics_h, analytics, (v) => setState(() => analytics = v)),
+            _toggle(s.strings.privacy.pv_research, s.strings.privacy.pv_research_h, research, (v) => setState(() => research = v), last: true),
           ]),
-          _SectionHead(LucideIcons.lock, s.strings.pv_security, s: s),
+          _SectionHead(LucideIcons.lock, s.strings.privacy.pv_security, s: s),
           _listCard([
-            _toggle(s.strings.pv_bio, s.strings.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
-            _toggle(s.strings.pv_pin, s.strings.pv_pin_h, pin, (v) => setState(() => pin = v), last: true),
+            _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
+            _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v), last: true),
           ]),
-          _SectionHead(LucideIcons.database, s.strings.pv_yourdata, s: s),
+          _SectionHead(LucideIcons.database, s.strings.privacy.pv_yourdata, s: s),
           _listCard([
-            _action(LucideIcons.download, s.strings.pv_export, s.strings.pv_export_h),
-            _action(LucideIcons.folderHeart, s.strings.pv_download, s.strings.pv_download_h),
-            _action(LucideIcons.appWindow, s.strings.pv_connected, s.strings.pv_connected_h, last: true),
+            _action(LucideIcons.download, s.strings.privacy.pv_export, s.strings.privacy.pv_export_h),
+            _action(LucideIcons.folderHeart, s.strings.privacy.pv_download, s.strings.privacy.pv_download_h),
+            _action(LucideIcons.appWindow, s.strings.privacy.pv_connected, s.strings.privacy.pv_connected_h, last: true),
           ]),
-          _SectionHead(LucideIcons.alertTriangle, s.strings.pv_danger, s: s),
+          _SectionHead(LucideIcons.alertTriangle, s.strings.privacy.pv_danger, s: s),
           _listCard([
-            _action(LucideIcons.trash2, s.strings.pv_delete, s.strings.pv_delete_h, danger: true, last: true),
+            _action(LucideIcons.trash2, s.strings.privacy.pv_delete, s.strings.privacy.pv_delete_h, danger: true, last: true),
           ]),
           Padding(
             padding: const EdgeInsets.only(top: 18),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),
               const SizedBox(width: 6),
-              Text(s.strings.pv_encrypted, style: Typo.meta(ar: s.rtl)),
+              Text(s.strings.privacy.pv_encrypted, style: Typo.meta(ar: s.rtl)),
             ]),
           ),
         ],
@@ -639,25 +639,25 @@ class EmergencyScreen extends StatelessWidget {
   final PatientAppState s;
 
   static const _contacts = [
-    ('em_ambulance', LucideIcons.heartPulse, '123', T.danger, T.dangerBg),
-    ('em_police', LucideIcons.shield, '122', T.petalBlue, T.petalBlue50),
-    ('em_fire', LucideIcons.flame, '180', Color(0xFFD97A20), Color(0xFFFBF0E2)),
-    ('em_tourist', LucideIcons.compass, '126', T.petalViolet, T.petalViolet50),
+    ('emergency.em_ambulance', LucideIcons.heartPulse, '123', T.danger, T.dangerBg),
+    ('emergency.em_police', LucideIcons.shield, '122', T.petalBlue, T.petalBlue50),
+    ('emergency.em_fire', LucideIcons.flame, '180', Color(0xFFD97A20), Color(0xFFFBF0E2)),
+    ('emergency.em_tourist', LucideIcons.compass, '126', T.petalViolet, T.petalViolet50),
   ];
 
   @override
   Widget build(BuildContext context) => _SubScreen(
         s: s,
-        title: s.strings.p_emergency,
+        title: s.strings.profile.p_emergency,
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(LucideIcons.mapPin, size: 12, color: T.fg3),
           const SizedBox(width: 4),
-          Text(s.strings.em_eg, style: Typo.meta(ar: s.rtl)),
+          Text(s.strings.emergency.em_eg, style: Typo.meta(ar: s.rtl)),
         ]),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 2, 0, 16),
-            child: Text(s.strings.em_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+            child: Text(s.strings.emergency.em_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
           ),
           LayoutBuilder(builder: (context, c) {
             final cols = c.maxWidth >= 520 ? 4 : 2;
@@ -672,7 +672,7 @@ class EmergencyScreen extends StatelessWidget {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.phoneCall, size: 15, color: T.fg3),
               const SizedBox(width: 6),
-              Text(s.strings.em_tap_call, style: Typo.meta(ar: s.rtl)),
+              Text(s.strings.emergency.em_tap_call, style: Typo.meta(ar: s.rtl)),
             ]),
           ),
         ],

@@ -75,10 +75,10 @@ final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async
 /// TTL choices offered before minting the emergency QR token (FR-017).
 /// `key` is an app i69n label key.
 const _emergencyTtlOptions = <({String key, int seconds})>[
-  (key: 'eqr_ttl_1h', seconds: 3600),
-  (key: 'eqr_ttl_6h', seconds: 21600),
-  (key: 'eqr_ttl_24h', seconds: 86400),
-  (key: 'eqr_ttl_7d', seconds: 604800),
+  (key: 'emergency.eqr_ttl_1h', seconds: 3600),
+  (key: 'emergency.eqr_ttl_6h', seconds: 21600),
+  (key: 'emergency.eqr_ttl_24h', seconds: 86400),
+  (key: 'emergency.eqr_ttl_7d', seconds: 604800),
 ];
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
@@ -270,7 +270,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                               fontWeight: FontWeight.w700, color: T.fg1))),
                   if (c.isPrimary) ...[
                     const SizedBox(width: 7),
-                    Pill(s.strings.pd_primary,
+                    Pill(s.strings.profile.pd_primary,
                         kind: PillKind.info,
                         dot: false,
                         ar: s.rtl,
@@ -298,10 +298,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       };
 
   String? get _handleMsg => switch (unStatus) {
-        'checking' => s.strings.un_checking,
-        'available' => s.strings.un_avail,
-        'taken' => s.strings.un_taken,
-        'invalid' => s.strings.un_invalid,
+        'checking' => s.strings.auth.un_checking,
+        'available' => s.strings.auth.un_avail,
+        'taken' => s.strings.auth.un_taken,
+        'invalid' => s.strings.auth.un_invalid,
         _ => null,
       };
 
@@ -354,8 +354,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         AppBarRow(
           leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.pop(context)),
           children: [
-            Expanded(child: Text(s.strings.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-            if (saved) ...[Pill(s.strings.pd_saved, kind: PillKind.success, ar: s.rtl), const SizedBox(width: 8)],
+            Expanded(child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+            if (saved) ...[Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl), const SizedBox(width: 8)],
             RoundBtn(icon: LucideIcons.qrCode, iconSize: 19, onTap: () => _showQr(context)),
           ],
         ),
@@ -369,12 +369,12 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                   color: T.petalAqua,
                   size: 72),
               const SizedBox(height: 10),
-              PButton(s.strings.pd_change_photo, icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
+              PButton(s.strings.profile.pd_change_photo, icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
             ])),
             // Account (handle + QR share)
-            _section(LucideIcons.atSign, s.strings.pd_account),
+            _section(LucideIcons.atSign, s.strings.profile.pd_account),
             _card([
-              _labeled(s.strings.un_label, TextField(
+              _labeled(s.strings.auth.un_label, TextField(
                 controller: handle, textDirection: TextDirection.ltr,
                 onChanged: _setHandle,
                 style: Typo.num(size: FS.lg),
@@ -426,8 +426,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         child: Icon(LucideIcons.qrCode, size: 20, color: s.accent.d)),
                     const SizedBox(width: 13),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(s.strings.pd_share_qr, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
-                      Text(s.strings.pd_share_qr_h, style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.d)),
+                      Text(s.strings.profile.pd_share_qr, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
+                      Text(s.strings.profile.pd_share_qr_h, style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.d)),
                     ])),
                     Chevron(rtl: s.rtl, color: s.accent.d),
                   ]),
@@ -436,30 +436,30 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             ]),
             // Basic info — name (→ display_name), date of birth (PHI, 18+),
             // gender. All persisted via PATCH /account/profile.
-            _section(LucideIcons.user, s.strings.pd_basic_info),
+            _section(LucideIcons.user, s.strings.profile.pd_basic_info),
             _card([
               Row(children: [
-                Expanded(child: _field(s.strings.pf_fname, _firstCtrl)),
+                Expanded(child: _field(s.strings.onboarding.pf_fname, _firstCtrl)),
                 const SizedBox(width: 12),
-                Expanded(child: _field(s.strings.pf_lname, _lastCtrl)),
+                Expanded(child: _field(s.strings.onboarding.pf_lname, _lastCtrl)),
               ]),
               const SizedBox(height: 14),
-              _labeled(s.strings.pf_dob, _dobField()),
+              _labeled(s.strings.onboarding.pf_dob, _dobField()),
               const SizedBox(height: 14),
-              _labeled(s.strings.pf_gender, _genderSeg()),
+              _labeled(s.strings.onboarding.pf_gender, _genderSeg()),
             ]),
             // Contact — phone, national ID (PHI/PII, encrypted), nationality.
-            _section(LucideIcons.phone, s.strings.pd_contact_section),
+            _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
             _card([
-              _field(s.strings.pd_phone, _phoneCtrl, mono: true),
+              _field(s.strings.profile.pd_phone, _phoneCtrl, mono: true),
               const SizedBox(height: 14),
-              _field(s.strings.pd_nid, _nidCtrl, mono: true),
+              _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
               const SizedBox(height: 14),
-              _field(s.strings.pd_nationality, _natCtrl),
+              _field(s.strings.profile.pd_nationality, _natCtrl),
             ]),
 
             // Emergency contact (real on-device PHI; up to 3 contacts).
-            _section(LucideIcons.phoneCall, s.strings.pd_emergency),
+            _section(LucideIcons.phoneCall, s.strings.profile.pd_emergency),
             _card([
               for (var i = 0; i < contacts.length; i++) ...[
                 _contactRow(contacts[i]),
@@ -467,15 +467,15 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                   const SizedBox(height: 12),
               ],
               if (!atMaxContacts) ...[
-                _field(s.strings.pd_em_name, emName),
+                _field(s.strings.profile.pd_em_name, emName),
                 const SizedBox(height: 14),
                 Row(children: [
-                  Expanded(child: _field(s.strings.pd_em_rel, emRel)),
+                  Expanded(child: _field(s.strings.profile.pd_em_rel, emRel)),
                   const SizedBox(width: 12),
-                  Expanded(child: _field(s.strings.pd_em_phone, emPhone, mono: true)),
+                  Expanded(child: _field(s.strings.profile.pd_em_phone, emPhone, mono: true)),
                 ]),
                 const SizedBox(height: 14),
-                PButton(s.strings.pd_add_contact,
+                PButton(s.strings.profile.pd_add_contact,
                     icon: LucideIcons.plus, variant: BtnVariant.secondary,
                     block: true, accent: s.accent, ar: s.rtl,
                     onTap: _addEmergencyContact),
@@ -486,7 +486,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             // Disabled until loaded and while a handle is mid-check / bad.
             Opacity(
               opacity: _canSave && !_saving && _loaded ? 1 : 0.4,
-              child: PButton(saved ? s.strings.pd_saved : s.strings.pd_save,
+              child: PButton(saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save,
                   icon: saved ? LucideIcons.check : LucideIcons.save,
                   variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl,
                   onTap: _canSave && !_saving && _loaded ? _save : null),
@@ -594,9 +594,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             borderRadius: BorderRadius.circular(T.rMd),
             border: Border.all(color: T.border)),
         child: Row(children: [
-          _seg(s.strings.pf_female, _gender == 'female', () => setState(() => _gender = 'female')),
+          _seg(s.strings.onboarding.pf_female, _gender == 'female', () => setState(() => _gender = 'female')),
           const SizedBox(width: 6),
-          _seg(s.strings.pf_male, _gender == 'male', () => setState(() => _gender = 'male')),
+          _seg(s.strings.onboarding.pf_male, _gender == 'male', () => setState(() => _gender = 'male')),
         ]),
       );
 
@@ -729,7 +729,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       (_) {
         _ticker?.cancel();
         setState(() { _mint = null; _revoking = false; _error = null; });
-        _showToast(s.strings.eqr_revoked_toast);
+        _showToast(s.strings.emergency.eqr_revoked_toast);
       },
       (f) => setState(() { _revoking = false; _error = f.message; }),
     );
@@ -741,11 +741,11 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     final m = _mint;
     if (m == null) return;
     Clipboard.setData(ClipboardData(text: m.qrUrl));
-    _showToast(s.strings.eqr_link_copied);
+    _showToast(s.strings.emergency.eqr_link_copied);
   }
 
   String get _countdownLabel {
-    if (_isExpired) return s.strings.eqr_expired;
+    if (_isExpired) return s.strings.emergency.eqr_expired;
     final d = _remaining;
     final days = d.inDays;
     final hours = d.inHours % 24;
@@ -768,13 +768,13 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
     final String desc;
     if (hasToken) {
-      desc = s.strings.eqr_help_active;
+      desc = s.strings.emergency.eqr_help_active;
     } else if (userId == null) {
-      desc = s.strings.eqr_help_signin;
+      desc = s.strings.emergency.eqr_help_signin;
     } else if (!canShare) {
-      desc = s.strings.eqr_help_incomplete;
+      desc = s.strings.emergency.eqr_help_incomplete;
     } else {
-      desc = s.strings.eqr_help_create;
+      desc = s.strings.emergency.eqr_help_create;
     }
 
     return Container(
@@ -791,7 +791,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
-                  Expanded(child: Text(s.strings.eqr_title,
+                  Expanded(child: Text(s.strings.emergency.eqr_title,
                       style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                   RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
                 ]),
@@ -889,7 +889,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
               Text(
                 _isExpired
                     ? _countdownLabel
-                    : s.strings.eqr_expires_in(_countdownLabel),
+                    : s.strings.emergency.eqr_expires_in(_countdownLabel),
                 style: Typo.num(size: FS.xs, weight: FontWeight.w700,
                     color: _isExpired ? T.danger : s.accent.d),
               ),
@@ -914,28 +914,28 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           const SizedBox(width: 10),
           Expanded(child: Text(m.qrUrl.split('#').first, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: Typo.num(size: FS.sm, color: T.fg2))),
-          PButton(s.strings.eqr_copy, icon: LucideIcons.copy, variant: BtnVariant.ghost, accent: s.accent, ar: ar,
+          PButton(s.strings.emergency.eqr_copy, icon: LucideIcons.copy, variant: BtnVariant.ghost, accent: s.accent, ar: ar,
               onTap: expired ? null : _copy),
         ]),
       ),
       const SizedBox(height: 16),
       if (expired)
         // Token lapsed → offer a fresh mint (returns to the affordance).
-        PButton(s.strings.eqr_generate_new, icon: LucideIcons.refreshCw,
+        PButton(s.strings.emergency.eqr_generate_new, icon: LucideIcons.refreshCw,
             variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
             onTap: () { _ticker?.cancel(); setState(() => _mint = null); })
       else ...[
         Row(children: [
-          Expanded(child: PButton(s.strings.eqr_save, icon: LucideIcons.download, variant: BtnVariant.secondary, large: true, block: true, ar: ar,
-              onTap: () => _showToast(s.strings.eqr_saved_toast))),
+          Expanded(child: PButton(s.strings.emergency.eqr_save, icon: LucideIcons.download, variant: BtnVariant.secondary, large: true, block: true, ar: ar,
+              onTap: () => _showToast(s.strings.emergency.eqr_saved_toast))),
           const SizedBox(width: 10),
-          Expanded(child: PButton(s.strings.eqr_share, icon: LucideIcons.share2, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
+          Expanded(child: PButton(s.strings.emergency.eqr_share, icon: LucideIcons.share2, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
               onTap: _copy)),
         ]),
         const SizedBox(height: 10),
         _revoking
             ? _busyButton()
-            : PButton(s.strings.eqr_revoke, icon: LucideIcons.ban,
+            : PButton(s.strings.emergency.eqr_revoke, icon: LucideIcons.ban,
                 variant: BtnVariant.ghost, block: true, ar: ar, color: T.danger, onTap: _revoke),
       ],
     ];
@@ -943,7 +943,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
   /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
-        Text(s.strings.eqr_valid_for.toUpperCase(),
+        Text(s.strings.emergency.eqr_valid_for.toUpperCase(),
             style: Typo.meta(ar: ar).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
         const SizedBox(height: 8),
         _ttlControl(),
@@ -954,7 +954,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         const SizedBox(height: 16),
         _minting
             ? _busyButton(primary: true)
-            : PButton(s.strings.eqr_generate, icon: LucideIcons.qrCode,
+            : PButton(s.strings.emergency.eqr_generate, icon: LucideIcons.qrCode,
                 variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
                 onTap: _mintToken),
       ];
@@ -1004,8 +1004,8 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             const SizedBox(height: 14),
             Text(
               signedOut
-                  ? s.strings.eqr_signin_required
-                  : s.strings.eqr_no_data,
+                  ? s.strings.emergency.eqr_signin_required
+                  : s.strings.emergency.eqr_no_data,
               textAlign: TextAlign.center,
               style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
           ]),
@@ -1014,7 +1014,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         // Disabled Generate button (0.4 opacity, non-tappable) — prototype style.
         Opacity(
           opacity: 0.4,
-          child: PButton(s.strings.eqr_generate, icon: LucideIcons.qrCode,
+          child: PButton(s.strings.emergency.eqr_generate, icon: LucideIcons.qrCode,
               variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar, onTap: null),
         ),
       ];

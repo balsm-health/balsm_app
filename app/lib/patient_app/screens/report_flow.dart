@@ -53,17 +53,17 @@ const _symptomIcons = <(SymptomId, IconData)>[
 
 /// i69n key for a symptom label. The module's ids are camelCase
 /// (`blurredVision`); the app's flat keys are snake_case (`sym_blurred_vision`).
-String symptomLabelKey(SymptomId id) => 'sym_${_snakeCase(id.id)}';
+String symptomLabelKey(SymptomId id) => 'checkin.sym_${_snakeCase(id.id)}';
 
 String _snakeCase(String v) =>
     v.replaceAllMapped(RegExp('[A-Z]'), (m) => '_${m[0]!.toLowerCase()}');
 
 ({String lbl, Color color}) _painInfo(PatientAppState s, int n) {
-  if (n == 0) return (lbl: s.t('pain_0'), color: T.petalMint);
-  if (n <= 3) return (lbl: s.t('pain_mild'), color: T.petalMint600);
-  if (n <= 6) return (lbl: s.t('pain_mod'), color: T.sun600);
-  if (n <= 9) return (lbl: s.t('pain_sev'), color: const Color(0xFFD97A20));
-  return (lbl: s.t('pain_worst'), color: T.danger);
+  if (n == 0) return (lbl: s.t('checkin.pain_0'), color: T.petalMint);
+  if (n <= 3) return (lbl: s.t('checkin.pain_mild'), color: T.petalMint600);
+  if (n <= 6) return (lbl: s.t('checkin.pain_mod'), color: T.sun600);
+  if (n <= 9) return (lbl: s.t('checkin.pain_sev'), color: const Color(0xFFD97A20));
+  return (lbl: s.t('checkin.pain_worst'), color: T.danger);
 }
 
 /// Full daily check-in wizard, on the real self-report module. Captures mood,
@@ -93,7 +93,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   final weightCtrl = TextEditingController();
   final spo2Ctrl = TextEditingController();
   final gluCtrl = TextEditingController();
-  String gluCtx = 'glu_fast'; // glu_fast | glu_meal | glu_random
+  String gluCtx = 'checkin.glu_fast'; // glu_fast | glu_meal | glu_random
 
   double pain = 0;
   final Set<SymptomId> syms = {};
@@ -158,9 +158,9 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       temperature: _parseDouble(tempCtrl),
       weightKg: _parseDouble(weightCtrl),
       spo2: _parseInt(spo2Ctrl),
-      glucoseFasting: gluCtx == 'glu_fast' ? glucose : null,
-      glucosePostMeal: gluCtx == 'glu_meal' ? glucose : null,
-      glucoseRandom: gluCtx == 'glu_random' ? glucose : null,
+      glucoseFasting: gluCtx == 'checkin.glu_fast' ? glucose : null,
+      glucosePostMeal: gluCtx == 'checkin.glu_meal' ? glucose : null,
+      glucoseRandom: gluCtx == 'checkin.glu_random' ? glucose : null,
     );
   }
 
@@ -258,7 +258,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
               const SizedBox(width: 12),
               SizedBox(
                   width: 40,
-                  child: Text('${step + 1} ${s.t('step_of')} ${_steps.length}',
+                  child: Text('${step + 1} ${s.t('common.step_of')} ${_steps.length}',
                       textAlign: TextAlign.center,
                       style: Typo.num(
                           size: FS.xs,
@@ -283,7 +283,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
               opacity: enabled ? 1 : 0.4,
               child: PButton(
                   isLast
-                      ? (saving ? '…' : s.t('finish'))
+                      ? (saving ? '…' : s.t('common.finish'))
                       : s.t('continue'),
                   variant: BtnVariant.primary,
                   large: true,
@@ -309,7 +309,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   Widget _stepBody() => switch (cur) {
         'mood' =>
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _title('q_mood_t', 'q_mood_h'),
+            _title('checkin.q_mood_t', 'checkin.q_mood_h'),
             Row(
                 children: List.generate(
                     5,
@@ -327,7 +327,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         'vitals' => _vitalsStep(),
         'meds' =>
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _title('q_med_t', 'q_med_h'),
+            _title('checkin.q_med_t', 'checkin.q_med_h'),
             ..._meds.map(_medCheck),
           ]),
         _ => _symptomsStep(),
@@ -335,52 +335,52 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
   Widget _vitalsStep() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title('q_vitals_t', 'q_vitals_h'),
+        _title('checkin.q_vitals_t', 'checkin.q_vitals_h'),
         PCard(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
               Row(children: [
-                Expanded(child: _vitalField(s.t('sys'), sysCtrl, s.t('unit_bp'))),
+                Expanded(child: _vitalField(s.t('checkin.sys'), sysCtrl, s.t('checkin.unit_bp'))),
                 const SizedBox(width: 12),
-                Expanded(child: _vitalField(s.t('dia'), diaCtrl, s.t('unit_bp'))),
+                Expanded(child: _vitalField(s.t('checkin.dia'), diaCtrl, s.t('checkin.unit_bp'))),
               ]),
               const SizedBox(height: 12),
               Row(children: [
-                Expanded(child: _vitalField(s.t('vital_hr'), hrCtrl, s.t('unit_hr'))),
+                Expanded(child: _vitalField(s.t('checkin.vital_hr'), hrCtrl, s.t('checkin.unit_hr'))),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: _vitalField(s.t('vital_temp'), tempCtrl,
-                        s.t('unit_temp'),
+                    child: _vitalField(s.t('checkin.vital_temp'), tempCtrl,
+                        s.t('checkin.unit_temp'),
                         decimal: true)),
               ]),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(
                     child: _vitalField(
-                        s.strings.pd_weight, weightCtrl, s.strings.pd_kg,
+                        s.strings.profile.pd_weight, weightCtrl, s.strings.profile.pd_kg,
                         decimal: true)),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: _vitalField(s.t('vital_spo2'), spo2Ctrl,
-                        s.t('unit_spo2'))),
+                    child: _vitalField(s.t('checkin.vital_spo2'), spo2Ctrl,
+                        s.t('checkin.unit_spo2'))),
               ]),
             ])),
         const SizedBox(height: 16),
-        Text(s.t('m_glucose'),
+        Text(s.t('profile.m_glucose'),
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 10),
         Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: const ['glu_fast', 'glu_meal', 'glu_random']
+            children: const ['checkin.glu_fast', 'checkin.glu_meal', 'checkin.glu_random']
                 .map((c) =>
                     _chip(s.t(c), gluCtx == c, () => setState(() => gluCtx = c)))
                 .toList()),
         const SizedBox(height: 12),
         PCard(
             padding: const EdgeInsets.all(16),
-            child: _vitalField(s.t('m_glucose'), gluCtrl, s.t('unit_glu'))),
+            child: _vitalField(s.t('profile.m_glucose'), gluCtrl, s.t('checkin.unit_glu'))),
       ]);
 
   Widget _vitalField(String label, TextEditingController c, String unit,
@@ -419,7 +419,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   Widget _symptomsStep() {
     final pinfo = _painInfo(s, pain.round());
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _title('q_sym_t', 'q_sym_h'),
+      _title('checkin.q_sym_t', 'checkin.q_sym_h'),
       Center(
           child: Column(children: [
         Text('${pain.round()}',
@@ -444,7 +444,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       ),
       if (pain > 0 || syms.isNotEmpty) ...[
         const SizedBox(height: 20),
-        Text(s.t('body_location'),
+        Text(s.t('checkin.body_location'),
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
         const SizedBox(height: 8),
@@ -460,12 +460,12 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             s.t(symptomLabelKey(e.$1)), syms.contains(e.$1),
             () => _toggleSym(e.$1),
             icon: e.$2)),
-        _chip(s.t('s_none'), noSymptoms, _toggleNone,
+        _chip(s.t('checkin.s_none'), noSymptoms, _toggleNone,
             icon: LucideIcons.checkCircle2),
       ]),
       Padding(
         padding: const EdgeInsets.only(top: 24, bottom: 10),
-        child: Text(s.t('note_lbl'),
+        child: Text(s.t('checkin.note_lbl'),
             style: Typo.bodySm(ar: s.rtl)
                 .copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
       ),
@@ -476,7 +476,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         textDirection: s.dir,
         style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
         decoration: InputDecoration(
-          hintText: s.t('note_ph'),
+          hintText: s.t('checkin.note_ph'),
           hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
           filled: true,
           fillColor: Colors.white,
@@ -499,7 +499,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         child: Row(children: [
           const Icon(LucideIcons.camera, size: 20, color: T.fg3),
           const SizedBox(width: 12),
-          Text(s.t('add_photo'),
+          Text(s.t('settings.add_photo'),
               style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
         ]),
       ),
@@ -598,13 +598,13 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                         style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
                 ])),
             if (skipped)
-              Pill(s.t('skipped'), kind: PillKind.neutral, ar: s.rtl)
+              Pill(s.t('meds.skipped'), kind: PillKind.neutral, ar: s.rtl)
             else
               GestureDetector(
                 onTap: () => setState(() => medMarks[m.id.value] = 'skipped'),
                 child: Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Text(s.t('mark_skip'),
+                    child: Text(s.t('meds.mark_skip'),
                         style: Typo.meta(ar: s.rtl)
                             .copyWith(fontWeight: FontWeight.w600))),
               ),
@@ -648,7 +648,7 @@ class _MoodCell extends StatelessWidget {
                   size: 32,
                   color: selected ? _moodColors[lv - 1] : T.ink400),
               const SizedBox(height: 6),
-              Text(s.t('mood_$lv'),
+              Text(s.t('checkin.mood_$lv'),
                   style: Typo.meta(ar: s.rtl).copyWith(
                       fontSize: FS.xs2,
                       fontWeight: FontWeight.w600,
@@ -680,41 +680,41 @@ class _Summary extends StatelessWidget {
       (
         LucideIcons.smile,
         PillKind.info,
-        s.t('m_mood'),
-        state.mood > 0 ? s.t('mood_${state.mood}') : '—'
+        s.t('profile.m_mood'),
+        state.mood > 0 ? s.t('checkin.mood_${state.mood}') : '—'
       ),
       if (vitals.systolic != null && vitals.diastolic != null)
         (
           LucideIcons.activity,
           PillKind.violet,
-          s.t('m_bp'),
-          '${vitals.systolic}/${vitals.diastolic} ${s.t('unit_bp')}'
+          s.t('profile.m_bp'),
+          '${vitals.systolic}/${vitals.diastolic} ${s.t('checkin.unit_bp')}'
         ),
       if (glucose != null)
         (
           LucideIcons.droplet,
           PillKind.success,
-          '${s.t('m_glucose')} · ${s.t(state.gluCtx)}',
-          '$glucose ${s.t('unit_glu')}'
+          '${s.t('profile.m_glucose')} · ${s.t(state.gluCtx)}',
+          '$glucose ${s.t('checkin.unit_glu')}'
         ),
       if (state._meds.isNotEmpty)
         (
           LucideIcons.pill,
           PillKind.info,
-          s.t('meds_today'),
-          '$taken/${state._meds.length} ${s.t('meds_taken')}'
+          s.t('meds.meds_today'),
+          '$taken/${state._meds.length} ${s.t('meds.meds_taken')}'
         ),
       (
         LucideIcons.thermometer,
         PillKind.warn,
-        s.t('m_pain'),
+        s.t('profile.m_pain'),
         '${state.pain.round()}/10 · ${pinfo.lbl}'
       ),
       if (symList.isNotEmpty)
         (
           LucideIcons.stethoscope,
           PillKind.neutral,
-          s.t('q_sym_t'),
+          s.t('checkin.q_sym_t'),
           symList.join(s.rtl ? '، ' : ', ')
         ),
     ];
@@ -740,7 +740,7 @@ class _Summary extends StatelessWidget {
                     child: const Icon(LucideIcons.check,
                         size: 44, color: T.petalMint600)),
                 const SizedBox(height: 18),
-                Text(s.t('saved_t'), style: Typo.title(ar: s.rtl)),
+                Text(s.t('common.saved_t'), style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
                 Container(
                   padding:
@@ -751,7 +751,7 @@ class _Summary extends StatelessWidget {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
                     const SizedBox(width: 8),
-                    Text(s.t('saved_local'),
+                    Text(s.t('common.saved_local'),
                         style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
                   ]),
                 ),
@@ -771,7 +771,7 @@ class _Summary extends StatelessWidget {
                 const Icon(LucideIcons.send, size: 15, color: T.fg3),
                 const SizedBox(width: 8),
                 Expanded(
-                    child: Text(s.t('to_doctor'), style: Typo.meta(ar: s.rtl))),
+                    child: Text(s.t('care.to_doctor'), style: Typo.meta(ar: s.rtl))),
               ]),
             ),
             const SizedBox(height: 16),
@@ -780,7 +780,7 @@ class _Summary extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
             child: Row(children: [
               Expanded(
-                  child: PButton(s.t('view_trends'),
+                  child: PButton(s.t('checkin.view_trends'),
                       variant: BtnVariant.secondary,
                       large: true,
                       block: true,
@@ -788,7 +788,7 @@ class _Summary extends StatelessWidget {
                       onTap: () => state._close('trends'))),
               const SizedBox(width: 12),
               Expanded(
-                  child: PButton(s.t('to_home'),
+                  child: PButton(s.t('care.to_home'),
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,

@@ -33,11 +33,11 @@ void showStorageSync(BuildContext context) {
 
 // Migration step labels — app i69n keys.
 const _migrateSteps = [
-  'store_step_prepare',
-  'store_step_checkins',
-  'store_step_records',
-  'store_step_rx',
-  'store_step_verify',
+  'storage.store_step_prepare',
+  'storage.store_step_checkins',
+  'storage.store_step_records',
+  'storage.store_step_rx',
+  'storage.store_step_verify',
 ];
 
 class _StorageSyncSheet extends StatefulWidget {
@@ -109,7 +109,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
               child: Row(children: [
                 const Icon(LucideIcons.hardDrive, size: 20, color: T.fg3),
                 const SizedBox(width: 10),
-                Expanded(child: Text(s.strings.storage, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
+                Expanded(child: Text(s.strings.storage.storage, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                 if (canClose) RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
               ]),
             ),
@@ -140,7 +140,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
-        child: Text(s.strings.store_choose_help,
+        child: Text(s.strings.storage.store_choose_help,
             style: Typo.meta(ar: ar).copyWith(height: 1.5)),
       ),
       ...const ['local', 'icloud', 'gdrive'].map(_providerCard),
@@ -181,7 +181,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                 Text(s.t(cfg.label), style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                 if (isLocal) ...[
                   const SizedBox(width: 8),
-                  Pill(s.strings.store_always_on, kind: PillKind.neutral, dot: false, ar: ar,
+                  Pill(s.strings.storage.store_always_on, kind: PillKind.neutral, dot: false, ar: ar,
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
                 ],
               ]),
@@ -193,8 +193,8 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                 ],
                 Text(
                   isActive
-                      ? (isLocal ? s.strings.store_local_only : s.strings.store_backed)
-                      : (isLocal ? s.strings.store_no_backup : s.strings.store_tap_connect),
+                      ? (isLocal ? s.strings.storage.store_local_only : s.strings.storage.store_backed)
+                      : (isLocal ? s.strings.storage.store_no_backup : s.strings.storage.store_tap_connect),
                   style: Typo.meta(ar: ar).copyWith(
                       fontSize: FS.xs, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                       color: isActive ? cfg.color : T.fg4)),
@@ -222,10 +222,10 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           child: Spinner(size: 34, stroke: 3, color: cfg.color),
         ),
         const SizedBox(height: 18),
-        Text(s.strings.store_connecting(s.t(cfg.label)),
+        Text(s.strings.storage.store_connecting(s.t(cfg.label)),
             textAlign: TextAlign.center, style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl)),
         const SizedBox(height: 6),
-        Text(s.strings.store_auto_start,
+        Text(s.strings.storage.store_auto_start,
             textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
       ]),
     ));
@@ -251,7 +251,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             _miniIco(cfg),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.strings.store_migrating, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+              Text(s.strings.storage.store_migrating, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               Text('${s.t(from.label)} → ${s.t(cfg.label)}', style: Typo.meta(ar: ar)),
             ])),
             Text('$pct%', style: Typo.num(size: FS.md, weight: FontWeight.w700, color: cfg.color)),
@@ -319,8 +319,8 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
         const SizedBox(height: 16),
         Text(
           toLocal
-              ? s.strings.store_removed_done
-              : s.strings.store_synced_done,
+              ? s.strings.storage.store_removed_done
+              : s.strings.storage.store_synced_done,
           textAlign: TextAlign.center, style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl),
         ),
         const SizedBox(height: 16),
@@ -332,13 +332,13 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             const SizedBox(width: 10),
             Flexible(child: Text(
               toLocal
-                  ? s.strings.store_device_only
-                  : s.strings.store_synced_with(s.t(cfg.label)),
+                  ? s.strings.storage.store_device_only
+                  : s.strings.storage.store_synced_with(s.t(cfg.label)),
               style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1))),
           ]),
         ),
         const SizedBox(height: 16),
-        PButton(s.strings.store_done, variant: BtnVariant.primary, large: true, block: true,
+        PButton(s.strings.storage.store_done, variant: BtnVariant.primary, large: true, block: true,
             accent: s.accent, ar: ar, onTap: () => Navigator.pop(context)),
       ]),
     ));
@@ -357,19 +357,19 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             const Icon(LucideIcons.cloudOff, size: 22, color: T.danger),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.strings.store_remove_q,
+              Text(s.strings.storage.store_remove_q,
                   style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               const SizedBox(height: 4),
               Text(
-                s.strings.store_remove_help(s.t(cur.label)),
+                s.strings.storage.store_remove_help(s.t(cur.label)),
                 style: Typo.meta(ar: ar).copyWith(height: 1.5)),
             ])),
           ]),
         ),
         const SizedBox(height: 14),
-        _DangerButton(label: s.strings.store_remove_cta, onTap: () => _runPhase('local', 'connecting')),
+        _DangerButton(label: s.strings.storage.store_remove_cta, onTap: () => _runPhase('local', 'connecting')),
         const SizedBox(height: 10),
-        PButton(s.strings.cancel, variant: BtnVariant.secondary, block: true, ar: ar,
+        PButton(s.strings.common.cancel, variant: BtnVariant.secondary, block: true, ar: ar,
             onTap: () => setState(() { phase = 'idle'; target = null; })),
       ]),
     ));

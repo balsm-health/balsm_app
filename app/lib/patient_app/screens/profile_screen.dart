@@ -40,18 +40,18 @@ class ProfileScreen extends ConsumerWidget {
     // Reflects the active backup target (local | icloud | gdrive).
     final stCfg = storageCfg(s.storageProvider);
     final rows = <(IconData, String, VoidCallback?, bool)>[
-      (LucideIcons.user, 'p_personal', () => openPersonalDetails(context), false),
-      (LucideIcons.clipboardList, 'p_cond', () => openMedicalProfile(context), false),
-      (LucideIcons.stethoscope, 'p_care', () => openCareTeam(context), false),
-      (LucideIcons.phoneCall, 'p_emergency', () => openEmergency(context), true),
-      (LucideIcons.bell, 'p_notif', null, false),
-      (LucideIcons.shieldCheck, 'p_privacy', () => openPrivacyData(context), false),
-      (LucideIcons.lifeBuoy, 'p_help', null, false),
+      (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
+      (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
+      (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
+      (LucideIcons.phoneCall, 'profile.p_emergency', () => openEmergency(context), true),
+      (LucideIcons.bell, 'profile.p_notif', null, false),
+      (LucideIcons.shieldCheck, 'profile.p_privacy', () => openPrivacyData(context), false),
+      (LucideIcons.lifeBuoy, 'profile.p_help', null, false),
     ];
     return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
       const PadTop(),
       AppBarRow(children: [
-        Expanded(child: Text(s.strings.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+        Expanded(child: Text(s.strings.common.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
       ]),
 
       // Profile head — real account summary (name + handle). No fabricated
@@ -75,9 +75,9 @@ class ProfileScreen extends ConsumerWidget {
 
       // Language + country
       _ListCard(children: [
-        _ListRow(icon: LucideIcons.languages, label: s.strings.p_lang, trailing: curLang.nativeName,
+        _ListRow(icon: LucideIcons.languages, label: s.strings.profile.p_lang, trailing: curLang.nativeName,
             first: true, onTap: () => _showLanguageSheet(context)),
-        _ListRow(icon: s.isHomeCountry ? LucideIcons.mapPin : LucideIcons.plane, label: s.strings.p_country,
+        _ListRow(icon: s.isHomeCountry ? LucideIcons.mapPin : LucideIcons.plane, label: s.strings.profile.p_country,
             trailing: s.country.name(kCatalog, locale: s.lang.value),
             iconBg: s.isHomeCountry ? null : T.sun500, iconFg: s.isHomeCountry ? null : Colors.white,
             onTap: () => _showCountrySheet(context)),
@@ -85,7 +85,7 @@ class ProfileScreen extends ConsumerWidget {
 
       // Storage — opens the backup/sync sheet (connect iCloud / Google Drive).
       _ListCard(children: [
-        _ListRow(icon: stCfg.icon, label: s.strings.storage, iconBg: stCfg.bg, iconFg: stCfg.color,
+        _ListRow(icon: stCfg.icon, label: s.strings.storage.storage, iconBg: stCfg.bg, iconFg: stCfg.color,
             trailingWidget: Pill(s.t(stCfg.label), kind: PillKind.neutral, dot: false, ar: s.rtl),
             first: true, onTap: () => showStorageSync(context)),
       ]),
@@ -110,13 +110,13 @@ class ProfileScreen extends ConsumerWidget {
       _ListCard(children: [
         _ListRow(
           icon: LucideIcons.smartphone,
-          label: s.strings.gov_sessions,
+          label: s.strings.nav.gov_sessions,
           first: true,
           onTap: () => _pushSessionsRouted(context),
         ),
         _ListRow(
           icon: LucideIcons.activity,
-          label: s.strings.gov_status,
+          label: s.strings.nav.gov_status,
           onTap: () => _pushGovernance(context, const StatusScreen()),
         ),
         // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
@@ -125,7 +125,7 @@ class ProfileScreen extends ConsumerWidget {
         // every go('/') resolves — see [_pushDeletionRouted].
         _ListRow(
           icon: LucideIcons.trash2,
-          label: s.strings.gov_delete,
+          label: s.strings.nav.gov_delete,
           iconBg: T.dangerBg, iconFg: T.danger, labelColor: T.danger,
           onTap: () => _pushDeletionRouted(context),
         ),
@@ -151,7 +151,7 @@ class ProfileScreen extends ConsumerWidget {
       // Sign out
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        child: PButton(s.strings.p_signout, icon: LucideIcons.logOut, variant: BtnVariant.secondary,
+        child: PButton(s.strings.profile.p_signout, icon: LucideIcons.logOut, variant: BtnVariant.secondary,
             block: true, ar: s.rtl, color: T.danger),
       ),
     ]));
@@ -424,10 +424,10 @@ void _showLanguageSheet(BuildContext context) {
     barrierColor: const Color(0x5C2B2B25),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
-      child: _SheetShell(title: s.strings.choose_lang, children: [
+      child: _SheetShell(title: s.strings.settings.choose_lang, children: [
         ...LanguageCode.supported.map((l) => _SelectRow(
               label: l.nativeName, sub: l.name(kCatalog), selected: l == s.lang,
-              badge: l.isFullySupported ? s.strings.lang_full : s.strings.lang_beta,
+              badge: l.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
               badgeOk: l.isFullySupported,
               enabled: l.isFullySupported,
               onTap: l.isFullySupported ? () { s.setLang(l); Navigator.pop(ctx); } : null,
@@ -445,11 +445,11 @@ void _showCountrySheet(BuildContext context) {
     barrierColor: const Color(0x5C2B2B25),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
-      child: _SheetShell(title: s.strings.choose_country, subtitle: s.strings.travel_help, children: [
+      child: _SheetShell(title: s.strings.settings.choose_country, subtitle: s.strings.settings.travel_help, children: [
         ...CountryCode.known.map((c) => _SelectRow(
-              label: c.name(kCatalog, locale: s.lang.value), sub: '${s.strings.emergency} ${c.emergencyNumber}',
+              label: c.name(kCatalog, locale: s.lang.value), sub: '${s.strings.emergency.emergency} ${c.emergencyNumber}',
               selected: c == s.country,
-              badge: c == kHomeCountry ? s.strings.home_country : null, badgeOk: true,
+              badge: c == kHomeCountry ? s.strings.settings.home_country : null, badgeOk: true,
               onTap: () { s.setCountry(c); Navigator.pop(ctx); },
             )),
       ]),
