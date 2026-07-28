@@ -41,8 +41,8 @@ dependencies:
   # patient_app/i18n/*.i69n.json, generated via build_runner.
   i69n:
     git:
-      url: https://github.com/hossameldinmi/i69n
-      ref: feature/remote-source
+      url: https://github.com/balsm-health/i69n
+      ref: master
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   qr_flutter: ^4.1.0

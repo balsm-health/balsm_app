@@ -52,8 +52,8 @@ dependencies:
   # runtime (`i69n.load`/`tr`) — remote value → compiled default → key.
   i69n:
     git:
-      url: https://github.com/hossameldinmi/i69n
-      ref: feature/remote-source
+      url: https://github.com/balsm-health/i69n
+      ref: master
 
 dev_dependencies:
   custom_lint: ^0.8.0
