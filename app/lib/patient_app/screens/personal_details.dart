@@ -101,7 +101,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   final _phoneCtrl = TextEditingController();
   final _nidCtrl = TextEditingController(); // national ID (PHI/PII)
   final _natCtrl = TextEditingController(); // nationality
-  String _gender = ''; // '' | 'female' | 'male' | 'other'
+  Gender? _gender; // null until loaded / chosen
   DateTime? _dob; // PHI
 
   // Emergency-contact fields feed the real AddEmergencyContactUseCase, so
@@ -341,8 +341,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       _phoneCtrl.text = profile.phone ?? '';
       _nidCtrl.text = profile.nationalId ?? '';
       _natCtrl.text = profile.nationality ?? '';
-      _gender = profile.gender ?? '';
-      s.setGender(Gender.fromString(profile.gender));
+      _gender = profile.gender;
+      s.setGender(profile.gender ?? Gender.other);
       _dob = (profile.dateOfBirth?.isNotEmpty ?? false)
           ? DateTime.tryParse(profile.dateOfBirth!)
           : null;
@@ -595,9 +595,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             borderRadius: BorderRadius.circular(T.rMd),
             border: Border.all(color: T.border)),
         child: Row(children: [
-          _seg(s.strings.onboarding.pf_female, _gender == 'female', () => setState(() => _gender = 'female')),
+          _seg(s.strings.onboarding.pf_female, _gender == Gender.female, () => setState(() => _gender = Gender.female)),
           const SizedBox(width: 6),
-          _seg(s.strings.onboarding.pf_male, _gender == 'male', () => setState(() => _gender = 'male')),
+          _seg(s.strings.onboarding.pf_male, _gender == Gender.male, () => setState(() => _gender = Gender.male)),
         ]),
       );
 

@@ -20,7 +20,7 @@ class ProfileDetails {
   final String? handle;
   final String? displayName;
   final String? bio;
-  final String? gender;
+  final Gender? gender;
   final String? nationality;
   final String? phone;
   final String? dateOfBirth; // yyyy-MM-dd
@@ -42,7 +42,7 @@ class UpdateProfileInput {
 
   final String? displayName;
   final String? bio;
-  final String? gender;
+  final Gender? gender;
   final String? nationality;
   final String? phone;
   final String? dateOfBirth;
@@ -65,7 +65,8 @@ class AccountProfileUseCase {
       handle: res.handle,
       displayName: res.displayName,
       bio: res.bio,
-      gender: res.gender,
+      // Wire format stays a snake_case string; the model carries the enum.
+      gender: res.gender == null ? null : Gender.fromString(res.gender),
       nationality: res.nationality,
       phone: res.phone,
       dateOfBirth: res.dateOfBirth,
@@ -78,7 +79,7 @@ class AccountProfileUseCase {
       await _api.updateProfile(UpdateProfileRequest(
         displayName: input.displayName,
         bio: input.bio,
-        gender: input.gender,
+        gender: input.gender?.name,
         nationality: input.nationality,
         phone: input.phone,
         dateOfBirth: input.dateOfBirth,
