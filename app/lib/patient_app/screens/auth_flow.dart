@@ -65,7 +65,7 @@ class _WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Text(s.strings.onboarding.w_sub, textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
               const SizedBox(height: 28),
-              PButton(s.strings.onboarding.w_start,
+              PButton(s.g(s.strings.onboarding.w_start_select),
                   variant: BtnVariant.primary,
                   large: true,
                   block: true,

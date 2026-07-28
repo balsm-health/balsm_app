@@ -1,5 +1,6 @@
 import 'package:core/core.dart'
-    show CountryCode, LanguageCode, TranslationCatalog;
+    show CountryCode, Gender, LanguageCode, TranslationCatalog;
+import 'package:i69n/i69n.dart' as i69n;
 import 'package:flutter/widgets.dart';
 import 'prefs.dart';
 import 'strings.dart';
@@ -40,6 +41,10 @@ class PatientAppState extends ChangeNotifier {
   String? authPassword;
 
   CountryCode country = kHomeCountry;
+
+  /// User gender — drives grammatically-gendered copy (Arabic). Defaults to
+  /// [Gender.other] (masculine) until the profile loads; set via [setGender].
+  Gender gender = Gender.other;
 
   /// Active backup target: local | icloud | gdrive (single active cloud).
   String storageProvider = 'local';
@@ -105,7 +110,18 @@ class PatientAppState extends ChangeNotifier {
   /// `s.t('meds.med_snooze15')` silently returns the key at runtime.
   Strings get strings => stringsFor(lang.value);
 
+  /// Picks the gender-correct variant from an i69n `_select` bundle
+  /// (`s.g(s.strings.home.hero_q_select)`). Resolves via the bundle's `[]`
+  /// operator on [Gender.name] (`female`/`male`/`other`).
+  String g(i69n.I69nMessageBundle select) => select[gender.name] as String;
+
   bool get isHomeCountry => country == kHomeCountry;
+
+  void setGender(Gender g) {
+    if (g == gender) return;
+    gender = g;
+    notifyListeners();
+  }
 
   void setLang(LanguageCode l) {
     lang = l;

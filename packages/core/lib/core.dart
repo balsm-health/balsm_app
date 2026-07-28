@@ -14,6 +14,7 @@ export 'src/domain/value_objects/health_profile_id.dart';
 export 'src/domain/value_objects/value_object.dart';
 export 'src/domain/value_objects/country_code.dart';
 export 'src/domain/value_objects/language_code.dart';
+export 'src/domain/value_objects/gender.dart';
 export 'src/domain/value_objects/currency_code.dart';
 export 'src/domain/value_objects/phone_number.dart';
 export 'src/domain/value_objects/nationality.dart';
