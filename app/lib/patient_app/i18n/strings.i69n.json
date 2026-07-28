@@ -84,6 +84,7 @@
     "unit_glu": "mg/dL",
     "bp_normal": "In range",
     "bp_high": "A little high",
+    "q_mood_t": "How are you feeling today?",
     "q_mood_h": "Pick the face that fits best.",
     "mood_1": "Rough",
     "mood_2": "Low",
@@ -102,6 +103,7 @@
     "q_med_t": "Did you take your medications?",
     "q_med_h": "Tap each one you've taken today.",
     "q_sym_t": "Any pain or symptoms?",
+    "q_sym_h": "Slide to your pain level, then tap anything you feel.",
     "pain_0": "No pain",
     "pain_mild": "Mild",
     "pain_mod": "Moderate",
@@ -185,17 +187,7 @@
     "body_bk_l_calf": "L. Calf",
     "body_bk_r_calf": "R. Calf",
     "body_bk_l_heel": "L. Heel",
-    "body_bk_r_heel": "R. Heel",
-    "q_mood_t_select": {
-      "male": "How are you feeling today?",
-      "female": "How are you feeling today?",
-      "other": "How are you feeling today?"
-    },
-    "q_sym_h_select": {
-      "male": "Slide to your pain level, then tap anything you feel.",
-      "female": "Slide to your pain level, then tap anything you feel.",
-      "other": "Slide to your pain level, then tap anything you feel."
-    }
+    "body_bk_r_heel": "R. Heel"
   },
   "common": {
     "continue_": "Continue",
@@ -268,22 +260,14 @@
     "nudge_med": "Add a medication",
     "nudge_med_sub": "Stay on track",
     "greet": "Good morning",
+    "hero_q": "How are you feeling today?",
+    "hero_cta": "Start check-in",
     "hero_time": "About 2 minutes",
     "streak": "day streak",
     "streak_help": "Checked in 6 of the last 7 days",
     "on_track": "On track",
     "experience": "experience",
-    "away_banner": "You're away from home",
-    "hero_q_select": {
-      "male": "How are you feeling today?",
-      "female": "How are you feeling today?",
-      "other": "How are you feeling today?"
-    },
-    "hero_cta_select": {
-      "male": "Start check-in",
-      "female": "Start check-in",
-      "other": "Start check-in"
-    }
+    "away_banner": "You're away from home"
   },
   "meds": {
     "meds_today": "Today's medications",
@@ -340,6 +324,7 @@
   "onboarding": {
     "w_title": "Your health, kept close.",
     "w_sub": "Daily check-ins, medication reminders, and trends — saved on your phone, synced when you're ready.",
+    "w_start": "Get started",
     "w_have": "I already have an account",
     "w_signin": "Sign in",
     "w_or": "or",
@@ -361,12 +346,7 @@
     "dob_title": "Date of birth",
     "dob_confirm": "Confirm",
     "dob_select": "Select a date",
-    "age_gate_body": "Balsm is currently available for ages 18 and older. We're working on a version for younger users with parental consent.",
-    "w_start_select": {
-      "male": "Get started",
-      "female": "Get started",
-      "other": "Get started"
-    }
+    "age_gate_body": "Balsm is currently available for ages 18 and older. We're working on a version for younger users with parental consent."
   },
   "privacy": {
     "pv_sharing": "Data sharing",
