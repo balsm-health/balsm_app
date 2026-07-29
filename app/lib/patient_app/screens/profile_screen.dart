@@ -1,3 +1,4 @@
+import 'package:auth/auth.dart' show signOutUseCaseProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -169,7 +170,16 @@ class ProfileScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             child: PButton(s.strings.profile.p_signout,
-                icon: LucideIcons.logOut, variant: BtnVariant.secondary, block: true, ar: s.rtl, color: T.danger),
+                icon: LucideIcons.logOut,
+                variant: BtnVariant.secondary,
+                block: true,
+                ar: s.rtl,
+                color: T.danger, onTap: () async {
+              // Clears tokens + best-effort server sign-out + publishes
+              // UserSignedOut (the main listener clears currentUserId).
+              await ref.read(signOutUseCaseProvider).call();
+              if (context.mounted) s.go('welcome');
+            }),
           ),
         ]));
   }
