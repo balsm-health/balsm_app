@@ -19,8 +19,11 @@ else
   exit 0
 fi
 
-# Only the staged, still-present Dart files (added/copied/modified).
-staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart')
+# Staged, still-present Dart files (added/copied/modified), minus generated
+# output (build_runner writes `// dart format off` files that would otherwise
+# re-trigger this on every regen — the analyzer excludes them too).
+staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart' \
+  | grep -vE '\.(i69n|g|freezed|mocks|config)\.dart$')
 [ -z "$staged" ] && exit 0
 
 # --set-exit-if-changed makes dart exit non-zero if any file would be reformatted.
