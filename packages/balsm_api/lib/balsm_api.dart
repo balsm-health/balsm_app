@@ -34,6 +34,10 @@ export 'src/account/account_api.dart';
 export 'src/account/dio_account_api.dart';
 export 'src/account/requests.dart';
 export 'src/account/responses.dart';
+export 'src/care_directory/care_directory_api.dart';
+export 'src/care_directory/dio_care_directory_api.dart';
+export 'src/care_directory/requests.dart';
+export 'src/care_directory/responses.dart';
 
 export 'src/auth/auth_api.dart';
 export 'src/auth/dio_auth_api.dart';

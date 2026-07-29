@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,6 +21,7 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   final _searchCtrl = TextEditingController();
+  final _mapController = MapController();
   String _query = '';
   CareEntityType? _activeType; // null → "all"
   bool _mapView = true; // map | list
@@ -29,7 +30,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _mapController.dispose();
     super.dispose();
+  }
+
+  /// Center the map on the user's current position (recenter button).
+  Future<void> _recenter() async {
+    final loc = await ref.read(userLatLngProvider.future);
+    _mapController.move(loc, 14);
   }
 
   List<CareEntity> _filter(List<CareEntity> all) {
@@ -133,7 +141,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _mapBody(PatientAppState s, List<CareEntity> filtered) {
     if (filtered.isEmpty) return _emptyState(s);
     return Stack(children: [
-      Positioned.fill(child: _CairoMap(entities: filtered, selectedId: _selected?.id, onPin: _select)),
+      Positioned.fill(
+          child: _TileMap(controller: _mapController, entities: filtered, selectedId: _selected?.id, onPin: _select)),
       // Count badge.
       PositionedDirectional(
         top: 12,
@@ -150,7 +159,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       PositionedDirectional(
         bottom: _selected != null ? 220 : 20,
         end: 14,
-        child: RoundBtn(icon: LucideIcons.locateFixed, fg: s.accent.main, onTap: () {}),
+        child: RoundBtn(icon: LucideIcons.locateFixed, fg: s.accent.main, onTap: _recenter),
       ),
       if (_selected != null) _entityCard(s, _selected!),
     ]);
@@ -380,36 +389,55 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       );
 }
 
-/// Stylized Cairo map (design `CairoMap`): a static SVG backdrop with entity
-/// pins positioned by their design coordinates over it.
-class _CairoMap extends StatelessWidget {
-  const _CairoMap({required this.entities, required this.selectedId, required this.onPin});
+/// Real OpenStreetMap tile map with a marker per entity. Centers on the first
+/// result (falls back to the market center); pins anchor at their lat/lng.
+class _TileMap extends StatelessWidget {
+  const _TileMap({
+    required this.controller,
+    required this.entities,
+    required this.selectedId,
+    required this.onPin,
+  });
+  final MapController controller;
   final List<CareEntity> entities;
   final String? selectedId;
   final void Function(CareEntity) onPin;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
-      final w = c.maxWidth, h = c.maxHeight;
-      return Stack(children: [
-        Positioned.fill(child: SvgPicture.string(_cairoSvg, fit: BoxFit.cover, alignment: Alignment.center)),
-        ...entities.map((e) {
-          final sel = e.id == selectedId;
-          final pinW = sel ? 40.0 : 32.0;
-          final left = w * (e.x / CareEntity.mapWidth) - pinW / 2;
-          final top = h * (e.y / CareEntity.mapHeight) - (pinW + 7);
-          return Positioned(
-            left: left,
-            top: top,
-            child: GestureDetector(
-              onTap: () => onPin(e),
-              child: _Pin(type: e.type, selected: sel, size: pinW),
-            ),
-          );
-        }),
-      ]);
-    });
+    final center = entities.isNotEmpty ? entities.first.position : kCareFallbackCenter;
+    return FlutterMap(
+      mapController: controller,
+      options: MapOptions(
+        initialCenter: center,
+        initialZoom: 13,
+        minZoom: 3,
+        maxZoom: 18,
+        interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'health.balsm.app',
+        ),
+        MarkerLayer(
+          markers: entities.map((e) {
+            final sel = e.id == selectedId;
+            final pinW = sel ? 40.0 : 32.0;
+            return Marker(
+              point: e.position,
+              width: pinW,
+              height: pinW + 7,
+              alignment: Alignment.topCenter, // tail tip sits on the coordinate
+              child: GestureDetector(
+                onTap: () => onPin(e),
+                child: _Pin(type: e.type, selected: sel, size: pinW),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 }
 
@@ -461,48 +489,3 @@ class _TailPainter extends CustomPainter {
   @override
   bool shouldRepaint(_TailPainter old) => old.color != color;
 }
-
-/// Hand-drawn Cairo backdrop (ported verbatim from design `map.jsx` CairoMap).
-const _cairoSvg = '''
-<svg viewBox="0 0 390 430" xmlns="http://www.w3.org/2000/svg">
-  <rect width="390" height="430" fill="#F2F1E8"/>
-  <rect x="0" y="0" width="130" height="88" fill="#ECEADF" rx="3"/>
-  <rect x="0" y="100" width="112" height="120" fill="#ECEADF" rx="3"/>
-  <rect x="0" y="234" width="96" height="84" fill="#ECEADF" rx="3"/>
-  <rect x="0" y="330" width="134" height="100" fill="#ECEADF" rx="3"/>
-  <rect x="234" y="0" width="156" height="82" fill="#ECEADF" rx="3"/>
-  <rect x="240" y="90" width="74" height="108" fill="#ECEADF" rx="3"/>
-  <rect x="318" y="90" width="72" height="94" fill="#ECEADF" rx="3"/>
-  <rect x="222" y="210" width="84" height="92" fill="#ECEADF" rx="3"/>
-  <rect x="316" y="200" width="74" height="122" fill="#ECEADF" rx="3"/>
-  <rect x="224" y="316" width="166" height="114" fill="#ECEADF" rx="3"/>
-  <path d="M 148 0 C 145 62, 138 102, 135 168 C 132 224, 138 272, 142 430 L 198 430 C 202 272, 208 224, 205 168 C 202 102, 195 62, 192 0 Z" fill="#C2DCF0"/>
-  <text x="170" y="44" text-anchor="middle" font-size="8" fill="#7BA8C8" font-weight="700" font-family="sans-serif" letter-spacing="1">NILE</text>
-  <path d="M 155 86 C 162 79, 177 76, 187 81 C 197 86, 201 110, 201 150 C 201 190, 197 220, 187 230 C 177 240, 159 237, 151 226 C 143 215, 141 190, 141 150 C 141 110, 148 93, 155 86 Z" fill="#C8E8BE"/>
-  <path d="M 204 0 C 212 62, 216 124, 214 182 C 212 242, 209 302, 204 430" fill="none" stroke="#FFFFFF" stroke-width="8"/>
-  <path d="M 130 0 C 126 62, 122 124, 122 182 C 122 242, 124 302, 130 430" fill="none" stroke="#FFFFFF" stroke-width="8"/>
-  <line x1="0" y1="90" x2="390" y2="90" stroke="#FFFFFF" stroke-width="7"/>
-  <line x1="0" y1="224" x2="390" y2="224" stroke="#FFFFFF" stroke-width="7"/>
-  <line x1="0" y1="328" x2="390" y2="328" stroke="#FFFFFF" stroke-width="7"/>
-  <line x1="62" y1="0" x2="62" y2="430" stroke="#FFFFFF" stroke-width="7"/>
-  <line x1="216" y1="0" x2="216" y2="430" stroke="#FFFFFF" stroke-width="7"/>
-  <line x1="318" y1="0" x2="318" y2="430" stroke="#FFFFFF" stroke-width="7"/>
-  <line x1="0" y1="150" x2="130" y2="150" stroke="#F4F3E8" stroke-width="3.5"/>
-  <line x1="204" y1="150" x2="390" y2="150" stroke="#F4F3E8" stroke-width="3.5"/>
-  <line x1="0" y1="280" x2="130" y2="280" stroke="#F4F3E8" stroke-width="3.5"/>
-  <line x1="204" y1="280" x2="390" y2="280" stroke="#F4F3E8" stroke-width="3.5"/>
-  <line x1="0" y1="384" x2="390" y2="384" stroke="#F4F3E8" stroke-width="3.5"/>
-  <line x1="270" y1="90" x2="270" y2="430" stroke="#F4F3E8" stroke-width="3.5"/>
-  <text x="50" y="52" text-anchor="middle" font-size="7.5" fill="#A8A89A" font-family="sans-serif" font-weight="600">Agouza</text>
-  <text x="270" y="162" text-anchor="middle" font-size="7.5" fill="#A8A89A" font-family="sans-serif" font-weight="600">Tahrir</text>
-  <text x="354" y="42" text-anchor="middle" font-size="7.5" fill="#A8A89A" font-family="sans-serif" font-weight="600">Heliopolis</text>
-  <text x="46" y="296" text-anchor="middle" font-size="7.5" fill="#A8A89A" font-family="sans-serif" font-weight="600">Garden City</text>
-  <text x="270" y="278" text-anchor="middle" font-size="7.5" fill="#A8A89A" font-family="sans-serif" font-weight="600">Dokki</text>
-  <text x="354" y="242" text-anchor="middle" font-size="7.5" fill="#A8A89A" font-family="sans-serif" font-weight="600">Nasr City</text>
-  <text x="354" y="360" text-anchor="middle" font-size="7.5" fill="#A8A89A" font-family="sans-serif" font-weight="600">New Cairo</text>
-  <circle cx="220" cy="218" r="18" fill="#1283FF" fill-opacity="0.10"/>
-  <circle cx="220" cy="218" r="10" fill="#1283FF" fill-opacity="0.22"/>
-  <circle cx="220" cy="218" r="6" fill="#1283FF"/>
-  <circle cx="220" cy="218" r="6" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
-</svg>
-''';

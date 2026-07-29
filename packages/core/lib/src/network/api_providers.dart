@@ -48,3 +48,7 @@ final disclosureApiProvider = Provider<DisclosureApi>((ref) {
 final geofenceApiProvider = Provider<GeofenceApi>((ref) {
   return DioGeofenceApi(net: ref.watch(networkManagerProvider));
 });
+
+final careDirectoryApiProvider = Provider<CareDirectoryApi>((ref) {
+  return DioCareDirectoryApi(net: ref.watch(networkManagerProvider));
+});

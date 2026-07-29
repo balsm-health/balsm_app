@@ -58,4 +58,7 @@ class ApiRoutes {
 
   // ── Geofence ──────────────────────────────────────────────────────────────
   static const geofence_denied_countries = '/geofence/denied-countries';
+
+  // ── Care directory ────────────────────────────────────────────────────────
+  static const care_entities = '/care/entities';
 }

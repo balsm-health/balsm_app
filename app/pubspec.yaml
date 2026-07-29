@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   core:
     path: ../packages/core
+  balsm_api:
+    path: ../packages/balsm_api
   auth:
     path: ../modules/auth
   disclosure:
