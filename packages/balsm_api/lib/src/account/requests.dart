@@ -22,7 +22,8 @@ class ChangeCountryRequest {
 /// `yyyy-MM-dd`. `dateOfBirth` + `nationalId` are PHI/PII (encrypted at rest).
 class UpdateProfileRequest {
   const UpdateProfileRequest({
-    this.displayName,
+    this.firstName,
+    this.lastName,
     this.bio,
     this.gender,
     this.nationality,
@@ -31,7 +32,9 @@ class UpdateProfileRequest {
     this.nationalId,
   });
 
-  final String? displayName;
+  // Server derives display_name from these; the client never sends display_name.
+  final String? firstName;
+  final String? lastName;
   final String? bio;
   final String? gender;
   final String? nationality;
@@ -40,7 +43,8 @@ class UpdateProfileRequest {
   final String? nationalId;
 
   Map<String, dynamic> toJson() => {
-        if (displayName != null) 'display_name': displayName,
+        if (firstName != null) 'first_name': firstName,
+        if (lastName != null) 'last_name': lastName,
         if (bio != null) 'bio': bio,
         if (gender != null) 'gender': gender,
         if (nationality != null) 'nationality': nationality,

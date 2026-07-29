@@ -188,7 +188,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     // 1) Profile fields (display name, bio, gender, nationality, phone, DOB,
     //    national ID). Empty string clears a field; DOB is 18+ gated server-side.
     final profileResult = await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
-          displayName: '${_firstCtrl.text.trim()} ${_lastCtrl.text.trim()}'.trim(),
+          firstName: _firstCtrl.text.trim(),
+          lastName: _lastCtrl.text.trim(),
           gender: _gender,
           nationality: _natCtrl.text.trim(),
           phone: _phoneCtrl.text.trim(),
@@ -322,16 +323,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     final atMaxContacts = contacts.length >= AddEmergencyContactUseCase.maxContacts;
 
     // Seed every editable field ONCE from the real /account/self on first load
-    // (no prototype sample identity). display_name is split into first/last.
+    // (no prototype sample identity). Name comes back as split first/last.
     final profile = ref.watch(_profileProvider).valueOrNull;
     if (!_loaded && profile != null) {
       _loaded = true;
       _origHandle = profile.handle ?? '';
       handle.text = _origHandle;
-      final name = (profile.displayName ?? '').trim();
-      final sp = name.indexOf(' ');
-      _firstCtrl.text = sp < 0 ? name : name.substring(0, sp);
-      _lastCtrl.text = sp < 0 ? '' : name.substring(sp + 1).trim();
+      _firstCtrl.text = profile.firstName ?? '';
+      _lastCtrl.text = profile.lastName ?? '';
       _phoneCtrl.text = profile.phone ?? '';
       _nidCtrl.text = profile.nationalId ?? '';
       _natCtrl.text = profile.nationality ?? '';

@@ -1188,7 +1188,8 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
     // GET /account/self came back empty — a blank account-details screen.
     setState(() => _creating = true);
     await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
-          displayName: '${first.text.trim()} ${last.text.trim()}'.trim(),
+          firstName: first.text.trim(),
+          lastName: last.text.trim(),
           gender: gender,
           dateOfBirth: _isoDob(d),
         ));

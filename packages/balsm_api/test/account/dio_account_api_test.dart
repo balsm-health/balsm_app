@@ -6,12 +6,25 @@ import '../helpers/fake_http_adapter.dart';
 void main() {
   test('getSelf parses snake_case payload', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(
-        '{"data": {"user_id": "u1", "handle": "hoss", "display_name": "Hossam", "country_code": "EG", "preferred_language": "ar", "deletion_state": "ACTIVE"}}'));
+        '{"data": {"user_id": "u1", "handle": "hoss", "first_name": "Hossam", "last_name": "Eldin", '
+        '"display_name": "Hossam Eldin", "country_code": "EG", "preferred_language": "ar", "deletion_state": "ACTIVE"}}'));
     final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
     expect(adapter.requests.single.path, '/account/self');
     expect(res!.id, 'u1');
-    expect(res.displayName, 'Hossam');
+    expect(res.firstName, 'Hossam');
+    expect(res.lastName, 'Eldin');
+    expect(res.displayName, 'Hossam Eldin');
     expect(res.deletionState, 'ACTIVE');
+  });
+
+  test('updateProfile PATCHes first_name/last_name and omits nulls', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"updated": true}}'));
+    await DioAccountApi(net: fakeNet(adapter))
+        .updateProfile(const UpdateProfileRequest(firstName: 'Hossam', lastName: 'Eldin', gender: 'male'));
+    final req = adapter.requests.single;
+    expect(req.method, 'PATCH');
+    expect(req.path, '/account/profile');
+    expect(req.data, {'first_name': 'Hossam', 'last_name': 'Eldin', 'gender': 'male'});
   });
 
   test('getSelf returns null on 404', () async {

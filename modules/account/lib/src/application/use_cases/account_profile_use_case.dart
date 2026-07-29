@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class ProfileDetails {
   const ProfileDetails({
     this.handle,
+    this.firstName,
+    this.lastName,
     this.displayName,
     this.bio,
     this.gender,
@@ -18,6 +20,11 @@ class ProfileDetails {
   });
 
   final String? handle;
+
+  /// Split name parts. [displayName] is server-derived (`"first last"`) and kept
+  /// for the PHI-free app-wide summary / read-only surfaces.
+  final String? firstName;
+  final String? lastName;
   final String? displayName;
   final String? bio;
   final Gender? gender;
@@ -31,7 +38,8 @@ class ProfileDetails {
 /// string clears it.
 class UpdateProfileInput {
   const UpdateProfileInput({
-    this.displayName,
+    this.firstName,
+    this.lastName,
     this.bio,
     this.gender,
     this.nationality,
@@ -40,7 +48,9 @@ class UpdateProfileInput {
     this.nationalId,
   });
 
-  final String? displayName;
+  // Server derives display_name from first + last; never sent by the client.
+  final String? firstName;
+  final String? lastName;
   final String? bio;
   final Gender? gender;
   final String? nationality;
@@ -63,6 +73,8 @@ class AccountProfileUseCase {
     if (res == null) return null;
     return ProfileDetails(
       handle: res.handle,
+      firstName: res.firstName,
+      lastName: res.lastName,
       displayName: res.displayName,
       bio: res.bio,
       // Wire format stays a snake_case string; the model carries the enum.
@@ -77,7 +89,8 @@ class AccountProfileUseCase {
   Future<AppResult<void>> update(UpdateProfileInput input) async {
     try {
       await _api.updateProfile(UpdateProfileRequest(
-        displayName: input.displayName,
+        firstName: input.firstName,
+        lastName: input.lastName,
         bio: input.bio,
         gender: input.gender?.name,
         nationality: input.nationality,

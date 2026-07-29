@@ -7,6 +7,8 @@ class AccountSelfResponse {
   const AccountSelfResponse({
     required this.id,
     this.handle,
+    this.firstName,
+    this.lastName,
     this.displayName,
     this.bio,
     this.gender,
@@ -22,6 +24,11 @@ class AccountSelfResponse {
 
   final String id;
   final String? handle;
+
+  /// Split name parts. The server stores these and derives [displayName] =
+  /// `"first last"`; legacy rows with only a display name are split server-side.
+  final String? firstName;
+  final String? lastName;
   final String? displayName;
   final String? bio;
   final String? gender;
@@ -46,6 +53,8 @@ class AccountSelfResponse {
         // Server sends `user_id` (consistent with verify / the rest of the API).
         id: json['user_id'] as String,
         handle: json['handle'] as String?,
+        firstName: json['first_name'] as String?,
+        lastName: json['last_name'] as String?,
         displayName: json['display_name'] as String?,
         bio: json['bio'] as String?,
         gender: json['gender'] as String?,
