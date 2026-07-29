@@ -27,7 +27,8 @@ class Strings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'auth':
@@ -80,7 +81,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get ph_title => "What's your number?";
   String get ph_help => "We'll text you a code to confirm it's you.";
   String get ph_label => "Mobile number";
-  String get ph_terms => "By continuing you agree to Balsm's terms and privacy policy.";
+  String get ph_terms =>
+      "By continuing you agree to Balsm's terms and privacy policy.";
   String get otp_title => "Enter your code";
   String get otp_help => "We sent a 6-digit code to";
   String get otp_resend => "Resend code";
@@ -98,7 +100,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get pw_min => "At least 8 characters";
   String get pw_invalid_creds => "Invalid email or password.";
   String get fp_title => "Reset your password";
-  String get fp_help => "Enter your email — we'll send a code to reset your password.";
+  String get fp_help =>
+      "Enter your email — we'll send a code to reset your password.";
   String get fp_send => "Send reset code";
   String get fp_code_label => "Reset code";
   String get fp_new_pw => "New password";
@@ -108,12 +111,15 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get fp_success => "Password updated. Sign in with your new password.";
   String get dial_title => "Country code";
   String get dial_search => "Search country";
-  String auth_locked_retry(String secs) => "Account temporarily locked. Try again in ${secs}s.";
-  String get auth_phone_soon => "Phone sign-in isn't available yet — please use email.";
+  String auth_locked_retry(String secs) =>
+      "Account temporarily locked. Try again in ${secs}s.";
+  String get auth_phone_soon =>
+      "Phone sign-in isn't available yet — please use email.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'use_phone':
@@ -212,7 +218,8 @@ class BootStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'boot_preparing':
@@ -230,7 +237,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   const CareStrings(this._parent);
   String get to_doctor => "A copy reaches Dr. Sara at your next visit.";
   String get to_home => "Back to home";
-  String get care_intro => "The doctors following your condition and who can see your reports.";
+  String get care_intro =>
+      "The doctors following your condition and who can see your reports.";
   String get care_primary => "Primary";
   String get care_message => "Message";
   String get care_book => "Book";
@@ -241,7 +249,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get book_appt => "Book";
   String get follow_up => "Follow-up";
   String get check_up => "Check-up";
-  String get book_via_doctor => "Your care team will schedule appointments for you.";
+  String get book_via_doctor =>
+      "Your care team will schedule appointments for you.";
   String get map_nearby => "Nearby care";
   String get map_search_ph => "Search clinics, pharmacies…";
   String get map_all => "All";
@@ -255,11 +264,13 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get map_your_loc => "Your location";
   String get map_no_results => "No places found";
   String get care_empty => "No care team yet";
-  String get care_add_help => "Add a doctor from the map to build your care team.";
+  String get care_add_help =>
+      "Add a doctor from the map to build your care team.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'to_doctor':
@@ -435,11 +446,13 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get body_bk_l_heel => "L. Heel";
   String get body_bk_r_heel => "R. Heel";
   String q_mood_t(Gender gender) => "How are you feeling today?";
-  String q_sym_h(Gender gender) => "Slide to your pain level, then tap anything you feel.";
+  String q_sym_h(Gender gender) =>
+      "Slide to your pain level, then tap anything you feel.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'latest':
@@ -693,7 +706,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -753,7 +767,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get em_ph => "you@example.com";
   String get em_otp_h => "We sent a 6-digit code to";
   String get em_eg => "Egypt";
-  String get em_intro => "Egypt's nationwide emergency lines. Tap any number to call right away.";
+  String get em_intro =>
+      "Egypt's nationwide emergency lines. Tap any number to call right away.";
   String get em_tap_call => "Tap to call";
   String get em_ambulance => "Ambulance";
   String get em_police => "Police";
@@ -791,7 +806,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'em_title':
@@ -897,7 +913,8 @@ class HomeStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'nudge_handle':
@@ -984,7 +1001,8 @@ class MedsStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'meds_today':
@@ -1088,7 +1106,8 @@ class NavStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'tab_home':
@@ -1123,7 +1142,8 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   String get w_apple => "Continue with Apple";
   String get w_google => "Continue with Google";
   String get pf_title => "Tell us about you";
-  String get pf_help => "This helps your care team read your reports correctly.";
+  String get pf_help =>
+      "This helps your care team read your reports correctly.";
   String get pf_fname => "First name";
   String get pf_lname => "Last name";
   String get pf_fname_ph => "e.g. Layla";
@@ -1144,7 +1164,8 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'w_title':
@@ -1242,8 +1263,10 @@ class PrivacyStrings implements i69n.I69nMessageBundle {
       "Before you continue, please review how we handle your data. Your health data stays on your device.";
   String get pv_collect_body =>
       "A minimal non-health account (email, country, language). Health records stay encrypted on your device.";
-  String get pv_protect_body => "On-device encryption, secure transport, and least-privilege access.";
-  String get pv_rights_body => "Access, correct, or delete your data at any time from account settings.";
+  String get pv_protect_body =>
+      "On-device encryption, secure transport, and least-privilege access.";
+  String get pv_rights_body =>
+      "Access, correct, or delete your data at any time from account settings.";
   String pv_authority_body(String authority) =>
       "The authority overseeing your data protection in your country: $authority.";
   String get pv_sharing_body =>
@@ -1254,7 +1277,8 @@ class PrivacyStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'pv_sharing':
@@ -1403,7 +1427,8 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'm_bp':
@@ -1548,7 +1573,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get rec_source => "Source";
   String get rec_view => "View document";
   String get rec_share => "Share with doctor";
-  String get rec_empty_h => "Add a lab test, scan, or report to keep your whole history in one place.";
+  String get rec_empty_h =>
+      "Add a lab test, scan, or report to keep your whole history in one place.";
   String get rec_pick_type => "What are you adding?";
   String get rec_title => "Title";
   String get rec_title_ph => "e.g. HbA1c blood test";
@@ -1561,7 +1587,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'reports':
@@ -1651,7 +1678,8 @@ class SettingsStrings implements i69n.I69nMessageBundle {
   String get add_member => "Add family member";
   String get choose_lang => "Choose language";
   String get choose_country => "Where are you now?";
-  String get travel_help => "Set your location so Balsm shows local emergency numbers and care info while you travel.";
+  String get travel_help =>
+      "Set your location so Balsm shows local emergency numbers and care info while you travel.";
   String get lang_full => "Full support";
   String get lang_beta => "Beta";
   String get home_country => "Home";
@@ -1660,12 +1688,14 @@ class SettingsStrings implements i69n.I69nMessageBundle {
   String get na_not_available => "Not available yet";
   String get na_notify_me => "Notify me when available";
   String get na_status_support => "Service status & support";
-  String get cal_months => "January|February|March|April|May|June|July|August|September|October|November|December";
+  String get cal_months =>
+      "January|February|March|April|May|June|July|August|September|October|November|December";
   String get cal_weekdays => "Su|Mo|Tu|We|Th|Fr|Sa";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'trust_private':
@@ -1751,12 +1781,14 @@ class StorageStrings implements i69n.I69nMessageBundle {
   String store_synced_with(String target) => "Synced with $target";
   String get store_done => "Done";
   String get store_remove_q => "Remove cloud backup?";
-  String store_remove_help(String target) => "Your data will be removed from $target and kept on this device only.";
+  String store_remove_help(String target) =>
+      "Your data will be removed from $target and kept on this device only.";
   String get store_remove_cta => "Remove cloud backup";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'store_backup_to':

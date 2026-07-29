@@ -448,14 +448,13 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_bk_l_heel => "كعب أيسر";
   String get body_bk_r_heel => "كعب أيمن";
   String q_mood_t(Gender gender) =>
-      "كيف تشعر${_select(gender, {'female': 'ين', 'other': ''})} اليوم؟";
+      "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
   String q_sym_h(Gender gender) => "حرّك${_select(gender, {
-            'female': 'ي',
-            'other': ''
+            'female': 'ي'
           })} المؤشر لمستوى الألم، ثم ${_select(gender, {
             'female': 'اختاري',
             'other': 'اختر'
-          })} ما تشعر${_select(gender, {'female': 'ين', 'other': ''})} به.";
+          })} ما تشعر${_select(gender, {'female': 'ين'})} به.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {

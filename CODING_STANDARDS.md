@@ -37,7 +37,7 @@
 
 ## 4. Localization
 
-- all user-visible strings live in i69n bundles (app: `app/lib/patient_app/i18n/`, core: `src/localization/i18n/`); regenerate with `dart run build_runner build` after editing JSON
+- all user-visible strings live in i69n bundles — `.i69n.jsonc` (JSON **with comments**: annotate keys, gender rules, RTL notes inline) in `app/lib/patient_app/i18n/`, `packages/core/lib/src/localization/i18n/`, and `modules/*/lib/src/i18n/`; regenerate with `dart run tool/build.dart gen` after editing
 - no inline bilingual ternaries (`ar ? '…' : '…'`)
 - reference data (countries, languages) comes from core value objects + `CountryRegistry` — no private lists in screens
 - prefer typed `s.strings.key` over stringly `s.t('key')`; `t()` only for keys computed at runtime
