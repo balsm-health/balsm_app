@@ -24,8 +24,7 @@ class SyncStatus {
   final DateTime? lastSyncedAt;
   final String? message;
 
-  SyncStatus copyWith({SyncState? state, DateTime? lastSyncedAt, String? message}) =>
-      SyncStatus(
+  SyncStatus copyWith({SyncState? state, DateTime? lastSyncedAt, String? message}) => SyncStatus(
         state: state ?? this.state,
         lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
         message: message,
@@ -41,5 +40,4 @@ class SyncStatusNotifier extends StateNotifier<SyncStatus> {
       state = state.copyWith(state: s, lastSyncedAt: lastSyncedAt, message: message);
 }
 
-final syncStatusProvider =
-    StateNotifierProvider<SyncStatusNotifier, SyncStatus>((ref) => SyncStatusNotifier());
+final syncStatusProvider = StateNotifierProvider<SyncStatusNotifier, SyncStatus>((ref) => SyncStatusNotifier());

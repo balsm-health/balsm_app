@@ -18,8 +18,14 @@ class SymptomId {
 
   /// The curated catalog, in display order.
   static const catalog = <SymptomId>[
-    headache, dizzy, fatigue, blurredVision,
-    swelling, chestTightness, nausea, thirst,
+    headache,
+    dizzy,
+    fatigue,
+    blurredVision,
+    swelling,
+    chestTightness,
+    nausea,
+    thirst,
   ];
 
   static final Map<String, SymptomId> _byId = {

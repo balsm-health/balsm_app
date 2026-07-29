@@ -11,8 +11,7 @@ import 'value_object.dart';
 class Nationality extends ValueObject {
   const Nationality(this.country);
 
-  factory Nationality.ofCode(String isoCode) =>
-      Nationality(CountryCode.fromCode(isoCode));
+  factory Nationality.ofCode(String isoCode) => Nationality(CountryCode.fromCode(isoCode));
 
   final CountryCode country;
 

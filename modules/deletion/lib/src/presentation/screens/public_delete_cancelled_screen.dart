@@ -14,14 +14,12 @@ class PublicDeleteCancelledScreen extends ConsumerStatefulWidget {
   const PublicDeleteCancelledScreen({super.key});
 
   @override
-  ConsumerState<PublicDeleteCancelledScreen> createState() =>
-      _PublicDeleteCancelledScreenState();
+  ConsumerState<PublicDeleteCancelledScreen> createState() => _PublicDeleteCancelledScreenState();
 }
 
 enum _Stage { reauth, done }
 
-class _PublicDeleteCancelledScreenState
-    extends ConsumerState<PublicDeleteCancelledScreen> {
+class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancelledScreen> {
   _Stage _stage = _Stage.reauth;
   bool _submitting = false;
   String? _error;
@@ -78,8 +76,7 @@ class _PublicDeleteCancelledScreenState
                   _Stage.done => Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: const [
-                        Icon(Icons.check_circle_outline,
-                            size: 48, color: BalsmColors.success),
+                        Icon(Icons.check_circle_outline, size: 48, color: BalsmColors.success),
                         SizedBox(height: 16),
                         Text(
                           'Deletion cancelled',
@@ -94,8 +91,7 @@ class _PublicDeleteCancelledScreenState
                         Text(
                           'Your account is safe. Nothing was deleted.',
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(fontSize: 14, color: BalsmColors.fg3),
+                          style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
                         ),
                       ],
                     ),

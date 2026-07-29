@@ -68,8 +68,7 @@ class UpdateHealthProfileUseCase {
   }
 }
 
-final updateHealthProfileUseCaseProvider =
-    Provider<UpdateHealthProfileUseCase>((ref) {
+final updateHealthProfileUseCaseProvider = Provider<UpdateHealthProfileUseCase>((ref) {
   return UpdateHealthProfileUseCase(
     dao: ref.watch(profileDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),

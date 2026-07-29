@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(emergencyCardStringsProvider);
 /// ```
-final emergencyCardStringsProvider =
-    LocalizationUtil.getProvider<Messages>(emergencyCardStrings);
+final emergencyCardStringsProvider = LocalizationUtil.getProvider<Messages>(emergencyCardStrings);

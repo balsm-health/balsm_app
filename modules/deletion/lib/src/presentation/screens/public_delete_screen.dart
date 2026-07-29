@@ -143,14 +143,11 @@ class _Done extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateText = graceUntil != null
-        ? DateFormat.yMMMMd().add_jm().format(graceUntil!.toLocal())
-        : 'soon';
+    final dateText = graceUntil != null ? DateFormat.yMMMMd().add_jm().format(graceUntil!.toLocal()) : 'soon';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.check_circle_outline,
-            size: 48, color: BalsmColors.success),
+        const Icon(Icons.check_circle_outline, size: 48, color: BalsmColors.success),
         const SizedBox(height: 16),
         const Text(
           'Deletion scheduled',

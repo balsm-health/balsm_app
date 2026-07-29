@@ -10,7 +10,10 @@ Response<dynamic> _resp(Object? body, {int status = 200}) => Response(
 
 void main() {
   test('unwrapEnvelope returns data map', () {
-    final data = unwrapEnvelope(_resp({'data': {'a': 1}, 'error': null}));
+    final data = unwrapEnvelope(_resp({
+      'data': {'a': 1},
+      'error': null
+    }));
     expect(data, {'a': 1});
   });
 
@@ -34,10 +37,20 @@ void main() {
   });
 
   test('unwrapEnvelopeList returns list data and throws on error', () {
-    expect(unwrapEnvelopeList(_resp({'data': [1, 2]})), [1, 2]);
-    expect(unwrapEnvelopeList(_resp({'data': {'not': 'list'}})), isEmpty);
     expect(
-      () => unwrapEnvelopeList(_resp({'error': {'message': 'x'}})),
+        unwrapEnvelopeList(_resp({
+          'data': [1, 2]
+        })),
+        [1, 2]);
+    expect(
+        unwrapEnvelopeList(_resp({
+          'data': {'not': 'list'}
+        })),
+        isEmpty);
+    expect(
+      () => unwrapEnvelopeList(_resp({
+        'error': {'message': 'x'}
+      })),
       throwsA(isA<ApiException>()),
     );
   });

@@ -64,9 +64,7 @@ const Set<String> kDenied = {
 /// on the allowlist. Mirrors the contract enforced before any event is sent.
 Map<String, dynamic> scrubByAllowlist(Map<dynamic, dynamic> data) {
   return Map.fromEntries(
-    data.entries
-        .where((e) => kAllowlist.contains(e.key.toString()))
-        .map((e) => MapEntry(e.key.toString(), e.value)),
+    data.entries.where((e) => kAllowlist.contains(e.key.toString())).map((e) => MapEntry(e.key.toString(), e.value)),
   );
 }
 

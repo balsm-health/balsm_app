@@ -39,35 +39,27 @@ class _BodyMapState extends State<BodyMap> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final regions = view == BodyView.front ? BodyRegion.front : BodyRegion.back;
-    final selectedLabels = BodyRegion.all
-        .where((r) => widget.selected.contains(r.id))
-        .map((r) => s.t(regionLabelKey(r.id)))
-        .toList();
+    final selectedLabels =
+        BodyRegion.all.where((r) => widget.selected.contains(r.id)).map((r) => s.t(regionLabelKey(r.id))).toList();
     final viewName = view == BodyView.front ? 'front' : 'back';
     return Column(children: [
       // Controls
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Row(children: [
-          _chip(s, s.rtl ? 'أمامي' : 'Front', view == BodyView.front,
-              () => setState(() => view = BodyView.front)),
+          _chip(s, s.rtl ? 'أمامي' : 'Front', view == BodyView.front, () => setState(() => view = BodyView.front)),
           const SizedBox(width: 5),
-          _chip(s, s.rtl ? 'خلفي' : 'Back', view == BodyView.back,
-              () => setState(() => view = BodyView.back)),
+          _chip(s, s.rtl ? 'خلفي' : 'Back', view == BodyView.back, () => setState(() => view = BodyView.back)),
         ]),
         Row(children: [
-          _chip(s, s.rtl ? 'أنثى' : '♀', gender == 'female',
-              () => setState(() => gender = 'female'), neutral: true),
+          _chip(s, s.rtl ? 'أنثى' : '♀', gender == 'female', () => setState(() => gender = 'female'), neutral: true),
           const SizedBox(width: 4),
-          _chip(s, s.rtl ? 'ذكر' : '♂', gender == 'male',
-              () => setState(() => gender = 'male'), neutral: true),
+          _chip(s, s.rtl ? 'ذكر' : '♂', gender == 'male', () => setState(() => gender = 'male'), neutral: true),
         ]),
       ]),
       const SizedBox(height: 8),
       // Location label
       Text(
-        widget.selected.isEmpty
-            ? (s.rtl ? 'انقر لتحديد الموقع' : 'Tap to mark location')
-            : selectedLabels.join(' · '),
+        widget.selected.isEmpty ? (s.rtl ? 'انقر لتحديد الموقع' : 'Tap to mark location') : selectedLabels.join(' · '),
         textAlign: TextAlign.center,
         style: Typo.meta(ar: s.rtl).copyWith(
             fontSize: FS.xs,
@@ -98,9 +90,7 @@ class _BodyMapState extends State<BodyMap> {
                         child: SizedBox(
                           width: 28,
                           height: 28,
-                          child: Center(
-                              child: _dot(
-                                  widget.selected.contains(r.id), s.accent)),
+                          child: Center(child: _dot(widget.selected.contains(r.id), s.accent)),
                         ),
                       ),
                     )),
@@ -120,15 +110,12 @@ class _BodyMapState extends State<BodyMap> {
       decoration: BoxDecoration(
         color: active ? accent.main : const Color(0xE0FFFFFF),
         shape: BoxShape.circle,
-        border: active
-            ? null
-            : Border.all(color: const Color(0xFF9A9990), width: 1.5),
+        border: active ? null : Border.all(color: const Color(0xFF9A9990), width: 1.5),
       ),
     );
   }
 
-  Widget _chip(PatientAppState s, String label, bool active, VoidCallback onTap,
-      {bool neutral = false}) {
+  Widget _chip(PatientAppState s, String label, bool active, VoidCallback onTap, {bool neutral = false}) {
     final on = active;
     final color = neutral ? T.fg1 : s.accent.d;
     final bg = neutral ? T.ink100 : s.accent.bg;
@@ -145,10 +132,8 @@ class _BodyMapState extends State<BodyMap> {
           border: Border.all(color: on ? border : T.border, width: 1.5),
         ),
         child: Text(label,
-            style: Typo.meta(ar: s.rtl).copyWith(
-                fontSize: FS.xs,
-                fontWeight: FontWeight.w600,
-                color: on ? color : T.fg3)),
+            style:
+                Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: on ? color : T.fg3)),
       ),
     );
   }

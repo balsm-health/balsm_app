@@ -21,17 +21,15 @@ void main() {
   });
 
   test('getSelf deletionState defaults to ACTIVE', () async {
-    final adapter = FakeHttpAdapter((_) => jsonResponse(
-        '{"data": {"user_id": "u1", "country_code": "EG", "preferred_language": "en"}}'));
+    final adapter = FakeHttpAdapter(
+        (_) => jsonResponse('{"data": {"user_id": "u1", "country_code": "EG", "preferred_language": "en"}}'));
     final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
     expect(res!.deletionState, 'ACTIVE');
   });
 
   test('claimHandle posts handle and echoes claimed handle', () async {
-    final adapter =
-        FakeHttpAdapter((_) => jsonResponse('{"data": {"handle": "hoss"}}'));
-    final res = await DioAccountApi(net: fakeNet(adapter))
-        .claimHandle(const ClaimHandleRequest(handle: 'hoss'));
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"handle": "hoss"}}'));
+    final res = await DioAccountApi(net: fakeNet(adapter)).claimHandle(const ClaimHandleRequest(handle: 'hoss'));
     expect(adapter.requests.single.path, '/account/handle/claim');
     expect(adapter.requests.single.data, {'handle': 'hoss'});
     expect(res.handle, 'hoss');
@@ -51,8 +49,7 @@ void main() {
   });
 
   test('checkHandleAvailability POSTs handle to /handle/check', () async {
-    final adapter =
-        FakeHttpAdapter((_) => jsonResponse('{"data": {"available": true}}'));
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"available": true}}'));
     final api = DioAccountApi(net: fakeNet(adapter));
     final res = await api.checkHandleAvailability('hoss');
     expect(adapter.requests.single.method, 'POST');
@@ -61,8 +58,7 @@ void main() {
     expect(res.available, isTrue);
 
     final adapter2 = FakeHttpAdapter((_) => jsonResponse('{"data": {}}'));
-    final res2 = await DioAccountApi(net: fakeNet(adapter2))
-        .checkHandleAvailability('x');
+    final res2 = await DioAccountApi(net: fakeNet(adapter2)).checkHandleAvailability('x');
     expect(res2.available, isFalse);
   });
 }

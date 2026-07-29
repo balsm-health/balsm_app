@@ -32,8 +32,7 @@ class MissedDoseDetector {
 
   DateTime? _lastRunDay;
 
-  bool get _permissionDenied =>
-      _readPermission() == NotificationPermissionState.denied;
+  bool get _permissionDenied => _readPermission() == NotificationPermissionState.denied;
 
   /// Returns true if detection should run this foreground.
   ///
@@ -67,9 +66,7 @@ class MissedDoseDetector {
         from: lookbackStart,
         to: now,
       );
-      final recordedScheduledAt = existing
-          .map((e) => e.scheduledAt.toIso8601String())
-          .toSet();
+      final recordedScheduledAt = existing.map((e) => e.scheduledAt.toIso8601String()).toSet();
 
       for (final scheduled in _expectedOccurrences(med, lookbackStart, cutoff)) {
         if (recordedScheduledAt.contains(scheduled.toIso8601String())) continue;
@@ -104,13 +101,10 @@ class MissedDoseDetector {
   ) sync* {
     if (med.startDate.isAfter(to)) return;
     final cfg = med.scheduleConfig;
-    final effectiveStart =
-        med.startDate.isAfter(from) ? med.startDate : from;
-    final effectiveEnd =
-        (med.endDate != null && med.endDate!.isBefore(to)) ? med.endDate! : to;
+    final effectiveStart = med.startDate.isAfter(from) ? med.startDate : from;
+    final effectiveEnd = (med.endDate != null && med.endDate!.isBefore(to)) ? med.endDate! : to;
 
-    for (var day = DateTime(effectiveStart.year, effectiveStart.month,
-            effectiveStart.day);
+    for (var day = DateTime(effectiveStart.year, effectiveStart.month, effectiveStart.day);
         !day.isAfter(effectiveEnd);
         day = day.add(const Duration(days: 1))) {
       if (!_dayMatches(med.scheduleType, cfg, day)) continue;

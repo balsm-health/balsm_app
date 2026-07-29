@@ -6,8 +6,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('change country in settings updates locale and authority text',
-      (tester) async {
+  testWidgets('change country in settings updates locale and authority text', (tester) async {
     // TODO(T188): drive with Patrol:
     //  1. authenticated user opens Account -> Country
     //  2. switch country (e.g. EG -> SA)

@@ -16,12 +16,10 @@ class LanguageSettingsScreen extends ConsumerStatefulWidget {
   const LanguageSettingsScreen({super.key});
 
   @override
-  ConsumerState<LanguageSettingsScreen> createState() =>
-      _LanguageSettingsScreenState();
+  ConsumerState<LanguageSettingsScreen> createState() => _LanguageSettingsScreenState();
 }
 
-class _LanguageSettingsScreenState
-    extends ConsumerState<LanguageSettingsScreen> {
+class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen> {
   // Locally-applied selection for immediate Directionality feedback,
   // before the server round-trip completes.
   String? _pending;
@@ -38,12 +36,11 @@ class _LanguageSettingsScreenState
       _error = null;
     });
 
-    final result =
-        await ref.read(changeLanguageUseCaseProvider).execute(
-              userId: summary.id,
-              oldLanguage: summary.preferredLanguage,
-              newLanguage: tag,
-            );
+    final result = await ref.read(changeLanguageUseCaseProvider).execute(
+          userId: summary.id,
+          oldLanguage: summary.preferredLanguage,
+          newLanguage: tag,
+        );
 
     if (!mounted) return;
     setState(() => _busy = false);
@@ -91,9 +88,8 @@ class _LanguageSettingsScreenState
           (l) => l.value == selectedBase,
           orElse: () => _languages.first,
         );
-        final dir = (LanguageCode.tryParseUi(selectedTag) ?? LanguageCode.en).isRtl
-            ? TextDirection.rtl
-            : TextDirection.ltr;
+        final dir =
+            (LanguageCode.tryParseUi(selectedTag) ?? LanguageCode.en).isRtl ? TextDirection.rtl : TextDirection.ltr;
 
         // Immediate Directionality flip for instant RTL/LTR feedback.
         return Directionality(

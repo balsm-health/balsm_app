@@ -42,8 +42,7 @@ class AccountSelfResponse {
   /// PHI/PII: national ID, decrypted server-side for self.
   final String? nationalId;
 
-  factory AccountSelfResponse.fromJson(Map<String, dynamic> json) =>
-      AccountSelfResponse(
+  factory AccountSelfResponse.fromJson(Map<String, dynamic> json) => AccountSelfResponse(
         // Server sends `user_id` (consistent with verify / the rest of the API).
         id: json['user_id'] as String,
         handle: json['handle'] as String?,

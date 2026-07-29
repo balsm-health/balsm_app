@@ -14,8 +14,7 @@ class AddMedicationScreen extends ConsumerStatefulWidget {
   const AddMedicationScreen({super.key});
 
   @override
-  ConsumerState<AddMedicationScreen> createState() =>
-      _AddMedicationScreenState();
+  ConsumerState<AddMedicationScreen> createState() => _AddMedicationScreenState();
 }
 
 class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
@@ -95,9 +94,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
                 (entry) => _TimeRow(
                   time: entry.value,
                   onEdit: () => _editTime(entry.key),
-                  onRemove: _times.length > 1
-                      ? () => setState(() => _times.removeAt(entry.key))
-                      : null,
+                  onRemove: _times.length > 1 ? () => setState(() => _times.removeAt(entry.key)) : null,
                 ),
               ),
           TextButton.icon(
@@ -115,9 +112,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             label: 'End date (optional)',
             value: _endDate,
             onTap: () => _pickDate(isStart: false),
-            onClear: _endDate != null
-                ? () => setState(() => _endDate = null)
-                : null,
+            onClear: _endDate != null ? () => setState(() => _endDate = null) : null,
           ),
           const SizedBox(height: 8),
           SwitchListTile(
@@ -148,8 +143,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       );
 
   Future<void> _addTime() async {
-    final picked =
-        await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
     if (picked != null) setState(() => _times.add(picked));
   }
 
@@ -210,9 +204,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       scheduleType: _scheduleType,
       scheduleConfig: ScheduleConfig(
         times: _sortedTimeStrings(),
-        days: _scheduleType == ScheduleType.daily
-            ? null
-            : (_days.toList()..sort()),
+        days: _scheduleType == ScheduleType.daily ? null : (_days.toList()..sort()),
       ),
       startDate: _startDate,
       endDate: _endDate,
@@ -233,14 +225,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   List<String> _sortedTimeStrings() {
-    final list = _times.toList()
-      ..sort((a, b) =>
-          (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
+    final list = _times.toList()..sort((a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
     return list.map(_hhmm).toList();
   }
 
-  String _hhmm(TimeOfDay t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  String _hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
 
 class _DayPicker extends StatelessWidget {

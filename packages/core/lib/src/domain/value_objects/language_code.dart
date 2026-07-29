@@ -9,8 +9,7 @@ import 'value_object.dart';
 /// lives in the core i69n bundle (`language.<code>.name`); resolve it via the
 /// `LanguageCodeL10n` extension.
 class LanguageCode extends ValueObject {
-  const LanguageCode._(this.value, this.nativeName, this.isRtl,
-      {this.isFullySupported = false});
+  const LanguageCode._(this.value, this.nativeName, this.isRtl, {this.isFullySupported = false});
 
   /// Look up a known language, or accept any well-formed 2-letter code.
   /// Throws [ArgumentError] on malformed input.
@@ -38,10 +37,7 @@ class LanguageCode extends ValueObject {
   final bool isFullySupported;
 
   /// Combine with a region to form a BCP-47 tag string (`ar` + `EG` → `ar-EG`).
-  String toTag([String? region]) =>
-      region == null || region.isEmpty
-          ? value
-          : '$value-${region.toUpperCase()}';
+  String toTag([String? region]) => region == null || region.isEmpty ? value : '$value-${region.toUpperCase()}';
 
   static const ar = LanguageCode._('ar', 'العربية', true, isFullySupported: true);
   static const en = LanguageCode._('en', 'English', false, isFullySupported: true);
@@ -76,8 +72,7 @@ class LanguageCode extends ValueObject {
 
   static const _rtlByDefault = {'ar', 'ur', 'fa', 'he', 'ps', 'sd'};
 
-  static bool _isAlpha(String s) =>
-      s.codeUnits.every((u) => u >= 0x61 && u <= 0x7A);
+  static bool _isAlpha(String s) => s.codeUnits.every((u) => u >= 0x61 && u <= 0x7A);
 
   @override
   List<Object?> get props => [value];

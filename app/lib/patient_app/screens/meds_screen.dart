@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:core/core.dart'
-    show UserId, currentUserIdProvider, globalKVDataSourceProvider;
+import 'package:core/core.dart' show UserId, currentUserIdProvider, globalKVDataSourceProvider;
 import 'package:medications/medications.dart'
     show
         Medication,
@@ -39,8 +38,7 @@ class MedsScreen extends ConsumerStatefulWidget {
   ConsumerState<MedsScreen> createState() => _MedsScreenState();
 }
 
-class _MedsScreenState extends ConsumerState<MedsScreen>
-    with WidgetsBindingObserver {
+class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObserver {
   bool _tzBusy = false;
 
   @override
@@ -95,9 +93,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
       final accept = await _showTimezoneConfirm(last, current);
       if (accept == true && mounted) {
         // Rebuilds OS reminder triggers for the new local clock times.
-        await ref
-            .read(medicationSchedulerProvider(userId))
-            .handleTimezoneShift(last);
+        await ref.read(medicationSchedulerProvider(userId)).handleTimezoneShift(last);
         ref.invalidate(todayDosesProvider);
         ref.invalidate(medicationListProvider);
       }
@@ -138,9 +134,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
           medicationId: dose.medication.id,
           scheduledAt: dose.scheduledAt,
           outcome: outcome,
-          snoozeUntil: outcome == DoseOutcome.snoozed
-              ? DateTime.now().add(const Duration(minutes: 15))
-              : null,
+          snoozeUntil: outcome == DoseOutcome.snoozed ? DateTime.now().add(const Duration(minutes: 15)) : null,
         );
     if (!mounted) return;
     ref.invalidate(todayDosesProvider);
@@ -225,8 +219,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
 
     // Adherence for today = resolved-as-taken / scheduled so far.
     final total = doses.length;
-    final taken =
-        doses.where((d) => d.event?.outcome == DoseOutcome.taken).length;
+    final taken = doses.where((d) => d.event?.outcome == DoseOutcome.taken).length;
     final adherence = total == 0 ? 1.0 : taken / total;
     final adherencePct = (adherence * 100).round();
 
@@ -235,15 +228,9 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
       child: ListView(padding: EdgeInsets.zero, children: [
         const PadTop(),
         AppBarRow(children: [
-          Expanded(
-              child: Text(s.strings.meds.medications,
-                  style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+          Expanded(child: Text(s.strings.meds.medications, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
           // Add medication — disabled (hidden) when signed out.
-          if (userId != null)
-            RoundBtn(
-                icon: LucideIcons.plus,
-                iconSize: 20,
-                onTap: () => _openAddMedication(userId)),
+          if (userId != null) RoundBtn(icon: LucideIcons.plus, iconSize: 20, onTap: () => _openAddMedication(userId)),
         ]),
 
         // Prescriptions link (navigates to the separate rx tab).
@@ -253,18 +240,12 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
           onTap: () => s.setTab('rx'),
           child: Row(children: [
             const IconSquare(LucideIcons.fileText,
-                bg: T.petalViolet50,
-                fg: T.petalViolet,
-                size: 34,
-                iconSize: 19,
-                radius: T.rSm),
+                bg: T.petalViolet50, fg: T.petalViolet, size: 34, iconSize: 19, radius: T.rSm),
             const SizedBox(width: 14),
             Expanded(
                 child: Text(s.strings.records.prescriptions,
-                    style: Typo.body(ar: s.rtl)
-                        .copyWith(fontWeight: FontWeight.w500, color: T.fg1))),
-            Pill('$medCount ${s.strings.meds.rx_active.toLowerCase()}',
-                kind: PillKind.success, ar: s.rtl),
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: T.fg1))),
+            Pill('$medCount ${s.strings.meds.rx_active.toLowerCase()}', kind: PillKind.success, ar: s.rtl),
             const SizedBox(width: 8),
             Chevron(rtl: s.rtl),
           ]),
@@ -282,48 +263,36 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
                 labelStyle: Typo.num(size: FS.sm, weight: FontWeight.w800)),
             const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Text('$adherencePct%',
-                          style: Typo.num(size: FS.md, weight: FontWeight.w700)),
-                      Text(' · ${s.strings.meds.adherence}',
-                          style:
-                              Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
-                    ]),
-                    const SizedBox(height: 6),
-                    Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
-                  ]),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text('$adherencePct%', style: Typo.num(size: FS.md, weight: FontWeight.w700)),
+                  Text(' · ${s.strings.meds.adherence}', style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
+                ]),
+                const SizedBox(height: 6),
+                Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
+              ]),
             ),
           ]),
         ),
 
         if (userId == null)
-          _EmptyState(
-              s: s,
-              text: s.strings.meds.meds_signin_help)
+          _EmptyState(s: s, text: s.strings.meds.meds_signin_help)
         else if (doses.isEmpty)
-          _EmptyState(
-              s: s,
-              text: medCount == 0
-                  ? s.strings.meds.meds_empty_help
-                  : s.strings.meds.meds_none_today)
+          _EmptyState(s: s, text: medCount == 0 ? s.strings.meds.meds_empty_help : s.strings.meds.meds_none_today)
         else
           for (final (key, icon, list) in groups) ...[
             if (list.isNotEmpty) ...[
               RowHead.icon(s.t(key), icon: icon, ar: s.rtl),
               PCard(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(children: list.indexed
-                    .map((e) => _MedDoseRow(
-                        s: s,
-                        dose: e.$2,
-                        first: e.$1 == 0,
-                        onTap: e.$2.isPending
-                            ? () => _openDoseActions(e.$2)
-                            : null))
-                    .toList()),
+                child: Column(
+                    children: list.indexed
+                        .map((e) => _MedDoseRow(
+                            s: s,
+                            dose: e.$2,
+                            first: e.$1 == 0,
+                            onTap: e.$2.isPending ? () => _openDoseActions(e.$2) : null))
+                        .toList()),
               ),
             ],
           ],
@@ -344,15 +313,13 @@ class _MedsScreenState extends ConsumerState<MedsScreen>
   return tones[id.value.hashCode.abs() % tones.length];
 }
 
-String _hhmm(DateTime t) =>
-    '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
 /// One scheduled dose row — same layout as the prototype `_MedListRow`, but the
 /// status pill reflects the real recorded outcome and a pending row is tappable
 /// to record taken/skip/snooze.
 class _MedDoseRow extends StatelessWidget {
-  const _MedDoseRow(
-      {required this.s, required this.dose, required this.first, this.onTap});
+  const _MedDoseRow({required this.s, required this.dose, required this.first, this.onTap});
   final PatientAppState s;
   final TodayDose dose;
   final bool first;
@@ -379,34 +346,21 @@ class _MedDoseRow extends StatelessWidget {
       onTap: onTap,
       scale: onTap == null ? 1.0 : 0.99,
       child: Container(
-        decoration: BoxDecoration(
-            border: first
-                ? null
-                : const Border(top: BorderSide(color: T.ink100))),
+        decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         child: Row(children: [
           Container(
               width: 42,
               height: 42,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  color: tone.bg,
-                  borderRadius: BorderRadius.circular(T.rMd)),
-              child: Icon(
-                  med.isControlled ? LucideIcons.heartPulse : LucideIcons.pill,
-                  size: 21,
-                  color: tone.fg)),
+              decoration: BoxDecoration(color: tone.bg, borderRadius: BorderRadius.circular(T.rMd)),
+              child: Icon(med.isControlled ? LucideIcons.heartPulse : LucideIcons.pill, size: 21, color: tone.fg)),
           const SizedBox(width: 14),
           Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(med.name,
-                    style: Typo.body(ar: s.rtl)
-                        .copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                Text(subtitle,
-                    style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-              ])),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(med.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          ])),
           Pill(label, kind: kind, ar: s.rtl),
           if (onTap != null) ...[
             const SizedBox(width: 8),
@@ -427,16 +381,9 @@ class _EmptyState extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(20, 12, 20, 8),
         padding: const EdgeInsets.all(22),
         child: Row(children: [
-          const IconSquare(LucideIcons.pill,
-              bg: T.petalBlue50,
-              fg: T.petalBlue,
-              size: 38,
-              iconSize: 20,
-              radius: T.rSm),
+          const IconSquare(LucideIcons.pill, bg: T.petalBlue50, fg: T.petalBlue, size: 38, iconSize: 20, radius: T.rSm),
           const SizedBox(width: 14),
-          Expanded(
-              child: Text(text,
-                  style: Typo.body(ar: s.rtl).copyWith(color: T.fg3))),
+          Expanded(child: Text(text, style: Typo.body(ar: s.rtl).copyWith(color: T.fg3))),
         ]),
       );
 }
@@ -452,11 +399,9 @@ class _SheetChrome extends StatelessWidget {
   Widget build(BuildContext context) {
     final st = s ?? AppScope.of(context);
     return Container(
-      constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9),
-      decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      decoration:
+          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -465,25 +410,16 @@ class _SheetChrome extends StatelessWidget {
                 width: 38,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                    color: T.ink200,
-                    borderRadius: BorderRadius.circular(999))),
+                decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
             Container(
               padding: const EdgeInsets.only(bottom: 10),
-              decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: T.ink100))),
+              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
               child: Row(children: [
                 Expanded(
                     child: Padding(
                         padding: const EdgeInsets.only(left: 4),
-                        child: Text(title,
-                            style: Typo.subhead(ar: st.rtl)
-                                .copyWith(fontWeight: FontWeight.w700)))),
-                RoundBtn(
-                    icon: LucideIcons.x,
-                    ghost: true,
-                    iconSize: 18,
-                    onTap: () => Navigator.pop(context)),
+                        child: Text(title, style: Typo.subhead(ar: st.rtl).copyWith(fontWeight: FontWeight.w700)))),
+                RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
               ]),
             ),
           ]),
@@ -492,8 +428,7 @@ class _SheetChrome extends StatelessWidget {
           // Add the keyboard inset to the bottom padding so the focused field
           // and the sheet's buttons scroll ABOVE the native keyboard.
           child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-                20, 14, 20, 38 + MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.fromLTRB(20, 14, 20, 38 + MediaQuery.of(context).viewInsets.bottom),
             child: child,
           ),
         ),
@@ -505,12 +440,7 @@ class _SheetChrome extends StatelessWidget {
 /// Full-width pill button (accent = primary, outline = secondary).
 class _SheetButton extends StatelessWidget {
   const _SheetButton(
-      {required this.s,
-      required this.label,
-      required this.onTap,
-      this.icon,
-      this.primary = false,
-      this.tone});
+      {required this.s, required this.label, required this.onTap, this.icon, this.primary = false, this.tone});
   final PatientAppState s;
   final String label;
   final VoidCallback onTap;
@@ -530,8 +460,7 @@ class _SheetButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: primary ? accent : Colors.white,
           borderRadius: BorderRadius.circular(T.rMd),
-          border: Border.all(
-              color: primary ? accent : T.borderStrong, width: 1.5),
+          border: Border.all(color: primary ? accent : T.borderStrong, width: 1.5),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           if (icon != null) ...[
@@ -539,9 +468,7 @@ class _SheetButton extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           Text(label,
-              style: Typo.body(ar: s.rtl).copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: primary ? Colors.white : T.fg1)),
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: primary ? Colors.white : T.fg1)),
         ]),
       ),
     );
@@ -562,8 +489,7 @@ class _DoseActionSheet extends StatelessWidget {
       child: Column(children: [
         Align(
           alignment: AlignmentDirectional.centerStart,
-          child: Text(
-              '${s.strings.meds.med_scheduled} · ${_hhmm(dose.scheduledAt)}',
+          child: Text('${s.strings.meds.med_scheduled} · ${_hhmm(dose.scheduledAt)}',
               style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
         ),
         const SizedBox(height: 16),
@@ -594,8 +520,7 @@ class _DoseActionSheet extends StatelessWidget {
 // ── Timezone-shift confirm sheet (G9 / FR-023) ───────────────────────────────
 
 class _TimezoneConfirmSheet extends StatelessWidget {
-  const _TimezoneConfirmSheet(
-      {required this.s, required this.previous, required this.current});
+  const _TimezoneConfirmSheet({required this.s, required this.previous, required this.current});
   final PatientAppState s;
   final String previous;
   final String current;
@@ -610,11 +535,8 @@ class _TimezoneConfirmSheet extends StatelessWidget {
               width: 46,
               height: 46,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  color: T.petalBlue50,
-                  borderRadius: BorderRadius.circular(T.rMd)),
-              child: const Icon(LucideIcons.globe,
-                  size: 22, color: T.petalBlue)),
+              decoration: BoxDecoration(color: T.petalBlue50, borderRadius: BorderRadius.circular(T.rMd)),
+              child: const Icon(LucideIcons.globe, size: 22, color: T.petalBlue)),
           const SizedBox(width: 14),
           Expanded(
             child: Text(s.strings.meds.meds_tz_moved(previous, current),
@@ -623,15 +545,9 @@ class _TimezoneConfirmSheet extends StatelessWidget {
         ]),
         const SizedBox(height: 20),
         _SheetButton(
-            s: s,
-            label: s.strings.meds.tz_recompute,
-            primary: true,
-            onTap: () => Navigator.pop(context, true)),
+            s: s, label: s.strings.meds.tz_recompute, primary: true, onTap: () => Navigator.pop(context, true)),
         const SizedBox(height: 10),
-        _SheetButton(
-            s: s,
-            label: s.strings.meds.tz_keep,
-            onTap: () => Navigator.pop(context, false)),
+        _SheetButton(s: s, label: s.strings.meds.tz_keep, onTap: () => Navigator.pop(context, false)),
       ]),
     );
   }
@@ -679,12 +595,10 @@ class _AddMedSheetState extends State<_AddMedSheet> {
     final name = _name.text.trim();
     if (name.isEmpty) return;
     final dose = _dose.text.trim();
-    Navigator.pop(
-        context, _NewMed(name: name, time: _time, dose: dose.isEmpty ? null : dose));
+    Navigator.pop(context, _NewMed(name: name, time: _time, dose: dose.isEmpty ? null : dose));
   }
 
-  Widget _field(TextEditingController c, String hint, {TextInputType? kb}) =>
-      TextField(
+  Widget _field(TextEditingController c, String hint, {TextInputType? kb}) => TextField(
         controller: c,
         textDirection: s.dir,
         keyboardType: kb,
@@ -695,14 +609,11 @@ class _AddMedSheetState extends State<_AddMedSheet> {
           isDense: true,
           filled: true,
           fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd),
-              borderSide: const BorderSide(color: T.border, width: 1.5)),
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
           focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd),
-              borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       );
 
@@ -713,20 +624,17 @@ class _AddMedSheetState extends State<_AddMedSheet> {
       title: s.strings.meds.med_add_title,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(s.strings.meds.med_field_name,
-            style: Typo.bodySm(ar: s.rtl)
-                .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 8),
         _field(_name, s.strings.meds.med_ph_name),
         const SizedBox(height: 16),
         Text(s.strings.meds.med_field_dose,
-            style: Typo.bodySm(ar: s.rtl)
-                .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 8),
         _field(_dose, s.strings.meds.med_ph_dose),
         const SizedBox(height: 16),
         Text(s.strings.meds.med_reminder_time,
-            style: Typo.bodySm(ar: s.rtl)
-                .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final (value, key) in _timeOptions)
@@ -736,38 +644,25 @@ class _AddMedSheetState extends State<_AddMedSheet> {
               child: AnimatedContainer(
                 duration: Motion.base,
                 curve: Motion.easeOut,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                 decoration: BoxDecoration(
                   color: _time == value ? s.accent.bg : Colors.white,
                   borderRadius: BorderRadius.circular(T.rMd),
-                  border: Border.all(
-                      color: _time == value ? s.accent.main : T.border,
-                      width: 1.5),
+                  border: Border.all(color: _time == value ? s.accent.main : T.border, width: 1.5),
                 ),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Text(s.t(key),
                       style: Typo.body(ar: s.rtl).copyWith(
-                          fontSize: FS.xs,
-                          fontWeight: FontWeight.w700,
-                          color: _time == value ? s.accent.d : T.fg2)),
+                          fontSize: FS.xs, fontWeight: FontWeight.w700, color: _time == value ? s.accent.d : T.fg2)),
                   Text(value,
-                      style: Typo.num(
-                          size: FS.xs2,
-                          weight: FontWeight.w600,
-                          color:
-                              _time == value ? s.accent.d : T.fg4)),
+                      style:
+                          Typo.num(size: FS.xs2, weight: FontWeight.w600, color: _time == value ? s.accent.d : T.fg4)),
                 ]),
               ),
             ),
         ]),
         const SizedBox(height: 22),
-        _SheetButton(
-            s: s,
-            label: s.strings.meds.med_add_btn,
-            icon: LucideIcons.plus,
-            primary: true,
-            onTap: _submit),
+        _SheetButton(s: s, label: s.strings.meds.med_add_btn, icon: LucideIcons.plus, primary: true, onTap: _submit),
       ]),
     );
   }

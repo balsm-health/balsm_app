@@ -25,5 +25,4 @@ final accountStrings = LocalizedStrings<Messages>.defaultLangs(
 /// Locale-explicit lookup for code that carries its own locale (e.g. a
 /// `preferredLanguage` route param). Non-reactive; Arabic must have been
 /// loaded (or falls back to English).
-Messages accountMessagesOf(String locale) =>
-    accountStrings.resolveSync(Locale(locale.split(RegExp('[-_]')).first));
+Messages accountMessagesOf(String locale) => accountStrings.resolveSync(Locale(locale.split(RegExp('[-_]')).first));

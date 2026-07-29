@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(sessionsStringsProvider);
 /// ```
-final sessionsStringsProvider =
-    LocalizationUtil.getProvider<Messages>(sessionsStrings);
+final sessionsStringsProvider = LocalizationUtil.getProvider<Messages>(sessionsStrings);

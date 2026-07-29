@@ -28,8 +28,7 @@ Future<void> initSentry() async {
 SentryEvent _scrub(SentryEvent event) {
   final crumbs = event.breadcrumbs;
   if (crumbs != null) {
-    event.breadcrumbs =
-        crumbs.map((b) => b.data == null ? b : _scrubbedCrumb(b)).toList();
+    event.breadcrumbs = crumbs.map((b) => b.data == null ? b : _scrubbedCrumb(b)).toList();
   }
   return event;
 }

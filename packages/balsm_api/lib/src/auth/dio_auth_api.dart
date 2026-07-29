@@ -30,54 +30,39 @@ class DioAuthApi implements AuthApi {
       _post(ApiRoutes.auth_otp_request, request.toJson(), cancelToken: cancelToken);
 
   @override
-  Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request,
-          {CancelToken? cancelToken}) async =>
-      AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.auth_otp_verify, request.toJson(), cancelToken: cancelToken));
+  Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request, {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(await _post(ApiRoutes.auth_otp_verify, request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request,
-          {CancelToken? cancelToken}) async =>
-      AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.auth_google, request.toJson(), cancelToken: cancelToken));
+  Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request, {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(await _post(ApiRoutes.auth_google, request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<AuthTokensResponse> signInWithApple(AppleSignInRequest request,
-          {CancelToken? cancelToken}) async =>
-      AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.auth_apple, request.toJson(), cancelToken: cancelToken));
+  Future<AuthTokensResponse> signInWithApple(AppleSignInRequest request, {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(await _post(ApiRoutes.auth_apple, request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<void> signOut({CancelToken? cancelToken}) =>
-      _post(ApiRoutes.auth_sign_out, {}, cancelToken: cancelToken);
+  Future<void> signOut({CancelToken? cancelToken}) => _post(ApiRoutes.auth_sign_out, {}, cancelToken: cancelToken);
 
   @override
-  Future<RefreshedTokensResponse> refresh(RefreshTokenRequest request,
-          {CancelToken? cancelToken}) async =>
+  Future<RefreshedTokensResponse> refresh(RefreshTokenRequest request, {CancelToken? cancelToken}) async =>
+      RefreshedTokensResponse.fromJson(await _post(ApiRoutes.auth_refresh, request.toJson(), cancelToken: cancelToken));
+
+  @override
+  Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request, {CancelToken? cancelToken}) async =>
       RefreshedTokensResponse.fromJson(
-          await _post(ApiRoutes.auth_refresh, request.toJson(), cancelToken: cancelToken));
+          await _post(ApiRoutes.auth_recovery_claim, request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request,
-          {CancelToken? cancelToken}) async =>
-      RefreshedTokensResponse.fromJson(await _post(ApiRoutes.auth_recovery_claim,
-          request.toJson(), cancelToken: cancelToken));
+  Future<AuthTokensResponse> passwordSignIn(PasswordSignInRequest request, {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(
+          await _post(ApiRoutes.auth_password_sign_in, request.toJson(), cancelToken: cancelToken));
 
   @override
-  Future<AuthTokensResponse> passwordSignIn(PasswordSignInRequest request,
-          {CancelToken? cancelToken}) async =>
-      AuthTokensResponse.fromJson(await _post(
-          ApiRoutes.auth_password_sign_in, request.toJson(),
-          cancelToken: cancelToken));
-
-  @override
-  Future<void> setPassword(SetPasswordRequest request,
-          {CancelToken? cancelToken}) =>
+  Future<void> setPassword(SetPasswordRequest request, {CancelToken? cancelToken}) =>
       _post(ApiRoutes.auth_password, request.toJson(), cancelToken: cancelToken);
 
   @override
-  Future<void> resetPassword(ResetPasswordRequest request,
-          {CancelToken? cancelToken}) =>
-      _post(ApiRoutes.auth_password_reset, request.toJson(),
-          cancelToken: cancelToken);
+  Future<void> resetPassword(ResetPasswordRequest request, {CancelToken? cancelToken}) =>
+      _post(ApiRoutes.auth_password_reset, request.toJson(), cancelToken: cancelToken);
 }

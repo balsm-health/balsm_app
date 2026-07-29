@@ -40,8 +40,7 @@ class ApiRoutes {
   static const _emergency_qr = '/emergency-qr';
   static const emergency_qr_mint = '$_emergency_qr/mint';
   static const emergency_qr_revoke = '$_emergency_qr/revoke';
-  static String emergencyQrResolve(String tokenId) =>
-      '$_emergency_qr/resolve/$tokenId';
+  static String emergencyQrResolve(String tokenId) => '$_emergency_qr/resolve/$tokenId';
 
   // ── Sessions ──────────────────────────────────────────────────────────────
   static const _sessions = '/sessions';

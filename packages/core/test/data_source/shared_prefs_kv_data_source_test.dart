@@ -31,22 +31,18 @@ void main() {
   test('present-but-wrong-typed value throws StorageDecodeException', () async {
     final kv = await make({'n': 42});
     expect(() => kv.get<String>('n'), throwsA(isA<StorageDecodeException>()));
-    expect(() => kv.get<Map<String, dynamic>>('n'),
-        throwsA(isA<StorageDecodeException>()));
+    expect(() => kv.get<Map<String, dynamic>>('n'), throwsA(isA<StorageDecodeException>()));
   });
 
   test('corrupt json throws StorageDecodeException, not silent null', () async {
     final kv = await make({'j': '{not json'});
-    expect(() => kv.get<Map<String, dynamic>>('j'),
-        throwsA(isA<StorageDecodeException>()));
+    expect(() => kv.get<Map<String, dynamic>>('j'), throwsA(isA<StorageDecodeException>()));
   });
 
   test('unsupported put type throws StorageWriteException', () async {
     final kv = await make();
-    expect(() => kv.put('x', DateTime(2026)),
-        throwsA(isA<StorageWriteException>()));
+    expect(() => kv.put('x', DateTime(2026)), throwsA(isA<StorageWriteException>()));
   });
-
 
   test('exists / delete / clear', () async {
     final kv = await make({'a': 1, 'b': 2});
@@ -56,5 +52,4 @@ void main() {
     await kv.clear();
     expect(await kv.exists('b'), isFalse);
   });
-
 }

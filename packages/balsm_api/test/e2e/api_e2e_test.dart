@@ -26,14 +26,11 @@ import 'package:test/test.dart';
 ///   E2E_COUNTRY    ISO country code            (default EG)
 void main() {
   final baseUrl = Platform.environment['E2E_BASE_URL'];
-  final skip = (baseUrl == null || baseUrl.isEmpty)
-      ? 'set E2E_BASE_URL to run live API E2E'
-      : null;
+  final skip = (baseUrl == null || baseUrl.isEmpty) ? 'set E2E_BASE_URL to run live API E2E' : null;
 
   final email = Platform.environment['E2E_EMAIL'] ?? 'e2e-suite@example.com';
   final otp = Platform.environment['E2E_OTP'] ?? '123456';
-  final deviceId = Platform.environment['E2E_DEVICE_ID'] ??
-      '0b1e5c00-0000-4000-8000-00000000e2e5';
+  final deviceId = Platform.environment['E2E_DEVICE_ID'] ?? '0b1e5c00-0000-4000-8000-00000000e2e5';
   final country = Platform.environment['E2E_COUNTRY'] ?? 'EG';
   final deviceLabel = 'e2e-suite';
 
@@ -135,8 +132,7 @@ void main() {
       expect(avail.available, isA<bool>());
 
       // PUT /account/language — write, then read back to confirm it persisted.
-      await account.changeLanguage(
-          const ChangeLanguageRequest(preferredLanguage: 'en'));
+      await account.changeLanguage(const ChangeLanguageRequest(preferredLanguage: 'en'));
       final after = await account.getSelf();
       expect(after!.preferredLanguage, 'en');
     }, skip: skip);

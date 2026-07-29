@@ -14,8 +14,7 @@ class AuthTokensResponse {
   final String userId;
   final bool isNewUser;
 
-  factory AuthTokensResponse.fromJson(Map<String, dynamic> json) =>
-      AuthTokensResponse(
+  factory AuthTokensResponse.fromJson(Map<String, dynamic> json) => AuthTokensResponse(
         accessToken: json['access_token'] as String,
         refreshToken: json['refresh_token'] as String,
         userId: json['user_id'] as String,
@@ -32,8 +31,7 @@ class RefreshedTokensResponse {
   final String accessToken;
   final String refreshToken;
 
-  factory RefreshedTokensResponse.fromJson(Map<String, dynamic> json) =>
-      RefreshedTokensResponse(
+  factory RefreshedTokensResponse.fromJson(Map<String, dynamic> json) => RefreshedTokensResponse(
         accessToken: json['access_token'] as String,
         refreshToken: json['refresh_token'] as String,
       );

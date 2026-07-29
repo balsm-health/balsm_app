@@ -7,6 +7,5 @@ class CheckInId extends UniqueId {
   const CheckInId.empty() : super.empty();
   CheckInId.uuid() : super.uuid('chk-');
 
-  static CheckInId? fromString(String? value) =>
-      value?.mapNotNull((v) => CheckInId.value(v));
+  static CheckInId? fromString(String? value) => value?.mapNotNull((v) => CheckInId.value(v));
 }

@@ -47,8 +47,7 @@ class DriveBackupAdapter implements BackupAdapter {
     final api = await _api();
     final id = await _findFile(api, key);
     if (id == null) return null;
-    final media = await api.files
-        .get(id, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
+    final media = await api.files.get(id, downloadOptions: drive.DownloadOptions.fullMedia) as drive.Media;
     final chunks = await media.stream.toList();
     return Uint8List.fromList(chunks.expand((c) => c).toList());
   }

@@ -33,8 +33,7 @@ class BalsmRoundButton extends StatefulWidget {
   State<BalsmRoundButton> createState() => _BalsmRoundButtonState();
 }
 
-class _BalsmRoundButtonState extends State<BalsmRoundButton>
-    with SingleTickerProviderStateMixin {
+class _BalsmRoundButtonState extends State<BalsmRoundButton> with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
 
@@ -90,13 +89,9 @@ class _BalsmRoundButtonState extends State<BalsmRoundButton>
             width: widget.size,
             height: widget.size,
             decoration: BoxDecoration(
-              color: isGhost
-                  ? Colors.transparent
-                  : (_pressed ? BalsmColors.ink100 : BalsmColors.ink50),
+              color: isGhost ? Colors.transparent : (_pressed ? BalsmColors.ink100 : BalsmColors.ink50),
               borderRadius: BorderRadius.circular(BalsmRadius.pill),
-              border: isGhost
-                  ? null
-                  : Border.all(color: BalsmColors.border),
+              border: isGhost ? null : Border.all(color: BalsmColors.border),
             ),
             child: widget.icon,
           ),

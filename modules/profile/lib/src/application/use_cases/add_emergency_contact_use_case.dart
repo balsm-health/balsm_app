@@ -97,8 +97,7 @@ class AddEmergencyContactUseCase {
   }
 }
 
-final addEmergencyContactUseCaseProvider =
-    Provider<AddEmergencyContactUseCase>((ref) {
+final addEmergencyContactUseCaseProvider = Provider<AddEmergencyContactUseCase>((ref) {
   return AddEmergencyContactUseCase(
     dao: ref.watch(profileDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),

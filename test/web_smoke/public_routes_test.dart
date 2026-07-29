@@ -8,16 +8,14 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('emergency public route renders without auth redirect',
-      (tester) async {
+  testWidgets('emergency public route renders without auth redirect', (tester) async {
     // TODO(T180): pump the production GoRouter at '/emergency/<token>#k=<key>'
     // with an UNAUTHENTICATED session and assert the emergency view (not the
     // login screen) is shown — i.e. redirect guard must allow this public path.
     // Requires: router fixture + EmergencyPublicScreen.
   }, skip: true);
 
-  testWidgets('account/delete public route renders without auth redirect',
-      (tester) async {
+  testWidgets('account/delete public route renders without auth redirect', (tester) async {
     // TODO(T180): pump the production GoRouter at '/account/delete' with an
     // UNAUTHENTICATED session and assert the deletion confirmation view is
     // shown (public deep link from email) rather than being redirected to auth.

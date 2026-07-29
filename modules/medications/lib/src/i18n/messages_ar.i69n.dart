@@ -17,8 +17,7 @@ class Messages_ar extends Messages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'list':
@@ -44,8 +43,7 @@ class ListMessages_ar extends ListMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'empty':
@@ -63,8 +61,7 @@ class TodayMessages_ar extends TodayMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -85,8 +82,7 @@ class OutcomeMessages_ar extends OutcomeMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'taken':
@@ -110,8 +106,7 @@ class NotificationMessages_ar extends NotificationMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'body':

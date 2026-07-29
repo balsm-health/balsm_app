@@ -33,16 +33,14 @@ class Money extends ValueObject {
 
   void _assertSameCurrency(Money other) {
     if (other.currency != currency) {
-      throw ArgumentError(
-          'currency mismatch: ${currency.value} vs ${other.currency.value}');
+      throw ArgumentError('currency mismatch: ${currency.value} vs ${other.currency.value}');
     }
   }
 
   /// `EGP 12.50` — symbol/format is a presentation concern; this is a debug
   /// form.
   @override
-  String toString() =>
-      '${currency.value} ${amount.toStringAsFixed(currency.minorUnitDigits)}';
+  String toString() => '${currency.value} ${amount.toStringAsFixed(currency.minorUnitDigits)}';
 
   @override
   List<Object?> get props => [currency, minorUnits];

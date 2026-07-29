@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(authStringsProvider);
 /// ```
-final authStringsProvider =
-    LocalizationUtil.getProvider<Messages>(authStrings);
+final authStringsProvider = LocalizationUtil.getProvider<Messages>(authStrings);

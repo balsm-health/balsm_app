@@ -28,12 +28,10 @@ class PublicEmergencyResolveScreen extends ConsumerStatefulWidget {
   final String? keyOverride;
 
   @override
-  ConsumerState<PublicEmergencyResolveScreen> createState() =>
-      _PublicEmergencyResolveScreenState();
+  ConsumerState<PublicEmergencyResolveScreen> createState() => _PublicEmergencyResolveScreenState();
 }
 
-class _PublicEmergencyResolveScreenState
-    extends ConsumerState<PublicEmergencyResolveScreen> {
+class _PublicEmergencyResolveScreenState extends ConsumerState<PublicEmergencyResolveScreen> {
   late final Future<AppResult<EmergencyCardSnapshot>> _future;
 
   @override
@@ -101,8 +99,7 @@ class _UnavailableView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.qr_code_2_outlined,
-                size: 56, color: BalsmColors.ink400),
+            const Icon(Icons.qr_code_2_outlined, size: 56, color: BalsmColors.ink400),
             const SizedBox(height: 16),
             Text(
               message,
@@ -149,8 +146,7 @@ class _ResolvedView extends StatelessWidget {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
                 color: BalsmColors.dangerBg,
                 borderRadius: BorderRadius.circular(BalsmRadius.md),

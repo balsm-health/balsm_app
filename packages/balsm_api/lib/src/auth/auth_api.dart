@@ -14,38 +14,31 @@ abstract class AuthApi {
 
   /// POST /auth/otp/verify — 423 lockout surfaces code 'account_locked'
   /// with [ApiException.retryAfterSeconds] from the Retry-After header.
-  Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request,
-      {CancelToken? cancelToken});
+  Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request, {CancelToken? cancelToken});
 
   /// POST /auth/google
-  Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request,
-      {CancelToken? cancelToken});
+  Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request, {CancelToken? cancelToken});
 
   /// POST /auth/apple
-  Future<AuthTokensResponse> signInWithApple(AppleSignInRequest request,
-      {CancelToken? cancelToken});
+  Future<AuthTokensResponse> signInWithApple(AppleSignInRequest request, {CancelToken? cancelToken});
 
   /// POST /auth/sign-out
   Future<void> signOut({CancelToken? cancelToken});
 
   /// POST /auth/refresh
-  Future<RefreshedTokensResponse> refresh(RefreshTokenRequest request,
-      {CancelToken? cancelToken});
+  Future<RefreshedTokensResponse> refresh(RefreshTokenRequest request, {CancelToken? cancelToken});
 
   /// POST /auth/recovery/claim
-  Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request,
-      {CancelToken? cancelToken});
+  Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request, {CancelToken? cancelToken});
 
   /// POST /auth/password/sign-in — email + password. Uniform 401 (code
   /// 'unauthorized') on unknown account / no password / wrong password.
-  Future<AuthTokensResponse> passwordSignIn(PasswordSignInRequest request,
-      {CancelToken? cancelToken});
+  Future<AuthTokensResponse> passwordSignIn(PasswordSignInRequest request, {CancelToken? cancelToken});
 
   /// POST /auth/password — set/change the signed-in user's password (auth'd).
   Future<void> setPassword(SetPasswordRequest request, {CancelToken? cancelToken});
 
   /// POST /auth/password/reset — reset with the emailed OTP code as the reset
   /// token (send it first via [requestOtp]).
-  Future<void> resetPassword(ResetPasswordRequest request,
-      {CancelToken? cancelToken});
+  Future<void> resetPassword(ResetPasswordRequest request, {CancelToken? cancelToken});
 }

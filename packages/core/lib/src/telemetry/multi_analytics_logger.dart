@@ -16,8 +16,7 @@ class MultiAnalyticsLogger implements AnalyticsLogger {
   }
 
   @override
-  void log(String message,
-      {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {
+  void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {
     for (final p in providers) {
       p.log(message, level: level, props: props);
     }
@@ -25,16 +24,9 @@ class MultiAnalyticsLogger implements AnalyticsLogger {
 
   @override
   void logError(Object error,
-      {StackTrace? stackTrace,
-      String? message,
-      Map<String, Object?>? context,
-      bool fatal = false}) {
+      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {
     for (final p in providers) {
-      p.logError(error,
-          stackTrace: stackTrace,
-          message: message,
-          context: context,
-          fatal: fatal);
+      p.logError(error, stackTrace: stackTrace, message: message, context: context, fatal: fatal);
     }
   }
 

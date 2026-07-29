@@ -3,8 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 enum NotificationPermissionState { granted, denied, provisional, notRequested }
 
-final notificationPermissionStateProvider =
-    StateNotifierProvider<_PermissionNotifier, NotificationPermissionState>(
+final notificationPermissionStateProvider = StateNotifierProvider<_PermissionNotifier, NotificationPermissionState>(
   (ref) => _PermissionNotifier(),
 );
 

@@ -100,8 +100,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           onRetry: () => ref.invalidate(todayDosesProvider),
         ),
         data: (doses) {
-          final hasMissed =
-              doses.any((d) => d.event?.outcome == DoseOutcome.missed);
+          final hasMissed = doses.any((d) => d.event?.outcome == DoseOutcome.missed);
           // Schedule a scroll-to-highlight once the list is laid out.
           if (_highlighted != null) _scrollToHighlight();
 
@@ -135,8 +134,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                       onSnooze: () => _record(
                         d,
                         DoseOutcome.snoozed,
-                        snoozeUntil:
-                            DateTime.now().add(const Duration(minutes: 30)),
+                        snoozeUntil: DateTime.now().add(const Duration(minutes: 30)),
                       ),
                     ),
                   );
@@ -198,15 +196,11 @@ class _DoseTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: highlighted ? BalsmColors.petalBlue50 : Colors.transparent,
         borderRadius: BorderRadius.circular(BalsmRadius.lg),
-        border: highlighted
-            ? Border.all(color: BalsmColors.petalBlue)
-            : null,
+        border: highlighted ? Border.all(color: BalsmColors.petalBlue) : null,
       ),
       child: BalsmMedRow(
         name: med.name,
-        dose: dose.medication.doseAmount == null
-            ? time
-            : '${med.doseAmount} · $time',
+        dose: dose.medication.doseAmount == null ? time : '${med.doseAmount} · $time',
         tone: med.isControlled ? BalsmMedTone.controlled : BalsmMedTone.info,
         showDivider: false,
         trailing: dose.isPending

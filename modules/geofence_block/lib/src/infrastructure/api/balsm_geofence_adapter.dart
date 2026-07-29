@@ -68,10 +68,7 @@ class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
 
   Future<List<String>> _fetch() async {
     final res = await _api.getDeniedCountries();
-    return res.deniedCodes
-        .map((e) => e.trim().toUpperCase())
-        .where((e) => e.isNotEmpty)
-        .toList(growable: false);
+    return res.deniedCodes.map((e) => e.trim().toUpperCase()).where((e) => e.isNotEmpty).toList(growable: false);
   }
 
   Future<_CachedDenyList?> _readCache() async {
@@ -79,12 +76,9 @@ class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
     if (raw == null || raw.isEmpty) return null;
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
-      final fetchedAt =
-          DateTime.tryParse(json['fetched_at'] as String? ?? '');
+      final fetchedAt = DateTime.tryParse(json['fetched_at'] as String? ?? '');
       if (fetchedAt == null) return null;
-      final codes = (json['codes'] as List? ?? const [])
-          .map((e) => e.toString())
-          .toList(growable: false);
+      final codes = (json['codes'] as List? ?? const []).map((e) => e.toString()).toList(growable: false);
       return _CachedDenyList(codes: codes, fetchedAt: fetchedAt);
     } catch (_) {
       return null;
@@ -106,13 +100,11 @@ class _CachedDenyList {
   final List<String> codes;
   final DateTime fetchedAt;
 
-  bool get isFresh =>
-      DateTime.now().toUtc().difference(fetchedAt.toUtc()) < _cacheTtl;
+  bool get isFresh => DateTime.now().toUtc().difference(fetchedAt.toUtc()) < _cacheTtl;
 }
 
 /// Riverpod provider exposing the geofence deny-list repository.
-final deniedCountriesRepositoryProvider =
-    Provider<ReadDeniedCountriesRepository>((ref) {
+final deniedCountriesRepositoryProvider = Provider<ReadDeniedCountriesRepository>((ref) {
   return BalsmGeofenceAdapter(
     api: ref.watch(geofenceApiProvider),
     storage: ref.watch(secureStorageProvider),

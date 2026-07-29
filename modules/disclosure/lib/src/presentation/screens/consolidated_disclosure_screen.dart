@@ -7,8 +7,7 @@ import '../../infrastructure/drift/disclosure_dao.dart';
 import '../i18n/i18n.dart';
 
 /// Riverpod provider for [AcceptDisclosureUseCase].
-final acceptDisclosureUseCaseProvider =
-    Provider<AcceptDisclosureUseCase>((ref) {
+final acceptDisclosureUseCaseProvider = Provider<AcceptDisclosureUseCase>((ref) {
   final db = ref.watch(appDatabaseProvider);
   final api = ref.watch(disclosureApiProvider);
   final bus = ref.watch(eventBusProvider);
@@ -42,12 +41,10 @@ class ConsolidatedDisclosureScreen extends ConsumerStatefulWidget {
   final String preferredLanguage;
 
   @override
-  ConsumerState<ConsolidatedDisclosureScreen> createState() =>
-      _ConsolidatedDisclosureScreenState();
+  ConsumerState<ConsolidatedDisclosureScreen> createState() => _ConsolidatedDisclosureScreenState();
 }
 
-class _ConsolidatedDisclosureScreenState
-    extends ConsumerState<ConsolidatedDisclosureScreen> {
+class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDisclosureScreen> {
   final _scrollController = ScrollController();
   bool _scrolledToEnd = false;
   bool _loading = false;
@@ -67,18 +64,14 @@ class _ConsolidatedDisclosureScreenState
   }
 
   void _onScroll() {
-    if (_scrollController.position.atEdge &&
-        _scrollController.position.pixels > 0 &&
-        !_scrolledToEnd) {
+    if (_scrollController.position.atEdge && _scrollController.position.pixels > 0 && !_scrolledToEnd) {
       setState(() => _scrolledToEnd = true);
     }
   }
 
   bool get _isRtl {
     final lang = widget.preferredLanguage.toLowerCase();
-    return lang.startsWith('ar') ||
-        lang.startsWith('he') ||
-        lang.startsWith('fa');
+    return lang.startsWith('ar') || lang.startsWith('he') || lang.startsWith('fa');
   }
 
   Future<void> _accept() async {
@@ -88,8 +81,7 @@ class _ConsolidatedDisclosureScreenState
     });
 
     final registry = ref.read(countryRegistryProvider);
-    final supervisoryAuthority =
-        registry.supervisoryAuthority(widget.countryCode);
+    final supervisoryAuthority = registry.supervisoryAuthority(widget.countryCode);
 
     final useCase = ref.read(acceptDisclosureUseCaseProvider);
     final result = await useCase.execute(
@@ -122,8 +114,7 @@ class _ConsolidatedDisclosureScreenState
     final m = disclosureMessagesOf(widget.preferredLanguage);
 
     final registry = ref.watch(countryRegistryProvider);
-    final supervisoryAuthority =
-        registry.supervisoryAuthority(widget.countryCode);
+    final supervisoryAuthority = registry.supervisoryAuthority(widget.countryCode);
 
     return Directionality(
       textDirection: _isRtl ? TextDirection.rtl : TextDirection.ltr,
@@ -140,10 +131,7 @@ class _ConsolidatedDisclosureScreenState
                   children: [
                     Text(
                       m.title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(

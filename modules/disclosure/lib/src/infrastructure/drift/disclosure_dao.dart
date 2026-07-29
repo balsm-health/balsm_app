@@ -70,8 +70,7 @@ class DisclosureDao {
         disclosureId: DisclosureId.value(row.read<String>('disclosure_id')),
         version: row.read<String>('version'),
         countryCodeAtAccept: row.read<String>('country_code'),
-        supervisoryAuthorityNameAtAccept:
-            row.read<String>('supervisory_authority_name'),
+        supervisoryAuthorityNameAtAccept: row.read<String>('supervisory_authority_name'),
         preferredLanguageAtAccept: row.read<String>('preferred_language'),
         acceptedAt: DateTime.fromMillisecondsSinceEpoch(
           row.read<int>('accepted_at'),

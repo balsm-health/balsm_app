@@ -108,8 +108,7 @@ class MintEmergencyQrTokenUseCase {
   }
 }
 
-final mintEmergencyQrTokenUseCaseProvider =
-    Provider<MintEmergencyQrTokenUseCase>((ref) {
+final mintEmergencyQrTokenUseCaseProvider = Provider<MintEmergencyQrTokenUseCase>((ref) {
   return MintEmergencyQrTokenUseCase(
     api: ref.watch(emergencyQrApiProvider),
     snapshotReader: ref.watch(emergencySnapshotReaderProvider),

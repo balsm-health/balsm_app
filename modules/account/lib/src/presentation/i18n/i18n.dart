@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(accountStringsProvider);
 /// ```
-final accountStringsProvider =
-    LocalizationUtil.getProvider<Messages>(accountStrings);
+final accountStringsProvider = LocalizationUtil.getProvider<Messages>(accountStrings);

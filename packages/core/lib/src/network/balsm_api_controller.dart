@@ -12,8 +12,10 @@ import 'auth_interceptor.dart';
 class ServerReconfigured extends AppEvent {
   final ServerPreset preset;
   const ServerReconfigured(this.preset);
-  @override String get eventName => 'server_reconfigured';
-  @override Map<String, dynamic> toJson() => {'preset': preset.apiBaseUrl};
+  @override
+  String get eventName => 'server_reconfigured';
+  @override
+  Map<String, dynamic> toJson() => {'preset': preset.apiBaseUrl};
 }
 
 /// Flutter-side owner of the pure [BalsmApiClient]: applies persisted server
@@ -55,8 +57,7 @@ class BalsmApiController {
     // Attach the bearer token to authenticated requests + refresh-on-401.
     // Without this, no request carries a token and every authenticated
     // endpoint returns 401.
-    client.dio.interceptors
-        .add(AuthInterceptor(client: client, storage: storage, bus: bus));
+    client.dio.interceptors.add(AuthInterceptor(client: client, storage: storage, bus: bus));
     return BalsmApiController(
       client: client,
       store: ActiveServerStore(storage),

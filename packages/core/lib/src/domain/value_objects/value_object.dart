@@ -13,9 +13,7 @@ abstract class ValueObject {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ValueObject &&
-          other.runtimeType == runtimeType &&
-          _propsEqual(other.props, props));
+      (other is ValueObject && other.runtimeType == runtimeType && _propsEqual(other.props, props));
 
   @override
   int get hashCode => Object.hashAll([runtimeType, ...props]);

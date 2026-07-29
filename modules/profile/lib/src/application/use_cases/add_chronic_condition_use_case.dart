@@ -48,8 +48,7 @@ class AddChronicConditionUseCase {
 
     // G7: normalize + validate the optional ICD-10 code / onset year.
     final trimmedIcd10 = icd10Code?.trim();
-    final normalizedIcd10 =
-        (trimmedIcd10 == null || trimmedIcd10.isEmpty) ? null : trimmedIcd10;
+    final normalizedIcd10 = (trimmedIcd10 == null || trimmedIcd10.isEmpty) ? null : trimmedIcd10;
     if (normalizedIcd10 != null && normalizedIcd10.length > 10) {
       return AppResult.failure(
         const ValidationFailure('ICD-10 code must be 10 characters or fewer'),
@@ -104,8 +103,7 @@ class AddChronicConditionUseCase {
   }
 }
 
-final addChronicConditionUseCaseProvider =
-    Provider<AddChronicConditionUseCase>((ref) {
+final addChronicConditionUseCaseProvider = Provider<AddChronicConditionUseCase>((ref) {
   return AddChronicConditionUseCase(
     dao: ref.watch(profileDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),

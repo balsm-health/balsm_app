@@ -125,6 +125,5 @@ class Accent {
   static const violet = Accent(T.petalViolet, T.petalViolet600, T.petalViolet50, Color(0x42724DD0));
   static const mint = Accent(T.petalMint600, Color(0xFF2FA552), T.petalMint50, Color(0x4D55D77F));
 
-  List<BoxShadow> get boxShadow =>
-      [BoxShadow(color: shadow, blurRadius: 22, offset: const Offset(0, 8))];
+  List<BoxShadow> get boxShadow => [BoxShadow(color: shadow, blurRadius: 22, offset: const Offset(0, 8))];
 }

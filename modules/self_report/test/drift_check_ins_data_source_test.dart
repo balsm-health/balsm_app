@@ -26,8 +26,7 @@ void main() {
         note: 'felt tired',
       );
 
-  test('write → read round-trips mood, pain, regions, symptoms, vitals, note',
-      () async {
+  test('write → read round-trips mood, pain, regions, symptoms, vitals, note', () async {
     final c = sample('chk-1');
     await ds.put(c.id, c);
 
@@ -72,14 +71,11 @@ void main() {
     await ds.put(c.id, c);
     await ds.delete(c.id);
     expect(await ds.find(c.id), isNull);
-    final syms = await db
-        .customSelect('SELECT COUNT(*) c FROM check_in_symptom')
-        .getSingle();
+    final syms = await db.customSelect('SELECT COUNT(*) c FROM check_in_symptom').getSingle();
     expect(syms.read<int>('c'), 0);
   });
 
-  test('mutations with no active profile throw NoActiveProfileException',
-      () async {
+  test('mutations with no active profile throw NoActiveProfileException', () async {
     final signedOut = DriftCheckInsDataSource(db, () => null);
     expect(
       () => signedOut.put(CheckInId.value('x'), sample('x')),

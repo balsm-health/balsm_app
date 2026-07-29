@@ -43,10 +43,7 @@ class UniqueId {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is UniqueId &&
-          other.runtimeType == runtimeType &&
-          other.value == value);
+      identical(this, other) || (other is UniqueId && other.runtimeType == runtimeType && other.value == value);
 
   @override
   int get hashCode => value.hashCode;

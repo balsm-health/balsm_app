@@ -9,6 +9,5 @@ class UserId extends UniqueId {
   const UserId.empty() : super.empty();
   UserId.uuid() : super.uuid('usr-');
 
-  static UserId? fromString(String? value) =>
-      value?.mapNotNull((v) => UserId.value(v));
+  static UserId? fromString(String? value) => value?.mapNotNull((v) => UserId.value(v));
 }

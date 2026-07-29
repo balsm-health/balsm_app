@@ -35,9 +35,7 @@ class ScheduleConfig {
 
   @override
   bool operator ==(Object other) =>
-      other is ScheduleConfig &&
-      _listEquals(other.times, times) &&
-      _listEquals(other.days, days);
+      other is ScheduleConfig && _listEquals(other.times, times) && _listEquals(other.days, days);
 
   @override
   int get hashCode => Object.hash(

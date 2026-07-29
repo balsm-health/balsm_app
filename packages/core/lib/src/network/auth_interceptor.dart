@@ -67,8 +67,7 @@ class AuthInterceptor extends Interceptor {
       path == ApiRoutes.auth_recovery_claim;
 
   @override
-  Future<void> onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
+  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     if (!_isBootstrap(options.path)) {
       var token = await _storage.read(key: _kAccess);
       // Proactive refresh: renew at/near expiry before sending, so most requests
@@ -94,8 +93,7 @@ class AuthInterceptor extends Interceptor {
       payload = payload.padRight(payload.length + (4 - payload.length % 4) % 4, '=');
       final map = jsonDecode(utf8.decode(base64.decode(payload)));
       if (map is! Map || map['exp'] is! int) return false;
-      final expiry =
-          DateTime.fromMillisecondsSinceEpoch((map['exp'] as int) * 1000, isUtc: true);
+      final expiry = DateTime.fromMillisecondsSinceEpoch((map['exp'] as int) * 1000, isUtc: true);
       return expiry.difference(DateTime.now().toUtc()) <= _proactiveWindow;
     } catch (_) {
       return false;
@@ -103,12 +101,9 @@ class AuthInterceptor extends Interceptor {
   }
 
   @override
-  Future<void> onError(
-      DioException err, ErrorInterceptorHandler handler) async {
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
     final req = err.requestOptions;
-    if (err.response?.statusCode != 401 ||
-        _isBootstrap(req.path) ||
-        req.extra[_retriedFlag] == true) {
+    if (err.response?.statusCode != 401 || _isBootstrap(req.path) || req.extra[_retriedFlag] == true) {
       return handler.next(err);
     }
 
@@ -128,16 +123,12 @@ class AuthInterceptor extends Interceptor {
   /// Single-flight refresh: concurrent 401s await one in-flight refresh instead
   /// of each firing their own (which would rotate the refresh token N times and
   /// invalidate all but the last).
-  Future<String?> _refresh() => _inFlightRefresh ??=
-      _doRefresh().whenComplete(() => _inFlightRefresh = null);
+  Future<String?> _refresh() => _inFlightRefresh ??= _doRefresh().whenComplete(() => _inFlightRefresh = null);
 
   Future<String?> _doRefresh() async {
     final refresh = await _storage.read(key: _kRefresh);
     final deviceId = await _storage.read(key: _kDeviceId);
-    if (refresh == null ||
-        refresh.isEmpty ||
-        deviceId == null ||
-        deviceId.isEmpty) {
+    if (refresh == null || refresh.isEmpty || deviceId == null || deviceId.isEmpty) {
       await _signOut();
       return null;
     }
@@ -149,15 +140,11 @@ class AuthInterceptor extends Interceptor {
         data: {'refresh_token': refresh, 'device_id': deviceId},
       );
       final body = res.data ?? const <String, dynamic>{};
-      final data = body['data'] is Map<String, dynamic>
-          ? body['data'] as Map<String, dynamic>
-          : const <String, dynamic>{};
+      final data =
+          body['data'] is Map<String, dynamic> ? body['data'] as Map<String, dynamic> : const <String, dynamic>{};
       final access = data['access_token'] as String?;
       final rotated = data['refresh_token'] as String?;
-      if (access == null ||
-          access.isEmpty ||
-          rotated == null ||
-          rotated.isEmpty) {
+      if (access == null || access.isEmpty || rotated == null || rotated.isEmpty) {
         await _signOut();
         return null;
       }

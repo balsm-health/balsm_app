@@ -65,10 +65,7 @@ void main() {
       });
 
       test('has no empty translation values', () {
-        final empty = bundle.entries
-            .where((e) => (e.value as String).trim().isEmpty)
-            .map((e) => e.key)
-            .toList();
+        final empty = bundle.entries.where((e) => (e.value as String).trim().isEmpty).map((e) => e.key).toList();
         expect(empty, isEmpty, reason: 'Empty values for keys: $empty');
       });
     });

@@ -157,9 +157,7 @@ void main() {
     });
 
     test('display groups digits, phone stays LTR', () {
-      final p = (PhoneNumber.create(country: eg, raw: '1001234567')
-              as AppSuccess<PhoneNumber>)
-          .data;
+      final p = (PhoneNumber.create(country: eg, raw: '1001234567') as AppSuccess<PhoneNumber>).data;
       expect(p.display(), '+20 100 123 456 7');
     });
   });

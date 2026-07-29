@@ -101,13 +101,11 @@ class BalsmHeroCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  if (!isDone && ctaLabel != null)
-                    _CtaButton(label: ctaLabel!, onTap: onCta),
+                  if (!isDone && ctaLabel != null) _CtaButton(label: ctaLabel!, onTap: onCta),
                   if (isDone)
                     Row(
                       children: [
-                        Icon(Icons.check_circle_rounded,
-                            size: 18, color: BalsmColors.appAccent),
+                        Icon(Icons.check_circle_rounded, size: 18, color: BalsmColors.appAccent),
                         const SizedBox(width: 6),
                         Text(
                           ctaLabel ?? '',
@@ -118,8 +116,7 @@ class BalsmHeroCard extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        const Icon(Icons.chevron_right,
-                            size: 18, color: BalsmColors.fg4),
+                        const Icon(Icons.chevron_right, size: 18, color: BalsmColors.fg4),
                       ],
                     ),
                   if (clockMeta != null) ...[

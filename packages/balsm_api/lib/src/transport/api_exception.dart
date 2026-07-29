@@ -60,8 +60,7 @@ class ApiException implements Exception {
       code: code ?? codeForStatus(status),
       statusCode: status,
       serverMessage: message,
-      retryAfterSeconds:
-          retryAfterRaw == null ? null : int.tryParse(retryAfterRaw),
+      retryAfterSeconds: retryAfterRaw == null ? null : int.tryParse(retryAfterRaw),
     );
   }
 

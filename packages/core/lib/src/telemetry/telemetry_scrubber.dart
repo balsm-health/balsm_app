@@ -11,7 +11,6 @@ Map<String, dynamic> scrubTelemetry(Map<dynamic, dynamic>? data) {
   if (data == null || data.isEmpty) return const {};
   return {
     for (final e in data.entries)
-      e.key.toString():
-          kTelemetryAllowlist.contains(e.key.toString()) ? e.value : _redacted,
+      e.key.toString(): kTelemetryAllowlist.contains(e.key.toString()) ? e.value : _redacted,
   };
 }

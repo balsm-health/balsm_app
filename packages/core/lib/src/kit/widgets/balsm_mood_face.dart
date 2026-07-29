@@ -91,6 +91,5 @@ class _MoodFacePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_MoodFacePainter old) =>
-      old.mood != mood || old.selected != selected;
+  bool shouldRepaint(_MoodFacePainter old) => old.mood != mood || old.selected != selected;
 }

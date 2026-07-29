@@ -15,8 +15,7 @@ class RecordSource {
   bool get isSelf => value == 'self';
 
   @override
-  bool operator ==(Object other) =>
-      other is RecordSource && other.value == value;
+  bool operator ==(Object other) => other is RecordSource && other.value == value;
   @override
   int get hashCode => value.hashCode;
 }

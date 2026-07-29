@@ -30,9 +30,7 @@ class BackupService {
         _adapter = adapter,
         _storage = storage,
         _status = status {
-    _flushSub = _bus.events
-        .where((e) => e.eventName == 'backup_flush_requested')
-        .listen((_) => flush());
+    _flushSub = _bus.events.where((e) => e.eventName == 'backup_flush_requested').listen((_) => flush());
     _onlineSub = onlineStream?.listen((online) {
       if (online) _retryIfDirty();
     });
@@ -125,8 +123,7 @@ class BackupService {
     final last = await _storage.readToken(_kLast);
     final dirty = await _storage.readToken(_kDirty) == '1';
     final ts = last == null ? null : DateTime.tryParse(last);
-    _status.set(dirty ? SyncState.offline : (ts != null ? SyncState.synced : SyncState.idle),
-        lastSyncedAt: ts);
+    _status.set(dirty ? SyncState.offline : (ts != null ? SyncState.synced : SyncState.idle), lastSyncedAt: ts);
   }
 
   void dispose() {

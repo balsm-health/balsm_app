@@ -4,8 +4,22 @@ import 'package:custom_lint_builder/custom_lint_builder.dart';
 class NoModuleToModuleImports extends DartLintRule {
   NoModuleToModuleImports() : super(code: _code);
 
-  static const _modules = ['auth','disclosure','home','profile','emergency_card','medications','sessions','account','deletion','geofence_block'];
-  static const _code = LintCode(name: 'no_module_to_module_imports', problemMessage: 'Modules must not import other modules directly. Use core event bus or read-repository interfaces.');
+  static const _modules = [
+    'auth',
+    'disclosure',
+    'home',
+    'profile',
+    'emergency_card',
+    'medications',
+    'sessions',
+    'account',
+    'deletion',
+    'geofence_block'
+  ];
+  static const _code = LintCode(
+      name: 'no_module_to_module_imports',
+      problemMessage:
+          'Modules must not import other modules directly. Use core event bus or read-repository interfaces.');
 
   /// Package name of the file under test — feature modules live in `modules/`.
   static String _pkgOf(String path) {

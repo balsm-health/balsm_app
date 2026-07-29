@@ -251,9 +251,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(t[1] as IconData,
-                        size: 14,
-                        color: on ? BalsmColors.appAccent : BalsmColors.fg3),
+                    Icon(t[1] as IconData, size: 14, color: on ? BalsmColors.appAccent : BalsmColors.fg3),
                     const SizedBox(width: 5),
                     Flexible(
                       child: Text(
@@ -287,9 +285,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         _eyebrow('Backend'),
         ...cfg.servers.map((p) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _presetCard(p,
-                  active: _currentBaseUrl == p.apiBaseUrl,
-                  onTap: () => _onPresetTap(p)),
+              child: _presetCard(p, active: _currentBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
             )),
         if (_store.savedEnvs.isNotEmpty) ...[
           _savedHeader(),
@@ -304,8 +300,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   List<Widget> _readOnlyBody(FlavorConfig cfg) {
     final active = cfg.servers.firstWhere(
       (p) => p.apiBaseUrl == _currentBaseUrl,
-      orElse: () =>
-          ServerPreset(label: _activeLabel(cfg), apiBaseUrl: _currentBaseUrl),
+      orElse: () => ServerPreset(label: _activeLabel(cfg), apiBaseUrl: _currentBaseUrl),
     );
     return [
       _eyebrow('Backend'),
@@ -360,8 +355,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                   Container(
                     width: 10,
                     height: 10,
-                    decoration: const BoxDecoration(
-                        color: Color(0xFF6B6B60), shape: BoxShape.circle),
+                    decoration: const BoxDecoration(color: Color(0xFF6B6B60), shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 13),
                   Expanded(
@@ -373,25 +367,19 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                             style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: active
-                                    ? const Color(0xFF3A3A34)
-                                    : BalsmColors.fg1)),
+                                color: active ? const Color(0xFF3A3A34) : BalsmColors.fg1)),
                         const SizedBox(height: 1),
                         Text(se.url,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontFamily: _kMono,
-                                fontSize: 11,
-                                color: Color(0xFF6B6B60))),
+                            style: const TextStyle(fontFamily: _kMono, fontSize: 11, color: Color(0xFF6B6B60))),
                       ],
                     ),
                   ),
                   if (active)
                     const Padding(
                       padding: EdgeInsets.only(right: 4),
-                      child: Icon(Icons.check_circle,
-                          size: 18, color: Color(0xFF6B6B60)),
+                      child: Icon(Icons.check_circle, size: 18, color: Color(0xFF6B6B60)),
                     ),
                   _tinyBtn('edit', () {
                     setState(() {
@@ -430,10 +418,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           ),
           child: Text(label,
               style: const TextStyle(
-                  fontFamily: _kMono,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF6B6B60))),
+                  fontFamily: _kMono, fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF6B6B60))),
         ),
       );
 
@@ -456,8 +441,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               children: [
                 TextButton(
                   onPressed: () => setState(() => _editingId = null),
-                  child: const Text('Cancel',
-                      style: TextStyle(color: BalsmColors.fg3)),
+                  child: const Text('Cancel', style: TextStyle(color: BalsmColors.fg3)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -482,8 +466,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       );
 
   // ── Preset card ─────────────────────────────────────────────────────────────
-  Widget _presetCard(ServerPreset p,
-      {required bool active, VoidCallback? onTap}) {
+  Widget _presetCard(ServerPreset p, {required bool active, VoidCallback? onTap}) {
     final es = _EnvStyle.of(p.label);
     final card = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -521,9 +504,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                   children: [
                     Text(p.label,
                         style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: active ? es.fg : BalsmColors.fg1)),
+                            fontSize: 14, fontWeight: FontWeight.w700, color: active ? es.fg : BalsmColors.fg1)),
                     if (es.isProd) ...[
                       const SizedBox(width: 7),
                       _liveBadge(),
@@ -534,10 +515,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 Text(p.apiBaseUrl,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontFamily: _kMono,
-                        fontSize: 11,
-                        color: active ? es.fg : BalsmColors.fg4)),
+                    style: TextStyle(fontFamily: _kMono, fontSize: 11, color: active ? es.fg : BalsmColors.fg4)),
               ],
             ),
           ),
@@ -550,8 +528,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       ),
     );
     if (onTap == null) return card;
-    return GestureDetector(
-        onTap: onTap, behavior: HitTestBehavior.opaque, child: card);
+    return GestureDetector(onTap: onTap, behavior: HitTestBehavior.opaque, child: card);
   }
 
   Widget _liveBadge() => Container(
@@ -561,11 +538,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           borderRadius: BorderRadius.circular(3),
         ),
         child: const Text('LIVE',
-            style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-                color: BalsmColors.danger)),
+            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: BalsmColors.danger)),
       );
 
   // ── Custom environment (name + url) ─────────────────────────────────────────
@@ -587,10 +560,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               Icon(Icons.add, size: 16, color: BalsmColors.fg3),
               SizedBox(width: 8),
               Text('Add custom environment',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: BalsmColors.fg3)),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.fg3)),
             ],
           ),
         ),
@@ -607,11 +577,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('NEW ENVIRONMENT',
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.0,
-                    color: BalsmColors.fg3)),
+                style:
+                    TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.0, color: BalsmColors.fg3)),
             const SizedBox(height: 10),
             _monoField('name', _nameCtrl, hint: 'My Staging'),
             const SizedBox(height: 8),
@@ -622,8 +589,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               children: [
                 TextButton(
                   onPressed: () => setState(() => _addingCustom = false),
-                  child: const Text('Cancel',
-                      style: TextStyle(color: BalsmColors.fg3)),
+                  child: const Text('Cancel', style: TextStyle(color: BalsmColors.fg3)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -641,14 +607,11 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         ),
       );
 
-  Widget _monoField(String label, TextEditingController ctrl, {String? hint}) =>
-      Row(
+  Widget _monoField(String label, TextEditingController ctrl, {String? hint}) => Row(
         children: [
           SizedBox(
             width: 34,
-            child: Text(label,
-                style: const TextStyle(
-                    fontFamily: _kMono, fontSize: 10, color: BalsmColors.fg3)),
+            child: Text(label, style: const TextStyle(fontFamily: _kMono, fontSize: 10, color: BalsmColors.fg3)),
           ),
           Expanded(
             child: TextField(
@@ -659,8 +622,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 hintText: hint,
                 filled: true,
                 fillColor: BalsmColors.surface,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
                   borderSide: const BorderSide(color: BalsmColors.border),
@@ -686,23 +648,18 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.warning_amber_rounded,
-                    size: 18, color: BalsmColors.danger),
+                Icon(Icons.warning_amber_rounded, size: 18, color: BalsmColors.danger),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Switch to production?',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF7A2A20))),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF7A2A20))),
                       SizedBox(height: 3),
                       Text(
                         'Real patient data. Real consequences. Any action here is permanent.',
-                        style: TextStyle(
-                            fontSize: 12, height: 1.5, color: Color(0xFF9B3A2F)),
+                        style: TextStyle(fontSize: 12, height: 1.5, color: Color(0xFF9B3A2F)),
                       ),
                     ],
                   ),
@@ -759,8 +716,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             Expanded(
               child: Text(
                 'Read-only in production. Server switching is disabled.',
-                style:
-                    TextStyle(fontSize: 11, height: 1.5, color: BalsmColors.fg3),
+                style: TextStyle(fontSize: 11, height: 1.5, color: BalsmColors.fg3),
               ),
             ),
           ],
@@ -781,8 +737,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             ),
             child: Column(
               children: [
-                ...kDevFlags.indexed
-                    .map((e) => _flagRow(e.$2, first: e.$1 == 0)),
+                ...kDevFlags.indexed.map((e) => _flagRow(e.$2, first: e.$1 == 0)),
               ],
             ),
           ),
@@ -798,9 +753,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         decoration: BoxDecoration(
           color: on ? BalsmColors.appAccent50 : Colors.transparent,
-          border: first
-              ? null
-              : const Border(top: BorderSide(color: BalsmColors.ink100)),
+          border: first ? null : const Border(top: BorderSide(color: BalsmColors.ink100)),
         ),
         child: Row(
           children: [
@@ -809,14 +762,9 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(f.label,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: BalsmColors.fg1)),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.fg1)),
                   const SizedBox(height: 1),
-                  Text(f.desc,
-                      style:
-                          const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
+                  Text(f.desc, style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
                 ],
               ),
             ),
@@ -841,11 +789,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 6),
               child: Text('// build',
-                  style: TextStyle(
-                      fontFamily: _kMono,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: _kTermAccent)),
+                  style: TextStyle(fontFamily: _kMono, fontSize: 11, fontWeight: FontWeight.w700, color: _kTermAccent)),
             ),
             _termRow('app', cfg.appName),
             _termRow('brand', cfg.brand.name),
@@ -862,18 +806,11 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           children: [
             SizedBox(
               width: 60,
-              child: Text(k,
-                  style: const TextStyle(
-                      fontFamily: _kMono,
-                      fontSize: 10.5,
-                      color: Color(0xFF6E6E64))),
+              child: Text(k, style: const TextStyle(fontFamily: _kMono, fontSize: 10.5, color: Color(0xFF6E6E64))),
             ),
             Expanded(
               child: SelectableText(v,
-                  style: const TextStyle(
-                      fontFamily: _kMono,
-                      fontSize: 10.5,
-                      color: Color(0xFFC8C8BE))),
+                  style: const TextStyle(fontFamily: _kMono, fontSize: 10.5, color: Color(0xFFC8C8BE))),
             ),
           ],
         ),
@@ -903,7 +840,9 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       _eyebrow('Encryption key'),
       _encKeyCard(),
       const SizedBox(height: 4),
-      if (!canExport) _readOnlyNote() else ...[
+      if (!canExport)
+        _readOnlyNote()
+      else ...[
         _eyebrow('Export'),
         _exportButton(
           icon: Icons.lock_outline,
@@ -936,17 +875,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             children: [
               Row(
                 children: [
-                  Container(
-                      width: 7,
-                      height: 7,
-                      decoration:
-                          BoxDecoration(color: dot, shape: BoxShape.circle)),
+                  Container(width: 7, height: 7, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
                   const SizedBox(width: 6),
                   Text(label,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: BalsmColors.fg3)),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: BalsmColors.fg3)),
                 ],
               ),
               const SizedBox(height: 4),
@@ -965,8 +897,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Widget _encKeyCard() => Container(
         margin: const EdgeInsets.only(top: 8, bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration:
-            BoxDecoration(color: _kTermBg, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: _kTermBg, borderRadius: BorderRadius.circular(10)),
         child: Row(
           children: [
             const Icon(Icons.vpn_key, size: 14, color: _kTermAccent),
@@ -976,8 +907,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 _store.encKey.isEmpty ? '…' : _store.encKey,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontFamily: _kMono, fontSize: 11, color: Color(0xFFC8C8BE)),
+                style: const TextStyle(fontFamily: _kMono, fontSize: 11, color: Color(0xFFC8C8BE)),
               ),
             ),
             GestureDetector(
@@ -987,12 +917,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                    color: const Color(0x14FFFFFF),
-                    borderRadius: BorderRadius.circular(5)),
-                child: const Text('copy',
-                    style: TextStyle(
-                        fontFamily: _kMono, fontSize: 10, color: Color(0xFF888888))),
+                decoration: BoxDecoration(color: const Color(0x14FFFFFF), borderRadius: BorderRadius.circular(5)),
+                child: const Text('copy', style: TextStyle(fontFamily: _kMono, fontSize: 10, color: Color(0xFF888888))),
               ),
             ),
           ],
@@ -1014,21 +940,15 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             Container(
               width: 34,
               height: 34,
-              decoration: BoxDecoration(
-                  color: iconBg, borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
               child: Icon(icon, size: 16, color: iconColor),
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: BalsmColors.fg1)),
-                Text(subtitle,
-                    style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: BalsmColors.fg1)),
+                Text(subtitle, style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
               ],
             ),
           ],
@@ -1038,18 +958,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Widget _sentryButton(FlavorConfig cfg) {
     final s = _sendStatus;
     final (bg, ic, icColor, title) = switch (s) {
-      'sent' => (
-          BalsmColors.petalMint50,
-          Icons.check,
-          BalsmColors.petalMint,
-          'Sent to Sentry!'
-        ),
-      'error' => (
-          BalsmColors.dangerBg,
-          Icons.warning_amber_rounded,
-          BalsmColors.danger,
-          'Failed to send'
-        ),
+      'sent' => (BalsmColors.petalMint50, Icons.check, BalsmColors.petalMint, 'Sent to Sentry!'),
+      'error' => (BalsmColors.dangerBg, Icons.warning_amber_rounded, BalsmColors.danger, 'Failed to send'),
       'sending' => (BalsmColors.ink50, Icons.sync, BalsmColors.fg2, 'Sending…'),
       _ => (BalsmColors.ink50, Icons.send, BalsmColors.fg2, 'Send to Sentry'),
     };
@@ -1078,17 +988,12 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             Icon(Icons.delete_outline, size: 16, color: BalsmColors.danger),
             SizedBox(width: 8),
             Text('Clear all logs',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: BalsmColors.danger)),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.danger)),
           ],
         ),
       );
 
-  Widget _cardButton(
-          {required Widget child, required VoidCallback onTap, Color? border}) =>
-      GestureDetector(
+  Widget _cardButton({required Widget child, required VoidCallback onTap, Color? border}) => GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
@@ -1117,8 +1022,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             Expanded(
               child: Text(
                 'Log content is never shown here. Save encrypted or send to Sentry to inspect.',
-                style:
-                    TextStyle(fontSize: 11, height: 1.5, color: BalsmColors.fg3),
+                style: TextStyle(fontSize: 11, height: 1.5, color: BalsmColors.fg3),
               ),
             ),
           ],
@@ -1141,8 +1045,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               Icon(Icons.image_outlined, size: 26, color: BalsmColors.fg4),
               SizedBox(height: 8),
               Text('No screenshot captured',
-                  style: TextStyle(
-                      fontFamily: _kMono, fontSize: 12, color: BalsmColors.fg4)),
+                  style: TextStyle(fontFamily: _kMono, fontSize: 12, color: BalsmColors.fg4)),
             ],
           ),
         ),
@@ -1181,18 +1084,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             minimumSize: const Size(double.infinity, 50),
           ),
           icon: Icon(_reportCopied ? Icons.check : Icons.copy, size: 17),
-          label: Text(
-              _reportCopied ? 'Copied to clipboard!' : 'Copy report to clipboard'),
+          label: Text(_reportCopied ? 'Copied to clipboard!' : 'Copy report to clipboard'),
         ),
       ];
 
   Widget _fieldLabel(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
-        child: Text(t,
-            style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: BalsmColors.fg2)),
+        child: Text(t, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: BalsmColors.fg2)),
       );
 
   InputDecoration _inputDeco(String hint) => InputDecoration(
@@ -1219,14 +1117,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           decoration: BoxDecoration(
             color: on ? BalsmColors.fg1 : BalsmColors.surface,
             borderRadius: BorderRadius.circular(BalsmRadius.sm),
-            border: Border.all(
-                color: on ? BalsmColors.fg1 : BalsmColors.border),
+            border: Border.all(color: on ? BalsmColors.fg1 : BalsmColors.border),
           ),
           child: Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: on ? Colors.white : BalsmColors.fg3)),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: on ? Colors.white : BalsmColors.fg3)),
         ),
       ),
     );
@@ -1235,11 +1129,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Widget _eyebrow(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(t.toUpperCase(),
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
-                color: BalsmColors.fg3)),
+            style:
+                const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: BalsmColors.fg3)),
       );
 
   // ── Actions ─────────────────────────────────────────────────────────────────
@@ -1278,8 +1169,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         envUrl: _currentBaseUrl,
         keyHex: _store.encKey,
       );
-      final file = File(
-          '${Directory.systemTemp.path}/balsm-${DateTime.now().millisecondsSinceEpoch}.enc.json');
+      final file = File('${Directory.systemTemp.path}/balsm-${DateTime.now().millisecondsSinceEpoch}.enc.json');
       await file.writeAsString(json);
       await Clipboard.setData(ClipboardData(text: json));
       _snack('Encrypted bundle copied · ${file.path}');
@@ -1386,23 +1276,17 @@ class _EnvStyle {
   static _EnvStyle of(String label) {
     final l = label.toLowerCase();
     if (l.contains('local')) {
-      return const _EnvStyle(
-          Color(0xFF3FC366), Color(0xFFE8F9EE), Color(0xFF1A6033));
+      return const _EnvStyle(Color(0xFF3FC366), Color(0xFFE8F9EE), Color(0xFF1A6033));
     }
     if (l.contains('prod')) {
-      return const _EnvStyle(
-          Color(0xFFD44A3C), Color(0xFFFBEBE7), Color(0xFF7A2A20),
-          isProd: true);
+      return const _EnvStyle(Color(0xFFD44A3C), Color(0xFFFBEBE7), Color(0xFF7A2A20), isProd: true);
     }
     if (l.contains('stag')) {
-      return const _EnvStyle(
-          Color(0xFFE5B428), Color(0xFFFDF5DC), Color(0xFF7A5A0F));
+      return const _EnvStyle(Color(0xFFE5B428), Color(0xFFFDF5DC), Color(0xFF7A5A0F));
     }
     if (l.contains('dev')) {
-      return const _EnvStyle(
-          Color(0xFF1283FF), Color(0xFFE4F0FF), Color(0xFF08407A));
+      return const _EnvStyle(Color(0xFF1283FF), Color(0xFFE4F0FF), Color(0xFF08407A));
     }
-    return const _EnvStyle(
-        Color(0xFF6B6B60), Color(0xFFF4F3EC), Color(0xFF3A3A34));
+    return const _EnvStyle(Color(0xFF6B6B60), Color(0xFFF4F3EC), Color(0xFF3A3A34));
   }
 }

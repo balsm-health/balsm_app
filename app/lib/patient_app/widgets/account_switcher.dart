@@ -41,13 +41,15 @@ class _AccountSwitcherSheet extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 38),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        Container(
+            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
           child: Row(children: [
-            Expanded(child: Text(s.strings.common.your_accounts,
-                style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
+            Expanded(
+                child: Text(s.strings.common.your_accounts,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
             RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
           ]),
         ),
@@ -75,9 +77,7 @@ class _AccountRow extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    final sub = (handle != null && handle!.isNotEmpty)
-        ? '@$handle'
-        : (s.strings.common.acc_active);
+    final sub = (handle != null && handle!.isNotEmpty) ? '@$handle' : (s.strings.common.acc_active);
     return PressHighlight(
       onTap: onTap,
       child: Container(
@@ -91,7 +91,8 @@ class _AccountRow extends StatelessWidget {
               if (name.isNotEmpty)
                 Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               const SizedBox(height: 3),
-              Text(sub, textDirection: handle != null && handle!.isNotEmpty ? TextDirection.ltr : s.dir,
+              Text(sub,
+                  textDirection: handle != null && handle!.isNotEmpty ? TextDirection.ltr : s.dir,
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),
           ),
@@ -113,8 +114,7 @@ class _EmptyAccount extends StatelessWidget {
           const Icon(LucideIcons.userCircle2, size: 22, color: T.fg3),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(s.strings.common.acc_not_signed_in,
-                style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            child: Text(s.strings.common.acc_not_signed_in, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ),
         ]),
       );

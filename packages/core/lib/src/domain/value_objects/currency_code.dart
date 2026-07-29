@@ -61,14 +61,23 @@ class CurrencyCode extends ValueObject {
   static const gbp = CurrencyCode._('GBP', 2, '£', 'Pound Sterling');
 
   static const _all = [
-    egp, sar, aed, qar, kwd, bhd, jod, omr, usd, eur, gbp,
+    egp,
+    sar,
+    aed,
+    qar,
+    kwd,
+    bhd,
+    jod,
+    omr,
+    usd,
+    eur,
+    gbp,
   ];
   static final Map<String, CurrencyCode> _byCode = {
     for (final c in _all) c.value: c,
   };
 
-  static bool _isAlpha(String s) =>
-      s.codeUnits.every((u) => u >= 0x41 && u <= 0x5A);
+  static bool _isAlpha(String s) => s.codeUnits.every((u) => u >= 0x41 && u <= 0x5A);
 
   @override
   List<Object?> get props => [value];

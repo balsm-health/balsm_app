@@ -14,8 +14,7 @@ import 'package:core/core.dart'
         LanguageCode,
         LanguageCodeL10n;
 import 'package:sessions/sessions.dart' show SessionsScreen;
-import 'package:deletion/deletion.dart'
-    show DeleteAccountScreen, DeletionConfirmScreen, DeletionCancelledScreen;
+import 'package:deletion/deletion.dart' show DeleteAccountScreen, DeletionConfirmScreen, DeletionCancelledScreen;
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -48,113 +47,131 @@ class ProfileScreen extends ConsumerWidget {
       (LucideIcons.shieldCheck, 'profile.p_privacy', () => openPrivacyData(context), false),
       (LucideIcons.lifeBuoy, 'profile.p_help', null, false),
     ];
-    return ContentColumn(maxWidth: 720, child: ListView(padding: EdgeInsets.zero, children: [
-      const PadTop(),
-      AppBarRow(children: [
-        Expanded(child: Text(s.strings.common.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-      ]),
+    return ContentColumn(
+        maxWidth: 720,
+        child: ListView(padding: EdgeInsets.zero, children: [
+          const PadTop(),
+          AppBarRow(children: [
+            Expanded(child: Text(s.strings.common.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+          ]),
 
-      // Profile head — real account summary (name + handle). No fabricated
-      // "member since" / conditions strip; conditions live on the medical
-      // profile sub-screen (real on-device PHI).
-      Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-        child: Column(children: [
-          Avatar(initials: accountInitials(displayName), color: T.petalAqua, size: 84, ar: s.rtl),
-          if (displayName.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
-          ],
-          if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text('@${summary.handle}', textDirection: TextDirection.ltr,
-                style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ],
-        ]),
-      ),
-
-      // Language + country
-      _ListCard(children: [
-        _ListRow(icon: LucideIcons.languages, label: s.strings.profile.p_lang, trailing: curLang.nativeName,
-            first: true, onTap: () => _showLanguageSheet(context)),
-        _ListRow(icon: s.isHomeCountry ? LucideIcons.mapPin : LucideIcons.plane, label: s.strings.profile.p_country,
-            trailing: s.country.name(kCatalog, locale: s.lang.value),
-            iconBg: s.isHomeCountry ? null : T.sun500, iconFg: s.isHomeCountry ? null : Colors.white,
-            onTap: () => _showCountrySheet(context)),
-      ]),
-
-      // Storage — opens the backup/sync sheet (connect iCloud / Google Drive).
-      _ListCard(children: [
-        _ListRow(icon: stCfg.icon, label: s.strings.storage.storage, iconBg: stCfg.bg, iconFg: stCfg.color,
-            trailingWidget: Pill(s.t(stCfg.label), kind: PillKind.neutral, dot: false, ar: s.rtl),
-            first: true, onTap: () => showStorageSync(context)),
-      ]),
-
-      // Menu
-      _ListCard(
-        children: rows.indexed
-            .map((entry) => _ListRow(
-                  icon: entry.$2.$1, label: s.t(entry.$2.$2),
-                  first: entry.$1 == 0, onTap: entry.$2.$3 ?? () {},
-                  iconBg: entry.$2.$4 ? T.dangerBg : null,
-                  iconFg: entry.$2.$4 ? T.danger : null,
-                  labelColor: entry.$2.$4 ? T.danger : null,
-                ))
-            .toList(),
-      ),
-
-      // Account & security — real governance screens (sessions, service status,
-      // account deletion). These push the REAL module screens (their own design
-      // system + re-auth), same MaterialPageRoute pattern as the lockout / 404
-      // → StatusScreen hop.
-      _ListCard(children: [
-        _ListRow(
-          icon: LucideIcons.smartphone,
-          label: s.strings.nav.gov_sessions,
-          first: true,
-          onTap: () => _pushSessionsRouted(context),
-        ),
-        _ListRow(
-          icon: LucideIcons.activity,
-          label: s.strings.nav.gov_status,
-          onTap: () => _pushGovernance(context, const StatusScreen()),
-        ),
-        // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
-        // '.cancelled') + go('/')). It is hosted in a scoped GoRouter whose
-        // deletion screens nest under an invisible exit-base, so every pop and
-        // every go('/') resolves — see [_pushDeletionRouted].
-        _ListRow(
-          icon: LucideIcons.trash2,
-          label: s.strings.nav.gov_delete,
-          iconBg: T.dangerBg, iconFg: T.danger, labelColor: T.danger,
-          onTap: () => _pushDeletionRouted(context),
-        ),
-        // Dev-only API server switcher (Local / Staging / Prod / custom). Gated
-        // on serverSwitchingEnabled (dev/staging), so it never renders in prod.
-        // (Prod can still reach the read-only Dev Config via the shake gesture.)
-        // The choice persists (reconfigure) and survives relaunch (init() in
-        // main). ServerSelectorScreen owns its Scaffold + Navigator.pop, so the
-        // plain _pushGovernance push is sufficient.
-        if (FlavorConfig.current.serverSwitchingEnabled)
-          _ListRow(
-            icon: LucideIcons.server,
-            label: 'Switch server (dev)',
-            onTap: () => _pushGovernance(
-              context,
-              ServerSelectorScreen(
-                controller: ref.read(balsmApiControllerProvider),
-              ),
-            ),
+          // Profile head — real account summary (name + handle). No fabricated
+          // "member since" / conditions strip; conditions live on the medical
+          // profile sub-screen (real on-device PHI).
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+            child: Column(children: [
+              Avatar(initials: accountInitials(displayName), color: T.petalAqua, size: 84, ar: s.rtl),
+              if (displayName.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
+              ],
+              if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text('@${summary.handle}',
+                    textDirection: TextDirection.ltr, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+              ],
+            ]),
           ),
-      ]),
 
-      // Sign out
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        child: PButton(s.strings.profile.p_signout, icon: LucideIcons.logOut, variant: BtnVariant.secondary,
-            block: true, ar: s.rtl, color: T.danger),
-      ),
-    ]));
+          // Language + country
+          _ListCard(children: [
+            _ListRow(
+                icon: LucideIcons.languages,
+                label: s.strings.profile.p_lang,
+                trailing: curLang.nativeName,
+                first: true,
+                onTap: () => _showLanguageSheet(context)),
+            _ListRow(
+                icon: s.isHomeCountry ? LucideIcons.mapPin : LucideIcons.plane,
+                label: s.strings.profile.p_country,
+                trailing: s.country.name(kCatalog, locale: s.lang.value),
+                iconBg: s.isHomeCountry ? null : T.sun500,
+                iconFg: s.isHomeCountry ? null : Colors.white,
+                onTap: () => _showCountrySheet(context)),
+          ]),
+
+          // Storage — opens the backup/sync sheet (connect iCloud / Google Drive).
+          _ListCard(children: [
+            _ListRow(
+                icon: stCfg.icon,
+                label: s.strings.storage.storage,
+                iconBg: stCfg.bg,
+                iconFg: stCfg.color,
+                trailingWidget: Pill(s.t(stCfg.label), kind: PillKind.neutral, dot: false, ar: s.rtl),
+                first: true,
+                onTap: () => showStorageSync(context)),
+          ]),
+
+          // Menu
+          _ListCard(
+            children: rows.indexed
+                .map((entry) => _ListRow(
+                      icon: entry.$2.$1,
+                      label: s.t(entry.$2.$2),
+                      first: entry.$1 == 0,
+                      onTap: entry.$2.$3 ?? () {},
+                      iconBg: entry.$2.$4 ? T.dangerBg : null,
+                      iconFg: entry.$2.$4 ? T.danger : null,
+                      labelColor: entry.$2.$4 ? T.danger : null,
+                    ))
+                .toList(),
+          ),
+
+          // Account & security — real governance screens (sessions, service status,
+          // account deletion). These push the REAL module screens (their own design
+          // system + re-auth), same MaterialPageRoute pattern as the lockout / 404
+          // → StatusScreen hop.
+          _ListCard(children: [
+            _ListRow(
+              icon: LucideIcons.smartphone,
+              label: s.strings.nav.gov_sessions,
+              first: true,
+              onTap: () => _pushSessionsRouted(context),
+            ),
+            _ListRow(
+              icon: LucideIcons.activity,
+              label: s.strings.nav.gov_status,
+              onTap: () => _pushGovernance(context, const StatusScreen()),
+            ),
+            // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
+            // '.cancelled') + go('/')). It is hosted in a scoped GoRouter whose
+            // deletion screens nest under an invisible exit-base, so every pop and
+            // every go('/') resolves — see [_pushDeletionRouted].
+            _ListRow(
+              icon: LucideIcons.trash2,
+              label: s.strings.nav.gov_delete,
+              iconBg: T.dangerBg,
+              iconFg: T.danger,
+              labelColor: T.danger,
+              onTap: () => _pushDeletionRouted(context),
+            ),
+            // Dev-only API server switcher (Local / Staging / Prod / custom). Gated
+            // on serverSwitchingEnabled (dev/staging), so it never renders in prod.
+            // (Prod can still reach the read-only Dev Config via the shake gesture.)
+            // The choice persists (reconfigure) and survives relaunch (init() in
+            // main). ServerSelectorScreen owns its Scaffold + Navigator.pop, so the
+            // plain _pushGovernance push is sufficient.
+            if (FlavorConfig.current.serverSwitchingEnabled)
+              _ListRow(
+                icon: LucideIcons.server,
+                label: 'Switch server (dev)',
+                onTap: () => _pushGovernance(
+                  context,
+                  ServerSelectorScreen(
+                    controller: ref.read(balsmApiControllerProvider),
+                  ),
+                ),
+              ),
+          ]),
+
+          // Sign out
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: PButton(s.strings.profile.p_signout,
+                icon: LucideIcons.logOut, variant: BtnVariant.secondary, block: true, ar: s.rtl, color: T.danger),
+          ),
+        ]));
   }
 }
 
@@ -381,7 +398,16 @@ class _ListCard extends StatelessWidget {
 }
 
 class _ListRow extends StatelessWidget {
-  const _ListRow({required this.icon, required this.label, this.trailing, this.trailingWidget, this.onTap, this.iconBg, this.iconFg, this.labelColor, this.first = false});
+  const _ListRow(
+      {required this.icon,
+      required this.label,
+      this.trailing,
+      this.trailingWidget,
+      this.onTap,
+      this.iconBg,
+      this.iconFg,
+      this.labelColor,
+      this.first = false});
   final IconData icon;
   final String label;
   final String? trailing;
@@ -403,11 +429,15 @@ class _ListRow extends StatelessWidget {
         child: Row(children: [
           IconSquare(icon, bg: iconBg ?? s.accent.bg, fg: iconFg ?? s.accent.d, size: 34, iconSize: 19, radius: T.rSm),
           const SizedBox(width: 14),
-          Expanded(child: Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1))),
+          Expanded(
+              child: Text(label,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1))),
           if (trailingWidget != null) trailingWidget!,
           if (trailing != null)
-            Padding(padding: const EdgeInsets.only(right: 8, left: 8),
-                child: Text(trailing!, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3))),
+            Padding(
+                padding: const EdgeInsets.only(right: 8, left: 8),
+                child:
+                    Text(trailing!, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3))),
           Chevron(rtl: s.rtl),
         ]),
       ),
@@ -426,11 +456,18 @@ void _showLanguageSheet(BuildContext context) {
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.settings.choose_lang, children: [
         ...LanguageCode.supported.map((l) => _SelectRow(
-              label: l.nativeName, sub: l.name(kCatalog), selected: l == s.lang,
+              label: l.nativeName,
+              sub: l.name(kCatalog),
+              selected: l == s.lang,
               badge: l.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
               badgeOk: l.isFullySupported,
               enabled: l.isFullySupported,
-              onTap: l.isFullySupported ? () { s.setLang(l); Navigator.pop(ctx); } : null,
+              onTap: l.isFullySupported
+                  ? () {
+                      s.setLang(l);
+                      Navigator.pop(ctx);
+                    }
+                  : null,
             )),
       ]),
     ),
@@ -447,10 +484,15 @@ void _showCountrySheet(BuildContext context) {
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.settings.choose_country, subtitle: s.strings.settings.travel_help, children: [
         ...CountryCode.known.map((c) => _SelectRow(
-              label: c.name(kCatalog, locale: s.lang.value), sub: '${s.strings.emergency.emergency} ${c.emergencyNumber}',
+              label: c.name(kCatalog, locale: s.lang.value),
+              sub: '${s.strings.emergency.emergency} ${c.emergencyNumber}',
               selected: c == s.country,
-              badge: c == kHomeCountry ? s.strings.settings.home_country : null, badgeOk: true,
-              onTap: () { s.setCountry(c); Navigator.pop(ctx); },
+              badge: c == kHomeCountry ? s.strings.settings.home_country : null,
+              badgeOk: true,
+              onTap: () {
+                s.setCountry(c);
+                Navigator.pop(ctx);
+              },
             )),
       ]),
     ),
@@ -467,27 +509,42 @@ class _SheetShell extends StatelessWidget {
     final s = AppScope.of(context);
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-      decoration: const BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+      decoration:
+          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       padding: const EdgeInsets.only(bottom: 38),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        Container(
+            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
         const SizedBox(height: 12),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(children: [Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)))])),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(children: [
+              Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)))
+            ])),
         if (subtitle != null)
-          Padding(padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
-              child: Align(alignment: AlignmentDirectional.centerStart, child: Text(subtitle!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)))),
+          Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+              child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(subtitle!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)))),
         const SizedBox(height: 8),
-        Flexible(child: ListView(shrinkWrap: true, padding: const EdgeInsets.symmetric(horizontal: 12), children: children)),
+        Flexible(
+            child: ListView(shrinkWrap: true, padding: const EdgeInsets.symmetric(horizontal: 12), children: children)),
       ]),
     );
   }
 }
 
 class _SelectRow extends StatelessWidget {
-  const _SelectRow({required this.label, this.sub, this.selected = false, this.badge, this.badgeOk = true, this.enabled = true, this.onTap});
+  const _SelectRow(
+      {required this.label,
+      this.sub,
+      this.selected = false,
+      this.badge,
+      this.badgeOk = true,
+      this.enabled = true,
+      this.onTap});
   final String label;
   final String? sub;
   final bool selected;
@@ -512,10 +569,11 @@ class _SelectRow extends StatelessWidget {
                 if (sub != null) Text(sub!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
               ]),
             ),
-            if (badge != null) Padding(
-              padding: const EdgeInsets.only(right: 8, left: 8),
-              child: Pill(badge!, kind: badgeOk ? PillKind.success : PillKind.warn, dot: false, ar: s.rtl),
-            ),
+            if (badge != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8, left: 8),
+                child: Pill(badge!, kind: badgeOk ? PillKind.success : PillKind.warn, dot: false, ar: s.rtl),
+              ),
             if (selected) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
           ]),
         ),

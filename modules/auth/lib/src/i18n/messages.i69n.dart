@@ -16,8 +16,7 @@ class Messages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'country':
@@ -44,8 +43,7 @@ class CountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -67,8 +65,7 @@ class EmailMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -93,8 +90,7 @@ class OtpMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -119,8 +115,7 @@ class ErrorOtpMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'invalid':
@@ -142,8 +137,7 @@ class SocialMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'google':
@@ -162,8 +156,7 @@ class LockoutMessages implements i69n.I69nMessageBundle {
   final Messages _parent;
   const LockoutMessages(this._parent);
   String get title => "Too many attempts";
-  String get body =>
-      "Your account is temporarily locked. Please try again later.";
+  String get body => "Your account is temporarily locked. Please try again later.";
   String get support => "Contact support";
   String get retry => "Try again";
   String get needHelp => "Need help?";
@@ -172,8 +165,7 @@ class LockoutMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':

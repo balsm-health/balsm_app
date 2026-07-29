@@ -40,9 +40,7 @@ class BalsmButton extends StatelessWidget {
           foregroundColor: fg,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          side: isPrimary || isDanger
-              ? BorderSide.none
-              : const BorderSide(color: BalsmColors.petalBlue),
+          side: isPrimary || isDanger ? BorderSide.none : const BorderSide(color: BalsmColors.petalBlue),
         ),
         child: loading
             ? const SizedBox(
@@ -209,9 +207,7 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = widget.countries
-        .where((c) => c.name.toLowerCase().contains(_query.toLowerCase()))
-        .toList();
+    final filtered = widget.countries.where((c) => c.name.toLowerCase().contains(_query.toLowerCase())).toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,

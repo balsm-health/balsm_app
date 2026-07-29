@@ -7,8 +7,7 @@ class EventBus {
 
   Stream<AppEvent> get events => _controller.stream;
 
-  Stream<T> on<T extends AppEvent>() =>
-      events.where((e) => e is T).cast<T>();
+  Stream<T> on<T extends AppEvent>() => events.where((e) => e is T).cast<T>();
 
   void publish(AppEvent event) {
     if (!_controller.isClosed) _controller.add(event);

@@ -66,8 +66,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
   }
 
   @override
-  Future<List<CheckIn>> findMany(Iterable<CheckInId> keys,
-      {HealthProfileId? scope}) async {
+  Future<List<CheckIn>> findMany(Iterable<CheckInId> keys, {HealthProfileId? scope}) async {
     final result = <CheckIn>[];
     for (final k in keys) {
       final c = await find(k, scope: scope);
@@ -77,8 +76,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
   }
 
   @override
-  Future<bool> exists(CheckInId key, {HealthProfileId? scope}) async =>
-      await find(key, scope: scope) != null;
+  Future<bool> exists(CheckInId key, {HealthProfileId? scope}) async => await find(key, scope: scope) != null;
 
   // ── Watch ────────────────────────────────────────────────────────────────
 
@@ -105,8 +103,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
   // ── Writes ───────────────────────────────────────────────────────────────
 
   @override
-  Future<void> put(CheckInId key, CheckIn value,
-      {HealthProfileId? scope}) async {
+  Future<void> put(CheckInId key, CheckIn value, {HealthProfileId? scope}) async {
     final p = _require(scope);
     final v = value.vitals;
     await _db.transaction(() async {
@@ -137,12 +134,9 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       );
       // Children: clear then re-insert (idempotent on REPLACE).
       await _db.customUpdate('DELETE FROM check_in_symptom WHERE check_in_id = ?',
-          variables: [Variable<String>(key.value)],
-          updateKind: UpdateKind.delete);
-      await _db.customUpdate(
-          'DELETE FROM check_in_pain_region WHERE check_in_id = ?',
-          variables: [Variable<String>(key.value)],
-          updateKind: UpdateKind.delete);
+          variables: [Variable<String>(key.value)], updateKind: UpdateKind.delete);
+      await _db.customUpdate('DELETE FROM check_in_pain_region WHERE check_in_id = ?',
+          variables: [Variable<String>(key.value)], updateKind: UpdateKind.delete);
       for (final s in value.symptoms) {
         await _db.customInsert(
           'INSERT INTO check_in_symptom (check_in_id, symptom_id) VALUES (?, ?)',
@@ -160,8 +154,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
   }
 
   @override
-  Future<void> putBulk(Map<CheckInId, CheckIn> values,
-      {HealthProfileId? scope}) async {
+  Future<void> putBulk(Map<CheckInId, CheckIn> values, {HealthProfileId? scope}) async {
     final p = _require(scope);
     for (final e in values.entries) {
       await put(e.key, e.value, scope: p);
@@ -180,8 +173,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
   }
 
   @override
-  Future<void> deleteMany(Iterable<CheckInId> keys,
-      {HealthProfileId? scope}) async {
+  Future<void> deleteMany(Iterable<CheckInId> keys, {HealthProfileId? scope}) async {
     for (final k in keys) {
       await delete(k, scope: scope);
     }
@@ -201,8 +193,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
 
   @override
   Future<void> clearAll() async {
-    await _db.customUpdate('DELETE FROM check_in',
-        updateKind: UpdateKind.delete);
+    await _db.customUpdate('DELETE FROM check_in', updateKind: UpdateKind.delete);
     _notifyChanged();
   }
 
@@ -226,13 +217,11 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       painLevel: PainLevel(row['pain_level'] as int),
       painRegions: {
         for (final r in regionRows)
-          if (BodyRegion.fromId(r.read<String>('region_id')) case final reg?)
-            reg,
+          if (BodyRegion.fromId(r.read<String>('region_id')) case final reg?) reg,
       },
       symptoms: {
         for (final s in symptomRows)
-          if (SymptomId.fromId(s.read<String>('symptom_id')) case final sym?)
-            sym,
+          if (SymptomId.fromId(s.read<String>('symptom_id')) case final sym?) sym,
       },
       vitals: Vitals.fromRow(row),
       note: row['note'] as String?,

@@ -13,8 +13,7 @@ void main() {
   const bob = UserId.value('bob');
 
   // Deterministic per-user keys (32 bytes) — keychain not involved in tests.
-  Future<List<int>> keyFor(UserId u) async =>
-      List<int>.generate(32, (i) => (i + u.value.length) & 0xff);
+  Future<List<int>> keyFor(UserId u) async => List<int>.generate(32, (i) => (i + u.value.length) & 0xff);
 
   final payload = Uint8List.fromList(List.generate(1024, (i) => i % 251));
 
@@ -64,8 +63,7 @@ void main() {
     active = null;
     expect(await store.read(path), isNull);
     expect(await store.exists(path), isFalse);
-    expect(() => store.save('x.pdf', payload),
-        throwsA(isA<NoActiveUserException>()));
+    expect(() => store.save('x.pdf', payload), throwsA(isA<NoActiveUserException>()));
     expect(() => store.delete(path), throwsA(isA<NoActiveUserException>()));
     await store.clear(); // must not throw
     active = alice;
@@ -93,9 +91,7 @@ void main() {
   });
 
   test('path traversal is rejected', () async {
-    expect(() => store.save('../escape.pdf', payload),
-        throwsA(isA<StorageWriteException>()));
-    expect(() => store.read('../../etc/passwd'),
-        throwsA(isA<StorageWriteException>()));
+    expect(() => store.save('../escape.pdf', payload), throwsA(isA<StorageWriteException>()));
+    expect(() => store.read('../../etc/passwd'), throwsA(isA<StorageWriteException>()));
   });
 }

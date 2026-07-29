@@ -168,7 +168,9 @@ class _MainAppState extends State<_MainApp> {
       _lastTab = s.tab;
     } else if (_lastTab != s.tab) {
       _lastTab = s.tab;
-      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _flashNav(); });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _flashNav();
+      });
     }
 
     // P001 patient-MVP slice ships only the home / medications / profile tabs.
@@ -202,7 +204,9 @@ class _MainAppState extends State<_MainApp> {
     return Stack(children: [
       content,
       PositionedDirectional(
-        top: 0, start: 0, end: 0,
+        top: 0,
+        start: 0,
+        end: 0,
         child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
       ),
     ]);
@@ -251,8 +255,8 @@ class _Tab extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(icon, size: 24, color: color),
             const SizedBox(height: 3),
-            Text(label, style: Typo.body(ar: s.rtl).copyWith(
-                fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
+            Text(label,
+                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
           ]),
         ),
       ),
@@ -348,8 +352,8 @@ class _RailItem extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 24, color: color),
           const SizedBox(height: 4),
-          Text(label, style: Typo.body(ar: s.rtl).copyWith(
-              fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
+          Text(label,
+              style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
         ]),
       ),
     );
@@ -396,8 +400,7 @@ class _BootSplash extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
-            Text(state.strings.boot.boot_tagline,
-                textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
+            Text(state.strings.boot.boot_tagline, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
           ]),
         ),
       ),

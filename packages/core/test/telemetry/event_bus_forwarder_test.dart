@@ -20,7 +20,8 @@ class FakeAnalyticsLogger implements AnalyticsLogger {
   @override
   void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {}
   @override
-  void logError(Object error, {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {}
+  void logError(Object error,
+      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {}
   @override
   void setUser(String? id) {}
   @override
@@ -79,7 +80,6 @@ void main() {
     observer.didPush(route, null);
 
     expect(logger.events.single.name, 'screen_view');
-    expect(logger.events.single.props,
-        {'route': '/account/settings', 'action': 'push'});
+    expect(logger.events.single.props, {'route': '/account/settings', 'action': 'push'});
   });
 }

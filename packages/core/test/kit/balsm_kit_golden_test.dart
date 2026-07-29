@@ -23,9 +23,7 @@ void main() {
             _wrap(
               Wrap(
                 spacing: 8,
-                children: BalsmPillVariant.values
-                    .map((v) => BalsmPill(label: v.name, variant: v))
-                    .toList(),
+                children: BalsmPillVariant.values.map((v) => BalsmPill(label: v.name, variant: v)).toList(),
               ),
               locale: locale,
               dir: dir,

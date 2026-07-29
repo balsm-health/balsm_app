@@ -93,8 +93,7 @@ class RecordDoseOutcomeUseCase {
   }
 }
 
-final recordDoseOutcomeUseCaseProvider =
-    Provider<RecordDoseOutcomeUseCase>((ref) {
+final recordDoseOutcomeUseCaseProvider = Provider<RecordDoseOutcomeUseCase>((ref) {
   return RecordDoseOutcomeUseCase(
     dao: ref.watch(medicationsDataSourceProvider),
     bus: ref.watch(eventBusProvider),

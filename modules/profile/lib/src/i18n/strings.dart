@@ -25,5 +25,4 @@ final profileStrings = LocalizedStrings<Messages>.defaultLangs(
 /// Locale-explicit lookup for code that carries its own locale (e.g. a
 /// `preferredLanguage` route param). Non-reactive; Arabic must have been
 /// loaded (or falls back to English).
-Messages profileMessagesOf(String locale) =>
-    profileStrings.resolveSync(Locale(locale.split(RegExp('[-_]')).first));
+Messages profileMessagesOf(String locale) => profileStrings.resolveSync(Locale(locale.split(RegExp('[-_]')).first));

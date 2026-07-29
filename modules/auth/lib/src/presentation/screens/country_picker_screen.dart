@@ -54,9 +54,7 @@ class _CountryPickerScreenState extends ConsumerState<CountryPickerScreen> {
 
   List<({String code, String name})> get _filtered => _query.isEmpty
       ? _countries
-      : _countries
-          .where((c) => c.name.toLowerCase().contains(_query.toLowerCase()))
-          .toList();
+      : _countries.where((c) => c.name.toLowerCase().contains(_query.toLowerCase())).toList();
 
   @override
   Widget build(BuildContext context) {

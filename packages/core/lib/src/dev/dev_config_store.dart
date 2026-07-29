@@ -38,8 +38,7 @@ const kDevFlags = <DevFlag>[
 /// [SharedPreferences]; the log-encryption key in the OS keychain (never prefs
 /// — it is a secret). Dev-tooling only.
 class DevConfigStore extends ChangeNotifier {
-  DevConfigStore({FlutterSecureStorage? secureStorage})
-      : _secure = secureStorage ?? const FlutterSecureStorage();
+  DevConfigStore({FlutterSecureStorage? secureStorage}) : _secure = secureStorage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _secure;
 
@@ -61,9 +60,7 @@ class DevConfigStore extends ChangeNotifier {
     final raw = prefs.getString(_kSavedEnvs);
     if (raw != null) {
       try {
-        _savedEnvs = (jsonDecode(raw) as List)
-            .map((e) => SavedEnv.fromJson(e as Map<String, dynamic>))
-            .toList();
+        _savedEnvs = (jsonDecode(raw) as List).map((e) => SavedEnv.fromJson(e as Map<String, dynamic>)).toList();
       } catch (_) {
         _savedEnvs = [];
       }
@@ -83,19 +80,14 @@ class DevConfigStore extends ChangeNotifier {
   }
 
   Future<SavedEnv> addSavedEnv(String name, String url) async {
-    final env = SavedEnv(
-        id: 'saved_${DateTime.now().microsecondsSinceEpoch}',
-        name: name.trim(),
-        url: url.trim());
+    final env = SavedEnv(id: 'saved_${DateTime.now().microsecondsSinceEpoch}', name: name.trim(), url: url.trim());
     _savedEnvs = [..._savedEnvs, env];
     await _persistEnvs();
     return env;
   }
 
   Future<void> updateSavedEnv(String id, String name, String url) async {
-    _savedEnvs = _savedEnvs
-        .map((e) => e.id == id ? SavedEnv(id: id, name: name.trim(), url: url.trim()) : e)
-        .toList();
+    _savedEnvs = _savedEnvs.map((e) => e.id == id ? SavedEnv(id: id, name: name.trim(), url: url.trim()) : e).toList();
     await _persistEnvs();
   }
 
@@ -113,8 +105,7 @@ class DevConfigStore extends ChangeNotifier {
 
   Future<void> _persistEnvs() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        _kSavedEnvs, jsonEncode(_savedEnvs.map((e) => e.toJson()).toList()));
+    await prefs.setString(_kSavedEnvs, jsonEncode(_savedEnvs.map((e) => e.toJson()).toList()));
     notifyListeners();
   }
 

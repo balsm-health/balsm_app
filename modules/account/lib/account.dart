@@ -13,8 +13,7 @@ export 'src/application/use_cases/change_language_use_case.dart';
 
 // Infrastructure — the concrete adapter + its builder, for the app to bind
 // into core's `readAccountRepositoryProvider` port.
-export 'src/infrastructure/api/balsm_account_adapter.dart'
-    show BalsmAccountAdapter, buildAccountAdapter;
+export 'src/infrastructure/api/balsm_account_adapter.dart' show BalsmAccountAdapter, buildAccountAdapter;
 
 // Presentation
 export 'src/presentation/screens/settings_screen.dart';

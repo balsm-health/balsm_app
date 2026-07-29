@@ -1,12 +1,9 @@
-import 'package:core/core.dart'
-    show accountSummaryProvider, currentUserIdProvider;
-import 'package:emergency_card/emergency_card.dart'
-    show EmergencyCardSnapshot, emergencySnapshotReaderProvider;
+import 'package:core/core.dart' show accountSummaryProvider, currentUserIdProvider;
+import 'package:emergency_card/emergency_card.dart' show EmergencyCardSnapshot, emergencySnapshotReaderProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:medications/medications.dart'
-    show DoseOutcome, TodayDose, medicationListProvider, todayDosesProvider;
+import 'package:medications/medications.dart' show DoseOutcome, TodayDose, medicationListProvider, todayDosesProvider;
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -46,16 +43,12 @@ class HomeScreen extends ConsumerWidget {
 
           // App bar: avatar (account switcher) + greeting + bell.
           AppBarRow(children: [
-            _AvatarButton(
-                initials: accountInitials(displayName),
-                onTap: () => showAccountSwitcher(context)),
+            _AvatarButton(initials: accountInitials(displayName), onTap: () => showAccountSwitcher(context)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
-                if (firstName.isNotEmpty)
-                  Text(firstName,
-                      style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
+                if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
               ]),
             ),
             RoundBtn(icon: LucideIcons.bell, onTap: () {}),
@@ -79,8 +72,7 @@ class HomeScreen extends ConsumerWidget {
 /// On-device emergency-card snapshot for the home nudge. Same seam the
 /// emergency/personal-details port uses; `null` when signed out or before a
 /// profile exists.
-final _homeEmergencySnapshotProvider =
-    FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
+final _homeEmergencySnapshotProvider = FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
   return ref.watch(emergencySnapshotReaderProvider).readSnapshot();
@@ -96,19 +88,16 @@ class _NudgeSection extends ConsumerWidget {
 
     // Handle: hide once the account summary carries one.
     final summaryAsync = ref.watch(accountSummaryProvider);
-    final needsHandle =
-        summaryAsync.hasValue && summaryAsync.valueOrNull?.handle == null;
+    final needsHandle = summaryAsync.hasValue && summaryAsync.valueOrNull?.handle == null;
 
     // Emergency card: nudge until the on-device snapshot has any data.
     final snapshotAsync = ref.watch(_homeEmergencySnapshotProvider);
     final snapshot = snapshotAsync.valueOrNull;
-    final needsEmergencyCard =
-        snapshotAsync.hasValue && (snapshot == null || !snapshot.hasAnyData);
+    final needsEmergencyCard = snapshotAsync.hasValue && (snapshot == null || !snapshot.hasAnyData);
 
     // First medication: nudge while the med list is empty.
     final medsAsync = ref.watch(medicationListProvider);
-    final needsFirstMedication =
-        medsAsync.hasValue && (medsAsync.valueOrNull?.isEmpty ?? false);
+    final needsFirstMedication = medsAsync.hasValue && (medsAsync.valueOrNull?.isEmpty ?? false);
 
     return Column(children: [
       if (needsHandle)
@@ -151,17 +140,13 @@ class _TodayMedsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final doses =
-        ref.watch(todayDosesProvider).valueOrNull ?? const <TodayDose>[];
+    final doses = ref.watch(todayDosesProvider).valueOrNull ?? const <TodayDose>[];
     if (doses.isEmpty) return const SizedBox.shrink();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      RowHead(s.strings.meds.meds_today,
-          action: s.strings.common.see_all, onAction: () => s.setTab('meds'), ar: s.rtl),
+      RowHead(s.strings.meds.meds_today, action: s.strings.common.see_all, onAction: () => s.setTab('meds'), ar: s.rtl),
       PCard(
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(children: doses.indexed
-            .map((e) => _HomeDoseRow(dose: e.$2, first: e.$1 == 0))
-            .toList()),
+        child: Column(children: doses.indexed.map((e) => _HomeDoseRow(dose: e.$2, first: e.$1 == 0)).toList()),
       ),
     ]);
   }
@@ -172,8 +157,7 @@ class _HomeDoseRow extends StatelessWidget {
   final TodayDose dose;
   final bool first;
 
-  static String _hm(DateTime d) =>
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  static String _hm(DateTime d) => '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -185,34 +169,27 @@ class _HomeDoseRow extends StatelessWidget {
       _hm(dose.scheduledAt),
     ].join(' · ');
     return Container(
-      decoration: BoxDecoration(
-          border: first ? null : const Border(top: BorderSide(color: T.ink100))),
+      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       child: Row(children: [
         Container(
-            width: 42, height: 42, alignment: Alignment.center,
-            decoration: BoxDecoration(
-                color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
             child: Icon(LucideIcons.pill, size: 21, color: s.accent.d)),
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(med.name,
-                style: Typo.body(ar: s.rtl)
-                    .copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            Text(subtitle,
-                textDirection: TextDirection.ltr,
-                style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            Text(med.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            Text(subtitle, textDirection: TextDirection.ltr, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ]),
         ),
         if (taken)
           Pill(s.strings.meds.taken, kind: PillKind.success, ar: s.rtl)
         else
           PButton(s.strings.meds.take,
-              variant: BtnVariant.soft,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: () => s.setTab('meds')),
+              variant: BtnVariant.soft, accent: s.accent, ar: s.rtl, onTap: () => s.setTab('meds')),
       ]),
     );
   }
@@ -236,7 +213,13 @@ class _AvatarButton extends StatelessWidget {
 }
 
 class _Shortcut extends StatelessWidget {
-  const _Shortcut({required this.icon, required this.iconBg, required this.iconFg, required this.title, required this.subtitle, required this.onTap});
+  const _Shortcut(
+      {required this.icon,
+      required this.iconBg,
+      required this.iconFg,
+      required this.title,
+      required this.subtitle,
+      required this.onTap});
   final IconData icon;
   final Color iconBg;
   final Color iconFg;

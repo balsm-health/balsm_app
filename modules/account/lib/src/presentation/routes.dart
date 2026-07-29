@@ -46,8 +46,7 @@ final accountRoutes = <RouteBase>[
       if (FlavorConfig.current.flavor != Flavor.dev) {
         return const SizedBox.shrink();
       }
-      final controller =
-          ProviderScope.containerOf(context).read(balsmApiControllerProvider);
+      final controller = ProviderScope.containerOf(context).read(balsmApiControllerProvider);
       return ServerSelectorScreen(controller: controller);
     },
   ),

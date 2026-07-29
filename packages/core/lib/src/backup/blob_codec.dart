@@ -21,8 +21,7 @@ class BackupCodec {
   static final _rng = Random.secure();
 
   /// Generates a random 16-byte salt.
-  static Uint8List newSalt() =>
-      Uint8List.fromList(List<int>.generate(16, (_) => _rng.nextInt(256)));
+  static Uint8List newSalt() => Uint8List.fromList(List<int>.generate(16, (_) => _rng.nextInt(256)));
 
   /// Encrypts [data] under a key derived from [recoverySecret] + [salt].
   static Future<Uint8List> encrypt(

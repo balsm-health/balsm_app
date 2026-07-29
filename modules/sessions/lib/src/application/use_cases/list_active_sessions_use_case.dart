@@ -43,7 +43,6 @@ class ListActiveSessionsUseCase {
   }
 }
 
-final listActiveSessionsUseCaseProvider =
-    Provider<ListActiveSessionsUseCase>((ref) {
+final listActiveSessionsUseCaseProvider = Provider<ListActiveSessionsUseCase>((ref) {
   return ListActiveSessionsUseCase(ref.watch(sessionsApiProvider));
 });

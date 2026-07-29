@@ -58,9 +58,7 @@ class _MetricTile extends StatelessWidget {
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final trendColor = tile.trend == BalsmMetricTrend.up
         ? BalsmColors.danger
-        : (tile.trend == BalsmMetricTrend.down
-            ? const Color(0xFF1F6A36)
-            : BalsmColors.fg3);
+        : (tile.trend == BalsmMetricTrend.down ? const Color(0xFF1F6A36) : BalsmColors.fg3);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -126,9 +124,7 @@ class _MetricTile extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  tile.trend == BalsmMetricTrend.up
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
+                  tile.trend == BalsmMetricTrend.up ? Icons.arrow_upward : Icons.arrow_downward,
                   size: 14,
                   color: trendColor,
                 ),

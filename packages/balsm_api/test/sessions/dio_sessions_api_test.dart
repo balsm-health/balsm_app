@@ -25,8 +25,7 @@ void main() {
   });
 
   test('listSessions throws fromEnvelope ApiException on error body', () {
-    final adapter = FakeHttpAdapter((_) =>
-        jsonResponse('{"data": null, "error": {"message": "boom"}}'));
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": null, "error": {"message": "boom"}}'));
     final api = DioSessionsApi(net: fakeNet(adapter));
     expect(
       api.listSessions(),
@@ -44,15 +43,12 @@ void main() {
   });
 
   test('revokeAllSessions parses revoked_count with 0 default', () async {
-    final adapter =
-        FakeHttpAdapter((_) => jsonResponse('{"data": {"revoked_count": 3}}'));
-    final res =
-        await DioSessionsApi(net: fakeNet(adapter)).revokeAllSessions();
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"revoked_count": 3}}'));
+    final res = await DioSessionsApi(net: fakeNet(adapter)).revokeAllSessions();
     expect(res.revokedCount, 3);
 
     final adapter2 = FakeHttpAdapter((_) => jsonResponse('{"data": {}}'));
-    final res2 =
-        await DioSessionsApi(net: fakeNet(adapter2)).revokeAllSessions();
+    final res2 = await DioSessionsApi(net: fakeNet(adapter2)).revokeAllSessions();
     expect(res2.revokedCount, 0);
   });
 }

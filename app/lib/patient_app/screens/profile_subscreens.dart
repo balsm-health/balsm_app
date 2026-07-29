@@ -86,8 +86,7 @@ class _SectionHead extends StatelessWidget {
 /// Reads the current user's on-device [HealthProfile] (SQLCipher-backed PHI).
 /// Re-runs when the signed-in user changes; emits `null` when signed out.
 /// Writes go through the profile use-cases, which invalidate this provider.
-final _medProfileProvider =
-    FutureProvider.autoDispose<HealthProfile?>((ref) async {
+final _medProfileProvider = FutureProvider.autoDispose<HealthProfile?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
   return ref.watch(profileDataSourceProvider).getProfile(userId);
@@ -97,8 +96,7 @@ class MedicalProfileScreen extends ConsumerStatefulWidget {
   const MedicalProfileScreen({super.key, required this.s});
   final PatientAppState s;
   @override
-  ConsumerState<MedicalProfileScreen> createState() =>
-      _MedicalProfileScreenState();
+  ConsumerState<MedicalProfileScreen> createState() => _MedicalProfileScreenState();
 }
 
 class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
@@ -165,9 +163,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   Future<void> _removeAllergy(AllergyId id) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
-    final result = await ref
-        .read(removeAllergyUseCaseProvider)
-        .execute(userId: userId, allergyId: id);
+    final result = await ref.read(removeAllergyUseCaseProvider).execute(userId: userId, allergyId: id);
     if (!mounted) return;
     if (result.isSuccess) {
       ref.invalidate(_medProfileProvider);
@@ -199,8 +195,13 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     setState(() => saving = true);
     Future.delayed(const Duration(milliseconds: 850), () {
       if (!mounted) return;
-      setState(() { saving = false; saved = true; });
-      Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => saved = false); });
+      setState(() {
+        saving = false;
+        saved = true;
+      });
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => saved = false);
+      });
     });
   }
 
@@ -236,85 +237,131 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
       trailing: saved ? Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl) : null,
       children: [
         _SectionHead(LucideIcons.clipboardList, s.strings.profile.pd_conditions, s: s),
-        _ConditionEditor(s: s, conditions: conditionList,
-            bg: s.accent.bg, fg: s.accent.d, onAdd: _addCondition),
+        _ConditionEditor(s: s, conditions: conditionList, bg: s.accent.bg, fg: s.accent.d, onAdd: _addCondition),
         _SectionHead(LucideIcons.alertOctagon, s.strings.profile.pd_allergies, s: s),
-        _ChipEditor(s: s, labels: allergyList.map((a) => a.name).toList(), ctrl: algInput,
-            hint: s.strings.profile.pd_add_alg, bg: const Color(0xFFFBEBE7), fg: T.danger,
-            onAdd: _addAllergy, onRemoveAt: (i) => _removeAllergy(allergyList[i].id)),
+        _ChipEditor(
+            s: s,
+            labels: allergyList.map((a) => a.name).toList(),
+            ctrl: algInput,
+            hint: s.strings.profile.pd_add_alg,
+            bg: const Color(0xFFFBEBE7),
+            fg: T.danger,
+            onAdd: _addAllergy,
+            onRemoveAt: (i) => _removeAllergy(allergyList[i].id)),
         _SectionHead(LucideIcons.droplet, s.strings.profile.pd_blood, s: s),
-        PCard(padding: const EdgeInsets.all(16), child: Wrap(spacing: 8, runSpacing: 8, children: const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
-            .map((bt) => Pressable(
-                  onTap: () => _setBloodType(bt),
-                  scale: 0.96,
-                  child: AnimatedContainer(
-                    duration: Motion.base,
-                    curve: Motion.easeOut,
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                    decoration: BoxDecoration(
-                      color: selectedBlood == bt ? s.accent.bg : Colors.white,
-                      borderRadius: BorderRadius.circular(T.rMd),
-                      border: Border.all(color: selectedBlood == bt ? s.accent.main : T.border, width: 1.5),
-                    ),
-                    child: Text(bt, style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: selectedBlood == bt ? s.accent.d : T.fg2)),
-                  ),
-                ))
-            .toList())),
+        PCard(
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
+                    .map((bt) => Pressable(
+                          onTap: () => _setBloodType(bt),
+                          scale: 0.96,
+                          child: AnimatedContainer(
+                            duration: Motion.base,
+                            curve: Motion.easeOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                            decoration: BoxDecoration(
+                              color: selectedBlood == bt ? s.accent.bg : Colors.white,
+                              borderRadius: BorderRadius.circular(T.rMd),
+                              border: Border.all(color: selectedBlood == bt ? s.accent.main : T.border, width: 1.5),
+                            ),
+                            child: Text(bt,
+                                style: Typo.num(
+                                    size: FS.sm,
+                                    weight: FontWeight.w700,
+                                    color: selectedBlood == bt ? s.accent.d : T.fg2)),
+                          ),
+                        ))
+                    .toList())),
         _SectionHead(LucideIcons.ruler, s.strings.profile.pd_measurements, s: s),
-        PCard(padding: const EdgeInsets.all(16), child: Column(children: [
-          Row(children: [
-            Expanded(child: _numField('${s.strings.profile.pd_weight} (${s.strings.profile.pd_kg})', weight)),
-            const SizedBox(width: 12),
-            Expanded(child: _numField('${s.strings.profile.pd_height} (${s.strings.profile.pd_cm})', height)),
-          ]),
-          if (bmi != null) ...[
-            const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Divider(height: 1, color: T.ink100)),
-            Row(children: [
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.strings.profile.bmi_label.toUpperCase(), style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
-                Text(bmi.value, style: Typo.display().copyWith(fontSize: FS.xl2)),
+        PCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              Row(children: [
+                Expanded(child: _numField('${s.strings.profile.pd_weight} (${s.strings.profile.pd_kg})', weight)),
+                const SizedBox(width: 12),
+                Expanded(child: _numField('${s.strings.profile.pd_height} (${s.strings.profile.pd_cm})', height)),
               ]),
-              const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Pill(s.t(bmi.key), kind: PillKind.neutral, dot: false, ar: s.rtl, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3)),
-                const SizedBox(height: 8),
-                LayoutBuilder(builder: (context, c) => Stack(clipBehavior: Clip.none, children: [
-                  Container(height: 6, decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(99),
-                    gradient: const LinearGradient(colors: [T.petalBlue, T.petalMint, Color(0xFFD97A20), T.danger], stops: [0, 0.33, 0.66, 1]),
-                  )),
-                  Positioned(
-                    left: (c.maxWidth * bmi.pct / 100) - 6,
-                    top: -3,
-                    child: Container(width: 12, height: 12, decoration: BoxDecoration(
-                      color: Colors.white, shape: BoxShape.circle, border: Border.all(color: T.fg1, width: 2.5))),
-                  ),
-                ])),
-              ])),
-            ]),
-          ],
-        ])),
+              if (bmi != null) ...[
+                const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Divider(height: 1, color: T.ink100)),
+                Row(children: [
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.strings.profile.bmi_label.toUpperCase(),
+                        style: Typo.meta(ar: s.rtl)
+                            .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
+                    Text(bmi.value, style: Typo.display().copyWith(fontSize: FS.xl2)),
+                  ]),
+                  const SizedBox(width: 14),
+                  Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Pill(s.t(bmi.key),
+                        kind: PillKind.neutral,
+                        dot: false,
+                        ar: s.rtl,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3)),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(
+                        builder: (context, c) => Stack(clipBehavior: Clip.none, children: [
+                              Container(
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(99),
+                                    gradient: const LinearGradient(
+                                        colors: [T.petalBlue, T.petalMint, Color(0xFFD97A20), T.danger],
+                                        stops: [0, 0.33, 0.66, 1]),
+                                  )),
+                              Positioned(
+                                left: (c.maxWidth * bmi.pct / 100) - 6,
+                                top: -3,
+                                child: Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: T.fg1, width: 2.5))),
+                              ),
+                            ])),
+                  ])),
+                ]),
+              ],
+            ])),
         const SizedBox(height: 22),
         PButton(saving ? '…' : (saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save),
             icon: saved ? LucideIcons.check : LucideIcons.save,
-            variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl,
+            variant: BtnVariant.primary,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: s.rtl,
             onTap: saving ? null : _save),
       ],
     );
   }
 
-  Widget _numField(String label, TextEditingController c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label.toUpperCase(), style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
+  Widget _numField(String label, TextEditingController c) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label.toUpperCase(),
+            style: Typo.meta(ar: s.rtl)
+                .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
         const SizedBox(height: 8),
         TextField(
-          controller: c, textDirection: TextDirection.ltr, keyboardType: TextInputType.number,
+          controller: c,
+          textDirection: TextDirection.ltr,
+          keyboardType: TextInputType.number,
           onChanged: (_) => setState(() {}),
           style: Typo.num(size: FS.lg),
           decoration: InputDecoration(
-            isDense: true, filled: true, fillColor: Colors.white,
+            isDense: true,
+            filled: true,
+            fillColor: Colors.white,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
           ),
         ),
       ]);
@@ -324,7 +371,15 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
 /// current items, [onAdd] persists a new one, and [onRemoveAt] (when provided)
 /// deletes item `i`. No local list mutation.
 class _ChipEditor extends StatelessWidget {
-  const _ChipEditor({required this.s, required this.labels, required this.ctrl, required this.hint, required this.bg, required this.fg, required this.onAdd, this.onRemoveAt});
+  const _ChipEditor(
+      {required this.s,
+      required this.labels,
+      required this.ctrl,
+      required this.hint,
+      required this.bg,
+      required this.fg,
+      required this.onAdd,
+      this.onRemoveAt});
   final PatientAppState s;
   final List<String> labels;
   final TextEditingController ctrl;
@@ -338,45 +393,70 @@ class _ChipEditor extends StatelessWidget {
     ctrl.clear();
     onAdd(v);
   }
+
   @override
-  Widget build(BuildContext context) => PCard(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget build(BuildContext context) => PCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (labels.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: labels.indexed
-              .map((e) => Container(
-                    padding: onRemoveAt == null
-                        ? const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6)
-                        : const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
-                    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rPill)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text(e.$2, style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
-                      if (onRemoveAt != null) ...[
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () => onRemoveAt!(e.$1),
-                          child: Icon(LucideIcons.x, size: 13, color: fg),
-                        ),
-                      ],
-                    ]),
-                  ))
-              .toList())),
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: labels.indexed
+                      .map((e) => Container(
+                            padding: onRemoveAt == null
+                                ? const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6)
+                                : const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
+                            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rPill)),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text(e.$2,
+                                  style: Typo.body(ar: s.rtl)
+                                      .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
+                              if (onRemoveAt != null) ...[
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: () => onRemoveAt!(e.$1),
+                                  child: Icon(LucideIcons.x, size: 13, color: fg),
+                                ),
+                              ],
+                            ]),
+                          ))
+                      .toList())),
         Row(children: [
-          Expanded(child: TextField(
-            controller: ctrl, textDirection: s.dir, onSubmitted: (_) => _add(),
+          Expanded(
+              child: TextField(
+            controller: ctrl,
+            textDirection: s.dir,
+            onSubmitted: (_) => _add(),
             style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
             decoration: InputDecoration(
-              hintText: hint, hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
-              isDense: true, filled: true, fillColor: Colors.white,
+              hintText: hint,
+              hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
+              isDense: true,
+              filled: true,
+              fillColor: Colors.white,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(T.rMd),
+                  borderSide: const BorderSide(color: T.border, width: 1.5)),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
             ),
           )),
           const SizedBox(width: 8),
           Pressable(
             onTap: _add,
             scale: 0.94,
-            child: Container(width: 44, height: 44, alignment: Alignment.center,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.borderStrong)),
+            child: Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(T.rMd),
+                    border: Border.all(color: T.borderStrong)),
                 child: const Icon(LucideIcons.plus, size: 18, color: T.fg1)),
           ),
         ]),
@@ -389,7 +469,8 @@ class _ChipEditor extends StatelessWidget {
 /// AddChronicConditionUseCase. (No remove: the module exposes no remove-condition
 /// use-case yet, so condition chips are display-only.) Prototype field styling.
 class _ConditionEditor extends StatefulWidget {
-  const _ConditionEditor({required this.s, required this.conditions, required this.bg, required this.fg, required this.onAdd});
+  const _ConditionEditor(
+      {required this.s, required this.conditions, required this.bg, required this.fg, required this.onAdd});
   final PatientAppState s;
   final List<ChronicCondition> conditions;
   final Color bg, fg;
@@ -426,9 +507,13 @@ class _ConditionEditorState extends State<_ConditionEditor> {
   }
 
   @override
-  Widget build(BuildContext context) => PCard(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget build(BuildContext context) => PCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (widget.conditions.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 12), child: Wrap(spacing: 8, runSpacing: 8, children: widget.conditions.map(_chip).toList())),
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(spacing: 8, runSpacing: 8, children: widget.conditions.map(_chip).toList())),
         _field(_name, s.strings.profile.pd_add_cond, s.dir),
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -439,8 +524,14 @@ class _ConditionEditorState extends State<_ConditionEditor> {
           Pressable(
             onTap: _add,
             scale: 0.94,
-            child: Container(width: 44, height: 44, alignment: Alignment.center,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.borderStrong)),
+            child: Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(T.rMd),
+                    border: Border.all(color: T.borderStrong)),
                 child: const Icon(LucideIcons.plus, size: 18, color: T.fg1)),
           ),
         ]),
@@ -455,10 +546,12 @@ class _ConditionEditorState extends State<_ConditionEditor> {
       padding: const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6),
       decoration: BoxDecoration(color: widget.bg, borderRadius: BorderRadius.circular(T.rPill)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(c.name, style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: widget.fg)),
+        Text(c.name,
+            style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: widget.fg)),
         if (meta.isNotEmpty) ...[
           const SizedBox(width: 6),
-          Text(meta, textDirection: TextDirection.ltr,
+          Text(meta,
+              textDirection: TextDirection.ltr,
               style: Typo.num(size: FS.xs2, weight: FontWeight.w700, color: widget.fg)),
         ],
       ]),
@@ -466,15 +559,22 @@ class _ConditionEditorState extends State<_ConditionEditor> {
   }
 
   Widget _field(TextEditingController c, String hint, TextDirection dir, {bool number = false}) => TextField(
-        controller: c, textDirection: dir, onSubmitted: (_) => _add(),
+        controller: c,
+        textDirection: dir,
+        onSubmitted: (_) => _add(),
         keyboardType: number ? TextInputType.number : TextInputType.text,
         style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
         decoration: InputDecoration(
-          hintText: hint, hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
-          isDense: true, filled: true, fillColor: Colors.white,
+          hintText: hint,
+          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       );
 }
@@ -505,15 +605,18 @@ class CareTeamScreen extends StatelessWidget {
                   style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
               const SizedBox(height: 4),
               Text(s.strings.care.care_add_help,
-                  textAlign: TextAlign.center,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                  textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),
           ),
           const SizedBox(height: 16),
           Pressable(
-            onTap: () { Navigator.pop(context); s.setTab('map'); },
+            onTap: () {
+              Navigator.pop(context);
+              s.setTab('map');
+            },
             child: Container(
-              height: 52, alignment: Alignment.center,
+              height: 52,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(T.rMd),
                 border: Border.all(color: T.borderStrong, width: 1.5, style: BorderStyle.solid),
@@ -521,7 +624,8 @@ class CareTeamScreen extends StatelessWidget {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
                 const Icon(LucideIcons.userPlus, size: 17, color: T.fg1),
                 const SizedBox(width: 8),
-                Text(s.strings.care.care_find, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                Text(s.strings.care.care_find,
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
               ]),
             ),
           ),
@@ -548,24 +652,31 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
         children: [
           _SectionHead(LucideIcons.share2, s.strings.privacy.pv_sharing, s: s),
           _listCard([
-            _toggle(s.strings.privacy.pv_share_team, s.strings.privacy.pv_share_team_h, shareTeam, (v) => setState(() => shareTeam = v)),
-            _toggle(s.strings.privacy.pv_analytics, s.strings.privacy.pv_analytics_h, analytics, (v) => setState(() => analytics = v)),
-            _toggle(s.strings.privacy.pv_research, s.strings.privacy.pv_research_h, research, (v) => setState(() => research = v), last: true),
+            _toggle(s.strings.privacy.pv_share_team, s.strings.privacy.pv_share_team_h, shareTeam,
+                (v) => setState(() => shareTeam = v)),
+            _toggle(s.strings.privacy.pv_analytics, s.strings.privacy.pv_analytics_h, analytics,
+                (v) => setState(() => analytics = v)),
+            _toggle(s.strings.privacy.pv_research, s.strings.privacy.pv_research_h, research,
+                (v) => setState(() => research = v),
+                last: true),
           ]),
           _SectionHead(LucideIcons.lock, s.strings.privacy.pv_security, s: s),
           _listCard([
             _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
-            _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v), last: true),
+            _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v),
+                last: true),
           ]),
           _SectionHead(LucideIcons.database, s.strings.privacy.pv_yourdata, s: s),
           _listCard([
             _action(LucideIcons.download, s.strings.privacy.pv_export, s.strings.privacy.pv_export_h),
             _action(LucideIcons.folderHeart, s.strings.privacy.pv_download, s.strings.privacy.pv_download_h),
-            _action(LucideIcons.appWindow, s.strings.privacy.pv_connected, s.strings.privacy.pv_connected_h, last: true),
+            _action(LucideIcons.appWindow, s.strings.privacy.pv_connected, s.strings.privacy.pv_connected_h,
+                last: true),
           ]),
           _SectionHead(LucideIcons.alertTriangle, s.strings.privacy.pv_danger, s: s),
           _listCard([
-            _action(LucideIcons.trash2, s.strings.privacy.pv_delete, s.strings.privacy.pv_delete_h, danger: true, last: true),
+            _action(LucideIcons.trash2, s.strings.privacy.pv_delete, s.strings.privacy.pv_delete_h,
+                danger: true, last: true),
           ]),
           Padding(
             padding: const EdgeInsets.only(top: 18),
@@ -590,7 +701,8 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
       );
 
   Widget _toggle(String title, String desc, bool on, ValueChanged<bool> set, {bool last = false}) => _row([
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
           const SizedBox(height: 2),
           Text(desc, style: Typo.meta(ar: s.rtl)),
@@ -600,12 +712,17 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
       ], last);
 
   Widget _action(IconData icon, String title, String desc, {bool danger = false, bool last = false}) => _row([
-        Container(width: 38, height: 38, alignment: Alignment.center,
+        Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
             decoration: BoxDecoration(color: danger ? T.dangerBg : T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
             child: Icon(icon, size: 18, color: danger ? T.danger : T.fg2)),
         const SizedBox(width: 14),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: danger ? T.danger : T.fg1)),
+        Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: danger ? T.danger : T.fg1)),
           const SizedBox(height: 2),
           Text(desc, style: Typo.meta(ar: s.rtl)),
         ])),
@@ -624,11 +741,15 @@ class _PSwitch extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          width: 46, height: 28,
+          width: 46,
+          height: 28,
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(color: on ? accent : T.ink300, borderRadius: BorderRadius.circular(999)),
           alignment: on ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
-          child: Container(width: 22, height: 22, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: T.shadowXs)),
+          child: Container(
+              width: 22,
+              height: 22,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: T.shadowXs)),
         ),
       );
 }
@@ -662,8 +783,12 @@ class EmergencyScreen extends StatelessWidget {
           LayoutBuilder(builder: (context, c) {
             final cols = c.maxWidth >= 520 ? 4 : 2;
             return GridView.count(
-              crossAxisCount: cols, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1.0,
+              crossAxisCount: cols,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.0,
               children: _contacts.map(_tile).toList(),
             );
           }),
@@ -680,15 +805,20 @@ class EmergencyScreen extends StatelessWidget {
 
   // `.emergency-tile:active { transform: scale(0.98) }` — tap-to-call tile.
   Widget _tile((String, IconData, String, Color, Color) ct) => Pressable(
-        onTap: () {},
-        scale: 0.98,
-        child: Container(
+      onTap: () {},
+      scale: 0.98,
+      child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(T.rLg),
-          border: Border.all(color: T.border), boxShadow: T.shadowSm),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rLg),
+            border: Border.all(color: T.border),
+            boxShadow: T.shadowSm),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 44, height: 44, alignment: Alignment.center,
+          Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
               decoration: BoxDecoration(color: ct.$5, borderRadius: BorderRadius.circular(T.rMd)),
               child: Icon(ct.$2, size: 22, color: ct.$4)),
           const Spacer(),

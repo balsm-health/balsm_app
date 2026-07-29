@@ -40,11 +40,8 @@ class ActiveSession {
       deviceLabel: json['device_label'] as String,
       deviceType: json['device_type'] as String,
       firstSeenAt: DateTime.parse(json['first_seen_at'] as String).toUtc(),
-      lastActivityAt:
-          DateTime.parse(json['last_activity_at'] as String).toUtc(),
-      revokedAt: json['revoked_at'] != null
-          ? DateTime.parse(json['revoked_at'] as String).toUtc()
-          : null,
+      lastActivityAt: DateTime.parse(json['last_activity_at'] as String).toUtc(),
+      revokedAt: json['revoked_at'] != null ? DateTime.parse(json['revoked_at'] as String).toUtc() : null,
       isCurrent: json['is_current'] as bool? ?? false,
       approxLocation: json['approx_location'] as String?,
     );

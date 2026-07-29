@@ -23,29 +23,23 @@ class FS {
 class Typo {
   Typo._();
 
-  static TextStyle _display(bool ar) =>
-      ar ? GoogleFonts.ibmPlexSansArabic() : GoogleFonts.montserrat();
-  static TextStyle _body(bool ar) =>
-      ar ? GoogleFonts.ibmPlexSansArabic() : GoogleFonts.ibmPlexSans();
+  static TextStyle _display(bool ar) => ar ? GoogleFonts.ibmPlexSansArabic() : GoogleFonts.montserrat();
+  static TextStyle _body(bool ar) => ar ? GoogleFonts.ibmPlexSansArabic() : GoogleFonts.ibmPlexSans();
   static TextStyle mono() => GoogleFonts.ibmPlexMono();
 
-  static TextStyle display({bool ar = false}) => _display(ar).copyWith(
-      fontWeight: FontWeight.w800, fontSize: FS.xl3, height: 1.1, letterSpacing: -0.64, color: T.fg1);
-  static TextStyle title({bool ar = false}) => _display(ar).copyWith(
-      fontWeight: FontWeight.w700, fontSize: FS.xl2, height: 1.18, letterSpacing: -0.4, color: T.fg1);
-  static TextStyle heading({bool ar = false}) => _display(ar).copyWith(
-      fontWeight: FontWeight.w700, fontSize: FS.xl, height: 1.25, letterSpacing: -0.21, color: T.fg1);
-  static TextStyle subhead({bool ar = false}) => _display(ar).copyWith(
-      fontWeight: FontWeight.w600, fontSize: FS.lg, height: 1.3, color: T.fg1);
-  static TextStyle body({bool ar = false}) =>
-      _body(ar).copyWith(fontSize: FS.md, height: 1.55, color: T.fg2);
-  static TextStyle bodySm({bool ar = false}) =>
-      _body(ar).copyWith(fontSize: FS.sm, height: 1.5, color: T.fg2);
-  static TextStyle meta({bool ar = false}) =>
-      _body(ar).copyWith(fontSize: FS.xs, height: 1.4, color: T.fg3);
-  static TextStyle eyebrow(Color color, {bool ar = false}) => _body(ar).copyWith(
-      fontSize: FS.xs2, fontWeight: FontWeight.w700,
-      letterSpacing: ar ? 0 : 1.76, color: color);
+  static TextStyle display({bool ar = false}) => _display(ar)
+      .copyWith(fontWeight: FontWeight.w800, fontSize: FS.xl3, height: 1.1, letterSpacing: -0.64, color: T.fg1);
+  static TextStyle title({bool ar = false}) => _display(ar)
+      .copyWith(fontWeight: FontWeight.w700, fontSize: FS.xl2, height: 1.18, letterSpacing: -0.4, color: T.fg1);
+  static TextStyle heading({bool ar = false}) => _display(ar)
+      .copyWith(fontWeight: FontWeight.w700, fontSize: FS.xl, height: 1.25, letterSpacing: -0.21, color: T.fg1);
+  static TextStyle subhead({bool ar = false}) =>
+      _display(ar).copyWith(fontWeight: FontWeight.w600, fontSize: FS.lg, height: 1.3, color: T.fg1);
+  static TextStyle body({bool ar = false}) => _body(ar).copyWith(fontSize: FS.md, height: 1.55, color: T.fg2);
+  static TextStyle bodySm({bool ar = false}) => _body(ar).copyWith(fontSize: FS.sm, height: 1.5, color: T.fg2);
+  static TextStyle meta({bool ar = false}) => _body(ar).copyWith(fontSize: FS.xs, height: 1.4, color: T.fg3);
+  static TextStyle eyebrow(Color color, {bool ar = false}) =>
+      _body(ar).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 1.76, color: color);
   static TextStyle num({double size = FS.md, FontWeight weight = FontWeight.w600, Color color = T.fg1}) =>
       mono().copyWith(fontSize: size, fontWeight: weight, color: color);
 }
@@ -58,8 +52,7 @@ class LIcon extends StatelessWidget {
   final Color? color;
   final double stroke; // visual hint only
   @override
-  Widget build(BuildContext context) =>
-      Icon(icon, size: size, color: color ?? T.fg2);
+  Widget build(BuildContext context) => Icon(icon, size: size, color: color ?? T.fg2);
 }
 
 // ── Status-bar / home-indicator spacers ──────────────────────
@@ -120,7 +113,8 @@ class _RoundBtnState extends State<RoundBtn> {
       child: AnimatedContainer(
         duration: Motion.base,
         curve: Motion.easeOut,
-        width: 44, height: 44,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: _down ? T.ink100 : rest,
           shape: BoxShape.circle,
@@ -142,13 +136,14 @@ class Avatar extends StatelessWidget {
   final Widget? child;
   @override
   Widget build(BuildContext context) => Container(
-        width: size, height: size,
+        width: size,
+        height: size,
         alignment: Alignment.center,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         child: child ??
             Text(initials,
-                style: Typo._display(ar).copyWith(
-                    fontWeight: FontWeight.w700, fontSize: size * 0.36, color: Colors.white)),
+                style: Typo._display(ar)
+                    .copyWith(fontWeight: FontWeight.w700, fontSize: size * 0.36, color: Colors.white)),
       );
 }
 
@@ -221,8 +216,15 @@ enum BtnVariant { primary, secondary, ghost, soft }
 /// Button (.btn) with variants + sizes.
 class PButton extends StatelessWidget {
   const PButton(this.label,
-      {super.key, this.icon, this.onTap, this.variant = BtnVariant.primary,
-      this.large = false, this.block = false, this.accent, this.ar = false, this.color});
+      {super.key,
+      this.icon,
+      this.onTap,
+      this.variant = BtnVariant.primary,
+      this.large = false,
+      this.block = false,
+      this.accent,
+      this.ar = false,
+      this.color});
   final String label;
   final IconData? icon;
   final VoidCallback? onTap;
@@ -241,16 +243,22 @@ class PButton extends StatelessWidget {
     List<BoxShadow>? shadow;
     switch (variant) {
       case BtnVariant.primary:
-        bg = a.main; fg = Colors.white; shadow = a.boxShadow;
+        bg = a.main;
+        fg = Colors.white;
+        shadow = a.boxShadow;
         break;
       case BtnVariant.secondary:
-        bg = Colors.white; fg = color ?? T.fg1; border = Border.all(color: T.borderStrong);
+        bg = Colors.white;
+        fg = color ?? T.fg1;
+        border = Border.all(color: T.borderStrong);
         break;
       case BtnVariant.ghost:
-        bg = Colors.transparent; fg = color ?? a.main;
+        bg = Colors.transparent;
+        fg = color ?? a.main;
         break;
       case BtnVariant.soft:
-        bg = a.bg; fg = a.d;
+        bg = a.bg;
+        fg = a.d;
         break;
     }
     final child = Container(
@@ -268,8 +276,8 @@ class PButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (icon != null) ...[Icon(icon, size: 20, color: fg), const SizedBox(width: 9)],
-          Text(label, style: Typo._body(ar).copyWith(
-              fontSize: large ? FS.lg : FS.md, fontWeight: FontWeight.w600, color: fg)),
+          Text(label,
+              style: Typo._body(ar).copyWith(fontSize: large ? FS.lg : FS.md, fontWeight: FontWeight.w600, color: fg)),
         ],
       ),
     );
@@ -304,13 +312,15 @@ class RowHead extends StatelessWidget {
             Icon(leadingIcon, size: 18, color: T.fg3),
             const SizedBox(width: 8),
           ],
-          Expanded(child: Text(title,
-              style: Typo._display(ar).copyWith(fontWeight: FontWeight.w700, fontSize: fontSize, color: T.fg1))),
+          Expanded(
+              child: Text(title,
+                  style: Typo._display(ar).copyWith(fontWeight: FontWeight.w700, fontSize: fontSize, color: T.fg1))),
           if (action != null)
             GestureDetector(
               onTap: onAction,
               child: Text(action!,
-                  style: Typo._body(ar).copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: Accent.blue.main)),
+                  style:
+                      Typo._body(ar).copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: Accent.blue.main)),
             ),
         ]),
       );
@@ -318,7 +328,8 @@ class RowHead extends StatelessWidget {
 
 /// Circular progress ring (streak / adherence).
 class RingProgress extends StatelessWidget {
-  const RingProgress({super.key, required this.progress, required this.color, this.label, this.size = 56, this.labelStyle});
+  const RingProgress(
+      {super.key, required this.progress, required this.color, this.label, this.size = 56, this.labelStyle});
   final double progress; // 0..1
   final Color color;
   final String? label;
@@ -328,7 +339,8 @@ class RingProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return SizedBox(
-      width: size, height: size,
+      width: size,
+      height: size,
       child: Stack(alignment: Alignment.center, children: [
         // Animate the arc sweep from 0 → progress (`.b-progress-ring__fill`
         // stroke-dashoffset transition over --dur-slow ease-out).
@@ -336,8 +348,7 @@ class RingProgress extends StatelessWidget {
           tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
           duration: reduce ? Duration.zero : Motion.slow,
           curve: Motion.easeOut,
-          builder: (_, v, __) =>
-              CustomPaint(size: Size(size, size), painter: _RingPainter(v, color)),
+          builder: (_, v, __) => CustomPaint(size: Size(size, size), painter: _RingPainter(v, color)),
         ),
         if (label != null)
           // `.b-progress-ring__center` — mono, weight 600, tabular numerals.
@@ -356,8 +367,15 @@ class _RingPainter extends CustomPainter {
     const stroke = 6.0;
     final c = size.center(Offset.zero);
     final r = (size.width - stroke) / 2;
-    final track = Paint()..color = T.ink100..style = PaintingStyle.stroke..strokeWidth = stroke;
-    final arc = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = stroke..strokeCap = StrokeCap.round;
+    final track = Paint()
+      ..color = T.ink100
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    final arc = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
     canvas.drawCircle(c, r, track);
     canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2, 2 * math.pi * progress, false, arc);
   }
@@ -368,7 +386,8 @@ class _RingPainter extends CustomPainter {
 
 /// Small leading icon square used in shortcut/list rows.
 class IconSquare extends StatelessWidget {
-  const IconSquare(this.icon, {super.key, required this.bg, required this.fg, this.size = 38, this.iconSize = 19, this.radius = T.rMd});
+  const IconSquare(this.icon,
+      {super.key, required this.bg, required this.fg, this.size = 38, this.iconSize = 19, this.radius = T.rMd});
   final IconData icon;
   final Color bg;
   final Color fg;
@@ -377,7 +396,8 @@ class IconSquare extends StatelessWidget {
   final double radius;
   @override
   Widget build(BuildContext context) => Container(
-        width: size, height: size,
+        width: size,
+        height: size,
         alignment: Alignment.center,
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(radius)),
         child: Icon(icon, size: iconSize, color: fg),
@@ -510,10 +530,8 @@ class RiseIn extends StatefulWidget {
 }
 
 class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: Motion.slow);
-  late final Animation<double> _a =
-      CurvedAnimation(parent: _c, curve: Motion.easeOut);
+  late final AnimationController _c = AnimationController(vsync: this, duration: Motion.slow);
+  late final Animation<double> _a = CurvedAnimation(parent: _c, curve: Motion.easeOut);
 
   @override
   void initState() {
@@ -521,7 +539,9 @@ class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
     if (widget.delay == Duration.zero) {
       _c.forward();
     } else {
-      Future.delayed(widget.delay, () { if (mounted) _c.forward(); });
+      Future.delayed(widget.delay, () {
+        if (mounted) _c.forward();
+      });
     }
   }
 
@@ -605,7 +625,9 @@ class _LinearProgressState extends State<LinearProgress> with SingleTickerProvid
             return Stack(children: [
               PositionedDirectional(
                 start: (-0.42 + 1.42 * e) * w,
-                top: 0, bottom: 0, width: 0.42 * w,
+                top: 0,
+                bottom: 0,
+                width: 0.42 * w,
                 child: DecoratedBox(decoration: BoxDecoration(color: fill, borderRadius: pill)),
               ),
             ]);
@@ -651,9 +673,8 @@ class Shimmer extends StatefulWidget {
 }
 
 class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
-        ..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
+    ..repeat();
 
   @override
   void dispose() {
@@ -670,7 +691,8 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
     );
     if (reduce) {
       return Container(
-        width: widget.width, height: widget.height,
+        width: widget.width,
+        height: widget.height,
         decoration: shape.copyWith(color: T.ink200),
       );
     }
@@ -680,7 +702,8 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
         // 280% background swept by b-shimmer 180% → -180% on an ease-in-out clock.
         final e = Motion.easeInOut.transform(_c.value);
         return Container(
-          width: widget.width, height: widget.height,
+          width: widget.width,
+          height: widget.height,
           decoration: shape.copyWith(
             gradient: LinearGradient(
               begin: Alignment(-1 - 2 * (1 - e), 0),
@@ -710,8 +733,8 @@ class Spinner extends StatefulWidget {
 }
 
 class _SpinnerState extends State<Spinner> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 850))..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 850))
+    ..repeat();
 
   @override
   void dispose() {
@@ -724,7 +747,8 @@ class _SpinnerState extends State<Spinner> with SingleTickerProviderStateMixin {
     final color = widget.color ?? Accent.blue.main;
     return RepaintBoundary(
       child: SizedBox(
-        width: widget.size, height: widget.size,
+        width: widget.size,
+        height: widget.size,
         child: AnimatedBuilder(
           animation: _c,
           builder: (_, __) => Transform.rotate(
@@ -781,8 +805,9 @@ class LoadingOverlay extends StatelessWidget {
       Spinner(color: scrim ? Colors.white : Accent.blue.main),
       if (message != null) ...[
         const SizedBox(height: 18),
-        Text(message!, textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(
-            color: scrim ? Colors.white : T.fg1, fontSize: 17)),
+        Text(message!,
+            textAlign: TextAlign.center,
+            style: Typo.subhead(ar: ar).copyWith(color: scrim ? Colors.white : T.fg1, fontSize: 17)),
       ],
     ]);
     final body = Container(
@@ -815,8 +840,8 @@ class TopLoadingBar extends StatefulWidget {
 }
 
 class _TopLoadingBarState extends State<TopLoadingBar> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1150))..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1150))
+    ..repeat();
 
   @override
   void dispose() {
@@ -844,7 +869,9 @@ class _TopLoadingBarState extends State<TopLoadingBar> with SingleTickerProvider
                     builder: (_, __) => Stack(children: [
                       PositionedDirectional(
                         start: (-0.34 + 1.34 * _c.value) * c.maxWidth,
-                        top: 0, bottom: 0, width: barW,
+                        top: 0,
+                        bottom: 0,
+                        width: barW,
                         child: Container(
                           decoration: BoxDecoration(
                             color: color,

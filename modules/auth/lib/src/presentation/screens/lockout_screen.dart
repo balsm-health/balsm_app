@@ -47,9 +47,7 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
 
   void _tick() {
     final now = DateTime.now();
-    final left = widget.lockedUntil.isAfter(now)
-        ? widget.lockedUntil.difference(now)
-        : Duration.zero;
+    final left = widget.lockedUntil.isAfter(now) ? widget.lockedUntil.difference(now) : Duration.zero;
     if (!mounted) return;
     setState(() => _remaining = left);
     if (left == Duration.zero) _timer?.cancel();
@@ -141,8 +139,7 @@ class _LockoutScreenState extends ConsumerState<LockoutScreen> {
               const SizedBox(height: 32),
               BalsmButton(
                 label: m.retry,
-                onPressed:
-                    _expired ? () => Navigator.of(context).maybePop() : null,
+                onPressed: _expired ? () => Navigator.of(context).maybePop() : null,
               ),
               const Spacer(),
               // Support section
@@ -206,8 +203,7 @@ class _SupportRow extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right,
-                size: 20, color: BalsmColors.ink300),
+            const Icon(Icons.chevron_right, size: 20, color: BalsmColors.ink300),
           ],
         ),
       ),

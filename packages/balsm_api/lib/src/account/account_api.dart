@@ -13,22 +13,17 @@ abstract class AccountApi {
   Future<AccountSelfResponse?> getSelf({CancelToken? cancelToken});
 
   /// POST /account/handle/claim
-  Future<ClaimHandleResponse> claimHandle(ClaimHandleRequest request,
-      {CancelToken? cancelToken});
+  Future<ClaimHandleResponse> claimHandle(ClaimHandleRequest request, {CancelToken? cancelToken});
 
   /// PATCH /account/profile — partial update of the self profile.
-  Future<void> updateProfile(UpdateProfileRequest request,
-      {CancelToken? cancelToken});
+  Future<void> updateProfile(UpdateProfileRequest request, {CancelToken? cancelToken});
 
   /// POST /account/language
-  Future<void> changeLanguage(ChangeLanguageRequest request,
-      {CancelToken? cancelToken});
+  Future<void> changeLanguage(ChangeLanguageRequest request, {CancelToken? cancelToken});
 
   /// POST /account/country
-  Future<void> changeCountry(ChangeCountryRequest request,
-      {CancelToken? cancelToken});
+  Future<void> changeCountry(ChangeCountryRequest request, {CancelToken? cancelToken});
 
   /// GET /account/handle/available?handle=
-  Future<HandleAvailabilityResponse> checkHandleAvailability(String handle,
-      {CancelToken? cancelToken});
+  Future<HandleAvailabilityResponse> checkHandleAvailability(String handle, {CancelToken? cancelToken});
 }

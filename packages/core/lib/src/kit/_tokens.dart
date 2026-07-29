@@ -5,25 +5,25 @@ import 'package:flutter/material.dart';
 class BalsmColors {
   BalsmColors._();
 
-  static const petalAqua    = Color(0xFF02BBB5);
+  static const petalAqua = Color(0xFF02BBB5);
   static const petalEmerald = Color(0xFF01C4A2);
-  static const petalBlue    = Color(0xFF1283FF);
-  static const petalMint    = Color(0xFF55D77F);
-  static const petalViolet  = Color(0xFF724DD0);
+  static const petalBlue = Color(0xFF1283FF);
+  static const petalMint = Color(0xFF55D77F);
+  static const petalViolet = Color(0xFF724DD0);
 
-  static const petalBlue600    = Color(0xFF0F6BCC);
-  static const petalMint600    = Color(0xFF3FC366);
-  static const petalViolet600  = Color(0xFF5C3AB0);
+  static const petalBlue600 = Color(0xFF0F6BCC);
+  static const petalMint600 = Color(0xFF3FC366);
+  static const petalViolet600 = Color(0xFF5C3AB0);
 
-  static const petalAqua50    = Color(0xFFE2F8F6);
-  static const petalBlue50    = Color(0xFFE4F0FF);
-  static const petalMint50    = Color(0xFFE8F9EE);
-  static const petalViolet50  = Color(0xFFECE6FA);
+  static const petalAqua50 = Color(0xFFE2F8F6);
+  static const petalBlue50 = Color(0xFFE4F0FF);
+  static const petalMint50 = Color(0xFFE8F9EE);
+  static const petalViolet50 = Color(0xFFECE6FA);
 
   // App accent = petal-blue (primary CTA, focus, links)
-  static const appAccent      = petalBlue;
-  static const appAccent600   = petalBlue600;
-  static const appAccent50    = petalBlue50;
+  static const appAccent = petalBlue;
+  static const appAccent600 = petalBlue600;
+  static const appAccent50 = petalBlue50;
 
   // Neutrals (warm, olive-biased)
   static const ink900 = Color(0xFF2B2B25);
@@ -35,25 +35,25 @@ class BalsmColors {
   static const ink300 = Color(0xFFC9C9C0);
   static const ink200 = Color(0xFFE1E1D9); // border
   static const ink100 = Color(0xFFEEEEE8);
-  static const ink50  = Color(0xFFF6F6F2);
+  static const ink50 = Color(0xFFF6F6F2);
 
-  static const cream50  = Color(0xFFFAFAF7);
+  static const cream50 = Color(0xFFFAFAF7);
   static const cream100 = Color(0xFFF4F3EC);
 
   // Semantic
-  static const success      = petalMint;
-  static const successBg    = petalMint50;
-  static const warning      = Color(0xFFE5B428);
-  static const warningBg    = Color(0xFFFDF5DC);
-  static const danger       = Color(0xFFD44A3C);
-  static const dangerBg     = Color(0xFFFBEBE7);
-  static const controlled   = petalViolet;
+  static const success = petalMint;
+  static const successBg = petalMint50;
+  static const warning = Color(0xFFE5B428);
+  static const warningBg = Color(0xFFFDF5DC);
+  static const danger = Color(0xFFD44A3C);
+  static const dangerBg = Color(0xFFFBEBE7);
+  static const controlled = petalViolet;
   static const controlledBg = petalViolet50;
 
-  static const surface      = Color(0xFFFFFFFF);
-  static const border       = ink200;
+  static const surface = Color(0xFFFFFFFF);
+  static const border = ink200;
   static const borderStrong = ink300;
-  static const borderFocus  = petalBlue;
+  static const borderFocus = petalBlue;
 
   // Foreground roles
   static const fg1 = ink900;
@@ -64,11 +64,11 @@ class BalsmColors {
 
 class BalsmRadius {
   BalsmRadius._();
-  static const xs   = 4.0;
-  static const sm   = 6.0;
-  static const md   = 10.0;
-  static const lg   = 14.0;
-  static const xl   = 20.0;
+  static const xs = 4.0;
+  static const sm = 6.0;
+  static const md = 10.0;
+  static const lg = 14.0;
+  static const xl = 20.0;
   static const pill = 999.0;
 }
 

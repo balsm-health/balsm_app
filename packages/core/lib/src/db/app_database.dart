@@ -42,8 +42,7 @@ class AppDatabase extends _$AppDatabase {
           // pre-existing DB the `medications`/`health_record` tables predate
           // `health_profile_id`, so indexing it inside `_phiSchema` (which runs
           // before the patches) would fail with "no such column".
-          await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
+          await customStatement('CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
           await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)');
           await runProfileAnchorBackfill();

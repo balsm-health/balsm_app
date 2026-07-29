@@ -15,5 +15,4 @@ import 'data_source.dart';
 /// it. If per-user-per-facility partitioning is ever needed, use a composite
 /// scope (`({UserId user, EntityId entity})`) on [ScopedDataSource] instead
 /// of weakening this rule.
-abstract class EntityDataSource<K, V>
-    extends ScopedDataSource<K, V, EntityId> {}
+abstract class EntityDataSource<K, V> extends ScopedDataSource<K, V, EntityId> {}

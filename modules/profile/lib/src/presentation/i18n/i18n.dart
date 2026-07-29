@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(profileStringsProvider);
 /// ```
-final profileStringsProvider =
-    LocalizationUtil.getProvider<Messages>(profileStrings);
+final profileStringsProvider = LocalizationUtil.getProvider<Messages>(profileStrings);

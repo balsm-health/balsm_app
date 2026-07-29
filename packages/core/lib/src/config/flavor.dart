@@ -32,6 +32,7 @@ class FlavorConfig {
   final String? sentryDsn;
   final String appName;
   final String appNameSuffix;
+
   /// Whether the Dev Config screen may REPOINT the API server (dev + staging).
   /// The screen itself is reachable in every flavor (shake gesture) — in prod it
   /// renders read-only diagnostics with switching disabled.

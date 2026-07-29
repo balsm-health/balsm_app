@@ -146,9 +146,7 @@ class _SessionsList extends ConsumerWidget {
                 label: session.deviceLabel,
                 sublabel: _subtitleFor(session),
                 showChevron: false,
-                onTap: session.isCurrent
-                    ? null
-                    : () => _confirmRevoke(context, ref, session),
+                onTap: session.isCurrent ? null : () => _confirmRevoke(context, ref, session),
                 trailing: session.isCurrent
                     ? const BalsmPill(
                         label: 'This device',
@@ -246,9 +244,7 @@ class _SessionsList extends ConsumerWidget {
       _deviceTypeLabel(session.deviceType),
       'First seen ${_shortDate(session.firstSeenAt)}',
       'Active ${_relativeTime(session.lastActivityAt)}',
-      if (session.approxLocation != null &&
-          session.approxLocation!.trim().isNotEmpty)
-        session.approxLocation!.trim(),
+      if (session.approxLocation != null && session.approxLocation!.trim().isNotEmpty) session.approxLocation!.trim(),
     ];
     return parts.join(' · ');
   }
@@ -279,8 +275,18 @@ class _SessionsList extends ConsumerWidget {
   }
 
   static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   static String _shortDate(DateTime when) {

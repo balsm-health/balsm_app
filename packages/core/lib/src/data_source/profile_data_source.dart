@@ -16,5 +16,4 @@ import 'data_source.dart';
 ///
 /// NOT for facility data — that is [EntityDataSource], which must never
 /// hold PHI.
-abstract class ProfileDataSource<K, V>
-    extends ScopedDataSource<K, V, HealthProfileId> {}
+abstract class ProfileDataSource<K, V> extends ScopedDataSource<K, V, HealthProfileId> {}

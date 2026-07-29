@@ -7,8 +7,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('signup -> country -> email -> otp -> disclosure -> home',
-      (tester) async {
+  testWidgets('signup -> country -> email -> otp -> disclosure -> home', (tester) async {
     // TODO(T184): drive with Patrol:
     //  1. launch app shell (main_dev)
     //  2. select country (EG)

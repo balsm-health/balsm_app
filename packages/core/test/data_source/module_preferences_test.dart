@@ -20,8 +20,7 @@ class _V2Prefs extends ModulePreferences {
         2: (m) async {
           ran.add(2);
           if (failStep2) throw StateError('boom');
-          await m.transform<String>(
-              'storage', (v) => v == 'gdrive' ? 'google_drive' : v);
+          await m.transform<String>('storage', (v) => v == 'gdrive' ? 'google_drive' : v);
         },
       };
 

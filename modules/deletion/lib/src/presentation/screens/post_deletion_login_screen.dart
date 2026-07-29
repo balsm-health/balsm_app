@@ -17,12 +17,10 @@ class PostDeletionLoginScreen extends ConsumerStatefulWidget {
   final DateTime? graceUntil;
 
   @override
-  ConsumerState<PostDeletionLoginScreen> createState() =>
-      _PostDeletionLoginScreenState();
+  ConsumerState<PostDeletionLoginScreen> createState() => _PostDeletionLoginScreenState();
 }
 
-class _PostDeletionLoginScreenState
-    extends ConsumerState<PostDeletionLoginScreen> {
+class _PostDeletionLoginScreenState extends ConsumerState<PostDeletionLoginScreen> {
   bool _submitting = false;
   String? _error;
 
@@ -45,9 +43,7 @@ class _PostDeletionLoginScreenState
   @override
   Widget build(BuildContext context) {
     final grace = widget.graceUntil;
-    final dateText = grace != null
-        ? DateFormat.yMMMMd().format(grace.toLocal())
-        : 'soon';
+    final dateText = grace != null ? DateFormat.yMMMMd().format(grace.toLocal()) : 'soon';
     return Scaffold(
       backgroundColor: BalsmColors.cream50,
       body: SafeArea(

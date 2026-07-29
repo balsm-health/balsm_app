@@ -65,8 +65,7 @@ class RefreshTokenRequest {
   const RefreshTokenRequest({required this.refreshToken, required this.deviceId});
   final String refreshToken;
   final String deviceId;
-  Map<String, dynamic> toJson() =>
-      {'refresh_token': refreshToken, 'device_id': deviceId};
+  Map<String, dynamic> toJson() => {'refresh_token': refreshToken, 'device_id': deviceId};
 }
 
 class RecoveryClaimRequest {
@@ -122,6 +121,5 @@ class ResetPasswordRequest {
   final String email;
   final String code;
   final String newPassword;
-  Map<String, dynamic> toJson() =>
-      {'email': email, 'code': code, 'new_password': newPassword};
+  Map<String, dynamic> toJson() => {'email': email, 'code': code, 'new_password': newPassword};
 }

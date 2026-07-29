@@ -3,7 +3,8 @@ import 'package:custom_lint_builder/custom_lint_builder.dart';
 
 class NoTestKitInRelease extends DartLintRule {
   NoTestKitInRelease() : super(code: _code);
-  static const _code = LintCode(name: 'no_test_kit_in_release', problemMessage: 'test_kit imports are blocked in non-dev builds.');
+  static const _code =
+      LintCode(name: 'no_test_kit_in_release', problemMessage: 'test_kit imports are blocked in non-dev builds.');
 
   @override
   void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {

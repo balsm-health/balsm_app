@@ -93,9 +93,7 @@ class _BalsmFieldState extends State<BalsmField> {
   @override
   Widget build(BuildContext context) {
     final hasError = widget.errorText != null;
-    final borderColor = hasError
-        ? BalsmColors.danger
-        : (_focused ? BalsmColors.borderFocus : BalsmColors.border);
+    final borderColor = hasError ? BalsmColors.danger : (_focused ? BalsmColors.borderFocus : BalsmColors.border);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,8 +121,7 @@ class _BalsmFieldState extends State<BalsmField> {
               boxShadow: _focused
                   ? [
                       BoxShadow(
-                        color: (hasError ? BalsmColors.danger : BalsmColors.appAccent)
-                            .withOpacity(0.16),
+                        color: (hasError ? BalsmColors.danger : BalsmColors.appAccent).withOpacity(0.16),
                         blurRadius: 0,
                         spreadRadius: 4,
                       ),

@@ -25,8 +25,7 @@ class QrCodeDisplayScreen extends ConsumerStatefulWidget {
   final String qrUrl;
 
   @override
-  ConsumerState<QrCodeDisplayScreen> createState() =>
-      _QrCodeDisplayScreenState();
+  ConsumerState<QrCodeDisplayScreen> createState() => _QrCodeDisplayScreenState();
 }
 
 class _QrCodeDisplayScreenState extends ConsumerState<QrCodeDisplayScreen> {
@@ -77,9 +76,7 @@ class _QrCodeDisplayScreenState extends ConsumerState<QrCodeDisplayScreen> {
 
   Future<void> _revoke() async {
     setState(() => _revoking = true);
-    final result = await ref
-        .read(revokeEmergencyQrTokenUseCaseProvider)
-        .call(tokenId: widget.token.jti);
+    final result = await ref.read(revokeEmergencyQrTokenUseCaseProvider).call(tokenId: widget.token.jti);
     if (!mounted) return;
     setState(() => _revoking = false);
     result.fold(
@@ -102,9 +99,7 @@ class _QrCodeDisplayScreenState extends ConsumerState<QrCodeDisplayScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                _revoked
-                    ? 'This QR has been revoked.'
-                    : 'Show this code to medical staff. It expires automatically.',
+                _revoked ? 'This QR has been revoked.' : 'Show this code to medical staff. It expires automatically.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 15, color: BalsmColors.fg2),
               ),
@@ -131,12 +126,9 @@ class _QrCodeDisplayScreenState extends ConsumerState<QrCodeDisplayScreen> {
               const SizedBox(height: 24),
               Center(
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: inactive
-                        ? BalsmColors.dangerBg
-                        : BalsmColors.petalBlue50,
+                    color: inactive ? BalsmColors.dangerBg : BalsmColors.petalBlue50,
                     borderRadius: BorderRadius.circular(BalsmRadius.pill),
                   ),
                   child: Row(
@@ -145,18 +137,14 @@ class _QrCodeDisplayScreenState extends ConsumerState<QrCodeDisplayScreen> {
                       Icon(
                         inactive ? Icons.timer_off : Icons.timer_outlined,
                         size: 18,
-                        color: inactive
-                            ? BalsmColors.danger
-                            : BalsmColors.petalBlue,
+                        color: inactive ? BalsmColors.danger : BalsmColors.petalBlue,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         _revoked ? 'Revoked' : _countdownLabel,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: inactive
-                              ? BalsmColors.danger
-                              : BalsmColors.petalBlue,
+                          color: inactive ? BalsmColors.danger : BalsmColors.petalBlue,
                         ),
                       ),
                     ],

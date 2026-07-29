@@ -27,12 +27,10 @@ class BalsmAuthAdapter {
   final AuthApi _api;
 
   /// POST /auth/otp/request
-  Future<void> requestOtp(String email, String countryCode,
-          {CancelToken? cancelToken}) =>
-      _guard(() => _api.requestOtp(
-            RequestOtpRequest(email: email, countryCode: countryCode),
-            cancelToken: cancelToken,
-          ));
+  Future<void> requestOtp(String email, String countryCode, {CancelToken? cancelToken}) => _guard(() => _api.requestOtp(
+        RequestOtpRequest(email: email, countryCode: countryCode),
+        cancelToken: cancelToken,
+      ));
 
   /// POST /auth/otp/verify
   Future<AuthTokens> verifyOtp(
@@ -87,13 +85,10 @@ class BalsmAuthAdapter {
           )));
 
   /// POST /auth/sign-out
-  Future<void> signOut({CancelToken? cancelToken}) =>
-      _guard(() => _api.signOut(cancelToken: cancelToken));
+  Future<void> signOut({CancelToken? cancelToken}) => _guard(() => _api.signOut(cancelToken: cancelToken));
 
   /// POST /auth/refresh
-  Future<RefreshedTokens> refresh(String refreshToken, String deviceId,
-          {CancelToken? cancelToken}) =>
-      _guard(() async {
+  Future<RefreshedTokens> refresh(String refreshToken, String deviceId, {CancelToken? cancelToken}) => _guard(() async {
         final r = await _api.refresh(
           RefreshTokenRequest(refreshToken: refreshToken, deviceId: deviceId),
           cancelToken: cancelToken,
@@ -141,11 +136,10 @@ class BalsmAuthAdapter {
           )));
 
   /// POST /auth/password — set/change the signed-in user's password.
-  Future<void> setPassword(String password, {CancelToken? cancelToken}) =>
-      _guard(() => _api.setPassword(
-            SetPasswordRequest(password: password),
-            cancelToken: cancelToken,
-          ));
+  Future<void> setPassword(String password, {CancelToken? cancelToken}) => _guard(() => _api.setPassword(
+        SetPasswordRequest(password: password),
+        cancelToken: cancelToken,
+      ));
 
   /// POST /auth/password/reset
   Future<void> resetPassword(
@@ -155,8 +149,7 @@ class BalsmAuthAdapter {
     CancelToken? cancelToken,
   }) =>
       _guard(() => _api.resetPassword(
-            ResetPasswordRequest(
-                email: email, code: code, newPassword: newPassword),
+            ResetPasswordRequest(email: email, code: code, newPassword: newPassword),
             cancelToken: cancelToken,
           ));
 

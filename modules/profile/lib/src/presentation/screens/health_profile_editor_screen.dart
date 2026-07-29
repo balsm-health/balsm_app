@@ -21,8 +21,7 @@ String normalizeArabicNumerals(String input) {
 }
 
 /// Watches the current user's on-device [HealthProfile]. PHI stays on-device.
-final _currentProfileProvider =
-    StreamProvider.autoDispose<HealthProfile?>((ref) {
+final _currentProfileProvider = StreamProvider.autoDispose<HealthProfile?>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) {
     return Stream<HealthProfile?>.value(null);
@@ -36,12 +35,10 @@ class HealthProfileEditorScreen extends ConsumerStatefulWidget {
   const HealthProfileEditorScreen({super.key});
 
   @override
-  ConsumerState<HealthProfileEditorScreen> createState() =>
-      _HealthProfileEditorScreenState();
+  ConsumerState<HealthProfileEditorScreen> createState() => _HealthProfileEditorScreenState();
 }
 
-class _HealthProfileEditorScreenState
-    extends ConsumerState<HealthProfileEditorScreen> {
+class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorScreen> {
   String? _errorMessage;
 
   UserId? get _userId => ref.read(currentUserIdProvider);
@@ -215,8 +212,7 @@ class _HealthProfileEditorScreenState
                         variant: _severityVariant(a.severity),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close,
-                            size: 18, color: BalsmColors.fg4),
+                        icon: const Icon(Icons.close, size: 18, color: BalsmColors.fg4),
                         onPressed: () => _removeAllergy(a.id),
                         tooltip: 'Remove',
                       ),
@@ -249,9 +245,7 @@ class _HealthProfileEditorScreenState
         // ---- Emergency contacts (max 3) ----
         _SectionHeader(
           title: 'Emergency Contacts',
-          trailing: contacts.length >= AddEmergencyContactUseCase.maxContacts
-              ? null
-              : _AddButton(onTap: _addContact),
+          trailing: contacts.length >= AddEmergencyContactUseCase.maxContacts ? null : _AddButton(onTap: _addContact),
         ),
         const SizedBox(height: 8),
         if (contacts.isEmpty)
@@ -262,9 +256,7 @@ class _HealthProfileEditorScreenState
               ...contacts.map(
                 (c) => BalsmListRow(
                   label: c.name,
-                  sublabel: c.relation == null
-                      ? c.phone
-                      : '${c.relation} · ${c.phone}',
+                  sublabel: c.relation == null ? c.phone : '${c.relation} · ${c.phone}',
                   showChevron: false,
                   trailing: c.isPrimary
                       ? const BalsmPill(

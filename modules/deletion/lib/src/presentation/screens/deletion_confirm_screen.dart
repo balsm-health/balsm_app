@@ -18,8 +18,7 @@ class DeletionConfirmScreen extends ConsumerStatefulWidget {
   const DeletionConfirmScreen({super.key});
 
   @override
-  ConsumerState<DeletionConfirmScreen> createState() =>
-      _DeletionConfirmScreenState();
+  ConsumerState<DeletionConfirmScreen> createState() => _DeletionConfirmScreenState();
 }
 
 class _DeletionConfirmScreenState extends ConsumerState<DeletionConfirmScreen> {

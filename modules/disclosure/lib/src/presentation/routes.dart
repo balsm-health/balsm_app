@@ -31,18 +31,14 @@ final disclosureRoutes = <RouteBase>[
     path: '/disclosure/onboarding',
     name: 'disclosure.onboarding',
     builder: (context, state) {
-      final args = state.extra is DisclosureRouteArgs
-          ? state.extra as DisclosureRouteArgs
-          : null;
+      final args = state.extra is DisclosureRouteArgs ? state.extra as DisclosureRouteArgs : null;
       final query = state.uri.queryParameters;
 
       return ConsolidatedDisclosureScreen(
-        disclosureId:
-            args?.disclosureId ?? query['disclosure_id'] ?? 'consolidated',
+        disclosureId: args?.disclosureId ?? query['disclosure_id'] ?? 'consolidated',
         version: args?.version ?? query['version'] ?? '1',
         countryCode: args?.countryCode ?? query['country_code'] ?? '',
-        preferredLanguage:
-            args?.preferredLanguage ?? query['preferred_language'] ?? 'en',
+        preferredLanguage: args?.preferredLanguage ?? query['preferred_language'] ?? 'en',
       );
     },
   ),

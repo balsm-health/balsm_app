@@ -15,8 +15,7 @@ class CountrySettingsScreen extends ConsumerStatefulWidget {
   const CountrySettingsScreen({super.key});
 
   @override
-  ConsumerState<CountrySettingsScreen> createState() =>
-      _CountrySettingsScreenState();
+  ConsumerState<CountrySettingsScreen> createState() => _CountrySettingsScreenState();
 }
 
 class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
@@ -79,8 +78,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
 
   /// Re-disclosure after a successful country change (new supervisory authority).
   Future<void> _showDisclosure(String code) async {
-    final authority =
-        ref.read(countryRegistryProvider).supervisoryAuthority(code);
+    final authority = ref.read(countryRegistryProvider).supervisoryAuthority(code);
     if (!mounted) return;
     await showDialog<void>(
       context: context,
@@ -157,12 +155,8 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                                         color: BalsmColors.appAccent,
                                         size: 22,
                                       )
-                                    : (_busy
-                                        ? const SizedBox.shrink()
-                                        : null),
-                                onTap: _busy
-                                    ? null
-                                    : () => _onSelect(summary, c.isoCode),
+                                    : (_busy ? const SizedBox.shrink() : null),
+                                onTap: _busy ? null : () => _onSelect(summary, c.isoCode),
                               ),
                             )
                             .toList(),
@@ -197,8 +191,7 @@ class _Warning extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded,
-                color: BalsmColors.warning, size: 20),
+            const Icon(Icons.warning_amber_rounded, color: BalsmColors.warning, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

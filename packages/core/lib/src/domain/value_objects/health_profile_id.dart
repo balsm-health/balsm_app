@@ -14,6 +14,5 @@ class HealthProfileId extends UniqueId {
   const HealthProfileId.empty() : super.empty();
   HealthProfileId.uuid() : super.uuid('hp-');
 
-  static HealthProfileId? fromString(String? value) =>
-      value?.mapNotNull((v) => HealthProfileId.value(v));
+  static HealthProfileId? fromString(String? value) => value?.mapNotNull((v) => HealthProfileId.value(v));
 }

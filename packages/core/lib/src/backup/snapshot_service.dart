@@ -81,9 +81,8 @@ class SnapshotService implements SnapshotPort {
   Future<void> _lwwUpsert(String table, Map<String, dynamic> row) async {
     final id = row['id'];
     final incoming = DateTime.tryParse('${row['updated_at']}');
-    final existing = await _db
-        .customSelect('SELECT updated_at FROM $table WHERE id = ?', variables: [_v(id)])
-        .getSingleOrNull();
+    final existing =
+        await _db.customSelect('SELECT updated_at FROM $table WHERE id = ?', variables: [_v(id)]).getSingleOrNull();
     if (existing != null) {
       final local = DateTime.tryParse('${existing.data['updated_at']}');
       if (local != null && incoming != null && !incoming.isAfter(local)) return;

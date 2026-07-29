@@ -18,9 +18,7 @@ class NotificationService {
     );
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
-      onDidReceiveNotificationResponse: onTap == null
-          ? null
-          : (response) => onTap(response.payload),
+      onDidReceiveNotificationResponse: onTap == null ? null : (response) => onTap(response.payload),
     );
   }
 
@@ -46,8 +44,7 @@ class NotificationService {
         iOS: const DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 

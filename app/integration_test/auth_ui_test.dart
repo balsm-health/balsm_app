@@ -33,8 +33,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('welcome → email+password → one-time-code renders + navigates',
-      (tester) async {
+  testWidgets('welcome → email+password → one-time-code renders + navigates', (tester) async {
     final state = PatientAppState();
     await pumpAuth(tester, state);
 
@@ -60,8 +59,7 @@ void main() {
     expect(find.text('Date of birth'), findsNothing);
   });
 
-  testWidgets('welcome shows the language pill and toggles AR ⇄ EN',
-      (tester) async {
+  testWidgets('welcome shows the language pill and toggles AR ⇄ EN', (tester) async {
     final state = PatientAppState();
     await pumpAuth(tester, state);
 

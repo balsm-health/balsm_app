@@ -76,8 +76,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
   }
 
   @override
-  Future<List<Medication>> findMany(Iterable<MedicationId> keys,
-      {HealthProfileId? scope}) async {
+  Future<List<Medication>> findMany(Iterable<MedicationId> keys, {HealthProfileId? scope}) async {
     final profile = _resolve(scope);
     if (profile == null || keys.isEmpty) return const [];
     final ids = keys.map((k) => k.value).toList();
@@ -94,12 +93,10 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
   }
 
   @override
-  Future<bool> exists(MedicationId key, {HealthProfileId? scope}) async =>
-      await find(key, scope: scope) != null;
+  Future<bool> exists(MedicationId key, {HealthProfileId? scope}) async => await find(key, scope: scope) != null;
 
   @override
-  Future<void> put(MedicationId key, Medication value,
-      {HealthProfileId? scope}) async {
+  Future<void> put(MedicationId key, Medication value, {HealthProfileId? scope}) async {
     final profile = _require(scope);
     await _db.customInsert(
       'INSERT OR REPLACE INTO $_kMedicationsTable '
@@ -122,8 +119,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
   }
 
   @override
-  Future<void> putBulk(Map<MedicationId, Medication> values,
-      {HealthProfileId? scope}) async {
+  Future<void> putBulk(Map<MedicationId, Medication> values, {HealthProfileId? scope}) async {
     final profile = _require(scope);
     for (final entry in values.entries) {
       await put(entry.key, entry.value, scope: profile);
@@ -149,8 +145,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
   }
 
   @override
-  Future<void> deleteMany(Iterable<MedicationId> keys,
-      {HealthProfileId? scope}) async {
+  Future<void> deleteMany(Iterable<MedicationId> keys, {HealthProfileId? scope}) async {
     final profile = _require(scope);
     for (final key in keys) {
       await delete(key, scope: profile);
@@ -190,16 +185,18 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
   Stream<Medication?> watch(MedicationId key, {HealthProfileId? scope}) {
     final profile = _resolve(scope);
     if (profile == null) return Stream.value(null);
-    return _db.customSelect(
-      'SELECT * FROM $_kMedicationsTable '
-      'WHERE id = ? AND health_profile_id = ? LIMIT 1',
-      variables: [
-        Variable<String>(key.value),
-        Variable<String>(profile.value),
-      ],
-      readsFrom: {/* TODO: medications table after build_runner */},
-    ).watch().map(
-        (rows) => rows.isEmpty ? null : _medicationFromRow(rows.first.data));
+    return _db
+        .customSelect(
+          'SELECT * FROM $_kMedicationsTable '
+          'WHERE id = ? AND health_profile_id = ? LIMIT 1',
+          variables: [
+            Variable<String>(key.value),
+            Variable<String>(profile.value),
+          ],
+          readsFrom: {/* TODO: medications table after build_runner */},
+        )
+        .watch()
+        .map((rows) => rows.isEmpty ? null : _medicationFromRow(rows.first.data));
   }
 
   @override
@@ -257,11 +254,13 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
       where.write(' AND scheduled_at < ?');
       vars.add(Variable<String>(to.toIso8601String()));
     }
-    final rows = await _db.customSelect(
-      'SELECT * FROM $_kDoseEventsTable WHERE $where '
-      'ORDER BY scheduled_at DESC, recorded_at DESC',
-      variables: vars,
-    ).get();
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM $_kDoseEventsTable WHERE $where '
+          'ORDER BY scheduled_at DESC, recorded_at DESC',
+          variables: vars,
+        )
+        .get();
     return rows.map((r) => _doseEventFromRow(r.data)).toList();
   }
 
@@ -284,15 +283,12 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
         userId: UserId.value(row['user_id'] as String),
         name: row['name'] as String,
         doseAmount: row['dose_amount'] as String?,
-        scheduleType: ScheduleType.values
-            .byName(row['schedule_type'] as String),
+        scheduleType: ScheduleType.values.byName(row['schedule_type'] as String),
         scheduleConfig: ScheduleConfig.fromJson(
           jsonDecode(row['schedule_config'] as String) as Map<String, dynamic>,
         ),
         startDate: DateTime.parse(row['start_date'] as String),
-        endDate: (row['end_date'] as String?) != null
-            ? DateTime.parse(row['end_date'] as String)
-            : null,
+        endDate: (row['end_date'] as String?) != null ? DateTime.parse(row['end_date'] as String) : null,
         isControlled: (row['is_controlled'] as int) != 0,
       );
 
@@ -302,12 +298,9 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
         scheduledAt: DateTime.parse(row['scheduled_at'] as String),
         recordedAt: DateTime.parse(row['recorded_at'] as String),
         outcome: DoseOutcome.values.byName(row['outcome'] as String),
-        parentEventId: (row['parent_event_id'] as String?) != null
-            ? DoseEventId.value(row['parent_event_id'] as String)
-            : null,
-        snoozeUntil: (row['snooze_until'] as String?) != null
-            ? DateTime.parse(row['snooze_until'] as String)
-            : null,
+        parentEventId:
+            (row['parent_event_id'] as String?) != null ? DoseEventId.value(row['parent_event_id'] as String) : null,
+        snoozeUntil: (row['snooze_until'] as String?) != null ? DateTime.parse(row['snooze_until'] as String) : null,
       );
 }
 

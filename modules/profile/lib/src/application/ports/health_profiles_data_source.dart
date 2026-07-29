@@ -15,10 +15,8 @@ import '../../domain/value_objects/ids.dart';
 /// Reads hydrate the full aggregate (allergies, conditions, contacts);
 /// `put` persists the head row only — children go through the dedicated
 /// add*/remove* operations.
-abstract class HealthProfilesDataSource
-    extends UserDataSource<HealthProfileId, HealthProfile>
-    implements
-        WatchableScopedDataSource<HealthProfileId, HealthProfile, UserId> {
+abstract class HealthProfilesDataSource extends UserDataSource<HealthProfileId, HealthProfile>
+    implements WatchableScopedDataSource<HealthProfileId, HealthProfile, UserId> {
   /// The user's (self) profile, or null if none exists yet.
   Future<HealthProfile?> getProfile(UserId userId);
 
@@ -37,11 +35,9 @@ abstract class HealthProfilesDataSource
 
   /// Inserts [condition] under [profileId]. Returns the generated
   /// [ChronicConditionId].
-  Future<ChronicConditionId> addCondition(
-      HealthProfileId profileId, ChronicCondition condition);
+  Future<ChronicConditionId> addCondition(HealthProfileId profileId, ChronicCondition condition);
 
   /// Inserts [contact] under [profileId]. Returns the generated
   /// [EmergencyContactId].
-  Future<EmergencyContactId> addContact(
-      HealthProfileId profileId, EmergencyContact contact);
+  Future<EmergencyContactId> addContact(HealthProfileId profileId, EmergencyContact contact);
 }

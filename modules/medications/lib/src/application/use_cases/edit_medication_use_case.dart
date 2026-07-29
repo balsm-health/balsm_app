@@ -19,8 +19,7 @@ class EditMedicationUseCase {
   }
 }
 
-final editMedicationUseCaseProvider =
-    Provider.family<EditMedicationUseCase, UserId>((ref, userId) {
+final editMedicationUseCaseProvider = Provider.family<EditMedicationUseCase, UserId>((ref, userId) {
   return EditMedicationUseCase(
     dao: ref.watch(medicationsDataSourceProvider),
     scheduler: ref.watch(medicationSchedulerProvider(userId)),

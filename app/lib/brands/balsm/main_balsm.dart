@@ -1,12 +1,8 @@
-import 'package:account/account.dart'
-    show buildAccountAdapter, DeniedCountriesPort, deniedCountriesPortProvider;
+import 'package:account/account.dart' show buildAccountAdapter, DeniedCountriesPort, deniedCountriesPortProvider;
 import 'package:auth/auth.dart' show UserSignedIn, UserSignedOut;
 import 'package:core/core.dart';
 import 'package:emergency_card/emergency_card.dart'
-    show
-        EmergencyCardSnapshot,
-        EmergencySnapshotReader,
-        emergencySnapshotReaderProvider;
+    show EmergencyCardSnapshot, EmergencySnapshotReader, emergencySnapshotReaderProvider;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,8 +135,7 @@ Future<void> main() async {
   ).start();
 
   // Seed the in-session user id from the boot-time secure-storage value.
-  container.read(_sessionUserIdProvider.notifier).state =
-      UserId.fromString(userId);
+  container.read(_sessionUserIdProvider.notifier).state = UserId.fromString(userId);
 
   // Keep the in-session user id live: sign-in sets it, sign-out clears it, so
   // every PHI reader (profile/meds/emergency/backup) sees the current user
@@ -214,8 +209,7 @@ class _ProfileEmergencySnapshotReader implements EmergencySnapshotReader {
       bloodType: profile.bloodType,
       allergyNames: profile.allergies.map((a) => a.name).toList(),
       conditionNames: profile.conditions.map((c) => c.name).toList(),
-      primaryContact:
-          primary == null ? null : (name: primary.name, phone: primary.phone),
+      primaryContact: primary == null ? null : (name: primary.name, phone: primary.phone),
       createdAt: DateTime.now(),
     );
   }

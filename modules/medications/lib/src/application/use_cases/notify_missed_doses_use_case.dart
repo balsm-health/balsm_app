@@ -11,12 +11,10 @@ class NotifyMissedDosesUseCase {
   final MissedDoseDetector detector;
 
   /// Runs missed-dose detection for [userId]; returns newly recorded misses.
-  Future<List<DoseEvent>> call(UserId userId) =>
-      detector.detectMissed(userId);
+  Future<List<DoseEvent>> call(UserId userId) => detector.detectMissed(userId);
 }
 
-final notifyMissedDosesUseCaseProvider =
-    Provider<NotifyMissedDosesUseCase>((ref) {
+final notifyMissedDosesUseCaseProvider = Provider<NotifyMissedDosesUseCase>((ref) {
   return NotifyMissedDosesUseCase(
     detector: ref.watch(missedDoseDetectorProvider),
   );

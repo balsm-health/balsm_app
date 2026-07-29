@@ -25,5 +25,4 @@ final deletionStrings = LocalizedStrings<Messages>.defaultLangs(
 /// Locale-explicit lookup for code that carries its own locale (e.g. a
 /// `preferredLanguage` route param). Non-reactive; Arabic must have been
 /// loaded (or falls back to English).
-Messages deletionMessagesOf(String locale) =>
-    deletionStrings.resolveSync(Locale(locale.split(RegExp('[-_]')).first));
+Messages deletionMessagesOf(String locale) => deletionStrings.resolveSync(Locale(locale.split(RegExp('[-_]')).first));

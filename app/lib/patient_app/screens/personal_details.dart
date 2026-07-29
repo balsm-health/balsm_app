@@ -4,14 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:core/core.dart'
-    show currentUserIdProvider, accountSummaryProvider, accountApiProvider, Gender;
+import 'package:core/core.dart' show currentUserIdProvider, accountSummaryProvider, accountApiProvider, Gender;
 import 'package:account/account.dart'
-    show
-        claimHandleUseCaseProvider,
-        accountProfileUseCaseProvider,
-        ProfileDetails,
-        UpdateProfileInput;
+    show claimHandleUseCaseProvider, accountProfileUseCaseProvider, ProfileDetails, UpdateProfileInput;
 import 'package:emergency_card/emergency_card.dart'
     show
         EmergencyCardSnapshot,
@@ -44,8 +39,7 @@ void openPersonalDetails(BuildContext context) {
 /// Reads the current user's emergency contacts from the on-device HealthProfile
 /// (SQLCipher PHI). Re-runs on sign-in/out; empty when signed out. Adding a
 /// contact via AddEmergencyContactUseCase invalidates this provider.
-final _emergencyContactsProvider =
-    FutureProvider.autoDispose<List<EmergencyContact>>((ref) async {
+final _emergencyContactsProvider = FutureProvider.autoDispose<List<EmergencyContact>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return const [];
   final profile = await ref.watch(profileDataSourceProvider).getProfile(userId);
@@ -56,8 +50,7 @@ final _emergencyContactsProvider =
 /// `emergencySnapshotReaderProvider` seam (the same PHI the mint use-case
 /// encrypts). Used only to gate the QR-share sheet's mint affordance: `null`
 /// when signed out or when there is no profile yet. Never leaves the device.
-final _emergencySnapshotProvider =
-    FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
+final _emergencySnapshotProvider = FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
   return ref.watch(emergencySnapshotReaderProvider).readSnapshot();
@@ -85,8 +78,7 @@ class PersonalDetailsScreen extends ConsumerStatefulWidget {
   const PersonalDetailsScreen({super.key, required this.s});
   final PatientAppState s;
   @override
-  ConsumerState<PersonalDetailsScreen> createState() =>
-      _PersonalDetailsScreenState();
+  ConsumerState<PersonalDetailsScreen> createState() => _PersonalDetailsScreenState();
 }
 
 class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
@@ -140,8 +132,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       handle.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
     }
     _debounce?.cancel();
-    if (v.isEmpty || v == _origHandle) { setState(() => unStatus = 'idle'); return; }
-    if (!_handleFormat.hasMatch(v)) { setState(() => unStatus = 'invalid'); return; }
+    if (v.isEmpty || v == _origHandle) {
+      setState(() => unStatus = 'idle');
+      return;
+    }
+    if (!_handleFormat.hasMatch(v)) {
+      setState(() => unStatus = 'invalid');
+      return;
+    }
     setState(() => unStatus = 'checking');
     _debounce = Timer(const Duration(milliseconds: 500), () => _check(v));
   }
@@ -176,8 +174,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     super.dispose();
   }
 
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
+  void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   /// Persists the profile via PATCH /account/profile, then — if the handle was
   /// changed and verified available — claims it. Refreshes both the screen-local
@@ -190,15 +187,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
     // 1) Profile fields (display name, bio, gender, nationality, phone, DOB,
     //    national ID). Empty string clears a field; DOB is 18+ gated server-side.
-    final profileResult =
-        await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
-              displayName: '${_firstCtrl.text.trim()} ${_lastCtrl.text.trim()}'.trim(),
-              gender: _gender,
-              nationality: _natCtrl.text.trim(),
-              phone: _phoneCtrl.text.trim(),
-              dateOfBirth: _fmtDob(),
-              nationalId: _nidCtrl.text.trim(),
-            ));
+    final profileResult = await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
+          displayName: '${_firstCtrl.text.trim()} ${_lastCtrl.text.trim()}'.trim(),
+          gender: _gender,
+          nationality: _natCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim(),
+          dateOfBirth: _fmtDob(),
+          nationalId: _nidCtrl.text.trim(),
+        ));
     if (!mounted) return;
     if (profileResult.isFailure) {
       setState(() => _saving = false);
@@ -213,7 +209,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       if (!mounted) return;
       final claimFailed = claim.isFailure;
       if (claimFailed) {
-        setState(() { _saving = false; unStatus = 'taken'; });
+        setState(() {
+          _saving = false;
+          unStatus = 'taken';
+        });
         _snack(claim.error.message);
         return;
       }
@@ -222,8 +221,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
     ref.invalidate(accountSummaryProvider);
     ref.invalidate(_profileProvider);
-    setState(() { _saving = false; unStatus = 'idle'; saved = true; });
-    Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => saved = false); });
+    setState(() {
+      _saving = false;
+      unStatus = 'idle';
+      saved = true;
+    });
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => saved = false);
+    });
   }
 
   /// Persists the emergency-contact form via AddEmergencyContactUseCase
@@ -248,45 +253,36 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       emPhone.clear();
       ref.invalidate(_emergencyContactsProvider);
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(result.error.message)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.error.message)));
     }
   }
 
   /// Read-only styled row for an existing emergency contact (prototype look).
   Widget _contactRow(EmergencyContact c) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-            color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
         child: Row(children: [
           Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Row(children: [
-                  Flexible(
-                      child: Text(c.name,
-                          style: Typo.body(ar: s.rtl).copyWith(
-                              fontWeight: FontWeight.w700, color: T.fg1))),
-                  if (c.isPrimary) ...[
-                    const SizedBox(width: 7),
-                    Pill(s.strings.profile.pd_primary,
-                        kind: PillKind.info,
-                        dot: false,
-                        ar: s.rtl,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2)),
-                  ],
-                ]),
-                const SizedBox(height: 3),
-                Text(
-                  c.relation == null || c.relation!.isEmpty
-                      ? c.phone
-                      : '${c.relation} · ${c.phone}',
-                  textDirection: TextDirection.ltr,
-                  style: Typo.meta(ar: s.rtl),
-                ),
-              ])),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Flexible(
+                  child: Text(c.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1))),
+              if (c.isPrimary) ...[
+                const SizedBox(width: 7),
+                Pill(s.strings.profile.pd_primary,
+                    kind: PillKind.info,
+                    dot: false,
+                    ar: s.rtl,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2)),
+              ],
+            ]),
+            const SizedBox(height: 3),
+            Text(
+              c.relation == null || c.relation!.isEmpty ? c.phone : '${c.relation} · ${c.phone}',
+              textDirection: TextDirection.ltr,
+              style: Typo.meta(ar: s.rtl),
+            ),
+          ])),
         ]),
       );
 
@@ -322,10 +318,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     // Real on-device emergency contacts (PHI). Empty while loading / signed out.
-    final contacts = ref.watch(_emergencyContactsProvider).valueOrNull ??
-        const <EmergencyContact>[];
-    final atMaxContacts =
-        contacts.length >= AddEmergencyContactUseCase.maxContacts;
+    final contacts = ref.watch(_emergencyContactsProvider).valueOrNull ?? const <EmergencyContact>[];
+    final atMaxContacts = contacts.length >= AddEmergencyContactUseCase.maxContacts;
 
     // Seed every editable field ONCE from the real /account/self on first load
     // (no prototype sample identity). display_name is split into first/last.
@@ -343,9 +337,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       _natCtrl.text = profile.nationality ?? '';
       _gender = profile.gender;
       s.setGender(profile.gender ?? Gender.other);
-      _dob = (profile.dateOfBirth?.isNotEmpty ?? false)
-          ? DateTime.tryParse(profile.dateOfBirth!)
-          : null;
+      _dob = (profile.dateOfBirth?.isNotEmpty ?? false) ? DateTime.tryParse(profile.dateOfBirth!) : null;
     }
 
     return Scaffold(
@@ -355,145 +347,176 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         AppBarRow(
           leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.pop(context)),
           children: [
-            Expanded(child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-            if (saved) ...[Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl), const SizedBox(width: 8)],
+            Expanded(
+                child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+            if (saved) ...[
+              Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
+              const SizedBox(width: 8)
+            ],
             RoundBtn(icon: LucideIcons.qrCode, iconSize: 19, onTap: () => _showQr(context)),
           ],
         ),
-        Expanded(child: ContentColumn(maxWidth: 560, child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-          children: [
-            // Avatar (initials from the live name fields).
-            Center(child: Column(children: [
-              Avatar(
-                  initials: _initials('${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
-                  color: T.petalAqua,
-                  size: 72),
-              const SizedBox(height: 10),
-              PButton(s.strings.profile.pd_change_photo, icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
-            ])),
-            // Account (handle + QR share)
-            _section(LucideIcons.atSign, s.strings.profile.pd_account),
-            _card([
-              _labeled(s.strings.auth.un_label, TextField(
-                controller: handle, textDirection: TextDirection.ltr,
-                onChanged: _setHandle,
-                style: Typo.num(size: FS.lg),
-                decoration: InputDecoration(
-                  isDense: true, prefixText: '@',
-                  prefixStyle: Typo.num(size: FS.lg, weight: FontWeight.w700, color: T.fg3),
-                  // Status icon: spinner while checking, then check / x / alert.
-                  suffixIcon: _handleSuffix(),
-                  suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                  filled: true, fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  // InputDecorator animates the border colour over ~200ms as the
-                  // handle validates (border tints mint / red / amber).
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd),
-                      borderSide: BorderSide(color: unStatus == 'idle' ? T.border : _handleStatusColor, width: 1.5)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd),
-                      borderSide: BorderSide(color: unStatus == 'idle' ? s.accent.main : _handleStatusColor, width: 1.5)),
-                ),
-              )),
-              // Validation message — slides in/out smoothly as status changes.
-              AnimatedSize(
-                duration: Motion.base,
-                curve: Motion.easeOut,
-                alignment: Alignment.topLeft,
-                child: _handleMsg == null
-                    ? const SizedBox(width: double.infinity)
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(_handleMsg!,
-                            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: _handleStatusColor)),
-                      ),
-              ),
-              const SizedBox(height: 6),
-              Row(children: [
-                const Icon(LucideIcons.link, size: 12, color: T.fg4),
-                const SizedBox(width: 5),
-                Text('balsm.health/@${handle.text}', textDirection: TextDirection.ltr, style: Typo.num(size: FS.xs, color: T.fg3)),
-              ]),
-              const SizedBox(height: 14),
-              Pressable(
-                onTap: () => _showQr(context),
-                scale: 0.98,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
-                  child: Row(children: [
-                    Container(width: 38, height: 38, alignment: Alignment.center,
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rSm)),
-                        child: Icon(LucideIcons.qrCode, size: 20, color: s.accent.d)),
-                    const SizedBox(width: 13),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(s.strings.profile.pd_share_qr, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
-                      Text(s.strings.profile.pd_share_qr_h, style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.d)),
+        Expanded(
+            child: ContentColumn(
+                maxWidth: 560,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                  children: [
+                    // Avatar (initials from the live name fields).
+                    Center(
+                        child: Column(children: [
+                      Avatar(
+                          initials: _initials('${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
+                          color: T.petalAqua,
+                          size: 72),
+                      const SizedBox(height: 10),
+                      PButton(s.strings.profile.pd_change_photo,
+                          icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
                     ])),
-                    Chevron(rtl: s.rtl, color: s.accent.d),
-                  ]),
-                ),
-              ),
-            ]),
-            // Basic info — name (→ display_name), date of birth (PHI, 18+),
-            // gender. All persisted via PATCH /account/profile.
-            _section(LucideIcons.user, s.strings.profile.pd_basic_info),
-            _card([
-              Row(children: [
-                Expanded(child: _field(s.strings.onboarding.pf_fname, _firstCtrl)),
-                const SizedBox(width: 12),
-                Expanded(child: _field(s.strings.onboarding.pf_lname, _lastCtrl)),
-              ]),
-              const SizedBox(height: 14),
-              _labeled(s.strings.onboarding.pf_dob, _dobField()),
-              const SizedBox(height: 14),
-              _labeled(s.strings.onboarding.pf_gender, _genderSeg()),
-            ]),
-            // Contact — phone, national ID (PHI/PII, encrypted), nationality.
-            _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
-            _card([
-              _field(s.strings.profile.pd_phone, _phoneCtrl, mono: true),
-              const SizedBox(height: 14),
-              _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
-              const SizedBox(height: 14),
-              _field(s.strings.profile.pd_nationality, _natCtrl),
-            ]),
+                    // Account (handle + QR share)
+                    _section(LucideIcons.atSign, s.strings.profile.pd_account),
+                    _card([
+                      _labeled(
+                          s.strings.auth.un_label,
+                          TextField(
+                            controller: handle,
+                            textDirection: TextDirection.ltr,
+                            onChanged: _setHandle,
+                            style: Typo.num(size: FS.lg),
+                            decoration: InputDecoration(
+                              isDense: true, prefixText: '@',
+                              prefixStyle: Typo.num(size: FS.lg, weight: FontWeight.w700, color: T.fg3),
+                              // Status icon: spinner while checking, then check / x / alert.
+                              suffixIcon: _handleSuffix(),
+                              suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                              filled: true, fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              // InputDecorator animates the border colour over ~200ms as the
+                              // handle validates (border tints mint / red / amber).
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(T.rMd),
+                                  borderSide: BorderSide(
+                                      color: unStatus == 'idle' ? T.border : _handleStatusColor, width: 1.5)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(T.rMd),
+                                  borderSide: BorderSide(
+                                      color: unStatus == 'idle' ? s.accent.main : _handleStatusColor, width: 1.5)),
+                            ),
+                          )),
+                      // Validation message — slides in/out smoothly as status changes.
+                      AnimatedSize(
+                        duration: Motion.base,
+                        curve: Motion.easeOut,
+                        alignment: Alignment.topLeft,
+                        child: _handleMsg == null
+                            ? const SizedBox(width: double.infinity)
+                            : Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(_handleMsg!,
+                                    style: Typo.meta(ar: s.rtl)
+                                        .copyWith(fontWeight: FontWeight.w600, color: _handleStatusColor)),
+                              ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(children: [
+                        const Icon(LucideIcons.link, size: 12, color: T.fg4),
+                        const SizedBox(width: 5),
+                        Text('balsm.health/@${handle.text}',
+                            textDirection: TextDirection.ltr, style: Typo.num(size: FS.xs, color: T.fg3)),
+                      ]),
+                      const SizedBox(height: 14),
+                      Pressable(
+                        onTap: () => _showQr(context),
+                        scale: 0.98,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
+                          child: Row(children: [
+                            Container(
+                                width: 38,
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration:
+                                    BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rSm)),
+                                child: Icon(LucideIcons.qrCode, size: 20, color: s.accent.d)),
+                            const SizedBox(width: 13),
+                            Expanded(
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text(s.strings.profile.pd_share_qr,
+                                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
+                              Text(s.strings.profile.pd_share_qr_h,
+                                  style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.d)),
+                            ])),
+                            Chevron(rtl: s.rtl, color: s.accent.d),
+                          ]),
+                        ),
+                      ),
+                    ]),
+                    // Basic info — name (→ display_name), date of birth (PHI, 18+),
+                    // gender. All persisted via PATCH /account/profile.
+                    _section(LucideIcons.user, s.strings.profile.pd_basic_info),
+                    _card([
+                      Row(children: [
+                        Expanded(child: _field(s.strings.onboarding.pf_fname, _firstCtrl)),
+                        const SizedBox(width: 12),
+                        Expanded(child: _field(s.strings.onboarding.pf_lname, _lastCtrl)),
+                      ]),
+                      const SizedBox(height: 14),
+                      _labeled(s.strings.onboarding.pf_dob, _dobField()),
+                      const SizedBox(height: 14),
+                      _labeled(s.strings.onboarding.pf_gender, _genderSeg()),
+                    ]),
+                    // Contact — phone, national ID (PHI/PII, encrypted), nationality.
+                    _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
+                    _card([
+                      _field(s.strings.profile.pd_phone, _phoneCtrl, mono: true),
+                      const SizedBox(height: 14),
+                      _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
+                      const SizedBox(height: 14),
+                      _field(s.strings.profile.pd_nationality, _natCtrl),
+                    ]),
 
-            // Emergency contact (real on-device PHI; up to 3 contacts).
-            _section(LucideIcons.phoneCall, s.strings.profile.pd_emergency),
-            _card([
-              for (var i = 0; i < contacts.length; i++) ...[
-                _contactRow(contacts[i]),
-                if (i < contacts.length - 1 || !atMaxContacts)
-                  const SizedBox(height: 12),
-              ],
-              if (!atMaxContacts) ...[
-                _field(s.strings.profile.pd_em_name, emName),
-                const SizedBox(height: 14),
-                Row(children: [
-                  Expanded(child: _field(s.strings.profile.pd_em_rel, emRel)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _field(s.strings.profile.pd_em_phone, emPhone, mono: true)),
-                ]),
-                const SizedBox(height: 14),
-                PButton(s.strings.profile.pd_add_contact,
-                    icon: LucideIcons.plus, variant: BtnVariant.secondary,
-                    block: true, accent: s.accent, ar: s.rtl,
-                    onTap: _addEmergencyContact),
-              ],
-            ]),
-            const SizedBox(height: 24),
-            // Saves the profile (and claims a changed+available handle).
-            // Disabled until loaded and while a handle is mid-check / bad.
-            Opacity(
-              opacity: _canSave && !_saving && _loaded ? 1 : 0.4,
-              child: PButton(saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save,
-                  icon: saved ? LucideIcons.check : LucideIcons.save,
-                  variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl,
-                  onTap: _canSave && !_saving && _loaded ? _save : null),
-            ),
-          ],
-        ))),
+                    // Emergency contact (real on-device PHI; up to 3 contacts).
+                    _section(LucideIcons.phoneCall, s.strings.profile.pd_emergency),
+                    _card([
+                      for (var i = 0; i < contacts.length; i++) ...[
+                        _contactRow(contacts[i]),
+                        if (i < contacts.length - 1 || !atMaxContacts) const SizedBox(height: 12),
+                      ],
+                      if (!atMaxContacts) ...[
+                        _field(s.strings.profile.pd_em_name, emName),
+                        const SizedBox(height: 14),
+                        Row(children: [
+                          Expanded(child: _field(s.strings.profile.pd_em_rel, emRel)),
+                          const SizedBox(width: 12),
+                          Expanded(child: _field(s.strings.profile.pd_em_phone, emPhone, mono: true)),
+                        ]),
+                        const SizedBox(height: 14),
+                        PButton(s.strings.profile.pd_add_contact,
+                            icon: LucideIcons.plus,
+                            variant: BtnVariant.secondary,
+                            block: true,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: _addEmergencyContact),
+                      ],
+                    ]),
+                    const SizedBox(height: 24),
+                    // Saves the profile (and claims a changed+available handle).
+                    // Disabled until loaded and while a handle is mid-check / bad.
+                    Opacity(
+                      opacity: _canSave && !_saving && _loaded ? 1 : 0.4,
+                      child: PButton(saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save,
+                          icon: saved ? LucideIcons.check : LucideIcons.save,
+                          variant: BtnVariant.primary,
+                          large: true,
+                          block: true,
+                          accent: s.accent,
+                          ar: s.rtl,
+                          onTap: _canSave && !_saving && _loaded ? _save : null),
+                    ),
+                  ],
+                ))),
       ]),
     );
   }
@@ -528,24 +551,37 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
   Widget _card(List<Widget> children) => Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.border), boxShadow: T.shadowSm),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rLg),
+            border: Border.all(color: T.border),
+            boxShadow: T.shadowSm),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
       );
 
   Widget _labeled(String label, Widget child) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label.toUpperCase(), style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: s.rtl ? 0 : 0.8, color: T.fg3)),
+        Text(label.toUpperCase(),
+            style: Typo.meta(ar: s.rtl)
+                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: s.rtl ? 0 : 0.8, color: T.fg3)),
         const SizedBox(height: 8),
         child,
       ]);
 
-  Widget _field(String label, TextEditingController c, {bool mono = false}) => _labeled(label, TextField(
-        controller: c, textDirection: mono ? TextDirection.ltr : s.dir,
+  Widget _field(String label, TextEditingController c, {bool mono = false}) => _labeled(
+      label,
+      TextField(
+        controller: c,
+        textDirection: mono ? TextDirection.ltr : s.dir,
         style: mono ? Typo.num(size: FS.lg) : Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, color: T.fg1),
         decoration: InputDecoration(
-          isDense: true, filled: true, fillColor: Colors.white,
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       ));
 
@@ -591,9 +627,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   Widget _genderSeg() => Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-            color: T.ink50,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: T.border)),
+            color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
         child: Row(children: [
           _seg(s.strings.onboarding.pf_female, _gender == Gender.female, () => setState(() => _gender = Gender.female)),
           const SizedBox(width: 6),
@@ -615,8 +649,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                 borderRadius: BorderRadius.circular(7),
                 boxShadow: active ? T.shadowXs : null),
             child: Text(label,
-                style: Typo.bodySm(ar: s.rtl)
-                    .copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
           ),
         ),
       );
@@ -665,8 +698,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   PatientAppState get s => widget.s;
   bool get ar => s.rtl;
 
-  bool get _isExpired =>
-      _mint == null || _remaining.isNegative || _remaining == Duration.zero;
+  bool get _isExpired => _mint == null || _remaining.isNegative || _remaining == Duration.zero;
 
   @override
   void dispose() {
@@ -678,18 +710,20 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   void _showToast(String msg) {
     setState(() => toast = msg);
     _toastTimer?.cancel();
-    _toastTimer = Timer(const Duration(milliseconds: 1800),
-        () { if (mounted) setState(() => toast = null); });
+    _toastTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => toast = null);
+    });
   }
 
   /// Mints the real emergency token. The use-case reads the on-device snapshot
   /// via the Tier-0 seam, client-side AES-256-GCM encrypts it, POSTs ONLY the
   /// ciphertext, and returns the full QR URL with the key in the `#k=` fragment.
   Future<void> _mintToken() async {
-    setState(() { _minting = true; _error = null; });
-    final result = await ref
-        .read(mintEmergencyQrTokenUseCaseProvider)
-        .call(ttlSeconds: _ttlSeconds);
+    setState(() {
+      _minting = true;
+      _error = null;
+    });
+    final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: _ttlSeconds);
     if (!mounted) return;
     result.fold(
       (m) {
@@ -702,7 +736,10 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       },
       // Mint failures — incl. the age gate (FR-301b) — surface in the error
       // style below the mint affordance.
-      (f) => setState(() { _minting = false; _error = f.message; }),
+      (f) => setState(() {
+        _minting = false;
+        _error = f.message;
+      }),
     );
   }
 
@@ -711,7 +748,10 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       final m = _mint;
-      if (m == null) { _ticker?.cancel(); return; }
+      if (m == null) {
+        _ticker?.cancel();
+        return;
+      }
       setState(() => _remaining = m.token.expiresAt.difference(DateTime.now()));
     });
   }
@@ -722,17 +762,22 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     final m = _mint;
     if (m == null) return;
     setState(() => _revoking = true);
-    final result = await ref
-        .read(revokeEmergencyQrTokenUseCaseProvider)
-        .call(tokenId: m.token.jti);
+    final result = await ref.read(revokeEmergencyQrTokenUseCaseProvider).call(tokenId: m.token.jti);
     if (!mounted) return;
     result.fold(
       (_) {
         _ticker?.cancel();
-        setState(() { _mint = null; _revoking = false; _error = null; });
+        setState(() {
+          _mint = null;
+          _revoking = false;
+          _error = null;
+        });
         _showToast(s.strings.emergency.eqr_revoked_toast);
       },
-      (f) => setState(() { _revoking = false; _error = f.message; }),
+      (f) => setState(() {
+        _revoking = false;
+        _error = f.message;
+      }),
     );
   }
 
@@ -780,20 +825,25 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
-      decoration: const BoxDecoration(color: T.cream50, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+      decoration:
+          const BoxDecoration(color: T.cream50, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       child: Stack(children: [
         Column(mainAxisSize: MainAxisSize.min, children: [
           // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
             child: Column(children: [
-              Container(width: 38, height: 4, margin: const EdgeInsets.only(bottom: 12),
+              Container(
+                  width: 38,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
-                  Expanded(child: Text(s.strings.emergency.eqr_title,
-                      style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
+                  Expanded(
+                      child: Text(s.strings.emergency.eqr_title,
+                          style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                   RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
                 ]),
               ),
@@ -822,14 +872,19 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         // In-sheet toast (matches the prototype's slide-up confirmation).
         if (toast != null)
           PositionedDirectional(
-            start: 20, end: 20, bottom: 24 + MediaQuery.of(context).padding.bottom,
-            child: RiseIn(child: Container(
+            start: 20,
+            end: 20,
+            bottom: 24 + MediaQuery.of(context).padding.bottom,
+            child: RiseIn(
+                child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(color: T.ink900, borderRadius: BorderRadius.circular(T.rLg)),
               child: Row(children: [
                 const Icon(LucideIcons.checkCircle, size: 18, color: T.petalMint),
                 const SizedBox(width: 10),
-                Expanded(child: Text(toast!, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: Colors.white))),
+                Expanded(
+                    child: Text(toast!,
+                        style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: Colors.white))),
               ]),
             )),
           ),
@@ -842,13 +897,16 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   Widget _qrCard(String data, {bool dim = false}) => Container(
         padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
         decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(T.rXl),
-          border: Border.all(color: T.ink100), boxShadow: T.shadowMd),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rXl),
+            border: Border.all(color: T.ink100),
+            boxShadow: T.shadowMd),
         child: Column(children: [
           Opacity(
             opacity: dim ? 0.3 : 1,
             child: SizedBox(
-              width: 240, height: 240,
+              width: 240,
+              height: 240,
               child: Stack(alignment: Alignment.center, children: [
                 QrImageView(
                   data: data,
@@ -863,10 +921,13 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                 ),
                 // Center flower mark with white halo (clears QR dots).
                 Container(
-                  width: 58, height: 58, alignment: Alignment.center,
+                  width: 58,
+                  height: 58,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white, borderRadius: BorderRadius.circular(14),
-                    boxShadow: const [BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: 5)]),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: const [BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: 5)]),
                   child: const BalsmFlower(size: 42),
                 ),
               ]),
@@ -874,25 +935,21 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           ),
           const SizedBox(height: 18),
           if (widget.name.isNotEmpty)
-            Text(widget.name, textAlign: TextAlign.center,
-                style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+            Text(widget.name,
+                textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           // Expiry chip (replaces the prototype's static @handle line).
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: _isExpired ? T.dangerBg : s.accent.bg,
-              borderRadius: BorderRadius.circular(T.rPill)),
+                color: _isExpired ? T.dangerBg : s.accent.bg, borderRadius: BorderRadius.circular(T.rPill)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(_isExpired ? LucideIcons.timerOff : LucideIcons.timer,
                   size: 15, color: _isExpired ? T.danger : s.accent.d),
               const SizedBox(width: 6),
               Text(
-                _isExpired
-                    ? _countdownLabel
-                    : s.strings.emergency.eqr_expires_in(_countdownLabel),
-                style: Typo.num(size: FS.xs, weight: FontWeight.w700,
-                    color: _isExpired ? T.danger : s.accent.d),
+                _isExpired ? _countdownLabel : s.strings.emergency.eqr_expires_in(_countdownLabel),
+                style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: _isExpired ? T.danger : s.accent.d),
               ),
             ]),
           ),
@@ -909,35 +966,64 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       // Link row + copy. Shows the token path (key fragment elided from view).
       Container(
         padding: const EdgeInsetsDirectional.only(start: 14, end: 6, top: 6, bottom: 6),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.ink100)),
+        decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.ink100)),
         child: Row(children: [
           const Icon(LucideIcons.link, size: 16, color: T.fg3),
           const SizedBox(width: 10),
-          Expanded(child: Text(m.qrUrl.split('#').first, textDirection: TextDirection.ltr, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: Typo.num(size: FS.sm, color: T.fg2))),
-          PButton(s.strings.emergency.eqr_copy, icon: LucideIcons.copy, variant: BtnVariant.ghost, accent: s.accent, ar: ar,
+          Expanded(
+              child: Text(m.qrUrl.split('#').first,
+                  textDirection: TextDirection.ltr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.num(size: FS.sm, color: T.fg2))),
+          PButton(s.strings.emergency.eqr_copy,
+              icon: LucideIcons.copy,
+              variant: BtnVariant.ghost,
+              accent: s.accent,
+              ar: ar,
               onTap: expired ? null : _copy),
         ]),
       ),
       const SizedBox(height: 16),
       if (expired)
         // Token lapsed → offer a fresh mint (returns to the affordance).
-        PButton(s.strings.emergency.eqr_generate_new, icon: LucideIcons.refreshCw,
-            variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
-            onTap: () { _ticker?.cancel(); setState(() => _mint = null); })
+        PButton(s.strings.emergency.eqr_generate_new,
+            icon: LucideIcons.refreshCw,
+            variant: BtnVariant.primary,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: ar, onTap: () {
+          _ticker?.cancel();
+          setState(() => _mint = null);
+        })
       else ...[
         Row(children: [
-          Expanded(child: PButton(s.strings.emergency.eqr_save, icon: LucideIcons.download, variant: BtnVariant.secondary, large: true, block: true, ar: ar,
-              onTap: () => _showToast(s.strings.emergency.eqr_saved_toast))),
+          Expanded(
+              child: PButton(s.strings.emergency.eqr_save,
+                  icon: LucideIcons.download,
+                  variant: BtnVariant.secondary,
+                  large: true,
+                  block: true,
+                  ar: ar,
+                  onTap: () => _showToast(s.strings.emergency.eqr_saved_toast))),
           const SizedBox(width: 10),
-          Expanded(child: PButton(s.strings.emergency.eqr_share, icon: LucideIcons.share2, variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
-              onTap: _copy)),
+          Expanded(
+              child: PButton(s.strings.emergency.eqr_share,
+                  icon: LucideIcons.share2,
+                  variant: BtnVariant.primary,
+                  large: true,
+                  block: true,
+                  accent: s.accent,
+                  ar: ar,
+                  onTap: _copy)),
         ]),
         const SizedBox(height: 10),
         _revoking
             ? _busyButton()
-            : PButton(s.strings.emergency.eqr_revoke, icon: LucideIcons.ban,
-                variant: BtnVariant.ghost, block: true, ar: ar, color: T.danger, onTap: _revoke),
+            : PButton(s.strings.emergency.eqr_revoke,
+                icon: LucideIcons.ban, variant: BtnVariant.ghost, block: true, ar: ar, color: T.danger, onTap: _revoke),
       ],
     ];
   }
@@ -945,7 +1031,8 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
         Text(s.strings.emergency.eqr_valid_for.toUpperCase(),
-            style: Typo.meta(ar: ar).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
+            style: Typo.meta(ar: ar)
+                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
         const SizedBox(height: 8),
         _ttlControl(),
         if (_error != null) ...[
@@ -955,15 +1042,21 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         const SizedBox(height: 16),
         _minting
             ? _busyButton(primary: true)
-            : PButton(s.strings.emergency.eqr_generate, icon: LucideIcons.qrCode,
-                variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar,
+            : PButton(s.strings.emergency.eqr_generate,
+                icon: LucideIcons.qrCode,
+                variant: BtnVariant.primary,
+                large: true,
+                block: true,
+                accent: s.accent,
+                ar: ar,
                 onTap: _mintToken),
       ];
 
   /// Segmented TTL selector (mirrors the prototype's `.segmented` control).
   Widget _ttlControl() => Container(
         padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
+        decoration: BoxDecoration(
+            color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
         child: Row(children: [
           for (var i = 0; i < _emergencyTtlOptions.length; i++) ...[
             if (i > 0) const SizedBox(width: 6),
@@ -980,14 +1073,14 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       child: AnimatedContainer(
         duration: Motion.base,
         curve: Motion.easeOut,
-        height: 42, alignment: Alignment.center,
+        height: 42,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: active ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-          boxShadow: active ? T.shadowXs : null),
+            color: active ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+            boxShadow: active ? T.shadowXs : null),
         child: Text(s.t(opt.key),
-            style: Typo.num(size: FS.sm, weight: FontWeight.w700,
-                color: active ? s.accent.d : T.fg3)),
+            style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: active ? s.accent.d : T.fg3)),
       ),
     );
   }
@@ -997,26 +1090,30 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 44, horizontal: 24),
           decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(T.rXl),
-            border: Border.all(color: T.ink100), boxShadow: T.shadowSm),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(T.rXl),
+              border: Border.all(color: T.ink100),
+              boxShadow: T.shadowSm),
           child: Column(children: [
-            Icon(signedOut ? LucideIcons.lock : LucideIcons.heartPulse,
-                size: 40, color: T.ink300),
+            Icon(signedOut ? LucideIcons.lock : LucideIcons.heartPulse, size: 40, color: T.ink300),
             const SizedBox(height: 14),
-            Text(
-              signedOut
-                  ? s.strings.emergency.eqr_signin_required
-                  : s.strings.emergency.eqr_no_data,
-              textAlign: TextAlign.center,
-              style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+            Text(signedOut ? s.strings.emergency.eqr_signin_required : s.strings.emergency.eqr_no_data,
+                textAlign: TextAlign.center,
+                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
           ]),
         ),
         const SizedBox(height: 16),
         // Disabled Generate button (0.4 opacity, non-tappable) — prototype style.
         Opacity(
           opacity: 0.4,
-          child: PButton(s.strings.emergency.eqr_generate, icon: LucideIcons.qrCode,
-              variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: ar, onTap: null),
+          child: PButton(s.strings.emergency.eqr_generate,
+              icon: LucideIcons.qrCode,
+              variant: BtnVariant.primary,
+              large: true,
+              block: true,
+              accent: s.accent,
+              ar: ar,
+              onTap: null),
         ),
       ];
 
@@ -1035,8 +1132,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         child: Row(children: [
           const Icon(LucideIcons.alertCircle, size: 18, color: T.danger),
           const SizedBox(width: 10),
-          Expanded(child: Text(msg,
-              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.danger))),
+          Expanded(child: Text(msg, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.danger))),
         ]),
       );
 
@@ -1046,10 +1142,10 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         width: double.infinity,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: primary ? s.accent.main : Colors.white,
-          borderRadius: BorderRadius.circular(primary ? T.rLg : T.rMd),
-          border: primary ? null : Border.all(color: T.borderStrong),
-          boxShadow: primary ? s.accent.boxShadow : null),
+            color: primary ? s.accent.main : Colors.white,
+            borderRadius: BorderRadius.circular(primary ? T.rLg : T.rMd),
+            border: primary ? null : Border.all(color: T.borderStrong),
+            boxShadow: primary ? s.accent.boxShadow : null),
         child: Spinner(size: 22, stroke: 2.5, color: primary ? Colors.white : s.accent.main),
       );
 }

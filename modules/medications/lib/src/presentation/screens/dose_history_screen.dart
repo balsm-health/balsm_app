@@ -84,9 +84,7 @@ class _TimelineTile extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isFirst
-                        ? Colors.transparent
-                        : BalsmColors.ink200,
+                    color: isFirst ? Colors.transparent : BalsmColors.ink200,
                   ),
                 ),
                 Container(
@@ -97,8 +95,7 @@ class _TimelineTile extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color:
-                        isLast ? Colors.transparent : BalsmColors.ink200,
+                    color: isLast ? Colors.transparent : BalsmColors.ink200,
                   ),
                 ),
               ],
@@ -133,12 +130,10 @@ class _TimelineTile extends StatelessWidget {
                     DateFormat('EEE, d MMM yyyy').format(event.scheduledAt),
                     style: const TextStyle(fontSize: 13, color: BalsmColors.fg3),
                   ),
-                  if (event.outcome == DoseOutcome.snoozed &&
-                      event.snoozeUntil != null)
+                  if (event.outcome == DoseOutcome.snoozed && event.snoozeUntil != null)
                     Text(
                       'Snoozed until ${DateFormat('HH:mm').format(event.snoozeUntil!)}',
-                      style:
-                          const TextStyle(fontSize: 12, color: BalsmColors.fg3),
+                      style: const TextStyle(fontSize: 12, color: BalsmColors.fg3),
                     ),
                   if (event.parentEventId != null)
                     const Text(

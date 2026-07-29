@@ -13,8 +13,7 @@ void main() {
   const alice = UserId.value('alice');
   const bob = UserId.value('bob');
 
-  RecordDocument doc(String id, UserId user, {String title = 'HbA1c'}) =>
-      RecordDocument(
+  RecordDocument doc(String id, UserId user, {String title = 'HbA1c'}) => RecordDocument(
         id: RecordDocumentId.value(id),
         userId: user,
         type: RecordType.lab,
@@ -57,10 +56,8 @@ void main() {
     active = null;
     expect(await ds.find(const RecordDocumentId.value('r1')), isNull);
     expect(await ds.findAll(), isEmpty);
-    expect(() => ds.put(const RecordDocumentId.value('x'), doc('x', alice)),
-        throwsA(isA<NoActiveUserException>()));
-    expect(() => ds.delete(const RecordDocumentId.value('r1')),
-        throwsA(isA<NoActiveUserException>()));
+    expect(() => ds.put(const RecordDocumentId.value('x'), doc('x', alice)), throwsA(isA<NoActiveUserException>()));
+    expect(() => ds.delete(const RecordDocumentId.value('r1')), throwsA(isA<NoActiveUserException>()));
     await ds.clear(); // must not throw
     active = alice;
     expect(await ds.findAll(), hasLength(1)); // clear was a real no-op
@@ -77,8 +74,7 @@ void main() {
     await ds.put(const RecordDocumentId.value('a'), doc('a', alice));
     await ds.put(const RecordDocumentId.value('b'), doc('b', alice));
     await ds.put(const RecordDocumentId.value('c'), doc('c', alice));
-    final some = await ds.findMany(
-        [const RecordDocumentId.value('a'), const RecordDocumentId.value('c')]);
+    final some = await ds.findMany([const RecordDocumentId.value('a'), const RecordDocumentId.value('c')]);
     expect(some, hasLength(2));
     await ds.deleteMany([const RecordDocumentId.value('a')]);
     expect(await ds.findAll(), hasLength(2));

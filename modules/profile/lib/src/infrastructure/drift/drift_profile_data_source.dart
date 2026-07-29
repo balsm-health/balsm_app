@@ -25,8 +25,7 @@ import '../../domain/value_objects/ids.dart';
 /// active user from [activeUser]; signed out → reads return null/empty,
 /// mutations throw [NoActiveUserException], [clear] is an idempotent no-op.
 class DriftProfileDataSource extends HealthProfilesDataSource {
-  DriftProfileDataSource({required AppDatabase db, required this.activeUser})
-      : _db = db;
+  DriftProfileDataSource({required AppDatabase db, required this.activeUser}) : _db = db;
 
   final AppDatabase _db;
 
@@ -70,8 +69,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   }
 
   @override
-  Future<List<HealthProfile>> findMany(Iterable<HealthProfileId> keys,
-      {UserId? scope}) async {
+  Future<List<HealthProfile>> findMany(Iterable<HealthProfileId> keys, {UserId? scope}) async {
     final result = <HealthProfile>[];
     for (final key in keys) {
       final profile = await find(key, scope: scope);
@@ -97,8 +95,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   /// Upserts the head row (blood type + timestamps). Child collections are
   /// NOT persisted here — use the add*/remove* methods.
   @override
-  Future<void> put(HealthProfileId key, HealthProfile value,
-      {UserId? scope}) async {
+  Future<void> put(HealthProfileId key, HealthProfile value, {UserId? scope}) async {
     final user = _resolve(scope) ?? value.userId;
     final now = DateTime.now().millisecondsSinceEpoch;
     await _db.customInsert(
@@ -112,17 +109,14 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       variables: [
         Variable.withString(key.value),
         Variable.withString(user.value),
-        value.bloodType != null
-            ? Variable.withString(value.bloodType!)
-            : const Variable(null),
+        value.bloodType != null ? Variable.withString(value.bloodType!) : const Variable(null),
         Variable.withInt(now),
       ],
     );
   }
 
   @override
-  Future<void> putBulk(Map<HealthProfileId, HealthProfile> values,
-      {UserId? scope}) async {
+  Future<void> putBulk(Map<HealthProfileId, HealthProfile> values, {UserId? scope}) async {
     for (final entry in values.entries) {
       await put(entry.key, entry.value, scope: scope);
     }
@@ -143,8 +137,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   }
 
   @override
-  Future<void> deleteMany(Iterable<HealthProfileId> keys,
-      {UserId? scope}) async {
+  Future<void> deleteMany(Iterable<HealthProfileId> keys, {UserId? scope}) async {
     for (final key in keys) {
       await delete(key, scope: scope);
     }
@@ -163,8 +156,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
 
   @override
   Future<void> clearAll() async {
-    await _db.customUpdate('DELETE FROM health_profile',
-        updateKind: UpdateKind.delete);
+    await _db.customUpdate('DELETE FROM health_profile', updateKind: UpdateKind.delete);
   }
 
   // --- WatchableScopedDataSource -------------------------------------------
@@ -183,8 +175,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
           readsFrom: {},
         )
         .watch()
-        .asyncMap(
-            (rows) async => rows.isEmpty ? null : _hydrateProfile(rows.first));
+        .asyncMap((rows) async => rows.isEmpty ? null : _hydrateProfile(rows.first));
   }
 
   @override
@@ -199,27 +190,23 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
           readsFrom: {},
         )
         .watch()
-        .asyncMap((rows) async =>
-            [for (final row in rows) await _hydrateProfile(row)]);
+        .asyncMap((rows) async => [for (final row in rows) await _hydrateProfile(row)]);
   }
 
   // --- Aggregate conveniences (pre-contract API, kept for callers) ---------
 
   /// The user's (self) profile, or null if none exists yet.
   @override
-  Future<HealthProfile?> getProfile(UserId userId) async =>
-      (await findAll(scope: userId)).firstOrNull;
+  Future<HealthProfile?> getProfile(UserId userId) async => (await findAll(scope: userId)).firstOrNull;
 
   /// Emits the current profile and updates whenever the row changes.
   @override
-  Stream<HealthProfile?> watchProfile(UserId userId) =>
-      watchAll(scope: userId).map((profiles) => profiles.firstOrNull);
+  Stream<HealthProfile?> watchProfile(UserId userId) => watchAll(scope: userId).map((profiles) => profiles.firstOrNull);
 
   /// Inserts or updates the head row for [profile]. Does NOT persist child
   /// collections — use the individual add*/remove* methods.
   @override
-  Future<void> upsertProfile(HealthProfile profile) =>
-      put(profile.id, profile, scope: profile.userId);
+  Future<void> upsertProfile(HealthProfile profile) => put(profile.id, profile, scope: profile.userId);
 
   Future<HealthProfile> _hydrateProfile(QueryRow row) async {
     final profileId = HealthProfileId.value(row.read<String>('id'));
@@ -255,12 +242,10 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     return rows
         .map((r) => Allergy(
               id: AllergyId.value(r.read<String>('id')),
-              healthProfileId:
-                  HealthProfileId.value(r.read<String>('health_profile_id')),
+              healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
               name: r.read<String>('name'),
               severity: r.read<String>('severity'),
-              isControlledSubstance:
-                  r.read<int>('is_controlled_substance') == 1,
+              isControlledSubstance: r.read<int>('is_controlled_substance') == 1,
               createdAt: DateTime.fromMillisecondsSinceEpoch(
                 r.read<int>('created_at'),
                 isUtc: true,
@@ -314,8 +299,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     return rows
         .map((r) => ChronicCondition(
               id: ChronicConditionId.value(r.read<String>('id')),
-              healthProfileId:
-                  HealthProfileId.value(r.read<String>('health_profile_id')),
+              healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
               name: r.read<String>('name'),
               icd10Code: r.readNullable<String>('icd10_code'),
               onsetYear: r.readNullable<int>('onset_year'),
@@ -330,8 +314,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   /// Inserts [condition] under [profileId]. Returns the generated
   /// [ChronicConditionId].
   @override
-  Future<ChronicConditionId> addCondition(
-      HealthProfileId profileId, ChronicCondition condition) async {
+  Future<ChronicConditionId> addCondition(HealthProfileId profileId, ChronicCondition condition) async {
     final id = ChronicConditionId.uuid();
     final now = DateTime.now().millisecondsSinceEpoch;
     await _db.customInsert(
@@ -344,12 +327,8 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
         Variable.withString(id.value),
         Variable.withString(profileId.value),
         Variable.withString(condition.name),
-        condition.icd10Code != null
-            ? Variable.withString(condition.icd10Code!)
-            : const Variable(null),
-        condition.onsetYear != null
-            ? Variable.withInt(condition.onsetYear!)
-            : const Variable(null),
+        condition.icd10Code != null ? Variable.withString(condition.icd10Code!) : const Variable(null),
+        condition.onsetYear != null ? Variable.withInt(condition.onsetYear!) : const Variable(null),
         Variable.withInt(now),
       ],
     );
@@ -369,8 +348,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     return rows
         .map((r) => EmergencyContact(
               id: EmergencyContactId.value(r.read<String>('id')),
-              healthProfileId:
-                  HealthProfileId.value(r.read<String>('health_profile_id')),
+              healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
               name: r.read<String>('name'),
               phone: r.read<String>('phone'),
               relation: r.readNullable<String>('relation'),
@@ -386,8 +364,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   /// Inserts [contact] under [profileId]. Returns the generated
   /// [EmergencyContactId].
   @override
-  Future<EmergencyContactId> addContact(
-      HealthProfileId profileId, EmergencyContact contact) async {
+  Future<EmergencyContactId> addContact(HealthProfileId profileId, EmergencyContact contact) async {
     final id = EmergencyContactId.uuid();
     final now = DateTime.now().millisecondsSinceEpoch;
     await _db.customInsert(
@@ -401,9 +378,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
         Variable.withString(profileId.value),
         Variable.withString(contact.name),
         Variable.withString(contact.phone),
-        contact.relation != null
-            ? Variable.withString(contact.relation!)
-            : const Variable(null),
+        contact.relation != null ? Variable.withString(contact.relation!) : const Variable(null),
         Variable.withInt(contact.isPrimary ? 1 : 0),
         Variable.withInt(now),
       ],

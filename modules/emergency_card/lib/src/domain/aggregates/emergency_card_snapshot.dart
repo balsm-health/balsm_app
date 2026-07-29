@@ -27,10 +27,7 @@ class EmergencyCardSnapshot {
   final DateTime createdAt;
 
   bool get hasAnyData =>
-      bloodType != null ||
-      allergyNames.isNotEmpty ||
-      conditionNames.isNotEmpty ||
-      primaryContact != null;
+      bloodType != null || allergyNames.isNotEmpty || conditionNames.isNotEmpty || primaryContact != null;
 
   Map<String, dynamic> toJson() => {
         'bloodType': bloodType,
@@ -48,12 +45,8 @@ class EmergencyCardSnapshot {
     final contact = json['primaryContact'] as Map<String, dynamic>?;
     return EmergencyCardSnapshot(
       bloodType: json['bloodType'] as String?,
-      allergyNames: (json['allergyNames'] as List<dynamic>? ?? [])
-          .map((e) => e as String)
-          .toList(),
-      conditionNames: (json['conditionNames'] as List<dynamic>? ?? [])
-          .map((e) => e as String)
-          .toList(),
+      allergyNames: (json['allergyNames'] as List<dynamic>? ?? []).map((e) => e as String).toList(),
+      conditionNames: (json['conditionNames'] as List<dynamic>? ?? []).map((e) => e as String).toList(),
       primaryContact: contact == null
           ? null
           : (
@@ -66,8 +59,7 @@ class EmergencyCardSnapshot {
 
   String toJsonString() => jsonEncode(toJson());
 
-  factory EmergencyCardSnapshot.fromJsonString(String s) =>
-      EmergencyCardSnapshot.fromJson(
+  factory EmergencyCardSnapshot.fromJsonString(String s) => EmergencyCardSnapshot.fromJson(
         jsonDecode(s) as Map<String, dynamic>,
       );
 }

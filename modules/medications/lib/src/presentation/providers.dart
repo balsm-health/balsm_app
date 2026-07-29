@@ -11,9 +11,7 @@ import '../infrastructure/drift/drift_medications_data_source.dart';
 final medicationListProvider = StreamProvider<List<Medication>>((ref) {
   final profileId = ref.watch(currentProfileIdProvider);
   if (profileId == null) return Stream.value(const <Medication>[]);
-  return ref
-      .watch(medicationsDataSourceProvider)
-      .watchAll(scope: profileId);
+  return ref.watch(medicationsDataSourceProvider).watchAll(scope: profileId);
 });
 
 /// A scheduled dose for "today" plus its recorded outcome (if any).
@@ -31,8 +29,7 @@ class TodayDose {
   final DoseEvent? event;
 
   /// Stable id used for highlight/scroll: medicationId@ISO8601(scheduledAt).
-  String get slotId =>
-      '${medication.id}@${scheduledAt.toIso8601String()}';
+  String get slotId => '${medication.id}@${scheduledAt.toIso8601String()}';
 
   bool get isPending => event == null;
 }
@@ -77,8 +74,7 @@ final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
 });
 
 /// Dose history for a single medication (most recent first).
-final doseHistoryProvider =
-    FutureProvider.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
+final doseHistoryProvider = FutureProvider.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
   return ref.watch(medicationsDataSourceProvider).getDoseEvents(medicationId);
 });
 
@@ -91,9 +87,7 @@ Iterable<DateTime> _todayOccurrences(
   final cfg = med.scheduleConfig;
   final matchesDay = switch (med.scheduleType) {
     ScheduleType.daily => true,
-    ScheduleType.weekly ||
-    ScheduleType.custom =>
-      (cfg.days ?? const <int>[]).contains(dayStart.weekday),
+    ScheduleType.weekly || ScheduleType.custom => (cfg.days ?? const <int>[]).contains(dayStart.weekday),
   };
   if (!matchesDay) return;
 

@@ -81,8 +81,18 @@ class CountryCode extends ValueObject {
 
   /// The curated countries, in reference order.
   static const known = [
-    egypt, saudi_arabia, united_arab_emirates, qatar, kuwait, bahrain,
-    oman, jordan, lebanon, morocco, united_states, united_kingdom,
+    egypt,
+    saudi_arabia,
+    united_arab_emirates,
+    qatar,
+    kuwait,
+    bahrain,
+    oman,
+    jordan,
+    lebanon,
+    morocco,
+    united_states,
+    united_kingdom,
   ];
 
   /// Derived string index for the [CountryCode.new] factory.

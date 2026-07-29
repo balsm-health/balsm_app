@@ -68,8 +68,7 @@ class EncryptedFileStore implements UserFileStore {
     return user;
   }
 
-  Directory _partition(UserId user) =>
-      Directory('${root.path}${Platform.pathSeparator}${user.value}');
+  Directory _partition(UserId user) => Directory('${root.path}${Platform.pathSeparator}${user.value}');
 
   File _file(UserId user, String relativeOrName) {
     // Accept both the relative path returned by [save] ('<user>/<name>.enc')
@@ -83,8 +82,7 @@ class EncryptedFileStore implements UserFileStore {
   }
 
   @override
-  Future<String> save(String fileName, Uint8List bytes,
-      {UserId? scope}) async {
+  Future<String> save(String fileName, Uint8List bytes, {UserId? scope}) async {
     final user = _require(scope);
     try {
       final key = SecretKey(await keyFor(user));
@@ -107,8 +105,7 @@ class EncryptedFileStore implements UserFileStore {
     if (!await file.exists()) return null;
     try {
       final raw = await file.readAsBytes();
-      final box = SecretBox.fromConcatenation(raw,
-          nonceLength: 12, macLength: 16);
+      final box = SecretBox.fromConcatenation(raw, nonceLength: 12, macLength: 16);
       final key = SecretKey(await keyFor(user));
       final clear = await _cipher.decrypt(box, secretKey: key);
       return Uint8List.fromList(clear);

@@ -28,8 +28,7 @@ class ConsoleAnalyticsLogger implements AnalyticsLogger {
   }
 
   @override
-  void log(String message,
-      {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {
+  void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {
     developer.log(
       '$message${_fmt(props)}',
       name: '$_name.log',
@@ -39,10 +38,7 @@ class ConsoleAnalyticsLogger implements AnalyticsLogger {
 
   @override
   void logError(Object error,
-      {StackTrace? stackTrace,
-      String? message,
-      Map<String, Object?>? context,
-      bool fatal = false}) {
+      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {
     developer.log(
       '${fatal ? 'FATAL ' : ''}${message ?? error.toString()}${_fmt(context)}',
       name: '$_name.error',

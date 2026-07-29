@@ -69,8 +69,7 @@ class _ReauthFormState extends State<ReauthForm> {
     super.dispose();
   }
 
-  bool get _valid =>
-      _identifier.text.trim().isNotEmpty && _secret.text.isNotEmpty;
+  bool get _valid => _identifier.text.trim().isNotEmpty && _secret.text.isNotEmpty;
 
   void _submit() {
     if (!_valid) return;

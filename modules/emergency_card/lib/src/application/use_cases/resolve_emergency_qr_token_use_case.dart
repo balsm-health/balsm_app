@@ -65,8 +65,7 @@ class ResolveEmergencyQrTokenUseCase {
         );
       }
       final nonce = payload.sublist(0, nonceLength);
-      final cipherText =
-          payload.sublist(nonceLength, payload.length - macLength);
+      final cipherText = payload.sublist(nonceLength, payload.length - macLength);
       final mac = Mac(payload.sublist(payload.length - macLength));
 
       final secretKey = SecretKey(keyBytes);
@@ -74,8 +73,7 @@ class ResolveEmergencyQrTokenUseCase {
         SecretBox(cipherText, nonce: nonce, mac: mac),
         secretKey: secretKey,
       );
-      final snapshot =
-          EmergencyCardSnapshot.fromJsonString(utf8.decode(plaintext));
+      final snapshot = EmergencyCardSnapshot.fromJsonString(utf8.decode(plaintext));
       return AppResult.success(snapshot);
     } catch (_) {
       // Decryption / auth-tag failure — never surface PHI or raw error detail.
@@ -100,7 +98,6 @@ class ResolveEmergencyQrTokenUseCase {
   }
 }
 
-final resolveEmergencyQrTokenUseCaseProvider =
-    Provider<ResolveEmergencyQrTokenUseCase>((ref) {
+final resolveEmergencyQrTokenUseCaseProvider = Provider<ResolveEmergencyQrTokenUseCase>((ref) {
   return ResolveEmergencyQrTokenUseCase(api: ref.watch(emergencyQrApiProvider));
 });

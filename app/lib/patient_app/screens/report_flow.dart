@@ -3,11 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show currentProfileIdProvider;
 import 'package:medications/medications.dart'
-    show
-        Medication,
-        DoseOutcome,
-        medicationListProvider,
-        recordDoseOutcomeUseCaseProvider;
+    show Medication, DoseOutcome, medicationListProvider, recordDoseOutcomeUseCaseProvider;
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
 import '../kit.dart';
@@ -55,8 +51,7 @@ const _symptomIcons = <(SymptomId, IconData)>[
 /// (`blurredVision`); the app's flat keys are snake_case (`sym_blurred_vision`).
 String symptomLabelKey(SymptomId id) => 'checkin.sym_${_snakeCase(id.id)}';
 
-String _snakeCase(String v) =>
-    v.replaceAllMapped(RegExp('[A-Z]'), (m) => '_${m[0]!.toLowerCase()}');
+String _snakeCase(String v) => v.replaceAllMapped(RegExp('[A-Z]'), (m) => '_${m[0]!.toLowerCase()}');
 
 ({String lbl, Color color}) _painInfo(PatientAppState s, int n) {
   if (n == 0) return (lbl: s.t('checkin.pain_0'), color: T.petalMint);
@@ -179,8 +174,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       recordedAt: DateTime.now(),
       mood: Mood(mood),
       painLevel: PainLevel(pain.round()),
-      painRegions:
-          painLocs.map(BodyRegion.fromId).whereType<BodyRegion>().toSet(),
+      painRegions: painLocs.map(BodyRegion.fromId).whereType<BodyRegion>().toSet(),
       symptoms: syms.toSet(),
       vitals: _buildVitals(),
       note: noteText.isEmpty ? null : noteText,
@@ -189,8 +183,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
     // Any med the patient marked taken/skipped is recorded as a real (append-
     // only) dose event via the medications module — on-device, never synced.
-    final meds =
-        ref.read(medicationListProvider).valueOrNull ?? const <Medication>[];
+    final meds = ref.read(medicationListProvider).valueOrNull ?? const <Medication>[];
     final recordDose = ref.read(recordDoseOutcomeUseCaseProvider);
     final now = DateTime.now();
     for (final med in meds) {
@@ -249,10 +242,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
             child: Row(children: [
-              RoundBtn(
-                  icon: step == 0 ? LucideIcons.x : LucideIcons.arrowLeft,
-                  ghost: true,
-                  onTap: back),
+              RoundBtn(icon: step == 0 ? LucideIcons.x : LucideIcons.arrowLeft, ghost: true, onTap: back),
               const SizedBox(width: 12),
               Expanded(child: LinearProgress(value: pct, color: s.accent.main)),
               const SizedBox(width: 12),
@@ -260,10 +250,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                   width: 40,
                   child: Text('${step + 1} ${s.t('common.step_of')} ${_steps.length}',
                       textAlign: TextAlign.center,
-                      style: Typo.num(
-                          size: FS.xs,
-                          weight: FontWeight.w600,
-                          color: T.fg3))),
+                      style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
             ]),
           ),
           Expanded(
@@ -276,15 +263,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
             decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0x00FAFAF7), T.cream50])),
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00FAFAF7), T.cream50])),
             child: Opacity(
               opacity: enabled ? 1 : 0.4,
-              child: PButton(
-                  isLast
-                      ? (saving ? '…' : s.t('common.finish'))
-                      : s.t('continue'),
+              child: PButton(isLast ? (saving ? '…' : s.t('common.finish')) : s.t('continue'),
                   variant: BtnVariant.primary,
                   large: true,
                   block: true,
@@ -298,8 +280,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     );
   }
 
-  Widget _title(String t, String h) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget _title(String t, String h) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(s.t(t), style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
         const SizedBox(height: 6),
         Text(s.t(h), style: Typo.body(ar: s.rtl).copyWith(color: T.fg3)),
@@ -307,8 +288,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       ]);
 
   Widget _stepBody() => switch (cur) {
-        'mood' =>
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        'mood' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _title(s.strings.checkin.q_mood_t(s.gender), 'checkin.q_mood_h'),
             Row(
                 children: List.generate(
@@ -317,24 +297,19 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                           child: Padding(
                             padding: EdgeInsets.only(right: i < 4 ? 10 : 0),
                             child: _MoodCell(
-                                lv: i + 1,
-                                selected: mood == i + 1,
-                                s: s,
-                                onTap: () => setState(() => mood = i + 1)),
+                                lv: i + 1, selected: mood == i + 1, s: s, onTap: () => setState(() => mood = i + 1)),
                           ),
                         ))),
           ]),
         'vitals' => _vitalsStep(),
-        'meds' =>
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        'meds' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _title('checkin.q_med_t', 'checkin.q_med_h'),
             ..._meds.map(_medCheck),
           ]),
         _ => _symptomsStep(),
       };
 
-  Widget _vitalsStep() =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget _vitalsStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _title('checkin.q_vitals_t', 'checkin.q_vitals_h'),
         PCard(
             padding: const EdgeInsets.all(16),
@@ -349,33 +324,26 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                 Expanded(child: _vitalField(s.t('checkin.vital_hr'), hrCtrl, s.t('checkin.unit_hr'))),
                 const SizedBox(width: 12),
                 Expanded(
-                    child: _vitalField(s.t('checkin.vital_temp'), tempCtrl,
-                        s.t('checkin.unit_temp'),
-                        decimal: true)),
+                    child: _vitalField(s.t('checkin.vital_temp'), tempCtrl, s.t('checkin.unit_temp'), decimal: true)),
               ]),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(
-                    child: _vitalField(
-                        s.strings.profile.pd_weight, weightCtrl, s.strings.profile.pd_kg,
-                        decimal: true)),
+                    child:
+                        _vitalField(s.strings.profile.pd_weight, weightCtrl, s.strings.profile.pd_kg, decimal: true)),
                 const SizedBox(width: 12),
-                Expanded(
-                    child: _vitalField(s.t('checkin.vital_spo2'), spo2Ctrl,
-                        s.t('checkin.unit_spo2'))),
+                Expanded(child: _vitalField(s.t('checkin.vital_spo2'), spo2Ctrl, s.t('checkin.unit_spo2'))),
               ]),
             ])),
         const SizedBox(height: 16),
         Text(s.t('profile.m_glucose'),
-            style: Typo.bodySm(ar: s.rtl)
-                .copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
         const SizedBox(height: 10),
         Wrap(
             spacing: 10,
             runSpacing: 10,
             children: const ['checkin.glu_fast', 'checkin.glu_meal', 'checkin.glu_random']
-                .map((c) =>
-                    _chip(s.t(c), gluCtx == c, () => setState(() => gluCtx = c)))
+                .map((c) => _chip(s.t(c), gluCtx == c, () => setState(() => gluCtx = c)))
                 .toList()),
         const SizedBox(height: 12),
         PCard(
@@ -383,15 +351,11 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             child: _vitalField(s.t('profile.m_glucose'), gluCtrl, s.t('checkin.unit_glu'))),
       ]);
 
-  Widget _vitalField(String label, TextEditingController c, String unit,
-          {bool decimal = false}) =>
+  Widget _vitalField(String label, TextEditingController c, String unit, {bool decimal = false}) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(),
-            style: Typo.meta(ar: s.rtl).copyWith(
-                fontSize: FS.xs2,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
-                color: T.fg3)),
+            style: Typo.meta(ar: s.rtl)
+                .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: T.fg3)),
         const SizedBox(height: 6),
         TextField(
           controller: c,
@@ -404,14 +368,11 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             fillColor: Colors.white,
             suffixText: unit,
             suffixStyle: Typo.meta(ar: s.rtl),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(T.rMd),
-                borderSide: const BorderSide(color: T.border, width: 1.5)),
+                borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
             focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(T.rMd),
-                borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+                borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
           ),
         ),
       ]);
@@ -423,51 +384,33 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       Center(
           child: Column(children: [
         Text('${pain.round()}',
-            style: Typo.display().copyWith(
-                fontSize: 64, color: pinfo.color, fontWeight: FontWeight.w800)),
-        Text(pinfo.lbl,
-            style: Typo.body(ar: s.rtl)
-                .copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+            style: Typo.display().copyWith(fontSize: 64, color: pinfo.color, fontWeight: FontWeight.w800)),
+        Text(pinfo.lbl, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
       ])),
       SliderTheme(
         data: SliderThemeData(
-            activeTrackColor: pinfo.color,
-            thumbColor: pinfo.color,
-            inactiveTrackColor: T.ink100,
-            trackHeight: 10),
-        child: Slider(
-            value: pain,
-            min: 0,
-            max: 10,
-            divisions: 10,
-            onChanged: (v) => setState(() => pain = v)),
+            activeTrackColor: pinfo.color, thumbColor: pinfo.color, inactiveTrackColor: T.ink100, trackHeight: 10),
+        child: Slider(value: pain, min: 0, max: 10, divisions: 10, onChanged: (v) => setState(() => pain = v)),
       ),
       if (pain > 0 || syms.isNotEmpty) ...[
         const SizedBox(height: 20),
         Text(s.t('checkin.body_location'),
-            style: Typo.bodySm(ar: s.rtl)
-                .copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
         const SizedBox(height: 8),
         BodyMap(
             selected: painLocs,
-            onToggle: (id) => setState(() => painLocs.contains(id)
-                ? painLocs.remove(id)
-                : painLocs.add(id))),
+            onToggle: (id) => setState(() => painLocs.contains(id) ? painLocs.remove(id) : painLocs.add(id))),
       ],
       const SizedBox(height: 16),
       Wrap(spacing: 10, runSpacing: 10, children: [
-        ..._symptomIcons.map((e) => _chip(
-            s.t(symptomLabelKey(e.$1)), syms.contains(e.$1),
-            () => _toggleSym(e.$1),
-            icon: e.$2)),
-        _chip(s.t('checkin.s_none'), noSymptoms, _toggleNone,
-            icon: LucideIcons.checkCircle2),
+        ..._symptomIcons
+            .map((e) => _chip(s.t(symptomLabelKey(e.$1)), syms.contains(e.$1), () => _toggleSym(e.$1), icon: e.$2)),
+        _chip(s.t('checkin.s_none'), noSymptoms, _toggleNone, icon: LucideIcons.checkCircle2),
       ]),
       Padding(
         padding: const EdgeInsets.only(top: 24, bottom: 10),
         child: Text(s.t('checkin.note_lbl'),
-            style: Typo.bodySm(ar: s.rtl)
-                .copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
       ),
       TextField(
         controller: note,
@@ -482,11 +425,9 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           fillColor: Colors.white,
           contentPadding: const EdgeInsets.all(14),
           enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd),
-              borderSide: const BorderSide(color: T.border, width: 1.5)),
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
           focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd),
-              borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       ),
       const SizedBox(height: 10),
@@ -499,8 +440,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         child: Row(children: [
           const Icon(LucideIcons.camera, size: 20, color: T.fg3),
           const SizedBox(width: 12),
-          Text(s.t('settings.add_photo'),
-              style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          Text(s.t('settings.add_photo'), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
         ]),
       ),
     ]);
@@ -517,9 +457,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       });
 
   // `.chip` — border/bg/color animate over --dur-base ease-out.
-  Widget _chip(String label, bool selected, VoidCallback onTap,
-          {IconData? icon}) =>
-      Pressable(
+  Widget _chip(String label, bool selected, VoidCallback onTap, {IconData? icon}) => Pressable(
         onTap: onTap,
         scale: 0.97,
         child: AnimatedContainer(
@@ -529,18 +467,13 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           decoration: BoxDecoration(
             color: selected ? s.accent.bg : Colors.white,
             borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(
-                color: selected ? s.accent.main : T.border, width: 1.5),
+            border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: selected ? s.accent.d : T.fg2),
-              const SizedBox(width: 7)
-            ],
+            if (icon != null) ...[Icon(icon, size: 16, color: selected ? s.accent.d : T.fg2), const SizedBox(width: 7)],
             Text(label,
-                style: Typo.bodySm(ar: s.rtl).copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: selected ? s.accent.d : T.fg2)),
+                style:
+                    Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg2)),
           ]),
         ),
       );
@@ -551,8 +484,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     final skipped = st == 'skipped';
     final subtitle = m.doseAmount;
     return GestureDetector(
-      onTap: () =>
-          setState(() => medMarks[m.id.value] = taken ? '' : 'taken'),
+      onTap: () => setState(() => medMarks[m.id.value] = taken ? '' : 'taken'),
       // `.check-row` + `.check-box` — border/bg animate over --dur-base.
       child: AnimatedOpacity(
         duration: Motion.base,
@@ -566,8 +498,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           decoration: BoxDecoration(
             color: taken ? T.petalMint50 : Colors.white,
             borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(
-                color: taken ? T.petalMint : T.border, width: 1.5),
+            border: Border.all(color: taken ? T.petalMint : T.border, width: 1.5),
           ),
           child: Row(children: [
             AnimatedContainer(
@@ -579,24 +510,15 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                 decoration: BoxDecoration(
                     color: taken ? T.petalMint : Colors.transparent,
                     borderRadius: BorderRadius.circular(9),
-                    border: Border.all(
-                        color: taken ? T.petalMint : T.borderStrong,
-                        width: 2)),
-                child: taken
-                    ? const Icon(LucideIcons.check, size: 18, color: Colors.white)
-                    : null),
+                    border: Border.all(color: taken ? T.petalMint : T.borderStrong, width: 2)),
+                child: taken ? const Icon(LucideIcons.check, size: 18, color: Colors.white) : null),
             const SizedBox(width: 14),
             Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(m.name,
-                      style: Typo.body(ar: s.rtl).copyWith(
-                          fontWeight: FontWeight.w600, color: T.fg1)),
-                  if (subtitle != null && subtitle.isNotEmpty)
-                    Text(subtitle,
-                        style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                ])),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(m.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+              if (subtitle != null && subtitle.isNotEmpty)
+                Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            ])),
             if (skipped)
               Pill(s.t('meds.skipped'), kind: PillKind.neutral, ar: s.rtl)
             else
@@ -604,9 +526,8 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                 onTap: () => setState(() => medMarks[m.id.value] = 'skipped'),
                 child: Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Text(s.t('meds.mark_skip'),
-                        style: Typo.meta(ar: s.rtl)
-                            .copyWith(fontWeight: FontWeight.w600))),
+                    child:
+                        Text(s.t('meds.mark_skip'), style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
               ),
           ]),
         ),
@@ -616,11 +537,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 }
 
 class _MoodCell extends StatelessWidget {
-  const _MoodCell(
-      {required this.lv,
-      required this.selected,
-      required this.s,
-      required this.onTap});
+  const _MoodCell({required this.lv, required this.selected, required this.s, required this.onTap});
   final int lv;
   final bool selected;
   final PatientAppState s;
@@ -639,20 +556,14 @@ class _MoodCell extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected ? s.accent.bg : Colors.white,
               borderRadius: BorderRadius.circular(T.rLg),
-              border: Border.all(
-                  color: selected ? s.accent.main : T.border, width: 1.5),
+              border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              MoodFace(
-                  level: lv,
-                  size: 32,
-                  color: selected ? _moodColors[lv - 1] : T.ink400),
+              MoodFace(level: lv, size: 32, color: selected ? _moodColors[lv - 1] : T.ink400),
               const SizedBox(height: 6),
               Text(s.t('checkin.mood_$lv'),
-                  style: Typo.meta(ar: s.rtl).copyWith(
-                      fontSize: FS.xs2,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? s.accent.d : T.fg3)),
+                  style: Typo.meta(ar: s.rtl)
+                      .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
             ]),
           ),
         ),
@@ -667,14 +578,9 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = state.s;
     final vitals = state._buildVitals();
-    final glucose = vitals.glucoseFasting ??
-        vitals.glucosePostMeal ??
-        vitals.glucoseRandom;
-    final taken = state._meds
-        .where((m) => state.medMarks[m.id.value] == 'taken')
-        .length;
-    final symList =
-        state.syms.map((sym) => s.t(symptomLabelKey(sym))).toList();
+    final glucose = vitals.glucoseFasting ?? vitals.glucosePostMeal ?? vitals.glucoseRandom;
+    final taken = state._meds.where((m) => state.medMarks[m.id.value] == 'taken').length;
+    final symList = state.syms.map((sym) => s.t(symptomLabelKey(sym))).toList();
     final pinfo = _painInfo(s, state.pain.round());
     final items = <(IconData, PillKind, String, String)>[
       (
@@ -704,19 +610,9 @@ class _Summary extends StatelessWidget {
           s.t('meds.meds_today'),
           '$taken/${state._meds.length} ${s.t('meds.meds_taken')}'
         ),
-      (
-        LucideIcons.thermometer,
-        PillKind.warn,
-        s.t('profile.m_pain'),
-        '${state.pain.round()}/10 · ${pinfo.lbl}'
-      ),
+      (LucideIcons.thermometer, PillKind.warn, s.t('profile.m_pain'), '${state.pain.round()}/10 · ${pinfo.lbl}'),
       if (symList.isNotEmpty)
-        (
-          LucideIcons.stethoscope,
-          PillKind.neutral,
-          s.t('checkin.q_sym_t'),
-          symList.join(s.rtl ? '، ' : ', ')
-        ),
+        (LucideIcons.stethoscope, PillKind.neutral, s.t('checkin.q_sym_t'), symList.join(s.rtl ? '، ' : ', ')),
     ];
     return Scaffold(
       backgroundColor: Colors.white,
@@ -735,24 +631,18 @@ class _Summary extends StatelessWidget {
                     width: 88,
                     height: 88,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                        color: T.petalMint50, shape: BoxShape.circle),
-                    child: const Icon(LucideIcons.check,
-                        size: 44, color: T.petalMint600)),
+                    decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
+                    child: const Icon(LucideIcons.check, size: 44, color: T.petalMint600)),
                 const SizedBox(height: 18),
                 Text(s.t('common.saved_t'), style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                      color: T.ink50,
-                      borderRadius: BorderRadius.circular(T.rPill)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
                     const SizedBox(width: 8),
-                    Text(s.t('common.saved_local'),
-                        style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                    Text(s.t('common.saved_local'), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
                   ]),
                 ),
               ]),
@@ -760,18 +650,14 @@ class _Summary extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
-                  children: items.indexed
-                      .map((e) => _summaryItem(s, e.$2,
-                          last: e.$1 == items.length - 1))
-                      .toList()),
+                  children: items.indexed.map((e) => _summaryItem(s, e.$2, last: e.$1 == items.length - 1)).toList()),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
               child: Row(children: [
                 const Icon(LucideIcons.send, size: 15, color: T.fg3),
                 const SizedBox(width: 8),
-                Expanded(
-                    child: Text(s.t('care.to_doctor'), style: Typo.meta(ar: s.rtl))),
+                Expanded(child: Text(s.t('care.to_doctor'), style: Typo.meta(ar: s.rtl))),
               ]),
             ),
             const SizedBox(height: 16),
@@ -802,9 +688,7 @@ class _Summary extends StatelessWidget {
     );
   }
 
-  Widget _summaryItem(
-      PatientAppState s, (IconData, PillKind, String, String) it,
-      {required bool last}) {
+  Widget _summaryItem(PatientAppState s, (IconData, PillKind, String, String) it, {required bool last}) {
     final c = switch (it.$2) {
       PillKind.info => (bg: T.petalBlue50, fg: T.petalBlue),
       PillKind.violet => (bg: T.petalViolet50, fg: T.petalViolet),
@@ -813,23 +697,16 @@ class _Summary extends StatelessWidget {
       _ => (bg: T.ink100, fg: T.ink600),
     };
     return Container(
-      decoration: BoxDecoration(
-          border: last
-              ? null
-              : const Border(bottom: BorderSide(color: T.ink100))),
+      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink100))),
       padding: const EdgeInsets.symmetric(vertical: 15),
       child: Row(children: [
         IconSquare(it.$1, bg: c.bg, fg: c.fg, size: 40, iconSize: 20),
         const SizedBox(width: 14),
         Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-              Text(it.$3,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-              Text(it.$4,
-                  style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
-            ])),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(it.$3, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          Text(it.$4, style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
+        ])),
       ]),
     );
   }

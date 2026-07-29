@@ -8,8 +8,7 @@ class MedicationId extends UniqueId {
   const MedicationId.empty() : super.empty();
   MedicationId.uuid() : super.uuid('med-');
 
-  static MedicationId? fromString(String? value) =>
-      value?.mapNotNull((v) => MedicationId.value(v));
+  static MedicationId? fromString(String? value) => value?.mapNotNull((v) => MedicationId.value(v));
 }
 
 /// Typed id of a dose-history event (append-only record).
@@ -18,6 +17,5 @@ class DoseEventId extends UniqueId {
   const DoseEventId.empty() : super.empty();
   DoseEventId.uuid() : super.uuid('dose-');
 
-  static DoseEventId? fromString(String? value) =>
-      value?.mapNotNull((v) => DoseEventId.value(v));
+  static DoseEventId? fromString(String? value) => value?.mapNotNull((v) => DoseEventId.value(v));
 }

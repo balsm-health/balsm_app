@@ -44,19 +44,26 @@ Future<bool> showRestoreDialog(BuildContext context, RestoreService restore) asy
       String? error;
       return StatefulBuilder(builder: (ctx, setState) {
         Future<void> doRestore() async {
-          setState(() { busy = true; error = null; });
+          setState(() {
+            busy = true;
+            error = null;
+          });
           try {
             await restore.restore(controller.text);
             if (ctx.mounted) Navigator.pop(ctx, true);
           } catch (_) {
-            setState(() { busy = false; error = 'Wrong code or no backup found. Try again.'; });
+            setState(() {
+              busy = false;
+              error = 'Wrong code or no backup found. Try again.';
+            });
           }
         }
 
         return AlertDialog(
           title: const Text('Restore your data?'),
           content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('We found a backup in your cloud. Enter your recovery code to restore your profile, medications, and history.'),
+            const Text(
+                'We found a backup in your cloud. Enter your recovery code to restore your profile, medications, and history.'),
             const SizedBox(height: 16),
             TextField(
               controller: controller,

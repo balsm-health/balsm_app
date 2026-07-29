@@ -21,8 +21,7 @@ class EmergencyCardScreen extends ConsumerStatefulWidget {
   const EmergencyCardScreen({super.key});
 
   @override
-  ConsumerState<EmergencyCardScreen> createState() =>
-      _EmergencyCardScreenState();
+  ConsumerState<EmergencyCardScreen> createState() => _EmergencyCardScreenState();
 }
 
 class _EmergencyCardScreenState extends ConsumerState<EmergencyCardScreen> {
@@ -37,8 +36,7 @@ class _EmergencyCardScreenState extends ConsumerState<EmergencyCardScreen> {
   }
 
   Future<void> _load() async {
-    final snapshot =
-        await ref.read(emergencySnapshotReaderProvider).readSnapshot();
+    final snapshot = await ref.read(emergencySnapshotReaderProvider).readSnapshot();
     if (!mounted) return;
     setState(() {
       _snapshot = snapshot;
@@ -81,16 +79,13 @@ class _EmergencyCardScreenState extends ConsumerState<EmergencyCardScreen> {
 
   Future<void> _mint(int ttlSeconds) async {
     setState(() => _minting = true);
-    final result = await ref
-        .read(mintEmergencyQrTokenUseCaseProvider)
-        .call(ttlSeconds: ttlSeconds);
+    final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: ttlSeconds);
     if (!mounted) return;
     setState(() => _minting = false);
     result.fold(
       (mint) => Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              QrCodeDisplayScreen(token: mint.token, qrUrl: mint.qrUrl),
+          builder: (_) => QrCodeDisplayScreen(token: mint.token, qrUrl: mint.qrUrl),
         ),
       ),
       (failure) => ScaffoldMessenger.of(context).showSnackBar(
@@ -137,8 +132,7 @@ class _EmptyNudge extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.medical_information_outlined,
-                size: 56, color: BalsmColors.ink400),
+            const Icon(Icons.medical_information_outlined, size: 56, color: BalsmColors.ink400),
             const SizedBox(height: 16),
             const Text(
               'Add your health details first',
@@ -175,8 +169,7 @@ class _CardBody extends StatelessWidget {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
                 color: BalsmColors.dangerBg,
                 borderRadius: BorderRadius.circular(BalsmRadius.md),

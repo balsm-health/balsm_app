@@ -34,8 +34,7 @@ class SentryAnalyticsLogger implements AnalyticsLogger {
   }
 
   @override
-  void log(String message,
-      {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {
+  void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {
     final data = scrubTelemetry(props);
     final sentryLevel = _toSentryLevel(level);
     if (level == LogLevel.warning || level == LogLevel.error) {
@@ -56,10 +55,7 @@ class SentryAnalyticsLogger implements AnalyticsLogger {
 
   @override
   void logError(Object error,
-      {StackTrace? stackTrace,
-      String? message,
-      Map<String, Object?>? context,
-      bool fatal = false}) {
+      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {
     final data = scrubTelemetry(context);
     Sentry.captureException(
       error,

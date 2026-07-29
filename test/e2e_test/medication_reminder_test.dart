@@ -6,8 +6,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('schedule medication, fire reminder, record outcome',
-      (tester) async {
+  testWidgets('schedule medication, fire reminder, record outcome', (tester) async {
     // TODO(T186): drive with Patrol:
     //  1. add a medication with a near-future schedule
     //  2. advance time / trigger the local notification

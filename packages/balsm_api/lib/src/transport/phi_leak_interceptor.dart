@@ -16,11 +16,29 @@ class PhiLeakInterceptor extends Interceptor {
   /// Non-PHI fields safe to surface in logs/telemetry. Everything else is
   /// redacted to `'[redacted]'` in the telemetry copy (never on the wire).
   static const allowedFields = {
-    'event_id', 'timestamp', 'platform', 'level', 'logger',
-    'transaction', 'environment', 'release', 'status_code',
-    'method', 'url', 'reason', 'type', 'value', 'correlationId',
-    'expires_in_seconds', 'ttl_seconds', 'is_new_user', 'deletion_state',
-    'token_id', 'expires_at', 'revoked', 'revoked_count',
+    'event_id',
+    'timestamp',
+    'platform',
+    'level',
+    'logger',
+    'transaction',
+    'environment',
+    'release',
+    'status_code',
+    'method',
+    'url',
+    'reason',
+    'type',
+    'value',
+    'correlationId',
+    'expires_in_seconds',
+    'ttl_seconds',
+    'is_new_user',
+    'deletion_state',
+    'token_id',
+    'expires_at',
+    'revoked',
+    'revoked_count',
   };
 
   @override
@@ -41,10 +59,7 @@ class PhiLeakInterceptor extends Interceptor {
   /// `'[redacted]'`. Use this for log/telemetry output only.
   static Map<String, dynamic> scrubForTelemetry(Map<dynamic, dynamic> data) {
     return {
-      for (final e in data.entries)
-        e.key.toString(): allowedFields.contains(e.key.toString())
-            ? e.value
-            : '[redacted]',
+      for (final e in data.entries) e.key.toString(): allowedFields.contains(e.key.toString()) ? e.value : '[redacted]',
     };
   }
 }

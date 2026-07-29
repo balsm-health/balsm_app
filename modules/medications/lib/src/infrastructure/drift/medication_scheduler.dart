@@ -88,13 +88,10 @@ class MedicationScheduler {
     DateTime to,
   ) sync* {
     final cfg = med.scheduleConfig;
-    final effectiveStart =
-        med.startDate.isAfter(from) ? med.startDate : from;
-    final effectiveEnd =
-        (med.endDate != null && med.endDate!.isBefore(to)) ? med.endDate! : to;
+    final effectiveStart = med.startDate.isAfter(from) ? med.startDate : from;
+    final effectiveEnd = (med.endDate != null && med.endDate!.isBefore(to)) ? med.endDate! : to;
 
-    for (var day = DateTime(effectiveStart.year, effectiveStart.month,
-            effectiveStart.day);
+    for (var day = DateTime(effectiveStart.year, effectiveStart.month, effectiveStart.day);
         !day.isAfter(effectiveEnd);
         day = day.add(const Duration(days: 1))) {
       if (!_dayMatches(med.scheduleType, cfg, day)) continue;
@@ -134,8 +131,7 @@ class MedicationScheduler {
 }
 
 /// Provider factory — caller supplies the active [userId].
-final medicationSchedulerProvider =
-    Provider.family<MedicationScheduler, UserId>((ref, userId) {
+final medicationSchedulerProvider = Provider.family<MedicationScheduler, UserId>((ref, userId) {
   return MedicationScheduler(
     notifications: ref.watch(notificationServiceProvider),
     dao: ref.watch(medicationsDataSourceProvider),

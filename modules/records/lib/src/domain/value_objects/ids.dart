@@ -7,6 +7,5 @@ class RecordDocumentId extends UniqueId {
   const RecordDocumentId.empty() : super.empty();
   RecordDocumentId.uuid() : super.uuid('rec-');
 
-  static RecordDocumentId? fromString(String? value) =>
-      value?.mapNotNull((v) => RecordDocumentId.value(v));
+  static RecordDocumentId? fromString(String? value) => value?.mapNotNull((v) => RecordDocumentId.value(v));
 }

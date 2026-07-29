@@ -46,13 +46,10 @@ class EmergencyQrToken {
         'ttlSeconds': ttlSeconds,
       };
 
-  factory EmergencyQrToken.fromJson(Map<String, dynamic> json) =>
-      EmergencyQrToken(
+  factory EmergencyQrToken.fromJson(Map<String, dynamic> json) => EmergencyQrToken(
         jti: QrTokenId.value(json['jti'] as String),
         expiresAt: DateTime.parse(json['expiresAt'] as String),
-        revokedAt: json['revokedAt'] == null
-            ? null
-            : DateTime.parse(json['revokedAt'] as String),
+        revokedAt: json['revokedAt'] == null ? null : DateTime.parse(json['revokedAt'] as String),
         ttlSeconds: json['ttlSeconds'] as int,
       );
 }

@@ -38,17 +38,13 @@ Future<void> main(List<String> argv) async {
   }
 
   // brand/env are optional positionals; anything starting with '-' is passthrough.
-  final brandKey = args.isNotEmpty && !args.first.startsWith('-')
-      ? args.removeAt(0)
-      : brands.keys.first;
+  final brandKey = args.isNotEmpty && !args.first.startsWith('-') ? args.removeAt(0) : brands.keys.first;
   final brand = brands[brandKey];
   if (brand == null) {
     _fail("unknown brand '$brandKey' (valid: ${brands.keys.join(', ')})");
   }
 
-  final env = args.isNotEmpty && !args.first.startsWith('-')
-      ? args.removeAt(0)
-      : brand.envs.first;
+  final env = args.isNotEmpty && !args.first.startsWith('-') ? args.removeAt(0) : brand.envs.first;
   if (action != 'test' && !brand.envs.contains(env)) {
     _fail("unknown env '$env' for brand '$brandKey' "
         '(valid: ${brand.envs.join(', ')})');

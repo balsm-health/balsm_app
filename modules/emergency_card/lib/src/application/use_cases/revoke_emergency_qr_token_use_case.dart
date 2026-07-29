@@ -35,8 +35,7 @@ class RevokeEmergencyQrTokenUseCase {
   }
 }
 
-final revokeEmergencyQrTokenUseCaseProvider =
-    Provider<RevokeEmergencyQrTokenUseCase>((ref) {
+final revokeEmergencyQrTokenUseCaseProvider = Provider<RevokeEmergencyQrTokenUseCase>((ref) {
   return RevokeEmergencyQrTokenUseCase(
     api: ref.watch(emergencyQrApiProvider),
     eventBus: ref.watch(eventBusProvider),

@@ -17,12 +17,10 @@ class AuthRecoveryClaimScreen extends ConsumerStatefulWidget {
   final String token;
 
   @override
-  ConsumerState<AuthRecoveryClaimScreen> createState() =>
-      _AuthRecoveryClaimScreenState();
+  ConsumerState<AuthRecoveryClaimScreen> createState() => _AuthRecoveryClaimScreenState();
 }
 
-class _AuthRecoveryClaimScreenState
-    extends ConsumerState<AuthRecoveryClaimScreen> {
+class _AuthRecoveryClaimScreenState extends ConsumerState<AuthRecoveryClaimScreen> {
   static const _kDeviceId = 'balsm.device_id';
   static const _deviceLabel = 'Balsm Flutter App';
 

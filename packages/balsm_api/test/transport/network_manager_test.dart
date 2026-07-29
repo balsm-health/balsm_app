@@ -10,7 +10,9 @@ void main() {
 
     final res = await net.get('/thing', queryParameters: {'q': '1'});
 
-    expect(res.data, {'data': {'a': 1}});
+    expect(res.data, {
+      'data': {'a': 1}
+    });
     expect(adapter.requests.single.path, '/thing');
     expect(adapter.requests.single.method, 'GET');
     expect(adapter.requests.single.queryParameters, {'q': '1'});

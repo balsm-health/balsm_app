@@ -9,8 +9,7 @@ class MoodFace extends StatelessWidget {
   final double size;
   final Color color;
   @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: Size.square(size), painter: _MoodPainter(level, color));
+  Widget build(BuildContext context) => CustomPaint(size: Size.square(size), painter: _MoodPainter(level, color));
 }
 
 class _MoodPainter extends CustomPainter {
@@ -31,7 +30,9 @@ class _MoodPainter extends CustomPainter {
 
     // eyes
     final eyeR = w * 0.045;
-    final fill = Paint()..color = color..style = PaintingStyle.fill;
+    final fill = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(w * 0.34, w * 0.40), eyeR, fill);
     canvas.drawCircle(Offset(w * 0.66, w * 0.40), eyeR, fill);
 
@@ -56,5 +57,6 @@ class MoodFaceButton extends StatelessWidget {
   final Color color;
   final double size;
   @override
-  Widget build(BuildContext context) => Transform.rotate(angle: 0 * math.pi, child: MoodFace(level: level, size: size, color: color));
+  Widget build(BuildContext context) =>
+      Transform.rotate(angle: 0 * math.pi, child: MoodFace(level: level, size: size, color: color));
 }

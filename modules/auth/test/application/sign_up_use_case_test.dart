@@ -37,14 +37,11 @@ void main() {
   Future<void> flush() => Future<void>.delayed(Duration.zero);
 
   group('verifyEmailOtp', () {
-    test('success persists tokens and publishes UserSignedUp(email, country)',
-        () async {
+    test('success persists tokens and publishes UserSignedUp(email, country)', () async {
       when(() => adapter.verifyOtp('a@b.com', '123456', 'dev-1', _label))
-          .thenAnswer((_) async =>
-              (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: true));
+          .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: true));
 
-      final r = await usecase.verifyEmailOtp(
-          email: 'a@b.com', code: '123456', countryCode: 'EG');
+      final r = await usecase.verifyEmailOtp(email: 'a@b.com', code: '123456', countryCode: 'EG');
       await flush();
 
       expect(r.isSuccess, isTrue);
@@ -61,8 +58,7 @@ void main() {
         const AuthException(code: 'otp_expired', message: 'Expired.'),
       );
 
-      final r = await usecase.verifyEmailOtp(
-          email: 'a@b.com', code: 'xxxxxx', countryCode: 'EG');
+      final r = await usecase.verifyEmailOtp(email: 'a@b.com', code: 'xxxxxx', countryCode: 'EG');
 
       expect(r.isFailure, isTrue);
       expect(r.error, isA<NetworkFailure>());
@@ -82,12 +78,10 @@ void main() {
 
   group('signUpWithGoogle', () {
     test('success persists tokens and publishes UserSignedUp(google)', () async {
-      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label)).thenAnswer(
-          (_) async =>
-              (accessToken: 'AT', refreshToken: 'RT', userId: 'U9', isNewUser: true));
+      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label))
+          .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U9', isNewUser: true));
 
-      final r = await usecase.signUpWithGoogle(
-          idToken: 'idtok', countryCode: 'SA', email: 'g@b.com');
+      final r = await usecase.signUpWithGoogle(idToken: 'idtok', countryCode: 'SA', email: 'g@b.com');
       await flush();
 
       expect(r.isSuccess, isTrue);

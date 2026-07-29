@@ -20,16 +20,14 @@ void main() {
     expect(e.statusCode, isNull);
   });
 
-  test('a cancelled request surfaces as ApiException.isCancelled end-to-end',
-      () async {
+  test('a cancelled request surfaces as ApiException.isCancelled end-to-end', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": []}'));
     final api = DioSessionsApi(net: fakeNet(adapter));
     final token = CancelToken()..cancel('user aborted');
 
     await expectLater(
       api.listSessions(cancelToken: token),
-      throwsA(isA<ApiException>()
-          .having((e) => e.isCancelled, 'isCancelled', isTrue)),
+      throwsA(isA<ApiException>().having((e) => e.isCancelled, 'isCancelled', isTrue)),
     );
   });
 }

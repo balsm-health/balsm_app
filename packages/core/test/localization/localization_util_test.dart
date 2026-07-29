@@ -26,8 +26,7 @@ void main() {
       expect(strings.current.tag, 'en');
     });
 
-    test('load() awaits a deferred locale; current falls back meanwhile',
-        () async {
+    test('load() awaits a deferred locale; current falls back meanwhile', () async {
       final gate = Completer<void>();
       var built = 0;
       final strings = LocalizedStrings.defaultLangs(
@@ -48,11 +47,9 @@ void main() {
 
     test('all-deferred registry fails loudly on sync resolve', () {
       final strings = LocalizedStrings<_Msgs>({
-        const Locale('ar'):
-            LocaleFactory.deferred(() async {}, () => const _Msgs('ar')),
+        const Locale('ar'): LocaleFactory.deferred(() async {}, () => const _Msgs('ar')),
       });
-      expect(() => strings.resolveSync(const Locale('ar')),
-          throwsA(isA<StateError>()));
+      expect(() => strings.resolveSync(const Locale('ar')), throwsA(isA<StateError>()));
     });
   });
 
@@ -69,8 +66,7 @@ void main() {
       expect(c.read(p).tag, 'ar');
     });
 
-    test('deferred locale emits fallback first, real bundle after load',
-        () async {
+    test('deferred locale emits fallback first, real bundle after load', () async {
       final gate = Completer<void>();
       final p = LocalizationUtil.getProvider(LocalizedStrings.defaultLangs(
         en: LocaleFactory.sync(() => const _Msgs('en')),
@@ -85,8 +81,7 @@ void main() {
       expect(c.read(p).tag, 'ar');
     });
 
-    test('stale deferred load does not overwrite a newer locale switch',
-        () async {
+    test('stale deferred load does not overwrite a newer locale switch', () async {
       final gate = Completer<void>();
       final p = LocalizationUtil.getProvider(LocalizedStrings.defaultLangs(
         en: LocaleFactory.sync(() => const _Msgs('en')),

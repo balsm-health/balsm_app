@@ -48,5 +48,4 @@ Dio fakeDio(FakeHttpAdapter adapter) {
 }
 
 /// [NetworkManager] backed by a [FakeHttpAdapter] — what area-client tests inject.
-NetworkManager fakeNet(FakeHttpAdapter adapter) =>
-    NetworkManager(dio: fakeDio(adapter));
+NetworkManager fakeNet(FakeHttpAdapter adapter) => NetworkManager(dio: fakeDio(adapter));

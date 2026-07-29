@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-
 /// Account settings hub.
 ///
 /// Sections: Account (Country / Language / Handle), Privacy (Sessions /
@@ -48,8 +47,7 @@ class SettingsScreen extends ConsumerWidget {
                       BalsmListRow(
                         leading: const Icon(Icons.alternate_email),
                         label: 'Handle',
-                        sublabel:
-                            summary?.handle != null ? '@${summary!.handle}' : 'Not set',
+                        sublabel: summary?.handle != null ? '@${summary!.handle}' : 'Not set',
                         onTap: () => context.goNamed('handle.claim'),
                       ),
                     ],
@@ -163,8 +161,7 @@ class _DevSectionLabel extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded,
-                size: 16, color: BalsmColors.warning),
+            const Icon(Icons.warning_amber_rounded, size: 16, color: BalsmColors.warning),
             const SizedBox(width: 6),
             Text(
               'DEVELOPER',

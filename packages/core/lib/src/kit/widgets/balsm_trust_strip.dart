@@ -31,9 +31,7 @@ class BalsmTrustStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: items
-            .map((item) => Expanded(child: _TrustItem(item: item)))
-            .toList(),
+        children: items.map((item) => Expanded(child: _TrustItem(item: item))).toList(),
       ),
     );
   }

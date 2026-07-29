@@ -116,9 +116,7 @@ class LocalizedStrings<T> {
   Future<T> load() => loadFor(LocalizationUtil.currentLocale);
 
   LocaleFactory<T> _factoryFor(Locale locale) =>
-      _factories[locale] ??
-      _factories[Locale(locale.languageCode)] ??
-      _factories.values.first;
+      _factories[locale] ?? _factories[Locale(locale.languageCode)] ?? _factories.values.first;
 
   /// The bundle for [locale] if it can be produced without awaiting a
   /// deferred library; null when that locale still needs [loadFor].

@@ -37,7 +37,9 @@ void main() {
     final e = ApiException.fromDioException(_dioError(
       status: 423,
       data: <String, dynamic>{'code': 'account_locked', 'message': 'locked'},
-      headers: {'Retry-After': ['90']},
+      headers: {
+        'Retry-After': ['90']
+      },
     ));
     expect(e.code, 'account_locked');
     expect(e.statusCode, 423);

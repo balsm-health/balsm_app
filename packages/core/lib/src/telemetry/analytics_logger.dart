@@ -16,15 +16,11 @@ abstract class AnalyticsLogger {
 
   /// A structured log line. `debug`/`info` become breadcrumbs; `warning`/
   /// `error` become events (visible + alertable).
-  void log(String message,
-      {LogLevel level = LogLevel.info, Map<String, Object?>? props});
+  void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props});
 
   /// A handled or uncaught error → event. [fatal] marks a crash.
   void logError(Object error,
-      {StackTrace? stackTrace,
-      String? message,
-      Map<String, Object?>? context,
-      bool fatal = false});
+      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false});
 
   /// Associate telemetry with an opaque, non-PHI user id (or null to clear).
   void setUser(String? id);
@@ -42,15 +38,11 @@ class NoopAnalyticsLogger implements AnalyticsLogger {
   void logEvent(String name, {Map<String, Object?>? props, bool key = false}) {}
 
   @override
-  void log(String message,
-      {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {}
+  void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {}
 
   @override
   void logError(Object error,
-      {StackTrace? stackTrace,
-      String? message,
-      Map<String, Object?>? context,
-      bool fatal = false}) {}
+      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {}
 
   @override
   void setUser(String? id) {}

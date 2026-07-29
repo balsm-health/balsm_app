@@ -123,8 +123,8 @@ void main() {
     expect(await svc.revealCode(), rotated);
 
     // Old code can no longer decrypt the (re-uploaded) blob.
-    final restore = RestoreService(
-      adapter: adapter, snapshot: _FakeSnapshot(), storage: FakeSecureStorage(), userId: 'u1');
+    final restore =
+        RestoreService(adapter: adapter, snapshot: _FakeSnapshot(), storage: FakeSecureStorage(), userId: 'u1');
     expect(() => restore.restore(original), throwsA(isA<BackupDecryptException>()));
     await restore.restore(rotated); // new code works
     svc.dispose();

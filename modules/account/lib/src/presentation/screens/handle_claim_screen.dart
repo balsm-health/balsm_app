@@ -99,10 +99,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
   /// suggestion within the 3-30 char handle format. Never suggests the
   /// attempted handle verbatim (it is unavailable).
   List<String> _conflictSuggestions(String handle) {
-    final base = handle
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9_.]+'), '')
-        .replaceAll(RegExp(r'^[._]+|[._]+$'), '');
+    final base = handle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_.]+'), '').replaceAll(RegExp(r'^[._]+|[._]+$'), '');
     if (base.isEmpty) return const [];
     // Leave room for a short suffix within the 30-char cap.
     final trimmed = base.length > 28 ? base.substring(0, 28) : base;
@@ -143,9 +140,8 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
   Widget build(BuildContext context) {
     // Only surface suggestions on a taken/reserved conflict, derived from the
     // attempted handle (not the unrelated display name).
-    final suggestions = _status == _HandleStatus.taken
-        ? _conflictSuggestions(_controller.text.trim())
-        : const <String>[];
+    final suggestions =
+        _status == _HandleStatus.taken ? _conflictSuggestions(_controller.text.trim()) : const <String>[];
 
     return Scaffold(
       backgroundColor: BalsmColors.cream50,
@@ -210,9 +206,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
               child: BalsmButton(
                 label: 'Claim handle',
                 loading: _submitting,
-                onPressed: _status == _HandleStatus.available && !_submitting
-                    ? _submit
-                    : null,
+                onPressed: _status == _HandleStatus.available && !_submitting ? _submit : null,
               ),
             ),
           ],
@@ -258,8 +252,7 @@ class _HandleField extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2),
         );
       case _HandleStatus.available:
-        return const Icon(Icons.check_circle,
-            color: BalsmColors.success, size: 22);
+        return const Icon(Icons.check_circle, color: BalsmColors.success, size: 22);
       case _HandleStatus.taken:
       case _HandleStatus.invalid:
         return const Icon(Icons.cancel, color: BalsmColors.danger, size: 22);
@@ -270,9 +263,7 @@ class _HandleField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final messageColor = status == _HandleStatus.available
-        ? BalsmColors.success
-        : BalsmColors.danger;
+    final messageColor = status == _HandleStatus.available ? BalsmColors.success : BalsmColors.danger;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

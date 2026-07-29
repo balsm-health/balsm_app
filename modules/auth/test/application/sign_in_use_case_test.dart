@@ -40,8 +40,7 @@ void main() {
   group('verifyEmailOtp', () {
     test('success persists tokens and publishes UserSignedIn(email)', () async {
       when(() => adapter.verifyOtp('a@b.com', '123456', 'dev-1', _label))
-          .thenAnswer((_) async =>
-              (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: false));
+          .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: false));
 
       final r = await usecase.verifyEmailOtp(email: 'a@b.com', code: '123456');
       await flush();
@@ -55,8 +54,7 @@ void main() {
       expect(signedIn.provider, 'email');
     });
 
-    test('423 account_locked returns SignInLockout + fires LockoutTriggered',
-        () async {
+    test('423 account_locked returns SignInLockout + fires LockoutTriggered', () async {
       when(() => adapter.verifyOtp(any(), any(), any(), any())).thenThrow(
         const AuthException(
           code: 'account_locked',
@@ -91,8 +89,7 @@ void main() {
     });
 
     test('unexpected error maps to NetworkFailure', () async {
-      when(() => adapter.verifyOtp(any(), any(), any(), any()))
-          .thenThrow(Exception('boom'));
+      when(() => adapter.verifyOtp(any(), any(), any(), any())).thenThrow(Exception('boom'));
 
       final r = await usecase.verifyEmailOtp(email: 'a@b.com', code: 'xxxxxx');
 
@@ -125,9 +122,8 @@ void main() {
 
   group('signInWithGoogle', () {
     test('success persists tokens and publishes UserSignedIn(google)', () async {
-      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label)).thenAnswer(
-          (_) async =>
-              (accessToken: 'AT', refreshToken: 'RT', userId: 'U9', isNewUser: false));
+      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label))
+          .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U9', isNewUser: false));
 
       final r = await usecase.signInWithGoogle(idToken: 'idtok', email: 'g@b.com');
       await flush();

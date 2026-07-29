@@ -83,8 +83,7 @@ class _MedicationTile extends StatelessWidget {
           ],
           BalsmPill(
             label: expired ? 'Inactive' : 'Active',
-            variant:
-                expired ? BalsmPillVariant.neutral : BalsmPillVariant.success,
+            variant: expired ? BalsmPillVariant.neutral : BalsmPillVariant.success,
             showDot: true,
           ),
         ],
@@ -110,8 +109,7 @@ class _EmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.medication_outlined,
-                  size: 48, color: BalsmColors.ink400),
+              Icon(Icons.medication_outlined, size: 48, color: BalsmColors.ink400),
               SizedBox(height: 16),
               Text(
                 'No medications yet',

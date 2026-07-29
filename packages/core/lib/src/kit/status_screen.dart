@@ -92,12 +92,7 @@ class ServiceHealth {
       if (item is String) {
         if (item.trim().isNotEmpty) out.add(StatusIncident(title: item.trim()));
       } else if (item is Map) {
-        final title = (item['title'] ??
-                item['name'] ??
-                item['summary'] ??
-                item['message'] ??
-                'Incident')
-            .toString();
+        final title = (item['title'] ?? item['name'] ?? item['summary'] ?? item['message'] ?? 'Incident').toString();
         final detailRaw = item['description'] ?? item['detail'] ?? item['body'];
         final sevRaw = item['severity'] ?? item['status'] ?? item['impact'];
         out.add(StatusIncident(
@@ -114,12 +109,9 @@ class ServiceHealth {
   /// `status`/`state`/`health` field and an optional `incidents` list.
   factory ServiceHealth.fromJson(dynamic json) {
     if (json is Map) {
-      final rawStatus =
-          (json['status'] ?? json['state'] ?? json['health'])?.toString();
+      final rawStatus = (json['status'] ?? json['state'] ?? json['health'])?.toString();
       final level = _levelFrom(rawStatus);
-      final label = (rawStatus == null || rawStatus.trim().isEmpty)
-          ? _defaultLabel(level)
-          : rawStatus.trim();
+      final label = (rawStatus == null || rawStatus.trim().isEmpty) ? _defaultLabel(level) : rawStatus.trim();
       return ServiceHealth(
         level: level,
         label: label,
@@ -146,8 +138,7 @@ class ServiceHealth {
 ///
 /// Uses the raw client rather than [NetworkManager] so no auth token or
 /// envelope-unwrapping is applied — the endpoint is `AllowAnonymous`.
-final serviceStatusProvider =
-    FutureProvider.autoDispose<ServiceHealth>((ref) async {
+final serviceStatusProvider = FutureProvider.autoDispose<ServiceHealth>((ref) async {
   final dio = ref.watch(balsmApiClientProvider).dio;
   final res = await dio.get<dynamic>('/status');
   return ServiceHealth.fromJson(res.data);
@@ -356,8 +347,7 @@ class _UnavailableView extends StatelessWidget {
         children: [
           Row(
             children: const [
-              Icon(Icons.cloud_off_outlined,
-                  color: BalsmColors.ink500, size: 26),
+              Icon(Icons.cloud_off_outlined, color: BalsmColors.ink500, size: 26),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -423,8 +413,7 @@ class _SupportFooter extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.mail_outline,
-                    size: 20, color: BalsmColors.appAccent),
+                const Icon(Icons.mail_outline, size: 20, color: BalsmColors.appAccent),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -436,8 +425,7 @@ class _SupportFooter extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right,
-                    size: 20, color: BalsmColors.ink300),
+                const Icon(Icons.chevron_right, size: 20, color: BalsmColors.ink300),
               ],
             ),
           ),

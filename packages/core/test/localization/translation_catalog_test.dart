@@ -33,7 +33,6 @@ void main() {
     expect(c.translate('common.continue', locale: 'en'), 'Continue');
   });
 
-
   test('unknown locale falls back to the English bundle', () {
     expect(c.translate('common.done', locale: 'fr'), 'Done');
   });

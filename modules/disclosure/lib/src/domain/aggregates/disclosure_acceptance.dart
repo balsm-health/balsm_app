@@ -1,4 +1,3 @@
-
 import '../value_objects/ids.dart';
 
 /// Aggregate root representing a patient's acceptance of a disclosure document.
@@ -29,13 +28,11 @@ class DisclosureAcceptance {
         'accepted_at': acceptedAt.toIso8601String(),
       };
 
-  factory DisclosureAcceptance.fromJson(Map<String, dynamic> json) =>
-      DisclosureAcceptance(
+  factory DisclosureAcceptance.fromJson(Map<String, dynamic> json) => DisclosureAcceptance(
         disclosureId: DisclosureId.value(json['disclosure_id'] as String),
         version: json['version'] as String,
         countryCodeAtAccept: json['country_code'] as String,
-        supervisoryAuthorityNameAtAccept:
-            json['supervisory_authority'] as String,
+        supervisoryAuthorityNameAtAccept: json['supervisory_authority'] as String,
         preferredLanguageAtAccept: json['preferred_language'] as String,
         acceptedAt: DateTime.parse(json['accepted_at'] as String),
       );
@@ -43,9 +40,7 @@ class DisclosureAcceptance {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is DisclosureAcceptance &&
-          disclosureId == other.disclosureId &&
-          version == other.version;
+      other is DisclosureAcceptance && disclosureId == other.disclosureId && version == other.version;
 
   @override
   int get hashCode => Object.hash(disclosureId, version);

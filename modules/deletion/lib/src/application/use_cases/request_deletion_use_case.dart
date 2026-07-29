@@ -51,8 +51,7 @@ class RequestDeletionUseCase {
 
   AppFailure _failureFor(ApiException e) {
     if (e.fromEnvelope) {
-      return ValidationFailure(
-          e.serverMessage ?? 'Unable to request account deletion.');
+      return ValidationFailure(e.serverMessage ?? 'Unable to request account deletion.');
     }
     if (e.isUnauthorized) return const UnauthorizedFailure();
     if (e.statusCode == 409) return const ConflictFailure();

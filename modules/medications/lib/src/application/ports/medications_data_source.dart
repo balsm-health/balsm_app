@@ -17,10 +17,8 @@ import '../../domain/value_objects/ids.dart';
 ///   append-only dose history (FR-019) must outlive the medication row.
 ///   Physical PHI wipe is a database-level operation owned by the deletion
 ///   flow, not a row-level contract op.
-abstract class MedicationsDataSource
-    extends ProfileDataSource<MedicationId, Medication>
-    implements
-        WatchableScopedDataSource<MedicationId, Medication, HealthProfileId> {
+abstract class MedicationsDataSource extends ProfileDataSource<MedicationId, Medication>
+    implements WatchableScopedDataSource<MedicationId, Medication, HealthProfileId> {
   /// Appends a dose event. Never updates or deletes existing rows.
   Future<void> insertDoseEvent(DoseEvent e);
 

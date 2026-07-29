@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(disclosureStringsProvider);
 /// ```
-final disclosureStringsProvider =
-    LocalizationUtil.getProvider<Messages>(disclosureStrings);
+final disclosureStringsProvider = LocalizationUtil.getProvider<Messages>(disclosureStrings);

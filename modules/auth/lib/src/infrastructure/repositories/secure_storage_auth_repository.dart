@@ -40,9 +40,12 @@ class SecureStorageAuthRepository implements ReadAuthRepository {
     final userId = await _storage.readToken(_kUserId);
     final refreshToken = await _storage.readToken(_kRefreshToken);
 
-    if (accessToken == null || accessToken.isEmpty ||
-        userId == null || userId.isEmpty ||
-        refreshToken == null || refreshToken.isEmpty) {
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        userId == null ||
+        userId.isEmpty ||
+        refreshToken == null ||
+        refreshToken.isEmpty) {
       return const Unauthenticated();
     }
 

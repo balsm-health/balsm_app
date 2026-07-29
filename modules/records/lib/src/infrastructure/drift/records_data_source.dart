@@ -74,8 +74,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 
   @override
-  Future<List<RecordDocument>> findMany(Iterable<RecordDocumentId> keys,
-      {UserId? scope}) async {
+  Future<List<RecordDocument>> findMany(Iterable<RecordDocumentId> keys, {UserId? scope}) async {
     final user = _resolve(scope);
     if (user == null || keys.isEmpty) return const [];
     final ids = keys.map((k) => k.value).toList();
@@ -92,8 +91,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 
   @override
-  Future<bool> exists(RecordDocumentId key, {UserId? scope}) async =>
-      await find(key, scope: scope) != null;
+  Future<bool> exists(RecordDocumentId key, {UserId? scope}) async => await find(key, scope: scope) != null;
 
   // ── Watch ────────────────────────────────────────────────────────────────
 
@@ -124,8 +122,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   // ── Writes ───────────────────────────────────────────────────────────────
 
   @override
-  Future<void> put(RecordDocumentId key, RecordDocument value,
-      {UserId? scope}) async {
+  Future<void> put(RecordDocumentId key, RecordDocument value, {UserId? scope}) async {
     final user = _require(scope);
     if (value.userId != user) {
       throw StorageWriteException(
@@ -168,8 +165,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 
   @override
-  Future<void> putBulk(Map<RecordDocumentId, RecordDocument> values,
-      {UserId? scope}) async {
+  Future<void> putBulk(Map<RecordDocumentId, RecordDocument> values, {UserId? scope}) async {
     final user = _require(scope);
     await _db.transaction(() async {
       for (final entry in values.entries) {
@@ -191,8 +187,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 
   @override
-  Future<void> deleteMany(Iterable<RecordDocumentId> keys,
-      {UserId? scope}) async {
+  Future<void> deleteMany(Iterable<RecordDocumentId> keys, {UserId? scope}) async {
     final user = _require(scope);
     if (keys.isEmpty) return;
     final ids = keys.map((k) => k.value).toList();
@@ -222,8 +217,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
 
   @override
   Future<void> clearAll() async {
-    await _db.customUpdate('DELETE FROM $_table',
-        updateKind: UpdateKind.delete);
+    await _db.customUpdate('DELETE FROM $_table', updateKind: UpdateKind.delete);
     _notifyChanged();
   }
 
@@ -247,8 +241,7 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
       );
     } catch (e) {
       if (e is StorageException) rethrow;
-      throw StorageDecodeException(
-          'health_record row ${row['id']}: undecodable', e);
+      throw StorageDecodeException('health_record row ${row['id']}: undecodable', e);
     }
   }
 }

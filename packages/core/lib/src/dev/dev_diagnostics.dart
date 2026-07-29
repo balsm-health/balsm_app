@@ -24,14 +24,13 @@ class DevDiagnostics {
       .replaceAll(_phone, '[phone]')
       .replaceAll(_date, '[date]');
 
-  static List<Map<String, String>> _redactedLogs(List<DevLogEntry> entries) =>
-      entries
-          .map((e) => {
-                'level': e.level,
-                'msg': redactLine(e.message),
-                'ts': e.ts.toUtc().toIso8601String(),
-              })
-          .toList();
+  static List<Map<String, String>> _redactedLogs(List<DevLogEntry> entries) => entries
+      .map((e) => {
+            'level': e.level,
+            'msg': redactLine(e.message),
+            'ts': e.ts.toUtc().toIso8601String(),
+          })
+      .toList();
 
   // ── Encrypted bundle (AES-256-GCM) — mirrors devconfig.jsx saveEncryptedLogs ──
   static Future<String> buildEncryptedBundle({

@@ -14,7 +14,9 @@ class ActiveServerStore {
     try {
       final m = jsonDecode(json) as Map<String, dynamic>;
       return ServerPreset(label: m['label'] as String, apiBaseUrl: m['apiBaseUrl'] as String);
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> write(ServerPreset p) async =>

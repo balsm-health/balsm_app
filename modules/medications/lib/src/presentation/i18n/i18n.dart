@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(medicationsStringsProvider);
 /// ```
-final medicationsStringsProvider =
-    LocalizationUtil.getProvider<Messages>(medicationsStrings);
+final medicationsStringsProvider = LocalizationUtil.getProvider<Messages>(medicationsStrings);

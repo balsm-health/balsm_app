@@ -31,16 +31,14 @@ class SignOutEverywhereUseCase {
 
   AppFailure _failureFor(ApiException e) {
     if (e.fromEnvelope) {
-      return ValidationFailure(
-          e.serverMessage ?? 'Unable to sign out everywhere.');
+      return ValidationFailure(e.serverMessage ?? 'Unable to sign out everywhere.');
     }
     if (e.isUnauthorized) return const UnauthorizedFailure();
     return const NetworkFailure();
   }
 }
 
-final signOutEverywhereUseCaseProvider =
-    Provider<SignOutEverywhereUseCase>((ref) {
+final signOutEverywhereUseCaseProvider = Provider<SignOutEverywhereUseCase>((ref) {
   return SignOutEverywhereUseCase(
     ref.watch(sessionsApiProvider),
     ref.watch(eventBusProvider),

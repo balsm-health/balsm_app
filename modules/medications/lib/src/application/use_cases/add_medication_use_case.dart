@@ -31,8 +31,7 @@ class AddMedicationUseCase {
   }
 }
 
-final addMedicationUseCaseProvider =
-    Provider.family<AddMedicationUseCase, UserId>((ref, userId) {
+final addMedicationUseCaseProvider = Provider.family<AddMedicationUseCase, UserId>((ref, userId) {
   return AddMedicationUseCase(
     dao: ref.watch(medicationsDataSourceProvider),
     bus: ref.watch(eventBusProvider),

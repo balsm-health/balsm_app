@@ -1,5 +1,4 @@
-import 'package:core/core.dart'
-    show CountryCode, Gender, LanguageCode, TranslationCatalog;
+import 'package:core/core.dart' show CountryCode, Gender, LanguageCode, TranslationCatalog;
 import 'package:flutter/widgets.dart';
 import 'prefs.dart';
 import 'strings.dart';
@@ -176,15 +175,10 @@ class PatientAppState extends ChangeNotifier {
 /// empty string when the name is blank (loading / signed out) so the avatar
 /// renders neutrally rather than showing fabricated initials.
 String accountInitials(String displayName) {
-  final parts = displayName
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((p) => p.isNotEmpty)
-      .toList();
+  final parts = displayName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
   if (parts.isEmpty) return '';
   if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-  return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-      .toUpperCase();
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
 }
 
 /// InheritedNotifier exposing [PatientAppState] to the widget tree.

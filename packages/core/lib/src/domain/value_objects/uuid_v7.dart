@@ -18,13 +18,11 @@ class UuidV7 {
 
   static const _uuid = Uuid();
 
-  static UuidV7 generate() =>
-      UuidV7._(UuidParsing.parseAsByteList(_uuid.v7()));
+  static UuidV7 generate() => UuidV7._(UuidParsing.parseAsByteList(_uuid.v7()));
 
   /// Parse a canonical `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` string.
   /// Throws [FormatException] on malformed input.
-  static UuidV7 fromString(String uuid) =>
-      UuidV7._(UuidParsing.parseAsByteList(uuid));
+  static UuidV7 fromString(String uuid) => UuidV7._(UuidParsing.parseAsByteList(uuid));
 
   /// Embedded 48-bit unix-ms timestamp. Uses multiplication (values stay under
   /// 2^53) instead of bit shifts, so it is correct under dart2js on web.
@@ -44,8 +42,7 @@ class UuidV7 {
   String toString() => UuidParsing.unparse(_bytes);
 
   @override
-  bool operator ==(Object other) =>
-      other is UuidV7 && toString() == other.toString();
+  bool operator ==(Object other) => other is UuidV7 && toString() == other.toString();
 
   @override
   int get hashCode => toString().hashCode;

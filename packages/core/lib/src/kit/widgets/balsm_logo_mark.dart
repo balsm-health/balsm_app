@@ -23,8 +23,7 @@ class BalsmLogoMark extends StatefulWidget {
   State<BalsmLogoMark> createState() => _BalsmLogoMarkState();
 }
 
-class _BalsmLogoMarkState extends State<BalsmLogoMark>
-    with SingleTickerProviderStateMixin {
+class _BalsmLogoMarkState extends State<BalsmLogoMark> with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
   @override

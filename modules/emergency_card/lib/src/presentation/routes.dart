@@ -38,8 +38,7 @@ final emergencyCardRoutes = <RouteBase>[
       tokenId: s.pathParameters['token']!,
       // Mobile deeplink forwards the key as a query param / route extra; web
       // reads the URL fragment internally.
-      keyOverride: s.uri.queryParameters['k'] ??
-          (s.extra is Map ? (s.extra as Map)['key'] as String? : null),
+      keyOverride: s.uri.queryParameters['k'] ?? (s.extra is Map ? (s.extra as Map)['key'] as String? : null),
     ),
   ),
 ];

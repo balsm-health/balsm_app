@@ -52,8 +52,7 @@ class PhoneNumber extends ValueObject {
     final normalized = _normalize(e164);
     if (normalized.isEmpty) return null;
     // Longest dial code first so `+1` doesn't shadow a longer match.
-    final known = CountryCode.known.toList()
-      ..sort((a, b) => b.dialCode.length.compareTo(a.dialCode.length));
+    final known = CountryCode.known.toList()..sort((a, b) => b.dialCode.length.compareTo(a.dialCode.length));
     for (final country in known) {
       final dial = country.dialCode.replaceAll('+', '');
       if (dial.isNotEmpty && normalized.startsWith(dial)) {
@@ -78,8 +77,7 @@ class PhoneNumber extends ValueObject {
     final buf = StringBuffer(country.dialCode)..write(' ');
     for (var i = 0; i < nationalNumber.length; i += 3) {
       if (i > 0) buf.write(' ');
-      buf.write(nationalNumber.substring(
-          i, (i + 3).clamp(0, nationalNumber.length)));
+      buf.write(nationalNumber.substring(i, (i + 3).clamp(0, nationalNumber.length)));
     }
     return buf.toString();
   }
@@ -110,8 +108,7 @@ class PhoneNumber extends ValueObject {
     return s.substring(i);
   }
 
-  static bool _isDigits(String s) =>
-      s.isNotEmpty && s.codeUnits.every((u) => u >= 0x30 && u <= 0x39);
+  static bool _isDigits(String s) => s.isNotEmpty && s.codeUnits.every((u) => u >= 0x30 && u <= 0x39);
 
   @override
   List<Object?> get props => [country, nationalNumber];

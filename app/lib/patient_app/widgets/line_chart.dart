@@ -43,7 +43,9 @@ class _LinePainter extends CustomPainter {
     double y(double v) => yPad + (1 - (v - min) / range) * (size.height - yPad * 2);
 
     // mid gridline
-    final grid = Paint()..color = T.ink100..strokeWidth = 1;
+    final grid = Paint()
+      ..color = T.ink100
+      ..strokeWidth = 1;
     canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), grid);
 
     for (final s in series) {
@@ -64,8 +66,13 @@ class _LinePainter extends CustomPainter {
       }
       canvas.drawPath(path, line);
 
-      final dot = Paint()..color = Colors.white..style = PaintingStyle.fill;
-      final dotStroke = Paint()..color = s.color..style = PaintingStyle.stroke..strokeWidth = 2;
+      final dot = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+      final dotStroke = Paint()
+        ..color = s.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
       final lastIdx = rtl ? 0 : n - 1;
       for (var i = 0; i < s.data.length; i++) {
         final p = Offset(x(i), y(s.data[i]));

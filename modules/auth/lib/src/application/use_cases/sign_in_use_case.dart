@@ -111,8 +111,7 @@ class SignInUseCase {
       final deviceId = await _ensureDeviceId();
       final deviceLabel = _deviceLabel();
 
-      final tokens =
-          await _adapter.passwordSignIn(email, password, deviceId, deviceLabel);
+      final tokens = await _adapter.passwordSignIn(email, password, deviceId, deviceLabel);
 
       await _persistTokens(
         accessToken: tokens.accessToken,

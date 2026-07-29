@@ -19,12 +19,8 @@ String formatSchedule(ScheduleType type, ScheduleConfig cfg) {
       return 'Daily · $times';
     case ScheduleType.weekly:
     case ScheduleType.custom:
-      final days = (cfg.days ?? const <int>[])
-          .map((d) => _weekdayShort[d] ?? '?')
-          .join(', ');
-      final label = days.isEmpty ? (type == ScheduleType.weekly
-          ? 'Weekly'
-          : 'Custom') : days;
+      final days = (cfg.days ?? const <int>[]).map((d) => _weekdayShort[d] ?? '?').join(', ');
+      final label = days.isEmpty ? (type == ScheduleType.weekly ? 'Weekly' : 'Custom') : days;
       return '$label · $times';
   }
 }

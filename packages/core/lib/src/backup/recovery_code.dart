@@ -28,8 +28,7 @@ class RecoveryCode {
   }
 
   /// Strips separators/whitespace and upper-cases for use as key material.
-  static String normalize(String input) =>
-      input.toUpperCase().replaceAll(RegExp(r'[^0-9A-Z]'), '');
+  static String normalize(String input) => input.toUpperCase().replaceAll(RegExp(r'[^0-9A-Z]'), '');
 
   /// True when [input] has the right length and only valid characters.
   static bool isValid(String input) {

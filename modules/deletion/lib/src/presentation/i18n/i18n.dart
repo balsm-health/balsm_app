@@ -10,5 +10,4 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(deletionStringsProvider);
 /// ```
-final deletionStringsProvider =
-    LocalizationUtil.getProvider<Messages>(deletionStrings);
+final deletionStringsProvider = LocalizationUtil.getProvider<Messages>(deletionStrings);

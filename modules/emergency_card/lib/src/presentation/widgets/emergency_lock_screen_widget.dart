@@ -21,10 +21,7 @@ class EmergencyLockScreenData {
   final String? primaryContactName;
 
   bool get hasAnyData =>
-      bloodType != null ||
-      topAllergies.isNotEmpty ||
-      topConditions.isNotEmpty ||
-      primaryContactName != null;
+      bloodType != null || topAllergies.isNotEmpty || topConditions.isNotEmpty || primaryContactName != null;
 
   Map<String, dynamic> toJson() => {
         'bloodType': bloodType,
@@ -33,22 +30,16 @@ class EmergencyLockScreenData {
         'primaryContactName': primaryContactName,
       };
 
-  factory EmergencyLockScreenData.fromJson(Map<String, dynamic> json) =>
-      EmergencyLockScreenData(
+  factory EmergencyLockScreenData.fromJson(Map<String, dynamic> json) => EmergencyLockScreenData(
         bloodType: json['bloodType'] as String?,
-        topAllergies: (json['topAllergies'] as List<dynamic>? ?? [])
-            .map((e) => e as String)
-            .toList(),
-        topConditions: (json['topConditions'] as List<dynamic>? ?? [])
-            .map((e) => e as String)
-            .toList(),
+        topAllergies: (json['topAllergies'] as List<dynamic>? ?? []).map((e) => e as String).toList(),
+        topConditions: (json['topConditions'] as List<dynamic>? ?? []).map((e) => e as String).toList(),
         primaryContactName: json['primaryContactName'] as String?,
       );
 
   String toJsonString() => jsonEncode(toJson());
 
-  factory EmergencyLockScreenData.fromJsonString(String s) =>
-      EmergencyLockScreenData.fromJson(
+  factory EmergencyLockScreenData.fromJsonString(String s) => EmergencyLockScreenData.fromJson(
         jsonDecode(s) as Map<String, dynamic>,
       );
 }

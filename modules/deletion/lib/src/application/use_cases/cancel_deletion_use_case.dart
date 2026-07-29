@@ -42,8 +42,7 @@ class CancelDeletionUseCase {
 
   AppFailure _failureFor(ApiException e) {
     if (e.fromEnvelope) {
-      return ValidationFailure(
-          e.serverMessage ?? 'Unable to cancel account deletion.');
+      return ValidationFailure(e.serverMessage ?? 'Unable to cancel account deletion.');
     }
     if (e.isUnauthorized) return const UnauthorizedFailure();
     if (e.statusCode == 409) {

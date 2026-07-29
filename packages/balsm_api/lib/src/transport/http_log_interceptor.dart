@@ -89,9 +89,7 @@ class HttpLogInterceptor extends Interceptor {
     handler.next(err);
   }
 
-  String _body(Object? data) => data is Map
-      ? '\n  body: ${PhiLeakInterceptor.scrubForTelemetry(data)}'
-      : '';
+  String _body(Object? data) => data is Map ? '\n  body: ${PhiLeakInterceptor.scrubForTelemetry(data)}' : '';
 
   String _elapsed(RequestOptions o) {
     final start = o.extra['_log_ts'];

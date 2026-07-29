@@ -12,7 +12,5 @@ import '../../domain/value_objects/ids.dart';
 ///
 /// Check-ins are immutable journal entries: [put] inserts a new one; there is
 /// no update path. Reads return newest-first.
-abstract class CheckInsDataSource
-    extends ProfileDataSource<CheckInId, CheckIn>
-    implements
-        WatchableScopedDataSource<CheckInId, CheckIn, HealthProfileId> {}
+abstract class CheckInsDataSource extends ProfileDataSource<CheckInId, CheckIn>
+    implements WatchableScopedDataSource<CheckInId, CheckIn, HealthProfileId> {}

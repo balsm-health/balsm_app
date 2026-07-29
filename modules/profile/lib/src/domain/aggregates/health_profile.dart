@@ -134,7 +134,14 @@ class EmergencyContact {
 
 /// Valid blood type codes (null means unknown/not set).
 const List<String> kBloodTypes = [
-  'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
+  'A+',
+  'A-',
+  'B+',
+  'B-',
+  'AB+',
+  'AB-',
+  'O+',
+  'O-',
 ];
 
 /// Valid allergy severity levels.

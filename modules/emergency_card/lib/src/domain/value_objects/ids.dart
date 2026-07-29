@@ -6,6 +6,5 @@ class QrTokenId extends UniqueId {
   const QrTokenId.value(super.value) : super.value();
   const QrTokenId.empty() : super.empty();
 
-  static QrTokenId? fromString(String? value) =>
-      value?.mapNotNull((v) => QrTokenId.value(v));
+  static QrTokenId? fromString(String? value) => value?.mapNotNull((v) => QrTokenId.value(v));
 }

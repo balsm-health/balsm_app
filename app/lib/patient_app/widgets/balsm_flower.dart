@@ -31,8 +31,8 @@ class PetalSpinner extends StatefulWidget {
 }
 
 class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 3600))..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3600))
+    ..repeat();
 
   @override
   void dispose() {
@@ -84,7 +84,11 @@ class _PetalRingPainter extends CustomPainter {
 
   // Petal order (clockwise from top): emerald → blue → mint → violet → aqua.
   static const _colors = [
-    T.petalEmerald, T.petalBlue, T.petalMint, T.petalViolet, T.petalAqua,
+    T.petalEmerald,
+    T.petalBlue,
+    T.petalMint,
+    T.petalViolet,
+    T.petalAqua,
   ];
 
   @override
@@ -98,7 +102,9 @@ class _PetalRingPainter extends CustomPainter {
       final a = -math.pi / 2 + i * 2 * math.pi / 5 + rotation;
       final c = center + Offset(orbit * math.cos(a), orbit * math.sin(a));
       canvas.drawCircle(
-        c, pr, Paint()
+        c,
+        pr,
+        Paint()
           ..color = _colors[i].withValues(alpha: opacities[i])
           ..isAntiAlias = true,
       );
@@ -106,6 +112,5 @@ class _PetalRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PetalRingPainter old) =>
-      old.rotation != rotation || old.opacities != opacities;
+  bool shouldRepaint(_PetalRingPainter old) => old.rotation != rotation || old.opacities != opacities;
 }

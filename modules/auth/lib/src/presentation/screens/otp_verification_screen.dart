@@ -31,8 +31,7 @@ class OtpVerificationScreen extends ConsumerStatefulWidget {
   final int currentStep;
 
   @override
-  ConsumerState<OtpVerificationScreen> createState() =>
-      _OtpVerificationScreenState();
+  ConsumerState<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
 class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
@@ -123,8 +122,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
       _otpKey = UniqueKey();
     });
     final useCase = ref.read(signUpUseCaseProvider);
-    final result =
-        await useCase.requestEmailOtp(widget.email, widget.countryCode);
+    final result = await useCase.requestEmailOtp(widget.email, widget.countryCode);
     if (!mounted) return;
     result.fold(
       (_) => _startCountdown(),
