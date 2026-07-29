@@ -75,6 +75,7 @@
     "map_found": "places nearby",
     "map_your_loc": "Your location",
     "map_no_results": "No places found",
+    "map_no_res_h": "Try a different search or filter.",
     "care_empty": "No care team yet",
     "care_add_help": "Add a doctor from the map to build your care team."
   },

@@ -263,6 +263,7 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get map_found => "places nearby";
   String get map_your_loc => "Your location";
   String get map_no_results => "No places found";
+  String get map_no_res_h => "Try a different search or filter.";
   String get care_empty => "No care team yet";
   String get care_add_help =>
       "Add a doctor from the map to build your care team.";
@@ -325,6 +326,8 @@ class CareStrings implements i69n.I69nMessageBundle {
         return map_your_loc;
       case 'map_no_results':
         return map_no_results;
+      case 'map_no_res_h':
+        return map_no_res_h;
       case 'care_empty':
         return care_empty;
       case 'care_add_help':

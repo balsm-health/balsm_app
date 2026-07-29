@@ -266,6 +266,7 @@ class CareStrings_ar extends CareStrings {
   String get map_found => "مكان بالقرب منك";
   String get map_your_loc => "موقعك";
   String get map_no_results => "لا توجد أماكن";
+  String get map_no_res_h => "جرّب بحثًا أو تصنيفًا آخر.";
   String get care_empty => "لا يوجد فريق رعاية بعد";
   String get care_add_help => "أضف طبيبك من الخريطة لبناء فريق الرعاية.";
   Object operator [](String key) {
@@ -327,6 +328,8 @@ class CareStrings_ar extends CareStrings {
         return map_your_loc;
       case 'map_no_results':
         return map_no_results;
+      case 'map_no_res_h':
+        return map_no_res_h;
       case 'care_empty':
         return care_empty;
       case 'care_add_help':

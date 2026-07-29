@@ -8,6 +8,7 @@ import 'responsive.dart';
 import 'tokens.dart';
 import 'widgets/balsm_flower.dart';
 import 'screens/home_screen.dart';
+import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/report_flow.dart' show openCheckin;
@@ -173,12 +174,13 @@ class _MainAppState extends State<_MainApp> {
       });
     }
 
-    // P001 patient-MVP slice ships only the home / medications / profile tabs.
-    // Later-phase screens (trends, map, records, appointments, prescriptions,
-    // quick-log / self-report) are gated out of navigation; any stale tab id
-    // resolves to the "coming next" placeholder rather than crashing.
+    // Patient app tabs: home / map (nearby care) / medications / profile, plus
+    // the quick-log FAB (self-report). Not-yet-built screens (trends, records,
+    // appointments, prescriptions) still resolve to the "coming next"
+    // placeholder rather than crashing.
     final screen = switch (s.tab) {
       'home' => const HomeScreen(),
+      'map' => const MapScreen(),
       'meds' => const MedsScreen(),
       'profile' => const ProfileScreen(),
       _ => _Placeholder(title: s.tab),
@@ -227,9 +229,10 @@ class _TabBar extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 22 + MediaQuery.of(context).padding.bottom.clamp(0, 12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
-        _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
-        // Quick-log "+" — opens the daily check-in flow as a route.
+        _Tab(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
+        // Quick-log "+" — opens the daily check-in flow as a route (center slot).
         const _QuickLog(),
+        _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
         _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
       ]),
     );
@@ -319,8 +322,9 @@ class _SideNav extends StatelessWidget {
         child: Column(children: [
           const SizedBox(height: Space.s5),
           _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
-          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
+          _RailItem(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
           const _QuickLog(rail: true),
+          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
           _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
           const Spacer(),
         ]),
