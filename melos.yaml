@@ -6,8 +6,14 @@ packages:
   - app
 
 scripts:
+  # Code generation (i69n bundles, drift, json/freezed). Delegates to the typed
+  # SoT in tool/build.dart, which runs build_runner in every package that
+  # depends on it and skips the rest — same command works from CI / VS Code.
   gen:
-    run: melos exec --concurrency=6 -- "dart run build_runner build --delete-conflicting-outputs"
+    run: dart run tool/build.dart gen
+  # Same, but rebuilds on change — leave running while editing .i69n.json etc.
+  gen:watch:
+    run: dart run tool/build.dart gen --watch
   analyze:
     run: melos exec --concurrency=6 -- "flutter analyze --no-fatal-infos"
   # DDD boundary rules (balsm_boundary_lint via custom_lint). Runs per package;

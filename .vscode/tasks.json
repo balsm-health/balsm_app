@@ -2,6 +2,21 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Flutter: code generation",
+      "type": "shell",
+      "command": "dart",
+      "args": ["run", "tool/build.dart", "gen"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: code generation (watch)",
+      "type": "shell",
+      "command": "dart",
+      "args": ["run", "tool/build.dart", "gen", "--watch"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
       "label": "Flutter: widget tests",
       "type": "shell",
       "command": "dart",
