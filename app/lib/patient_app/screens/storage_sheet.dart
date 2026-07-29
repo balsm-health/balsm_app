@@ -271,7 +271,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           child: Row(children: [
             _miniIco(from),
             const SizedBox(width: 12),
-            const Icon(LucideIcons.arrowRight, size: 18, color: T.fg3),
+            Icon(forwardArrow(context), size: 18, color: T.fg3),
             const SizedBox(width: 12),
             _miniIco(cfg),
             const SizedBox(width: 14),

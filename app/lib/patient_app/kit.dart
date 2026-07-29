@@ -126,6 +126,17 @@ class _RoundBtnState extends State<RoundBtn> {
   }
 }
 
+/// Back-navigation arrow that points the correct way for the ambient text
+/// direction — left in LTR, right in RTL (Arabic). Lucide glyphs don't
+/// auto-mirror, so the "back" vs "forward" direction is picked explicitly.
+IconData backArrow(BuildContext context) =>
+    Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowRight : LucideIcons.arrowLeft;
+
+/// Forward/progression arrow — the mirror of [backArrow]. Points right in LTR,
+/// left in RTL (Arabic), so it follows reading order in both directions.
+IconData forwardArrow(BuildContext context) =>
+    Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight;
+
 /// Colored initials avatar (.avatar).
 class Avatar extends StatelessWidget {
   const Avatar({super.key, required this.initials, required this.color, this.size = 44, this.ar = false, this.child});

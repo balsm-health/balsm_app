@@ -209,7 +209,7 @@ class _AuthHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
       child: Row(children: [
-        RoundBtn(icon: LucideIcons.arrowLeft, onTap: onBack),
+        RoundBtn(icon: backArrow(context), onTap: onBack),
         const Spacer(),
         Row(children: [
           for (var i = 0; i < 3; i++)
@@ -249,7 +249,7 @@ class _UnderEighteenScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
               child: Row(children: [
-                RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.of(context).maybePop()),
+                RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).maybePop()),
               ]),
             ),
             const Spacer(),
@@ -947,7 +947,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
               child: Row(children: [
-                RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.of(context).maybePop()),
+                RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).maybePop()),
               ]),
             ),
             Expanded(

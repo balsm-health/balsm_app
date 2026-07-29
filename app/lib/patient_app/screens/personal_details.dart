@@ -345,7 +345,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       body: Column(children: [
         const PadTop(),
         AppBarRow(
-          leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.pop(context)),
+          leading: RoundBtn(icon: backArrow(context), onTap: () => Navigator.pop(context)),
           children: [
             Expanded(
                 child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),

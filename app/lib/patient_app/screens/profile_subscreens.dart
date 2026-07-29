@@ -49,7 +49,7 @@ class _SubScreen extends StatelessWidget {
         body: Column(children: [
           const PadTop(),
           AppBarRow(
-            leading: RoundBtn(icon: LucideIcons.arrowLeft, onTap: () => Navigator.pop(context)),
+            leading: RoundBtn(icon: backArrow(context), onTap: () => Navigator.pop(context)),
             children: [
               Expanded(child: Text(title, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
               if (trailing != null) trailing!,
