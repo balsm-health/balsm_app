@@ -437,8 +437,7 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_bk_r_calf => "بطة ساق يمنى";
   String get body_bk_l_heel => "كعب أيسر";
   String get body_bk_r_heel => "كعب أيمن";
-  String q_mood_t(Gender gender) =>
-      "${_select(gender, {'male': 'كيف تشعر اليوم؟', 'female': 'كيف تشعرين اليوم؟', 'other': 'كيف تشعر اليوم؟'})}";
+  String q_mood_t(Gender gender) => "كيف تشعر${_select(gender, {'female': 'ين', 'male': '', 'other': ''})} اليوم؟";
   String q_sym_h(Gender gender) => "${_select(gender, {
             'male': 'حرّك المؤشر لمستوى الألم، ثم اختر ما تشعر به.',
             'female': 'حرّكي المؤشر لمستوى الألم، ثم اختاري ما تشعرين به.',

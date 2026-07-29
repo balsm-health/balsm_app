@@ -186,7 +186,7 @@
     "body_bk_r_calf": "بطة ساق يمنى",
     "body_bk_l_heel": "كعب أيسر",
     "body_bk_r_heel": "كعب أيمن",
-    "q_mood_t(Gender gender)": "${_select(gender, male: 'كيف تشعر اليوم؟', female: 'كيف تشعرين اليوم؟', other: 'كيف تشعر اليوم؟')}",
+    "q_mood_t(Gender gender)": "كيف تشعر${_select(gender, female: 'ين', male: '', other: '')} اليوم؟",
     "q_sym_h(Gender gender)": "${_select(gender, male: 'حرّك المؤشر لمستوى الألم، ثم اختر ما تشعر به.', female: 'حرّكي المؤشر لمستوى الألم، ثم اختاري ما تشعرين به.', other: 'حرّك المؤشر لمستوى الألم، ثم اختر ما تشعر به.')}"
   },
   "common": {
