@@ -1,8 +1,17 @@
 import 'dart:async';
+import 'package:account/account.dart'
+    show accountProfileUseCaseProvider, claimHandleUseCaseProvider, UpdateProfileInput;
 import 'package:auth/auth.dart'
     show ageGateUseCaseProvider, signUpUseCaseProvider, signInUseCaseProvider, SignInSuccess, SignInLockout;
 import 'package:core/core.dart'
-    show countryRegistryProvider, StatusScreen, CountryCode, CountryCodeL10n, LanguageCode, Gender;
+    show
+        accountSummaryProvider,
+        countryRegistryProvider,
+        StatusScreen,
+        CountryCode,
+        CountryCodeL10n,
+        LanguageCode,
+        Gender;
 import 'package:disclosure/disclosure.dart' show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1135,6 +1144,12 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   String _fmtDob(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}';
 
+  /// Wire format for the server (`yyyy-MM-dd`).
+  String _isoDob(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  bool _creating = false;
+
   Future<void> _pickDob() async {
     final s = AppScope.of(context);
     final picked = await showModalBottomSheet<DateTime>(
@@ -1152,9 +1167,11 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   }
 
   /// Design-aligned age gate: it runs HERE, on a NEW account, not before the
-  /// OTP. Under-18 → soft-block screen; otherwise complete sign-up through the
-  /// shared fail-closed disclosure gate.
-  void _createAccount() {
+  /// OTP. Under-18 → soft-block screen; otherwise persist the onboarding
+  /// identity and complete sign-up through the shared fail-closed disclosure
+  /// gate.
+  Future<void> _createAccount() async {
+    if (_creating) return;
     final s = AppScope.of(context);
     final d = _dobDate;
     if (d == null) return;
@@ -1165,6 +1182,26 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
       ));
       return;
     }
+    // The OTP-verify step already established the session (bearer token
+    // persisted), so persist the collected identity to the server now. Without
+    // this PATCH the display name, DOB, and gender were dropped on the floor and
+    // GET /account/self came back empty — a blank account-details screen.
+    setState(() => _creating = true);
+    await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
+          displayName: '${first.text.trim()} ${last.text.trim()}'.trim(),
+          gender: gender,
+          dateOfBirth: _isoDob(d),
+        ));
+    // Claim the chosen handle (best-effort — a genuinely-taken handle can be
+    // changed later from account details; onboarding must not hard-block on it).
+    final wantedHandle = handle.text.trim();
+    if (wantedHandle.isNotEmpty) {
+      await ref.read(claimHandleUseCaseProvider).execute(wantedHandle);
+    }
+    // Refresh the app-wide summary so the profile head shows the new name.
+    ref.invalidate(accountSummaryProvider);
+    if (!mounted) return;
+    setState(() => _creating = false);
     unawaited(enterAfterSignIn(context, ref, s));
   }
 
