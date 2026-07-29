@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show currentProfileIdProvider;
@@ -339,6 +338,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             ),
           ),
         ),
+        if (!bpSkip) _numPad((d) => _vitalKey(_bpTarget, d), () => _vitalBack(_bpTarget)),
         _skipRow(bpSkip, () => setState(() => bpSkip = !bpSkip)),
       ]);
 
@@ -372,24 +372,78 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             ),
           ),
         ),
+        if (!gluSkip) _numPad((d) => _vitalKey(gluCtrl, d), () => _vitalBack(gluCtrl)),
         _skipRow(gluSkip, () => setState(() => gluSkip = !gluSkip)),
       ]);
 
-  /// Big centered numeric entry (design `.vital-num`): the active field gets the
-  /// accent border + wash. Re-renders the step (for `canNext`) on each keystroke.
+  /// The BP field the keypad currently types into (design `bpField`).
+  TextEditingController get _bpTarget => bpField == 'sys' ? sysCtrl : diaCtrl;
+
+  void _vitalKey(TextEditingController c, String digit) {
+    if (c.text.length >= 3) return;
+    setState(() => _setText(c, c.text + digit));
+  }
+
+  void _vitalBack(TextEditingController c) {
+    if (c.text.isEmpty) return;
+    setState(() => _setText(c, c.text.substring(0, c.text.length - 1)));
+  }
+
+  // Assigning `.text` resets the selection to offset 0; keep the cursor at the
+  // end so it trails the last digit in the centered display.
+  void _setText(TextEditingController c, String value) => c.value = TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      );
+
+  /// In-app numeric keypad (design `NumPad`): 1-9, then a blank slot, 0, and a
+  /// delete key. Drives the vitals displays so no OS keyboard is needed.
+  Widget _numPad(void Function(String) onKey, VoidCallback onBack) {
+    Widget cell({String? label, VoidCallback? onTap, Widget? child}) => Expanded(
+          child: Pressable(
+            onTap: onTap,
+            scale: 0.96,
+            child: Container(
+              height: 54,
+              alignment: Alignment.center,
+              margin: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: onTap == null ? Colors.transparent : Colors.white,
+                borderRadius: BorderRadius.circular(T.rMd),
+                border: onTap == null ? null : Border.all(color: T.border),
+              ),
+              child: child ?? Text(label ?? '', style: Typo.num(size: FS.xl, weight: FontWeight.w700, color: T.fg1)),
+            ),
+          ),
+        );
+    Widget digitRow(List<String> ds) => Row(children: ds.map((d) => cell(label: d, onTap: () => onKey(d))).toList());
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(children: [
+        digitRow(const ['1', '2', '3']),
+        digitRow(const ['4', '5', '6']),
+        digitRow(const ['7', '8', '9']),
+        Row(children: [
+          cell(), // blank slot (design)
+          cell(label: '0', onTap: () => onKey('0')),
+          cell(onTap: onBack, child: const Icon(LucideIcons.delete, size: 22, color: T.fg2)),
+        ]),
+      ]),
+    );
+  }
+
+  // A big numeric display. Input comes from the in-app [_numPad] (design copy:
+  // "tap the number, then use the number pad"), NOT the OS keyboard — so it's
+  // read-only. Tapping selects it as the keypad's target (via [onFocus]).
   Widget _bigNum(TextEditingController c, {required bool active, required VoidCallback onFocus, double width = 92}) =>
       SizedBox(
         width: width,
         child: TextField(
           controller: c,
+          readOnly: true,
+          showCursor: true,
           textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
           onTap: onFocus,
-          onChanged: (_) {
-            onFocus();
-            setState(() {});
-          },
           style: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.fg1),
           decoration: InputDecoration(
             hintText: '—',
