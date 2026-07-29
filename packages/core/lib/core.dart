@@ -20,6 +20,7 @@ export 'src/domain/value_objects/phone_number.dart';
 export 'src/domain/value_objects/nationality.dart';
 export 'src/domain/value_objects/iso8601_timestamp.dart';
 export 'src/domain/value_objects/money.dart';
+export 'src/domain/value_objects/tag.dart';
 export 'src/event_bus/event_bus.dart';
 export 'src/db/app_database.dart';
 export 'src/extensions/type_extensions.dart';
@@ -42,7 +43,8 @@ export 'src/data_source/impl/shared_prefs_kv_data_source.dart';
 // DTOs, and ApiException, and a blanket re-export here would make every
 // shared name ambiguous (defined in both core and balsm_api) in every file
 // that imports both.
-export 'package:balsm_api/balsm_api.dart' show BalsmApiClient, PhiLeakInterceptor;
+export 'package:balsm_api/balsm_api.dart'
+    show BalsmApiClient, PhiLeakInterceptor;
 export 'src/network/balsm_api_controller.dart';
 export 'src/network/api_providers.dart';
 export 'src/auth_context/current_user.dart';
@@ -98,9 +100,11 @@ export 'src/backup/drive_backup_adapter.dart';
 
 // Dev-only: compile-time excluded in staging/prod via --dart-define FLAVOR.
 // ignore: invalid_export_of_internal_element
-export 'src/dev/server_selector_screen.dart' if (dart.library.io) 'src/dev/server_selector_screen.dart';
+export 'src/dev/server_selector_screen.dart'
+    if (dart.library.io) 'src/dev/server_selector_screen.dart';
 export 'src/dev/dev_log_buffer.dart' show DevLogBuffer;
 
 // Test kit: gated by DEV environment flag.
-export 'src/test_kit/fakes.dart' if (dart.library.html) 'src/test_kit/fakes.dart';
+export 'src/test_kit/fakes.dart'
+    if (dart.library.html) 'src/test_kit/fakes.dart';
 export 'src/test_kit/golden_helpers.dart';
