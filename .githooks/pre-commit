@@ -1,0 +1,35 @@
+#!/bin/sh
+# Balsm pre-commit — block a commit when any staged *.dart is not
+# `dart format`-clean.
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+# Width follows `formatter: page_width` in analysis_options.yaml when set,
+# else dart's default. To auto-fix:  dart format . && git add -u
+# Bypass in a genuine emergency:  git commit --no-verify  (discouraged).
+
+# Prefer puro's dart (repo standard), else fall back to PATH dart.
+if command -v puro >/dev/null 2>&1; then
+  DART="puro dart"
+elif command -v dart >/dev/null 2>&1; then
+  DART="dart"
+else
+  echo "pre-commit: no dart on PATH (install puro or the Dart SDK); skipping format check." >&2
+  exit 0
+fi
+
+# Only the staged, still-present Dart files (added/copied/modified).
+staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart')
+[ -z "$staged" ] && exit 0
+
+# --set-exit-if-changed makes dart exit non-zero if any file would be reformatted.
+if ! printf '%s\n' "$staged" | xargs $DART format --output=none --set-exit-if-changed; then
+  echo ""
+  echo "✖ pre-commit: staged Dart files are not formatted."
+  echo "  Fix with:  dart format . && git add -u"
+  echo "  (Override only if you must:  git commit --no-verify)"
+  exit 1
+fi
+
+exit 0
