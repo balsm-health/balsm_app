@@ -3,75 +3,37 @@ import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 
-import 'phi_leak_interceptor.dart';
-
-/// Debug-only Dio interceptor that logs each request/response to the dev
-/// console (`dart:developer.log`, tag `balsm.http`).
+/// Debug-only Dio interceptor that logs the FULL request and response —
+/// method, URL, every header, and the complete body — to the dev console
+/// (`dart:developer.log`, tag `balsm.http`). Nothing is scrubbed or redacted.
 ///
-/// Each request prints a copy-pasteable `curl`, but a SAFE one: sensitive
-/// headers (`Authorization`, `Cookie`, `X-Dev-Key`, …) are redacted to
-/// `<redacted>` and the body is the PHI-scrubbed copy — so it is intentionally
-/// NOT directly runnable for auth/PHI endpoints (swap in your own token /
-/// allowlist fields to replay).
-///
-/// PHI/secrets: it NEVER logs a raw header value or a raw body. Request bodies
-/// come from the PHI-scrubbed copy [PhiLeakInterceptor] stashes in
-/// `options.extra['phi_safe_body']`; response bodies are scrubbed here the same
-/// way. Add it AFTER [PhiLeakInterceptor] so the scrubbed copy already exists.
+/// DEBUG BUILDS ONLY. It is wired in `BalsmApiController.create` behind
+/// `kDebugMode`, and added AFTER the auth interceptor so the outgoing bearer
+/// token is visible in the request log. It prints PHI and access/refresh
+/// tokens verbatim — NEVER enable it in a release build.
 class HttpLogInterceptor extends Interceptor {
   const HttpLogInterceptor();
 
   static const _name = 'balsm.http';
+  static const _encoder = JsonEncoder.withIndent('  ');
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     options.extra['_log_ts'] = DateTime.now().microsecondsSinceEpoch;
-    developer.log(
-      '→ ${options.method} ${options.uri}\n${_curl(options)}',
-      name: _name,
-      level: 700,
-    );
+    final b = StringBuffer('→ ${options.method} ${options.uri}');
+    _headers(b, options.headers);
+    _body(b, options.data);
+    developer.log(b.toString(), name: _name, level: 700);
     handler.next(options);
   }
-
-  /// A copy-pasteable curl with sensitive headers redacted and the PHI-scrubbed
-  /// body. Headers here are what's set at request time; the bearer token is
-  /// added by a later interceptor and never reaches this log.
-  String _curl(RequestOptions o) {
-    final parts = <String>["curl -X ${o.method} '${o.uri}'"];
-    o.headers.forEach((k, v) {
-      parts.add("-H '$k: ${_sensitive(k) ? '<redacted>' : v}'");
-    });
-    final body = o.extra['phi_safe_body'];
-    if (body is Map) {
-      String encoded;
-      try {
-        encoded = jsonEncode(body);
-      } catch (_) {
-        encoded = body.toString();
-      }
-      parts.add("-d '$encoded'");
-    }
-    return parts.join(" \\\n  ");
-  }
-
-  static bool _sensitive(String key) => const {
-        'authorization',
-        'cookie',
-        'proxy-authorization',
-        'x-dev-key',
-        'x-api-key',
-      }.contains(key.toLowerCase());
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     final o = response.requestOptions;
-    developer.log(
-      '← ${response.statusCode} ${o.method} ${o.uri}${_elapsed(o)}'
-      '${_body(response.data)}',
-      name: _name,
-      level: 800,
-    );
+    final b = StringBuffer('← ${response.statusCode} ${o.method} ${o.uri}${_elapsed(o)}');
+    _headers(b, response.headers.map);
+    _body(b, response.data);
+    developer.log(b.toString(), name: _name, level: 800);
     handler.next(response);
   }
 
@@ -79,17 +41,40 @@ class HttpLogInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final o = err.requestOptions;
     final res = err.response;
-    developer.log(
-      '✗ ${res?.statusCode ?? err.type.name} ${o.method} ${o.uri}${_elapsed(o)}'
-      '${res == null ? '' : _body(res.data)}',
-      name: _name,
-      level: 1000,
-      error: err.message,
-    );
+    final b = StringBuffer('✗ ${res?.statusCode ?? err.type.name} ${o.method} ${o.uri}${_elapsed(o)}');
+    if (res != null) {
+      _headers(b, res.headers.map);
+      _body(b, res.data);
+    }
+    developer.log(b.toString(), name: _name, level: 1000, error: err.message);
     handler.next(err);
   }
 
-  String _body(Object? data) => data is Map ? '\n  body: ${PhiLeakInterceptor.scrubForTelemetry(data)}' : '';
+  /// Appends every header verbatim (string or `List<String>` values).
+  void _headers(StringBuffer b, Map<String, dynamic> headers) {
+    if (headers.isEmpty) return;
+    b.write('\n  headers:');
+    headers.forEach((k, v) => b.write('\n    $k: ${v is List ? v.join(', ') : v}'));
+  }
+
+  /// Appends the full body, pretty-printed for maps/lists, indented under the
+  /// log line. No fields are omitted.
+  void _body(StringBuffer b, Object? data) {
+    if (data == null) return;
+    String out;
+    if (data is Map || data is List) {
+      try {
+        out = _encoder.convert(data);
+      } catch (_) {
+        out = data.toString();
+      }
+    } else {
+      out = data.toString();
+    }
+    if (out.isEmpty) return;
+    b.write('\n  body: ');
+    b.write(out.replaceAll('\n', '\n  '));
+  }
 
   String _elapsed(RequestOptions o) {
     final start = o.extra['_log_ts'];

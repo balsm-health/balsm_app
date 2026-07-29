@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 
-import 'http_log_interceptor.dart';
 import 'phi_leak_interceptor.dart';
 
 /// Owns the shared [Dio] instance for all Balsm API areas.
@@ -18,13 +17,11 @@ class BalsmApiClient {
 
   set baseUrl(String value) => _dio.options.baseUrl = value;
 
-  /// [logRequests] adds a console request/response logger (debug builds only —
-  /// pass `kDebugMode`). It logs method/URL/status/timing + PHI-scrubbed bodies,
-  /// never headers or raw payloads. Added after [PhiLeakInterceptor] so the
-  /// scrubbed body copy already exists.
+  /// The full-request/response console logger ([HttpLogInterceptor]) is NOT
+  /// added here — it must run after the auth interceptor to see the bearer, so
+  /// `BalsmApiController.create` appends it last, behind `kDebugMode`.
   factory BalsmApiClient.create({
     required String baseUrl,
-    bool logRequests = false,
   }) {
     final dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -33,7 +30,6 @@ class BalsmApiClient {
       headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
     ));
     dio.interceptors.add(PhiLeakInterceptor());
-    if (logRequests) dio.interceptors.add(const HttpLogInterceptor());
     return BalsmApiClient(dio: dio);
   }
 }

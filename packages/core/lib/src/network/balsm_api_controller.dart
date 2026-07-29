@@ -52,12 +52,15 @@ class BalsmApiController {
   }) {
     final client = BalsmApiClient.create(
       baseUrl: FlavorConfig.current.defaultServer.apiBaseUrl,
-      logRequests: kDebugMode,
     );
     // Attach the bearer token to authenticated requests + refresh-on-401.
     // Without this, no request carries a token and every authenticated
     // endpoint returns 401.
     client.dio.interceptors.add(AuthInterceptor(client: client, storage: storage, bus: bus));
+    // Debug-only: full request/response console logger (tag `balsm.http`),
+    // unredacted. Added LAST so the request log includes the bearer that the
+    // auth interceptor just attached. Never runs in a release build.
+    if (kDebugMode) client.dio.interceptors.add(const HttpLogInterceptor());
     return BalsmApiController(
       client: client,
       store: ActiveServerStore(storage),
