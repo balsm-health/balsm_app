@@ -1,3 +1,4 @@
+// Arabic bundle — gendered copy uses _select(gender, …); see checkin.q_sym_h.
 {
   "_i69n": "nothrow",
   "_i69n_language": "ar",
