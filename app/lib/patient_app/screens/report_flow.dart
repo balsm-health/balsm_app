@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show currentProfileIdProvider;
@@ -80,15 +81,15 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
   int mood = 0;
 
-  // Vitals — every field optional; an empty field maps to null.
+  // Vitals — the design captures only blood pressure + glucose, each on its own
+  // step. Both optional; skipping a step leaves those readings null.
   final sysCtrl = TextEditingController();
   final diaCtrl = TextEditingController();
-  final hrCtrl = TextEditingController();
-  final tempCtrl = TextEditingController();
-  final weightCtrl = TextEditingController();
-  final spo2Ctrl = TextEditingController();
   final gluCtrl = TextEditingController();
   String gluCtx = 'checkin.glu_fast'; // glu_fast | glu_meal | glu_random
+  String bpField = 'sys'; // active field in the BP pair (sys | dia)
+  bool bpSkip = false; // "I didn't measure this today" — BP step
+  bool gluSkip = false; // …glucose step
 
   double pain = 0;
   final Set<SymptomId> syms = {};
@@ -111,10 +112,6 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   void dispose() {
     sysCtrl.dispose();
     diaCtrl.dispose();
-    hrCtrl.dispose();
-    tempCtrl.dispose();
-    weightCtrl.dispose();
-    spo2Ctrl.dispose();
     gluCtrl.dispose();
     note.dispose();
     super.dispose();
@@ -122,6 +119,9 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
   bool get canNext => switch (cur) {
         'mood' => mood > 0,
+        // Skipped, or both readings entered (>=2 digits) — mirrors the design.
+        'bp' => bpSkip || (sysCtrl.text.length >= 2 && diaCtrl.text.length >= 2),
+        'glucose' => gluSkip || gluCtrl.text.length >= 2,
         _ => true,
       };
 
@@ -142,17 +142,14 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   }
 
   int? _parseInt(TextEditingController c) => int.tryParse(c.text.trim());
-  double? _parseDouble(TextEditingController c) => double.tryParse(c.text.trim());
 
   Vitals _buildVitals() {
-    final glucose = _parseInt(gluCtrl);
+    // Design captures BP + glucose only; heart rate / temperature / weight /
+    // SpO2 stay null (the Vitals model keeps the fields for future use).
+    final glucose = gluSkip ? null : _parseInt(gluCtrl);
     return Vitals(
-      systolic: _parseInt(sysCtrl),
-      diastolic: _parseInt(diaCtrl),
-      heartRate: _parseInt(hrCtrl),
-      temperature: _parseDouble(tempCtrl),
-      weightKg: _parseDouble(weightCtrl),
-      spo2: _parseInt(spo2Ctrl),
+      systolic: bpSkip ? null : _parseInt(sysCtrl),
+      diastolic: bpSkip ? null : _parseInt(diaCtrl),
       glucoseFasting: gluCtx == 'checkin.glu_fast' ? glucose : null,
       glucosePostMeal: gluCtx == 'checkin.glu_meal' ? glucose : null,
       glucoseRandom: gluCtx == 'checkin.glu_random' ? glucose : null,
@@ -218,7 +215,8 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     _meds = ref.watch(medicationListProvider).valueOrNull ?? const [];
     _steps = [
       'mood',
-      'vitals',
+      'bp',
+      'glucose',
       if (_meds.isNotEmpty) 'meds',
       'symptoms',
     ];
@@ -301,7 +299,8 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                           ),
                         ))),
           ]),
-        'vitals' => _vitalsStep(),
+        'bp' => _bpStep(),
+        'glucose' => _glucoseStep(),
         'meds' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _title('checkin.q_med_t', 'checkin.q_med_h'),
             ..._meds.map(_medCheck),
@@ -309,73 +308,124 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         _ => _symptomsStep(),
       };
 
-  Widget _vitalsStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title('checkin.q_vitals_t', 'checkin.q_vitals_h'),
-        PCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(children: [
-              Row(children: [
-                Expanded(child: _vitalField(s.t('checkin.sys'), sysCtrl, s.t('checkin.unit_bp'))),
-                const SizedBox(width: 12),
-                Expanded(child: _vitalField(s.t('checkin.dia'), diaCtrl, s.t('checkin.unit_bp'))),
+  // BLOOD PRESSURE — dedicated step: big sys / dia pair, active-field highlight,
+  // centered unit, skip toggle (design report.jsx `cur === 'bp'`).
+  Widget _bpStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _title('checkin.q_bp_t', 'checkin.q_bp_h'),
+        Opacity(
+          opacity: bpSkip ? 0.4 : 1,
+          child: IgnorePointer(
+            ignoring: bpSkip,
+            child: PCard(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Column(children: [
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  _bigNum(sysCtrl, active: bpField == 'sys', onFocus: () => setState(() => bpField = 'sys')),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('/', style: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.ink300))),
+                  _bigNum(diaCtrl, active: bpField == 'dia', onFocus: () => setState(() => bpField = 'dia')),
+                ]),
+                const SizedBox(height: 6),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  _bpLabel(s.t('checkin.sys'), bpField == 'sys'),
+                  const SizedBox(width: 24),
+                  _bpLabel(s.t('checkin.dia'), bpField == 'dia'),
+                ]),
+                const SizedBox(height: 8),
+                Text(s.t('checkin.unit_bp'),
+                    textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
               ]),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(child: _vitalField(s.t('checkin.vital_hr'), hrCtrl, s.t('checkin.unit_hr'))),
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _vitalField(s.t('checkin.vital_temp'), tempCtrl, s.t('checkin.unit_temp'), decimal: true)),
-              ]),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(
-                    child:
-                        _vitalField(s.strings.profile.pd_weight, weightCtrl, s.strings.profile.pd_kg, decimal: true)),
-                const SizedBox(width: 12),
-                Expanded(child: _vitalField(s.t('checkin.vital_spo2'), spo2Ctrl, s.t('checkin.unit_spo2'))),
-              ]),
-            ])),
-        const SizedBox(height: 16),
-        Text(s.t('profile.m_glucose'),
-            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-        const SizedBox(height: 10),
+            ),
+          ),
+        ),
+        _skipRow(bpSkip, () => setState(() => bpSkip = !bpSkip)),
+      ]);
+
+  // GLUCOSE — dedicated step: context chips above, one big number, skip toggle
+  // (design report.jsx `cur === 'glucose'`).
+  Widget _glucoseStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _title('checkin.q_glu_t', 'checkin.q_glu_h'),
         Wrap(
             spacing: 10,
             runSpacing: 10,
             children: const ['checkin.glu_fast', 'checkin.glu_meal', 'checkin.glu_random']
                 .map((c) => _chip(s.t(c), gluCtx == c, () => setState(() => gluCtx = c)))
                 .toList()),
-        const SizedBox(height: 12),
-        PCard(
-            padding: const EdgeInsets.all(16),
-            child: _vitalField(s.t('profile.m_glucose'), gluCtrl, s.t('checkin.unit_glu'))),
-      ]);
-
-  Widget _vitalField(String label, TextEditingController c, String unit, {bool decimal = false}) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label.toUpperCase(),
-            style: Typo.meta(ar: s.rtl)
-                .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: T.fg3)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: c,
-          textDirection: TextDirection.ltr,
-          keyboardType: TextInputType.numberWithOptions(decimal: decimal),
-          style: Typo.num(size: FS.lg),
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: Colors.white,
-            suffixText: unit,
-            suffixStyle: Typo.meta(ar: s.rtl),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+        const SizedBox(height: 16),
+        Opacity(
+          opacity: gluSkip ? 0.4 : 1,
+          child: IgnorePointer(
+            ignoring: gluSkip,
+            child: PCard(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  _bigNum(gluCtrl, active: true, onFocus: () {}, width: 150),
+                  const SizedBox(width: 10),
+                  Text(s.t('checkin.unit_glu'), style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
+                ],
+              ),
+            ),
           ),
         ),
+        _skipRow(gluSkip, () => setState(() => gluSkip = !gluSkip)),
       ]);
+
+  /// Big centered numeric entry (design `.vital-num`): the active field gets the
+  /// accent border + wash. Re-renders the step (for `canNext`) on each keystroke.
+  Widget _bigNum(TextEditingController c, {required bool active, required VoidCallback onFocus, double width = 92}) =>
+      SizedBox(
+        width: width,
+        child: TextField(
+          controller: c,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
+          onTap: onFocus,
+          onChanged: (_) {
+            onFocus();
+            setState(() {});
+          },
+          style: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.fg1),
+          decoration: InputDecoration(
+            hintText: '—',
+            hintStyle: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.ink300),
+            isDense: true,
+            filled: true,
+            fillColor: active ? s.accent.bg : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(T.rLg),
+                borderSide: BorderSide(color: active ? s.accent.main : T.border, width: 1.5)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(T.rLg), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+          ),
+        ),
+      );
+
+  Widget _bpLabel(String label, bool active) => SizedBox(
+        width: 92,
+        child: Text(label,
+            textAlign: TextAlign.center,
+            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: active ? s.accent.main : T.fg3)),
+      );
+
+  /// "I didn't measure this today" toggle (design `SkipRow`).
+  Widget _skipRow(bool on, VoidCallback toggle) => Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Center(
+          child: PButton(s.strings.meds.skip_q,
+              icon: on ? LucideIcons.checkCircle2 : LucideIcons.circle,
+              variant: BtnVariant.ghost,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: toggle),
+        ),
+      );
 
   Widget _symptomsStep() {
     final pinfo = _painInfo(s, pain.round());
