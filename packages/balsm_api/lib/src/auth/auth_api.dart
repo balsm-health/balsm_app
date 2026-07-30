@@ -16,6 +16,10 @@ abstract class AuthApi {
   /// with [ApiException.retryAfterSeconds] from the Retry-After header.
   Future<AuthTokensResponse> verifyOtp(VerifyOtpRequest request, {CancelToken? cancelToken});
 
+  /// POST /auth/otp/verify-link — redeems a magic sign-in link token for a
+  /// session (same envelope as [verifyOtp]).
+  Future<AuthTokensResponse> verifyLink(VerifyLinkRequest request, {CancelToken? cancelToken});
+
   /// POST /auth/google
   Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request, {CancelToken? cancelToken});
 

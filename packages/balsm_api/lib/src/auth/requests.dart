@@ -26,6 +26,25 @@ class VerifyOtpRequest {
       };
 }
 
+/// POST /auth/otp/verify-link — the magic sign-in link's single-use token
+/// (extracted from the `balsm://auth/link?t=` deep link). No email: the token
+/// alone identifies the challenge server-side.
+class VerifyLinkRequest {
+  const VerifyLinkRequest({
+    required this.token,
+    required this.deviceId,
+    required this.deviceLabel,
+  });
+  final String token;
+  final String deviceId;
+  final String deviceLabel;
+  Map<String, dynamic> toJson() => {
+        'token': token,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+      };
+}
+
 class GoogleSignInRequest {
   const GoogleSignInRequest({
     required this.idToken,

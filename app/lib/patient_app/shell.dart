@@ -13,6 +13,7 @@ import 'screens/meds_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/report_flow.dart' show openCheckin;
 import 'screens/auth_flow.dart';
+import 'deep_link_handler.dart';
 import 'dev/shake_to_dev_config.dart';
 
 /// Root of the patient app prototype. Owns [PatientAppState] and renders the
@@ -89,15 +90,17 @@ class _PatientAppState extends State<PatientApp> {
               child: ShakeToDevConfig(navigatorKey: _navKey, child: child!),
             );
           },
-          home: Directionality(
-            textDirection: state.dir,
-            child: AdaptiveFrame(
-              child: Scaffold(
-                backgroundColor: Colors.white,
-                body: Stack(children: [
-                  state.route == 'app' ? const _MainApp() : const AuthRouter(),
-                  Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
-                ]),
+          home: DeepLinkHandler(
+            child: Directionality(
+              textDirection: state.dir,
+              child: AdaptiveFrame(
+                child: Scaffold(
+                  backgroundColor: Colors.white,
+                  body: Stack(children: [
+                    state.route == 'app' ? const _MainApp() : const AuthRouter(),
+                    Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                  ]),
+                ),
               ),
             ),
           ),

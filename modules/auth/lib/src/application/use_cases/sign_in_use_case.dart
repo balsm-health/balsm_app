@@ -99,6 +99,36 @@ class SignInUseCase {
     }
   }
 
+  /// Magic-link sign-in: redeem the single-use token from the `balsm://auth/link`
+  /// deep link for a session. Same persistence + [UserSignedIn] as OTP verify;
+  /// the email is unknown here (the token alone identifies the account).
+  Future<AppResult<SignInResult>> verifyMagicLink({required String token}) async {
+    try {
+      final deviceId = await _ensureDeviceId();
+      final deviceLabel = _deviceLabel();
+
+      final tokens = await _adapter.verifyLink(token, deviceId, deviceLabel);
+
+      await _persistTokens(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        userId: tokens.userId,
+      );
+
+      _bus.publish(UserSignedIn(
+        userId: UserId.value(tokens.userId),
+        email: '',
+        provider: 'email_link',
+      ));
+
+      return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
+    } on AuthException catch (e) {
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
   // ── Email + password ──────────────────────────────────────────────────────
 
   /// Sign in with email + password. A `401` surfaces as a generic failure (no

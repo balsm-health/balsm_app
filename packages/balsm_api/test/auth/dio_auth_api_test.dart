@@ -24,6 +24,20 @@ void main() {
     expect(res.isNewUser, isTrue);
   });
 
+  test('verifyLink posts the token and parses the enveloped token response', () async {
+    final adapter = FakeHttpAdapter(
+        (_) => jsonResponse('{"data": {"access_token": "at", "refresh_token": "rt", "user_id": "u1"}}'));
+    final api = DioAuthApi(net: fakeNet(adapter));
+
+    final res = await api.verifyLink(const VerifyLinkRequest(token: 'lk_abc', deviceId: 'd1', deviceLabel: 'iPhone'));
+
+    expect(adapter.requests.single.path, '/auth/otp/verify-link');
+    expect(adapter.requests.single.data, {'token': 'lk_abc', 'device_id': 'd1', 'device_label': 'iPhone'});
+    expect(res.accessToken, 'at');
+    expect(res.userId, 'u1');
+    expect(res.isNewUser, isFalse);
+  });
+
   test('is_new_user defaults to false', () async {
     final adapter = FakeHttpAdapter(
         (_) => jsonResponse('{"data": {"access_token": "at", "refresh_token": "rt", "user_id": "u1"}}'));

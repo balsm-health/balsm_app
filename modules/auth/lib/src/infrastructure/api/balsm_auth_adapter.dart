@@ -50,6 +50,22 @@ class BalsmAuthAdapter {
             cancelToken: cancelToken,
           )));
 
+  /// POST /auth/otp/verify-link — redeem a magic sign-in link token.
+  Future<AuthTokens> verifyLink(
+    String token,
+    String deviceId,
+    String deviceLabel, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async => _toAuthTokens(await _api.verifyLink(
+            VerifyLinkRequest(
+              token: token,
+              deviceId: deviceId,
+              deviceLabel: deviceLabel,
+            ),
+            cancelToken: cancelToken,
+          )));
+
   /// POST /auth/google
   Future<AuthTokens> signInWithGoogle(
     String idToken,

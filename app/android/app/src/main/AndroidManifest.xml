@@ -7,6 +7,8 @@
       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
       <intent-filter android:autoVerify="true"><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="https" android:host="${BASE_URL}" android:pathPrefix="/emergency/"/></intent-filter>
       <intent-filter android:autoVerify="true"><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="https" android:host="${BASE_URL}" android:path="/account/delete"/></intent-filter>
+      <!-- Magic sign-in link: the emailed https link 302-redirects to balsm://auth/link?t=… -->
+      <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="balsm" android:host="auth"/></intent-filter>
     </activity>
     <meta-data android:name="flutterEmbedding" android:value="2"/>
   </application>

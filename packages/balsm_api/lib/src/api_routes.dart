@@ -17,6 +17,7 @@ class ApiRoutes {
   static const _auth = '/auth';
   static const auth_otp_request = '$_auth/otp/request';
   static const auth_otp_verify = '$_auth/otp/verify';
+  static const auth_otp_verify_link = '$_auth/otp/verify-link';
   static const auth_google = '$_auth/google';
   static const auth_apple = '$_auth/apple';
   static const auth_sign_out = '$_auth/sign-out';

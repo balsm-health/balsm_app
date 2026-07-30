@@ -34,6 +34,11 @@ class DioAuthApi implements AuthApi {
       AuthTokensResponse.fromJson(await _post(ApiRoutes.auth_otp_verify, request.toJson(), cancelToken: cancelToken));
 
   @override
+  Future<AuthTokensResponse> verifyLink(VerifyLinkRequest request, {CancelToken? cancelToken}) async =>
+      AuthTokensResponse.fromJson(
+          await _post(ApiRoutes.auth_otp_verify_link, request.toJson(), cancelToken: cancelToken));
+
+  @override
   Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request, {CancelToken? cancelToken}) async =>
       AuthTokensResponse.fromJson(await _post(ApiRoutes.auth_google, request.toJson(), cancelToken: cancelToken));
 
