@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:core/core.dart' show currentUserIdProvider, accountSummaryProvider, accountApiProvider, Gender;
+import 'package:core/core.dart'
+    show currentUserIdProvider, accountSummaryProvider, accountApiProvider, Gender, CountryCode, CountryCodeL10n;
 import 'package:account/account.dart'
     show claimHandleUseCaseProvider, accountProfileUseCaseProvider, ProfileDetails, UpdateProfileInput;
 import 'package:emergency_card/emergency_card.dart'
@@ -92,7 +93,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   final _lastCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _nidCtrl = TextEditingController(); // national ID (PHI/PII)
-  final _natCtrl = TextEditingController(); // nationality
+  CountryCode? _nationality; // picked from a bottom sheet (stored as ISO code)
   Gender? _gender; // null until loaded / chosen
   DateTime? _dob; // PHI
 
@@ -167,7 +168,6 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     _lastCtrl.dispose();
     _phoneCtrl.dispose();
     _nidCtrl.dispose();
-    _natCtrl.dispose();
     emName.dispose();
     emRel.dispose();
     emPhone.dispose();
@@ -191,7 +191,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           firstName: _firstCtrl.text.trim(),
           lastName: _lastCtrl.text.trim(),
           gender: _gender,
-          nationality: _natCtrl.text.trim(),
+          nationality: _nationality?.value,
           phone: _phoneCtrl.text.trim(),
           dateOfBirth: _fmtDob(),
           nationalId: _nidCtrl.text.trim(),
@@ -333,7 +333,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       _lastCtrl.text = profile.lastName ?? '';
       _phoneCtrl.text = profile.phone ?? '';
       _nidCtrl.text = profile.nationalId ?? '';
-      _natCtrl.text = profile.nationality ?? '';
+      // Stored as an ISO country code; legacy free-text values won't parse and
+      // simply show the placeholder until re-selected.
+      _nationality = (profile.nationality?.isNotEmpty ?? false) ? CountryCode.tryFromCode(profile.nationality!) : null;
       _gender = profile.gender;
       s.setGender(profile.gender ?? Gender.other);
       _dob = (profile.dateOfBirth?.isNotEmpty ?? false) ? DateTime.tryParse(profile.dateOfBirth!) : null;
@@ -472,7 +474,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       const SizedBox(height: 14),
                       _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
                       const SizedBox(height: 14),
-                      _field(s.strings.profile.pd_nationality, _natCtrl),
+                      _labeled(s.strings.profile.pd_nationality, _nationalityField()),
                     ]),
 
                     // Emergency contact (real on-device PHI; up to 3 contacts).
@@ -623,6 +625,47 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     if (picked != null && mounted) setState(() => _dob = picked);
   }
 
+  /// Nationality field — opens a bottom-sheet country selector; shows the
+  /// localized demonym (e.g. "Egyptian" / "مصري") of the picked country.
+  Widget _nationalityField() => GestureDetector(
+        onTap: _pickNationality,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 52,
+          padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rMd),
+            border: Border.all(color: T.border, width: 1.5),
+          ),
+          child: Row(children: [
+            if (_nationality != null) ...[
+              Text(_flagEmoji(_nationality!.value), style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+            ],
+            Expanded(
+              child: Text(
+                _nationality == null ? '—' : _nationality!.demonym(kCatalog, locale: s.lang.value),
+                style: Typo.body(ar: s.rtl).copyWith(
+                    fontSize: FS.lg, fontWeight: FontWeight.w600, color: _nationality == null ? T.fg4 : T.fg1),
+              ),
+            ),
+            const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4),
+          ]),
+        ),
+      );
+
+  Future<void> _pickNationality() async {
+    final picked = await showModalBottomSheet<CountryCode>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x5C2B2B25),
+      builder: (_) => _NationalitySheet(current: _nationality, s: s),
+    );
+    if (picked != null && mounted) setState(() => _nationality = picked);
+  }
+
   Widget _genderSeg() => Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
@@ -661,6 +704,76 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     final a = parts.first.substring(0, 1);
     final b = parts.length > 1 ? parts[1].substring(0, 1) : '';
     return (a + b).toUpperCase();
+  }
+}
+
+/// Regional-indicator flag emoji from a 2-letter ISO country code.
+String _flagEmoji(String code) {
+  if (code.length != 2) return '🏳️';
+  return String.fromCharCodes(code.toUpperCase().codeUnits.map((c) => 0x1F1E6 + (c - 0x41)));
+}
+
+/// Nationality picker — a bottom sheet listing the curated countries with flag
+/// + localized demonym; returns the chosen [CountryCode]. Mirrors the auth
+/// flow's dial-code sheet styling.
+class _NationalitySheet extends StatelessWidget {
+  const _NationalitySheet({required this.current, required this.s});
+  final CountryCode? current;
+  final PatientAppState s;
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: s.dir,
+      child: Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+        decoration:
+            const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 10),
+          Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(s.strings.profile.pd_nationality,
+                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: CountryCode.known
+                  .map((c) => GestureDetector(
+                        onTap: () => Navigator.pop(context, c),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          child: Row(children: [
+                            Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: Text(c.demonym(kCatalog, locale: s.lang.value),
+                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                            if (c == current)
+                              Padding(
+                                  padding: const EdgeInsetsDirectional.only(start: 8),
+                                  child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
+                          ]),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ),
+        ]),
+      ),
+    );
   }
 }
 
