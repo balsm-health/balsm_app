@@ -713,65 +713,112 @@ String _flagEmoji(String code) {
   return String.fromCharCodes(code.toUpperCase().codeUnits.map((c) => 0x1F1E6 + (c - 0x41)));
 }
 
-/// Nationality picker — a bottom sheet listing the curated countries with flag
-/// + localized demonym; returns the chosen [CountryCode]. Mirrors the auth
-/// flow's dial-code sheet styling.
-class _NationalitySheet extends StatelessWidget {
+/// Nationality picker — a searchable bottom sheet over every supported
+/// nationality ([CountryCode.supportedNationalities], the full ISO set): flag +
+/// localized demonym, filtered by demonym / country name / code. Returns the
+/// chosen [CountryCode]. Mirrors the auth flow's dial-code sheet styling.
+class _NationalitySheet extends StatefulWidget {
   const _NationalitySheet({required this.current, required this.s});
   final CountryCode? current;
   final PatientAppState s;
   @override
+  State<_NationalitySheet> createState() => _NationalitySheetState();
+}
+
+class _NationalitySheetState extends State<_NationalitySheet> {
+  final _search = TextEditingController();
+  PatientAppState get s => widget.s;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final locale = s.lang.value;
+    final q = _search.text.trim().toLowerCase();
+    final items = CountryCode.supportedNationalities.where((c) {
+      if (q.isEmpty) return true;
+      return c.demonym(kCatalog, locale: locale).toLowerCase().contains(q) ||
+          c.name(kCatalog, locale: locale).toLowerCase().contains(q) ||
+          c.value.toLowerCase().contains(q);
+    }).toList();
     return Directionality(
       textDirection: s.dir,
-      child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-        decoration:
-            const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          Container(
-              width: 38,
-              height: 4,
-              decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(s.strings.profile.pd_nationality,
-                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          decoration: const BoxDecoration(
+              color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SizedBox(height: 10),
+            Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(s.strings.profile.pd_nationality,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: CountryCode.known
-                  .map((c) => GestureDetector(
-                        onTap: () => Navigator.pop(context, c),
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                          child: Row(children: [
-                            Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: Text(c.demonym(kCatalog, locale: s.lang.value),
-                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
-                            if (c == current)
-                              Padding(
-                                  padding: const EdgeInsetsDirectional.only(start: 8),
-                                  child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
-                          ]),
-                        ),
-                      ))
-                  .toList(),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                textDirection: s.dir,
+                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.base),
+                decoration: InputDecoration(
+                  isDense: true,
+                  prefixIcon: const Icon(LucideIcons.search, size: 18, color: T.fg4),
+                  hintText: s.strings.profile.pd_nationality,
+                  filled: true,
+                  fillColor: T.ink50,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide.none),
+                ),
+              ),
             ),
-          ),
-        ]),
+            const SizedBox(height: 8),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: items.length,
+                itemBuilder: (_, i) {
+                  final c = items[i];
+                  return GestureDetector(
+                    onTap: () => Navigator.pop(context, c),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      child: Row(children: [
+                        Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                            child: Text(c.demonym(kCatalog, locale: locale),
+                                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                        if (c == widget.current)
+                          Padding(
+                              padding: const EdgeInsetsDirectional.only(start: 8),
+                              child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ]),
+        ),
       ),
     );
   }

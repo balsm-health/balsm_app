@@ -11,13 +11,15 @@ import 'translation_catalog.dart';
 /// these with a [TranslationCatalog] + locale. On a missing translation the
 /// helpers fall back to the raw code (never a bare i69n key).
 extension CountryCodeL10n on CountryCode {
-  /// Localized country name, e.g. `Egypt` / `مصر`.
+  /// Localized country name, e.g. `Egypt` / `مصر`. Falls back to the baked-in
+  /// English name (then the raw code) when there is no translation.
   String name(TranslationCatalog catalog, {String locale = 'en'}) =>
-      _resolve(catalog, 'country.${value.toLowerCase()}.name', locale, value);
+      _resolve(catalog, 'country.${value.toLowerCase()}.name', locale, englishName);
 
-  /// Localized demonym, e.g. `Egyptian` / `مصري`.
+  /// Localized demonym, e.g. `Egyptian` / `مصري`. Falls back to the baked-in
+  /// English demonym (then the raw code) when there is no translation.
   String demonym(TranslationCatalog catalog, {String locale = 'en'}) =>
-      _resolve(catalog, 'country.${value.toLowerCase()}.demonym', locale, value);
+      _resolve(catalog, 'country.${value.toLowerCase()}.demonym', locale, englishDemonym);
 }
 
 extension LanguageCodeL10n on LanguageCode {
