@@ -93,5 +93,18 @@
     "tr": {
       "name": "Turkish"
     }
+  },
+  "relation": {
+    "spouse": "Spouse",
+    "partner": "Partner",
+    "parent": "Parent",
+    "child": "Child",
+    "sibling": "Sibling",
+    "grandparent": "Grandparent",
+    "relative": "Relative",
+    "friend": "Friend",
+    "guardian": "Guardian",
+    "caregiver": "Caregiver",
+    "other": "Other"
   }
 }

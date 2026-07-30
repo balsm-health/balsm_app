@@ -18,6 +18,7 @@ export 'src/domain/value_objects/gender.dart';
 export 'src/domain/value_objects/currency_code.dart';
 export 'src/domain/value_objects/phone_number.dart';
 export 'src/domain/value_objects/nationality.dart';
+export 'src/domain/value_objects/relationship.dart';
 export 'src/domain/value_objects/iso8601_timestamp.dart';
 export 'src/domain/value_objects/money.dart';
 export 'src/domain/value_objects/tag.dart';

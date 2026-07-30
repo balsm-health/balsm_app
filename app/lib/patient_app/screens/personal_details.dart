@@ -5,7 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:core/core.dart'
-    show currentUserIdProvider, accountSummaryProvider, accountApiProvider, Gender, CountryCode, CountryCodeL10n;
+    show
+        currentUserIdProvider,
+        accountSummaryProvider,
+        accountApiProvider,
+        Gender,
+        CountryCode,
+        CountryCodeL10n,
+        Relationship,
+        RelationshipL10n;
 import 'package:account/account.dart'
     show claimHandleUseCaseProvider, accountProfileUseCaseProvider, ProfileDetails, UpdateProfileInput;
 import 'package:emergency_card/emergency_card.dart'
@@ -100,7 +108,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   // Emergency-contact fields feed the real AddEmergencyContactUseCase, so
   // they start empty (an "add new contact" form) rather than seeded sample PHI.
   final emName = TextEditingController();
-  final emRel = TextEditingController();
+  Relationship? _emRelation; // picked from the relationship selector
   final emPhone = TextEditingController();
 
   bool saved = false;
@@ -169,7 +177,6 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     _phoneCtrl.dispose();
     _nidCtrl.dispose();
     emName.dispose();
-    emRel.dispose();
     emPhone.dispose();
     super.dispose();
   }
@@ -240,17 +247,16 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     final name = emName.text.trim();
     final contactPhone = normalizeArabicNumerals(emPhone.text).trim();
     if (name.isEmpty || contactPhone.isEmpty) return;
-    final relation = emRel.text.trim();
     final result = await ref.read(addEmergencyContactUseCaseProvider).execute(
           userId: userId,
           name: name,
           phone: contactPhone,
-          relation: relation.isEmpty ? null : relation,
+          relation: _emRelation?.wire,
         );
     if (!mounted) return;
     if (result.isSuccess) {
       emName.clear();
-      emRel.clear();
+      setState(() => _emRelation = null);
       emPhone.clear();
       ref.invalidate(_emergencyContactsProvider);
     } else {
@@ -278,11 +284,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               ],
             ]),
             const SizedBox(height: 3),
-            Text(
-              c.relation == null || c.relation!.isEmpty ? c.phone : '${c.relation} · ${c.phone}',
-              textDirection: TextDirection.ltr,
-              style: Typo.meta(ar: s.rtl),
-            ),
+            Builder(builder: (_) {
+              final rel = _relationLabel(c.relation);
+              return Text(
+                rel == null ? c.phone : '$rel · ${c.phone}',
+                textDirection: c.relation == null ? TextDirection.ltr : s.dir,
+                style: Typo.meta(ar: s.rtl),
+              );
+            }),
           ])),
         ]),
       );
@@ -487,8 +496,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       if (!atMaxContacts) ...[
                         _field(s.strings.profile.pd_em_name, emName),
                         const SizedBox(height: 14),
-                        Row(children: [
-                          Expanded(child: _field(s.strings.profile.pd_em_rel, emRel)),
+                        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Expanded(child: _labeled(s.strings.profile.pd_em_rel, _relationField())),
                           const SizedBox(width: 12),
                           Expanded(child: _field(s.strings.profile.pd_em_phone, emPhone, mono: true)),
                         ]),
@@ -666,6 +675,52 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     if (picked != null && mounted) setState(() => _nationality = picked);
   }
 
+  /// Localized label for a stored relation wire-code; falls back to the raw
+  /// stored string for legacy free-text values (returns null when unset).
+  String? _relationLabel(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final rel = Relationship.tryFromCode(code);
+    return rel == null ? code : rel.label(kCatalog, locale: s.lang.value);
+  }
+
+  /// Relationship field — opens a bottom-sheet selector of [Relationship]
+  /// values, shown as localized labels.
+  Widget _relationField() => GestureDetector(
+        onTap: _pickRelationship,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 52,
+          padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rMd),
+            border: Border.all(color: T.border, width: 1.5),
+          ),
+          child: Row(children: [
+            Expanded(
+              child: Text(
+                _emRelation == null ? '—' : _emRelation!.label(kCatalog, locale: s.lang.value),
+                overflow: TextOverflow.ellipsis,
+                style: Typo.body(ar: s.rtl)
+                    .copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600, color: _emRelation == null ? T.fg4 : T.fg1),
+              ),
+            ),
+            const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4),
+          ]),
+        ),
+      );
+
+  Future<void> _pickRelationship() async {
+    final picked = await showModalBottomSheet<Relationship>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: const Color(0x5C2B2B25),
+      builder: (_) => _RelationshipSheet(current: _emRelation, s: s),
+    );
+    if (picked != null && mounted) setState(() => _emRelation = picked);
+  }
+
   Widget _genderSeg() => Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
@@ -819,6 +874,68 @@ class _NationalitySheetState extends State<_NationalitySheet> {
             ),
           ]),
         ),
+      ),
+    );
+  }
+}
+
+/// Relationship picker — a bottom sheet of the [Relationship] values shown as
+/// localized labels; returns the chosen value. No search (short fixed list).
+class _RelationshipSheet extends StatelessWidget {
+  const _RelationshipSheet({required this.current, required this.s});
+  final Relationship? current;
+  final PatientAppState s;
+  @override
+  Widget build(BuildContext context) {
+    final locale = s.lang.value;
+    return Directionality(
+      textDirection: s.dir,
+      child: Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+        decoration:
+            const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+        padding: const EdgeInsets.only(bottom: 24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 10),
+          Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(s.strings.profile.pd_em_rel,
+                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: Relationship.values
+                  .map((r) => GestureDetector(
+                        onTap: () => Navigator.pop(context, r),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          child: Row(children: [
+                            Expanded(
+                                child: Text(r.label(kCatalog, locale: locale),
+                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                            if (r == current)
+                              Padding(
+                                  padding: const EdgeInsetsDirectional.only(start: 8),
+                                  child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
+                          ]),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ),
+        ]),
       ),
     );
   }

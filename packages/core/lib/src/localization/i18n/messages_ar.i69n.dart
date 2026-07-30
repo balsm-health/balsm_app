@@ -14,6 +14,7 @@ class Messages_ar extends Messages {
   NotfoundMessages_ar get notfound => NotfoundMessages_ar(this);
   CountryMessages_ar get country => CountryMessages_ar(this);
   LanguageMessages_ar get language => LanguageMessages_ar(this);
+  RelationMessages_ar get relation => RelationMessages_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -31,6 +32,8 @@ class Messages_ar extends Messages {
         return country;
       case 'language':
         return language;
+      case 'relation':
+        return relation;
       default:
         return super[key];
     }
@@ -594,6 +597,55 @@ class TrLanguageMessages_ar extends TrLanguageMessages {
     switch (key) {
       case 'name':
         return name;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class RelationMessages_ar extends RelationMessages {
+  final Messages_ar _parent;
+  const RelationMessages_ar(this._parent) : super(_parent);
+  String get spouse => "الزوج/الزوجة";
+  String get partner => "الشريك";
+  String get parent => "أحد الوالدين";
+  String get child => "ابن/ابنة";
+  String get sibling => "شقيق/شقيقة";
+  String get grandparent => "الجد/الجدة";
+  String get relative => "قريب";
+  String get friend => "صديق";
+  String get guardian => "ولي الأمر";
+  String get caregiver => "مقدّم الرعاية";
+  String get other => "أخرى";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'spouse':
+        return spouse;
+      case 'partner':
+        return partner;
+      case 'parent':
+        return parent;
+      case 'child':
+        return child;
+      case 'sibling':
+        return sibling;
+      case 'grandparent':
+        return grandparent;
+      case 'relative':
+        return relative;
+      case 'friend':
+        return friend;
+      case 'guardian':
+        return guardian;
+      case 'caregiver':
+        return caregiver;
+      case 'other':
+        return other;
       default:
         return super[key];
     }

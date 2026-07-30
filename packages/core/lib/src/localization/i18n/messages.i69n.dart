@@ -13,6 +13,7 @@ class Messages implements i69n.I69nMessageBundle {
   NotfoundMessages get notfound => NotfoundMessages(this);
   CountryMessages get country => CountryMessages(this);
   LanguageMessages get language => LanguageMessages(this);
+  RelationMessages get relation => RelationMessages(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -30,6 +31,8 @@ class Messages implements i69n.I69nMessageBundle {
         return country;
       case 'language':
         return language;
+      case 'relation':
+        return relation;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -593,6 +596,55 @@ class TrLanguageMessages implements i69n.I69nMessageBundle {
     switch (key) {
       case 'name':
         return name;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class RelationMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const RelationMessages(this._parent);
+  String get spouse => "Spouse";
+  String get partner => "Partner";
+  String get parent => "Parent";
+  String get child => "Child";
+  String get sibling => "Sibling";
+  String get grandparent => "Grandparent";
+  String get relative => "Relative";
+  String get friend => "Friend";
+  String get guardian => "Guardian";
+  String get caregiver => "Caregiver";
+  String get other => "Other";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'spouse':
+        return spouse;
+      case 'partner':
+        return partner;
+      case 'parent':
+        return parent;
+      case 'child':
+        return child;
+      case 'sibling':
+        return sibling;
+      case 'grandparent':
+        return grandparent;
+      case 'relative':
+        return relative;
+      case 'friend':
+        return friend;
+      case 'guardian':
+        return guardian;
+      case 'caregiver':
+        return caregiver;
+      case 'other':
+        return other;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

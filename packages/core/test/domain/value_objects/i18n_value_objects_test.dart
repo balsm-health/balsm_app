@@ -105,6 +105,16 @@ void main() {
       expect(n, Nationality.ofCode('eg'));
     });
 
+    test('relationship label per locale + code round-trip', () {
+      expect(Relationship.spouse.label(catalog, locale: 'en'), 'Spouse');
+      expect(Relationship.spouse.label(catalog, locale: 'ar'), 'الزوج/الزوجة');
+      expect(Relationship.caregiver.label(catalog, locale: 'en'), 'Caregiver');
+      expect(Relationship.spouse.wire, 'spouse');
+      expect(Relationship.tryFromCode('Caregiver'), Relationship.caregiver); // case-insensitive
+      expect(Relationship.tryFromCode('bestie'), isNull); // unknown → null
+      expect(Relationship.fromCode('bestie'), Relationship.other); // fromCode → neutral fallback
+    });
+
     test('unlisted country falls back to the ISO code, not a bare key', () {
       final zz = CountryCode.fromCode('ZZ');
       expect(zz.name(catalog, locale: 'en'), 'ZZ');

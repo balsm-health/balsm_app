@@ -93,5 +93,18 @@
     "tr": {
       "name": "التركية"
     }
+  },
+  "relation": {
+    "spouse": "الزوج/الزوجة",
+    "partner": "الشريك",
+    "parent": "أحد الوالدين",
+    "child": "ابن/ابنة",
+    "sibling": "شقيق/شقيقة",
+    "grandparent": "الجد/الجدة",
+    "relative": "قريب",
+    "friend": "صديق",
+    "guardian": "ولي الأمر",
+    "caregiver": "مقدّم الرعاية",
+    "other": "أخرى"
   }
 }
