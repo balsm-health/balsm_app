@@ -43,10 +43,14 @@ class _DeepLinkHandlerState extends ConsumerState<DeepLinkHandler> {
     super.dispose();
   }
 
-  /// Extracts the token from `balsm://auth/link?t=…` and redeems it. Other
-  /// schemes/paths are ignored.
+  /// Extracts the token from the magic-link URL and redeems it. Accepts both
+  /// forms: the native custom scheme `balsm://auth/link?t=…` and the Flutter-web
+  /// URL `https://<host>/auth/link?t=…` (on web `app_links` reports the browser
+  /// URL). Any other scheme/path is ignored.
   Future<void> _onUri(Uri uri) async {
-    if (uri.scheme != 'balsm' || uri.host != 'auth' || !uri.path.contains('link')) return;
+    final isNative = uri.scheme == 'balsm' && uri.host == 'auth' && uri.path.contains('link');
+    final isWeb = uri.path.contains('/auth/link');
+    if (!isNative && !isWeb) return;
     final token = uri.queryParameters['t'];
     if (token == null || token.isEmpty || _handling) return;
 
