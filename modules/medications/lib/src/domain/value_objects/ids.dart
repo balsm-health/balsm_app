@@ -8,6 +8,16 @@ class MedicationId extends UniqueId {
   const MedicationId.empty() : super.empty();
   MedicationId.uuid() : super.uuidv7('med');
 
+  const MedicationId._(String value, {bool isLocal = false, String prefix = '', String type = UniqueId.key_uuid_v7})
+      : super.value(value, isLocal: isLocal, prefix: prefix, type: type);
+
+  /// Rebuilds the typed id — with its provenance — from the navigation JSON
+  /// (the `storeKey()` a route param carries).
+  factory MedicationId.fromJson(Map<String, dynamic> json) {
+    final id = UniqueId.fromJson(json);
+    return MedicationId._(id.value, isLocal: id.isLocal, prefix: id.prefix, type: id.type);
+  }
+
   static MedicationId? fromString(String? value) => value?.mapNotNull((v) => MedicationId.value(v));
 }
 

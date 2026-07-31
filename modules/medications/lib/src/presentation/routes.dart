@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:go_router/go_router.dart';
 
 import '../domain/value_objects/ids.dart';
@@ -34,7 +36,7 @@ final medicationRoutes = <RouteBase>[
         path: ':id/history',
         name: 'medications.detail',
         builder: (_, s) => DoseHistoryScreen(
-          medicationId: MedicationId.value(s.pathParameters['id']!),
+          medicationId: MedicationId.fromJson(jsonDecode(s.pathParameters['id']!) as Map<String, dynamic>),
         ),
       ),
     ],
