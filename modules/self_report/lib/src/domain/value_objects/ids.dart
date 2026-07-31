@@ -5,7 +5,7 @@ import 'package:core/core.dart';
 class CheckInId extends UniqueId {
   const CheckInId.value(super.value) : super.value();
   const CheckInId.empty() : super.empty();
-  CheckInId.uuid() : super.uuid('chk-');
+  CheckInId.uuid() : super.uuidv7('chk');
 
   static CheckInId? fromString(String? value) => value?.mapNotNull((v) => CheckInId.value(v));
 }

@@ -21,7 +21,7 @@ class MedicationAdded extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'medicationId': medicationId.toString(),
+        'medicationId': medicationId.value,
         'userId': userId.value,
         'name': name,
         'occurredAt': occurredAt.toIso8601String(),

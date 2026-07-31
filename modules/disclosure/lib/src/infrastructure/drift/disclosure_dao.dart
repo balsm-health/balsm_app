@@ -34,7 +34,7 @@ class DisclosureDao {
         accepted_at = excluded.accepted_at
       ''',
       variables: [
-        Variable.withString(UniqueId.uuid().value),
+        Variable.withString(UniqueId.uuidv7().value),
         Variable.withString(acceptance.disclosureId.value),
         Variable.withString(acceptance.version),
         Variable.withString(acceptance.countryCodeAtAccept),

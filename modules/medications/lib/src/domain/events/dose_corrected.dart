@@ -30,9 +30,9 @@ class DoseCorrected extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'doseEventId': doseEventId.toString(),
-        'medicationId': medicationId.toString(),
-        'parentEventId': parentEventId.toString(),
+        'doseEventId': doseEventId.value,
+        'medicationId': medicationId.value,
+        'parentEventId': parentEventId.value,
         'newOutcome': newOutcome.name,
         'scheduledAt': scheduledAt.toIso8601String(),
         'recordedAt': recordedAt.toIso8601String(),

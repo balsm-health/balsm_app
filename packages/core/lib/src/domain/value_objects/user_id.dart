@@ -7,7 +7,7 @@ import 'unique_id.dart';
 class UserId extends UniqueId {
   const UserId.value(super.value) : super.value();
   const UserId.empty() : super.empty();
-  UserId.uuid() : super.uuid('usr-');
+  UserId.uuid() : super.uuidv7('usr');
 
   static UserId? fromString(String? value) => value?.mapNotNull((v) => UserId.value(v));
 }

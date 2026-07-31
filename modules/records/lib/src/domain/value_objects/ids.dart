@@ -5,7 +5,7 @@ import 'package:core/core.dart';
 class RecordDocumentId extends UniqueId {
   const RecordDocumentId.value(super.value) : super.value();
   const RecordDocumentId.empty() : super.empty();
-  RecordDocumentId.uuid() : super.uuid('rec-');
+  RecordDocumentId.uuid() : super.uuidv7('rec');
 
   static RecordDocumentId? fromString(String? value) => value?.mapNotNull((v) => RecordDocumentId.value(v));
 }

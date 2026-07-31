@@ -9,7 +9,7 @@ export 'package:core/core.dart' show HealthProfileId;
 class AllergyId extends UniqueId {
   const AllergyId.value(super.value) : super.value();
   const AllergyId.empty() : super.empty();
-  AllergyId.uuid() : super.uuid('alg-');
+  AllergyId.uuid() : super.uuidv7('alg');
 
   static AllergyId? fromString(String? value) => value?.mapNotNull((v) => AllergyId.value(v));
 }
@@ -18,7 +18,7 @@ class AllergyId extends UniqueId {
 class ChronicConditionId extends UniqueId {
   const ChronicConditionId.value(super.value) : super.value();
   const ChronicConditionId.empty() : super.empty();
-  ChronicConditionId.uuid() : super.uuid('cond-');
+  ChronicConditionId.uuid() : super.uuidv7('cond');
 
   static ChronicConditionId? fromString(String? value) => value?.mapNotNull((v) => ChronicConditionId.value(v));
 }
@@ -27,7 +27,7 @@ class ChronicConditionId extends UniqueId {
 class EmergencyContactId extends UniqueId {
   const EmergencyContactId.value(super.value) : super.value();
   const EmergencyContactId.empty() : super.empty();
-  EmergencyContactId.uuid() : super.uuid('ec-');
+  EmergencyContactId.uuid() : super.uuidv7('ec');
 
   static EmergencyContactId? fromString(String? value) => value?.mapNotNull((v) => EmergencyContactId.value(v));
 }

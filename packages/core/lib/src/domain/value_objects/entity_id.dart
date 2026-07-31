@@ -7,7 +7,7 @@ import 'unique_id.dart';
 class EntityId extends UniqueId {
   const EntityId.value(super.value) : super.value();
   const EntityId.empty() : super.empty();
-  EntityId.uuid() : super.uuid('entity-');
+  EntityId.uuid() : super.uuidv7('entity');
 
   static EntityId? fromString(String? value) => value?.mapNotNull((v) => EntityId.value(v));
 }

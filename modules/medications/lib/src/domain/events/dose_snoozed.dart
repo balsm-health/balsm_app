@@ -23,8 +23,8 @@ class DoseSnoozed extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'doseEventId': doseEventId.toString(),
-        'medicationId': medicationId.toString(),
+        'doseEventId': doseEventId.value,
+        'medicationId': medicationId.value,
         'scheduledAt': scheduledAt.toIso8601String(),
         'recordedAt': recordedAt.toIso8601String(),
         'snoozeUntil': snoozeUntil.toIso8601String(),

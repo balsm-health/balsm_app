@@ -12,7 +12,7 @@ import 'unique_id.dart';
 class HealthProfileId extends UniqueId {
   const HealthProfileId.value(super.value) : super.value();
   const HealthProfileId.empty() : super.empty();
-  HealthProfileId.uuid() : super.uuid('hp-');
+  HealthProfileId.uuid() : super.uuidv7('hp');
 
   static HealthProfileId? fromString(String? value) => value?.mapNotNull((v) => HealthProfileId.value(v));
 }

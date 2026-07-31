@@ -68,7 +68,7 @@ class _MedicationTile extends StatelessWidget {
       tone: tone,
       onTap: () => context.goNamed(
         'medications.detail',
-        pathParameters: {'id': med.id.toString()},
+        pathParameters: {'id': med.id.value},
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

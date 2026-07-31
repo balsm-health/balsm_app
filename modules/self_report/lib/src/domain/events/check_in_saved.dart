@@ -18,7 +18,7 @@ class CheckInSaved extends AppEvent {
 
   @override
   Map<String, dynamic> toJson() => {
-        'checkInId': checkInId.toString(),
+        'checkInId': checkInId.value,
         'occurredAt': occurredAt.toIso8601String(),
       };
 }

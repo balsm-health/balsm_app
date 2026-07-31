@@ -6,7 +6,7 @@ import 'package:core/core.dart';
 class MedicationId extends UniqueId {
   const MedicationId.value(super.value) : super.value();
   const MedicationId.empty() : super.empty();
-  MedicationId.uuid() : super.uuid('med-');
+  MedicationId.uuid() : super.uuidv7('med');
 
   static MedicationId? fromString(String? value) => value?.mapNotNull((v) => MedicationId.value(v));
 }
@@ -15,7 +15,7 @@ class MedicationId extends UniqueId {
 class DoseEventId extends UniqueId {
   const DoseEventId.value(super.value) : super.value();
   const DoseEventId.empty() : super.empty();
-  DoseEventId.uuid() : super.uuid('dose-');
+  DoseEventId.uuid() : super.uuidv7('dose');
 
   static DoseEventId? fromString(String? value) => value?.mapNotNull((v) => DoseEventId.value(v));
 }

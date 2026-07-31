@@ -125,7 +125,7 @@ class MedicationScheduler {
   /// Stable, collision-resistant 31-bit notification id from medication id +
   /// occurrence time.
   int _notificationId(Medication med, DateTime when) {
-    final h = Object.hash(med.id.toString(), when.toIso8601String());
+    final h = Object.hash(med.id.value, when.toIso8601String());
     return h & 0x7FFFFFFF;
   }
 }
