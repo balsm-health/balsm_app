@@ -6,6 +6,19 @@
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
 
+# Flutter native tooling — machine-generated (absolute SDK paths), regenerated
+# by `fvm flutter pub get`; must never be committed. Covers every package
+# (app, modules/*) so newly-scaffolded modules can't leak them again.
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/ephemeral/
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# fvm — pin (.fvmrc) is committed; the SDK symlink + cached versions are local
+.fvm/
+
 # Signing material — provisioned by CI from secrets, never committed
 **/key.properties
 *.jks

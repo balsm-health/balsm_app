@@ -1,4 +1,4 @@
-# balsm_app_flutter — Coding Standards
+# balsm_app — Coding Standards
 
 > Extends the shared standards in
 > [Balsm-Core/agents/rules/CODING_STANDARDS.md](../Balsm-Core/agents/rules/CODING_STANDARDS.md).
@@ -44,8 +44,8 @@
 
 ## 5. Tooling
 
-- Flutter runs via **puro**: `puro flutter …`, `puro dart …`
-- tests per package (`puro flutter test` in `packages/core` etc.); analyze before committing
+- Flutter runs via **fvm**: `fvm flutter …`, `fvm dart …` (version pinned in `.fvmrc`)
+- tests per package (`fvm flutter test` in `packages/core` etc.); analyze before committing
 - **code generation**: `dart run tool/build.dart gen` (also `melos run gen`, or the "Flutter: code generation" VS Code task) — runs `build_runner` across every package that depends on it (i69n bundles, drift, json/freezed) and skips the rest; add `--watch` for continuous rebuilds. Regenerate after editing any `*.i69n.json`, drift table, or annotated model.
 
 ## 6. Flutter Performance

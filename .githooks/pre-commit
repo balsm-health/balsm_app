@@ -9,13 +9,13 @@
 # else dart's default. To auto-fix:  dart format . && git add -u
 # Bypass in a genuine emergency:  git commit --no-verify  (discouraged).
 
-# Prefer puro's dart (repo standard), else fall back to PATH dart.
-if command -v puro >/dev/null 2>&1; then
-  DART="puro dart"
+# Prefer fvm's dart (repo standard), else fall back to PATH dart.
+if command -v fvm >/dev/null 2>&1; then
+  DART="fvm dart"
 elif command -v dart >/dev/null 2>&1; then
   DART="dart"
 else
-  echo "pre-commit: no dart on PATH (install puro or the Dart SDK); skipping format check." >&2
+  echo "pre-commit: no dart on PATH (install fvm or the Dart SDK); skipping format check." >&2
   exit 0
 fi
 

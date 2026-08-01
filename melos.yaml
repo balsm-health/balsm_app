@@ -1,5 +1,9 @@
 name: balsm_app
 
+# Flutter SDK is pinned via fvm (.fvmrc); melos runs every package against the
+# fvm-managed SDK so `melos exec -- flutter …` never falls back to PATH.
+sdkPath: .fvm/flutter_sdk
+
 packages:
   - packages/*
   - modules/*
