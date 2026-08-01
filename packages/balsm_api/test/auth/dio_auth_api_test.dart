@@ -63,9 +63,19 @@ void main() {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"code": "otp_expired"}', status: 400));
     final api = DioAuthApi(net: fakeNet(adapter));
     expect(
-      api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG')),
+      api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG', purpose: OtpPurpose.register)),
       throwsA(isA<ApiException>().having((e) => e.code, 'code', 'otp_expired')),
     );
+  });
+
+  test('requestOtp posts snake_case body carrying the purpose', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"expires_in_seconds": 600}}'));
+    final api = DioAuthApi(net: fakeNet(adapter));
+
+    await api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG', purpose: OtpPurpose.reset));
+
+    expect(adapter.requests.single.path, '/auth/otp/request');
+    expect(adapter.requests.single.data, {'email': 'a@b.c', 'country_code': 'EG', 'purpose': 'reset'});
   });
 
   test('refresh and recoveryClaim parse the enveloped refreshed tokens', () async {

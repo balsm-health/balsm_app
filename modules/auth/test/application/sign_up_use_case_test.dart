@@ -1,4 +1,5 @@
 import 'package:auth/auth.dart';
+import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:auth/src/infrastructure/api/auth_exception.dart';
 import 'package:auth/src/infrastructure/api/balsm_auth_adapter.dart';
 import 'package:core/core.dart';
@@ -66,13 +67,13 @@ void main() {
   });
 
   group('requestEmailOtp', () {
-    test('success forwards email + country', () async {
-      when(() => adapter.requestOtp('a@b.com', 'EG')).thenAnswer((_) async {});
+    test('success forwards email + country with register purpose', () async {
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.register)).thenAnswer((_) async {});
 
       final r = await usecase.requestEmailOtp('a@b.com', 'EG');
 
       expect(r.isSuccess, isTrue);
-      verify(() => adapter.requestOtp('a@b.com', 'EG')).called(1);
+      verify(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.register)).called(1);
     });
   });
 

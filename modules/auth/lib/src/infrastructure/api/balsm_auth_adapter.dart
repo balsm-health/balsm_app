@@ -27,10 +27,16 @@ class BalsmAuthAdapter {
   final AuthApi _api;
 
   /// POST /auth/otp/request
-  Future<void> requestOtp(String email, String countryCode, {CancelToken? cancelToken}) => _guard(() => _api.requestOtp(
-        RequestOtpRequest(email: email, countryCode: countryCode),
-        cancelToken: cancelToken,
-      ));
+  Future<void> requestOtp(
+    String email,
+    String countryCode, {
+    required OtpPurpose purpose,
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() => _api.requestOtp(
+            RequestOtpRequest(email: email, countryCode: countryCode, purpose: purpose),
+            cancelToken: cancelToken,
+          ));
 
   /// POST /auth/otp/verify
   Future<AuthTokens> verifyOtp(

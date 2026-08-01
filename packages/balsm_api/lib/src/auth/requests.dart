@@ -1,10 +1,20 @@
 /// PHI constraint (all auth DTOs): never log or stringify these — they
 /// carry emails, device identifiers, and tokens.
+
+/// Why an OTP email is requested. The server sends an email only for these two
+/// flows — email-OTP login was removed to conserve email quota.
+enum OtpPurpose { register, reset }
+
 class RequestOtpRequest {
-  const RequestOtpRequest({required this.email, required this.countryCode});
+  const RequestOtpRequest({
+    required this.email,
+    required this.countryCode,
+    required this.purpose,
+  });
   final String email;
   final String countryCode;
-  Map<String, dynamic> toJson() => {'email': email, 'country_code': countryCode};
+  final OtpPurpose purpose;
+  Map<String, dynamic> toJson() => {'email': email, 'country_code': countryCode, 'purpose': purpose.name};
 }
 
 class VerifyOtpRequest {

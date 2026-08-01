@@ -1,3 +1,4 @@
+import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:core/core.dart';
 
 import '../../domain/events/user_signed_up.dart';
@@ -38,7 +39,7 @@ class SignUpUseCase {
     String countryCode,
   ) async {
     try {
-      await _adapter.requestOtp(email, countryCode);
+      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.register);
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));

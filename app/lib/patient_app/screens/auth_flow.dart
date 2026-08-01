@@ -547,8 +547,11 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                       onChanged: (_) => setState(() {})),
                 ],
 
-                // Email: switch between password sign-in and one-time-code sign-up.
-                if (email) ...[
+                // Sign-UP only: switch between one-time-code and also-set-a-password.
+                // Sign-IN email is password-only — email-OTP login was removed to
+                // conserve email quota; passwordless returning users recover via
+                // the "forgot password" link above.
+                if (email && s.authIntent == 'signup') ...[
                   const SizedBox(height: 16),
                   Center(
                     child: GestureDetector(

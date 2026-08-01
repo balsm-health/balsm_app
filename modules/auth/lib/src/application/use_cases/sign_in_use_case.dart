@@ -1,3 +1,4 @@
+import 'package:balsm_api/balsm_api.dart' show OtpPurpose;
 import 'package:core/core.dart';
 
 import '../../domain/aggregates/auth_session.dart';
@@ -52,10 +53,12 @@ class SignInUseCase {
 
   // ── Email OTP flow ────────────────────────────────────────────────────────
 
-  /// Step 1: Request OTP for an existing user (same endpoint as sign-up).
+  /// Step 1 of forgot-password: request a reset code for an existing user.
+  /// Email-OTP login was removed, so this is reset-only; the code is submitted
+  /// to `resetPassword`. An unknown email returns success with no email sent.
   Future<AppResult<void>> requestEmailOtp(String email, String countryCode) async {
     try {
-      await _adapter.requestOtp(email, countryCode);
+      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.reset);
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));

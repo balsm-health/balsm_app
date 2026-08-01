@@ -64,7 +64,7 @@ void main() {
 
     test('POST /auth/otp/request accepts the snake_case body', () async {
       await auth.requestOtp(
-        RequestOtpRequest(email: email, countryCode: country),
+        RequestOtpRequest(email: email, countryCode: country, purpose: OtpPurpose.register),
       );
       // Completing without throwing == 2xx (NetworkManager maps non-2xx to
       // ApiException).
