@@ -157,11 +157,13 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
   Future<void> _pickDate({required bool isStart}) async {
     final initial = isStart ? _startDate : (_endDate ?? _startDate);
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
+    final picked = await showBalsmDatePicker(
+      context,
+      initial: initial,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
+      title: isStart ? 'Start date' : 'End date',
+      confirmLabel: 'Confirm',
     );
     if (picked == null) return;
     setState(() {

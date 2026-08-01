@@ -11,7 +11,8 @@ import 'package:core/core.dart'
         CountryCode,
         CountryCodeL10n,
         LanguageCode,
-        Gender;
+        Gender,
+        showBalsmDatePicker;
 import 'package:disclosure/disclosure.dart' show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1155,12 +1156,18 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
 
   Future<void> _pickDob() async {
     final s = AppScope.of(context);
-    final picked = await showModalBottomSheet<DateTime>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C2B2B25),
-      isScrollControlled: true,
-      builder: (_) => _DobCalendarSheet(initial: _dobDate, s: s),
+    final now = DateTime.now();
+    final picked = await showBalsmDatePicker(
+      context,
+      initial: _dobDate,
+      firstDate: DateTime(now.year - 120),
+      lastDate: now,
+      title: s.strings.onboarding.dob_title,
+      confirmLabel: s.strings.onboarding.dob_confirm,
+      months: s.strings.settings.cal_months.split('|'),
+      weekdays: s.strings.settings.cal_weekdays.split('|'),
+      rtl: s.rtl,
+      accent: s.accent.main,
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -1705,188 +1712,6 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                   onTap: () => Navigator.pop(context)),
           ]),
         ),
-      ),
-    );
-  }
-}
-
-// ── Date-of-birth calendar sheet ─────────────────────────────
-class _DobCalendarSheet extends StatefulWidget {
-  const _DobCalendarSheet({required this.initial, required this.s});
-  final DateTime? initial;
-  final PatientAppState s;
-  @override
-  State<_DobCalendarSheet> createState() => _DobCalendarSheetState();
-}
-
-class _DobCalendarSheetState extends State<_DobCalendarSheet> {
-  late int _y;
-  late int _m; // 0-based
-  DateTime? _sel;
-  bool _yearMode = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    final init = widget.initial ?? DateTime(now.year - 25, now.month);
-    _y = init.year;
-    _m = init.month - 1;
-    _sel = widget.initial;
-  }
-
-  void _prev() => setState(() {
-        if (_m == 0) {
-          _m = 11;
-          _y--;
-        } else {
-          _m--;
-        }
-      });
-  void _next() => setState(() {
-        if (_m == 11) {
-          _m = 0;
-          _y++;
-        } else {
-          _m++;
-        }
-      });
-
-  @override
-  Widget build(BuildContext context) {
-    final s = widget.s;
-    final rtl = s.rtl;
-    // Pipe-separated lists in the i69n bundle (`cal_months`/`cal_weekdays`).
-    final months = s.strings.settings.cal_months.split('|');
-    final wd = s.strings.settings.cal_weekdays.split('|');
-    final now = DateTime.now();
-    final firstWeekday = DateTime(_y, _m + 1, 1).weekday % 7; // Sun=0
-    final daysIn = DateTime(_y, _m + 2, 0).day;
-    final years = [for (var y = now.year; y >= 1920; y--) y];
-
-    return Directionality(
-      textDirection: s.dir,
-      child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.82),
-        decoration:
-            const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          Container(
-              width: 38,
-              height: 4,
-              decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
-          const SizedBox(height: 12),
-          Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(children: [
-                Expanded(
-                    child: Text(s.strings.onboarding.dob_title,
-                        style: Typo.subhead(ar: rtl).copyWith(fontWeight: FontWeight.w700))),
-                RoundBtn(icon: LucideIcons.x, onTap: () => Navigator.pop(context)),
-              ])),
-          const SizedBox(height: 8),
-          Flexible(
-              child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(children: [
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      RoundBtn(icon: rtl ? LucideIcons.chevronRight : LucideIcons.chevronLeft, onTap: _prev),
-                      GestureDetector(
-                          onTap: () => setState(() => _yearMode = !_yearMode),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text('${months[_m]} $_y',
-                                style: Typo.subhead(ar: rtl).copyWith(fontWeight: FontWeight.w700)),
-                            const SizedBox(width: 4),
-                            const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-                          ])),
-                      RoundBtn(icon: rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, onTap: _next),
-                    ]),
-                    const SizedBox(height: 12),
-                    if (_yearMode)
-                      GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 1.9,
-                          children: years
-                              .map((y) => GestureDetector(
-                                  onTap: () => setState(() {
-                                        _y = y;
-                                        _yearMode = false;
-                                      }),
-                                  child: Container(
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: y == _y ? s.accent.main : T.border, width: 1.5),
-                                          color: y == _y ? s.accent.main : Colors.white),
-                                      child: Text('$y',
-                                          style: Typo.num(
-                                              size: FS.sm,
-                                              weight: FontWeight.w600,
-                                              color: y == _y ? Colors.white : T.fg1)))))
-                              .toList())
-                    else ...[
-                      Row(
-                          children: wd
-                              .map((w) => Expanded(
-                                  child: Center(
-                                      child: Text(w,
-                                          style:
-                                              Typo.meta(ar: rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg3)))))
-                              .toList()),
-                      const SizedBox(height: 6),
-                      GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 7,
-                          mainAxisSpacing: 2,
-                          crossAxisSpacing: 2,
-                          children: [
-                            for (var i = 0; i < firstWeekday; i++) const SizedBox(),
-                            for (var d = 1; d <= daysIn; d++)
-                              Builder(builder: (_) {
-                                final date = DateTime(_y, _m + 1, d);
-                                final disabled = date.isAfter(now);
-                                final active =
-                                    _sel != null && _sel!.year == _y && _sel!.month == _m + 1 && _sel!.day == d;
-                                return GestureDetector(
-                                  onTap: disabled ? null : () => setState(() => _sel = date),
-                                  child: Container(
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                          shape: BoxShape.circle, color: active ? s.accent.main : Colors.transparent),
-                                      child: Text('$d',
-                                          style: Typo.num(
-                                              size: FS.sm,
-                                              weight: active ? FontWeight.w700 : FontWeight.w500,
-                                              color: disabled
-                                                  ? T.ink200
-                                                  : active
-                                                      ? Colors.white
-                                                      : T.fg1))),
-                                );
-                              }),
-                          ]),
-                    ],
-                    const SizedBox(height: 16),
-                  ]))),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).padding.bottom + 20),
-            child: Opacity(
-                opacity: _sel != null ? 1 : 0.4,
-                child: PButton(_sel != null ? s.strings.onboarding.dob_confirm : s.strings.onboarding.dob_select,
-                    variant: BtnVariant.primary,
-                    large: true,
-                    block: true,
-                    accent: s.accent,
-                    ar: rtl,
-                    onTap: _sel != null ? () => Navigator.pop(context, _sel) : null)),
-          ),
-        ]),
       ),
     );
   }

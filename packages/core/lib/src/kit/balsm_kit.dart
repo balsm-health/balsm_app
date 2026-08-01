@@ -5,6 +5,7 @@ export 'widgets/balsm_app_bar.dart';
 export 'widgets/balsm_avatar.dart';
 export 'widgets/balsm_bottom_nav.dart';
 export 'widgets/balsm_card.dart';
+export 'widgets/balsm_date_picker.dart';
 export 'widgets/balsm_field.dart';
 export 'widgets/balsm_hero_card.dart';
 export 'widgets/balsm_icon.dart';

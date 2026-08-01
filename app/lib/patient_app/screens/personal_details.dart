@@ -13,7 +13,8 @@ import 'package:core/core.dart'
         CountryCode,
         CountryCodeL10n,
         Relationship,
-        RelationshipL10n;
+        RelationshipL10n,
+        showBalsmDatePicker;
 import 'package:account/account.dart'
     show claimHandleUseCaseProvider, accountProfileUseCaseProvider, ProfileDetails, UpdateProfileInput;
 import 'package:emergency_card/emergency_card.dart'
@@ -625,11 +626,17 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
   Future<void> _pickDob() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dob ?? DateTime(now.year - 25, now.month, now.day),
+    final picked = await showBalsmDatePicker(
+      context,
+      initial: _dob ?? DateTime(now.year - 25, now.month, now.day),
       firstDate: DateTime(now.year - 120),
       lastDate: now,
+      title: s.strings.onboarding.dob_title,
+      confirmLabel: s.strings.onboarding.dob_confirm,
+      months: s.strings.settings.cal_months.split('|'),
+      weekdays: s.strings.settings.cal_weekdays.split('|'),
+      rtl: s.rtl,
+      accent: s.accent.main,
     );
     if (picked != null && mounted) setState(() => _dob = picked);
   }
