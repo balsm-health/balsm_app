@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
 <module fileurl="file://$PROJECT_DIR$/melos_balsm_app.iml" filepath="$PROJECT_DIR$/melos_balsm_app.iml"/>
-<module fileurl="file://$PROJECT_DIR$/.idea/balsm_app_flutter.iml" filepath="$PROJECT_DIR$/.idea/balsm_app_flutter.iml"/>
+<module fileurl="file://$PROJECT_DIR$/.idea/balsm_app.iml" filepath="$PROJECT_DIR$/.idea/balsm_app.iml"/>
     </modules>
   </component>
 </project>

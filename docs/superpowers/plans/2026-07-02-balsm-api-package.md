@@ -121,7 +121,7 @@ Expected: both tests PASS (interceptor is pre-existing, copied code; the "failin
 - [ ] **Step 5: Bootstrap melos and verify workspace still resolves**
 
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app_flutter && dart run melos bootstrap
+cd /Volumes/Dev/Balsm/balsm_app && dart run melos bootstrap
 ```
 Expected: `packages/*` glob picks up balsm_api; SUCCESS output.
 
@@ -825,7 +825,7 @@ The fuzz test imports `package:core/core.dart` (for `PhiLeakInterceptor`, now su
 dart run melos bootstrap
 melos exec --scope=core --scope=account -- "flutter analyze --no-fatal-infos"
 melos exec --scope=core -- "flutter test"
-cd /Volumes/Dev/Balsm/balsm_app_flutter && flutter test test/phi_leak_fuzz_test
+cd /Volumes/Dev/Balsm/balsm_app && flutter test test/phi_leak_fuzz_test
 ```
 Expected: analyze clean for core + account; core tests pass; fuzz suite passes.
 
@@ -3114,7 +3114,7 @@ git commit -m "docs(agents): Flutter modules depend on core + balsm_api; API lay
 ### Task 13: Repo skill — `flutter-add-api-endpoint`
 
 **Files:**
-- Create: `/Volumes/Dev/Balsm/balsm_app_flutter/.claude/skills/flutter-add-api-endpoint/SKILL.md`
+- Create: `/Volumes/Dev/Balsm/balsm_app/.claude/skills/flutter-add-api-endpoint/SKILL.md`
 
 - [ ] **Step 1: Write the skill** (format mirrors `.claude/skills/flutter-use-asset-constants/SKILL.md`)
 
@@ -3209,7 +3209,7 @@ folder, same four-file shape.
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app_flutter
+cd /Volumes/Dev/Balsm/balsm_app
 git add .claude/skills/flutter-add-api-endpoint
 git commit -m "[Docs] add flutter-add-api-endpoint skill — balsm_api conventions"
 ```

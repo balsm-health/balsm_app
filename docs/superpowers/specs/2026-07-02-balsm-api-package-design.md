@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-02
 **Status:** Implemented (2026-07-02)
-**Scope:** Flutter monorepo (`balsm_app_flutter`)
+**Scope:** Flutter monorepo (`balsm_app`)
 
 ## Problem
 

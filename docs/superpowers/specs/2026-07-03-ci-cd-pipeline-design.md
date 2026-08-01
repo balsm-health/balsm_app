@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-03
 **Status:** Implemented (2026-07-03)
-**Scope:** `balsm_app_flutter` (GitHub Actions)
+**Scope:** `balsm_app` (GitHub Actions)
 
 ## Goal
 
