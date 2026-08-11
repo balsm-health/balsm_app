@@ -8,8 +8,7 @@ import 'package:core/core.dart';
 String get _languageCode => 'ar';
 String get _localeName => 'ar';
 
-String _select(Object? value, Map<String, String> cases) =>
-    i69n.select(value, cases);
+String _select(Object? value, Map<String, String> cases) => i69n.select(value, cases);
 
 class Strings_ar extends Strings {
   const Strings_ar();
@@ -31,8 +30,7 @@ class Strings_ar extends Strings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'auth':
@@ -85,8 +83,7 @@ class AuthStrings_ar extends AuthStrings {
   String get ph_title => "ما رقم هاتفك؟";
   String get ph_help => "سنرسل لك رمزاً عبر رسالة للتأكد من هويتك.";
   String get ph_label => "رقم الموبايل";
-  String get ph_terms =>
-      "بالمتابعة فإنك توافق على شروط بَلسَم وسياسة الخصوصية.";
+  String get ph_terms => "بالمتابعة فإنك توافق على شروط بلسم وسياسة الخصوصية.";
   String get otp_title => "أدخل رمز التحقق";
   String get otp_help => "أرسلنا رمزاً من 6 أرقام إلى";
   String get otp_resend => "إعادة إرسال الرمز";
@@ -104,27 +101,22 @@ class AuthStrings_ar extends AuthStrings {
   String get pw_min => "٨ أحرف على الأقل";
   String get pw_invalid_creds => "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
   String get fp_title => "إعادة تعيين كلمة المرور";
-  String get fp_help =>
-      "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
+  String get fp_help => "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
   String get fp_send => "إرسال رمز إعادة التعيين";
   String get fp_code_label => "رمز إعادة التعيين";
   String get fp_new_pw => "كلمة المرور الجديدة";
   String get fp_reset => "إعادة تعيين كلمة المرور";
   String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
   String get fp_done => "تم";
-  String get fp_success =>
-      "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
+  String get fp_success => "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
   String get dial_title => "رمز الدولة";
   String get dial_search => "ابحث عن دولة";
-  String auth_locked_retry(String secs) =>
-      "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
-  String get auth_phone_soon =>
-      "تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.";
+  String auth_locked_retry(String secs) => "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
+  String get auth_phone_soon => "تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'use_phone':
@@ -223,8 +215,7 @@ class BootStrings_ar extends BootStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'boot_preparing':
@@ -272,8 +263,7 @@ class CareStrings_ar extends CareStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'to_doctor':
@@ -450,19 +440,15 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_bk_r_calf => "بطة ساق يمنى";
   String get body_bk_l_heel => "كعب أيسر";
   String get body_bk_r_heel => "كعب أيمن";
-  String q_mood_t(Gender gender) =>
-      "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
-  String q_sym_h(Gender gender) => "حرّك${_select(gender, {
-            'female': 'ي'
-          })} المؤشر لمستوى الألم، ثم ${_select(gender, {
+  String q_mood_t(Gender gender) => "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
+  String q_sym_h(Gender gender) => "حرّك${_select(gender, {'female': 'ي'})} المؤشر لمستوى الألم، ثم ${_select(gender, {
             'female': 'اختاري',
             'other': 'اختر'
           })} ما تشعر${_select(gender, {'female': 'ين'})} به.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'latest':
@@ -706,7 +692,7 @@ class CommonStrings_ar extends CommonStrings {
   String get saved_local => "حُفظ محلياً — ستتم المزامنة عند الاتصال.";
   String get no_symptoms => "لا أعراض";
   String get profile => "الملف الشخصي";
-  String get since => "مريضة بَلسَم منذ";
+  String get since => "مريضة بلسم منذ";
   String get no_appts => "لا مواعيد قادمة";
   String get your_accounts => "حساباتك";
   String get pages => "صفحات";
@@ -716,8 +702,7 @@ class CommonStrings_ar extends CommonStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -777,8 +762,7 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get em_ph => "you@example.com";
   String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
   String get em_eg => "مصر";
-  String get em_intro =>
-      "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
+  String get em_intro => "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
   String get em_tap_call => "اضغط للاتصال";
   String get em_ambulance => "إسعاف";
   String get em_police => "شرطة";
@@ -794,12 +778,9 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_ttl_7d => "٧ أيام";
   String get eqr_help_active =>
       "اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.";
-  String get eqr_help_signin =>
-      "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
-  String get eqr_help_incomplete =>
-      "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
-  String get eqr_help_create =>
-      "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
+  String get eqr_help_signin => "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
+  String get eqr_help_incomplete => "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
+  String get eqr_help_create => "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
   String get eqr_expired => "منتهي";
   String eqr_expires_in(String t) => "ينتهي خلال $t";
   String get eqr_copy => "نسخ";
@@ -817,8 +798,7 @@ class EmergencyStrings_ar extends EmergencyStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'em_title':
@@ -919,21 +899,14 @@ class HomeStrings_ar extends HomeStrings {
   String get on_track => "ملتزمة";
   String get experience => "خبرة";
   String get away_banner => "أنت خارج بلدك";
-  String hero_q(Gender gender) => "${_select(gender, {
-            'male': 'كيف تشعر اليوم؟',
-            'female': 'كيف تشعرين اليوم؟',
-            'other': 'كيف تشعر اليوم؟'
-          })}";
-  String hero_cta(Gender gender) => "${_select(gender, {
-            'male': 'ابدأ المتابعة',
-            'female': 'ابدئي المتابعة',
-            'other': 'ابدأ المتابعة'
-          })}";
+  String hero_q(Gender gender) =>
+      "${_select(gender, {'male': 'كيف تشعر اليوم؟', 'female': 'كيف تشعرين اليوم؟', 'other': 'كيف تشعر اليوم؟'})}";
+  String hero_cta(Gender gender) =>
+      "${_select(gender, {'male': 'ابدأ المتابعة', 'female': 'ابدئي المتابعة', 'other': 'ابدأ المتابعة'})}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'nudge_handle':
@@ -1020,8 +993,7 @@ class MedsStrings_ar extends MedsStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'meds_today':
@@ -1125,8 +1097,7 @@ class NavStrings_ar extends NavStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'tab_home':
@@ -1153,8 +1124,7 @@ class OnboardingStrings_ar extends OnboardingStrings {
   final Strings_ar _parent;
   const OnboardingStrings_ar(this._parent) : super(_parent);
   String get w_title => "صحتك، دائماً قريبة.";
-  String get w_sub =>
-      "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
+  String get w_sub => "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
   String get w_have => "لديّ حساب بالفعل";
   String get w_signin => "تسجيل الدخول";
   String get w_or => "أو";
@@ -1178,16 +1148,12 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get dob_select => "اختر تاريخاً";
   String get age_gate_body =>
       "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
-  String w_start(Gender gender) => "${_select(gender, {
-            'male': 'ابدأ الآن',
-            'female': 'ابدئي الآن',
-            'other': 'ابدأ الآن'
-          })}";
+  String w_start(Gender gender) =>
+      "${_select(gender, {'male': 'ابدأ الآن', 'female': 'ابدئي الآن', 'other': 'ابدأ الآن'})}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'w_title':
@@ -1281,26 +1247,18 @@ class PrivacyStrings_ar extends PrivacyStrings {
   String get pv_deletion => "الحذف";
   String get pv_saving => "جارٍ الحفظ…";
   String get pv_agree => "أوافق وأتابع";
-  String get pv_intro_body =>
-      "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
-  String get pv_collect_body =>
-      "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
-  String get pv_protect_body =>
-      "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
-  String get pv_rights_body =>
-      "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
-  String pv_authority_body(String authority) =>
-      "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
-  String get pv_sharing_body =>
-      "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
-  String get pv_deletion_body =>
-      "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
+  String get pv_intro_body => "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
+  String get pv_collect_body => "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
+  String get pv_protect_body => "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
+  String get pv_rights_body => "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
+  String pv_authority_body(String authority) => "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
+  String get pv_sharing_body => "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
+  String get pv_deletion_body => "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
   String get pv_scroll_hint => "مرّر للأسفل للمتابعة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'pv_sharing':
@@ -1401,7 +1359,7 @@ class ProfileStrings_ar extends ProfileStrings {
   String get pd_account => "الحساب";
   String get pd_share_qr => "شارك رمز QR الخاص بي";
   String get pd_share_qr_h => "ليتمكن الآخرون من المسح والتواصل";
-  String get pd_qr_scan => "امسح للتواصل عبر بَلسَم";
+  String get pd_qr_scan => "امسح للتواصل عبر بلسم";
   String get pd_nationality => "الجنسية";
   String get pd_blood => "فصيلة الدم";
   String get pd_weight => "الوزن";
@@ -1449,8 +1407,7 @@ class ProfileStrings_ar extends ProfileStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'm_bp':
@@ -1595,8 +1552,7 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_source => "المصدر";
   String get rec_view => "عرض المستند";
   String get rec_share => "مشاركة مع الطبيب";
-  String get rec_empty_h =>
-      "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
+  String get rec_empty_h => "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
   String get rec_pick_type => "ما الذي تضيفه؟";
   String get rec_title => "العنوان";
   String get rec_title_ph => "مثال: تحليل السكر التراكمي";
@@ -1609,8 +1565,7 @@ class RecordsStrings_ar extends RecordsStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'reports':
@@ -1700,8 +1655,7 @@ class SettingsStrings_ar extends SettingsStrings {
   String get add_member => "إضافة فرد من الأسرة";
   String get choose_lang => "اختر اللغة";
   String get choose_country => "أين أنت الآن؟";
-  String get travel_help =>
-      "حدّد موقعك ليعرض بَلسَم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
+  String get travel_help => "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
   String get lang_full => "دعم كامل";
   String get lang_beta => "تجريبي";
   String get home_country => "بلدك";
@@ -1710,14 +1664,12 @@ class SettingsStrings_ar extends SettingsStrings {
   String get na_not_available => "غير متاح بعد";
   String get na_notify_me => "أبلغني عند التوفر";
   String get na_status_support => "حالة الخدمة والدعم";
-  String get cal_months =>
-      "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
+  String get cal_months => "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
   String get cal_weekdays => "أحد|إثن|ثلا|أرب|خمي|جمع|سبت";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'trust_private':
@@ -1803,14 +1755,12 @@ class StorageStrings_ar extends StorageStrings {
   String store_synced_with(String target) => "مزامن مع $target";
   String get store_done => "تم";
   String get store_remove_q => "إيقاف النسخ الاحتياطي؟";
-  String store_remove_help(String target) =>
-      "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
+  String store_remove_help(String target) => "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
   String get store_remove_cta => "إيقاف النسخ الاحتياطي";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'store_backup_to':
