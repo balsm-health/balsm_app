@@ -25,17 +25,17 @@ class BalsmColors {
   static const appAccent600 = petalBlue600;
   static const appAccent50 = petalBlue50;
 
-  // Neutrals (warm, olive-biased)
-  static const ink900 = Color(0xFF2B2B25);
-  static const ink800 = Color(0xFF3D3D34);
-  static const ink700 = Color(0xFF56564C);
-  static const ink600 = Color(0xFF6B6B60); // wordmark
-  static const ink500 = Color(0xFF8C8C82);
-  static const ink400 = Color(0xFFADAEA4);
-  static const ink300 = Color(0xFFC9C9C0);
-  static const ink200 = Color(0xFFE1E1D9); // border
-  static const ink100 = Color(0xFFEEEEE8);
-  static const ink50 = Color(0xFFF6F6F2);
+  // Neutrals (cool, navy-slate-biased — keyed to the #1F2D3D wordmark)
+  static const ink900 = Color(0xFF14202B);
+  static const ink800 = Color(0xFF1F2D3D); // = wordmark
+  static const ink700 = Color(0xFF384756);
+  static const ink600 = Color(0xFF526174); // = wordmark ".health" TLD
+  static const ink500 = Color(0xFF78838F);
+  static const ink400 = Color(0xFF9BA4AD);
+  static const ink300 = Color(0xFFC0C6CC);
+  static const ink200 = Color(0xFFDBDFE3); // border
+  static const ink100 = Color(0xFFEBEDF0);
+  static const ink50 = Color(0xFFF5F6F8);
 
   static const cream50 = Color(0xFFFAFAF7);
   static const cream100 = Color(0xFFF4F3EC);
@@ -76,15 +76,15 @@ class BalsmShadow {
   BalsmShadow._();
   // 0.06 * 255 ≈ 15 (0x0F), 0.04 * 255 ≈ 10 (0x0A)
   static const xs = [
-    BoxShadow(color: Color(0x0F2B2B25), blurRadius: 2, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x0F14202B), blurRadius: 2, offset: Offset(0, 1)),
   ];
   static const sm = [
-    BoxShadow(color: Color(0x0F2B2B25), blurRadius: 6, offset: Offset(0, 2)),
-    BoxShadow(color: Color(0x0A2B2B25), blurRadius: 2, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x0F14202B), blurRadius: 6, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x0A14202B), blurRadius: 2, offset: Offset(0, 1)),
   ];
   static const md = [
-    BoxShadow(color: Color(0x142B2B25), blurRadius: 20, offset: Offset(0, 8)),
-    BoxShadow(color: Color(0x0A2B2B25), blurRadius: 6, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x1414202B), blurRadius: 20, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x0A14202B), blurRadius: 6, offset: Offset(0, 2)),
   ];
   // Brand / accent glow
   static const brand = [

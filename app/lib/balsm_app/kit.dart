@@ -822,7 +822,7 @@ class LoadingOverlay extends StatelessWidget {
       ],
     ]);
     final body = Container(
-      color: scrim ? const Color(0x8C2B2B25) : T.cream50,
+      color: scrim ? const Color(0x8C14202B) : T.cream50,
       alignment: Alignment.center,
       padding: const EdgeInsets.all(24),
       child: inner,

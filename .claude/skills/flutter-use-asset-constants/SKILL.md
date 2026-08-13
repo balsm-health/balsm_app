@@ -1,6 +1,6 @@
 ---
 name: flutter-use-asset-constants
-description: Route every Flutter asset path through the `Assets` constants class (lib/patient_app/assets.dart) instead of hardcoding 'assets/…' strings. Use when adding, bundling, or referencing any asset — SVG, image/PNG, icon, font, JSON, Lottie — or when you see or are about to write SvgPicture.asset('assets/…'), Image.asset, AssetImage, or rootBundle.load with a literal path.
+description: Route every Flutter asset path through the `Assets` constants class (lib/balsm_app/assets.dart) instead of hardcoding 'assets/…' strings. Use when adding, bundling, or referencing any asset — SVG, image/PNG, icon, font, JSON, Lottie — or when you see or are about to write SvgPicture.asset('assets/…'), Image.asset, AssetImage, or rootBundle.load with a literal path.
 metadata:
   type: convention
 ---
@@ -8,7 +8,7 @@ metadata:
 # Use Asset Path Constants
 
 Every bundled asset in this app is referenced through **one source of truth** —
-the `Assets` class in `lib/patient_app/assets.dart`. Do **not** hardcode
+the `Assets` class in `lib/balsm_app/assets.dart`. Do **not** hardcode
 `'assets/…'` string literals anywhere in `lib/`.
 
 ## Why

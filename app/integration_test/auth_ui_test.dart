@@ -7,8 +7,8 @@
 // Run on a booted iOS simulator:
 //   flutter test integration_test/auth_ui_test.dart -d <simulator-udid>
 
-import 'package:app/patient_app/app_state.dart';
-import 'package:app/patient_app/screens/auth_flow.dart';
+import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:core/core.dart' show FlavorConfig, AppBrand, Flavor;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

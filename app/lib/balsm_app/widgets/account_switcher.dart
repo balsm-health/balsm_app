@@ -18,7 +18,7 @@ Future<void> showAccountSwitcher(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C2B2B25),
+    barrierColor: const Color(0x5C14202B),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _AccountSwitcherSheet(s),

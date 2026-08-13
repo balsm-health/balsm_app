@@ -12,7 +12,7 @@ import '../widgets/account_switcher.dart';
 import 'personal_details.dart';
 import 'profile_subscreens.dart';
 
-/// Home tab — P001 patient-MVP slice.
+/// Home tab — P001 patient-MVP scope.
 ///
 /// Ported onto real providers: the greeting name comes from the account
 /// summary (not the sample family-account data), and the status cards reflect

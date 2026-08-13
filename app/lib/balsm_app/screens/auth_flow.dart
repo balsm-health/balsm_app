@@ -367,7 +367,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     final picked = await showModalBottomSheet<CountryCode>(
       context: context,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C2B2B25),
+      barrierColor: const Color(0x5C14202B),
       isScrollControlled: true,
       builder: (_) => _DialCodeSheet(current: _dialCountry, s: s),
     );
@@ -379,7 +379,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C2B2B25),
+      barrierColor: const Color(0x5C14202B),
       isScrollControlled: true,
       builder: (_) => _ForgotPasswordSheet(initialEmail: email, s: s),
     );

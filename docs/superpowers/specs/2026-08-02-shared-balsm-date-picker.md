@@ -24,9 +24,9 @@ shared Balsm date picker.
 
 ## Migrations (all 3 date-pick sites)
 
-- `app/lib/patient_app/screens/auth_flow.dart` — DOB; deletes the private
+- `app/lib/balsm_app/screens/auth_flow.dart` — DOB; deletes the private
   `_DobCalendarSheet`, passes localized strings + accent.
-- `app/lib/patient_app/screens/personal_details.dart` — DOB; replaces raw
+- `app/lib/balsm_app/screens/personal_details.dart` — DOB; replaces raw
   `showDatePicker`.
 - `modules/medications/.../add_medication_screen.dart` — start/end dates;
   replaces raw `showDatePicker`.

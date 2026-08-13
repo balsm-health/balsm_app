@@ -111,7 +111,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x612B2B25),
+      barrierColor: const Color(0x6114202B),
       builder: (ctx) => Directionality(
         textDirection: s.dir,
         child: Align(
@@ -166,7 +166,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x612B2B25),
+      barrierColor: const Color(0x6114202B),
       builder: (ctx) => Directionality(
         textDirection: s.dir,
         child: Align(
@@ -187,7 +187,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x612B2B25),
+      barrierColor: const Color(0x6114202B),
       builder: (ctx) => Directionality(
         textDirection: s.dir,
         child: Align(

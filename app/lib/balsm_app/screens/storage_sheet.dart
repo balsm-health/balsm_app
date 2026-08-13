@@ -17,7 +17,7 @@ void showStorageSync(BuildContext context) {
     isDismissible: false, // gated by phase — close via the X / Done button
     enableDrag: false,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C2B2B25),
+    barrierColor: const Color(0x5C14202B),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: Align(

@@ -49,7 +49,7 @@ Future<DateTime?> showBalsmDatePicker(
   return showModalBottomSheet<DateTime>(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C2B2B25),
+    barrierColor: const Color(0x5C14202B),
     isScrollControlled: true,
     builder: (_) => _BalsmDatePickerSheet(
       firstDate: _dateOnly(firstDate),

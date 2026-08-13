@@ -461,7 +461,7 @@ void _showLanguageSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C2B2B25),
+    barrierColor: const Color(0x5C14202B),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.settings.choose_lang, children: [
@@ -489,7 +489,7 @@ void _showCountrySheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C2B2B25),
+    barrierColor: const Color(0x5C14202B),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.settings.choose_country, subtitle: s.strings.settings.travel_help, children: [

@@ -221,7 +221,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
-                    boxShadow: [BoxShadow(color: Color(0x242B2B25), blurRadius: 32, offset: Offset(0, -4))]),
+                    boxShadow: [BoxShadow(color: Color(0x2414202B), blurRadius: 32, offset: Offset(0, -4))]),
                 padding: EdgeInsets.fromLTRB(18, 10, 18, 24 + MediaQuery.of(context).padding.bottom),
                 child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Center(
@@ -459,7 +459,7 @@ class _Pin extends StatelessWidget {
           border: Border.all(color: type.color, width: 2.5),
           boxShadow: [
             BoxShadow(
-                color: selected ? type.color.withValues(alpha: 0.53) : const Color(0x382B2B25),
+                color: selected ? type.color.withValues(alpha: 0.53) : const Color(0x3814202B),
                 blurRadius: selected ? 10 : 5,
                 offset: const Offset(0, 3)),
           ],

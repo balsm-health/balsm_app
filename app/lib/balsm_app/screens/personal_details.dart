@@ -537,7 +537,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x6B2B2B25),
+      barrierColor: const Color(0x6B14202B),
       builder: (ctx) => Directionality(
         textDirection: s.dir,
         child: Align(
@@ -676,7 +676,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C2B2B25),
+      barrierColor: const Color(0x5C14202B),
       builder: (_) => _NationalitySheet(current: _nationality, s: s),
     );
     if (picked != null && mounted) setState(() => _nationality = picked);
@@ -722,7 +722,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C2B2B25),
+      barrierColor: const Color(0x5C14202B),
       builder: (_) => _RelationshipSheet(current: _emRelation, s: s),
     );
     if (picked != null && mounted) setState(() => _emRelation = picked);

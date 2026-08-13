@@ -31,13 +31,13 @@
   - `lib/src/application/` — use cases + `ports/` (abstract persistence/service contracts; no storage tech in name or imports)
   - `lib/src/infrastructure/` — drift/API implementations (`Drift{X}DataSource` etc.), bound to ports via riverpod providers
   - `lib/src/presentation/` — screens, widgets, providers
-- `app/` — the runnable shell (brands, patient_app prototype port)
+- `app/` — the runnable shell (brands, balsm_app prototype port)
 - modules never import other modules — cross-module reads go through core contracts/ports
 - PHI persistence implements core's scoped data-source contracts (`ProfileDataSource` partitioned by `health_profile_id`, `UserDataSource` by account); domain/application layers depend on the module port, never on `Drift*` concretes
 
 ## 4. Localization
 
-- all user-visible strings live in i69n bundles — `.i69n.jsonc` (JSON **with comments**: annotate keys, gender rules, RTL notes inline) in `app/lib/patient_app/i18n/`, `packages/core/lib/src/localization/i18n/`, and `modules/*/lib/src/i18n/`; regenerate with `dart run tool/build.dart gen` after editing
+- all user-visible strings live in i69n bundles — `.i69n.jsonc` (JSON **with comments**: annotate keys, gender rules, RTL notes inline) in `app/lib/balsm_app/i18n/`, `packages/core/lib/src/localization/i18n/`, and `modules/*/lib/src/i18n/`; regenerate with `dart run tool/build.dart gen` after editing
 - no inline bilingual ternaries (`ar ? '…' : '…'`)
 - reference data (countries, languages) comes from core value objects + `CountryRegistry` — no private lists in screens
 - prefer typed `s.strings.key` over stringly `s.t('key')`; `t()` only for keys computed at runtime

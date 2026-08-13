@@ -10,9 +10,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geofence_block/geofence_block.dart'
     show ReadDeniedCountriesRepository, deniedCountriesRepositoryProvider;
 import 'package:profile/profile.dart' show EmergencyContact, profileDataSourceProvider;
-import 'package:app/patient_app/app_state.dart';
-import 'package:app/patient_app/prefs.dart';
-import 'package:app/patient_app/shell.dart';
+import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/prefs.dart';
+import 'package:app/balsm_app/shell.dart';
 
 /// In-session holder for the signed-in user id. `currentUserIdProvider` reads
 /// this, so an in-session sign-in / sign-out is reflected immediately (the

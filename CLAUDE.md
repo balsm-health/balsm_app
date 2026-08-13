@@ -17,7 +17,7 @@ Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm
   `UserDataSource` — by account). Domain/application layers depend on the
   module's port, never on `Drift*` concretes.
 - Flutter runs via **fvm** (`fvm flutter …`, `fvm dart …`); version pinned in `.fvmrc`.
-- UI strings live in i69n bundles (`app/lib/patient_app/i18n/*.json`, core's
+- UI strings live in i69n bundles (`app/lib/balsm_app/i18n/*.json`, core's
   `localization/i18n/`); after editing JSON run `dart run build_runner build`
   in that package. No inline bilingual `ar ? … : …` ternaries.
 - Reference data comes from core value objects: `LanguageCode`,

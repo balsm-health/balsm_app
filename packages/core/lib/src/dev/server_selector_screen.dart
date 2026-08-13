@@ -346,7 +346,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 color: active ? BalsmColors.ink50 : BalsmColors.surface,
                 borderRadius: BorderRadius.circular(BalsmRadius.lg),
                 border: Border.all(
-                  color: active ? const Color(0xFF6B6B60) : BalsmColors.border,
+                  color: active ? const Color(0xFF526174) : BalsmColors.border,
                   width: 1.5,
                 ),
               ),
@@ -355,7 +355,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                   Container(
                     width: 10,
                     height: 10,
-                    decoration: const BoxDecoration(color: Color(0xFF6B6B60), shape: BoxShape.circle),
+                    decoration: const BoxDecoration(color: Color(0xFF526174), shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 13),
                   Expanded(
@@ -372,14 +372,14 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                         Text(se.url,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontFamily: _kMono, fontSize: 11, color: Color(0xFF6B6B60))),
+                            style: const TextStyle(fontFamily: _kMono, fontSize: 11, color: Color(0xFF526174))),
                       ],
                     ),
                   ),
                   if (active)
                     const Padding(
                       padding: EdgeInsets.only(right: 4),
-                      child: Icon(Icons.check_circle, size: 18, color: Color(0xFF6B6B60)),
+                      child: Icon(Icons.check_circle, size: 18, color: Color(0xFF526174)),
                     ),
                   _tinyBtn('edit', () {
                     setState(() {
@@ -418,7 +418,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           ),
           child: Text(label,
               style: const TextStyle(
-                  fontFamily: _kMono, fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF6B6B60))),
+                  fontFamily: _kMono, fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF526174))),
         ),
       );
 
@@ -428,7 +428,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         decoration: BoxDecoration(
           color: BalsmColors.ink50,
           borderRadius: BorderRadius.circular(BalsmRadius.lg),
-          border: Border.all(color: const Color(0xFF6B6B60), width: 1.5),
+          border: Border.all(color: const Color(0xFF526174), width: 1.5),
         ),
         child: Column(
           children: [
@@ -1287,6 +1287,6 @@ class _EnvStyle {
     if (l.contains('dev')) {
       return const _EnvStyle(Color(0xFF1283FF), Color(0xFFE4F0FF), Color(0xFF08407A));
     }
-    return const _EnvStyle(Color(0xFF6B6B60), Color(0xFFF4F3EC), Color(0xFF3A3A34));
+    return const _EnvStyle(Color(0xFF526174), Color(0xFFF4F3EC), Color(0xFF3A3A34));
   }
 }
