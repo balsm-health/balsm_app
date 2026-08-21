@@ -23,6 +23,7 @@ class HttpLogInterceptor extends Interceptor {
     final b = StringBuffer('→ ${options.method} ${options.uri}');
     _headers(b, options.headers);
     _body(b, options.data);
+    b.write('\n  curl: ${_curl(options)}');
     developer.log(b.toString(), name: _name, level: 700);
     handler.next(options);
   }
@@ -82,4 +83,34 @@ class HttpLogInterceptor extends Interceptor {
     final ms = (DateTime.now().microsecondsSinceEpoch - start) / 1000;
     return ' (${ms.toStringAsFixed(0)}ms)';
   }
+
+  /// Builds a copy-pasteable `curl` equivalent of [options] — method, every
+  /// header, and the body verbatim. Same no-redaction policy as the rest of
+  /// this interceptor: the bearer token and any PHI print in full.
+  String _curl(RequestOptions options) {
+    final b = StringBuffer('curl -X ${options.method} ${_shQuote(options.uri.toString())}');
+    options.headers.forEach((k, v) {
+      final value = v is List ? v.join(', ') : v.toString();
+      b.write(' \\\n    -H ${_shQuote('$k: $value')}');
+    });
+    final data = options.data;
+    if (data != null) {
+      String body;
+      if (data is Map || data is List) {
+        try {
+          body = jsonEncode(data);
+        } catch (_) {
+          body = data.toString();
+        }
+      } else {
+        body = data.toString();
+      }
+      if (body.isNotEmpty) b.write(' \\\n    -d ${_shQuote(body)}');
+    }
+    return b.toString();
+  }
+
+  /// Single-quotes a shell argument, escaping embedded single quotes
+  /// (`'` → `'\''`) so the printed command is directly runnable.
+  String _shQuote(String s) => "'${s.replaceAll("'", "'\\''")}'";
 }

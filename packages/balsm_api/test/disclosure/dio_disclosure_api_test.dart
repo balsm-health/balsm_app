@@ -21,7 +21,7 @@ void main() {
       'version': '2',
       'country_code': 'EG',
       'supervisory_authority': 'PDPC',
-      'preferred_language': 'ar',
+      'language': 'ar',
     });
   });
 }

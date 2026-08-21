@@ -235,7 +235,8 @@ class PButton extends StatelessWidget {
       this.block = false,
       this.accent,
       this.ar = false,
-      this.color});
+      this.color,
+      this.gradient = false});
   final String label;
   final IconData? icon;
   final VoidCallback? onTap;
@@ -245,6 +246,8 @@ class PButton extends StatelessWidget {
   final Accent? accent;
   final bool ar;
   final Color? color; // text-color override
+  /// Horizontal accent wash on primary (welcome CTA in the live Claude Design).
+  final bool gradient;
 
   @override
   Widget build(BuildContext context) {
@@ -272,13 +275,23 @@ class PButton extends StatelessWidget {
         fg = a.d;
         break;
     }
+    final radius = BorderRadius.circular(large ? T.rLg : T.rMd);
+    final useGrad = gradient && variant == BtnVariant.primary;
     final child = Container(
       height: large ? 56 : 52,
       width: block ? double.infinity : null,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(large ? T.rLg : T.rMd),
+        color: useGrad ? null : bg,
+        gradient: useGrad
+            ? LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                // Live Claude Design: lighter wash on the left, accent on the right.
+                colors: [Color.lerp(a.main, Colors.white, 0.28)!, a.main],
+              )
+            : null,
+        borderRadius: radius,
         border: border,
         boxShadow: shadow,
       ),

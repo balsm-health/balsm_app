@@ -20,7 +20,7 @@ class PatientAppState extends ChangeNotifier {
   LanguageCode lang = LanguageCode.en;
   Accent accent = Accent.blue;
 
-  /// Auth route: welcome | phone | otp | profile | app
+  /// Auth route: walkthrough | welcome | phone | otp | profile | app
   String route = 'welcome';
 
   /// Active tab/sub-screen: home | map | meds | profile | trends | records | appts
@@ -63,7 +63,11 @@ class PatientAppState extends ChangeNotifier {
       // Persisted as the bare ISO code; malformed values fall back to home.
       s.country = CountryCode.tryFromCode(await prefs.country()) ?? kHomeCountry;
       s.storageProvider = await prefs.storage();
-      s.route = await prefs.signedIn() ? 'app' : 'welcome';
+      if (await prefs.signedIn()) {
+        s.route = 'app';
+      } else {
+        s.route = await prefs.walkthroughSeen() ? 'welcome' : 'walkthrough';
+      }
     } catch (_) {
       s.route = 'welcome';
     }
@@ -148,6 +152,9 @@ class PatientAppState extends ChangeNotifier {
 
   void go(String r) {
     if (r == 'app') tab = 'home';
+    // Leaving the first-run walkthrough (Skip or Get started) marks it seen so
+    // it never shows again on this device, signed in or not.
+    if (route == 'walkthrough' && r != 'walkthrough') _prefs?.setWalkthroughSeen(true);
     route = r;
     _save(); // persist signed-in / signed-out
     notifyListeners();

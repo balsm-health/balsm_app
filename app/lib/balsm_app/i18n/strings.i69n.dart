@@ -19,6 +19,7 @@ class Strings implements i69n.I69nMessageBundle {
   MedsStrings get meds => MedsStrings(this);
   NavStrings get nav => NavStrings(this);
   OnboardingStrings get onboarding => OnboardingStrings(this);
+  WalkthroughStrings get walkthrough => WalkthroughStrings(this);
   PrivacyStrings get privacy => PrivacyStrings(this);
   ProfileStrings get profile => ProfileStrings(this);
   RecordsStrings get records => RecordsStrings(this);
@@ -51,6 +52,8 @@ class Strings implements i69n.I69nMessageBundle {
         return nav;
       case 'onboarding':
         return onboarding;
+      case 'walkthrough':
+        return walkthrough;
       case 'privacy':
         return privacy;
       case 'profile':
@@ -1221,6 +1224,104 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
         return age_gate_body;
       case 'w_start':
         return w_start;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class WalkthroughStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const WalkthroughStrings(this._parent);
+  String get wt_eyebrow_1 => "Open · Arab · Trusted";
+  String get wt_title_1 => "Healthcare that finally belongs to us.";
+  String get wt_body_1 =>
+      "Balsm is the first and largest open-source health platform built in Egypt and the Arab world — Arabic-first, and owned by the people who use it.";
+  String get wt_eyebrow_2 => "A day with Balsm";
+  String get wt_title_2 =>
+      "From this morning's reading to tonight's pharmacy run.";
+  String get wt_body_2 =>
+      "One record, one daily check-in, one map of care nearby — try them below, right where they live in the app.";
+  String get wt_eyebrow_3 => "Yours, always";
+  String get wt_title_3 => "Your data stays yours.";
+  String get wt_body_3 =>
+      "Saved on your phone by design, and it works offline. You choose what is shared — and with whom.";
+  String get wt_skip => "Skip";
+  String get wt_next => "Next";
+  String get wt_start => "Get started";
+  String get wt_demo_record => "Record";
+  String get wt_demo_checkin => "Check-in";
+  String get wt_demo_nearby => "Nearby";
+  String get wt_demo_rec1_t => "CBC blood panel";
+  String get wt_demo_rec1_d => "2 days ago";
+  String get wt_demo_rec2_t => "Cardiology referral";
+  String get wt_demo_rec2_d => "2 weeks ago";
+  String get wt_demo_mood_low => "Low";
+  String get wt_demo_mood_okay => "Okay";
+  String get wt_demo_mood_good => "Good";
+  String get wt_demo_mood_great => "Great";
+  String get wt_demo_pin1 => "Zahran Pharmacy";
+  String get wt_demo_pin2 => "Nour Clinic";
+  String get wt_demo_pin3 => "City Lab";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'wt_eyebrow_1':
+        return wt_eyebrow_1;
+      case 'wt_title_1':
+        return wt_title_1;
+      case 'wt_body_1':
+        return wt_body_1;
+      case 'wt_eyebrow_2':
+        return wt_eyebrow_2;
+      case 'wt_title_2':
+        return wt_title_2;
+      case 'wt_body_2':
+        return wt_body_2;
+      case 'wt_eyebrow_3':
+        return wt_eyebrow_3;
+      case 'wt_title_3':
+        return wt_title_3;
+      case 'wt_body_3':
+        return wt_body_3;
+      case 'wt_skip':
+        return wt_skip;
+      case 'wt_next':
+        return wt_next;
+      case 'wt_start':
+        return wt_start;
+      case 'wt_demo_record':
+        return wt_demo_record;
+      case 'wt_demo_checkin':
+        return wt_demo_checkin;
+      case 'wt_demo_nearby':
+        return wt_demo_nearby;
+      case 'wt_demo_rec1_t':
+        return wt_demo_rec1_t;
+      case 'wt_demo_rec1_d':
+        return wt_demo_rec1_d;
+      case 'wt_demo_rec2_t':
+        return wt_demo_rec2_t;
+      case 'wt_demo_rec2_d':
+        return wt_demo_rec2_d;
+      case 'wt_demo_mood_low':
+        return wt_demo_mood_low;
+      case 'wt_demo_mood_okay':
+        return wt_demo_mood_okay;
+      case 'wt_demo_mood_good':
+        return wt_demo_mood_good;
+      case 'wt_demo_mood_great':
+        return wt_demo_mood_great;
+      case 'wt_demo_pin1':
+        return wt_demo_pin1;
+      case 'wt_demo_pin2':
+        return wt_demo_pin2;
+      case 'wt_demo_pin3':
+        return wt_demo_pin3;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

@@ -92,6 +92,21 @@ class T {
   static const List<BoxShadow> accentShadow = [
     BoxShadow(color: Color(0x421283FF), blurRadius: 22, offset: Offset(0, 8)),
   ];
+
+  // ── Walkthrough-only shadows (walkthrough.css) ─────────────
+  // Distinct alpha/blur from the shared --shadow-md/xs scale, so kept local
+  // rather than aliased to shadowMd/shadowXs.
+  static const List<BoxShadow> shadowWtTile = [
+    BoxShadow(color: Color(0x1A14202B), blurRadius: 36, offset: Offset(0, 16)), // rgba(20,32,43,0.10)
+    BoxShadow(color: Color(0x0F14202B), blurRadius: 8, offset: Offset(0, 3)), // rgba(20,32,43,0.06)
+  ];
+  static const List<BoxShadow> shadowWtDemo = [
+    BoxShadow(color: Color(0x1F14202B), blurRadius: 36, offset: Offset(0, 16)), // rgba(20,32,43,0.12)
+    BoxShadow(color: Color(0x0F14202B), blurRadius: 8, offset: Offset(0, 3)), // rgba(20,32,43,0.06)
+  ];
+  static const List<BoxShadow> shadowWtTabOn = [
+    BoxShadow(color: Color(0x1F14202B), blurRadius: 4, offset: Offset(0, 1)), // rgba(20,32,43,0.12)
+  ];
 }
 
 /// Motion tokens ported verbatim from `colors_and_type.css` (`--ease-*`,

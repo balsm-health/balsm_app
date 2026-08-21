@@ -10,19 +10,20 @@ import 'package:core/core.dart'
         StatusScreen,
         CountryCode,
         CountryCodeL10n,
-        LanguageCode,
         Gender,
         showBalsmDatePicker;
 import 'package:disclosure/disclosure.dart' show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/balsm_flower.dart';
+import 'walkthrough_screen.dart';
 
 /// Routes the auth flow by `state.route`.
 class AuthRouter extends StatelessWidget {
@@ -31,6 +32,7 @@ class AuthRouter extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return switch (s.route) {
+      'walkthrough' => const WalkthroughScreen(),
       'phone' => const _PhoneScreen(),
       'otp' => const _OtpScreen(),
       'profile' => const _ProfileSetupScreen(),
@@ -46,38 +48,56 @@ class _WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-            begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [T.cream50, T.cream100, T.cream50]),
-      ),
+      decoration: const BoxDecoration(color: T.cream50),
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           child: Column(children: [
-            const Spacer(),
+            const SizedBox(height: 36),
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
               child: Column(children: [
                 const BalsmFlower(size: 84),
-                const SizedBox(height: 22),
+                const SizedBox(height: 14),
+                // Bilingual lockup from the live Claude Design: Arabic name
+                // over Balsm.health (TLD one step lighter than the wordmark).
+                Text('بلسم',
+                    textAlign: TextAlign.center,
+                    style:
+                        Typo.display(ar: true).copyWith(fontSize: FS.xl, fontWeight: FontWeight.w700, color: T.ink800)),
+                const SizedBox(height: 2),
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                        text: 'Balsm',
+                        style: Typo.display().copyWith(
+                            fontSize: FS.lg, fontWeight: FontWeight.w800, color: T.ink800, letterSpacing: -0.3)),
+                    TextSpan(
+                        text: '.health',
+                        style: Typo.display().copyWith(
+                            fontSize: FS.sm, fontWeight: FontWeight.w600, color: T.ink600, letterSpacing: -0.2)),
+                  ]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
                 Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
                 const SizedBox(height: 12),
                 Text(s.strings.onboarding.w_sub,
                     textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
                 const SizedBox(height: 28),
                 PButton(s.strings.onboarding.w_start(s.gender),
-                    variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
+                    variant: BtnVariant.primary,
+                    large: true,
+                    block: true,
+                    gradient: true,
+                    accent: s.accent,
+                    ar: s.rtl, onTap: () {
                   s.setAuthIntent('signup');
                   s.go('phone');
                 }),
                 const SizedBox(height: 14),
-                Row(children: [
-                  const Expanded(child: Divider(color: T.ink200)),
-                  Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(s.strings.onboarding.w_or, style: Typo.meta(ar: s.rtl))),
-                  const Expanded(child: Divider(color: T.ink200)),
-                ]),
+                Text(s.strings.onboarding.w_or,
+                    style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 14),
                 // Social sign-in has no real backend wired here (no google_sign_in /
                 // sign_in_with_apple tokens available), and must NOT bypass the
@@ -115,7 +135,7 @@ class _WelcomeScreen extends StatelessWidget {
                 ),
               ]),
             ),
-            const SizedBox(height: 22),
+            const Spacer(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
@@ -124,32 +144,7 @@ class _WelcomeScreen extends StatelessWidget {
                 _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
               ]),
             ),
-            const SizedBox(height: 16),
-            // Language toggle pill (AR ⇄ EN) — updated design.
-            Center(
-              child: GestureDetector(
-                onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: T.border),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.languages, size: 17, color: T.fg2),
-                    const SizedBox(width: 7),
-                    // Endonym of the OTHER language — the toggle's target.
-                    Text((s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar).nativeName,
-                        style: Typo.bodySm(ar: s.lang != LanguageCode.ar)
-                            .copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                  ]),
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 28),
           ]),
         ),
       ),
@@ -159,11 +154,11 @@ class _WelcomeScreen extends StatelessWidget {
   Widget _trust(PatientAppState s, IconData icon, String label) => SizedBox(
         width: 84,
         child: Column(children: [
-          Icon(icon, size: 22, color: s.accent.main),
+          Icon(icon, size: 22, color: T.fg3),
           const SizedBox(height: 6),
           Text(label,
               textAlign: TextAlign.center,
-              style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600)),
+              style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
         ]),
       );
 }
@@ -189,15 +184,7 @@ class _SocialButton extends StatelessWidget {
           border: dark ? null : Border.all(color: const Color(0x2E3C3C3A), width: 1.5),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          if (googleG)
-            Container(
-                width: 18,
-                height: 18,
-                alignment: Alignment.center,
-                child: const Text('G',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF4285F4))))
-          else
-            Icon(icon, size: 19, color: Colors.white),
+          if (googleG) const _GoogleMark() else Icon(icon, size: 19, color: Colors.white),
           const SizedBox(width: 10),
           Text(label,
               style: Typo.body(ar: s.rtl)
@@ -207,6 +194,22 @@ class _SocialButton extends StatelessWidget {
     );
   }
 }
+
+/// Official four-colour Google G, matching the live Claude Design social button.
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+  @override
+  Widget build(BuildContext context) => SvgPicture.string(_kGoogleGSvg, width: 18, height: 18);
+}
+
+const _kGoogleGSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+</svg>
+''';
 
 // ── Auth header with step dots ───────────────────────────────
 class _AuthHeader extends StatelessWidget {

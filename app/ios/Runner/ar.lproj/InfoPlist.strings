@@ -1,0 +1,3 @@
+/* App display name — home screen, Settings, notifications. */
+CFBundleDisplayName = "بلسم";
+CFBundleName = "بلسم";

@@ -18,6 +18,8 @@ class AcceptDisclosureRequest {
         'version': version,
         'country_code': countryCode,
         'supervisory_authority': supervisoryAuthority,
-        'preferred_language': preferredLanguage,
+        // Server binds `language` (Disclosure POST /disclosure/accept →
+        // AcceptDisclosureRequest.Language), not `preferred_language`.
+        'language': preferredLanguage,
       };
 }
