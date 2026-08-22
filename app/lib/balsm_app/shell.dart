@@ -11,7 +11,7 @@ import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/report_flow.dart' show openCheckin;
+import 'screens/quick_log.dart' show showQuickLog;
 import 'screens/auth_flow.dart';
 import 'deep_link_handler.dart';
 import 'dev/shake_to_dev_config.dart';
@@ -271,8 +271,8 @@ class _Tab extends StatelessWidget {
 }
 
 /// Quick-log "+" action — the design's center FAB. Rendered as a raised accent
-/// circle in the bottom tab bar (and the side rail), it opens the daily
-/// check-in flow ([openCheckin]) as a Directionality-wrapped route.
+/// circle in the bottom tab bar (and the side rail), it opens the quick-log
+/// sheet ([showQuickLog]): the full check-in plus the one-metric mini flows.
 class _QuickLog extends StatelessWidget {
   const _QuickLog({this.rail = false});
   final bool rail;
@@ -280,7 +280,7 @@ class _QuickLog extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final button = Pressable(
-      onTap: () => openCheckin(context),
+      onTap: () => showQuickLog(context),
       scale: 0.94,
       child: Container(
         width: 48,

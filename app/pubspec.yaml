@@ -71,6 +71,16 @@ dependency_overrides:
   # linked → "Couldn't resolve OBJC_CLASS_$_NSArray ... symbol not found").
   # Pin to the last method-channel build to sidestep native assets.
   path_provider_foundation: 2.4.1
+# sqlite3 3.x defaults to bundling a precompiled sqlite3.framework via Dart
+# hooks. Flutter's native-assets copy step shares `build/native_assets/ios`
+# across iphoneos and iphonesimulator, so a device build's framework gets
+# embedded into the next simulator run (dlopen: have 'iOS', need
+# 'iOS-simulator'). Look up SQLCipher already linked by sqlcipher_flutter_libs
+# instead of shipping a second sqlite3.
+hooks:
+  user_defines:
+    sqlite3:
+      source: process
 flutter:
   uses-material-design: true
   generate: true

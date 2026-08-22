@@ -26,7 +26,7 @@ void openCheckin(BuildContext context) {
 }
 
 /// MoodFace stroke color per level (1 = rough … 5 = great).
-const _moodColors = <Color>[
+const moodColors = <Color>[
   T.danger,
   Color(0xFFD97A20),
   T.sun600,
@@ -36,7 +36,7 @@ const _moodColors = <Color>[
 
 /// The self-report symptom catalog paired with its display icon. Ids come from
 /// the module's [SymptomId] catalog; icons are presentation-only.
-const _symptomIcons = <(SymptomId, IconData)>[
+const symptomIcons = <(SymptomId, IconData)>[
   (SymptomId.headache, LucideIcons.brain),
   (SymptomId.dizzy, LucideIcons.rotateCw),
   (SymptomId.fatigue, LucideIcons.batteryLow),
@@ -53,7 +53,7 @@ String symptomLabelKey(SymptomId id) => 'checkin.sym_${_snakeCase(id.id)}';
 
 String _snakeCase(String v) => v.replaceAllMapped(RegExp('[A-Z]'), (m) => '_${m[0]!.toLowerCase()}');
 
-({String lbl, Color color}) _painInfo(PatientAppState s, int n) {
+({String lbl, Color color}) painInfo(PatientAppState s, int n) {
   if (n == 0) return (lbl: s.t('checkin.pain_0'), color: T.petalMint);
   if (n <= 3) return (lbl: s.t('checkin.pain_mild'), color: T.petalMint600);
   if (n <= 6) return (lbl: s.t('checkin.pain_mod'), color: T.sun600);
@@ -168,7 +168,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       id: CheckInId.uuid(),
       healthProfileId: profileId,
       recordedAt: DateTime.now(),
-      mood: Mood(mood),
+      mood: mood > 0 ? Mood(mood) : null,
       painLevel: PainLevel(pain.round()),
       painRegions: painLocs.map(BodyRegion.fromId).whereType<BodyRegion>().toSet(),
       symptoms: syms.toSet(),
@@ -278,22 +278,22 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   }
 
   Widget _title(String t, String h) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(s.t(t), style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
+        Text(t, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
         const SizedBox(height: 6),
-        Text(s.t(h), style: Typo.body(ar: s.rtl).copyWith(color: T.fg3)),
+        Text(h, style: Typo.body(ar: s.rtl).copyWith(color: T.fg3)),
         const SizedBox(height: 24),
       ]);
 
   Widget _stepBody() => switch (cur) {
         'mood' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _title(s.strings.checkin.q_mood_t(s.gender), 'checkin.q_mood_h'),
+            _title(s.strings.checkin.q_mood_t(s.gender), s.strings.checkin.q_mood_h),
             Row(
                 children: List.generate(
                     5,
                     (i) => Expanded(
                           child: Padding(
                             padding: EdgeInsets.only(right: i < 4 ? 10 : 0),
-                            child: _MoodCell(
+                            child: MoodCell(
                                 lv: i + 1, selected: mood == i + 1, s: s, onTap: () => setState(() => mood = i + 1)),
                           ),
                         ))),
@@ -301,7 +301,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         'bp' => _bpStep(),
         'glucose' => _glucoseStep(),
         'meds' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _title('checkin.q_med_t', 'checkin.q_med_h'),
+            _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h),
             ..._meds.map(_medCheck),
           ]),
         _ => _symptomsStep(),
@@ -310,7 +310,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   // BLOOD PRESSURE — dedicated step: big sys / dia pair, active-field highlight,
   // centered unit, skip toggle (design report.jsx `cur === 'bp'`).
   Widget _bpStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title('checkin.q_bp_t', 'checkin.q_bp_h'),
+        _title(s.strings.checkin.q_bp_t, s.strings.checkin.q_bp_h),
         Opacity(
           opacity: bpSkip ? 0.4 : 1,
           child: IgnorePointer(
@@ -345,7 +345,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   // GLUCOSE — dedicated step: context chips above, one big number, skip toggle
   // (design report.jsx `cur === 'glucose'`).
   Widget _glucoseStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title('checkin.q_glu_t', 'checkin.q_glu_h'),
+        _title(s.strings.checkin.q_glu_t, s.strings.checkin.q_glu_h),
         Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -482,9 +482,9 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       );
 
   Widget _symptomsStep() {
-    final pinfo = _painInfo(s, pain.round());
+    final pinfo = painInfo(s, pain.round());
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _title('checkin.q_sym_t', s.strings.checkin.q_sym_h(s.gender)),
+      _title(s.strings.checkin.q_sym_t, s.strings.checkin.q_sym_h(s.gender)),
       Center(
           child: Column(children: [
         Text('${pain.round()}',
@@ -507,7 +507,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       ],
       const SizedBox(height: 16),
       Wrap(spacing: 10, runSpacing: 10, children: [
-        ..._symptomIcons
+        ...symptomIcons
             .map((e) => _chip(s.t(symptomLabelKey(e.$1)), syms.contains(e.$1), () => _toggleSym(e.$1), icon: e.$2)),
         _chip(s.t('checkin.s_none'), noSymptoms, _toggleNone, icon: LucideIcons.checkCircle2),
       ]),
@@ -640,8 +640,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   }
 }
 
-class _MoodCell extends StatelessWidget {
-  const _MoodCell({required this.lv, required this.selected, required this.s, required this.onTap});
+/// One of the five mood faces (`.mood` cell) — shared by the full check-in's
+/// mood step and the quick-log mood flow.
+class MoodCell extends StatelessWidget {
+  const MoodCell({super.key, required this.lv, required this.selected, required this.s, required this.onTap});
   final int lv;
   final bool selected;
   final PatientAppState s;
@@ -663,7 +665,7 @@ class _MoodCell extends StatelessWidget {
               border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              MoodFace(level: lv, size: 32, color: selected ? _moodColors[lv - 1] : T.ink400),
+              MoodFace(level: lv, size: 32, color: selected ? moodColors[lv - 1] : T.ink400),
               const SizedBox(height: 6),
               Text(s.t('checkin.mood_$lv'),
                   style: Typo.meta(ar: s.rtl)
@@ -685,7 +687,7 @@ class _Summary extends StatelessWidget {
     final glucose = vitals.glucoseFasting ?? vitals.glucosePostMeal ?? vitals.glucoseRandom;
     final taken = state._meds.where((m) => state.medMarks[m.id.value] == 'taken').length;
     final symList = state.syms.map((sym) => s.t(symptomLabelKey(sym))).toList();
-    final pinfo = _painInfo(s, state.pain.round());
+    final pinfo = painInfo(s, state.pain.round());
     final items = <(IconData, PillKind, String, String)>[
       (
         LucideIcons.smile,

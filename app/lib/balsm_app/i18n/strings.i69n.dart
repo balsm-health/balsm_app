@@ -393,7 +393,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get ql_title => "Let's check in";
   String get ql_add_records => "add to records";
   String get full_checkin => "Full check-in";
+  String get ql_full_sub => "Mood · blood pressure · glucose · meds · symptoms";
   String get quick_log_or => "or log just one";
+  String get ql_save => "Save";
+  String get ql_saved => "Saved";
   String get body_location => "Where does it hurt?";
   String get cond_icd10_hint => "ICD-10 (optional)";
   String get cond_onset_hint => "Onset yr";
@@ -559,8 +562,14 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_add_records;
       case 'full_checkin':
         return full_checkin;
+      case 'ql_full_sub':
+        return ql_full_sub;
       case 'quick_log_or':
         return quick_log_or;
+      case 'ql_save':
+        return ql_save;
+      case 'ql_saved':
+        return ql_saved;
       case 'body_location':
         return body_location;
       case 'cond_icd10_hint':

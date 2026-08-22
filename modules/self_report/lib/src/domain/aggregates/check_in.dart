@@ -20,7 +20,7 @@ class CheckIn {
     required this.id,
     required this.healthProfileId,
     required this.recordedAt,
-    required this.mood,
+    this.mood,
     required this.painLevel,
     required this.painRegions,
     required this.symptoms,
@@ -32,7 +32,11 @@ class CheckIn {
   final CheckInId id;
   final HealthProfileId healthProfileId;
   final DateTime recordedAt;
-  final Mood mood;
+
+  /// Null when the patient did not report a mood — a quick-log entry that
+  /// captures a single metric (a blood-pressure reading, say) says nothing
+  /// about how they felt, and inventing a score would invent PHI.
+  final Mood? mood;
   final PainLevel painLevel;
   final Set<BodyRegion> painRegions;
   final Set<SymptomId> symptoms;

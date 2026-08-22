@@ -18,6 +18,8 @@ dependencies:
   drift: ^2.29.0
   # SQLCipher provides the sqlite3 native libs WITH encryption — do not also
   # depend on sqlite3_flutter_libs (duplicate Sqlite3FlutterLibsPlugin class).
+  # The app pubspec sets sqlite3 hooks `source: process` so Dart does not also
+  # embed native-assets sqlite3.framework (device/sim mixup on iOS).
   sqlcipher_flutter_libs: ^0.5.4
   dio: ^5.8.0
   balsm_api:

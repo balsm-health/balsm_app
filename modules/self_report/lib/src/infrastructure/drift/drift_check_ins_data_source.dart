@@ -13,6 +13,11 @@ import '../../domain/value_objects/pain_level.dart';
 import '../../domain/value_objects/symptom.dart';
 import '../../domain/value_objects/vitals.dart';
 
+/// `check_in.mood` is `INTEGER NOT NULL` and [Mood] is a 1–5 scale, so 0 is the
+/// on-disk marker for "no mood reported" ([CheckIn.mood] `== null`). Confined to
+/// this data source — the domain only ever sees a real score or null.
+const _moodNotReported = 0;
+
 /// Drift-backed [CheckInsDataSource]. PHI lives on-device only (SQLCipher).
 ///
 /// Partitions on `health_profile_id`. `scope == null` resolves the ACTIVE
@@ -117,7 +122,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
           Variable<String>(key.value),
           Variable<String>(p.value),
           Variable<String>(value.recordedAt.toUtc().toIso8601String()),
-          Variable<int>(value.mood.score),
+          Variable<int>(value.mood?.score ?? _moodNotReported),
           Variable<int>(value.painLevel.value),
           Variable<String>(value.note),
           Variable<String>(value.photoRecordId),
@@ -213,7 +218,10 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       id: CheckInId.value(id),
       healthProfileId: HealthProfileId.value(row['health_profile_id'] as String),
       recordedAt: DateTime.parse(row['recorded_at'] as String),
-      mood: Mood(row['mood'] as int),
+      mood: switch (row['mood'] as int) {
+        _moodNotReported => null,
+        final score => Mood(score),
+      },
       painLevel: PainLevel(row['pain_level'] as int),
       painRegions: {
         for (final r in regionRows)

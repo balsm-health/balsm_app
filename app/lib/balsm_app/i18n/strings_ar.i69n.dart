@@ -394,7 +394,10 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_title => "لنسجّل متابعتك";
   String get ql_add_records => "أضف إلى السجلات";
   String get full_checkin => "المتابعة الكاملة";
+  String get ql_full_sub => "المزاج · ضغط الدم · السكر · الأدوية · الأعراض";
   String get quick_log_or => "أو سجّل قراءة واحدة";
+  String get ql_save => "حفظ";
+  String get ql_saved => "تم الحفظ";
   String get body_location => "أين يؤلمك؟";
   String get cond_icd10_hint => "رمز ICD-10 (اختياري)";
   String get cond_onset_hint => "سنة البدء";
@@ -565,8 +568,14 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_add_records;
       case 'full_checkin':
         return full_checkin;
+      case 'ql_full_sub':
+        return ql_full_sub;
       case 'quick_log_or':
         return quick_log_or;
+      case 'ql_save':
+        return ql_save;
+      case 'ql_saved':
+        return ql_saved;
       case 'body_location':
         return body_location;
       case 'cond_icd10_hint':

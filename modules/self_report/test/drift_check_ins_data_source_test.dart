@@ -43,6 +43,24 @@ void main() {
     expect(got.note, 'felt tired');
   });
 
+  test('a quick-log entry with no mood round-trips as null, not a fabricated score', () async {
+    final bpOnly = CheckIn(
+      id: CheckInId.value('chk-bp'),
+      healthProfileId: profile,
+      recordedAt: DateTime.utc(2026, 7, 24, 18),
+      painLevel: PainLevel.none,
+      painRegions: const {},
+      symptoms: const {},
+      vitals: const Vitals(systolic: 118, diastolic: 76),
+    );
+    await ds.put(bpOnly.id, bpOnly);
+
+    final got = await ds.find(bpOnly.id);
+    expect(got!.mood, isNull);
+    expect(got.vitals.systolic, 118);
+    expect(got.vitals.diastolic, 76);
+  });
+
   test('findAll returns newest-first and is profile-scoped', () async {
     final older = CheckIn(
       id: CheckInId.value('chk-old'),
