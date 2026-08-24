@@ -20,7 +20,7 @@ void main() {
         recordedAt: DateTime.utc(2026, 7, 24, 9),
         mood: Mood.good,
         painLevel: const PainLevel(6),
-        painRegions: {BodyRegion.chest, BodyRegion.bkLower},
+        painRegions: {BodyRegion.chest, BodyRegion.bk_lower},
         symptoms: {SymptomId.headache, SymptomId.nausea},
         vitals: const Vitals(systolic: 120, diastolic: 80, glucoseFasting: 95),
         note: 'felt tired',
@@ -34,7 +34,7 @@ void main() {
     expect(got, isNotNull);
     expect(got!.mood, Mood.good);
     expect(got.painLevel.value, 6);
-    expect(got.painRegions, {BodyRegion.chest, BodyRegion.bkLower});
+    expect(got.painRegions, {BodyRegion.chest, BodyRegion.bk_lower});
     expect(got.symptoms.map((s) => s.id).toSet(), {'headache', 'nausea'});
     expect(got.vitals.systolic, 120);
     expect(got.vitals.diastolic, 80);
