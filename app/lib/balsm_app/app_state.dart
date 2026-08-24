@@ -1,6 +1,7 @@
 import 'package:core/core.dart' show CountryCode, Gender, LanguageCode, TranslationCatalog;
 import 'package:flutter/widgets.dart';
 import 'prefs.dart';
+import 'storage_target.dart';
 import 'strings.dart';
 import 'tokens.dart';
 
@@ -45,8 +46,8 @@ class PatientAppState extends ChangeNotifier {
   /// Defaults to [Gender.other] (masculine) until the profile loads.
   Gender gender = Gender.other;
 
-  /// Active backup target: local | icloud | gdrive (single active cloud).
-  String storageProvider = 'local';
+  /// Active backup target. Closed catalog — see [StorageTarget].
+  StorageTarget storageProvider = StorageTarget.local;
 
   PatientAppPrefs? _prefs;
 
@@ -165,7 +166,7 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void switchCloudProvider(String to) {
+  void switchCloudProvider(StorageTarget to) {
     storageProvider = to;
     _save();
     notifyListeners();

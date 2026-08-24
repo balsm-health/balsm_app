@@ -37,7 +37,7 @@ class ProfileScreen extends ConsumerWidget {
     final summary = ref.watch(accountSummaryProvider).valueOrNull;
     final displayName = (summary?.displayName ?? '').trim();
     final curLang = s.lang;
-    // Reflects the active backup target (local | icloud | gdrive).
+    // Reflects the active backup target (StorageTarget).
     final stCfg = storageCfg(s.storageProvider);
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
@@ -99,7 +99,8 @@ class ProfileScreen extends ConsumerWidget {
                 label: s.strings.storage.storage,
                 iconBg: stCfg.bg,
                 iconFg: stCfg.color,
-                trailingWidget: Pill(s.t(stCfg.label), kind: PillKind.neutral, dot: false, ar: s.rtl),
+                trailingWidget:
+                    Pill(s.storageProvider.label(s.strings.storage), kind: PillKind.neutral, dot: false, ar: s.rtl),
                 first: true,
                 onTap: () => showStorageSync(context)),
           ]),

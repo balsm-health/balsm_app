@@ -18,8 +18,7 @@ class Messages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -45,20 +44,16 @@ class Messages implements i69n.I69nMessageBundle {
 class SectionMessages implements i69n.I69nMessageBundle {
   final Messages _parent;
   const SectionMessages(this._parent);
-  DataCollectedSectionMessages get dataCollected =>
-      DataCollectedSectionMessages(this);
-  HowProtectedSectionMessages get howProtected =>
-      HowProtectedSectionMessages(this);
+  DataCollectedSectionMessages get dataCollected => DataCollectedSectionMessages(this);
+  HowProtectedSectionMessages get howProtected => HowProtectedSectionMessages(this);
   YourRightsSectionMessages get yourRights => YourRightsSectionMessages(this);
-  SupervisorySectionMessages get supervisory =>
-      SupervisorySectionMessages(this);
+  SupervisorySectionMessages get supervisory => SupervisorySectionMessages(this);
   SharingSectionMessages get sharing => SharingSectionMessages(this);
   DeletionSectionMessages get deletion => DeletionSectionMessages(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'dataCollected':
@@ -88,8 +83,7 @@ class DataCollectedSectionMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -106,13 +100,11 @@ class HowProtectedSectionMessages implements i69n.I69nMessageBundle {
   final SectionMessages _parent;
   const HowProtectedSectionMessages(this._parent);
   String get title => "How it's protected";
-  String get body =>
-      "Everything on this device is encrypted. Backups are encrypted with a key that only you hold.";
+  String get body => "Everything on this device is encrypted. Backups are encrypted with a key that only you hold.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -129,13 +121,11 @@ class YourRightsSectionMessages implements i69n.I69nMessageBundle {
   final SectionMessages _parent;
   const YourRightsSectionMessages(this._parent);
   String get title => "Your rights";
-  String get body =>
-      "You can export, back up, or permanently delete your data at any time from Settings.";
+  String get body => "You can export, back up, or permanently delete your data at any time from Settings.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -152,13 +142,11 @@ class SupervisorySectionMessages implements i69n.I69nMessageBundle {
   final SectionMessages _parent;
   const SupervisorySectionMessages(this._parent);
   String get title => "Supervisory authority";
-  String body(String authority) =>
-      "Data protection complaints may be raised with $authority.";
+  String body(String authority) => "Data protection complaints may be raised with $authority.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -180,8 +168,7 @@ class SharingSectionMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -203,8 +190,7 @@ class DeletionSectionMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -226,8 +212,7 @@ class AuthorityMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'eg':

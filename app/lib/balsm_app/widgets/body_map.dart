@@ -5,18 +5,13 @@ import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
 
-/// i69n key for a body-region label. The module keeps region ids stable
-/// (`l-shoulder`, `bk-l-glute`); the app's flat snake keys replace the hyphens
-/// (`body_l_shoulder`). The label itself lives only in the i69n bundle — the
-/// [BodyRegion] value object intentionally carries no copy.
-String regionLabelKey(String id) => 'checkin.body_${id.replaceAll('-', '_')}';
+/// Localized label for a [BodyRegion]. Copy lives on the enum (module i69n).
+String regionLabel(PatientAppState s, BodyRegion region) => region.labelForLang(s.lang.value);
 
 /// Tappable anatomical body figure (bodymap.jsx, surface layer).
 ///
-/// Regions come from the self-report module's [BodyRegion] catalog. Selection is
-/// a plain `Set<String>` of region ids so the caller stays decoupled from the
-/// value object; it maps ids back to [BodyRegion] (via `BodyRegion.fromId`) when
-/// it builds the check-in.
+/// Regions and selection are the self-report module's [BodyRegion] catalog —
+/// a closed enum, not free-form ids.
 class BodyMap extends StatefulWidget {
   const BodyMap({
     super.key,
@@ -24,8 +19,8 @@ class BodyMap extends StatefulWidget {
     required this.onToggle,
     this.initialGender = 'female',
   });
-  final Set<String> selected;
-  final ValueChanged<String> onToggle;
+  final Set<BodyRegion> selected;
+  final ValueChanged<BodyRegion> onToggle;
   final String initialGender;
   @override
   State<BodyMap> createState() => _BodyMapState();
@@ -39,27 +34,27 @@ class _BodyMapState extends State<BodyMap> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final regions = view == BodyView.front ? BodyRegion.front : BodyRegion.back;
-    final selectedLabels =
-        BodyRegion.all.where((r) => widget.selected.contains(r.id)).map((r) => s.t(regionLabelKey(r.id))).toList();
+    final c = s.strings.checkin;
+    final selectedLabels = BodyRegion.all.where(widget.selected.contains).map((r) => regionLabel(s, r)).toList();
     final viewName = view == BodyView.front ? 'front' : 'back';
     return Column(children: [
       // Controls
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Row(children: [
-          _chip(s, s.rtl ? 'أمامي' : 'Front', view == BodyView.front, () => setState(() => view = BodyView.front)),
+          _chip(s, c.body_view_front, view == BodyView.front, () => setState(() => view = BodyView.front)),
           const SizedBox(width: 5),
-          _chip(s, s.rtl ? 'خلفي' : 'Back', view == BodyView.back, () => setState(() => view = BodyView.back)),
+          _chip(s, c.body_view_back, view == BodyView.back, () => setState(() => view = BodyView.back)),
         ]),
         Row(children: [
-          _chip(s, s.rtl ? 'أنثى' : '♀', gender == 'female', () => setState(() => gender = 'female'), neutral: true),
+          _chip(s, c.body_sex_female, gender == 'female', () => setState(() => gender = 'female'), neutral: true),
           const SizedBox(width: 4),
-          _chip(s, s.rtl ? 'ذكر' : '♂', gender == 'male', () => setState(() => gender = 'male'), neutral: true),
+          _chip(s, c.body_sex_male, gender == 'male', () => setState(() => gender = 'male'), neutral: true),
         ]),
       ]),
       const SizedBox(height: 8),
       // Location label
       Text(
-        widget.selected.isEmpty ? (s.rtl ? 'انقر لتحديد الموقع' : 'Tap to mark location') : selectedLabels.join(' · '),
+        widget.selected.isEmpty ? c.body_tap : selectedLabels.join(c.list_mid),
         textAlign: TextAlign.center,
         style: Typo.meta(ar: s.rtl).copyWith(
             fontSize: FS.xs,
@@ -86,11 +81,11 @@ class _BodyMapState extends State<BodyMap> {
                       left: r.cx / 200 * c.maxWidth - 14,
                       top: r.cy / 384 * c.maxHeight - 14,
                       child: GestureDetector(
-                        onTap: () => widget.onToggle(r.id),
+                        onTap: () => widget.onToggle(r),
                         child: SizedBox(
                           width: 28,
                           height: 28,
-                          child: Center(child: _dot(widget.selected.contains(r.id), s.accent)),
+                          child: Center(child: _dot(widget.selected.contains(r), s.accent)),
                         ),
                       ),
                     )),

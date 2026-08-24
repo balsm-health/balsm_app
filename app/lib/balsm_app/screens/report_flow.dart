@@ -10,8 +10,9 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart' show AdaptiveFrame;
-import '../widgets/mood_face.dart';
-import '../widgets/body_map.dart';
+import 'metric_log.dart';
+
+export 'checkin_shared.dart' show MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
 
 /// Opens the full daily check-in flow (report.jsx ReportFlow) as a route.
 void openCheckin(BuildContext context) {
@@ -25,47 +26,11 @@ void openCheckin(BuildContext context) {
   ));
 }
 
-/// MoodFace stroke color per level (1 = rough … 5 = great).
-const moodColors = <Color>[
-  T.danger,
-  Color(0xFFD97A20),
-  T.sun600,
-  T.petalMint,
-  T.petalMint600,
-];
-
-/// The self-report symptom catalog paired with its display icon. Ids come from
-/// the module's [SymptomId] catalog; icons are presentation-only.
-const symptomIcons = <(SymptomId, IconData)>[
-  (SymptomId.headache, LucideIcons.brain),
-  (SymptomId.dizzy, LucideIcons.rotateCw),
-  (SymptomId.fatigue, LucideIcons.batteryLow),
-  (SymptomId.blurredVision, LucideIcons.eye),
-  (SymptomId.swelling, LucideIcons.droplet),
-  (SymptomId.chestTightness, LucideIcons.heartPulse),
-  (SymptomId.nausea, LucideIcons.frown),
-  (SymptomId.thirst, LucideIcons.cupSoda),
-];
-
-/// i69n key for a symptom label. The module's ids are camelCase
-/// (`blurredVision`); the app's flat keys are snake_case (`sym_blurred_vision`).
-String symptomLabelKey(SymptomId id) => 'checkin.sym_${_snakeCase(id.id)}';
-
-String _snakeCase(String v) => v.replaceAllMapped(RegExp('[A-Z]'), (m) => '_${m[0]!.toLowerCase()}');
-
-({String lbl, Color color}) painInfo(PatientAppState s, int n) {
-  if (n == 0) return (lbl: s.t('checkin.pain_0'), color: T.petalMint);
-  if (n <= 3) return (lbl: s.t('checkin.pain_mild'), color: T.petalMint600);
-  if (n <= 6) return (lbl: s.t('checkin.pain_mod'), color: T.sun600);
-  if (n <= 9) return (lbl: s.t('checkin.pain_sev'), color: const Color(0xFFD97A20));
-  return (lbl: s.t('checkin.pain_worst'), color: T.danger);
-}
-
-/// Full daily check-in wizard, on the real self-report module. Captures mood,
-/// vitals, medication adherence (only when the profile has medications), pain +
-/// body regions, symptoms, and a note, then persists a [CheckIn] on-device and
-/// records any med marks as real dose events. PHI: check-in contents are never
-/// logged.
+/// Full daily check-in wizard, on the real self-report module. Pages come
+/// from [trackedCheckInMetricsProvider] (catalog defaults until the patient
+/// can pick metrics) plus a medications page when the profile has meds.
+///
+/// Every metric page is the same one-metric log template used by quick-log.
 class ReportFlow extends ConsumerStatefulWidget {
   const ReportFlow({super.key, required this.s});
   final PatientAppState s;
@@ -78,51 +43,24 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   bool submitted = false;
   bool saving = false;
 
-  int mood = 0;
-
-  // Vitals — the design captures only blood pressure + glucose, each on its own
-  // step. Both optional; skipping a step leaves those readings null.
-  final sysCtrl = TextEditingController();
-  final diaCtrl = TextEditingController();
-  final gluCtrl = TextEditingController();
-  String gluCtx = 'checkin.glu_fast'; // glu_fast | glu_meal | glu_random
-  String bpField = 'sys'; // active field in the BP pair (sys | dia)
-  bool bpSkip = false; // "I didn't measure this today" — BP step
-  bool gluSkip = false; // …glucose step
-
-  double pain = 0;
-  final Set<SymptomId> syms = {};
-  bool noSymptoms = false;
-  final Set<String> painLocs = {};
-  final note = TextEditingController();
-
   /// Medication adherence marks captured in the meds step, keyed by med id:
   /// '' | 'taken' | 'skipped'.
   final Map<String, String> medMarks = {};
 
+  final Map<String, MetricLogCapture> _captures = {};
+  final Map<String, bool> _valid = {};
+
   // Refreshed each build from the reactive providers.
   List<Medication> _meds = const [];
-  List<String> _steps = const ['mood', 'vitals', 'symptoms'];
+  List<String> _steps = const [];
 
   PatientAppState get s => widget.s;
-  String get cur => _steps[step];
+  String get cur => (step >= 0 && step < _steps.length) ? _steps[step] : '';
 
-  @override
-  void dispose() {
-    sysCtrl.dispose();
-    diaCtrl.dispose();
-    gluCtrl.dispose();
-    note.dispose();
-    super.dispose();
+  bool get canNext {
+    if (cur == kMedsCheckInStepId) return true;
+    return _valid[cur] == true;
   }
-
-  bool get canNext => switch (cur) {
-        'mood' => mood > 0,
-        // Skipped, or both readings entered (>=2 digits) — mirrors the design.
-        'bp' => bpSkip || (sysCtrl.text.length >= 2 && diaCtrl.text.length >= 2),
-        'glucose' => gluSkip || gluCtrl.text.length >= 2,
-        _ => true,
-      };
 
   void next() {
     if (step < _steps.length - 1) {
@@ -140,19 +78,31 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     }
   }
 
-  int? _parseInt(TextEditingController c) => int.tryParse(c.text.trim());
+  void _onCapture(String id, MetricLogCapture capture, {required bool valid}) {
+    setState(() {
+      _captures[id] = capture;
+      _valid[id] = valid;
+    });
+  }
 
-  Vitals _buildVitals() {
-    // Design captures BP + glucose only; heart rate / temperature / weight /
-    // SpO2 stay null (the Vitals model keeps the fields for future use).
-    final glucose = gluSkip ? null : _parseInt(gluCtrl);
-    return Vitals(
-      systolic: bpSkip ? null : _parseInt(sysCtrl),
-      diastolic: bpSkip ? null : _parseInt(diaCtrl),
-      glucoseFasting: gluCtx == 'checkin.glu_fast' ? glucose : null,
-      glucosePostMeal: gluCtx == 'checkin.glu_meal' ? glucose : null,
-      glucoseRandom: gluCtx == 'checkin.glu_random' ? glucose : null,
-    );
+  Vitals _mergedVitals() {
+    var out = Vitals.empty;
+    for (final id in _steps) {
+      final v = _captures[id]?.vitals;
+      if (v == null || v.isEmpty) continue;
+      out = Vitals(
+        systolic: v.systolic ?? out.systolic,
+        diastolic: v.diastolic ?? out.diastolic,
+        heartRate: v.heartRate ?? out.heartRate,
+        temperature: v.temperature ?? out.temperature,
+        weightKg: v.weightKg ?? out.weightKg,
+        spo2: v.spo2 ?? out.spo2,
+        glucoseFasting: v.glucoseFasting ?? out.glucoseFasting,
+        glucosePostMeal: v.glucosePostMeal ?? out.glucosePostMeal,
+        glucoseRandom: v.glucoseRandom ?? out.glucoseRandom,
+      );
+    }
+    return out;
   }
 
   /// Persists the check-in on-device and records med marks as real dose events.
@@ -160,25 +110,40 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   Future<void> _finish() async {
     if (saving) return;
     final profileId = ref.read(currentProfileIdProvider);
-    if (profileId == null) return; // finish is disabled while signed out
+    if (profileId == null) return;
     setState(() => saving = true);
 
-    final noteText = note.text.trim();
+    Mood? mood;
+    var painLevel = PainLevel.none;
+    final painRegions = <BodyRegion>{};
+    final symptoms = <SymptomId>{};
+    final notes = <String>[];
+
+    for (final id in _steps) {
+      if (id == kMedsCheckInStepId) continue;
+      final c = _captures[id];
+      if (c == null) continue;
+      mood ??= c.mood;
+      if (c.painLevel.value > painLevel.value) painLevel = c.painLevel;
+      painRegions.addAll(c.painRegions);
+      symptoms.addAll(c.symptoms);
+      final n = c.note?.trim();
+      if (n != null && n.isNotEmpty) notes.add(n);
+    }
+
     final checkIn = CheckIn(
       id: CheckInId.uuid(),
       healthProfileId: profileId,
       recordedAt: DateTime.now(),
-      mood: mood > 0 ? Mood(mood) : null,
-      painLevel: PainLevel(pain.round()),
-      painRegions: painLocs.map(BodyRegion.fromId).whereType<BodyRegion>().toSet(),
-      symptoms: syms.toSet(),
-      vitals: _buildVitals(),
-      note: noteText.isEmpty ? null : noteText,
+      mood: mood,
+      painLevel: painLevel,
+      painRegions: painRegions,
+      symptoms: symptoms,
+      vitals: _mergedVitals(),
+      note: notes.isEmpty ? null : notes.join('\n'),
     );
     await ref.read(saveCheckInUseCaseProvider).call(checkIn);
 
-    // Any med the patient marked taken/skipped is recorded as a real (append-
-    // only) dose event via the medications module — on-device, never synced.
     final meds = ref.read(medicationListProvider).valueOrNull ?? const <Medication>[];
     final recordDose = ref.read(recordDoseOutcomeUseCaseProvider);
     final now = DateTime.now();
@@ -212,22 +177,25 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   @override
   Widget build(BuildContext context) {
     _meds = ref.watch(medicationListProvider).valueOrNull ?? const [];
-    _steps = [
-      'mood',
-      'bp',
-      'glucose',
-      if (_meds.isNotEmpty) 'meds',
-      'symptoms',
-    ];
-    if (step > _steps.length - 1) step = _steps.length - 1;
+    _steps = fullCheckInSteps(
+      tracked: ref.watch(trackedCheckInMetricsProvider),
+      hasMeds: _meds.isNotEmpty,
+    );
+    if (_steps.isEmpty) {
+      _steps = fullCheckInSteps(
+        tracked: CheckInMetric.defaultFullCheckup,
+        hasMeds: _meds.isNotEmpty,
+      );
+    }
+    if (step >= _steps.length) step = _steps.isEmpty ? 0 : _steps.length - 1;
 
     if (submitted) return _Summary(state: this);
 
     final isLast = step == _steps.length - 1;
     final profileId = ref.watch(currentProfileIdProvider);
     final canFinish = profileId != null && !saving;
-    final enabled = isLast ? canFinish : canNext;
-    final pct = (step + 1) / _steps.length;
+    final enabled = isLast ? (canFinish && canNext) : canNext;
+    final pct = _steps.isEmpty ? 1.0 : (step + 1) / _steps.length;
 
     return Scaffold(
       backgroundColor: T.cream50,
@@ -235,7 +203,6 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         maxWidth: 480,
         child: Column(children: [
           const PadTop(),
-          // progress header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
             child: Row(children: [
@@ -245,17 +212,24 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
               const SizedBox(width: 12),
               SizedBox(
                   width: 40,
-                  child: Text('${step + 1} ${s.t('common.step_of')} ${_steps.length}',
+                  child: Text('${step + 1} ${s.strings.common.step_of} ${_steps.length}',
                       textAlign: TextAlign.center,
                       style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
             ]),
           ),
           Expanded(
-              child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-            child: RiseIn(key: ValueKey(cur), child: _stepBody()),
-          )),
-          // foot
+            child: IndexedStack(
+              index: _steps.isEmpty ? 0 : step,
+              children: [
+                for (final id in _steps)
+                  SingleChildScrollView(
+                    key: ValueKey(id),
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                    child: _stepBody(id),
+                  ),
+              ],
+            ),
+          ),
           Container(
             padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
             decoration: const BoxDecoration(
@@ -263,7 +237,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                     begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00FAFAF7), T.cream50])),
             child: Opacity(
               opacity: enabled ? 1 : 0.4,
-              child: PButton(isLast ? (saving ? '…' : s.t('common.finish')) : s.t('continue'),
+              child: PButton(isLast ? (saving ? '…' : s.strings.common.finish) : s.strings.common.continue_,
                   variant: BtnVariant.primary,
                   large: true,
                   block: true,
@@ -284,303 +258,22 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         const SizedBox(height: 24),
       ]);
 
-  Widget _stepBody() => switch (cur) {
-        'mood' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _title(s.strings.checkin.q_mood_t(s.gender), s.strings.checkin.q_mood_h),
-            Row(
-                children: List.generate(
-                    5,
-                    (i) => Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(right: i < 4 ? 10 : 0),
-                            child: MoodCell(
-                                lv: i + 1, selected: mood == i + 1, s: s, onTap: () => setState(() => mood = i + 1)),
-                          ),
-                        ))),
-          ]),
-        'bp' => _bpStep(),
-        'glucose' => _glucoseStep(),
-        'meds' => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h),
-            ..._meds.map(_medCheck),
-          ]),
-        _ => _symptomsStep(),
-      };
-
-  // BLOOD PRESSURE — dedicated step: big sys / dia pair, active-field highlight,
-  // centered unit, skip toggle (design report.jsx `cur === 'bp'`).
-  Widget _bpStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title(s.strings.checkin.q_bp_t, s.strings.checkin.q_bp_h),
-        Opacity(
-          opacity: bpSkip ? 0.4 : 1,
-          child: IgnorePointer(
-            ignoring: bpSkip,
-            child: PCard(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              child: Column(children: [
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  _bigNum(sysCtrl, active: bpField == 'sys', onFocus: () => setState(() => bpField = 'sys')),
-                  Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text('/', style: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.ink300))),
-                  _bigNum(diaCtrl, active: bpField == 'dia', onFocus: () => setState(() => bpField = 'dia')),
-                ]),
-                const SizedBox(height: 6),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  _bpLabel(s.t('checkin.sys'), bpField == 'sys'),
-                  const SizedBox(width: 24),
-                  _bpLabel(s.t('checkin.dia'), bpField == 'dia'),
-                ]),
-                const SizedBox(height: 8),
-                Text(s.t('checkin.unit_bp'),
-                    textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-              ]),
-            ),
-          ),
-        ),
-        if (!bpSkip) _numPad((d) => _vitalKey(_bpTarget, d), () => _vitalBack(_bpTarget)),
-        _skipRow(bpSkip, () => setState(() => bpSkip = !bpSkip)),
+  Widget _stepBody(String id) {
+    if (id == kMedsCheckInStepId) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h),
+        ..._meds.map(_medCheck),
       ]);
-
-  // GLUCOSE — dedicated step: context chips above, one big number, skip toggle
-  // (design report.jsx `cur === 'glucose'`).
-  Widget _glucoseStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title(s.strings.checkin.q_glu_t, s.strings.checkin.q_glu_h),
-        Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: const ['checkin.glu_fast', 'checkin.glu_meal', 'checkin.glu_random']
-                .map((c) => _chip(s.t(c), gluCtx == c, () => setState(() => gluCtx = c)))
-                .toList()),
-        const SizedBox(height: 16),
-        Opacity(
-          opacity: gluSkip ? 0.4 : 1,
-          child: IgnorePointer(
-            ignoring: gluSkip,
-            child: PCard(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  _bigNum(gluCtrl, active: true, onFocus: () {}, width: 150),
-                  const SizedBox(width: 10),
-                  Text(s.t('checkin.unit_glu'), style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (!gluSkip) _numPad((d) => _vitalKey(gluCtrl, d), () => _vitalBack(gluCtrl)),
-        _skipRow(gluSkip, () => setState(() => gluSkip = !gluSkip)),
-      ]);
-
-  /// The BP field the keypad currently types into (design `bpField`).
-  TextEditingController get _bpTarget => bpField == 'sys' ? sysCtrl : diaCtrl;
-
-  void _vitalKey(TextEditingController c, String digit) {
-    if (c.text.length >= 3) return;
-    setState(() => _setText(c, c.text + digit));
-  }
-
-  void _vitalBack(TextEditingController c) {
-    if (c.text.isEmpty) return;
-    setState(() => _setText(c, c.text.substring(0, c.text.length - 1)));
-  }
-
-  // Assigning `.text` resets the selection to offset 0; keep the cursor at the
-  // end so it trails the last digit in the centered display.
-  void _setText(TextEditingController c, String value) => c.value = TextEditingValue(
-        text: value,
-        selection: TextSelection.collapsed(offset: value.length),
-      );
-
-  /// In-app numeric keypad (design `NumPad`): 1-9, then a blank slot, 0, and a
-  /// delete key. Drives the vitals displays so no OS keyboard is needed.
-  Widget _numPad(void Function(String) onKey, VoidCallback onBack) {
-    Widget cell({String? label, VoidCallback? onTap, Widget? child}) => Expanded(
-          child: Pressable(
-            onTap: onTap,
-            scale: 0.96,
-            child: Container(
-              height: 54,
-              alignment: Alignment.center,
-              margin: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: onTap == null ? Colors.transparent : Colors.white,
-                borderRadius: BorderRadius.circular(T.rMd),
-                border: onTap == null ? null : Border.all(color: T.border),
-              ),
-              child: child ?? Text(label ?? '', style: Typo.num(size: FS.xl, weight: FontWeight.w700, color: T.fg1)),
-            ),
-          ),
-        );
-    Widget digitRow(List<String> ds) => Row(children: ds.map((d) => cell(label: d, onTap: () => onKey(d))).toList());
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(children: [
-        digitRow(const ['1', '2', '3']),
-        digitRow(const ['4', '5', '6']),
-        digitRow(const ['7', '8', '9']),
-        Row(children: [
-          cell(), // blank slot (design)
-          cell(label: '0', onTap: () => onKey('0')),
-          cell(onTap: onBack, child: const Icon(LucideIcons.delete, size: 22, color: T.fg2)),
-        ]),
-      ]),
+    }
+    final metric = CheckInMetric.fromId(id);
+    if (metric == null) return const SizedBox.shrink();
+    return MetricLog(
+      metric: metric,
+      s: s,
+      host: MetricLogHost.embedded,
+      onChanged: (capture, {required valid}) => _onCapture(id, capture, valid: valid),
     );
   }
-
-  // A big numeric display. Input comes from the in-app [_numPad] (design copy:
-  // "tap the number, then use the number pad"), NOT the OS keyboard — so it's
-  // read-only. Tapping selects it as the keypad's target (via [onFocus]).
-  Widget _bigNum(TextEditingController c, {required bool active, required VoidCallback onFocus, double width = 92}) =>
-      SizedBox(
-        width: width,
-        child: TextField(
-          controller: c,
-          readOnly: true,
-          showCursor: true,
-          textAlign: TextAlign.center,
-          onTap: onFocus,
-          style: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.fg1),
-          decoration: InputDecoration(
-            hintText: '—',
-            hintStyle: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.ink300),
-            isDense: true,
-            filled: true,
-            fillColor: active ? s.accent.bg : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(T.rLg),
-                borderSide: BorderSide(color: active ? s.accent.main : T.border, width: 1.5)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(T.rLg), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
-          ),
-        ),
-      );
-
-  Widget _bpLabel(String label, bool active) => SizedBox(
-        width: 92,
-        child: Text(label,
-            textAlign: TextAlign.center,
-            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: active ? s.accent.main : T.fg3)),
-      );
-
-  /// "I didn't measure this today" toggle (design `SkipRow`).
-  Widget _skipRow(bool on, VoidCallback toggle) => Padding(
-        padding: const EdgeInsets.only(top: 14),
-        child: Center(
-          child: PButton(s.strings.meds.skip_q,
-              icon: on ? LucideIcons.checkCircle2 : LucideIcons.circle,
-              variant: BtnVariant.ghost,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: toggle),
-        ),
-      );
-
-  Widget _symptomsStep() {
-    final pinfo = painInfo(s, pain.round());
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _title(s.strings.checkin.q_sym_t, s.strings.checkin.q_sym_h(s.gender)),
-      Center(
-          child: Column(children: [
-        Text('${pain.round()}',
-            style: Typo.display().copyWith(fontSize: 64, color: pinfo.color, fontWeight: FontWeight.w800)),
-        Text(pinfo.lbl, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-      ])),
-      SliderTheme(
-        data: SliderThemeData(
-            activeTrackColor: pinfo.color, thumbColor: pinfo.color, inactiveTrackColor: T.ink100, trackHeight: 10),
-        child: Slider(value: pain, min: 0, max: 10, divisions: 10, onChanged: (v) => setState(() => pain = v)),
-      ),
-      if (pain > 0 || syms.isNotEmpty) ...[
-        const SizedBox(height: 20),
-        Text(s.t('checkin.body_location'),
-            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-        const SizedBox(height: 8),
-        BodyMap(
-            selected: painLocs,
-            onToggle: (id) => setState(() => painLocs.contains(id) ? painLocs.remove(id) : painLocs.add(id))),
-      ],
-      const SizedBox(height: 16),
-      Wrap(spacing: 10, runSpacing: 10, children: [
-        ...symptomIcons
-            .map((e) => _chip(s.t(symptomLabelKey(e.$1)), syms.contains(e.$1), () => _toggleSym(e.$1), icon: e.$2)),
-        _chip(s.t('checkin.s_none'), noSymptoms, _toggleNone, icon: LucideIcons.checkCircle2),
-      ]),
-      Padding(
-        padding: const EdgeInsets.only(top: 24, bottom: 10),
-        child: Text(s.t('checkin.note_lbl'),
-            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-      ),
-      TextField(
-        controller: note,
-        minLines: 3,
-        maxLines: 5,
-        textDirection: s.dir,
-        style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
-        decoration: InputDecoration(
-          hintText: s.t('checkin.note_ph'),
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.all(14),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
-        ),
-      ),
-      const SizedBox(height: 10),
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(T.rMd),
-          border: Border.all(color: T.borderStrong, width: 1.5),
-        ),
-        child: Row(children: [
-          const Icon(LucideIcons.camera, size: 20, color: T.fg3),
-          const SizedBox(width: 12),
-          Text(s.t('settings.add_photo'), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-        ]),
-      ),
-    ]);
-  }
-
-  void _toggleSym(SymptomId id) => setState(() {
-        noSymptoms = false;
-        syms.contains(id) ? syms.remove(id) : syms.add(id);
-      });
-
-  void _toggleNone() => setState(() {
-        noSymptoms = !noSymptoms;
-        if (noSymptoms) syms.clear();
-      });
-
-  // `.chip` — border/bg/color animate over --dur-base ease-out.
-  Widget _chip(String label, bool selected, VoidCallback onTap, {IconData? icon}) => Pressable(
-        onTap: onTap,
-        scale: 0.97,
-        child: AnimatedContainer(
-          duration: Motion.base,
-          curve: Motion.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-          decoration: BoxDecoration(
-            color: selected ? s.accent.bg : Colors.white,
-            borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (icon != null) ...[Icon(icon, size: 16, color: selected ? s.accent.d : T.fg2), const SizedBox(width: 7)],
-            Text(label,
-                style:
-                    Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg2)),
-          ]),
-        ),
-      );
 
   Widget _medCheck(Medication m) {
     final st = medMarks[m.id.value] ?? '';
@@ -589,7 +282,6 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     final subtitle = m.doseAmount;
     return GestureDetector(
       onTap: () => setState(() => medMarks[m.id.value] = taken ? '' : 'taken'),
-      // `.check-row` + `.check-box` — border/bg animate over --dur-base.
       child: AnimatedOpacity(
         duration: Motion.base,
         curve: Motion.easeOut,
@@ -624,56 +316,20 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                 Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ])),
             if (skipped)
-              Pill(s.t('meds.skipped'), kind: PillKind.neutral, ar: s.rtl)
+              Pill(s.strings.meds.skipped, kind: PillKind.neutral, ar: s.rtl)
             else
               GestureDetector(
                 onTap: () => setState(() => medMarks[m.id.value] = 'skipped'),
                 child: Padding(
                     padding: const EdgeInsets.all(8),
-                    child:
-                        Text(s.t('meds.mark_skip'), style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                    child: Text(s.strings.meds.mark_skip,
+                        style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
               ),
           ]),
         ),
       ),
     );
   }
-}
-
-/// One of the five mood faces (`.mood` cell) — shared by the full check-in's
-/// mood step and the quick-log mood flow.
-class MoodCell extends StatelessWidget {
-  const MoodCell({super.key, required this.lv, required this.selected, required this.s, required this.onTap});
-  final int lv;
-  final bool selected;
-  final PatientAppState s;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        // `.mood.sel` — bg/border animate + lift translateY(-2px), --dur-base.
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: AnimatedContainer(
-            duration: Motion.base,
-            curve: Motion.easeOut,
-            transform: Matrix4.translationValues(0, selected ? -2 : 0, 0),
-            transformAlignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: selected ? s.accent.bg : Colors.white,
-              borderRadius: BorderRadius.circular(T.rLg),
-              border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
-            ),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              MoodFace(level: lv, size: 32, color: selected ? moodColors[lv - 1] : T.ink400),
-              const SizedBox(height: 6),
-              Text(s.t('checkin.mood_$lv'),
-                  style: Typo.meta(ar: s.rtl)
-                      .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
-            ]),
-          ),
-        ),
-      );
 }
 
 // ── Summary ──────────────────────────────────────────────────
@@ -683,42 +339,23 @@ class _Summary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = state.s;
-    final vitals = state._buildVitals();
-    final glucose = vitals.glucoseFasting ?? vitals.glucosePostMeal ?? vitals.glucoseRandom;
     final taken = state._meds.where((m) => state.medMarks[m.id.value] == 'taken').length;
-    final symList = state.syms.map((sym) => s.t(symptomLabelKey(sym))).toList();
-    final pinfo = painInfo(s, state.pain.round());
     final items = <(IconData, PillKind, String, String)>[
-      (
-        LucideIcons.smile,
-        PillKind.info,
-        s.t('profile.m_mood'),
-        state.mood > 0 ? s.t('checkin.mood_${state.mood}') : '—'
-      ),
-      if (vitals.systolic != null && vitals.diastolic != null)
-        (
-          LucideIcons.activity,
-          PillKind.violet,
-          s.t('profile.m_bp'),
-          '${vitals.systolic}/${vitals.diastolic} ${s.t('checkin.unit_bp')}'
-        ),
-      if (glucose != null)
-        (
-          LucideIcons.droplet,
-          PillKind.success,
-          '${s.t('profile.m_glucose')} · ${s.t(state.gluCtx)}',
-          '$glucose ${s.t('checkin.unit_glu')}'
-        ),
-      if (state._meds.isNotEmpty)
-        (
-          LucideIcons.pill,
-          PillKind.info,
-          s.t('meds.meds_today'),
-          '$taken/${state._meds.length} ${s.t('meds.meds_taken')}'
-        ),
-      (LucideIcons.thermometer, PillKind.warn, s.t('profile.m_pain'), '${state.pain.round()}/10 · ${pinfo.lbl}'),
-      if (symList.isNotEmpty)
-        (LucideIcons.stethoscope, PillKind.neutral, s.t('checkin.q_sym_t'), symList.join(s.rtl ? '، ' : ', ')),
+      for (final id in state._steps)
+        if (id == kMedsCheckInStepId)
+          (
+            LucideIcons.pill,
+            PillKind.info,
+            s.strings.meds.meds_today,
+            '$taken/${state._meds.length} ${s.strings.meds.meds_taken}'
+          )
+        else if (state._captures[id] case final c? when c.summary.isNotEmpty)
+          (
+            _summaryIcon(id).$1,
+            _summaryIcon(id).$2,
+            _summaryLabel(s, id),
+            c.summary,
+          ),
     ];
     return Scaffold(
       backgroundColor: Colors.white,
@@ -740,7 +377,7 @@ class _Summary extends StatelessWidget {
                     decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
                     child: const Icon(LucideIcons.check, size: 44, color: T.petalMint600)),
                 const SizedBox(height: 18),
-                Text(s.t('common.saved_t'), style: Typo.title(ar: s.rtl)),
+                Text(s.strings.common.saved_t, style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -748,7 +385,7 @@ class _Summary extends StatelessWidget {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
                     const SizedBox(width: 8),
-                    Text(s.t('common.saved_local'), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                    Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
                   ]),
                 ),
               ]),
@@ -763,7 +400,7 @@ class _Summary extends StatelessWidget {
               child: Row(children: [
                 const Icon(LucideIcons.send, size: 15, color: T.fg3),
                 const SizedBox(width: 8),
-                Expanded(child: Text(s.t('care.to_doctor'), style: Typo.meta(ar: s.rtl))),
+                Expanded(child: Text(s.strings.care.to_doctor, style: Typo.meta(ar: s.rtl))),
               ]),
             ),
             const SizedBox(height: 16),
@@ -772,7 +409,7 @@ class _Summary extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
             child: Row(children: [
               Expanded(
-                  child: PButton(s.t('checkin.view_trends'),
+                  child: PButton(s.strings.checkin.view_trends,
                       variant: BtnVariant.secondary,
                       large: true,
                       block: true,
@@ -780,7 +417,7 @@ class _Summary extends StatelessWidget {
                       onTap: () => state._close('trends'))),
               const SizedBox(width: 12),
               Expanded(
-                  child: PButton(s.t('care.to_home'),
+                  child: PButton(s.strings.care.to_home,
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,
@@ -816,4 +453,26 @@ class _Summary extends StatelessWidget {
       ]),
     );
   }
+}
+
+(IconData, PillKind) _summaryIcon(String id) {
+  final metric = CheckInMetric.fromId(id);
+  if (metric == CheckInMetric.mood) return (LucideIcons.smile, PillKind.info);
+  if (metric == CheckInMetric.bloodPressure) return (LucideIcons.activity, PillKind.violet);
+  if (metric == CheckInMetric.glucose) return (LucideIcons.droplet, PillKind.success);
+  if (metric == CheckInMetric.weight) return (LucideIcons.scale, PillKind.info);
+  if (metric == CheckInMetric.pain) return (LucideIcons.zap, PillKind.warn);
+  if (metric == CheckInMetric.symptoms) return (LucideIcons.stethoscope, PillKind.neutral);
+  return (LucideIcons.activity, PillKind.neutral);
+}
+
+String _summaryLabel(PatientAppState s, String id) {
+  final metric = CheckInMetric.fromId(id);
+  if (metric == CheckInMetric.mood) return s.strings.profile.m_mood;
+  if (metric == CheckInMetric.bloodPressure) return s.strings.profile.m_bp;
+  if (metric == CheckInMetric.glucose) return s.strings.profile.m_glucose;
+  if (metric == CheckInMetric.weight) return s.strings.profile.m_weight;
+  if (metric == CheckInMetric.pain) return s.strings.profile.m_pain;
+  if (metric == CheckInMetric.symptoms) return s.strings.checkin.symptoms;
+  return id;
 }

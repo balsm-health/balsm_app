@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
+import '../storage_target.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
 
@@ -49,12 +50,12 @@ class _StorageSyncSheet extends StatefulWidget {
 
 class _StorageSyncSheetState extends State<_StorageSyncSheet> {
   String phase = 'idle'; // idle | connecting | migrating | done | confirm_disconnect
-  String? target;
+  StorageTarget? target;
   int progress = 0;
   Timer? _timer;
 
   PatientAppState get s => widget.s;
-  String get active => s.storageProvider;
+  StorageTarget get active => s.storageProvider;
   bool get ar => s.rtl;
 
   @override
@@ -63,7 +64,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     super.dispose();
   }
 
-  void _runPhase(String to, String mode) {
+  void _runPhase(StorageTarget to, String mode) {
     setState(() {
       target = to;
       phase = mode;
@@ -88,14 +89,14 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     });
   }
 
-  void _select(String to) {
+  void _select(StorageTarget to) {
     if (to == active) return;
-    if (to == 'local') {
+    if (to.isLocal) {
       setState(() {
-        target = 'local';
+        target = StorageTarget.local;
         phase = 'confirm_disconnect';
       });
-    } else if (active == 'local') {
+    } else if (active.isLocal) {
       _runPhase(to, 'connecting');
     } else {
       _runPhase(to, 'migrating');
@@ -161,14 +162,14 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
         child: Text(s.strings.storage.store_choose_help, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
       ),
-      ...const ['local', 'icloud', 'gdrive'].map(_providerCard),
+      ...StorageTarget.picker.map(_providerCard),
     ]);
   }
 
-  Widget _providerCard(String p) {
+  Widget _providerCard(StorageTarget p) {
     final cfg = storageCfg(p);
     final isActive = active == p;
-    final isLocal = p == 'local';
+    final isLocal = p.isLocal;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Pressable(
@@ -199,7 +200,8 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Text(s.t(cfg.label), style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                Text(p.label(s.strings.storage),
+                    style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                 if (isLocal) ...[
                   const SizedBox(width: 8),
                   Pill(s.strings.storage.store_always_on,
@@ -247,7 +249,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           child: Spinner(size: 34, stroke: 3, color: cfg.color),
         ),
         const SizedBox(height: 18),
-        Text(s.strings.storage.store_connecting(s.t(cfg.label)),
+        Text(s.strings.storage.store_connecting(target!.label(s.strings.storage)),
             textAlign: TextAlign.center, style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl)),
         const SizedBox(height: 6),
         Text(s.strings.storage.store_auto_start, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
@@ -279,7 +281,8 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(s.strings.storage.store_migrating,
                   style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              Text('${s.t(from.label)} → ${s.t(cfg.label)}', style: Typo.meta(ar: ar)),
+              Text('${active.label(s.strings.storage)} → ${target!.label(s.strings.storage)}',
+                  style: Typo.meta(ar: ar)),
             ])),
             Text('$pct%', style: Typo.num(size: FS.md, weight: FontWeight.w700, color: cfg.color)),
           ]),
@@ -299,7 +302,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     ));
   }
 
-  Widget _miniIco(({IconData icon, Color color, Color bg, Color border, dynamic label}) cfg) => Container(
+  Widget _miniIco(StorageChrome cfg) => Container(
         width: 40,
         height: 40,
         alignment: Alignment.center,
@@ -307,7 +310,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
         child: Icon(cfg.icon, size: 20, color: cfg.color),
       );
 
-  Widget _stepRow(int i, ({IconData icon, Color color, Color bg, Color border, dynamic label}) cfg) {
+  Widget _stepRow(int i, StorageChrome cfg) {
     final done = i < progress;
     final act = i == progress; // current in-flight step
     return AnimatedContainer(
@@ -340,7 +343,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
   // ── DONE ───────────────────────────────────────────────────
   Widget _done() {
     final cfg = storageCfg(target!);
-    final toLocal = target == 'local';
+    final toLocal = target!.isLocal;
     return RiseIn(
         child: Padding(
       padding: const EdgeInsets.fromLTRB(0, 28, 0, 8),
@@ -368,7 +371,9 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
             const SizedBox(width: 10),
             Flexible(
                 child: Text(
-                    toLocal ? s.strings.storage.store_device_only : s.strings.storage.store_synced_with(s.t(cfg.label)),
+                    toLocal
+                        ? s.strings.storage.store_device_only
+                        : s.strings.storage.store_synced_with(target!.label(s.strings.storage)),
                     style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1))),
           ]),
         ),
@@ -386,7 +391,6 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
 
   // ── CONFIRM DISCONNECT ─────────────────────────────────────
   Widget _confirmDisconnect() {
-    final cur = storageCfg(active);
     return RiseIn(
         child: Padding(
       padding: const EdgeInsets.fromLTRB(0, 20, 0, 4),
@@ -405,12 +409,14 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
               Text(s.strings.storage.store_remove_q,
                   style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
               const SizedBox(height: 4),
-              Text(s.strings.storage.store_remove_help(s.t(cur.label)), style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+              Text(s.strings.storage.store_remove_help(active.label(s.strings.storage)),
+                  style: Typo.meta(ar: ar).copyWith(height: 1.5)),
             ])),
           ]),
         ),
         const SizedBox(height: 14),
-        _DangerButton(label: s.strings.storage.store_remove_cta, onTap: () => _runPhase('local', 'connecting')),
+        _DangerButton(
+            label: s.strings.storage.store_remove_cta, onTap: () => _runPhase(StorageTarget.local, 'connecting')),
         const SizedBox(height: 10),
         PButton(s.strings.common.cancel,
             variant: BtnVariant.secondary,

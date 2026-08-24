@@ -8,8 +8,7 @@ import 'package:core/core.dart';
 String get _languageCode => 'ar';
 String get _localeName => 'ar';
 
-String _select(Object? value, Map<String, String> cases) =>
-    i69n.select(value, cases);
+String _select(Object? value, Map<String, String> cases) => i69n.select(value, cases);
 
 class Strings_ar extends Strings {
   const Strings_ar();
@@ -32,8 +31,7 @@ class Strings_ar extends Strings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'auth':
@@ -106,27 +104,22 @@ class AuthStrings_ar extends AuthStrings {
   String get pw_min => "٨ أحرف على الأقل";
   String get pw_invalid_creds => "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
   String get fp_title => "إعادة تعيين كلمة المرور";
-  String get fp_help =>
-      "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
+  String get fp_help => "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
   String get fp_send => "إرسال رمز إعادة التعيين";
   String get fp_code_label => "رمز إعادة التعيين";
   String get fp_new_pw => "كلمة المرور الجديدة";
   String get fp_reset => "إعادة تعيين كلمة المرور";
   String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
   String get fp_done => "تم";
-  String get fp_success =>
-      "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
+  String get fp_success => "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
   String get dial_title => "رمز الدولة";
   String get dial_search => "ابحث عن دولة";
-  String auth_locked_retry(String secs) =>
-      "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
-  String get auth_phone_soon =>
-      "تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.";
+  String auth_locked_retry(String secs) => "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
+  String get auth_phone_soon => "تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'use_phone':
@@ -225,8 +218,7 @@ class BootStrings_ar extends BootStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'boot_preparing':
@@ -274,8 +266,7 @@ class CareStrings_ar extends CareStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'to_doctor':
@@ -399,6 +390,19 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_save => "حفظ";
   String get ql_saved => "تم الحفظ";
   String get body_location => "أين يؤلمك؟";
+  String get body_view_front => "أمامي";
+  String get body_view_back => "خلفي";
+  String get body_sex_female => "أنثى";
+  String get body_sex_male => "ذكر";
+  String get body_tap => "انقر لتحديد الموقع";
+  String get list_sep => "، ";
+  String get list_mid => " · ";
+  String pain_n(String n) => "$n/10";
+  String pain_n_where(String n, String where) => "$n/10 · $where";
+  String labeled_where(String label, String where) => "$label · $where";
+  String reading_unit(String n, String unit) => "$n $unit";
+  String reading_unit_ctx(String n, String unit, String ctx) => "$n $unit · $ctx";
+  String bp_pair(String sys, String dia) => "$sys/$dia";
   String get cond_icd10_hint => "رمز ICD-10 (اختياري)";
   String get cond_onset_hint => "سنة البدء";
   String get q_vitals_t => "مؤشراتك الحيوية";
@@ -417,57 +421,15 @@ class CheckinStrings_ar extends CheckinStrings {
   String get sym_chest_tightness => "ضيق بالصدر";
   String get sym_nausea => "غثيان";
   String get sym_thirst => "عطش زائد";
-  String get body_head => "الرأس";
-  String get body_neck => "الرقبة";
-  String get body_l_shoulder => "كتف أيسر";
-  String get body_r_shoulder => "كتف أيمن";
-  String get body_chest => "الصدر";
-  String get body_l_upper_arm => "عضد أيسر";
-  String get body_r_upper_arm => "عضد أيمن";
-  String get body_abdomen => "البطن";
-  String get body_l_elbow => "مرفق أيسر";
-  String get body_r_elbow => "مرفق أيمن";
-  String get body_l_forearm => "ساعد أيسر";
-  String get body_r_forearm => "ساعد أيمن";
-  String get body_pelvis => "الحوض";
-  String get body_l_hand => "يد يسرى";
-  String get body_r_hand => "يد يمنى";
-  String get body_l_thigh => "فخذ أيسر";
-  String get body_r_thigh => "فخذ أيمن";
-  String get body_l_knee => "ركبة يسرى";
-  String get body_r_knee => "ركبة يمنى";
-  String get body_l_shin => "ساق يسرى";
-  String get body_r_shin => "ساق يمنى";
-  String get body_l_foot => "قدم يسرى";
-  String get body_r_foot => "قدم يمنى";
-  String get body_bk_head => "الرأس";
-  String get body_bk_neck => "الرقبة";
-  String get body_bk_l_shoulder => "كتف أيسر";
-  String get body_bk_r_shoulder => "كتف أيمن";
-  String get body_bk_upper => "أعلى الظهر";
-  String get body_bk_mid => "وسط الظهر";
-  String get body_bk_lower => "أسفل الظهر";
-  String get body_bk_l_glute => "أرداف أيسر";
-  String get body_bk_r_glute => "أرداف أيمن";
-  String get body_bk_l_hamstr => "أوتار ركبة يسرى";
-  String get body_bk_r_hamstr => "أوتار ركبة يمنى";
-  String get body_bk_l_calf => "بطة ساق يسرى";
-  String get body_bk_r_calf => "بطة ساق يمنى";
-  String get body_bk_l_heel => "كعب أيسر";
-  String get body_bk_r_heel => "كعب أيمن";
-  String q_mood_t(Gender gender) =>
-      "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
-  String q_sym_h(Gender gender) => "حرّك${_select(gender, {
-            'female': 'ي'
-          })} المؤشر لمستوى الألم، ثم ${_select(gender, {
+  String q_mood_t(Gender gender) => "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
+  String q_sym_h(Gender gender) => "حرّك${_select(gender, {'female': 'ي'})} المؤشر لمستوى الألم، ثم ${_select(gender, {
             'female': 'اختاري',
             'other': 'اختر'
           })} ما تشعر${_select(gender, {'female': 'ين'})} به.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'latest':
@@ -578,6 +540,32 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_saved;
       case 'body_location':
         return body_location;
+      case 'body_view_front':
+        return body_view_front;
+      case 'body_view_back':
+        return body_view_back;
+      case 'body_sex_female':
+        return body_sex_female;
+      case 'body_sex_male':
+        return body_sex_male;
+      case 'body_tap':
+        return body_tap;
+      case 'list_sep':
+        return list_sep;
+      case 'list_mid':
+        return list_mid;
+      case 'pain_n':
+        return pain_n;
+      case 'pain_n_where':
+        return pain_n_where;
+      case 'labeled_where':
+        return labeled_where;
+      case 'reading_unit':
+        return reading_unit;
+      case 'reading_unit_ctx':
+        return reading_unit_ctx;
+      case 'bp_pair':
+        return bp_pair;
       case 'cond_icd10_hint':
         return cond_icd10_hint;
       case 'cond_onset_hint':
@@ -614,82 +602,6 @@ class CheckinStrings_ar extends CheckinStrings {
         return sym_nausea;
       case 'sym_thirst':
         return sym_thirst;
-      case 'body_head':
-        return body_head;
-      case 'body_neck':
-        return body_neck;
-      case 'body_l_shoulder':
-        return body_l_shoulder;
-      case 'body_r_shoulder':
-        return body_r_shoulder;
-      case 'body_chest':
-        return body_chest;
-      case 'body_l_upper_arm':
-        return body_l_upper_arm;
-      case 'body_r_upper_arm':
-        return body_r_upper_arm;
-      case 'body_abdomen':
-        return body_abdomen;
-      case 'body_l_elbow':
-        return body_l_elbow;
-      case 'body_r_elbow':
-        return body_r_elbow;
-      case 'body_l_forearm':
-        return body_l_forearm;
-      case 'body_r_forearm':
-        return body_r_forearm;
-      case 'body_pelvis':
-        return body_pelvis;
-      case 'body_l_hand':
-        return body_l_hand;
-      case 'body_r_hand':
-        return body_r_hand;
-      case 'body_l_thigh':
-        return body_l_thigh;
-      case 'body_r_thigh':
-        return body_r_thigh;
-      case 'body_l_knee':
-        return body_l_knee;
-      case 'body_r_knee':
-        return body_r_knee;
-      case 'body_l_shin':
-        return body_l_shin;
-      case 'body_r_shin':
-        return body_r_shin;
-      case 'body_l_foot':
-        return body_l_foot;
-      case 'body_r_foot':
-        return body_r_foot;
-      case 'body_bk_head':
-        return body_bk_head;
-      case 'body_bk_neck':
-        return body_bk_neck;
-      case 'body_bk_l_shoulder':
-        return body_bk_l_shoulder;
-      case 'body_bk_r_shoulder':
-        return body_bk_r_shoulder;
-      case 'body_bk_upper':
-        return body_bk_upper;
-      case 'body_bk_mid':
-        return body_bk_mid;
-      case 'body_bk_lower':
-        return body_bk_lower;
-      case 'body_bk_l_glute':
-        return body_bk_l_glute;
-      case 'body_bk_r_glute':
-        return body_bk_r_glute;
-      case 'body_bk_l_hamstr':
-        return body_bk_l_hamstr;
-      case 'body_bk_r_hamstr':
-        return body_bk_r_hamstr;
-      case 'body_bk_l_calf':
-        return body_bk_l_calf;
-      case 'body_bk_r_calf':
-        return body_bk_r_calf;
-      case 'body_bk_l_heel':
-        return body_bk_l_heel;
-      case 'body_bk_r_heel':
-        return body_bk_r_heel;
       case 'q_mood_t':
         return q_mood_t;
       case 'q_sym_h':
@@ -727,8 +639,7 @@ class CommonStrings_ar extends CommonStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -788,8 +699,7 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get em_ph => "you@example.com";
   String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
   String get em_eg => "مصر";
-  String get em_intro =>
-      "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
+  String get em_intro => "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
   String get em_tap_call => "اضغط للاتصال";
   String get em_ambulance => "إسعاف";
   String get em_police => "شرطة";
@@ -805,12 +715,9 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_ttl_7d => "٧ أيام";
   String get eqr_help_active =>
       "اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.";
-  String get eqr_help_signin =>
-      "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
-  String get eqr_help_incomplete =>
-      "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
-  String get eqr_help_create =>
-      "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
+  String get eqr_help_signin => "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
+  String get eqr_help_incomplete => "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
+  String get eqr_help_create => "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
   String get eqr_expired => "منتهي";
   String eqr_expires_in(String t) => "ينتهي خلال $t";
   String get eqr_copy => "نسخ";
@@ -828,8 +735,7 @@ class EmergencyStrings_ar extends EmergencyStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'em_title':
@@ -930,21 +836,14 @@ class HomeStrings_ar extends HomeStrings {
   String get on_track => "ملتزمة";
   String get experience => "خبرة";
   String get away_banner => "أنت خارج بلدك";
-  String hero_q(Gender gender) => "${_select(gender, {
-            'male': 'كيف تشعر اليوم؟',
-            'female': 'كيف تشعرين اليوم؟',
-            'other': 'كيف تشعر اليوم؟'
-          })}";
-  String hero_cta(Gender gender) => "${_select(gender, {
-            'male': 'ابدأ المتابعة',
-            'female': 'ابدئي المتابعة',
-            'other': 'ابدأ المتابعة'
-          })}";
+  String hero_q(Gender gender) =>
+      "${_select(gender, {'male': 'كيف تشعر اليوم؟', 'female': 'كيف تشعرين اليوم؟', 'other': 'كيف تشعر اليوم؟'})}";
+  String hero_cta(Gender gender) =>
+      "${_select(gender, {'male': 'ابدأ المتابعة', 'female': 'ابدئي المتابعة', 'other': 'ابدأ المتابعة'})}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'nudge_handle':
@@ -1031,8 +930,7 @@ class MedsStrings_ar extends MedsStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'meds_today':
@@ -1136,8 +1034,7 @@ class NavStrings_ar extends NavStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'tab_home':
@@ -1164,8 +1061,7 @@ class OnboardingStrings_ar extends OnboardingStrings {
   final Strings_ar _parent;
   const OnboardingStrings_ar(this._parent) : super(_parent);
   String get w_title => "صحتك، دائماً قريبة.";
-  String get w_sub =>
-      "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
+  String get w_sub => "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
   String get w_have => "لديّ حساب بالفعل";
   String get w_signin => "تسجيل الدخول";
   String get w_or => "أو";
@@ -1189,16 +1085,12 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get dob_select => "اختر تاريخاً";
   String get age_gate_body =>
       "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
-  String w_start(Gender gender) => "${_select(gender, {
-            'male': 'ابدأ الآن',
-            'female': 'ابدئي الآن',
-            'other': 'ابدأ الآن'
-          })}";
+  String w_start(Gender gender) =>
+      "${_select(gender, {'male': 'ابدأ الآن', 'female': 'ابدئي الآن', 'other': 'ابدأ الآن'})}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'w_title':
@@ -1266,12 +1158,10 @@ class WalkthroughStrings_ar extends WalkthroughStrings {
       "بلسم أول وأكبر منصة صحية مفتوحة المصدر بُنيت في مصر والعالم العربي — بالعربية أولاً، ويملكها من يستخدمها.";
   String get wt_eyebrow_2 => "يوم مع بلسم";
   String get wt_title_2 => "من قياس هذا الصباح إلى الصيدلية الليلة.";
-  String get wt_body_2 =>
-      "سجلّ واحد، وتسجيل يومي، وخريطة رعاية واحدة — جرّبها في الأسفل، تماماً كما تظهر في التطبيق.";
+  String get wt_body_2 => "سجلّ واحد، وتسجيل يومي، وخريطة رعاية واحدة — جرّبها في الأسفل، تماماً كما تظهر في التطبيق.";
   String get wt_eyebrow_3 => "ملكك دائماً";
   String get wt_title_3 => "بياناتك تبقى ملكك.";
-  String get wt_body_3 =>
-      "محفوظة على هاتفك بالتصميم، وتعمل دون إنترنت. أنت تختار ما تشاركه — ومع من.";
+  String get wt_body_3 => "محفوظة على هاتفك بالتصميم، وتعمل دون إنترنت. أنت تختار ما تشاركه — ومع من.";
   String get wt_skip => "تخطّي";
   String get wt_next => "التالي";
   String get wt_start => "ابدأ الآن";
@@ -1292,8 +1182,7 @@ class WalkthroughStrings_ar extends WalkthroughStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'wt_eyebrow_1':
@@ -1389,26 +1278,18 @@ class PrivacyStrings_ar extends PrivacyStrings {
   String get pv_deletion => "الحذف";
   String get pv_saving => "جارٍ الحفظ…";
   String get pv_agree => "أوافق وأتابع";
-  String get pv_intro_body =>
-      "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
-  String get pv_collect_body =>
-      "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
-  String get pv_protect_body =>
-      "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
-  String get pv_rights_body =>
-      "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
-  String pv_authority_body(String authority) =>
-      "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
-  String get pv_sharing_body =>
-      "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
-  String get pv_deletion_body =>
-      "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
+  String get pv_intro_body => "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
+  String get pv_collect_body => "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
+  String get pv_protect_body => "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
+  String get pv_rights_body => "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
+  String pv_authority_body(String authority) => "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
+  String get pv_sharing_body => "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
+  String get pv_deletion_body => "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
   String get pv_scroll_hint => "مرّر للأسفل للمتابعة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'pv_sharing':
@@ -1557,8 +1438,7 @@ class ProfileStrings_ar extends ProfileStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'm_bp':
@@ -1703,8 +1583,7 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_source => "المصدر";
   String get rec_view => "عرض المستند";
   String get rec_share => "مشاركة مع الطبيب";
-  String get rec_empty_h =>
-      "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
+  String get rec_empty_h => "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
   String get rec_pick_type => "ما الذي تضيفه؟";
   String get rec_title => "العنوان";
   String get rec_title_ph => "مثال: تحليل السكر التراكمي";
@@ -1717,8 +1596,7 @@ class RecordsStrings_ar extends RecordsStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'reports':
@@ -1808,8 +1686,7 @@ class SettingsStrings_ar extends SettingsStrings {
   String get add_member => "إضافة فرد من الأسرة";
   String get choose_lang => "اختر اللغة";
   String get choose_country => "أين أنت الآن؟";
-  String get travel_help =>
-      "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
+  String get travel_help => "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
   String get lang_full => "دعم كامل";
   String get lang_beta => "تجريبي";
   String get home_country => "بلدك";
@@ -1818,14 +1695,12 @@ class SettingsStrings_ar extends SettingsStrings {
   String get na_not_available => "غير متاح بعد";
   String get na_notify_me => "أبلغني عند التوفر";
   String get na_status_support => "حالة الخدمة والدعم";
-  String get cal_months =>
-      "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
+  String get cal_months => "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
   String get cal_weekdays => "أحد|إثن|ثلا|أرب|خمي|جمع|سبت";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'trust_private':
@@ -1886,10 +1761,12 @@ class StorageStrings_ar extends StorageStrings {
   String get storage_short => "التخزين";
   String get storage_icloud => "آي كلاود";
   String get storage_gdrive => "جوجل درايف";
+  String get storage_balsm_cloud => "سحابة بلسم";
   String get storage_device => "على هذا الجهاز";
   String get store_local => "على هذا الجهاز";
   String get store_icloud => "آي كلاود";
   String get store_gdrive => "جوجل درايف";
+  String get store_balsm_cloud => "سحابة بلسم";
   String get store_synced => "تمت المزامنة";
   String get store_local_only => "محلي فقط";
   String get store_backed => "محفوظ احتياطياً";
@@ -1911,14 +1788,12 @@ class StorageStrings_ar extends StorageStrings {
   String store_synced_with(String target) => "مزامن مع $target";
   String get store_done => "تم";
   String get store_remove_q => "إيقاف النسخ الاحتياطي؟";
-  String store_remove_help(String target) =>
-      "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
+  String store_remove_help(String target) => "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
   String get store_remove_cta => "إيقاف النسخ الاحتياطي";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'store_backup_to':
@@ -1943,6 +1818,8 @@ class StorageStrings_ar extends StorageStrings {
         return storage_icloud;
       case 'storage_gdrive':
         return storage_gdrive;
+      case 'storage_balsm_cloud':
+        return storage_balsm_cloud;
       case 'storage_device':
         return storage_device;
       case 'store_local':
@@ -1951,6 +1828,8 @@ class StorageStrings_ar extends StorageStrings {
         return store_icloud;
       case 'store_gdrive':
         return store_gdrive;
+      case 'store_balsm_cloud':
+        return store_balsm_cloud;
       case 'store_synced':
         return store_synced;
       case 'store_local_only':

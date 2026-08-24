@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'storage_target.dart';
 
 /// App-shell preference group (`pa.*` namespace) — language, accent, country,
 /// backup target, signed-in flag. All storage goes through the injected
@@ -16,8 +17,9 @@ class PatientAppPrefs extends ModulePreferences {
   Future<String> country() async => await read<String>('country') ?? 'EG';
   Future<void> setCountry(String v) => write('country', v);
 
-  Future<String> storage() async => await read<String>('storage') ?? 'local';
-  Future<void> setStorage(String v) => write('storage', v);
+  Future<StorageTarget> storage() async =>
+      StorageTarget.tryFromId(await read<String>('storage') ?? '') ?? StorageTarget.local;
+  Future<void> setStorage(StorageTarget v) => write('storage', v.id);
 
   Future<bool> signedIn() async => await read<bool>('signedIn') ?? false;
   Future<void> setSignedIn(bool v) => write('signedIn', v);
