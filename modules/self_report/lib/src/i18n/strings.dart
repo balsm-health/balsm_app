@@ -8,7 +8,7 @@ import 'messages_ar.i69n.dart';
 export 'messages.i69n.dart';
 export 'messages_ar.i69n.dart';
 
-/// Self-report catalog copy (body-region labels). English + Arabic both
+/// Self-report catalog copy (body-region + tissue labels). English + Arabic both
 /// compiled in — the catalog is tiny; deferring Arabic would flash English
 /// on the body map before `loadLibrary` returns.
 ///

@@ -6,7 +6,7 @@ enum BodyView { front, back }
 /// A selectable region on the body figure (body-map hotspot). Closed catalog —
 /// adding a region is a product decision, not free-form input.
 ///
-/// Structural facts: [view], figure coordinates ([cx]/[cy] in the 200×400
+/// Structural facts: [view], figure coordinates ([cx]/[cy] in the 200×384
 /// body-figure space), persist [id]. Localized copy lives in the module i69n
 /// bundle; resolve via [label] / [labelForLang].
 enum BodyRegion {
@@ -47,7 +47,26 @@ enum BodyRegion {
   bk_l_calf(BodyView.back, 80, 330, 'bk-l-calf'),
   bk_r_calf(BodyView.back, 120, 330, 'bk-r-calf'),
   bk_l_heel(BodyView.back, 80, 358, 'bk-l-heel'),
-  bk_r_heel(BodyView.back, 120, 358, 'bk-r-heel');
+  bk_r_heel(BodyView.back, 120, 358, 'bk-r-heel'),
+  // Head extras — smaller than [head] so a tap on an eye/ear/jaw wins.
+  sinuses(BodyView.front, 100, 22),
+  l_eye(BodyView.front, 89, 28, 'l-eye'),
+  r_eye(BodyView.front, 111, 28, 'r-eye'),
+  l_ear(BodyView.front, 79, 32, 'l-ear'),
+  r_ear(BodyView.front, 121, 32, 'r-ear'),
+  jaw(BodyView.front, 100, 44),
+  bk_l_ear(BodyView.back, 79, 32, 'bk-l-ear'),
+  bk_r_ear(BodyView.back, 121, 32, 'bk-r-ear'),
+  // Named viscera — organ layer only.
+  heart(BodyView.front, 92, 108),
+  l_lung(BodyView.front, 80, 102, 'l-lung'),
+  r_lung(BodyView.front, 120, 102, 'r-lung'),
+  stomach(BodyView.front, 95, 148),
+  liver(BodyView.front, 118, 140),
+  intestines(BodyView.front, 100, 168),
+  bladder(BodyView.front, 100, 198),
+  l_kidney(BodyView.back, 82, 158, 'l-kidney'),
+  r_kidney(BodyView.back, 118, 158, 'r-kidney');
 
   const BodyRegion(this.view, this.cx, this.cy, [this._id]);
 
@@ -60,8 +79,14 @@ enum BodyRegion {
   /// that already matches (head, chest, abdomen, …).
   String get id => _id ?? name;
 
-  /// Front-view regions, in render order.
+  /// Front-view surface + head extras (not viscera).
   static const front = <BodyRegion>[
+    sinuses,
+    l_eye,
+    r_eye,
+    l_ear,
+    r_ear,
+    jaw,
     head,
     neck,
     l_shoulder,
@@ -87,8 +112,10 @@ enum BodyRegion {
     r_foot,
   ];
 
-  /// Back-view regions, in render order.
+  /// Back-view surface + ears (not viscera).
   static const back = <BodyRegion>[
+    bk_l_ear,
+    bk_r_ear,
     bk_head,
     bk_neck,
     bk_l_shoulder,
@@ -106,8 +133,25 @@ enum BodyRegion {
     bk_r_heel,
   ];
 
-  /// Every region across both views.
-  static const all = [...front, ...back];
+  /// Named viscera drawn on the front organ layer.
+  static const organFront = <BodyRegion>[
+    heart,
+    l_lung,
+    r_lung,
+    stomach,
+    liver,
+    intestines,
+    bladder,
+  ];
+
+  /// Named viscera drawn on the back organ layer.
+  static const organBack = <BodyRegion>[
+    l_kidney,
+    r_kidney,
+  ];
+
+  /// Every region across both views, including viscera.
+  static const all = [...front, ...back, ...organFront, ...organBack];
 
   static final Map<String, BodyRegion> _byId = {
     for (final r in values) r.id: r,
@@ -115,6 +159,18 @@ enum BodyRegion {
 
   /// Resolve a stored region id, or null if unknown / retired.
   static BodyRegion? fromId(String id) => _byId[id];
+
+  /// Eyes, ears, sinuses, jaw — smaller than the generic head hotspot.
+  bool get isHeadExtra => switch (this) {
+        sinuses || l_eye || r_eye || l_ear || r_ear || jaw || bk_l_ear || bk_r_ear => true,
+        _ => false,
+      };
+
+  /// Named viscera. Selectable on the organ tissue layer only.
+  bool get isOrgan => switch (this) {
+        heart || l_lung || r_lung || stomach || liver || intestines || bladder || l_kidney || r_kidney => true,
+        _ => false,
+      };
 
   /// Label in [messages]' locale (module i69n `body.*`).
   String label(Messages messages) {
@@ -158,6 +214,23 @@ enum BodyRegion {
       bk_r_calf => b.bk_r_calf,
       bk_l_heel => b.bk_l_heel,
       bk_r_heel => b.bk_r_heel,
+      sinuses => b.sinuses,
+      l_eye => b.l_eye,
+      r_eye => b.r_eye,
+      l_ear => b.l_ear,
+      r_ear => b.r_ear,
+      jaw => b.jaw,
+      bk_l_ear => b.bk_l_ear,
+      bk_r_ear => b.bk_r_ear,
+      heart => b.heart,
+      l_lung => b.l_lung,
+      r_lung => b.r_lung,
+      stomach => b.stomach,
+      liver => b.liver,
+      intestines => b.intestines,
+      bladder => b.bladder,
+      l_kidney => b.l_kidney,
+      r_kidney => b.r_kidney,
     };
   }
 

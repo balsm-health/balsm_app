@@ -38,6 +38,7 @@ class AppDatabase extends _$AppDatabase {
           // user_id — re-keying the DAOs lands with the dependants feature.
           await _ensureColumn('medications', 'health_profile_id', 'TEXT');
           await _ensureColumn('health_record', 'health_profile_id', 'TEXT');
+          await _ensurePainSitePk();
           // These indexes must be created AFTER the column patches above — on a
           // pre-existing DB the `medications`/`health_record` tables predate
           // `health_profile_id`, so indexing it inside `_phiSchema` (which runs
@@ -58,6 +59,38 @@ class AppDatabase extends _$AppDatabase {
     if (!hasColumn) {
       await customStatement('ALTER TABLE $table ADD COLUMN $column $ddlType');
     }
+  }
+
+  /// Rebuilds `check_in_pain_region` so one check-in can store the same region
+  /// on more than one tissue. Pre-existing rows become `tissue_id = 'muscle'`.
+  Future<void> _ensurePainSitePk() async {
+    final info = await customSelect('PRAGMA table_info(check_in_pain_region)').get();
+    if (info.isEmpty) return;
+    final pkCount = info.where((r) => r.read<int>('pk') > 0).length;
+    final hasTissue = info.any((r) => r.read<String>('name') == 'tissue_id');
+    if (hasTissue && pkCount >= 3) return;
+
+    await customStatement('''
+      CREATE TABLE check_in_pain_region_new (
+        check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE,
+        region_id TEXT NOT NULL,
+        tissue_id TEXT NOT NULL DEFAULT 'muscle',
+        PRIMARY KEY (check_in_id, region_id, tissue_id)
+      )
+    ''');
+    if (hasTissue) {
+      await customStatement(
+        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        "SELECT check_in_id, region_id, COALESCE(tissue_id, 'muscle') FROM check_in_pain_region",
+      );
+    } else {
+      await customStatement(
+        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        "SELECT check_in_id, region_id, 'muscle' FROM check_in_pain_region",
+      );
+    }
+    await customStatement('DROP TABLE check_in_pain_region');
+    await customStatement('ALTER TABLE check_in_pain_region_new RENAME TO check_in_pain_region');
   }
 
   /// Anchors any NULL `health_profile_id` rows to their user's profile row
@@ -229,7 +262,8 @@ const _phiSchema = <String>[
   CREATE TABLE IF NOT EXISTS check_in_pain_region (
     check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE,
     region_id TEXT NOT NULL,
-    PRIMARY KEY (check_in_id, region_id)
+    tissue_id TEXT NOT NULL DEFAULT 'muscle',
+    PRIMARY KEY (check_in_id, region_id, tissue_id)
   )''',
   'CREATE INDEX IF NOT EXISTS idx_check_in_profile ON check_in(health_profile_id)',
   // Disclosure/consent acceptance ledger (disclosure module). PHI-free —

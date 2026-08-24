@@ -39,6 +39,32 @@
     "bk_l_calf": "L. Calf",
     "bk_r_calf": "R. Calf",
     "bk_l_heel": "L. Heel",
-    "bk_r_heel": "R. Heel"
+    "bk_r_heel": "R. Heel",
+    "sinuses": "Sinuses",
+    "l_eye": "L. Eye",
+    "r_eye": "R. Eye",
+    "l_ear": "L. Ear",
+    "r_ear": "R. Ear",
+    "jaw": "Jaw",
+    "bk_l_ear": "L. Ear",
+    "bk_r_ear": "R. Ear",
+    "heart": "Heart",
+    "l_lung": "L. Lung",
+    "r_lung": "R. Lung",
+    "stomach": "Stomach",
+    "liver": "Liver",
+    "intestines": "Intestines",
+    "bladder": "Bladder",
+    "l_kidney": "L. Kidney",
+    "r_kidney": "R. Kidney"
+  },
+  "tissue": {
+    "skin": "Skin",
+    "muscle": "Muscle",
+    "bone": "Bone",
+    "joint": "Joint",
+    "tendon": "Tendon",
+    "nerve": "Nerve",
+    "organ": "Organ"
   }
 }

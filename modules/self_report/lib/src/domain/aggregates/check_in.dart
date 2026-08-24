@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
 
-import '../value_objects/body_region.dart';
+import '../value_objects/pain_site.dart';
 import '../value_objects/ids.dart';
 import '../value_objects/mood.dart';
 import '../value_objects/pain_level.dart';
@@ -22,7 +22,7 @@ class CheckIn {
     required this.recordedAt,
     this.mood,
     required this.painLevel,
-    required this.painRegions,
+    required this.painSites,
     required this.symptoms,
     required this.vitals,
     this.note,
@@ -38,7 +38,7 @@ class CheckIn {
   /// about how they felt, and inventing a score would invent PHI.
   final Mood? mood;
   final PainLevel painLevel;
-  final Set<BodyRegion> painRegions;
+  final Set<PainSite> painSites;
   final Set<SymptomId> symptoms;
   final Vitals vitals;
   final String? note;

@@ -9,6 +9,7 @@ String get _localeName => 'en';
 class Messages implements i69n.I69nMessageBundle {
   const Messages();
   BodyMessages get body => BodyMessages(this);
+  TissueMessages get tissue => TissueMessages(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -17,6 +18,8 @@ class Messages implements i69n.I69nMessageBundle {
     switch (key) {
       case 'body':
         return body;
+      case 'tissue':
+        return tissue;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -64,6 +67,23 @@ class BodyMessages implements i69n.I69nMessageBundle {
   String get bk_r_calf => "R. Calf";
   String get bk_l_heel => "L. Heel";
   String get bk_r_heel => "R. Heel";
+  String get sinuses => "Sinuses";
+  String get l_eye => "L. Eye";
+  String get r_eye => "R. Eye";
+  String get l_ear => "L. Ear";
+  String get r_ear => "R. Ear";
+  String get jaw => "Jaw";
+  String get bk_l_ear => "L. Ear";
+  String get bk_r_ear => "R. Ear";
+  String get heart => "Heart";
+  String get l_lung => "L. Lung";
+  String get r_lung => "R. Lung";
+  String get stomach => "Stomach";
+  String get liver => "Liver";
+  String get intestines => "Intestines";
+  String get bladder => "Bladder";
+  String get l_kidney => "L. Kidney";
+  String get r_kidney => "R. Kidney";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -146,6 +166,76 @@ class BodyMessages implements i69n.I69nMessageBundle {
         return bk_l_heel;
       case 'bk_r_heel':
         return bk_r_heel;
+      case 'sinuses':
+        return sinuses;
+      case 'l_eye':
+        return l_eye;
+      case 'r_eye':
+        return r_eye;
+      case 'l_ear':
+        return l_ear;
+      case 'r_ear':
+        return r_ear;
+      case 'jaw':
+        return jaw;
+      case 'bk_l_ear':
+        return bk_l_ear;
+      case 'bk_r_ear':
+        return bk_r_ear;
+      case 'heart':
+        return heart;
+      case 'l_lung':
+        return l_lung;
+      case 'r_lung':
+        return r_lung;
+      case 'stomach':
+        return stomach;
+      case 'liver':
+        return liver;
+      case 'intestines':
+        return intestines;
+      case 'bladder':
+        return bladder;
+      case 'l_kidney':
+        return l_kidney;
+      case 'r_kidney':
+        return r_kidney;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class TissueMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const TissueMessages(this._parent);
+  String get skin => "Skin";
+  String get muscle => "Muscle";
+  String get bone => "Bone";
+  String get joint => "Joint";
+  String get tendon => "Tendon";
+  String get nerve => "Nerve";
+  String get organ => "Organ";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'skin':
+        return skin;
+      case 'muscle':
+        return muscle;
+      case 'bone':
+        return bone;
+      case 'joint':
+        return joint;
+      case 'tendon':
+        return tendon;
+      case 'nerve':
+        return nerve;
+      case 'organ':
+        return organ;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

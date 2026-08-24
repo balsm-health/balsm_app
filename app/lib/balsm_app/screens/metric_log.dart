@@ -1,4 +1,7 @@
+import 'package:account/account.dart' show accountProfileUseCaseProvider;
+import 'package:core/core.dart' show currentUserIdProvider, Gender;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
@@ -25,7 +28,7 @@ class MetricLogCapture {
     this.note,
     this.mood,
     this.painLevel = PainLevel.none,
-    this.painRegions = const {},
+    this.painSites = const {},
     this.symptoms = const {},
     this.vitals = Vitals.empty,
   });
@@ -34,7 +37,7 @@ class MetricLogCapture {
   final String? note;
   final Mood? mood;
   final PainLevel painLevel;
-  final Set<BodyRegion> painRegions;
+  final Set<PainSite> painSites;
   final Set<SymptomId> symptoms;
   final Vitals vitals;
 
@@ -46,7 +49,7 @@ class MetricLogCapture {
       other.mood == mood &&
       other.painLevel == painLevel &&
       other.vitals == vitals &&
-      _sameSet(other.painRegions, painRegions) &&
+      _sameSet(other.painSites, painSites) &&
       _sameSet(other.symptoms, symptoms);
 
   @override
@@ -56,7 +59,7 @@ class MetricLogCapture {
         mood,
         painLevel,
         vitals,
-        Object.hashAllUnordered(painRegions),
+        Object.hashAllUnordered(painSites),
         Object.hashAllUnordered(symptoms),
       );
 }
@@ -65,6 +68,35 @@ bool _sameSet<E>(Set<E> a, Set<E> b) => a.length == b.length && a.containsAll(b)
 
 typedef MetricLogSave = void Function(MetricLogCapture capture);
 typedef MetricLogChanged = void Function(MetricLogCapture capture, {required bool valid});
+
+/// Gender from the signed-in user's current profile. Profile details remain
+/// ephemeral and are never logged or copied into metric captures.
+final _currentProfileGenderProvider = FutureProvider.autoDispose<Gender?>((ref) async {
+  if (ref.watch(currentUserIdProvider) == null) return null;
+  return (await ref.watch(accountProfileUseCaseProvider).load())?.gender;
+});
+
+class _CurrentProfileBodyMap extends ConsumerWidget {
+  const _CurrentProfileBodyMap({
+    required this.s,
+    required this.selected,
+    required this.onToggle,
+  });
+
+  final PatientAppState s;
+  final Set<PainSite> selected;
+  final ValueChanged<PainSite> onToggle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gender = ref.watch(_currentProfileGenderProvider).valueOrNull ?? s.gender;
+    return BodyMap(
+      gender: gender,
+      selected: selected,
+      onToggle: onToggle,
+    );
+  }
+}
 
 /// The one-metric log template for [metric]. Same UI in the quick-log sheet
 /// and as a full check-in step.
@@ -651,21 +683,21 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
   late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
 
   double pain = 0;
-  final Set<BodyRegion> locations = {};
+  final Set<PainSite> locations = {};
 
   @override
   bool get valid => pain > 0 || locations.isNotEmpty;
 
   @override
   MetricLogCapture get capture {
-    final where = locations.map((r) => regionLabel(s, r)).join(s.strings.checkin.list_sep);
+    final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
     return MetricLogCapture(
       summary: where.isEmpty
           ? s.strings.checkin.pain_n('${pain.round()}')
           : s.strings.checkin.pain_n_where('${pain.round()}', where),
       note: _trimmedNote(noteCtrl),
       painLevel: PainLevel(pain.round()),
-      painRegions: locations,
+      painSites: locations,
     );
   }
 
@@ -704,10 +736,11 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
           child: Text(s.strings.checkin.body_location,
               style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
         ),
-        BodyMap(
+        _CurrentProfileBodyMap(
+            s: s,
             selected: locations,
-            onToggle: (region) => setState(() {
-                  locations.contains(region) ? locations.remove(region) : locations.add(region);
+            onToggle: (site) => setState(() {
+                  locations.contains(site) ? locations.remove(site) : locations.add(site);
                   emit();
                 })),
       ]),
@@ -741,7 +774,7 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
 
   SymptomId? symptom;
   bool noSymptoms = false;
-  final Set<BodyRegion> locations = {};
+  final Set<PainSite> locations = {};
 
   bool get _showMap => symptom != null && _locatedSymptomIds.contains(symptom!.id);
 
@@ -751,12 +784,12 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
   @override
   MetricLogCapture get capture {
     final label = noSymptoms ? s.strings.checkin.s_none : (symptom == null ? '' : symptomLabel(s, symptom!));
-    final where = locations.map((r) => regionLabel(s, r)).join(s.strings.checkin.list_sep);
+    final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
     return MetricLogCapture(
       summary: where.isEmpty ? label : s.strings.checkin.labeled_where(label, where),
       note: _trimmedNote(noteCtrl),
       symptoms: symptom == null ? const {} : {symptom!},
-      painRegions: locations,
+      painSites: locations,
     );
   }
 
@@ -801,10 +834,11 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
             child: Text(s.strings.checkin.body_location,
                 style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
           ),
-          BodyMap(
+          _CurrentProfileBodyMap(
+              s: s,
               selected: locations,
-              onToggle: (region) => setState(() {
-                    locations.contains(region) ? locations.remove(region) : locations.add(region);
+              onToggle: (site) => setState(() {
+                    locations.contains(site) ? locations.remove(site) : locations.add(site);
                     emit();
                   })),
         ],

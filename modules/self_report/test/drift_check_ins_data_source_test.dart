@@ -20,7 +20,10 @@ void main() {
         recordedAt: DateTime.utc(2026, 7, 24, 9),
         mood: Mood.good,
         painLevel: const PainLevel(6),
-        painRegions: {BodyRegion.chest, BodyRegion.bk_lower},
+        painSites: {
+          PainSite(region: BodyRegion.chest, tissue: BodyTissue.muscle),
+          PainSite(region: BodyRegion.bk_lower, tissue: BodyTissue.muscle),
+        },
         symptoms: {SymptomId.headache, SymptomId.nausea},
         vitals: const Vitals(systolic: 120, diastolic: 80, glucoseFasting: 95),
         note: 'felt tired',
@@ -34,7 +37,10 @@ void main() {
     expect(got, isNotNull);
     expect(got!.mood, Mood.good);
     expect(got.painLevel.value, 6);
-    expect(got.painRegions, {BodyRegion.chest, BodyRegion.bk_lower});
+    expect(got.painSites, {
+      PainSite(region: BodyRegion.chest, tissue: BodyTissue.muscle),
+      PainSite(region: BodyRegion.bk_lower, tissue: BodyTissue.muscle),
+    });
     expect(got.symptoms.map((s) => s.id).toSet(), {'headache', 'nausea'});
     expect(got.vitals.systolic, 120);
     expect(got.vitals.diastolic, 80);
@@ -49,7 +55,7 @@ void main() {
       healthProfileId: profile,
       recordedAt: DateTime.utc(2026, 7, 24, 18),
       painLevel: PainLevel.none,
-      painRegions: const {},
+      painSites: const {},
       symptoms: const {},
       vitals: const Vitals(systolic: 118, diastolic: 76),
     );
@@ -68,7 +74,7 @@ void main() {
       recordedAt: DateTime.utc(2026, 7, 20),
       mood: Mood.ok,
       painLevel: PainLevel.none,
-      painRegions: const {},
+      painSites: const {},
       symptoms: const {},
       vitals: Vitals.empty,
     );
@@ -100,5 +106,23 @@ void main() {
       throwsA(isA<NoActiveProfileException>()),
     );
     expect(await signedOut.findAll(), isEmpty);
+  });
+
+  test('same region on two tissues round-trips as two sites', () async {
+    final c = CheckIn(
+      id: CheckInId.value('chk-layers'),
+      healthProfileId: profile,
+      recordedAt: DateTime.utc(2026, 8, 24, 9),
+      painLevel: const PainLevel(4),
+      painSites: {
+        PainSite(region: BodyRegion.chest, tissue: BodyTissue.muscle),
+        PainSite(region: BodyRegion.chest, tissue: BodyTissue.joint),
+      },
+      symptoms: const {},
+      vitals: Vitals.empty,
+    );
+    await ds.put(c.id, c);
+    final got = await ds.find(c.id);
+    expect(got!.painSites, c.painSites);
   });
 }

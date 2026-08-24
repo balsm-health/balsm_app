@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/ports/check_ins_data_source.dart';
 import '../../domain/aggregates/check_in.dart';
 import '../../domain/value_objects/body_region.dart';
+import '../../domain/value_objects/body_tissue.dart';
 import '../../domain/value_objects/ids.dart';
+import '../../domain/value_objects/pain_site.dart';
 import '../../domain/value_objects/mood.dart';
 import '../../domain/value_objects/pain_level.dart';
 import '../../domain/value_objects/symptom.dart';
@@ -148,10 +150,14 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
           variables: [Variable<String>(key.value), Variable<String>(s.id)],
         );
       }
-      for (final r in value.painRegions) {
+      for (final site in value.painSites) {
         await _db.customInsert(
-          'INSERT INTO check_in_pain_region (check_in_id, region_id) VALUES (?, ?)',
-          variables: [Variable<String>(key.value), Variable<String>(r.id)],
+          'INSERT INTO check_in_pain_region (check_in_id, region_id, tissue_id) VALUES (?, ?, ?)',
+          variables: [
+            Variable<String>(key.value),
+            Variable<String>(site.region.id),
+            Variable<String>(site.tissue.id),
+          ],
         );
       }
     });
@@ -211,7 +217,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       variables: [Variable<String>(id)],
     ).get();
     final regionRows = await _db.customSelect(
-      'SELECT region_id FROM check_in_pain_region WHERE check_in_id = ?',
+      'SELECT region_id, tissue_id FROM check_in_pain_region WHERE check_in_id = ?',
       variables: [Variable<String>(id)],
     ).get();
     return CheckIn(
@@ -223,9 +229,13 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
         final score => Mood(score),
       },
       painLevel: PainLevel(row['pain_level'] as int),
-      painRegions: {
+      painSites: {
         for (final r in regionRows)
-          if (BodyRegion.fromId(r.read<String>('region_id')) case final reg?) reg,
+          if (BodyRegion.fromId(r.read<String>('region_id')) case final reg?)
+            PainSite(
+              region: reg,
+              tissue: BodyTissue.fromId(r.read<String>('tissue_id')) ?? BodyTissue.muscle,
+            ),
       },
       symptoms: {
         for (final s in symptomRows)

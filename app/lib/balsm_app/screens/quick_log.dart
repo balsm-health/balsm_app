@@ -112,7 +112,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
           recordedAt: DateTime.now(),
           mood: capture.mood,
           painLevel: capture.painLevel,
-          painRegions: capture.painRegions,
+          painSites: capture.painSites,
           symptoms: capture.symptoms,
           vitals: capture.vitals,
           note: capture.note,

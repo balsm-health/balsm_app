@@ -10,6 +10,7 @@ String get _localeName => 'ar';
 class Messages_ar extends Messages {
   const Messages_ar();
   BodyMessages_ar get body => BodyMessages_ar(this);
+  TissueMessages_ar get tissue => TissueMessages_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -18,6 +19,8 @@ class Messages_ar extends Messages {
     switch (key) {
       case 'body':
         return body;
+      case 'tissue':
+        return tissue;
       default:
         return super[key];
     }
@@ -65,6 +68,23 @@ class BodyMessages_ar extends BodyMessages {
   String get bk_r_calf => "بطة ساق يمنى";
   String get bk_l_heel => "كعب أيسر";
   String get bk_r_heel => "كعب أيمن";
+  String get sinuses => "الجيوب الأنفية";
+  String get l_eye => "عين يسرى";
+  String get r_eye => "عين يمنى";
+  String get l_ear => "أذن يسرى";
+  String get r_ear => "أذن يمنى";
+  String get jaw => "الفك";
+  String get bk_l_ear => "أذن يسرى";
+  String get bk_r_ear => "أذن يمنى";
+  String get heart => "القلب";
+  String get l_lung => "رئة يسرى";
+  String get r_lung => "رئة يمنى";
+  String get stomach => "المعدة";
+  String get liver => "الكبد";
+  String get intestines => "الأمعاء";
+  String get bladder => "المثانة";
+  String get l_kidney => "كلية يسرى";
+  String get r_kidney => "كلية يمنى";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -147,6 +167,76 @@ class BodyMessages_ar extends BodyMessages {
         return bk_l_heel;
       case 'bk_r_heel':
         return bk_r_heel;
+      case 'sinuses':
+        return sinuses;
+      case 'l_eye':
+        return l_eye;
+      case 'r_eye':
+        return r_eye;
+      case 'l_ear':
+        return l_ear;
+      case 'r_ear':
+        return r_ear;
+      case 'jaw':
+        return jaw;
+      case 'bk_l_ear':
+        return bk_l_ear;
+      case 'bk_r_ear':
+        return bk_r_ear;
+      case 'heart':
+        return heart;
+      case 'l_lung':
+        return l_lung;
+      case 'r_lung':
+        return r_lung;
+      case 'stomach':
+        return stomach;
+      case 'liver':
+        return liver;
+      case 'intestines':
+        return intestines;
+      case 'bladder':
+        return bladder;
+      case 'l_kidney':
+        return l_kidney;
+      case 'r_kidney':
+        return r_kidney;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class TissueMessages_ar extends TissueMessages {
+  final Messages_ar _parent;
+  const TissueMessages_ar(this._parent) : super(_parent);
+  String get skin => "الجلد";
+  String get muscle => "العضل";
+  String get bone => "العظم";
+  String get joint => "المفصل";
+  String get tendon => "الوتر";
+  String get nerve => "العصب";
+  String get organ => "العضو";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'skin':
+        return skin;
+      case 'muscle':
+        return muscle;
+      case 'bone':
+        return bone;
+      case 'joint':
+        return joint;
+      case 'tendon':
+        return tendon;
+      case 'nerve':
+        return nerve;
+      case 'organ':
+        return organ;
       default:
         return super[key];
     }

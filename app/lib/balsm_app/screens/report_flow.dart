@@ -115,7 +115,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
     Mood? mood;
     var painLevel = PainLevel.none;
-    final painRegions = <BodyRegion>{};
+    final painSites = <PainSite>{};
     final symptoms = <SymptomId>{};
     final notes = <String>[];
 
@@ -125,7 +125,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       if (c == null) continue;
       mood ??= c.mood;
       if (c.painLevel.value > painLevel.value) painLevel = c.painLevel;
-      painRegions.addAll(c.painRegions);
+      painSites.addAll(c.painSites);
       symptoms.addAll(c.symptoms);
       final n = c.note?.trim();
       if (n != null && n.isNotEmpty) notes.add(n);
@@ -137,7 +137,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       recordedAt: DateTime.now(),
       mood: mood,
       painLevel: painLevel,
-      painRegions: painRegions,
+      painSites: painSites,
       symptoms: symptoms,
       vitals: _mergedVitals(),
       note: notes.isEmpty ? null : notes.join('\n'),

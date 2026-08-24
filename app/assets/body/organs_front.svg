@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 384">
+  <defs>
+    <clipPath id="body-clip"><path d="M100 8C88.3 8 80.3 16.2 80 29.3c-.3 10.7 4.6 18.8 12.4 22.4l-1.1 10.2c-11.6 1.4-22.4 4.6-31 10.7-7 5-10 13.1-11.7 24.3l-5.2 31.9c-2.5 15.2-4 31.9-2.8 47.4l2.1 27.7c.6 7.8 4.9 15.8 9.7 16.2 4.3.4 6.3-4.2 5.3-11.3l-3.2-29.5c-1-10 1-21 3.2-32.6l6.7-34.5c1.8-9.2 5.1-16.2 9.8-19.5-2.8 12.5-4.4 24.6-4.2 36.5.2 10.8 1.5 20.5.3 30.3-1.3 10.9-4.7 24.4-4.3 37 .3 10.1 4.7 22.5 7.9 36.1 3 12.9 3.3 27.9 3.3 42.9 0 16.7.5 33.2 1.8 48.8l-3.3 43.9c-3.5 7.9-7.2 13.7-5.8 18.2 5.6 3.1 15.2 3.5 24 1l.8-18.8c1.3-18.1 2.4-38 2.7-58 .4-22.8-.3-43.5.4-61.2.4-9.5 1.3-17.6 2.2-23.2.9 5.6 1.8 13.7 2.2 23.2.7 17.7 0 38.4.4 61.2.3 20 1.4 39.9 2.7 58l.8 18.8c8.8 2.5 18.4 2.1 24-1 1.4-4.5-2.3-10.3-5.8-18.2l-3.3-43.9c1.3-15.6 1.8-32.1 1.8-48.8 0-15 .3-30 3.3-42.9 3.2-13.6 7.6-26 7.9-36.1.4-12.6-3-26.1-4.3-37-1.2-9.8.1-19.5.3-30.3.2-11.9-1.4-24-4.2-36.5 4.7 3.3 8 10.3 9.8 19.5l6.7 34.5c2.2 11.6 4.2 22.6 3.2 32.6l-3.2 29.5c-1 7.1 1 11.7 5.3 11.3 4.8-.4 9.1-8.4 9.7-16.2l2.1-27.7c1.2-15.5-.3-32.2-2.8-47.4l-5.2-31.9c-1.7-11.2-4.7-19.3-11.7-24.3-8.6-6.1-19.4-9.3-31-10.7l-1.1-10.2c7.8-3.6 12.7-11.7 12.4-22.4C119.7 16.2 111.7 8 100 8Z"/></clipPath>
+  </defs>
+  <path d="M100 8C88.3 8 80.3 16.2 80 29.3c-.3 10.7 4.6 18.8 12.4 22.4l-1.1 10.2c-11.6 1.4-22.4 4.6-31 10.7-7 5-10 13.1-11.7 24.3l-5.2 31.9c-2.5 15.2-4 31.9-2.8 47.4l2.1 27.7c.6 7.8 4.9 15.8 9.7 16.2 4.3.4 6.3-4.2 5.3-11.3l-3.2-29.5c-1-10 1-21 3.2-32.6l6.7-34.5c1.8-9.2 5.1-16.2 9.8-19.5-2.8 12.5-4.4 24.6-4.2 36.5.2 10.8 1.5 20.5.3 30.3-1.3 10.9-4.7 24.4-4.3 37 .3 10.1 4.7 22.5 7.9 36.1 3 12.9 3.3 27.9 3.3 42.9 0 16.7.5 33.2 1.8 48.8l-3.3 43.9c-3.5 7.9-7.2 13.7-5.8 18.2 5.6 3.1 15.2 3.5 24 1l.8-18.8c1.3-18.1 2.4-38 2.7-58 .4-22.8-.3-43.5.4-61.2.4-9.5 1.3-17.6 2.2-23.2.9 5.6 1.8 13.7 2.2 23.2.7 17.7 0 38.4.4 61.2.3 20 1.4 39.9 2.7 58l.8 18.8c8.8 2.5 18.4 2.1 24-1 1.4-4.5-2.3-10.3-5.8-18.2l-3.3-43.9c1.3-15.6 1.8-32.1 1.8-48.8 0-15 .3-30 3.3-42.9 3.2-13.6 7.6-26 7.9-36.1.4-12.6-3-26.1-4.3-37-1.2-9.8.1-19.5.3-30.3.2-11.9-1.4-24-4.2-36.5 4.7 3.3 8 10.3 9.8 19.5l6.7 34.5c2.2 11.6 4.2 22.6 3.2 32.6l-3.2 29.5c-1 7.1 1 11.7 5.3 11.3 4.8-.4 9.1-8.4 9.7-16.2l2.1-27.7c1.2-15.5-.3-32.2-2.8-47.4l-5.2-31.9c-1.7-11.2-4.7-19.3-11.7-24.3-8.6-6.1-19.4-9.3-31-10.7l-1.1-10.2c7.8-3.6 12.7-11.7 12.4-22.4C119.7 16.2 111.7 8 100 8Z" fill="#F2EEE8" stroke="#D2CAC0" stroke-width="1.15" stroke-linejoin="round"/>
+  <g clip-path="url(#body-clip)">
+    <ellipse id="region-head" fill="#F2EEE8" cx="100" cy="30" rx="19" ry="22"/>
+    <path id="region-neck" fill="#F2EEE8" d="M92 51h16l2 18H90Z"/>
+    <path id="region-l-shoulder" fill="#F2EEE8" d="M91 62C75 63 60 68 52 80l21 15 21-20Z"/>
+    <path id="region-r-shoulder" fill="#F2EEE8" d="M109 62c16 1 31 6 39 18l-21 15-21-20Z"/>
+    <path id="region-chest" fill="#F2EEE8" d="M73 85q27-12 54 0l-3 42H76Z"/>
+    <path id="region-l-upper-arm" fill="#F2EEE8" d="M52 80c-6 8-7 21-9 35l-4 38 18 2 7-42c2-11 5-20 10-25Z"/>
+    <path id="region-r-upper-arm" fill="#F2EEE8" d="M148 80c6 8 7 21 9 35l4 38-18 2-7-42c-2-11-5-20-10-25Z"/>
+    <path id="region-abdomen" fill="#F2EEE8" d="M76 127h48c1 17-1 34-6 48H82c-5-14-7-31-6-48Z"/>
+    <path id="region-l-elbow" fill="#F2EEE8" d="M39 152h18l1 29-17-1Z"/>
+    <path id="region-r-elbow" fill="#F2EEE8" d="M161 152h-18l-1 29 17-1Z"/>
+    <path id="region-l-forearm" fill="#F2EEE8" d="M41 180l17 1v29l-15 1Z"/>
+    <path id="region-r-forearm" fill="#F2EEE8" d="M159 180l-17 1v29l15 1Z"/>
+    <path id="region-pelvis" fill="#F2EEE8" d="M82 175h36l10 36-28 13-28-13Z"/>
+    <path id="region-l-hand" fill="#F2EEE8" d="M43 207c1 9 5 14 10 14s7-5 5-14Z"/>
+    <path id="region-r-hand" fill="#F2EEE8" d="M157 207c-1 9-5 14-10 14s-7-5-5-14Z"/>
+    <path id="region-l-thigh" fill="#F2EEE8" d="M72 211l28 13-3 67-20 1c0-25-1-48-5-81Z"/>
+    <path id="region-r-thigh" fill="#F2EEE8" d="M128 211l-28 13 3 67 20 1c0-25 1-48 5-81Z"/>
+    <path id="region-l-knee" fill="#F2EEE8" d="M77 291h20l-1 23-18 1Z"/>
+    <path id="region-r-knee" fill="#F2EEE8" d="M123 291h-20l1 23 18 1Z"/>
+    <path id="region-l-shin" fill="#F2EEE8" d="M78 314h18l-2 43-16 1Z"/>
+    <path id="region-r-shin" fill="#F2EEE8" d="M122 314h-18l2 43 16 1Z"/>
+    <path id="region-l-foot" fill="#F2EEE8" d="M78 357h16l-1 21c-8 3-17 2-23-1 0-5 4-12 8-20Z"/>
+    <path id="region-r-foot" fill="#F2EEE8" d="M122 357h-16l1 21c8 3 17 2 23-1 0-5-4-12-8-20Z"/>
+    <ellipse id="region-sinuses" fill="#EEE8E1" cx="100" cy="22" rx="14" ry="7"/>
+    <ellipse id="region-l-eye" fill="#EEE8E1" cx="89" cy="28" rx="7" ry="5"/>
+    <ellipse id="region-r-eye" fill="#EEE8E1" cx="111" cy="28" rx="7" ry="5"/>
+    <ellipse id="region-l-ear" fill="#EEE8E1" cx="79" cy="32" rx="5" ry="8"/>
+    <ellipse id="region-r-ear" fill="#EEE8E1" cx="121" cy="32" rx="5" ry="8"/>
+    <ellipse id="region-jaw" fill="#EEE8E1" cx="100" cy="44" rx="14" ry="8"/>
+  </g>
+  <g fill="none" stroke="#D2CAC0" stroke-linecap="round" opacity=".58">
+    <path d="M89 68c3.4 4.4 7 6.5 11 6.5s7.6-2.1 11-6.5M75.5 92c7.4-1.8 13.5.4 24.5 6.8 11-6.4 17.1-8.6 24.5-6.8" stroke-width="1.15"/>
+    <path d="M100 101v49m-3 7.5c1.9 1.5 4.1 1.5 6 0M77.5 294c2.3 1.5 4.7 1.5 7 0m31 0c2.3 1.5 4.7 1.5 7 0" stroke-width="1"/>
+  </g>
+
+  <g id="anatomical-reference" fill="none" stroke="#C9B8A9" stroke-width=".65" opacity=".68">
+    <path d="M100 61v31"/>
+    <path d="M99 76Q83 75 75 94M101 76q16-1 24 18"/>
+    <path d="M97 91Q82 85 75 105t20 24M103 91q15-6 22 14t-20 24"/>
+    <path d="M100 77v55"/>
+    <path d="M86 93q14-8 28 0M81 101q19-10 38 0M78 110q22-10 44 0M80 119q20-8 40 0"/>
+  </g>
+  <g id="organs" stroke-linejoin="round">
+    <path id="region-l-lung" fill="#E9A8A2" stroke="#B96E70" stroke-width=".8"
+      d="M96 82Q84 78 78 87q-6 10-5 25 1 17 10 20 9 3 13-8Z"/>
+    <path id="region-r-lung" fill="#E9A8A2" stroke="#B96E70" stroke-width=".8"
+      d="M104 82q12-4 18 5 6 10 5 25-1 17-10 20-9 3-13-8Z"/>
+    <path id="region-heart" fill="#C95F65" stroke="#8F3F48" stroke-width=".9"
+      d="M96 103q5-6 10-2 6 4 2 13-3 7-12 15-9-8-12-15-3-8 2-12 5-4 10 1Z"/>
+    <path fill="none" stroke="#8F3F48" stroke-width="1.1"
+      d="M95 102q1-10 8-16m-4 15q7-5 10-13"/>
+    <g fill="none" stroke="#B96E70" stroke-width=".65" opacity=".75">
+      <path d="M78 103q8 5 17 1M78 114q8 5 17 1"/>
+      <path d="M122 103q-8 5-17 1M122 114q-8 5-17 1"/>
+    </g>
+    <path id="region-liver" fill="#A96748" stroke="#75442F" stroke-width=".9"
+      d="M99 132q17-9 31 1 3 9-4 18-14 3-29-3-5-8 2-16Z"/>
+    <path id="region-stomach" fill="#E6A078" stroke="#A96748" stroke-width=".9"
+      d="M96 137q-9-1-12 7-2 6 4 10 3 2 1 9-2 8 7 12 9 3 14-5 5-9-1-16-6-7-4-14-3-4-9-3Z"/>
+    <path id="region-intestines" fill="#D99775" stroke="#9D654E" stroke-width=".9"
+      d="M82 159q18-8 36 0 7 9 4 27-2 13-12 17H90q-10-4-12-17-3-18 4-27Z"/>
+    <g fill="none" stroke="#F1C2A6" stroke-width="2.4" stroke-linecap="round">
+      <path d="M86 166q27-7 28 3t-26 7q-7 5 1 10 25-7 26 3t-23 8"/>
+      <path d="M84 161v30q1 9 9 11m23-41v30q-1 9-9 11"/>
+    </g>
+    <path id="region-bladder" fill="#D7A4BB" stroke="#93647B" stroke-width=".8"
+      d="M100 194q10 7 9 17-1 9-9 11-8-2-9-11-1-10 9-17Z"/>
+  </g>
+</svg>

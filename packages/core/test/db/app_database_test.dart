@@ -124,4 +124,34 @@ void main() {
     expect(rows[0].read<String>('health_profile_id'), 'hp1');
     expect(rows[1].read<String>('health_profile_id'), 'hp-existing');
   });
+
+  test('legacy check_in_pain_region rebuilds with tissue_id PK', () async {
+    final dir = await Directory.systemTemp.createTemp('balsm_pain_site');
+    final file = File('${dir.path}/legacy.db');
+    addTearDown(() => dir.delete(recursive: true));
+
+    final seed = sqlite3.open(file.path);
+    seed.execute(
+      'CREATE TABLE check_in (id TEXT PRIMARY KEY, health_profile_id TEXT NOT NULL, '
+      "recorded_at TEXT NOT NULL, mood INTEGER NOT NULL, pain_level INTEGER NOT NULL)",
+    );
+    seed.execute(
+      'CREATE TABLE check_in_pain_region ('
+      'check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE, '
+      'region_id TEXT NOT NULL, PRIMARY KEY (check_in_id, region_id))',
+    );
+    seed.execute("INSERT INTO check_in (id, health_profile_id, recorded_at, mood, pain_level) "
+        "VALUES ('c1', 'hp1', '2026-01-01', 0, 4)");
+    seed.execute("INSERT INTO check_in_pain_region (check_in_id, region_id) VALUES ('c1', 'chest')");
+    seed.dispose();
+
+    final legacy = AppDatabase(NativeDatabase(file));
+    addTearDown(legacy.close);
+    final cols = await legacy.customSelect('PRAGMA table_info(check_in_pain_region)').get();
+    expect(cols.map((r) => r.read<String>('name')), containsAll(['region_id', 'tissue_id']));
+    final pk = cols.where((r) => r.read<int>('pk') > 0).map((r) => r.read<String>('name')).toSet();
+    expect(pk, {'check_in_id', 'region_id', 'tissue_id'});
+    final row = await legacy.customSelect('SELECT tissue_id FROM check_in_pain_region').getSingle();
+    expect(row.read<String>('tissue_id'), 'muscle');
+  });
 }
