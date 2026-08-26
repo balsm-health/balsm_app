@@ -231,11 +231,15 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       painLevel: PainLevel(row['pain_level'] as int),
       painSites: {
         for (final r in regionRows)
-          if (BodyRegion.fromId(r.read<String>('region_id')) case final reg?)
-            PainSite(
-              region: reg,
-              tissue: BodyTissue.fromId(r.read<String>('tissue_id')) ?? BodyTissue.muscle,
-            ),
+          // Legacy rows predate tissue_id and default to muscle. A pair that no
+          // longer resolves (retired location, or one dropped from that layer)
+          // is skipped rather than coerced onto a layer it is not on.
+          if (BodyRegion.fromId(
+            r.read<String>('region_id'),
+            BodyTissue.fromId(r.read<String>('tissue_id')) ?? BodyTissue.muscle,
+          )
+              case final reg?)
+            PainSite(reg),
       },
       symptoms: {
         for (final s in symptomRows)

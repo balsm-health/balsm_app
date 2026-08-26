@@ -22,30 +22,33 @@ enum BodyTissue {
   /// Resolve a stored tissue id, or null if unknown / retired.
   static BodyTissue? fromId(String id) => _byId[id];
 
-  /// Regions selectable on this layer for [view].
-  List<BodyRegion> regions(BodyView view) {
-    final surface = view == BodyView.front ? BodyRegion.front : BodyRegion.back;
-    final viscera = view == BodyView.front ? BodyRegion.organFront : BodyRegion.organBack;
-    return [
-      ...surface.where(allows),
-      if (this == organ) ...viscera,
-    ];
-  }
+  /// Catalog for this layer. Every entry is the matching [BodyRegion] subclass.
+  List<BodyRegion> get catalog => switch (this) {
+        skin => Skin.values,
+        muscle => Muscle.values,
+        bone => Bone.values,
+        joint => Joint.values,
+        tendon => Tendon.values,
+        nerve => Nerve.values,
+        organ => Organ.values,
+      };
 
-  /// Whether [region] is a hotspot on this layer (viscera gated by [organ]).
-  bool allows(BodyRegion region) {
-    if (region.isOrgan) return this == organ;
-    return switch (this) {
-      skin || muscle || nerve => true,
-      bone => region != BodyRegion.sinuses &&
-          region != BodyRegion.l_eye &&
-          region != BodyRegion.r_eye &&
-          region != BodyRegion.abdomen,
-      joint => _joints.contains(region),
-      tendon => _tendons.contains(region),
-      organ => region.isHeadExtra,
-    };
-  }
+  static final Map<(BodyTissue, BodyView), List<BodyRegion>> _byView = {
+    for (final t in values)
+      for (final v in BodyView.values)
+        (t, v): List.unmodifiable([
+          for (final r in t.catalog)
+            if (r.view == v) r,
+        ]),
+  };
+
+  /// Regions selectable on this layer for [view]. Built once, safe to call
+  /// from `build` — no per-frame allocation.
+  List<BodyRegion> regions(BodyView view) => _byView[(this, view)]!;
+
+  /// Whether that *location* is a hotspot on this layer. Takes any layer's
+  /// instance — `bone.allows(Skin.chest)` asks about the chest, not the skin.
+  bool allows(BodyRegion region) => BodyRegion.fromId(region.value, this) != null;
 
   /// Label in [messages]' locale (module i69n `tissue.*`).
   String label(Messages messages) {
@@ -64,43 +67,3 @@ enum BodyTissue {
   /// Label for a language code (`en` / `ar`).
   String labelForLang(String lang) => label(selfReportMessagesOf(lang));
 }
-
-const _joints = <BodyRegion>{
-  BodyRegion.jaw,
-  BodyRegion.neck,
-  BodyRegion.l_shoulder,
-  BodyRegion.r_shoulder,
-  BodyRegion.l_elbow,
-  BodyRegion.r_elbow,
-  BodyRegion.l_hand,
-  BodyRegion.r_hand,
-  BodyRegion.pelvis,
-  BodyRegion.l_knee,
-  BodyRegion.r_knee,
-  BodyRegion.l_foot,
-  BodyRegion.r_foot,
-  BodyRegion.bk_neck,
-  BodyRegion.bk_l_shoulder,
-  BodyRegion.bk_r_shoulder,
-  BodyRegion.bk_upper,
-  BodyRegion.bk_mid,
-  BodyRegion.bk_lower,
-  BodyRegion.bk_l_glute,
-  BodyRegion.bk_r_glute,
-};
-
-const _tendons = <BodyRegion>{
-  BodyRegion.l_shoulder,
-  BodyRegion.r_shoulder,
-  BodyRegion.l_elbow,
-  BodyRegion.r_elbow,
-  BodyRegion.l_hand,
-  BodyRegion.r_hand,
-  BodyRegion.pelvis,
-  BodyRegion.l_knee,
-  BodyRegion.r_knee,
-  BodyRegion.bk_l_shoulder,
-  BodyRegion.bk_r_shoulder,
-  BodyRegion.bk_l_heel,
-  BodyRegion.bk_r_heel,
-};

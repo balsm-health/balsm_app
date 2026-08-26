@@ -21,8 +21,8 @@ void main() {
         mood: Mood.good,
         painLevel: const PainLevel(6),
         painSites: {
-          PainSite(region: BodyRegion.chest, tissue: BodyTissue.muscle),
-          PainSite(region: BodyRegion.bk_lower, tissue: BodyTissue.muscle),
+          PainSite(Muscle.chest),
+          PainSite(Muscle.bk_lower),
         },
         symptoms: {SymptomId.headache, SymptomId.nausea},
         vitals: const Vitals(systolic: 120, diastolic: 80, glucoseFasting: 95),
@@ -38,8 +38,8 @@ void main() {
     expect(got!.mood, Mood.good);
     expect(got.painLevel.value, 6);
     expect(got.painSites, {
-      PainSite(region: BodyRegion.chest, tissue: BodyTissue.muscle),
-      PainSite(region: BodyRegion.bk_lower, tissue: BodyTissue.muscle),
+      PainSite(Muscle.chest),
+      PainSite(Muscle.bk_lower),
     });
     expect(got.symptoms.map((s) => s.id).toSet(), {'headache', 'nausea'});
     expect(got.vitals.systolic, 120);
@@ -115,8 +115,8 @@ void main() {
       recordedAt: DateTime.utc(2026, 8, 24, 9),
       painLevel: const PainLevel(4),
       painSites: {
-        PainSite(region: BodyRegion.chest, tissue: BodyTissue.muscle),
-        PainSite(region: BodyRegion.chest, tissue: BodyTissue.joint),
+        PainSite(Muscle.l_knee),
+        PainSite(Joint.l_knee),
       },
       symptoms: const {},
       vitals: Vitals.empty,

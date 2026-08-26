@@ -2,8 +2,7 @@ import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:core/core.dart' show Gender;
-import 'package:self_report/self_report.dart'
-    show BodyRegion, BodyTissue, BodyView, PainSite, selfReportMessagesOf;
+import 'package:self_report/self_report.dart' show BodyRegion, BodyTissue, BodyView, PainSite, selfReportMessagesOf;
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
@@ -91,8 +90,7 @@ class _BodyMapState extends State<BodyMap> {
         spacing: 5,
         runSpacing: 5,
         children: [
-          for (final t in BodyTissue.values)
-            _chip(s, t.label(messages), tissue == t, () => setState(() => tissue = t)),
+          for (final t in BodyTissue.values) _chip(s, t.label(messages), tissue == t, () => setState(() => tissue = t)),
         ],
       ),
       const SizedBox(height: 8),
@@ -116,7 +114,7 @@ class _BodyMapState extends State<BodyMap> {
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (details) {
                   final region = _hitRegion(details.localPosition, constraints.biggest, regions);
-                  if (region != null) widget.onToggle(PainSite(region: region, tissue: tissue));
+                  if (region != null) widget.onToggle(PainSite(region));
                 },
                 child: SvgPicture.asset(
                   _asset(tissue, view, widget.gender),
@@ -155,39 +153,15 @@ class _BodyMapState extends State<BodyMap> {
     return best;
   }
 
-  /// Skeleton plates have slightly shorter limb proportions than the muscle
-  /// atlas. Align bone/joint hit targets with what is visibly drawn.
+  /// Where to aim a tap for [region] on the layer currently shown.
+  ///
+  /// Skeleton plates draw limbs shorter and higher than the muscle atlas, so
+  /// those layers override the catalog position; everything else taps where the
+  /// region says it is.
   Offset _hitCenter(BodyRegion region) {
-    if (tissue != BodyTissue.bone && tissue != BodyTissue.joint) {
-      return Offset(region.cx, region.cy);
-    }
-    return switch (region) {
-      BodyRegion.l_shoulder || BodyRegion.bk_l_shoulder => const Offset(53, 78),
-      BodyRegion.r_shoulder || BodyRegion.bk_r_shoulder => const Offset(140, 78),
-      BodyRegion.chest || BodyRegion.bk_upper => const Offset(100, 103),
-      BodyRegion.l_upper_arm => const Offset(52, 110),
-      BodyRegion.r_upper_arm => const Offset(148, 110),
-      BodyRegion.l_elbow => const Offset(44, 145),
-      BodyRegion.r_elbow => const Offset(146, 145),
-      BodyRegion.l_forearm => const Offset(49, 169),
-      BodyRegion.r_forearm => const Offset(151, 169),
-      BodyRegion.l_hand => const Offset(43, 192),
-      BodyRegion.r_hand => const Offset(153, 192),
-      BodyRegion.pelvis => const Offset(100, 181),
-      BodyRegion.l_thigh || BodyRegion.bk_l_hamstr => const Offset(82, 231),
-      BodyRegion.r_thigh || BodyRegion.bk_r_hamstr => const Offset(118, 231),
-      BodyRegion.l_knee => const Offset(82, 277),
-      BodyRegion.r_knee => const Offset(118, 277),
-      BodyRegion.l_shin || BodyRegion.bk_l_calf => const Offset(82, 322),
-      BodyRegion.r_shin || BodyRegion.bk_r_calf => const Offset(118, 322),
-      BodyRegion.l_foot || BodyRegion.bk_l_heel => const Offset(85, 362),
-      BodyRegion.r_foot || BodyRegion.bk_r_heel => const Offset(115, 362),
-      BodyRegion.bk_mid => const Offset(100, 124),
-      BodyRegion.bk_lower => const Offset(100, 150),
-      BodyRegion.bk_l_glute => const Offset(82, 181),
-      BodyRegion.bk_r_glute => const Offset(118, 181),
-      _ => Offset(region.cx, region.cy),
-    };
+    final catalog = Offset(region.cx, region.cy);
+    if (!_skeletonLayers.contains(tissue)) return catalog;
+    return _skeletonCenters[region.id] ?? catalog;
   }
 
   Widget _chip(PatientAppState s, String label, bool active, VoidCallback onTap) {
@@ -210,41 +184,82 @@ class _BodyMapState extends State<BodyMap> {
     );
   }
 
-  Size _hitSize(BodyRegion region) => switch (region) {
-        BodyRegion.sinuses => const Size(28, 14),
-        BodyRegion.l_eye || BodyRegion.r_eye => const Size(14, 12),
-        BodyRegion.l_ear || BodyRegion.r_ear || BodyRegion.bk_l_ear || BodyRegion.bk_r_ear => const Size(12, 16),
-        BodyRegion.jaw => const Size(28, 16),
-        BodyRegion.heart => const Size(22, 22),
-        BodyRegion.l_lung || BodyRegion.r_lung => const Size(24, 32),
-        BodyRegion.stomach || BodyRegion.liver => const Size(26, 22),
-        BodyRegion.intestines => const Size(36, 28),
-        BodyRegion.bladder => const Size(22, 18),
-        BodyRegion.l_kidney || BodyRegion.r_kidney => const Size(18, 24),
-        BodyRegion.head || BodyRegion.bk_head => const Size(42, 48),
-        BodyRegion.neck || BodyRegion.bk_neck => const Size(24, 22),
-        BodyRegion.l_shoulder ||
-        BodyRegion.r_shoulder ||
-        BodyRegion.bk_l_shoulder ||
-        BodyRegion.bk_r_shoulder =>
-          const Size(38, 32),
-        BodyRegion.chest || BodyRegion.bk_upper => const Size(52, 42),
-        BodyRegion.abdomen || BodyRegion.bk_mid || BodyRegion.bk_lower => const Size(48, 34),
-        BodyRegion.l_upper_arm || BodyRegion.r_upper_arm => const Size(24, 48),
-        BodyRegion.l_elbow || BodyRegion.r_elbow => const Size(24, 30),
-        BodyRegion.l_forearm || BodyRegion.r_forearm => const Size(22, 38),
-        BodyRegion.l_hand || BodyRegion.r_hand => const Size(20, 26),
-        BodyRegion.pelvis || BodyRegion.bk_l_glute || BodyRegion.bk_r_glute => const Size(34, 42),
-        BodyRegion.l_thigh ||
-        BodyRegion.r_thigh ||
-        BodyRegion.bk_l_hamstr ||
-        BodyRegion.bk_r_hamstr =>
-          const Size(30, 68),
-        BodyRegion.l_knee || BodyRegion.r_knee => const Size(26, 28),
-        BodyRegion.l_shin || BodyRegion.r_shin || BodyRegion.bk_l_calf || BodyRegion.bk_r_calf => const Size(26, 48),
-        BodyRegion.l_foot || BodyRegion.r_foot || BodyRegion.bk_l_heel || BodyRegion.bk_r_heel => const Size(28, 30),
+  Size _hitSize(BodyRegion region) => switch (region.id) {
+        'sinuses' => const Size(28, 14),
+        'l-eye' || 'r-eye' => const Size(14, 12),
+        'l-ear' || 'r-ear' || 'bk-l-ear' || 'bk-r-ear' => const Size(12, 16),
+        'jaw' => const Size(28, 16),
+        'heart' => const Size(22, 22),
+        'l-lung' || 'r-lung' => const Size(24, 32),
+        'stomach' || 'liver' => const Size(26, 22),
+        'intestines' => const Size(36, 28),
+        'bladder' => const Size(22, 18),
+        'l-kidney' || 'r-kidney' => const Size(18, 24),
+        'head' || 'bk-head' => const Size(42, 48),
+        'neck' || 'bk-neck' => const Size(24, 22),
+        'l-shoulder' || 'r-shoulder' || 'bk-l-shoulder' || 'bk-r-shoulder' => const Size(38, 32),
+        'chest' || 'bk-upper' => const Size(52, 42),
+        'abdomen' || 'bk-mid' || 'bk-lower' => const Size(48, 34),
+        'l-upper-arm' || 'r-upper-arm' => const Size(24, 48),
+        'l-elbow' || 'r-elbow' => const Size(24, 30),
+        'l-forearm' || 'r-forearm' => const Size(22, 38),
+        'l-hand' || 'r-hand' => const Size(20, 26),
+        'pelvis' || 'bk-l-glute' || 'bk-r-glute' => const Size(34, 42),
+        'l-thigh' || 'r-thigh' || 'bk-l-hamstr' || 'bk-r-hamstr' => const Size(30, 68),
+        'l-knee' || 'r-knee' => const Size(26, 28),
+        'l-shin' || 'r-shin' || 'bk-l-calf' || 'bk-r-calf' => const Size(26, 48),
+        'l-foot' || 'r-foot' || 'bk-l-heel' || 'bk-r-heel' => const Size(28, 30),
+        _ => const Size(28, 30),
       };
 }
+
+/// Layers rendered on the skeleton plates rather than the muscle atlas.
+const _skeletonLayers = <BodyTissue>{BodyTissue.bone, BodyTissue.joint};
+
+/// Hit centers for [_skeletonLayers], in SVG units on the 200×384 viewBox.
+/// A location absent here is tapped at its catalog `(cx, cy)`.
+///
+/// Front and back entries are tuned independently — they coincide only where
+/// the two plates happen to align.
+const _skeletonCenters = <String, Offset>{
+  // Shoulders and torso.
+  'l-shoulder': Offset(53, 78),
+  'r-shoulder': Offset(140, 78),
+  'bk-l-shoulder': Offset(53, 78),
+  'bk-r-shoulder': Offset(140, 78),
+  'chest': Offset(100, 103),
+  'bk-upper': Offset(100, 103),
+  'bk-mid': Offset(100, 124),
+  'bk-lower': Offset(100, 150),
+  // Arms.
+  'l-upper-arm': Offset(52, 110),
+  'r-upper-arm': Offset(148, 110),
+  'l-elbow': Offset(44, 145),
+  'r-elbow': Offset(146, 145),
+  'l-forearm': Offset(49, 169),
+  'r-forearm': Offset(151, 169),
+  'l-hand': Offset(43, 192),
+  'r-hand': Offset(153, 192),
+  // Pelvis and glutes.
+  'pelvis': Offset(100, 181),
+  'bk-l-glute': Offset(82, 181),
+  'bk-r-glute': Offset(118, 181),
+  // Legs.
+  'l-thigh': Offset(82, 231),
+  'r-thigh': Offset(118, 231),
+  'bk-l-hamstr': Offset(82, 231),
+  'bk-r-hamstr': Offset(118, 231),
+  'l-knee': Offset(82, 277),
+  'r-knee': Offset(118, 277),
+  'l-shin': Offset(82, 322),
+  'r-shin': Offset(118, 322),
+  'bk-l-calf': Offset(82, 322),
+  'bk-r-calf': Offset(118, 322),
+  'l-foot': Offset(85, 362),
+  'r-foot': Offset(115, 362),
+  'bk-l-heel': Offset(85, 362),
+  'bk-r-heel': Offset(115, 362),
+};
 
 double _selectionAlpha(BodyTissue tissue) => switch (tissue) {
       BodyTissue.skin => .55,

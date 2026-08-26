@@ -12,6 +12,7 @@ export 'src/domain/value_objects/user_id.dart';
 export 'src/domain/value_objects/entity_id.dart';
 export 'src/domain/value_objects/health_profile_id.dart';
 export 'src/domain/value_objects/value_object.dart';
+export 'src/domain/value_objects/base_enum.dart';
 export 'src/domain/value_objects/country_code.dart';
 export 'src/domain/value_objects/language_code.dart';
 export 'src/domain/value_objects/gender.dart';
