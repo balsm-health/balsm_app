@@ -55,5 +55,13 @@
       "group": "build",
       "problemMatcher": []
     }
+    , {
+      "label": "Dart: format",
+      "type": "shell",
+      "command": "dart",
+      "args": ["format", "."],
+      "group": "format",
+      "problemMatcher": []
+    }
   ]
 }
