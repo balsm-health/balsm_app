@@ -1,0 +1,16 @@
+---
+description: Patient-app PHI, module boundaries, fvm, and i18n rules
+alwaysApply: true
+---
+
+# balsm_app
+
+- **PHI stays on-device** (drift/SQLCipher). Never log, print, or transmit PHI. Field-encrypted DOB is the only cloud PHI exception. Never fabricate sample PHI.
+- Modules depend on `packages/core`, never on each other. Cross-module reads go through ports in `application/ports/`.
+- Domain/application layers depend on module ports (`ProfileDataSource`, `UserDataSource`), never on `Drift*` concretes.
+- Run Flutter via **fvm** (`fvm flutter …`, `fvm dart …`).
+- UI strings live in i69n JSON. After editing, run `dart run build_runner build` in that package. No inline `ar ? … : …` ternaries.
+
+@file CLAUDE.md
+@file CODING_STANDARDS.md
+@file ../Balsm-Core/agents/rules/AGENTS.md
