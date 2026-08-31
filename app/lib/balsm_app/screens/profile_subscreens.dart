@@ -8,6 +8,7 @@ import 'package:profile/profile.dart'
         Allergy,
         ChronicCondition,
         AllergyId,
+        kBloodTypes,
         profileDataSourceProvider,
         updateHealthProfileUseCaseProvider,
         addAllergyUseCaseProvider,
@@ -250,33 +251,15 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
             onRemoveAt: (i) => _removeAllergy(allergyList[i].id)),
         _SectionHead(LucideIcons.droplet, s.strings.profile.pd_blood, s: s),
         PCard(
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: const ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
-                    .map((bt) => Pressable(
-                          onTap: () => _setBloodType(bt),
-                          scale: 0.96,
-                          child: AnimatedContainer(
-                            duration: Motion.base,
-                            curve: Motion.easeOut,
-                            height: 40,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            decoration: BoxDecoration(
-                              color: selectedBlood == bt ? s.accent.bg : Colors.white,
-                              borderRadius: BorderRadius.circular(T.rMd),
-                              border: Border.all(color: selectedBlood == bt ? s.accent.main : T.border, width: 1.5),
-                            ),
-                            child: Text(bt,
-                                style: Typo.num(
-                                    size: FS.sm,
-                                    weight: FontWeight.w700,
-                                    color: selectedBlood == bt ? s.accent.d : T.fg2)),
-                          ),
-                        ))
-                    .toList())),
+          padding: const EdgeInsets.all(12),
+          child: _BloodTypeGrid(
+            selected: selectedBlood,
+            accentBg: s.accent.bg,
+            accent: s.accent.main,
+            accentFg: s.accent.d,
+            onSelect: _setBloodType,
+          ),
+        ),
         _SectionHead(LucideIcons.ruler, s.strings.profile.pd_measurements, s: s),
         PCard(
             padding: const EdgeInsets.all(16),
@@ -368,6 +351,73 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
           ),
         ),
       ]);
+}
+
+/// Compact 4×2 blood-type picker. ABO codes stay LTR so the grid does not
+/// mirror in Arabic.
+class _BloodTypeGrid extends StatelessWidget {
+  const _BloodTypeGrid({
+    required this.selected,
+    required this.accentBg,
+    required this.accent,
+    required this.accentFg,
+    required this.onSelect,
+  });
+
+  final String? selected;
+  final Color accentBg;
+  final Color accent;
+  final Color accentFg;
+  final ValueChanged<String> onSelect;
+
+  static const _cols = 4;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <TableRow>[];
+    for (var i = 0; i < kBloodTypes.length; i += _cols) {
+      rows.add(TableRow(
+        children: [
+          for (var c = 0; c < _cols; c++)
+            Padding(
+              padding: EdgeInsets.only(
+                left: c == 0 ? 0 : 4,
+                right: c == _cols - 1 ? 0 : 4,
+                bottom: i + _cols < kBloodTypes.length ? 8 : 0,
+              ),
+              child: _cell(kBloodTypes[i + c]),
+            ),
+        ],
+      ));
+    }
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Table(children: rows),
+    );
+  }
+
+  Widget _cell(String bt) {
+    final on = selected == bt;
+    return Pressable(
+      onTap: () => onSelect(bt),
+      scale: 0.96,
+      child: AnimatedContainer(
+        duration: Motion.base,
+        curve: Motion.easeOut,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: on ? accentBg : Colors.white,
+          borderRadius: BorderRadius.circular(T.rMd),
+          border: Border.all(color: on ? accent : T.border, width: 1.5),
+        ),
+        child: Text(
+          bt,
+          style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: on ? accentFg : T.fg2),
+        ),
+      ),
+    );
+  }
 }
 
 /// Chip list + single-line add field. Backed by real data: [labels] render the
