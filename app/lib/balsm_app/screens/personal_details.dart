@@ -187,6 +187,42 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   /// Persists the profile via PATCH /account/profile, then — if the handle was
   /// changed and verified available — claims it. Refreshes both the screen-local
   /// profile and the app-wide account summary so every screen reflects the edit.
+  /// Save entry point. A changed handle retires the patient's public link, so
+  /// it is confirmed first (`hc_*` sheet) rather than swapped silently.
+  Future<void> _requestSave() async {
+    if (!_canSave || _saving || !_loaded) return;
+    final next = handle.text.trim();
+    if (next == _origHandle) return _save();
+    final confirmed = await _confirmHandleChange(next);
+    if (!confirmed) {
+      // Cancelling restores the claimed handle so the field never lies about
+      // what the account actually resolves to.
+      handle.text = _origHandle;
+      if (mounted) setState(() => unStatus = 'idle');
+      return;
+    }
+    await _save();
+  }
+
+  Future<bool> _confirmHandleChange(String next) async =>
+      await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: const Color(0x5C14202B),
+        builder: (_) => Directionality(
+          textDirection: s.dir,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: _HandleChangeSheet(s: s, from: _origHandle, to: next),
+            ),
+          ),
+        ),
+      ) ??
+      false;
+
   Future<void> _save() async {
     // Never submit before the profile has loaded — empty controllers would
     // clear the user's data server-side.
@@ -364,7 +400,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
               const SizedBox(width: 8)
             ],
-            RoundBtn(icon: LucideIcons.qrCode, iconSize: 19, onTap: () => _showQr(context)),
+            RoundBtn(icon: LucideIcons.qrCode, onTap: () => _showQr(context)),
           ],
         ),
         Expanded(
@@ -379,7 +415,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       Avatar(
                           initials: _initials('${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
                           color: T.petalAqua,
-                          size: 72),
+                          size: 72,
+                          fontSize: 26),
                       const SizedBox(height: 10),
                       PButton(s.strings.profile.pd_change_photo,
                           icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
@@ -430,7 +467,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       ),
                       const SizedBox(height: 6),
                       Row(children: [
-                        const Icon(LucideIcons.link, size: 12, color: T.fg4),
+                        const Icon(LucideIcons.info, size: 12, color: T.fg3),
                         const SizedBox(width: 5),
                         Text('balsm.health/@${handle.text}',
                             textDirection: TextDirection.ltr, style: Typo.num(size: FS.xs, color: T.fg3)),
@@ -441,24 +478,29 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         scale: 0.98,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
+                          decoration: BoxDecoration(
+                              color: s.accent.bg,
+                              borderRadius: BorderRadius.circular(T.rLg),
+                              border: Border.all(color: T.ink100)),
                           child: Row(children: [
                             Container(
-                                width: 38,
-                                height: 38,
+                                width: 40,
+                                height: 40,
                                 alignment: Alignment.center,
-                                decoration:
-                                    BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(T.rSm)),
-                                child: Icon(LucideIcons.qrCode, size: 20, color: s.accent.d)),
-                            const SizedBox(width: 13),
+                                decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(T.rMd),
+                                    boxShadow: T.shadowXs),
+                                child: Icon(LucideIcons.qrCode, size: 22, color: s.accent.main)),
+                            const SizedBox(width: 12),
                             Expanded(
                                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text(s.strings.profile.pd_share_qr,
-                                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
-                              Text(s.strings.profile.pd_share_qr_h,
-                                  style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.d)),
+                                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                              const SizedBox(height: 1),
+                              Text(s.strings.profile.pd_share_qr_h, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
                             ])),
-                            Chevron(rtl: s.rtl, color: s.accent.d),
+                            Chevron(rtl: s.rtl, color: T.fg3),
                           ]),
                         ),
                       ),
@@ -524,7 +566,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                           block: true,
                           accent: s.accent,
                           ar: s.rtl,
-                          onTap: _canSave && !_saving && _loaded ? _save : null),
+                          onTap: _canSave && !_saving && _loaded ? _requestSave : null),
                     ),
                   ],
                 ))),
@@ -561,6 +603,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       );
 
   Widget _card(List<Widget> children) => Container(
+        margin: const EdgeInsets.only(bottom: 4),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
             color: Colors.white,
@@ -572,8 +615,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
   Widget _labeled(String label, Widget child) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(),
-            style: Typo.meta(ar: s.rtl)
-                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: s.rtl ? 0 : 0.8, color: T.fg3)),
+            style: Typo.meta(ar: s.rtl).copyWith(
+                fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: s.rtl ? 0 : FS.xs * 0.08, color: T.fg3)),
         const SizedBox(height: 8),
         child,
       ]);
@@ -1430,5 +1473,89 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             border: primary ? null : Border.all(color: T.borderStrong),
             boxShadow: primary ? s.accent.boxShadow : null),
         child: Spinner(size: 22, stroke: 2.5, color: primary ? Colors.white : s.accent.main),
+      );
+}
+
+/// Username-change confirmation (home.jsx's `hc_*` sheet): the old handle
+/// struck through above the new one, so the patient sees exactly which public
+/// link is being retired before it happens.
+class _HandleChangeSheet extends StatelessWidget {
+  const _HandleChangeSheet({required this.s, required this.from, required this.to});
+  final PatientAppState s;
+  final String from;
+  final String to;
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = s.rtl;
+    final p = s.strings.profile;
+    return Container(
+      decoration:
+          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+      padding: const EdgeInsets.only(bottom: 38),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        Container(
+            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(p.hc_title, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 2, 0, 18),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(color: Color(0xFFFFF6E0), shape: BoxShape.circle),
+                  child: const Icon(LucideIcons.alertTriangle, size: 21, color: T.sun500),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Text(p.hc_body, style: Typo.bodySm(ar: ar).copyWith(height: 1.55))),
+              ]),
+            ),
+            _handleRow(ar, p.hc_from, from, bg: T.ink50, color: T.fg3, strike: true),
+            const SizedBox(height: 10),
+            _handleRow(ar, p.hc_to, to, bg: s.accent.bg, color: s.accent.d, bold: true),
+            const SizedBox(height: 22),
+            PButton(p.hc_confirm,
+                variant: BtnVariant.primary,
+                large: true,
+                block: true,
+                accent: s.accent,
+                ar: ar,
+                onTap: () => Navigator.pop(context, true)),
+            const SizedBox(height: 10),
+            PButton(p.hc_cancel,
+                variant: BtnVariant.ghost,
+                block: true,
+                accent: s.accent,
+                ar: ar,
+                onTap: () => Navigator.pop(context, false)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _handleRow(bool ar, String label, String value,
+          {required Color bg, required Color color, bool strike = false, bool bold = false}) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rMd)),
+        child: Row(children: [
+          Text(label, style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+          const Spacer(),
+          Flexible(
+            child: Text('@$value',
+                textDirection: TextDirection.ltr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.num(size: FS.sm, weight: bold ? FontWeight.w700 : FontWeight.w400, color: color)
+                    .copyWith(decoration: strike ? TextDecoration.lineThrough : null, decorationColor: color)),
+          ),
+        ]),
       );
 }

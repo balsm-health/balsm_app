@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show Gender;
 import 'package:self_report/self_report.dart' show BodyRegion, BodyTissue, BodyView, PainSite, selfReportMessagesOf;
 import '../app_state.dart';
@@ -23,10 +24,20 @@ class _BodyRegionColorMapper extends ColorMapper {
   final Set<String> selectedIds;
   final Color selectedColor;
 
+  /// Once anything on this layer is marked, everything else recedes.
+  /// Stand-in for `.bm-has-sel [id^="region-"]:not([data-sel="1"]) { opacity: .32 }`
+  /// — SVG element opacity is not reachable from a [ColorMapper], so the
+  /// region's own colors are faded instead.
+  static const _dimOpacity = 0.32;
+
   @override
   Color substitute(String? id, String elementName, String attributeName, Color color) {
     final regionId = svgRegionId(id);
-    if (regionId == null || !selectedIds.contains(regionId)) return color;
+    if (regionId == null) return color;
+    if (!selectedIds.contains(regionId)) {
+      if (selectedIds.isEmpty) return color;
+      return color.withValues(alpha: color.a * _dimOpacity);
+    }
     return attributeName == 'stroke' ? selectedColor.withValues(alpha: 1) : selectedColor;
   }
 
@@ -60,7 +71,7 @@ class BodyMap extends StatefulWidget {
 
 class _BodyMapState extends State<BodyMap> {
   BodyView view = BodyView.front;
-  BodyTissue tissue = BodyTissue.muscle;
+  BodyTissue tissue = BodyTissue.skin;
 
   /// Artwork tap targets for the asset on screen. Empty until it parses, and
   /// for any shape we could not map — [_catalogHit] covers both cases.
@@ -94,27 +105,37 @@ class _BodyMapState extends State<BodyMap> {
         _chip(s, c.body_view_back, view == BodyView.back, () => setState(() => view = BodyView.back)),
       ]),
       const SizedBox(height: 8),
-      Wrap(
-        spacing: 5,
-        runSpacing: 5,
-        children: [
-          for (final t in BodyTissue.values) _chip(s, t.label(messages), tissue == t, () => setState(() => tissue = t)),
-        ],
+      // One scrolling row, never wrapping — the layer strip is a shelf.
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Row(children: [
+          for (final (i, t) in BodyTissue.values.indexed) ...[
+            if (i > 0) const SizedBox(width: 5),
+            _chip(s, t.label(messages), tissue == t, () => setState(() => tissue = t), icon: _tissueIcon(t)),
+          ],
+        ]),
       ),
       const SizedBox(height: 8),
-      Text(
-        widget.selected.isEmpty ? c.body_tap : selectedLabels.join(c.list_sep),
-        textAlign: TextAlign.center,
-        style: Typo.meta(ar: s.rtl).copyWith(
-            fontSize: FS.xs,
-            fontWeight: FontWeight.w700,
-            letterSpacing: s.rtl ? 0 : 0.8,
-            color: widget.selected.isEmpty ? T.fg4 : T.fg2),
+      ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 16),
+        child: Text(
+          widget.selected.isEmpty ? c.body_tap : selectedLabels.join(c.list_sep),
+          textAlign: TextAlign.center,
+          style: Typo.meta(ar: s.rtl).copyWith(
+              fontSize: FS.xs,
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+              letterSpacing: s.rtl ? 0 : FS.xs * 0.08,
+              color: widget.selected.isEmpty ? T.fg4 : T.fg2),
+        ),
       ),
       const SizedBox(height: 8),
+      // `.bm-host` centres the plate; the art is capped at 190 wide / 360 tall,
+      // and 360 is the binding constraint at this aspect (190 → 364.8).
       Center(
         child: SizedBox(
-          width: 190,
+          height: 360,
           child: AspectRatio(
             aspectRatio: 200 / 384,
             child: LayoutBuilder(builder: (context, constraints) {
@@ -179,12 +200,13 @@ class _BodyMapState extends State<BodyMap> {
     return best;
   }
 
-  Widget _chip(PatientAppState s, String label, bool active, VoidCallback onTap) {
+  Widget _chip(PatientAppState s, String label, bool active, VoidCallback onTap, {IconData? icon}) {
     final on = active;
+    final fg = on ? s.accent.d : T.fg2;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 32,
+        height: 34,
         padding: const EdgeInsets.symmetric(horizontal: 13),
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -192,13 +214,30 @@ class _BodyMapState extends State<BodyMap> {
           borderRadius: BorderRadius.circular(T.rPill),
           border: Border.all(color: on ? s.accent.main : T.border, width: 1.5),
         ),
-        child: Text(label,
-            style: Typo.meta(ar: s.rtl)
-                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: on ? s.accent.d : T.fg3)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: fg),
+            const SizedBox(width: 5),
+          ],
+          Text(label,
+              softWrap: false,
+              style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
+        ]),
       ),
     );
   }
 }
+
+/// Layer glyphs, matching the design's lucide set on `BODY_LAYERS`.
+IconData _tissueIcon(BodyTissue tissue) => switch (tissue) {
+      BodyTissue.skin => LucideIcons.user,
+      BodyTissue.muscle => LucideIcons.dumbbell,
+      BodyTissue.bone => LucideIcons.bone,
+      BodyTissue.joint => LucideIcons.target,
+      BodyTissue.tendon => LucideIcons.link2,
+      BodyTissue.nerve => LucideIcons.zap,
+      BodyTissue.organ => LucideIcons.heartPulse,
+    };
 
 double _selectionAlpha(BodyTissue tissue) => switch (tissue) {
       BodyTissue.skin => .55,

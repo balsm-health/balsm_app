@@ -22,6 +22,8 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart' show AdaptiveFrame;
 import 'personal_details.dart';
+import 'ecosystem_sheet.dart';
+import 'feedback_sheet.dart';
 import 'profile_subscreens.dart';
 import 'storage_sheet.dart';
 import '../widgets/badges.dart';
@@ -42,6 +44,7 @@ class ProfileScreen extends ConsumerWidget {
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
+      (LucideIcons.calendar, 'care.appts', () => s.setTab('appts'), false),
       (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
       (LucideIcons.phoneCall, 'profile.p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'profile.p_notif', null, false),
@@ -62,10 +65,10 @@ class ProfileScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             child: Column(children: [
-              Avatar(initials: accountInitials(displayName), color: T.petalAqua, size: 84, ar: s.rtl),
+              Avatar(initials: accountInitials(displayName), color: T.petalAqua, size: 84, fontSize: FS.xl3, ar: s.rtl),
               if (displayName.isNotEmpty) ...[
                 const SizedBox(height: 14),
-                Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
+                Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2, fontWeight: FontWeight.w800)),
               ],
               if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
                 const SizedBox(height: 2),
@@ -123,6 +126,22 @@ class ProfileScreen extends ConsumerWidget {
           // Account & security — real governance screens (sessions, service status,
           // account deletion). These push the REAL module screens (their own design
           // system + re-auth), same MaterialPageRoute pattern as the lockout / 404
+          // Community: rate the app and read the ecosystem story. Neither is
+          // PHI — feedback keeps only a rating + date in the KV prefs group.
+          _ListCard(children: [
+            _ListRow(
+              icon: LucideIcons.messageSquare,
+              label: s.strings.feedback.fb_row,
+              first: true,
+              onTap: () => showFeedbackSheet(context),
+            ),
+            _ListRow(
+              icon: LucideIcons.sprout,
+              label: s.strings.ecosystem.eco_row,
+              onTap: () => showEcosystemSheet(context),
+            ),
+          ]),
+
           // → StatusScreen hop.
           _ListCard(children: [
             _ListRow(
@@ -466,16 +485,18 @@ void _showLanguageSheet(BuildContext context) {
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.settings.choose_lang, children: [
-        ...LanguageCode.supported.map((l) => _SelectRow(
-              label: l.nativeName,
-              sub: l.name(kCatalog),
-              selected: l == s.lang,
-              badge: l.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
-              badgeOk: l.isFullySupported,
-              enabled: l.isFullySupported,
-              onTap: l.isFullySupported
+        ...LanguageCode.supported.indexed.map((e) => _SelectRow(
+              label: e.$2.nativeName,
+              sub: e.$2.name(kCatalog),
+              code: e.$2.value.toUpperCase(),
+              selected: e.$2 == s.lang,
+              last: e.$1 == LanguageCode.supported.length - 1,
+              badge: e.$2.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
+              badgeOk: e.$2.isFullySupported,
+              enabled: e.$2.isFullySupported,
+              onTap: e.$2.isFullySupported
                   ? () {
-                      s.setLang(l);
+                      s.setLang(e.$2);
                       Navigator.pop(ctx);
                     }
                   : null,
@@ -494,14 +515,17 @@ void _showCountrySheet(BuildContext context) {
     builder: (ctx) => Directionality(
       textDirection: s.dir,
       child: _SheetShell(title: s.strings.settings.choose_country, subtitle: s.strings.settings.travel_help, children: [
-        ...CountryCode.known.map((c) => _SelectRow(
-              label: c.name(kCatalog, locale: s.lang.value),
-              sub: '${s.strings.emergency.emergency} ${c.emergencyNumber}',
-              selected: c == s.country,
-              badge: c == kHomeCountry ? s.strings.settings.home_country : null,
+        ...CountryCode.known.indexed.map((e) => _SelectRow(
+              label: e.$2.name(kCatalog, locale: s.lang.value),
+              sub: '${e.$2.dialCode}   ${s.strings.emergency.emergency} ${e.$2.emergencyNumber}',
+              code: e.$2.value.toUpperCase(),
+              codeMono: true,
+              selected: e.$2 == s.country,
+              last: e.$1 == CountryCode.known.length - 1,
+              badge: e.$2 == kHomeCountry ? s.strings.settings.home_country : null,
               badgeOk: true,
               onTap: () {
-                s.setCountry(c);
+                s.setCountry(e.$2);
                 Navigator.pop(ctx);
               },
             )),
@@ -551,14 +575,24 @@ class _SelectRow extends StatelessWidget {
   const _SelectRow(
       {required this.label,
       this.sub,
+      this.code,
+      this.codeMono = false,
       this.selected = false,
+      this.last = false,
       this.badge,
       this.badgeOk = true,
       this.enabled = true,
       this.onTap});
   final String label;
   final String? sub;
+
+  /// Leading 44px tile — the language/ISO code, tinted when the row is active.
+  final String? code;
+  final bool codeMono;
   final bool selected;
+
+  /// Last row in the list: no hairline underneath.
+  final bool last;
   final String? badge;
   final bool badgeOk;
   final bool enabled;
@@ -573,17 +607,38 @@ class _SelectRow extends StatelessWidget {
         radius: T.rMd,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink50))),
           child: Row(children: [
+            if (code != null) ...[
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration:
+                    BoxDecoration(color: selected ? s.accent.bg : T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+                child: codeMono
+                    ? Text(code!,
+                        style: Typo.num(size: 15, weight: FontWeight.w600, color: selected ? s.accent.d : T.fg2))
+                    : Text(code!,
+                        style: Typo.display(ar: s.rtl)
+                            .copyWith(fontSize: 17, fontWeight: FontWeight.w700, color: selected ? s.accent.d : T.fg2)),
+              ),
+              const SizedBox(width: 14),
+            ],
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                if (sub != null) Text(sub!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                if (sub != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(sub!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                  ),
               ]),
             ),
             if (badge != null)
               Padding(
                 padding: const EdgeInsets.only(right: 8, left: 8),
-                child: Pill(badge!, kind: badgeOk ? PillKind.success : PillKind.warn, dot: false, ar: s.rtl),
+                child: Pill(badge!, kind: badgeOk ? PillKind.neutral : PillKind.warn, dot: false, ar: s.rtl),
               ),
             if (selected) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
           ]),

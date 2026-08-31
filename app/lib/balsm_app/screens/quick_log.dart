@@ -4,11 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show currentProfileIdProvider;
+import 'package:records/records.dart' show RecordType;
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
 import 'metric_log.dart';
+import 'records_detail.dart' show showAddRecord;
+import 'records_screen.dart' show recordTypeLabelOne, recordTypeStyle;
 import 'report_flow.dart' show openCheckin;
 
 /// Opens the quick-log sheet (quicklog.jsx `QuickLogSheet`) — what the "+"
@@ -34,6 +37,10 @@ void showQuickLog(BuildContext context) {
             onFullCheckin: () {
               Navigator.pop(sheetContext);
               openCheckin(context);
+            },
+            onAddRecord: (type) {
+              Navigator.pop(sheetContext);
+              showAddRecord(context, initialType: type);
             },
           ),
         ),
@@ -75,9 +82,10 @@ CheckInMetric _catalogMetric(_Metric m) => switch (m) {
     };
 
 class _QuickLogSheet extends ConsumerStatefulWidget {
-  const _QuickLogSheet({required this.s, required this.onFullCheckin});
+  const _QuickLogSheet({required this.s, required this.onFullCheckin, required this.onAddRecord});
   final PatientAppState s;
   final VoidCallback onFullCheckin;
+  final ValueChanged<RecordType> onAddRecord;
   @override
   ConsumerState<_QuickLogSheet> createState() => _QuickLogSheetState();
 }
@@ -176,7 +184,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
           ),
           Flexible(
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 14, 20, 24 + MediaQuery.of(context).padding.bottom.clamp(0, 20)),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 38),
               child: RiseIn(key: ValueKey('${active}_${savedValue != null}'), child: _body()),
             ),
           ),
@@ -222,20 +230,51 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
             ]),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Row(children: [
-            const Expanded(child: Divider(height: 1, color: T.ink100)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Text(s.strings.checkin.quick_log_or,
-                  style: Typo.meta(ar: ar).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg4)),
-            ),
-            const Expanded(child: Divider(height: 1, color: T.ink100)),
-          ]),
-        ),
+        _labelledRule(s.strings.checkin.quick_log_or, top: 16, bottom: 10),
         ..._Metric.values.map(_metricRow),
+        _labelledRule(s.strings.checkin.ql_add_records, top: 14, bottom: 12),
+        Row(children: [
+          for (final (i, type) in RecordType.values.indexed) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(child: _recordShortcut(type)),
+          ],
+        ]),
       ]);
+
+  /// A hairline with a caption sitting in the gap.
+  Widget _labelledRule(String label, {required double top, required double bottom}) => Padding(
+        padding: EdgeInsets.only(top: top, bottom: bottom),
+        child: Row(children: [
+          const Expanded(child: Divider(height: 1, color: T.ink100)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(label,
+                softWrap: false,
+                style: Typo.meta(ar: ar).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg4)),
+          ),
+          const Expanded(child: Divider(height: 1, color: T.ink100)),
+        ]),
+      );
+
+  /// Straight into the add-record sheet with the type already chosen.
+  Widget _recordShortcut(RecordType type) {
+    final style = recordTypeStyle(type);
+    return PressHighlight(
+      onTap: () => widget.onAddRecord(type),
+      radius: T.rLg,
+      border: Border.all(color: T.border, width: 1.5),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 14),
+        child: Column(children: [
+          IconSquare(style.icon, bg: style.bg, fg: style.fg, size: 40, iconSize: 20),
+          const SizedBox(height: 8),
+          Text(recordTypeLabelOne(s, type),
+              textAlign: TextAlign.center,
+              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+        ]),
+      ),
+    );
+  }
 
   Widget _metricRow(_Metric m) {
     final style = _metricStyles[m]!;
@@ -275,7 +314,7 @@ class _SavedFlash extends StatelessWidget {
       const SizedBox(height: 14),
       Text(s.strings.checkin.ql_saved, style: Typo.heading(ar: ar)),
       const SizedBox(height: 6),
-      Text(value, textAlign: TextAlign.center, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w600)),
+      Text(value, textAlign: TextAlign.center, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w500)),
       const SizedBox(height: 12),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -292,7 +331,7 @@ class _SavedFlash extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
           child: Row(children: [
-            const Icon(LucideIcons.fileText, size: 14, color: T.fg4),
+            const Icon(LucideIcons.fileText, size: 13, color: T.fg4),
             const SizedBox(width: 8),
             Expanded(child: Text(note!, style: Typo.bodySm(ar: ar).copyWith(color: T.fg3))),
           ]),

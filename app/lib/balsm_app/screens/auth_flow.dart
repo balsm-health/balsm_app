@@ -22,6 +22,7 @@ import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../widgets/legal_sheet.dart';
 import '../widgets/balsm_flower.dart';
 import 'walkthrough_screen.dart';
 
@@ -57,7 +58,7 @@ class _WelcomeScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
               child: Column(children: [
-                const BalsmFlower(size: 84),
+                const BalsmFlower(size: 92),
                 const SizedBox(height: 14),
                 // Bilingual lockup from the live Claude Design: Arabic name
                 // over Balsm.health (TLD one step lighter than the wordmark).
@@ -597,7 +598,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                               }
                             : null)),
                 const SizedBox(height: 14),
-                Text(s.strings.auth.ph_terms, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                TermsLine(s: s),
               ]),
             ),
           ]),

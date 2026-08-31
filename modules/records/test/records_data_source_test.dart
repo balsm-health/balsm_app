@@ -3,7 +3,6 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:records/records.dart';
 // Tests may reach into src/ — the aggregate is intentionally not on the barrel.
-import 'package:records/src/domain/aggregates/record_document.dart';
 
 void main() {
   late AppDatabase db;

@@ -84,7 +84,14 @@ class _AccountRow extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(vertical: 13),
         child: Row(children: [
-          Avatar(initials: accountInitials(name), color: T.petalAqua, size: 48, ar: s.rtl),
+          // `box-shadow: 0 0 0 3px ${acc.color}33` marks the active account.
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: Color(0x3302BBB5), spreadRadius: 3)],
+            ),
+            child: Avatar(initials: accountInitials(name), color: T.petalAqua, size: 48, ar: s.rtl),
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

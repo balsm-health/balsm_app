@@ -51,6 +51,10 @@ class PatientAppState extends ChangeNotifier {
 
   PatientAppPrefs? _prefs;
 
+  /// The app-shell preference group, once [load] has run. Null before that and
+  /// in tests that build a bare state — callers must handle the null.
+  PatientAppPrefs? get prefs => _prefs;
+
   /// Loads the persisted session + preferences from the app-shell preference
   /// group. Returns a ready state whose `route` is `app` when a session was
   /// saved, else `welcome`.

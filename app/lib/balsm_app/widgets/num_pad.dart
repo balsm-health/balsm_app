@@ -5,44 +5,56 @@ import '../tokens.dart';
 
 /// Tap keypad (.keypad) used by the vitals quick-log flows.
 class NumPad extends StatelessWidget {
-  const NumPad({super.key, required this.onKey, required this.onBack, this.decimal = false, this.onDot, this.pressBg});
+  const NumPad({super.key, required this.onKey, required this.onBack, this.decimal = false, this.onDot});
   final ValueChanged<String> onKey;
   final VoidCallback onBack;
   final bool decimal;
   final VoidCallback? onDot;
 
-  /// Accent wash flashed on press (`:active { background: app-accent-50 }`).
-  final Color? pressBg;
-
   @override
   Widget build(BuildContext context) {
-    final press = pressBg ?? T.petalBlue50;
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.55,
-      children: [
-        for (var d = 1; d <= 9; d++) _Key(label: '$d', onTap: () => onKey('$d'), pressBg: press),
-        decimal ? _Key(label: '.', fn: true, onTap: onDot ?? () {}, pressBg: press) : const SizedBox.shrink(),
-        _Key(label: '0', onTap: () => onKey('0'), pressBg: press),
-        _Key(icon: LucideIcons.delete, fn: true, onTap: onBack, pressBg: press),
-      ],
+    // `.numpad { direction: ltr }` — 1-2-3 never mirrors, even in Arabic.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: GridView.count(
+        crossAxisCount: 3,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        // `.numpad-key { height: 52px }` — the key height is fixed, so derive
+        // the ratio from the measured column width instead of guessing one.
+        childAspectRatio: _keyRatio(context),
+        children: [
+          for (var d = 1; d <= 9; d++) _Key(label: '$d', onTap: () => onKey('$d')),
+          decimal ? _Key(label: '.', onTap: onDot ?? () {}) : const SizedBox.shrink(),
+          _Key(label: '0', onTap: () => onKey('0')),
+          _Key(icon: LucideIcons.delete, del: true, onTap: onBack),
+        ],
+      ),
     );
+  }
+
+  /// Column width → aspect ratio that lands each key on the design's fixed
+  /// 52pt height, whatever the available width.
+  static double _keyRatio(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    // 3 columns, 8pt gutters, inside the flow's 24pt side padding.
+    final key = ((width - 48 - 16) / 3).clamp(48.0, 120.0);
+    return key / 52.0;
   }
 }
 
-/// `.keypad button` — flashes accent wash + scales to 0.97 while held,
-/// over `--dur-fast` ease-out. Honors reduced motion.
+/// `.numpad-key` — borderless `ink50` tile that darkens to `ink100` and
+/// scales to 0.97 while held, over `--dur-fast` ease-out. Honors reduced motion.
 class _Key extends StatefulWidget {
-  const _Key({this.label, this.icon, required this.onTap, this.fn = false, required this.pressBg});
+  const _Key({this.label, this.icon, required this.onTap, this.del = false});
   final String? label;
   final IconData? icon;
   final VoidCallback onTap;
-  final bool fn;
-  final Color pressBg;
+
+  /// `.numpad-key.is-del` — the delete key sits back at `fg3`.
+  final bool del;
   @override
   State<_Key> createState() => _KeyState();
 }
@@ -57,7 +69,6 @@ class _KeyState extends State<_Key> {
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final pressed = _down && !reduce;
-    final rest = widget.fn ? T.ink50 : Colors.white;
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => _set(true),
@@ -72,13 +83,13 @@ class _KeyState extends State<_Key> {
           curve: Motion.easeOut,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: _down ? widget.pressBg : rest,
+            color: _down ? T.ink100 : T.ink50,
             borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: T.border),
           ),
           child: widget.icon != null
-              ? Icon(widget.icon, size: 22, color: T.fg1)
-              : Text(widget.label!, style: Typo.num(size: FS.xl, weight: FontWeight.w600)),
+              ? Icon(widget.icon, size: 22, color: widget.del ? T.fg3 : T.fg1)
+              : Text(widget.label!,
+                  style: Typo.num(size: 22, weight: FontWeight.w500, color: widget.del ? T.fg3 : T.fg1)),
         ),
       ),
     );

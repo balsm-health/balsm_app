@@ -261,7 +261,9 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                           child: AnimatedContainer(
                             duration: Motion.base,
                             curve: Motion.easeOut,
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                            height: 40,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
                               color: selectedBlood == bt ? s.accent.bg : Colors.white,
                               borderRadius: BorderRadius.circular(T.rMd),
@@ -296,11 +298,12 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                   const SizedBox(width: 14),
                   Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Pill(s.t(bmi.key),
-                        kind: PillKind.neutral,
-                        dot: false,
-                        ar: s.rtl,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3)),
+                    Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(color: bmi.bg, borderRadius: BorderRadius.circular(T.rPill)),
+                        child: Text(s.t(bmi.key),
+                            style: Typo.meta(ar: s.rtl)
+                                .copyWith(fontSize: 11, fontWeight: FontWeight.w700, color: bmi.color))),
                     const SizedBox(height: 8),
                     LayoutBuilder(
                         builder: (context, c) => Stack(clipBehavior: Clip.none, children: [
@@ -780,18 +783,17 @@ class EmergencyScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(0, 2, 0, 16),
             child: Text(s.strings.emergency.em_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
           ),
-          LayoutBuilder(builder: (context, c) {
-            final cols = c.maxWidth >= 520 ? 4 : 2;
-            return GridView.count(
-              crossAxisCount: cols,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.0,
-              children: _contacts.map(_tile).toList(),
-            );
-          }),
+          // `.emergency-grid` is two columns at every width — these are
+          // thumb-sized call targets, not a responsive card grid.
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.34,
+            children: _contacts.map(_tile).toList(),
+          ),
           Padding(
             padding: const EdgeInsets.only(top: 18),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -820,12 +822,12 @@ class EmergencyScreen extends StatelessWidget {
               height: 44,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: ct.$5, borderRadius: BorderRadius.circular(T.rMd)),
-              child: Icon(ct.$2, size: 22, color: ct.$4)),
-          const Spacer(),
+              child: Icon(ct.$2, size: 23, color: ct.$4)),
+          const SizedBox(height: 12),
           Text(s.t(ct.$1), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
           const SizedBox(height: 2),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(ct.$3, style: Typo.num(size: FS.xl, weight: FontWeight.w800)),
+            Text(ct.$3, style: Typo.num(size: FS.xl2, weight: FontWeight.w600)),
             Icon(LucideIcons.phone, size: 13, color: ct.$4),
           ]),
         ]),

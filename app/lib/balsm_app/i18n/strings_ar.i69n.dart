@@ -25,6 +25,8 @@ class Strings_ar extends Strings {
   WalkthroughStrings_ar get walkthrough => WalkthroughStrings_ar(this);
   PrivacyStrings_ar get privacy => PrivacyStrings_ar(this);
   ProfileStrings_ar get profile => ProfileStrings_ar(this);
+  EcosystemStrings_ar get ecosystem => EcosystemStrings_ar(this);
+  FeedbackStrings_ar get feedback => FeedbackStrings_ar(this);
   RecordsStrings_ar get records => RecordsStrings_ar(this);
   SettingsStrings_ar get settings => SettingsStrings_ar(this);
   StorageStrings_ar get storage => StorageStrings_ar(this);
@@ -60,6 +62,10 @@ class Strings_ar extends Strings {
         return privacy;
       case 'profile':
         return profile;
+      case 'ecosystem':
+        return ecosystem;
+      case 'feedback':
+        return feedback;
       case 'records':
         return records;
       case 'settings':
@@ -87,6 +93,13 @@ class AuthStrings_ar extends AuthStrings {
   String get ph_help => "سنرسل لك رمزاً عبر رسالة للتأكد من هويتك.";
   String get ph_label => "رقم الموبايل";
   String get ph_terms => "بالمتابعة فإنك توافق على شروط بلسم وسياسة الخصوصية.";
+  String get ph_terms_pre => "بالمتابعة فإنك توافق على";
+  String get ph_terms_link => "شروط بلسم";
+  String get ph_terms_and => "و";
+  String get ph_priv_link => "سياسة الخصوصية";
+  String get legal_terms_t => "شروط الاستخدام";
+  String get legal_priv_t => "سياسة الخصوصية";
+  String get legal_updated => "إصدار الإشعار";
   String get otp_title => "أدخل رمز التحقق";
   String get otp_help => "أرسلنا رمزاً من 6 أرقام إلى";
   String get otp_resend => "إعادة إرسال الرمز";
@@ -146,6 +159,20 @@ class AuthStrings_ar extends AuthStrings {
         return ph_label;
       case 'ph_terms':
         return ph_terms;
+      case 'ph_terms_pre':
+        return ph_terms_pre;
+      case 'ph_terms_link':
+        return ph_terms_link;
+      case 'ph_terms_and':
+        return ph_terms_and;
+      case 'ph_priv_link':
+        return ph_priv_link;
+      case 'legal_terms_t':
+        return legal_terms_t;
+      case 'legal_priv_t':
+        return legal_priv_t;
+      case 'legal_updated':
+        return legal_updated;
       case 'otp_title':
         return otp_title;
       case 'otp_help':
@@ -234,6 +261,7 @@ class BootStrings_ar extends BootStrings {
 class CareStrings_ar extends CareStrings {
   final Strings_ar _parent;
   const CareStrings_ar(this._parent) : super(_parent);
+  String get map_sub => "مكان بالقرب منك";
   String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
   String get to_home => "العودة للرئيسية";
   String get care_intro => "الأطباء الذين يتابعون حالتك ويرون تقاريرك.";
@@ -261,6 +289,7 @@ class CareStrings_ar extends CareStrings {
   String get map_your_loc => "موقعك";
   String get map_no_results => "لا توجد أماكن";
   String get map_no_res_h => "جرّب بحثًا أو تصنيفًا آخر.";
+  String get map_clear => "مسح البحث";
   String get care_empty => "لا يوجد فريق رعاية بعد";
   String get care_add_help => "أضف طبيبك من الخريطة لبناء فريق الرعاية.";
   Object operator [](String key) {
@@ -269,6 +298,8 @@ class CareStrings_ar extends CareStrings {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
+      case 'map_sub':
+        return map_sub;
       case 'to_doctor':
         return to_doctor;
       case 'to_home':
@@ -323,6 +354,8 @@ class CareStrings_ar extends CareStrings {
         return map_no_results;
       case 'map_no_res_h':
         return map_no_res_h;
+      case 'map_clear':
+        return map_clear;
       case 'care_empty':
         return care_empty;
       case 'care_add_help':
@@ -381,6 +414,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get range_m => "شهر";
   String get range_3m => "3 أشهر";
   String get avg => "متوسط";
+  String get no_checkins => "لا توجد متابعات بعد";
+  String get no_readings => "لا توجد قراءات في هذه الفترة";
   String get symptoms => "الأعراض";
   String get ql_title => "لنسجّل متابعتك";
   String get ql_add_records => "أضف إلى السجلات";
@@ -522,6 +557,10 @@ class CheckinStrings_ar extends CheckinStrings {
         return range_3m;
       case 'avg':
         return avg;
+      case 'no_checkins':
+        return no_checkins;
+      case 'no_readings':
+        return no_readings;
       case 'symptoms':
         return symptoms;
       case 'ql_title':
@@ -900,6 +939,9 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_active => "فعّالة";
   String get rx_expired => "منتهية";
   String get rx_valid_until => "صالحة حتى";
+  String get rx_issued => "تاريخ الإصدار";
+  String get rx_med_one => "دواء واحد";
+  String rx_meds_n(String n) => "$n أدوية";
   String get rx_show => "أظهر للصيدلاني";
   String get rx_scan => "امسح للصرف";
   String get dose_skipped => "تم التخطي";
@@ -963,6 +1005,12 @@ class MedsStrings_ar extends MedsStrings {
         return rx_expired;
       case 'rx_valid_until':
         return rx_valid_until;
+      case 'rx_issued':
+        return rx_issued;
+      case 'rx_med_one':
+        return rx_med_one;
+      case 'rx_meds_n':
+        return rx_meds_n;
       case 'rx_show':
         return rx_show;
       case 'rx_scan':
@@ -1403,6 +1451,13 @@ class ProfileStrings_ar extends ProfileStrings {
   String get pd_em_phone => "الهاتف";
   String get pd_save => "حفظ التغييرات";
   String get pd_saved => "تم الحفظ";
+  String get hc_title => "تغيير اسم المستخدم؟";
+  String get hc_body =>
+      "يتوقف رابطك القديم عن العمل فوراً. كل من يحتفظ به — طبيب أو أحد أفراد العائلة — سيحتاج إلى الرابط الجديد.";
+  String get hc_from => "من";
+  String get hc_to => "إلى";
+  String get hc_confirm => "تغيير اسم المستخدم";
+  String get hc_cancel => "الإبقاء على الاسم الحالي";
   String get conn_accounts => "الحسابات المرتبطة";
   String get conn_apple => "Apple ID";
   String get conn_google => "حساب Google";
@@ -1485,6 +1540,18 @@ class ProfileStrings_ar extends ProfileStrings {
         return pd_save;
       case 'pd_saved':
         return pd_saved;
+      case 'hc_title':
+        return hc_title;
+      case 'hc_body':
+        return hc_body;
+      case 'hc_from':
+        return hc_from;
+      case 'hc_to':
+        return hc_to;
+      case 'hc_confirm':
+        return hc_confirm;
+      case 'hc_cancel':
+        return hc_cancel;
       case 'conn_accounts':
         return conn_accounts;
       case 'conn_apple':
@@ -1555,9 +1622,176 @@ class ProfileStrings_ar extends ProfileStrings {
   }
 }
 
+class EcosystemStrings_ar extends EcosystemStrings {
+  final Strings_ar _parent;
+  const EcosystemStrings_ar(this._parent) : super(_parent);
+  String get eco_row => "عن بَلسَم والمجتمع";
+  String get eco_title => "منظومة بَلسَم";
+  String get eco_hero => "بَلسَم أكبر من هذا التطبيق";
+  String get eco_sub =>
+      "نظام صحي مملوك للمجتمع في العالم العربي. شيفرة مفتوحة، وبياناتك ملكك، ولا وسيط بينك وبين رعايتك.";
+  String get eco_p1h => "هذا التطبيق — لك";
+  String get eco_p1b => "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك.";
+  String get eco_p2h => "بَلسَم للصيدليات";
+  String get eco_p2b => "صرف الأدوية وإدارة المخزون يعملان حتى عندما ينقطع الإنترنت.";
+  String get eco_p3h => "بَلسَم للعيادات";
+  String get eco_p3b => "الأطباء والمختبرات على النظام المفتوح نفسه — لتكون رعايتك مترابطة.";
+  String get eco_help_t => "ساعد بَلسَم على الانتشار";
+  String get eco_help_sub => "بَلسَم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
+  String get eco_tagline => "مفتوح · عربي · موثوق";
+  String get eco_a1h => "أخبر شخصاً تثق به";
+  String get eco_a1b => "العائلة والجيران هم طريق انتشار بَلسَم — توصية واحدة في كل مرة.";
+  String get eco_a2h => "شارك ملاحظاتك";
+  String get eco_a2b => "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
+  String get eco_a3h => "اسأل صيدليتك أو عيادتك";
+  String get eco_a3b => "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بَلسَم في زيارتك القادمة — فهو مجاني وملك لهم.";
+  String get eco_a4h => "ساهم في المشروع";
+  String get eco_a4b => "مطوّرون ومترجمون وأطباء — الشيفرة وخارطة الطريق مفتوحتان للجميع.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eco_row':
+        return eco_row;
+      case 'eco_title':
+        return eco_title;
+      case 'eco_hero':
+        return eco_hero;
+      case 'eco_sub':
+        return eco_sub;
+      case 'eco_p1h':
+        return eco_p1h;
+      case 'eco_p1b':
+        return eco_p1b;
+      case 'eco_p2h':
+        return eco_p2h;
+      case 'eco_p2b':
+        return eco_p2b;
+      case 'eco_p3h':
+        return eco_p3h;
+      case 'eco_p3b':
+        return eco_p3b;
+      case 'eco_help_t':
+        return eco_help_t;
+      case 'eco_help_sub':
+        return eco_help_sub;
+      case 'eco_tagline':
+        return eco_tagline;
+      case 'eco_a1h':
+        return eco_a1h;
+      case 'eco_a1b':
+        return eco_a1b;
+      case 'eco_a2h':
+        return eco_a2h;
+      case 'eco_a2b':
+        return eco_a2b;
+      case 'eco_a3h':
+        return eco_a3h;
+      case 'eco_a3b':
+        return eco_a3b;
+      case 'eco_a4h':
+        return eco_a4h;
+      case 'eco_a4b':
+        return eco_a4b;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class FeedbackStrings_ar extends FeedbackStrings {
+  final Strings_ar _parent;
+  const FeedbackStrings_ar(this._parent) : super(_parent);
+  String get fb_row => "التقييم والملاحظات";
+  String get fb_title => "كيف تجد بَلسَم؟";
+  String get fb_rate_q => "اضغط على زهرة للتقييم";
+  String get fb_r1 => "يحتاج تحسيناً";
+  String get fb_r2 => "يمكن أن يكون أفضل";
+  String get fb_r3 => "مقبول";
+  String get fb_r4 => "جيد";
+  String get fb_r5 => "ممتاز";
+  String get fb_last => "آخر مشاركة";
+  String get fb_about => "ما موضوع ملاحظتك؟";
+  String get fb_note_lbl => "أخبرنا المزيد";
+  String get fb_optional => "اختياري";
+  String get fb_ph => "ما الذي أعجبك؟ وما الذي لم يعجبك؟";
+  String get fb_privacy => "يراجعها فريق بَلسَم داخل بَلسَم — وليس في متجر التطبيقات. بياناتك الصحية تبقى على جهازك.";
+  String get fb_send => "إرسال الملاحظات";
+  String get fb_thanks => "وصلتنا. شكراً لك.";
+  String get fb_thanks_sub => "فريق بَلسَم يقرأ كل ملاحظة، وملاحظتك تساعد بَلسَم على خدمة الجميع بشكل أفضل.";
+  String get fb_done => "تم";
+  String get fb_t_general => "عام";
+  String get fb_t_ease => "سهولة الاستخدام";
+  String get fb_t_records => "السجلات";
+  String get fb_t_appts => "المواعيد";
+  String get fb_t_meds => "الأدوية";
+  String get fb_t_arabic => "العربية واللغة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'fb_row':
+        return fb_row;
+      case 'fb_title':
+        return fb_title;
+      case 'fb_rate_q':
+        return fb_rate_q;
+      case 'fb_r1':
+        return fb_r1;
+      case 'fb_r2':
+        return fb_r2;
+      case 'fb_r3':
+        return fb_r3;
+      case 'fb_r4':
+        return fb_r4;
+      case 'fb_r5':
+        return fb_r5;
+      case 'fb_last':
+        return fb_last;
+      case 'fb_about':
+        return fb_about;
+      case 'fb_note_lbl':
+        return fb_note_lbl;
+      case 'fb_optional':
+        return fb_optional;
+      case 'fb_ph':
+        return fb_ph;
+      case 'fb_privacy':
+        return fb_privacy;
+      case 'fb_send':
+        return fb_send;
+      case 'fb_thanks':
+        return fb_thanks;
+      case 'fb_thanks_sub':
+        return fb_thanks_sub;
+      case 'fb_done':
+        return fb_done;
+      case 'fb_t_general':
+        return fb_t_general;
+      case 'fb_t_ease':
+        return fb_t_ease;
+      case 'fb_t_records':
+        return fb_t_records;
+      case 'fb_t_appts':
+        return fb_t_appts;
+      case 'fb_t_meds':
+        return fb_t_meds;
+      case 'fb_t_arabic':
+        return fb_t_arabic;
+      default:
+        return super[key];
+    }
+  }
+}
+
 class RecordsStrings_ar extends RecordsStrings {
   final Strings_ar _parent;
   const RecordsStrings_ar(this._parent) : super(_parent);
+  String get rec_documents => "مستند";
   String get reports => "التقارير السابقة";
   String get rec_search_ph => "ابحث في السجلات والوسوم والنتائج…";
   String get rec_search_clear => "مسح البحث";
@@ -1582,6 +1816,7 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_empty => "لا توجد سجلات بعد";
   String get rec_source => "المصدر";
   String get rec_view => "عرض المستند";
+  String get rec_preview => "معاينة المستند";
   String get rec_share => "مشاركة مع الطبيب";
   String get rec_empty_h => "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
   String get rec_pick_type => "ما الذي تضيفه؟";
@@ -1599,6 +1834,8 @@ class RecordsStrings_ar extends RecordsStrings {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
+      case 'rec_documents':
+        return rec_documents;
       case 'reports':
         return reports;
       case 'rec_search_ph':
@@ -1647,6 +1884,8 @@ class RecordsStrings_ar extends RecordsStrings {
         return rec_source;
       case 'rec_view':
         return rec_view;
+      case 'rec_preview':
+        return rec_preview;
       case 'rec_share':
         return rec_share;
       case 'rec_empty_h':

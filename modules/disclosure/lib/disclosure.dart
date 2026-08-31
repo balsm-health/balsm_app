@@ -10,3 +10,6 @@ export 'src/application/use_cases/accept_disclosure_use_case.dart';
 export 'src/infrastructure/drift/disclosure_dao.dart';
 export 'src/presentation/screens/consolidated_disclosure_screen.dart';
 export 'src/presentation/routes.dart';
+// Module copy — the app shell reuses the same reviewed legal sections for the
+// tappable terms / privacy sheet on the auth footer.
+export 'src/i18n/strings.dart';

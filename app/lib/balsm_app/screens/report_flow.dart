@@ -50,6 +50,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   final Map<String, MetricLogCapture> _captures = {};
   final Map<String, bool> _valid = {};
 
+  /// Steps the patient marked "I didn't measure this today" (`SkipRow`). A
+  /// skipped step contributes nothing to the check-in and never blocks Next.
+  final Set<String> _skipped = {};
+
   // Refreshed each build from the reactive providers.
   List<Medication> _meds = const [];
   List<String> _steps = const [];
@@ -59,8 +63,23 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
   bool get canNext {
     if (cur == kMedsCheckInStepId) return true;
+    if (_skipped.contains(cur)) return true;
     return _valid[cur] == true;
   }
+
+  /// Measurements the patient may simply not have taken today. The design
+  /// offers `SkipRow` under blood pressure and glucose; weight is the same
+  /// class of reading.
+  static final _skippable = {CheckInMetric.bloodPressure, CheckInMetric.glucose, CheckInMetric.weight};
+
+  void _toggleSkip(String id) => setState(() {
+        if (_skipped.remove(id)) return;
+        _skipped.add(id);
+        // Anything already typed is discarded — a skipped reading must not
+        // reach the check-in or the summary.
+        _captures.remove(id);
+        _valid.remove(id);
+      });
 
   void next() {
     if (step < _steps.length - 1) {
@@ -79,6 +98,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   }
 
   void _onCapture(String id, MetricLogCapture capture, {required bool valid}) {
+    if (_skipped.contains(id)) return;
     setState(() {
       _captures[id] = capture;
       _valid[id] = valid;
@@ -232,9 +252,14 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
+            // `.flow-foot` reaches solid cream by 30% and stays there, so the
+            // button never floats over half-transparent content.
             decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                    begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00FAFAF7), T.cream50])),
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0, 0.3],
+                    colors: [Color(0x00FAFAF7), T.cream50])),
             child: Opacity(
               opacity: enabled ? 1 : 0.4,
               child: PButton(isLast ? (saving ? '…' : s.strings.common.finish) : s.strings.common.continue_,
@@ -267,12 +292,37 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     }
     final metric = CheckInMetric.fromId(id);
     if (metric == null) return const SizedBox.shrink();
-    return MetricLog(
+    final log = MetricLog(
       metric: metric,
       s: s,
       host: MetricLogHost.embedded,
       onChanged: (capture, {required valid}) => _onCapture(id, capture, valid: valid),
     );
+    if (!_skippable.contains(metric)) return log;
+    final skipped = _skipped.contains(id);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      // `.card.is-disabled { opacity: .4 }` while the step is skipped.
+      IgnorePointer(
+        ignoring: skipped,
+        child: AnimatedOpacity(
+          opacity: skipped ? 0.4 : 1,
+          duration: Motion.base,
+          curve: Motion.easeOut,
+          child: log,
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Center(
+          child: PButton(s.strings.meds.skip_q,
+              icon: skipped ? LucideIcons.checkCircle2 : LucideIcons.circle,
+              variant: BtnVariant.ghost,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => _toggleSkip(id)),
+        ),
+      ),
+    ]);
   }
 
   Widget _medCheck(Medication m) {

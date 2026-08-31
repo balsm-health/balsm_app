@@ -132,7 +132,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
             behavior: HitTestBehavior.translucent,
             child: Column(children: [
               Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 0),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 5, 20, 0),
                 child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   _SkipButton(label: wt.wt_skip, onTap: () => _finish(s)),
                 ]),
@@ -377,7 +377,8 @@ class _WtDayDemoState extends State<_WtDayDemo> {
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(color: T.cream100, borderRadius: BorderRadius.circular(T.rLg)),
               child: Row(children: [
-                for (var i = 0; i < tabs.length; i++)
+                for (var i = 0; i < tabs.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 4),
                   Expanded(
                     child: _DemoTab(
                       icon: tabs[i].$1,
@@ -388,6 +389,7 @@ class _WtDayDemoState extends State<_WtDayDemo> {
                       onTap: () => _pick(i),
                     ),
                   ),
+                ],
               ]),
             ),
             const SizedBox(height: 10),
@@ -482,9 +484,9 @@ class _DemoRecords extends StatelessWidget {
       (LucideIcons.fileText, strings.wt_demo_rec2_t, strings.wt_demo_rec2_d),
     ];
     return Column(children: [
-      for (final r in rows)
+      for (final (i, r) in rows.indexed)
         Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+          padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
             decoration: BoxDecoration(color: T.cream100, borderRadius: BorderRadius.circular(T.rMd)),
@@ -529,22 +531,22 @@ class _DemoCheckin extends StatelessWidget {
       (LucideIcons.smile, strings.wt_demo_mood_good),
       (LucideIcons.laugh, strings.wt_demo_mood_great),
     ];
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      SizedBox(
-        height: 52, // <svg className="wt-demo-chart" ... height="52">
-        width: double.infinity,
-        child: CustomPaint(painter: _SparklinePainter(color: accent.main)),
-      ),
-      const SizedBox(height: 12),
-      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        for (var i = 0; i < moods.length; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _MoodButton(
-                icon: moods[i].$1, label: moods[i].$2, on: i == mood, accent: accent, onTap: () => onMood(i)),
+    return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          SizedBox(
+            height: 52, // <svg className="wt-demo-chart" ... height="52">
+            width: double.infinity,
+            child: CustomPaint(painter: _SparklinePainter(color: accent.main)),
           ),
-      ]),
-    ]);
+          const SizedBox(height: 12),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            for (var i = 0; i < moods.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              _MoodButton(icon: moods[i].$1, label: moods[i].$2, on: i == mood, accent: accent, onTap: () => onMood(i)),
+            ],
+          ]),
+        ]));
   }
 }
 
@@ -685,8 +687,11 @@ class _SkipButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Pressable(
         onTap: onTap,
-        child: Padding(
-          // `.wt-skip { padding: 8px 8px; font-size: var(--pt-sm) }`
+        // `.wt-skip { padding: 8px 8px; min-height: 40px; border-radius: pill }`
+        // — the 40pt floor is what makes it a comfortable target.
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 40),
+          alignment: Alignment.center,
           padding: const EdgeInsets.all(8),
           child: Text(label, style: Typo.bodySm().copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
         ),
@@ -726,15 +731,16 @@ class _Dots extends StatelessWidget {
 /// variant, kept as a small local widget only because this CTA needs a
 /// *trailing* arrow (`PButton`'s optional icon renders leading).
 ///
-/// Background is deliberately **not** [accent] — `.b-btn-primary` in
-/// components.css is hardcoded to `background: var(--balsm-primary)`
-/// (brand blue) and never reads `--app-accent`; only its box-shadow is
-/// retuned per-slide (`.b-btn-primary { box-shadow: var(--app-accent-shadow) }`
-/// in app.css). So the button stays blue on every slide — only the glow
-/// tints with the slide's petal.
+/// Fill is the **app** accent, not the slide's petal: `.b-btn-primary` paints
+/// `--balsm-primary`, which app.jsx binds once at the root to the accent tweak.
+/// The walkthrough's per-slide `accentVars` rebind only `--app-accent*`, so the
+/// slide petal reaches the box-shadow (`.b-btn-primary { box-shadow:
+/// var(--app-accent-shadow) }`) and nothing else.
 class _WtNextButton extends StatelessWidget {
   const _WtNextButton({required this.label, required this.accent, required this.ar, required this.onTap});
   final String label;
+
+  /// The slide's petal — drives the glow only.
   final Accent accent;
   final bool ar;
   final VoidCallback onTap;
@@ -746,7 +752,9 @@ class _WtNextButton extends StatelessWidget {
           width: double.infinity,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-              color: Accent.blue.main, borderRadius: BorderRadius.circular(T.rLg), boxShadow: accent.boxShadow),
+              color: AppScope.of(context).accent.main,
+              borderRadius: BorderRadius.circular(T.rLg),
+              boxShadow: accent.boxShadow),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text(label,
                 style: Typo.body(ar: ar).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600, color: T.white)),

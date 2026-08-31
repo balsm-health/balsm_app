@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:core/core.dart' show UserId, currentUserIdProvider, globalKVDataSourceProvider;
+import 'package:prescriptions/prescriptions.dart' show Prescription, prescriptionListProvider;
 import 'package:medications/medications.dart'
     show
         Medication,
@@ -208,6 +209,9 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
     final userId = ref.watch(currentUserIdProvider);
     final doses = ref.watch(todayDosesProvider).valueOrNull ?? const <TodayDose>[];
     final medCount = ref.watch(medicationListProvider).valueOrNull?.length ?? 0;
+    // The prescriptions row counts *prescriptions* still in force — not meds.
+    final activeRxCount =
+        (ref.watch(prescriptionListProvider).valueOrNull ?? const <Prescription>[]).where((rx) => rx.isActive()).length;
 
     // Group today's doses into morning (< 12:00) / evening for the two cards.
     final morning = doses.where((d) => d.scheduledAt.hour < 12).toList();
@@ -245,7 +249,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
             Expanded(
                 child: Text(s.strings.records.prescriptions,
                     style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: T.fg1))),
-            Pill('$medCount ${s.strings.meds.rx_active.toLowerCase()}', kind: PillKind.success, ar: s.rtl),
+            Pill('$activeRxCount ${s.strings.meds.rx_active.toLowerCase()}', kind: PillKind.success, ar: s.rtl),
             const SizedBox(width: 8),
             Chevron(rtl: s.rtl),
           ]),

@@ -230,6 +230,37 @@ const _phiSchema = <String>[
   // NOTE: the medications/health_record profile-anchor indexes are created in
   // `beforeOpen` AFTER `_ensureColumn`, not here — on a pre-existing DB the
   // column doesn't exist yet when `_phiSchema` runs.
+  // Appointments (appointments module). PHI, on-device only. Patient-entered:
+  // there is no provider directory to link against, so the clinician is stored
+  // as free text rather than a foreign key.
+  '''
+  CREATE TABLE IF NOT EXISTS appointment (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    clinician TEXT NOT NULL,
+    specialty TEXT,
+    location TEXT,
+    kind TEXT NOT NULL,
+    starts_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_appointment_user_time ON appointment(user_id, starts_at)',
+  // Prescriptions (prescriptions module). PHI, on-device only. Patient-entered
+  // from a paper/e-script: `items` is a JSON list of {name, dose}, and
+  // `reference` is the code a pharmacy scans.
+  '''
+  CREATE TABLE IF NOT EXISTS prescription (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    clinician TEXT NOT NULL,
+    specialty TEXT,
+    reference TEXT,
+    items TEXT NOT NULL,
+    issued_at TEXT NOT NULL,
+    valid_until TEXT,
+    created_at TEXT NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_prescription_user_time ON prescription(user_id, issued_at)',
   // Self-report / check-in (self_report module). PHI, on-device only,
   // partitioned by health_profile_id (the person). Vitals are nullable
   // columns; symptoms and pain regions are child rows.

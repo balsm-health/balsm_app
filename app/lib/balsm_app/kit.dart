@@ -139,10 +139,22 @@ IconData forwardArrow(BuildContext context) =>
 
 /// Colored initials avatar (.avatar).
 class Avatar extends StatelessWidget {
-  const Avatar({super.key, required this.initials, required this.color, this.size = 44, this.ar = false, this.child});
+  const Avatar(
+      {super.key,
+      required this.initials,
+      required this.color,
+      this.size = 44,
+      this.fontSize,
+      this.ar = false,
+      this.child});
   final String initials;
   final Color color;
   final double size;
+
+  /// Initials size. The design sets this per use rather than by ratio — 16 at
+  /// 44px (`.avatar`), 32 at 84px (`.profile-head .avatar`) — so the 0.36
+  /// fallback only approximates. Pass it explicitly to match a spec exactly.
+  final double? fontSize;
   final bool ar;
   final Widget? child;
   @override
@@ -154,7 +166,7 @@ class Avatar extends StatelessWidget {
         child: child ??
             Text(initials,
                 style: Typo._display(ar)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: size * 0.36, color: Colors.white)),
+                    .copyWith(fontWeight: FontWeight.w700, fontSize: fontSize ?? size * 0.36, color: Colors.white)),
       );
 }
 
@@ -185,46 +197,70 @@ class PCard extends StatelessWidget {
   }
 }
 
-enum PillKind { success, info, warn, danger, violet, neutral }
+/// Clinical status variants — DS `.b-badge--*`. [violet] is the DS
+/// `--controlled` flag (Schedule II/III); [brand] is solid accent with no dot.
+enum PillKind { success, info, warn, danger, violet, expiring, emerald, neutral, brand, outline }
 
-/// Status pill (.pill) with leading dot.
+/// Status pill (.b-badge) with leading dot.
 class Pill extends StatelessWidget {
-  const Pill(this.label, {super.key, this.kind = PillKind.neutral, this.dot = true, this.ar = false, this.padding});
+  const Pill(this.label,
+      {super.key, this.kind = PillKind.neutral, this.dot = true, this.ar = false, this.padding, this.small = false});
   final String label;
   final PillKind kind;
   final bool dot;
   final bool ar;
   final EdgeInsetsGeometry? padding;
 
-  ({Color bg, Color fg, Color dot}) get _c => switch (kind) {
-        PillKind.success => (bg: T.petalMint50, fg: const Color(0xFF1F6A36), dot: T.petalMint),
-        PillKind.info => (bg: T.petalBlue50, fg: const Color(0xFF08407A), dot: T.petalBlue),
-        PillKind.warn => (bg: const Color(0xFFFDF5DC), fg: const Color(0xFF7A5A0F), dot: T.warning),
-        PillKind.danger => (bg: const Color(0xFFFBEBE7), fg: const Color(0xFF7A2A20), dot: T.danger),
-        PillKind.violet => (bg: T.petalViolet50, fg: const Color(0xFF3D2872), dot: T.petalViolet),
-        PillKind.neutral => (bg: T.ink100, fg: T.ink700, dot: T.ink500),
+  /// `.b-badge--sm` — tighter padding and 11px text for dense rows.
+  final bool small;
+
+  ({Color bg, Color fg, Color dot, Color? border}) get _c => switch (kind) {
+        PillKind.success => (bg: T.petalMint50, fg: const Color(0xFF1F6A36), dot: T.petalMint, border: null),
+        PillKind.info => (bg: T.petalBlue50, fg: const Color(0xFF08407A), dot: T.petalBlue, border: null),
+        PillKind.warn => (bg: T.warningBg, fg: const Color(0xFF7A5A0F), dot: T.warning, border: null),
+        PillKind.danger => (bg: T.dangerBg, fg: const Color(0xFF7A2A20), dot: T.danger, border: null),
+        PillKind.violet => (bg: T.petalViolet50, fg: const Color(0xFF3D2872), dot: T.petalViolet, border: null),
+        PillKind.expiring => (bg: T.expiringBg, fg: const Color(0xFF7A4310), dot: T.expiring, border: null),
+        PillKind.emerald => (bg: T.petalEmerald50, fg: const Color(0xFF015A47), dot: T.petalEmerald, border: null),
+        PillKind.neutral => (bg: T.ink100, fg: T.ink700, dot: T.ink500, border: null),
+        PillKind.brand => (bg: T.petalBlue, fg: Colors.white, dot: Colors.white, border: null),
+        PillKind.outline => (bg: T.surface, fg: T.ink700, dot: T.ink500, border: T.border),
       };
 
   @override
   Widget build(BuildContext context) {
     final c = _c;
+    // The DS defines no dot for `--brand`; it reads as a solid tag, not a state.
+    final showDot = dot && kind != PillKind.brand;
     return Container(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
-      decoration: BoxDecoration(color: c.bg, borderRadius: BorderRadius.circular(T.rPill)),
+      padding: padding ??
+          (small
+              ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+              : const EdgeInsets.symmetric(horizontal: 11, vertical: 4)),
+      decoration: BoxDecoration(
+        color: c.bg,
+        borderRadius: BorderRadius.circular(T.rPill),
+        border: c.border == null ? null : Border.all(color: c.border!),
+      ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (dot) ...[
+        if (showDot) ...[
           Container(width: 7, height: 7, decoration: BoxDecoration(color: c.dot, shape: BoxShape.circle)),
-          const SizedBox(width: 6),
+          SizedBox(width: small ? 4 : 6),
         ],
-        Text(label, style: Typo._body(ar).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: c.fg)),
+        Text(label,
+            style: Typo._body(ar).copyWith(fontSize: small ? FS.xs2 : FS.xs, fontWeight: FontWeight.w600, color: c.fg)),
       ]),
     );
   }
 }
 
-enum BtnVariant { primary, secondary, ghost, soft }
+enum BtnVariant { primary, secondary, ghost, soft, danger, link }
 
-/// Button (.btn) with variants + sizes.
+/// Touch-density sizes — app.css retunes the DS `--btn-h-*` for a thumb-first
+/// surface (DS is 30/38/46; the app is 40/52/56).
+enum BtnSize { sm, md, lg }
+
+/// Button (.b-btn) with variants + sizes.
 class PButton extends StatelessWidget {
   const PButton(this.label,
       {super.key,
@@ -232,6 +268,7 @@ class PButton extends StatelessWidget {
       this.onTap,
       this.variant = BtnVariant.primary,
       this.large = false,
+      this.size,
       this.block = false,
       this.accent,
       this.ar = false,
@@ -241,7 +278,12 @@ class PButton extends StatelessWidget {
   final IconData? icon;
   final VoidCallback? onTap;
   final BtnVariant variant;
+
+  /// Shorthand for `size: BtnSize.lg`, kept for existing call sites.
   final bool large;
+
+  /// Explicit size; wins over [large].
+  final BtnSize? size;
   final bool block;
   final Accent? accent;
   final bool ar;
@@ -249,9 +291,19 @@ class PButton extends StatelessWidget {
   /// Horizontal accent wash on primary (welcome CTA in the live Claude Design).
   final bool gradient;
 
+  BtnSize get _size => size ?? (large ? BtnSize.lg : BtnSize.md);
+
+  double get _height => switch (_size) { BtnSize.sm => 40, BtnSize.md => 52, BtnSize.lg => 56 };
+  double get _padX => switch (_size) { BtnSize.sm => 14, BtnSize.md => 20, BtnSize.lg => 24 };
+  double get _fontSize => switch (_size) { BtnSize.sm => FS.sm, BtnSize.md => FS.md, BtnSize.lg => FS.lg };
+  double get _radius => switch (_size) { BtnSize.sm => T.rSm, BtnSize.md => T.rMd, BtnSize.lg => T.rLg };
+  double get _gap => switch (_size) { BtnSize.sm => 6, BtnSize.md => 9, BtnSize.lg => 10 };
+
   @override
   Widget build(BuildContext context) {
     final a = accent ?? Accent.blue;
+    // `.b-btn:disabled { opacity: .4; pointer-events: none }`
+    final enabled = onTap != null;
     Color bg, fg;
     Border? border;
     List<BoxShadow>? shadow;
@@ -264,7 +316,7 @@ class PButton extends StatelessWidget {
       case BtnVariant.secondary:
         bg = Colors.white;
         fg = color ?? T.fg1;
-        border = Border.all(color: T.borderStrong);
+        border = Border.all(color: T.border);
         break;
       case BtnVariant.ghost:
         bg = Colors.transparent;
@@ -274,13 +326,42 @@ class PButton extends StatelessWidget {
         bg = a.bg;
         fg = a.d;
         break;
+      case BtnVariant.danger:
+        bg = T.danger;
+        fg = Colors.white;
+        break;
+      case BtnVariant.link:
+        bg = Colors.transparent;
+        fg = color ?? a.main;
+        break;
     }
-    final radius = BorderRadius.circular(large ? T.rLg : T.rMd);
+
+    // `.b-btn-link` is text, not a slab: auto height, underlined, 2px inset.
+    if (variant == BtnVariant.link) {
+      return Opacity(
+        opacity: enabled ? 1 : 0.4,
+        child: Pressable(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(label,
+                style: Typo._body(ar).copyWith(
+                  fontSize: _fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                  decoration: TextDecoration.underline,
+                  decorationColor: fg,
+                )),
+          ),
+        ),
+      );
+    }
+
     final useGrad = gradient && variant == BtnVariant.primary;
     final child = Container(
-      height: large ? 56 : 52,
+      height: _height,
       width: block ? double.infinity : null,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: _padX),
       decoration: BoxDecoration(
         color: useGrad ? null : bg,
         gradient: useGrad
@@ -291,22 +372,22 @@ class PButton extends StatelessWidget {
                 colors: [Color.lerp(a.main, Colors.white, 0.28)!, a.main],
               )
             : null,
-        borderRadius: radius,
+        borderRadius: BorderRadius.circular(_radius),
         border: border,
-        boxShadow: shadow,
+        // A shadow under a faded button reads as an enabled control.
+        boxShadow: enabled ? shadow : null,
       ),
       child: Row(
         mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (icon != null) ...[Icon(icon, size: 20, color: fg), const SizedBox(width: 9)],
-          Text(label,
-              style: Typo._body(ar).copyWith(fontSize: large ? FS.lg : FS.md, fontWeight: FontWeight.w600, color: fg)),
+          if (icon != null) ...[Icon(icon, size: 20, color: fg), SizedBox(width: _gap)],
+          Text(label, style: Typo._body(ar).copyWith(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg)),
         ],
       ),
     );
-    // .btn:active { transform: scale(0.98) } — press feedback.
-    return Pressable(onTap: onTap, child: child);
+    // .b-btn:active { transform: scale(0.98) } — press feedback.
+    return Opacity(opacity: enabled ? 1 : 0.4, child: Pressable(onTap: onTap, child: child));
   }
 }
 
@@ -331,22 +412,29 @@ class RowHead extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: margin ?? const EdgeInsets.fromLTRB(20, 24, 20, 12),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          if (leadingIcon != null) ...[
-            Icon(leadingIcon, size: 18, color: T.fg3),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-              child: Text(title,
-                  style: Typo._display(ar).copyWith(fontWeight: FontWeight.w700, fontSize: fontSize, color: T.fg1))),
-          if (action != null)
-            GestureDetector(
-              onTap: onAction,
-              child: Text(action!,
-                  style:
-                      Typo._body(ar).copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: Accent.blue.main)),
-            ),
-        ]),
+        child: Row(
+            // `.row-head { align-items: baseline }` — the 13px action sits on the
+            // same baseline as the 18px title. The icon variant has no text to
+            // align against, so it centers instead.
+            crossAxisAlignment: leadingIcon == null ? CrossAxisAlignment.baseline : CrossAxisAlignment.center,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(leadingIcon, size: 18, color: T.fg3),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                  child: Text(title,
+                      style:
+                          Typo._display(ar).copyWith(fontWeight: FontWeight.w700, fontSize: fontSize, color: T.fg1))),
+              if (action != null)
+                GestureDetector(
+                  onTap: onAction,
+                  child: Text(action!,
+                      style: Typo._body(ar)
+                          .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: Accent.blue.main)),
+                ),
+            ]),
       );
 }
 
@@ -375,8 +463,11 @@ class RingProgress extends StatelessWidget {
           builder: (_, v, __) => CustomPaint(size: Size(size, size), painter: _RingPainter(v, color)),
         ),
         if (label != null)
-          // `.b-progress-ring__center` — mono, weight 600, tabular numerals.
-          Text(label!, style: labelStyle ?? Typo.num(size: FS.md, weight: FontWeight.w700, color: T.fg1)),
+          // `.ring .rtxt` — display family, weight 800, 16px. (The DS's own
+          // `.b-progress-ring__center` is mono; the app's streak ring is not.)
+          Text(label!,
+              style: labelStyle ??
+                  Typo._display(false).copyWith(fontWeight: FontWeight.w800, fontSize: FS.md, color: T.fg1)),
       ]),
     );
   }
@@ -502,12 +593,16 @@ class PressHighlight extends StatefulWidget {
     this.onTap,
     this.radius = 0,
     this.color,
+    this.border,
     this.behavior = HitTestBehavior.opaque,
   });
   final Widget child;
   final VoidCallback? onTap;
   final double radius;
   final Color? color;
+
+  /// Outline kept through the press, for tiles that read as cards.
+  final BoxBorder? border;
   final HitTestBehavior behavior;
   @override
   State<PressHighlight> createState() => _PressHighlightState();
@@ -533,6 +628,7 @@ class _PressHighlightState extends State<PressHighlight> {
         curve: Motion.easeOut,
         decoration: BoxDecoration(
           color: _down ? (widget.color ?? T.ink50) : Colors.transparent,
+          border: widget.border,
           borderRadius: BorderRadius.circular(widget.radius),
         ),
         child: widget.child,
@@ -600,7 +696,7 @@ class LinearProgress extends StatefulWidget {
     this.value = 0,
     this.indeterminate = false,
     this.color,
-    this.height = 8,
+    this.height = 7,
     this.track,
   });
   final double value;
@@ -912,4 +1008,82 @@ class _TopLoadingBarState extends State<TopLoadingBar> with SingleTickerProvider
       ),
     );
   }
+}
+
+/// `.b-check` — the design system's checkbox / radio.
+///
+/// Box is 18×18 (radius 5, or a circle for [radio]) with a 1.5px `ink300`
+/// outline; checked fills with `--balsm-primary`, which app.jsx rebinds to the
+/// accent petal ("so DS components follow it"), so pass the session [accent].
+class BCheck extends StatelessWidget {
+  const BCheck({
+    super.key,
+    required this.label,
+    required this.checked,
+    required this.onTap,
+    required this.accent,
+    this.icon,
+    this.radio = false,
+    this.ar = false,
+  });
+  final String label;
+  final bool checked;
+  final VoidCallback onTap;
+  final Accent accent;
+
+  /// Optional glyph shown before the label (15px, per `SymptomPicker`).
+  final IconData? icon;
+  final bool radio;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 130),
+              curve: Motion.easeOut,
+              width: 18,
+              height: 18,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: checked ? accent.main : Colors.white,
+                shape: radio ? BoxShape.circle : BoxShape.rectangle,
+                borderRadius: radio ? null : BorderRadius.circular(5),
+                border: Border.all(color: checked ? accent.main : T.ink300, width: 1.5),
+              ),
+              child: radio
+                  ? AnimatedScale(
+                      scale: checked ? 1 : 0,
+                      duration: const Duration(milliseconds: 130),
+                      curve: Motion.easeOut,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      ),
+                    )
+                  : AnimatedOpacity(
+                      opacity: checked ? 1 : 0,
+                      duration: const Duration(milliseconds: 110),
+                      child: const Icon(LucideIcons.check, size: 12, color: Colors.white),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 9),
+          if (icon != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icon, size: 15, color: T.fg1),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: Text(label, style: Typo.body(ar: ar).copyWith(fontSize: 14, height: 1.45, color: T.fg1)),
+          ),
+        ]),
+      );
 }

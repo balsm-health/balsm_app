@@ -31,6 +31,19 @@ class PatientAppPrefs extends ModulePreferences {
 
   /// Last device timezone marker seen on app foreground (FR-023 / gap G9).
   /// Null until first recorded. Non-PHI — a coarse zone name/abbreviation only.
+
+  /// Last in-app feedback rating (1–5) and when it was sent. App feedback, not
+  /// PHI — it stays in the KV group rather than the encrypted PHI database.
+  Future<int?> feedbackRating() => read<int>('fbRating');
+  Future<void> setFeedbackRating(int v) => write('fbRating', v);
+
+  Future<DateTime?> feedbackSentAt() async {
+    final raw = await read<String>('fbSentAt');
+    return raw == null ? null : DateTime.tryParse(raw);
+  }
+
+  Future<void> setFeedbackSentAt(DateTime v) => write('fbSentAt', v.toUtc().toIso8601String());
+
   Future<String?> lastTimezone() => read<String>('lastTz');
   Future<void> setLastTimezone(String v) => write('lastTz', v);
 }

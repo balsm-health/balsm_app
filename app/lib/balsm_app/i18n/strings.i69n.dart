@@ -22,6 +22,8 @@ class Strings implements i69n.I69nMessageBundle {
   WalkthroughStrings get walkthrough => WalkthroughStrings(this);
   PrivacyStrings get privacy => PrivacyStrings(this);
   ProfileStrings get profile => ProfileStrings(this);
+  EcosystemStrings get ecosystem => EcosystemStrings(this);
+  FeedbackStrings get feedback => FeedbackStrings(this);
   RecordsStrings get records => RecordsStrings(this);
   SettingsStrings get settings => SettingsStrings(this);
   StorageStrings get storage => StorageStrings(this);
@@ -57,6 +59,10 @@ class Strings implements i69n.I69nMessageBundle {
         return privacy;
       case 'profile':
         return profile;
+      case 'ecosystem':
+        return ecosystem;
+      case 'feedback':
+        return feedback;
       case 'records':
         return records;
       case 'settings':
@@ -84,6 +90,13 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get ph_help => "We'll text you a code to confirm it's you.";
   String get ph_label => "Mobile number";
   String get ph_terms => "By continuing you agree to Balsm's terms and privacy policy.";
+  String get ph_terms_pre => "By continuing you agree to Balsm's";
+  String get ph_terms_link => "terms";
+  String get ph_terms_and => "and";
+  String get ph_priv_link => "privacy policy";
+  String get legal_terms_t => "Terms of use";
+  String get legal_priv_t => "Privacy policy";
+  String get legal_updated => "Notice version";
   String get otp_title => "Enter your code";
   String get otp_help => "We sent a 6-digit code to";
   String get otp_resend => "Resend code";
@@ -143,6 +156,20 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return ph_label;
       case 'ph_terms':
         return ph_terms;
+      case 'ph_terms_pre':
+        return ph_terms_pre;
+      case 'ph_terms_link':
+        return ph_terms_link;
+      case 'ph_terms_and':
+        return ph_terms_and;
+      case 'ph_priv_link':
+        return ph_priv_link;
+      case 'legal_terms_t':
+        return legal_terms_t;
+      case 'legal_priv_t':
+        return legal_priv_t;
+      case 'legal_updated':
+        return legal_updated;
       case 'otp_title':
         return otp_title;
       case 'otp_help':
@@ -231,6 +258,7 @@ class BootStrings implements i69n.I69nMessageBundle {
 class CareStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const CareStrings(this._parent);
+  String get map_sub => "places mapped nearby";
   String get to_doctor => "A copy reaches Dr. Sara at your next visit.";
   String get to_home => "Back to home";
   String get care_intro => "The doctors following your condition and who can see your reports.";
@@ -258,6 +286,7 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get map_your_loc => "Your location";
   String get map_no_results => "No places found";
   String get map_no_res_h => "Try a different search or filter.";
+  String get map_clear => "Clear search";
   String get care_empty => "No care team yet";
   String get care_add_help => "Add a doctor from the map to build your care team.";
   Object operator [](String key) {
@@ -266,6 +295,8 @@ class CareStrings implements i69n.I69nMessageBundle {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
+      case 'map_sub':
+        return map_sub;
       case 'to_doctor':
         return to_doctor;
       case 'to_home':
@@ -320,6 +351,8 @@ class CareStrings implements i69n.I69nMessageBundle {
         return map_no_results;
       case 'map_no_res_h':
         return map_no_res_h;
+      case 'map_clear':
+        return map_clear;
       case 'care_empty':
         return care_empty;
       case 'care_add_help':
@@ -378,6 +411,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get range_m => "Month";
   String get range_3m => "3 months";
   String get avg => "avg";
+  String get no_checkins => "No check-ins yet";
+  String get no_readings => "No readings in this range";
   String get symptoms => "Symptoms";
   String get ql_title => "Let's check in";
   String get ql_add_records => "add to records";
@@ -516,6 +551,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return range_3m;
       case 'avg':
         return avg;
+      case 'no_checkins':
+        return no_checkins;
+      case 'no_readings':
+        return no_readings;
       case 'symptoms':
         return symptoms;
       case 'ql_title':
@@ -894,6 +933,9 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get rx_active => "Active";
   String get rx_expired => "Expired";
   String get rx_valid_until => "Valid until";
+  String get rx_issued => "Issued";
+  String get rx_med_one => "1 medication";
+  String rx_meds_n(String n) => "$n medications";
   String get rx_show => "Show to pharmacist";
   String get rx_scan => "Scan to dispense";
   String get dose_skipped => "Skipped";
@@ -957,6 +999,12 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return rx_expired;
       case 'rx_valid_until':
         return rx_valid_until;
+      case 'rx_issued':
+        return rx_issued;
+      case 'rx_med_one':
+        return rx_med_one;
+      case 'rx_meds_n':
+        return rx_meds_n;
       case 'rx_show':
         return rx_show;
       case 'rx_scan':
@@ -1404,6 +1452,13 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get pd_em_phone => "Phone";
   String get pd_save => "Save changes";
   String get pd_saved => "Saved";
+  String get hc_title => "Change your username?";
+  String get hc_body =>
+      "Your old link stops working right away. Anyone holding it — a clinician, a family member — will need the new one.";
+  String get hc_from => "From";
+  String get hc_to => "To";
+  String get hc_confirm => "Change username";
+  String get hc_cancel => "Keep current username";
   String get conn_accounts => "Connected accounts";
   String get conn_apple => "Apple ID";
   String get conn_google => "Google account";
@@ -1486,6 +1541,18 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return pd_save;
       case 'pd_saved':
         return pd_saved;
+      case 'hc_title':
+        return hc_title;
+      case 'hc_body':
+        return hc_body;
+      case 'hc_from':
+        return hc_from;
+      case 'hc_to':
+        return hc_to;
+      case 'hc_confirm':
+        return hc_confirm;
+      case 'hc_cancel':
+        return hc_cancel;
       case 'conn_accounts':
         return conn_accounts;
       case 'conn_apple':
@@ -1556,9 +1623,178 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   }
 }
 
+class EcosystemStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const EcosystemStrings(this._parent);
+  String get eco_row => "About Balsm & community";
+  String get eco_title => "The Balsm ecosystem";
+  String get eco_hero => "Balsm is bigger than this app";
+  String get eco_sub =>
+      "A community-owned healthcare system for the Arab world. Open code, your data, no vendor in between.";
+  String get eco_p1h => "This app — for you";
+  String get eco_p1b => "Your records, medications and appointments, whole and in your language.";
+  String get eco_p2h => "Balsm for pharmacies";
+  String get eco_p2b => "Dispensing and inventory that keep working even when the internet doesn't.";
+  String get eco_p3h => "Balsm for clinics";
+  String get eco_p3b => "Doctors and labs on the same open system — so your care connects.";
+  String get eco_help_t => "Help Balsm grow";
+  String get eco_help_sub => "Balsm belongs to the people who use it. Every one of these makes it stronger.";
+  String get eco_tagline => "Open · Arab · Trusted";
+  String get eco_a1h => "Tell someone you trust";
+  String get eco_a1b => "Family and neighbours are how Balsm travels — one recommendation at a time.";
+  String get eco_a2h => "Share your feedback";
+  String get eco_a2b => "Rate the app and tell us what to fix. The team reads every note.";
+  String get eco_a3h => "Ask your pharmacy or clinic";
+  String get eco_a3b =>
+      "Providers join when patients ask. Mention Balsm on your next visit — it's free for them to own.";
+  String get eco_a4h => "Contribute to the project";
+  String get eco_a4b => "Developers, translators, clinicians — the code and roadmap are open to everyone.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eco_row':
+        return eco_row;
+      case 'eco_title':
+        return eco_title;
+      case 'eco_hero':
+        return eco_hero;
+      case 'eco_sub':
+        return eco_sub;
+      case 'eco_p1h':
+        return eco_p1h;
+      case 'eco_p1b':
+        return eco_p1b;
+      case 'eco_p2h':
+        return eco_p2h;
+      case 'eco_p2b':
+        return eco_p2b;
+      case 'eco_p3h':
+        return eco_p3h;
+      case 'eco_p3b':
+        return eco_p3b;
+      case 'eco_help_t':
+        return eco_help_t;
+      case 'eco_help_sub':
+        return eco_help_sub;
+      case 'eco_tagline':
+        return eco_tagline;
+      case 'eco_a1h':
+        return eco_a1h;
+      case 'eco_a1b':
+        return eco_a1b;
+      case 'eco_a2h':
+        return eco_a2h;
+      case 'eco_a2b':
+        return eco_a2b;
+      case 'eco_a3h':
+        return eco_a3h;
+      case 'eco_a3b':
+        return eco_a3b;
+      case 'eco_a4h':
+        return eco_a4h;
+      case 'eco_a4b':
+        return eco_a4b;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class FeedbackStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const FeedbackStrings(this._parent);
+  String get fb_row => "Rate & feedback";
+  String get fb_title => "How is Balsm doing?";
+  String get fb_rate_q => "Tap a flower to rate";
+  String get fb_r1 => "Needs work";
+  String get fb_r2 => "Could be better";
+  String get fb_r3 => "Okay";
+  String get fb_r4 => "Good";
+  String get fb_r5 => "Excellent";
+  String get fb_last => "Last shared";
+  String get fb_about => "What is it about?";
+  String get fb_note_lbl => "Tell us more";
+  String get fb_optional => "optional";
+  String get fb_ph => "What worked well? What didn't?";
+  String get fb_privacy =>
+      "Reviewed by the Balsm team, inside Balsm — never an app store. Your health data stays on your device.";
+  String get fb_send => "Send feedback";
+  String get fb_thanks => "Received. Thank you.";
+  String get fb_thanks_sub => "The Balsm team reads every note. Yours helps Balsm work better for everyone.";
+  String get fb_done => "Done";
+  String get fb_t_general => "General";
+  String get fb_t_ease => "Ease of use";
+  String get fb_t_records => "Records";
+  String get fb_t_appts => "Appointments";
+  String get fb_t_meds => "Medications";
+  String get fb_t_arabic => "Arabic & language";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'fb_row':
+        return fb_row;
+      case 'fb_title':
+        return fb_title;
+      case 'fb_rate_q':
+        return fb_rate_q;
+      case 'fb_r1':
+        return fb_r1;
+      case 'fb_r2':
+        return fb_r2;
+      case 'fb_r3':
+        return fb_r3;
+      case 'fb_r4':
+        return fb_r4;
+      case 'fb_r5':
+        return fb_r5;
+      case 'fb_last':
+        return fb_last;
+      case 'fb_about':
+        return fb_about;
+      case 'fb_note_lbl':
+        return fb_note_lbl;
+      case 'fb_optional':
+        return fb_optional;
+      case 'fb_ph':
+        return fb_ph;
+      case 'fb_privacy':
+        return fb_privacy;
+      case 'fb_send':
+        return fb_send;
+      case 'fb_thanks':
+        return fb_thanks;
+      case 'fb_thanks_sub':
+        return fb_thanks_sub;
+      case 'fb_done':
+        return fb_done;
+      case 'fb_t_general':
+        return fb_t_general;
+      case 'fb_t_ease':
+        return fb_t_ease;
+      case 'fb_t_records':
+        return fb_t_records;
+      case 'fb_t_appts':
+        return fb_t_appts;
+      case 'fb_t_meds':
+        return fb_t_meds;
+      case 'fb_t_arabic':
+        return fb_t_arabic;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
 class RecordsStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const RecordsStrings(this._parent);
+  String get rec_documents => "documents";
   String get reports => "Past reports";
   String get rec_search_ph => "Search records, tags, results…";
   String get rec_search_clear => "Clear search";
@@ -1583,6 +1819,7 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get rec_empty => "No records yet";
   String get rec_source => "Source";
   String get rec_view => "View document";
+  String get rec_preview => "Document preview";
   String get rec_share => "Share with doctor";
   String get rec_empty_h => "Add a lab test, scan, or report to keep your whole history in one place.";
   String get rec_pick_type => "What are you adding?";
@@ -1600,6 +1837,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
+      case 'rec_documents':
+        return rec_documents;
       case 'reports':
         return reports;
       case 'rec_search_ph':
@@ -1648,6 +1887,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return rec_source;
       case 'rec_view':
         return rec_view;
+      case 'rec_preview':
+        return rec_preview;
       case 'rec_share':
         return rec_share;
       case 'rec_empty_h':

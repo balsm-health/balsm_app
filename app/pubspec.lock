@@ -64,6 +64,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
+  appointments:
+    dependency: "direct main"
+    description:
+      path: "../modules/appointments"
+      relative: true
+    source: path
+    version: "0.0.0"
   args:
     dependency: transitive
     description:
@@ -1068,6 +1075,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.2"
+  prescriptions:
+    dependency: "direct main"
+    description:
+      path: "../modules/prescriptions"
+      relative: true
+    source: path
+    version: "0.0.0"
   process:
     dependency: transitive
     description:
@@ -1132,7 +1146,7 @@ packages:
     source: hosted
     version: "0.6.0"
   records:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "../modules/records"
       relative: true

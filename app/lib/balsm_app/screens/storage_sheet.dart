@@ -415,8 +415,12 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           ]),
         ),
         const SizedBox(height: 14),
-        _DangerButton(
-            label: s.strings.storage.store_remove_cta, onTap: () => _runPhase(StorageTarget.local, 'connecting')),
+        PButton(s.strings.storage.store_remove_cta,
+            variant: BtnVariant.danger,
+            large: true,
+            block: true,
+            ar: ar,
+            onTap: () => _runPhase(StorageTarget.local, 'connecting')),
         const SizedBox(height: 10),
         PButton(s.strings.common.cancel,
             variant: BtnVariant.secondary,
@@ -428,27 +432,5 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                 })),
       ]),
     ));
-  }
-}
-
-/// Red destructive button (`.btn danger`).
-class _DangerButton extends StatelessWidget {
-  const _DangerButton({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) {
-    final ar = AppScope.of(context).rtl;
-    return Pressable(
-      onTap: onTap,
-      child: Container(
-        height: 56,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(color: T.danger, borderRadius: BorderRadius.circular(T.rLg)),
-        child: Text(label,
-            style: Typo.body(ar: ar).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600, color: Colors.white)),
-      ),
-    );
   }
 }

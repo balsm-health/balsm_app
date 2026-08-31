@@ -55,6 +55,8 @@ class T {
   static const dangerBg = Color(0xFFFBEBE7);
   static const controlled = petalViolet;
   static const controlledBg = petalViolet50;
+  static const expiring = Color(0xFFD97A20);
+  static const expiringBg = Color(0xFFFBEEDC);
 
   // ── Surfaces / foreground roles ────────────────────────────
   static const surface = white;

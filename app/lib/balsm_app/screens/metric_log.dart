@@ -188,6 +188,8 @@ class _NoteField extends StatelessWidget {
   Widget build(BuildContext context) {
     final ar = s.rtl;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // `NoteAttach` opens with a rule — it closes the metric block above it.
+      const Padding(padding: EdgeInsets.only(top: 18), child: Divider(height: 1, color: T.ink100)),
       Padding(
         padding: const EdgeInsets.only(top: 18, bottom: 8),
         child: Text(s.strings.checkin.note_lbl,
@@ -251,26 +253,27 @@ class _BigReading extends StatelessWidget {
           duration: Motion.base,
           curve: Motion.easeOut,
           width: width,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: active ? s.accent.bg : Colors.white,
-            borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(color: active ? s.accent.main : T.border, width: 1.5),
+            borderRadius: BorderRadius.circular(T.rMd),
+            // `.vital-num` carries a transparent 1.5px border at rest so the
+            // box does not jump when the accent border appears.
+            border: Border.all(color: active ? s.accent.main : Colors.transparent, width: 1.5),
           ),
           child: Text(value.isEmpty ? '—' : value,
-              style: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: value.isEmpty ? T.ink300 : T.fg1)),
+              style: Typo.num(size: FS.xl4, weight: FontWeight.w600, color: value.isEmpty ? T.ink300 : T.fg1)),
         ),
       );
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.selected, required this.s, required this.onTap, this.icon});
+  const _Chip({required this.label, required this.selected, required this.s, required this.onTap});
   final String label;
   final bool selected;
   final PatientAppState s;
   final VoidCallback onTap;
-  final IconData? icon;
   @override
   Widget build(BuildContext context) => Pressable(
         onTap: onTap,
@@ -278,21 +281,15 @@ class _Chip extends StatelessWidget {
         child: AnimatedContainer(
           duration: Motion.base,
           curve: Motion.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
             color: selected ? s.accent.bg : Colors.white,
             borderRadius: BorderRadius.circular(T.rPill),
             border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16, color: selected ? s.accent.d : T.fg2),
-              const SizedBox(width: 7),
-            ],
-            Text(label,
-                style:
-                    Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg2)),
-          ]),
+          child: Text(label,
+              style:
+                  Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg2)),
         ),
       );
 }
@@ -351,7 +348,7 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
                 5,
                 (i) => Expanded(
                       child: Padding(
-                        padding: EdgeInsets.only(right: i < 4 ? 8 : 0),
+                        padding: EdgeInsets.only(right: i < 4 ? 10 : 0),
                         child: MoodCell(
                             lv: i + 1,
                             selected: mood == i + 1,
@@ -437,33 +434,28 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
     return chrome(
       child: Column(children: [
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _BigReading(value: sys, s: s, active: onSys, onTap: () => setState(() => onSys = true), width: 104),
+          _BigReading(value: sys, s: s, active: onSys, onTap: () => setState(() => onSys = true), width: 108),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('/', style: Typo.num(size: FS.xl3, weight: FontWeight.w700, color: T.ink300)),
+            child: Text('/',
+                style:
+                    Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.xl3, fontWeight: FontWeight.w700, color: T.ink300)),
           ),
-          _BigReading(value: dia, s: s, active: !onSys, onTap: () => setState(() => onSys = false), width: 104),
+          _BigReading(value: dia, s: s, active: !onSys, onTap: () => setState(() => onSys = false), width: 108),
         ]),
-        const SizedBox(height: 6),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(
-              width: 104,
-              child: Text(s.strings.checkin.sys,
-                  textAlign: TextAlign.center,
-                  style:
-                      Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? s.accent.main : T.fg3))),
-          const SizedBox(width: 24),
-          SizedBox(
-              width: 104,
-              child: Text(s.strings.checkin.dia,
-                  textAlign: TextAlign.center,
-                  style:
-                      Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? T.fg3 : s.accent.main))),
+        const SizedBox(height: 4),
+        Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+          Text(s.strings.checkin.sys,
+              style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? s.accent.main : T.fg3)),
+          const SizedBox(width: 60),
+          Text(s.strings.checkin.dia,
+              style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? T.fg3 : s.accent.main)),
         ]),
-        const SizedBox(height: 8),
-        Text(s.strings.checkin.unit_bp, style: Typo.meta(ar: ar).copyWith(color: T.fg3)),
-        const SizedBox(height: 12),
-        NumPad(onKey: _key, onBack: _back, pressBg: s.accent.bg),
+        const SizedBox(height: 4),
+        Text(s.strings.checkin.unit_bp,
+            style: Typo.bodySm(ar: ar).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
+        const SizedBox(height: 16),
+        NumPad(onKey: _key, onBack: _back),
       ]),
     );
   }
@@ -557,8 +549,9 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
           const SizedBox(height: 16),
           _BigReading(value: glu, s: s, width: 150),
           const SizedBox(height: 8),
-          Text(s.strings.checkin.unit_glu, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-          const SizedBox(height: 12),
+          Text(s.strings.checkin.unit_glu,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
+          const SizedBox(height: 16),
           NumPad(
             onKey: (d) => setState(() {
               glu = glu.length >= 3 ? glu : glu + d;
@@ -568,7 +561,6 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
               glu = glu.isEmpty ? glu : glu.substring(0, glu.length - 1);
               emit();
             }),
-            pressBg: s.accent.bg,
           ),
         ]),
       );
@@ -645,14 +637,14 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
         child: Column(children: [
           _BigReading(value: display, s: s, width: 170),
           const SizedBox(height: 8),
-          Text(s.strings.profile.pd_kg, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-          const SizedBox(height: 12),
+          Text(s.strings.profile.pd_kg,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
+          const SizedBox(height: 16),
           NumPad(
             onKey: _key,
             onBack: _back,
             decimal: true,
             onDot: () => setState(() => hasDot = hasDot || kg.isNotEmpty),
-            pressBg: s.accent.bg,
           ),
         ]),
       );
@@ -715,21 +707,17 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Center(
             child: Column(children: [
-          Text('${pain.round()}', style: Typo.num(size: 64, weight: FontWeight.w700, color: info.color)),
+          Text('${pain.round()}',
+              style: Typo.display(ar: s.rtl).copyWith(fontSize: 64, fontWeight: FontWeight.w800, color: info.color)),
           Text(info.lbl, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
         ])),
-        SliderTheme(
-          data: SliderThemeData(
-              activeTrackColor: info.color, thumbColor: info.color, inactiveTrackColor: T.ink100, trackHeight: 10),
-          child: Slider(
-              value: pain,
-              min: 0,
-              max: 10,
-              divisions: 10,
-              onChanged: (v) => setState(() {
-                    pain = v;
-                    emit();
-                  })),
+        PainSlider(
+          value: pain,
+          knobColor: info.color,
+          onChanged: (v) => setState(() {
+            pain = v;
+            emit();
+          }),
         ),
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -772,23 +760,29 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
   @override
   late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
 
-  SymptomId? symptom;
+  final Set<SymptomId> symptoms = {};
   bool noSymptoms = false;
   final Set<PainSite> locations = {};
 
-  bool get _showMap => symptom != null && _locatedSymptomIds.contains(symptom!.id);
+  /// `SymptomPicker` is `multi` in the full check-in and single-select in the
+  /// one-metric quick log — the design passes `multi={false}` only there.
+  bool get _multi => host == MetricLogHost.embedded;
+
+  bool get _showMap => symptoms.any((id) => _locatedSymptomIds.contains(id.id));
 
   @override
-  bool get valid => symptom != null || noSymptoms;
+  bool get valid => symptoms.isNotEmpty || noSymptoms;
 
   @override
   MetricLogCapture get capture {
-    final label = noSymptoms ? s.strings.checkin.s_none : (symptom == null ? '' : symptomLabel(s, symptom!));
+    final label = noSymptoms
+        ? s.strings.checkin.s_none
+        : symptoms.map((id) => symptomLabel(s, id)).join(s.strings.checkin.list_sep);
     final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
     return MetricLogCapture(
       summary: where.isEmpty ? label : s.strings.checkin.labeled_where(label, where),
       note: _trimmedNote(noteCtrl),
-      symptoms: symptom == null ? const {} : {symptom!},
+      symptoms: Set.unmodifiable(symptoms),
       painSites: locations,
     );
   }
@@ -801,7 +795,12 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
 
   void _select(SymptomId id) => setState(() {
         noSymptoms = false;
-        symptom = symptom == id ? null : id;
+        if (symptoms.contains(id)) {
+          symptoms.remove(id);
+        } else {
+          if (!_multi) symptoms.clear();
+          symptoms.add(id);
+        }
         if (!_showMap) locations.clear();
         emit();
       });
@@ -811,18 +810,28 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
     final ar = s.rtl;
     return chrome(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Wrap(spacing: 10, runSpacing: 10, children: [
-          ...symptomIcons.map((e) => _Chip(
-              label: symptomLabel(s, e.$1), selected: symptom == e.$1, s: s, icon: e.$2, onTap: () => _select(e.$1))),
-          _Chip(
+        // `SymptomPicker` — a `.b-check-group--row`: checkboxes in the full
+        // check-in, radios in the one-metric log. Not chips.
+        Wrap(spacing: 16, runSpacing: 11, children: [
+          ...symptomIcons.map((e) => BCheck(
+              label: symptomLabel(s, e.$1),
+              checked: symptoms.contains(e.$1),
+              icon: e.$2,
+              radio: !_multi,
+              accent: s.accent,
+              ar: ar,
+              onTap: () => _select(e.$1))),
+          BCheck(
               label: s.strings.checkin.s_none,
-              selected: noSymptoms,
-              s: s,
+              checked: noSymptoms,
               icon: LucideIcons.checkCircle2,
+              radio: !_multi,
+              accent: s.accent,
+              ar: ar,
               onTap: () => setState(() {
                     noSymptoms = !noSymptoms;
                     if (noSymptoms) {
-                      symptom = null;
+                      symptoms.clear();
                       locations.clear();
                     }
                     emit();
@@ -842,6 +851,85 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
                     emit();
                   })),
         ],
+      ]),
+    );
+  }
+}
+
+/// `.pain-track` — a 0–10 scale on a mint→sun→danger gradient rail.
+///
+/// Material's `Slider` can only paint a flat active track, so the rail, knob
+/// and ticks are drawn directly. The rail shows the whole scale at once (it is
+/// a severity legend, not a progress bar), which is why it is not split into
+/// active/inactive halves.
+class PainSlider extends StatelessWidget {
+  const PainSlider({super.key, required this.value, required this.knobColor, required this.onChanged});
+
+  final double value; // 0..10
+  final Color knobColor;
+  final ValueChanged<double> onChanged;
+
+  static const _railHeight = 12.0;
+  static const _knob = 36.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 6),
+      child: Column(children: [
+        SizedBox(
+          height: 56,
+          child: LayoutBuilder(builder: (context, c) {
+            // The knob centre travels between half-knob insets so it never
+            // overhangs the rail ends.
+            final travel = c.maxWidth - _knob;
+            void report(double dx) {
+              final raw = ((dx - _knob / 2) / travel).clamp(0.0, 1.0);
+              final t = rtl ? 1 - raw : raw;
+              onChanged((t * 10).roundToDouble());
+            }
+
+            final fraction = (rtl ? 10 - value : value) / 10;
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (d) => report(d.localPosition.dx),
+              onHorizontalDragUpdate: (d) => report(d.localPosition.dx),
+              child: Stack(alignment: Alignment.centerLeft, children: [
+                Center(
+                  child: Container(
+                    height: _railHeight,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(T.rPill),
+                      gradient: const LinearGradient(
+                        colors: [T.petalMint, T.sun400, T.danger],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: fraction * travel,
+                  child: Container(
+                    width: _knob,
+                    height: _knob,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: knobColor, width: 3),
+                      boxShadow: T.shadowMd,
+                    ),
+                  ),
+                ),
+              ]),
+            );
+          }),
+        ),
+        // `.pain-ticks` — the endpoints and midpoint, in tabular figures.
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          for (final n in const [0, 5, 10])
+            Text('$n', style: Typo.num(size: FS.xs2, weight: FontWeight.w600, color: T.fg4)),
+        ]),
       ]),
     );
   }

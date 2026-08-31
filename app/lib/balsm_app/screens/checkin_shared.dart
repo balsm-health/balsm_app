@@ -54,7 +54,7 @@ String symptomLabel(PatientAppState s, SymptomId id) {
   if (n == 0) return (lbl: c.pain_0, color: T.petalMint);
   if (n <= 3) return (lbl: c.pain_mild, color: T.petalMint600);
   if (n <= 6) return (lbl: c.pain_mod, color: T.sun600);
-  if (n <= 9) return (lbl: c.pain_sev, color: const Color(0xFFD97A20));
+  if (n <= 9) return (lbl: c.pain_sev, color: T.expiring);
   return (lbl: c.pain_worst, color: T.danger);
 }
 
@@ -82,8 +82,8 @@ class MoodCell extends StatelessWidget {
               border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              MoodFace(level: lv, size: 32, color: selected ? moodColors[lv - 1] : T.ink400),
-              const SizedBox(height: 6),
+              MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
+              const SizedBox(height: 8),
               Text(moodLabel(s, lv),
                   style: Typo.meta(ar: s.rtl)
                       .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),

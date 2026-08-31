@@ -72,7 +72,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         const PadTop(),
         // App bar — title + list/map toggle.
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
           child: Row(children: [
             Expanded(child: Text(s.strings.care.map_nearby, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
             _softButton(
@@ -94,26 +94,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               _query = v;
               _selected = null;
             }),
-            style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md),
+            style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, color: T.fg1),
             decoration: InputDecoration(
               isDense: true,
               filled: true,
-              fillColor: T.ink50,
+              fillColor: Colors.white,
               hintText: s.strings.care.map_search_ph,
               prefixIcon: const Icon(LucideIcons.search, size: 18, color: T.fg4),
               suffixIcon: _query.isEmpty
                   ? null
-                  : IconButton(
-                      icon: const Icon(LucideIcons.x, size: 14, color: T.fg2),
-                      onPressed: () => setState(() {
-                        _query = '';
-                        _searchCtrl.clear();
-                        _selected = null;
-                      }),
+                  : Center(
+                      widthFactor: 1,
+                      child: GestureDetector(
+                        onTap: () => setState(() {
+                          _query = '';
+                          _searchCtrl.clear();
+                          _selected = null;
+                        }),
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          margin: const EdgeInsetsDirectional.only(end: 10),
+                          decoration: const BoxDecoration(color: T.ink200, shape: BoxShape.circle),
+                          child: const Icon(LucideIcons.x, size: 11, color: T.fg2),
+                        ),
+                      ),
                     ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border)),
+                  borderRadius: BorderRadius.circular(T.rMd),
+                  borderSide: const BorderSide(color: T.border, width: 1.5)),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
             ),
@@ -131,7 +142,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 4),
         Expanded(child: _mapView ? _mapBody(s, filtered) : _listBody(s, filtered)),
       ]),
     );
@@ -159,7 +169,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       PositionedDirectional(
         bottom: _selected != null ? 220 : 20,
         end: 14,
-        child: RoundBtn(icon: LucideIcons.locateFixed, fg: s.accent.main, onTap: _recenter),
+        child: RoundBtn(icon: LucideIcons.locateFixed, bg: Colors.white, fg: s.accent.main, onTap: _recenter),
       ),
       if (_selected != null) _entityCard(s, _selected!),
     ]);
@@ -184,6 +194,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               color: active ? e.type.bg : Colors.white,
               borderRadius: BorderRadius.circular(T.rLg),
               border: Border.all(color: active ? e.type.color : T.border, width: 1.5),
+              boxShadow: T.shadowSm,
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _typeIcon(e.type, 46),
@@ -307,7 +318,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
           ),
           const SizedBox(height: 16),
-          _softButton(icon: LucideIcons.rotateCcw, label: s.strings.care.map_all, onTap: _clearFilters),
+          _softButton(icon: LucideIcons.rotateCcw, label: s.strings.care.map_clear, onTap: _clearFilters),
         ]),
       );
 
@@ -319,11 +330,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: Container(
         height: 40,
         padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+        decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 16, color: T.fg2),
-          const SizedBox(width: 6),
-          Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+          Icon(icon, size: 16, color: s.accent.d),
+          const SizedBox(width: 9),
+          Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: s.accent.d)),
         ]),
       ),
     );
@@ -349,7 +360,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             border: Border.all(color: active ? color : T.border, width: 1.5),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (type != null) ...[Icon(type.icon, size: 13, color: active ? color : T.fg3), const SizedBox(width: 6)],
+            if (type != null) ...[Icon(type.icon, size: 13, color: active ? color : T.fg2), const SizedBox(width: 6)],
             Text(label,
                 style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: active ? color : T.fg2)),
           ]),

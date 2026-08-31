@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -10,8 +12,12 @@ import 'widgets/balsm_flower.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
+import 'screens/prescriptions_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/records_screen.dart';
+import 'screens/trends_screen.dart';
 import 'screens/quick_log.dart' show showQuickLog;
+import 'screens/appointments_screen.dart';
 import 'screens/auth_flow.dart';
 import 'deep_link_handler.dart';
 import 'dev/shake_to_dev_config.dart';
@@ -178,13 +184,16 @@ class _MainAppState extends State<_MainApp> {
     }
 
     // Patient app tabs: home / map (nearby care) / medications / profile, plus
-    // the quick-log FAB (self-report). Not-yet-built screens (trends, records,
-    // appointments, prescriptions) still resolve to the "coming next"
-    // placeholder rather than crashing.
+    // the quick-log FAB (self-report). Any tab id without a case still
+    // resolves to the "coming next" placeholder rather than crashing.
     final screen = switch (s.tab) {
       'home' => const HomeScreen(),
       'map' => const MapScreen(),
       'meds' => const MedsScreen(),
+      'records' => const RecordsScreen(),
+      'trends' => const TrendsScreen(),
+      'appts' => const AppointmentsScreen(),
+      'rx' => const PrescriptionsScreen(),
       'profile' => const ProfileScreen(),
       _ => _Placeholder(title: s.tab),
     };
@@ -224,21 +233,34 @@ class _TabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xEBFFFFFF),
-        border: Border(top: BorderSide(color: T.border)),
+    // The frosted plate is painted as its own clipped layer so the centre FAB,
+    // which rides 22px above the bar, is not clipped along with the blur.
+    return Stack(clipBehavior: Clip.none, children: [
+      Positioned.fill(
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0xEBFFFFFF),
+                border: Border(top: BorderSide(color: T.border)),
+              ),
+            ),
+          ),
+        ),
       ),
-      padding: EdgeInsets.only(bottom: 22 + MediaQuery.of(context).padding.bottom.clamp(0, 12)),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
-        _Tab(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
-        // Quick-log "+" — opens the daily check-in flow as a route (center slot).
-        const _QuickLog(),
-        _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
-        _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
-      ]),
-    );
+      Padding(
+        padding: EdgeInsets.only(bottom: 22 + MediaQuery.of(context).padding.bottom.clamp(0, 12)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
+          _Tab(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
+          // Quick-log "+" — opens the daily check-in flow as a route (center slot).
+          const _QuickLog(),
+          _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
+          _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
+        ]),
+      ),
+    ]);
   }
 }
 
@@ -283,12 +305,15 @@ class _QuickLog extends StatelessWidget {
       onTap: () => showQuickLog(context),
       scale: 0.94,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 58,
+        height: 58,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: s.accent.main,
           shape: BoxShape.circle,
+          // A 4px white ring lets the raised disc punch through the bar. The
+          // rail draws it flush, so no ring there.
+          border: rail ? null : Border.all(color: Colors.white, width: 4),
           boxShadow: s.accent.boxShadow,
         ),
         child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
@@ -301,9 +326,8 @@ class _QuickLog extends StatelessWidget {
       );
     }
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Center(child: button),
+      child: Center(
+        child: Transform.translate(offset: const Offset(0, -22), child: button),
       ),
     );
   }
