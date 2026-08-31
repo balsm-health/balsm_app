@@ -7,11 +7,22 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/line_chart.dart';
-import '../widgets/mood_face.dart';
 import 'checkin_shared.dart';
+import 'day_records_screen.dart';
 
 /// How far back the charts look.
 enum TrendRange { week, month, quarter }
+
+enum _TrendMetric { bp, glucose, pain, weight }
+
+extension on _TrendMetric {
+  String label(PatientAppState s) => switch (this) {
+        _TrendMetric.bp => s.strings.profile.m_bp,
+        _TrendMetric.glucose => s.strings.profile.m_glucose,
+        _TrendMetric.pain => s.strings.profile.m_pain,
+        _TrendMetric.weight => s.strings.profile.m_weight,
+      };
+}
 
 extension on TrendRange {
   int get days => switch (this) { TrendRange.week => 7, TrendRange.month => 30, TrendRange.quarter => 90 };
@@ -26,7 +37,7 @@ extension on TrendRange {
 ///
 /// Reads real on-device check-ins; every series is derived from what the
 /// patient actually logged, so a metric with no readings hides its card rather
-/// than drawing an empty axis.
+/// than drawing an empty axis. Filter chips match the Claude Design TrendsScreen.
 class TrendsScreen extends ConsumerStatefulWidget {
   const TrendsScreen({super.key});
 
@@ -36,6 +47,17 @@ class TrendsScreen extends ConsumerStatefulWidget {
 
 class _TrendsScreenState extends ConsumerState<TrendsScreen> {
   TrendRange _range = TrendRange.week;
+  final _visible = {_TrendMetric.bp, _TrendMetric.glucose, _TrendMetric.pain, _TrendMetric.weight};
+
+  void _toggle(_TrendMetric m) {
+    setState(() {
+      if (_visible.contains(m)) {
+        if (_visible.length > 1) _visible.remove(m);
+      } else {
+        _visible.add(m);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +68,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
     // `findAll` is newest-first; charts read left-to-right in time order.
     final inRange = history.where((c) => c.recordedAt.isAfter(cutoff)).toList().reversed.toList();
 
-    final sys = <double>[], dia = <double>[], glucose = <double>[];
+    final sys = <double>[], dia = <double>[], glucose = <double>[], pain = <double>[], weight = <double>[];
     for (final c in inRange) {
       final v = c.vitals;
       if (v.systolic != null && v.diastolic != null) {
@@ -55,6 +77,56 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
       }
       final g = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
       if (g != null) glucose.add(g.toDouble());
+      pain.add(c.painLevel.value.toDouble());
+      if (v.weightKg != null) weight.add(v.weightKg!);
+    }
+
+    final charts = <Widget>[];
+    void addChart(Widget card) {
+      charts.add(card);
+    }
+
+    const firstMargin = EdgeInsets.fromLTRB(20, 0, 20, 0);
+    const nextMargin = EdgeInsets.fromLTRB(20, 14, 20, 0);
+    EdgeInsetsGeometry margin() => charts.isEmpty ? firstMargin : nextMargin;
+
+    if (_visible.contains(_TrendMetric.bp) && sys.isNotEmpty) {
+      addChart(_ChartCard(
+        title: s.strings.profile.m_bp,
+        value: '${_avg(sys).round()}/${_avg(dia).round()}',
+        unit: s.strings.checkin.unit_bp,
+        series: [ChartSeries(sys, T.petalViolet), ChartSeries(dia, T.petalBlue)],
+        legend: [(s.strings.checkin.sys, T.petalViolet), (s.strings.checkin.dia, T.petalBlue)],
+        margin: margin(),
+      ));
+    }
+    if (_visible.contains(_TrendMetric.glucose) && glucose.isNotEmpty) {
+      addChart(_ChartCard(
+        title: s.strings.profile.m_glucose,
+        value: _avg(glucose).round().toString(),
+        unit: s.strings.checkin.unit_glu,
+        series: [ChartSeries(glucose, T.petalMint600)],
+        margin: margin(),
+      ));
+    }
+    if (_visible.contains(_TrendMetric.pain) && pain.isNotEmpty) {
+      addChart(_ChartCard(
+        title: s.strings.profile.m_pain,
+        value: _avg(pain).toStringAsFixed(1),
+        unit: '/10',
+        series: [ChartSeries(pain, T.danger)],
+        margin: margin(),
+      ));
+    }
+    if (_visible.contains(_TrendMetric.weight) && weight.isNotEmpty) {
+      addChart(_ChartCard(
+        title: s.strings.profile.m_weight,
+        value: _fmtWeight(weight.last),
+        unit: s.strings.checkin.unit_kg,
+        series: [ChartSeries(weight, T.petalBlue)],
+        margin: margin(),
+        showAvg: false,
+      ));
     }
 
     return ContentColumn(
@@ -67,23 +139,25 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
           _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),
         ]),
-        if (sys.isNotEmpty)
-          _ChartCard(
-            title: s.strings.profile.m_bp,
-            value: '${_avg(sys).round()}/${_avg(dia).round()}',
-            unit: s.strings.checkin.unit_bp,
-            series: [ChartSeries(sys, T.petalViolet), ChartSeries(dia, T.petalBlue)],
-            legend: [(s.strings.checkin.sys, T.petalViolet), (s.strings.checkin.dia, T.petalBlue)],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+          child: Row(
+            children: _TrendMetric.values
+                .map((m) => Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 8),
+                      child: BChip(
+                        m.label(s),
+                        active: _visible.contains(m),
+                        accent: s.accent.main,
+                        ar: s.rtl,
+                        onTap: () => _toggle(m),
+                      ),
+                    ))
+                .toList(),
           ),
-        if (glucose.isNotEmpty)
-          _ChartCard(
-            margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-            title: s.strings.profile.m_glucose,
-            value: _avg(glucose).round().toString(),
-            unit: s.strings.checkin.unit_glu,
-            series: [ChartSeries(glucose, T.petalMint600)],
-          ),
-        if (sys.isEmpty && glucose.isEmpty) _NoReadings(range: _range),
+        ),
+        if (charts.isEmpty) _NoReadings(range: _range) else ...charts,
         RowHead(s.strings.records.reports, ar: s.rtl),
         if (history.isEmpty)
           PCard(
@@ -100,10 +174,15 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
         else
           PCard(
             margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.zero,
             child: Column(
-              children: [
-                for (final (i, c) in history.indexed) _HistoryRow(checkIn: c, first: i == 0),
-              ],
+              children: history.indexed
+                  .map((e) => CheckInHistoryRow(
+                        checkIn: e.$2,
+                        first: e.$1 == 0,
+                        onTap: () => DayRecordsScreen.open(context, e.$2),
+                      ))
+                  .toList(),
             ),
           ),
         const SizedBox(height: 24),
@@ -112,6 +191,8 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
   }
 
   static double _avg(List<double> xs) => xs.isEmpty ? 0 : xs.reduce((a, b) => a + b) / xs.length;
+
+  static String _fmtWeight(double kg) => kg == kg.roundToDouble() ? '${kg.round()}' : kg.toStringAsFixed(1);
 }
 
 /// `.range-tabs` — week / month / 3 months.
@@ -152,6 +233,7 @@ class _ChartCard extends StatelessWidget {
     required this.series,
     this.legend = const [],
     this.margin,
+    this.showAvg = true,
   });
   final String title;
   final String value;
@@ -159,6 +241,7 @@ class _ChartCard extends StatelessWidget {
   final List<ChartSeries> series;
   final List<(String, Color)> legend;
   final EdgeInsetsGeometry? margin;
+  final bool showAvg;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +253,7 @@ class _ChartCard extends StatelessWidget {
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, fontSize: FS.md)),
           Row(children: [
-            Text('${s.strings.checkin.avg} ', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            if (showAvg) Text('${s.strings.checkin.avg} ', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             Text(value, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg1)),
             Text(' $unit', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ]),
@@ -209,68 +292,6 @@ class _NoReadings extends StatelessWidget {
         Text(s.strings.checkin.no_readings,
             textAlign: TextAlign.center,
             style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-      ]),
-    );
-  }
-}
-
-/// `.history-row` — day chip, vitals summary, mood face, pain badge.
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.checkIn, required this.first});
-  final CheckIn checkIn;
-  final bool first;
-
-  static const _monthsEn = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  static const _monthsAr = ['ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون', 'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس'];
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final d = checkIn.recordedAt;
-    final v = checkIn.vitals;
-    final pain = checkIn.painLevel.value;
-    final info = painInfo(s, pain);
-    final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
-
-    return Container(
-      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(children: [
-        SizedBox(
-          width: 50,
-          child: Column(children: [
-            Text(d.day.toString(),
-                style: Typo.num(size: FS.lg, weight: FontWeight.w800, color: T.fg1).copyWith(height: 1)),
-            Text((s.rtl ? _monthsAr : _monthsEn)[d.month - 1],
-                style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, letterSpacing: s.rtl ? 0 : 1.1)),
-          ]),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-            if (v.systolic != null && v.diastolic != null) ...[
-              const Icon(LucideIcons.activity, size: 14, color: T.petalViolet),
-              Text('${v.systolic}/${v.diastolic}',
-                  textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg1)),
-            ],
-            if (glucose != null) ...[
-              const Icon(LucideIcons.droplet, size: 14, color: T.petalMint600),
-              Text('$glucose', style: Typo.num(size: FS.sm, color: T.fg1)),
-            ],
-          ]),
-        ),
-        if (checkIn.mood != null) ...[
-          MoodFace(level: checkIn.mood!.score, size: 26, color: moodColors[checkIn.mood!.score - 1]),
-          const SizedBox(width: 10),
-        ],
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: info.color.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(T.rPill),
-          ),
-          child: Text('$pain', style: Typo.num(size: FS.xs, color: info.color)),
-        ),
       ]),
     );
   }

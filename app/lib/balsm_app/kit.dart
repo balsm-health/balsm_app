@@ -254,6 +254,51 @@ class Pill extends StatelessWidget {
   }
 }
 
+/// Filter chip (`.b-chip`). Active fills the session accent; inactive is an
+/// outlined pill. At least one chip in a set should stay on — the caller
+/// enforces that.
+class BChip extends StatelessWidget {
+  const BChip(
+    this.label, {
+    super.key,
+    required this.active,
+    required this.onTap,
+    required this.accent,
+    this.ar = false,
+  });
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final Color accent;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: Motion.fast,
+        curve: Motion.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? accent : Colors.white,
+          borderRadius: BorderRadius.circular(T.rPill),
+          border: Border.all(color: active ? accent : T.border, width: 1.5),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (active) ...[
+            const Icon(LucideIcons.check, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+          ],
+          Text(label,
+              style: Typo._body(ar)
+                  .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: active ? Colors.white : T.fg2)),
+        ]),
+      ),
+    );
+  }
+}
+
 enum BtnVariant { primary, secondary, ghost, soft, danger, link }
 
 /// Touch-density sizes — app.css retunes the DS `--btn-h-*` for a thumb-first

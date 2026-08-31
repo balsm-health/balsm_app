@@ -3,9 +3,10 @@ import 'package:emergency_card/emergency_card.dart' show EmergencyCardSnapshot, 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:medications/medications.dart' show DoseOutcome, TodayDose, medicationListProvider, todayDosesProvider;
+import 'package:medications/medications.dart' show medicationListProvider;
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
+import 'day_records_screen.dart';
 import 'home_widgets.dart';
 import 'records_screen.dart';
 import '../app_state.dart';
@@ -22,11 +23,10 @@ import 'profile_subscreens.dart';
 /// Ported onto real providers: the greeting name comes from the account
 /// summary (not the sample family-account data), and the status cards reflect
 /// real on-device state — onboarding nudges (claim handle, set up the
-/// emergency card, add a first medication) plus a today's-medications summary.
-/// Every card is driven by real on-device state and hides itself when it has
-/// nothing to say — no streak at zero, no metric grid before the first
-/// check-in, no appointment strip with nothing booked. Signed-out-safe: every
-/// real read resolves to an empty/hidden state rather than crashing.
+/// emergency card, add a first medication). Layout follows the Claude Design
+/// HomeScreen: travel banner, check-in hero, streak, nearby/records shortcuts,
+/// latest readings (including SpO₂ when logged), then recent reports that open
+/// the day detail. Appointments and today's meds live on their own tabs.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -59,11 +59,10 @@ class HomeScreen extends ConsumerWidget {
             RoundBtn(icon: LucideIcons.bell, onTap: () {}),
           ]),
 
+          const AwayBanner(),
+
           // Daily check-in hero — the primary action on this screen.
           const _CheckInSection(),
-
-          // Next scheduled visit; hides itself when nothing is booked.
-          const UpcomingAppointmentStrip(),
 
           // Onboarding nudges — driven by real P001 providers (handle /
           // emergency card / first medication). Each stays hidden until its
@@ -84,8 +83,7 @@ class HomeScreen extends ConsumerWidget {
           // Latest readings — only once something has been logged.
           const _LatestMetrics(),
 
-          // Today's medications — real on-device schedule.
-          const _TodayMedsCard(),
+          const _RecentReports(),
 
           const SizedBox(height: 24),
         ],
@@ -153,70 +151,6 @@ class _NudgeSection extends ConsumerWidget {
           onTap: () => s.setTab('meds'),
         ),
     ]);
-  }
-}
-
-/// Today's medications summary — real `todayDosesProvider`. Hidden when there
-/// are no doses scheduled today (or signed out). Taking a dose happens on the
-/// medications tab; the row's action routes there.
-class _TodayMedsCard extends ConsumerWidget {
-  const _TodayMedsCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = AppScope.of(context);
-    final doses = ref.watch(todayDosesProvider).valueOrNull ?? const <TodayDose>[];
-    if (doses.isEmpty) return const SizedBox.shrink();
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      RowHead(s.strings.meds.meds_today, action: s.strings.common.see_all, onAction: () => s.setTab('meds'), ar: s.rtl),
-      PCard(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(children: doses.indexed.map((e) => _HomeDoseRow(dose: e.$2, first: e.$1 == 0)).toList()),
-      ),
-    ]);
-  }
-}
-
-class _HomeDoseRow extends StatelessWidget {
-  const _HomeDoseRow({required this.dose, required this.first});
-  final TodayDose dose;
-  final bool first;
-
-  static String _hm(DateTime d) => '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final med = dose.medication;
-    final taken = dose.event?.outcome == DoseOutcome.taken;
-    final subtitle = [
-      if (med.doseAmount != null && med.doseAmount!.isNotEmpty) med.doseAmount!,
-      _hm(dose.scheduledAt),
-    ].join(' · ');
-    return Container(
-      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      child: Row(children: [
-        Container(
-            width: 42,
-            height: 42,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
-            child: Icon(LucideIcons.pill, size: 21, color: s.accent.d)),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(med.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            Text(subtitle, textDirection: TextDirection.ltr, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ]),
-        ),
-        if (taken)
-          Pill(s.strings.meds.taken, kind: PillKind.success, ar: s.rtl)
-        else
-          PButton(s.strings.meds.take,
-              variant: BtnVariant.soft, accent: s.accent, ar: s.rtl, onTap: () => s.setTab('meds')),
-      ]),
-    );
   }
 }
 
@@ -344,6 +278,13 @@ class _LatestMetrics extends ConsumerWidget {
           value: '$glucose',
           unit: s.strings.checkin.unit_glu,
         ),
+      if (v.spo2 != null)
+        MetricTile(
+          icon: LucideIcons.wind,
+          label: s.strings.profile.m_o2,
+          value: '${v.spo2}',
+          unit: s.strings.checkin.unit_spo2,
+        ),
       if (latest.mood != null)
         MetricTile(
           icon: LucideIcons.smile,
@@ -370,6 +311,36 @@ class _LatestMetrics extends ConsumerWidget {
           crossAxisSpacing: 12,
           childAspectRatio: 1.72,
           children: tiles,
+        ),
+      ),
+    ]);
+  }
+}
+
+/// Last three check-ins — Claude Design "recent reports"; each row opens
+/// [DayRecordsScreen]. Hidden until the patient has logged at least once.
+class _RecentReports extends ConsumerWidget {
+  const _RecentReports();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
+    if (history.isEmpty) return const SizedBox.shrink();
+    final recent = history.take(3).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      RowHead(s.strings.common.recent, action: s.strings.common.see_all, onAction: () => s.setTab('trends'), ar: s.rtl),
+      PCard(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: recent.indexed
+              .map((e) => CheckInHistoryRow(
+                    checkIn: e.$2,
+                    first: e.$1 == 0,
+                    onTap: () => DayRecordsScreen.open(context, e.$2),
+                  ))
+              .toList(),
         ),
       ),
     ]);

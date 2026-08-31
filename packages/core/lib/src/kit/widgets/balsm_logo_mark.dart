@@ -4,7 +4,7 @@ import '../_tokens.dart';
 
 enum BalsmLogoMarkVariant { small, medium, large, spinner }
 
-/// 5-petal flower logo from brand/logo-vertical.svg via flutter_svg.
+/// 5-figure ring lockup from `assets/brand/logo-vertical.svg` via flutter_svg.
 /// spinner variant: animated 4s linear rotate (loading per design.md §6).
 class BalsmLogoMark extends StatefulWidget {
   const BalsmLogoMark({

@@ -46,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
       (LucideIcons.calendar, 'care.appts', () => s.setTab('appts'), false),
       (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
-      (LucideIcons.phoneCall, 'profile.p_emergency', () => openEmergency(context), true),
+      (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'profile.p_notif', null, false),
       (LucideIcons.shieldCheck, 'profile.p_privacy', () => openPrivacyData(context), false),
       (LucideIcons.lifeBuoy, 'profile.p_help', null, false),
@@ -130,13 +130,13 @@ class ProfileScreen extends ConsumerWidget {
           // PHI — feedback keeps only a rating + date in the KV prefs group.
           _ListCard(children: [
             _ListRow(
-              icon: LucideIcons.messageSquare,
+              icon: LucideIcons.star,
               label: s.strings.feedback.fb_row,
               first: true,
               onTap: () => showFeedbackSheet(context),
             ),
             _ListRow(
-              icon: LucideIcons.sprout,
+              icon: LucideIcons.flower2,
               label: s.strings.ecosystem.eco_row,
               onTap: () => showEcosystemSheet(context),
             ),

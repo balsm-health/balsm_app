@@ -70,7 +70,12 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   /// Measurements the patient may simply not have taken today. The design
   /// offers `SkipRow` under blood pressure and glucose; weight is the same
   /// class of reading.
-  static final _skippable = {CheckInMetric.bloodPressure, CheckInMetric.glucose, CheckInMetric.weight};
+  static final _skippable = {
+    CheckInMetric.bloodPressure,
+    CheckInMetric.glucose,
+    CheckInMetric.weight,
+    CheckInMetric.spo2,
+  };
 
   void _toggleSkip(String id) => setState(() {
         if (_skipped.remove(id)) return;
@@ -511,6 +516,7 @@ class _Summary extends StatelessWidget {
   if (metric == CheckInMetric.bloodPressure) return (LucideIcons.activity, PillKind.violet);
   if (metric == CheckInMetric.glucose) return (LucideIcons.droplet, PillKind.success);
   if (metric == CheckInMetric.weight) return (LucideIcons.scale, PillKind.info);
+  if (metric == CheckInMetric.spo2) return (LucideIcons.wind, PillKind.info);
   if (metric == CheckInMetric.pain) return (LucideIcons.zap, PillKind.warn);
   if (metric == CheckInMetric.symptoms) return (LucideIcons.stethoscope, PillKind.neutral);
   return (LucideIcons.activity, PillKind.neutral);
@@ -522,6 +528,7 @@ String _summaryLabel(PatientAppState s, String id) {
   if (metric == CheckInMetric.bloodPressure) return s.strings.profile.m_bp;
   if (metric == CheckInMetric.glucose) return s.strings.profile.m_glucose;
   if (metric == CheckInMetric.weight) return s.strings.profile.m_weight;
+  if (metric == CheckInMetric.spo2) return s.strings.profile.m_o2;
   if (metric == CheckInMetric.pain) return s.strings.profile.m_pain;
   if (metric == CheckInMetric.symptoms) return s.strings.checkin.symptoms;
   return id;

@@ -108,6 +108,7 @@ class MetricLog extends StatelessWidget {
     required this.host,
     this.onSave,
     this.onChanged,
+    this.focusedSymptom,
   });
 
   final CheckInMetric metric;
@@ -116,8 +117,21 @@ class MetricLog extends StatelessWidget {
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
 
+  /// Quick-log one-symptom detail: skip the multi-select picker and capture
+  /// just this catalog entry (body map only when the design marks it located).
+  final SymptomId? focusedSymptom;
+
   @override
   Widget build(BuildContext context) {
+    if (focusedSymptom != null) {
+      return _OneSymptomLog(
+        s: s,
+        host: host,
+        symptom: focusedSymptom!,
+        onSave: onSave,
+        onChanged: onChanged,
+      );
+    }
     if (metric == CheckInMetric.mood) {
       return _MoodLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
     }
@@ -130,6 +144,9 @@ class MetricLog extends StatelessWidget {
     if (metric == CheckInMetric.weight) {
       return _WeightLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
     }
+    if (metric == CheckInMetric.spo2) {
+      return _O2Log(s: s, host: host, onSave: onSave, onChanged: onChanged);
+    }
     if (metric == CheckInMetric.pain) {
       return _PainLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
     }
@@ -140,9 +157,9 @@ class MetricLog extends StatelessWidget {
   }
 }
 
-/// Symptoms the design pairs with the body map (`loc: true`) — the catalog's
-/// only located entry is swelling; the rest are whole-body sensations.
-const _locatedSymptomIds = {'swelling'};
+/// Symptoms the design pairs with the body map (`loc: true`). Catalog-only —
+/// urine/stool/tingling from the prototype are not in [SymptomId].
+const _locatedSymptomIds = {'swelling', 'chestTightness'};
 
 mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   PatientAppState get s;
@@ -650,6 +667,76 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
       );
 }
 
+// ── SpO₂ ─────────────────────────────────────────────────────
+
+class _O2Log extends StatefulWidget {
+  const _O2Log({required this.s, required this.host, this.onSave, this.onChanged});
+  final PatientAppState s;
+  final MetricLogHost host;
+  final MetricLogSave? onSave;
+  final MetricLogChanged? onChanged;
+  @override
+  State<_O2Log> createState() => _O2LogState();
+}
+
+class _O2LogState extends State<_O2Log> with _MetricLogState {
+  @override
+  PatientAppState get s => widget.s;
+  @override
+  MetricLogHost get host => widget.host;
+  @override
+  MetricLogSave? get onSave => widget.onSave;
+  @override
+  MetricLogChanged? get onChanged => widget.onChanged;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+
+  String digits = '';
+
+  int? get _pct => digits.isEmpty ? null : int.tryParse(digits);
+
+  @override
+  bool get valid {
+    final n = _pct;
+    return digits.length >= 2 && n != null && n <= 100;
+  }
+
+  @override
+  MetricLogCapture get capture => MetricLogCapture(
+        summary: valid ? '$digits${s.strings.checkin.unit_spo2}' : '',
+        note: _trimmedNote(noteCtrl),
+        vitals: valid ? Vitals(spo2: _pct) : Vitals.empty,
+      );
+
+  @override
+  void dispose() {
+    noteCtrl.dispose();
+    super.dispose();
+  }
+
+  void _key(String d) => setState(() {
+        if (digits.length < 3) digits += d;
+        emit();
+      });
+
+  void _back() => setState(() {
+        if (digits.isNotEmpty) digits = digits.substring(0, digits.length - 1);
+        emit();
+      });
+
+  @override
+  Widget build(BuildContext context) => chrome(
+        child: Column(children: [
+          _BigReading(value: digits, s: s, width: 150),
+          const SizedBox(height: 8),
+          Text(s.strings.checkin.unit_spo2,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
+          const SizedBox(height: 16),
+          NumPad(onKey: _key, onBack: _back),
+        ]),
+      );
+}
+
 // ── Pain ─────────────────────────────────────────────────────
 
 class _PainLog extends StatefulWidget {
@@ -851,6 +938,86 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
                     emit();
                   })),
         ],
+      ]),
+    );
+  }
+}
+
+/// One catalog symptom from the quick-log list — note + save, body map
+/// only when the design marks the entry located.
+class _OneSymptomLog extends StatefulWidget {
+  const _OneSymptomLog({
+    required this.s,
+    required this.host,
+    required this.symptom,
+    this.onSave,
+    this.onChanged,
+  });
+  final PatientAppState s;
+  final MetricLogHost host;
+  final SymptomId symptom;
+  final MetricLogSave? onSave;
+  final MetricLogChanged? onChanged;
+  @override
+  State<_OneSymptomLog> createState() => _OneSymptomLogState();
+}
+
+class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
+  @override
+  PatientAppState get s => widget.s;
+  @override
+  MetricLogHost get host => widget.host;
+  @override
+  MetricLogSave? get onSave => widget.onSave;
+  @override
+  MetricLogChanged? get onChanged => widget.onChanged;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+
+  final Set<PainSite> locations = {};
+
+  bool get _showMap => _locatedSymptomIds.contains(widget.symptom.id);
+
+  @override
+  bool get valid => true;
+
+  @override
+  MetricLogCapture get capture {
+    final label = symptomLabel(s, widget.symptom);
+    final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
+    return MetricLogCapture(
+      summary: where.isEmpty ? label : s.strings.checkin.labeled_where(label, where),
+      note: _trimmedNote(noteCtrl),
+      symptoms: {widget.symptom},
+      painSites: locations,
+    );
+  }
+
+  @override
+  void dispose() {
+    noteCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_showMap) return chrome(child: const SizedBox.shrink());
+    final ar = s.rtl;
+    return chrome(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(s.strings.checkin.body_location,
+              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+        ),
+        _CurrentProfileBodyMap(
+          s: s,
+          selected: locations,
+          onToggle: (site) => setState(() {
+            locations.contains(site) ? locations.remove(site) : locations.add(site);
+            emit();
+          }),
+        ),
       ]),
     );
   }

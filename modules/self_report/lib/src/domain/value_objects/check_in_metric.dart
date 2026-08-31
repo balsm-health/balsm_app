@@ -60,6 +60,7 @@ class CheckInMetric {
   static const spo2 = CheckInMetric._(
     'spo2',
     kind: CheckInMetricKind.vital,
+    wizardReady: true,
   );
 
   /// 0–10 scale + body map (quick-log pain template).

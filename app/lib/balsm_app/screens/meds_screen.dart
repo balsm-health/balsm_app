@@ -232,10 +232,51 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
       child: ListView(padding: EdgeInsets.zero, children: [
         const PadTop(),
         AppBarRow(children: [
-          Expanded(child: Text(s.strings.meds.medications, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(s.strings.meds.medications, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
+              const SizedBox(height: 2),
+              Text(s.strings.meds.regimen, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            ]),
+          ),
           // Add medication — disabled (hidden) when signed out.
           if (userId != null) RoundBtn(icon: LucideIcons.plus, iconSize: 20, onTap: () => _openAddMedication(userId)),
         ]),
+
+        // Adherence (today's taken / scheduled). Gradient card from the Claude Design.
+        Container(
+          margin: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(T.rLg),
+            border: Border.all(color: T.petalMint50),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: [0.0, 0.65],
+              colors: [T.petalMint50, Colors.white],
+            ),
+            boxShadow: T.shadowSm,
+          ),
+          child: Row(children: [
+            RingProgress(
+                progress: adherence,
+                size: 68,
+                color: T.petalMint,
+                label: '$adherencePct%',
+                labelStyle: Typo.num(size: FS.base, weight: FontWeight.w700)),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.strings.meds.adherence, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(s.strings.meds.last_7d, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                const SizedBox(height: 8),
+                Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
+              ]),
+            ),
+          ]),
+        ),
 
         // Prescriptions link (navigates to the separate rx tab).
         PCard(
@@ -247,35 +288,16 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
                 bg: T.petalViolet50, fg: T.petalViolet, size: 34, iconSize: 19, radius: T.rSm),
             const SizedBox(width: 14),
             Expanded(
-                child: Text(s.strings.records.prescriptions,
-                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: T.fg1))),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.strings.records.prescriptions,
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                const SizedBox(height: 1),
+                Text(s.strings.meds.rx_manage, style: Typo.meta(ar: s.rtl)),
+              ]),
+            ),
             Pill('$activeRxCount ${s.strings.meds.rx_active.toLowerCase()}', kind: PillKind.success, ar: s.rtl),
             const SizedBox(width: 8),
             Chevron(rtl: s.rtl),
-          ]),
-        ),
-
-        // Adherence (today).
-        PCard(
-          margin: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-          padding: const EdgeInsets.all(18),
-          child: Row(children: [
-            RingProgress(
-                progress: adherence,
-                color: T.petalMint,
-                label: '$adherencePct%',
-                labelStyle: Typo.num(size: FS.sm, weight: FontWeight.w800)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text('$adherencePct%', style: Typo.num(size: FS.md, weight: FontWeight.w700)),
-                  Text(' · ${s.strings.meds.adherence}', style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
-                ]),
-                const SizedBox(height: 6),
-                Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
-              ]),
-            ),
           ]),
         ),
 
@@ -286,7 +308,12 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
         else
           for (final (key, icon, list) in groups) ...[
             if (list.isNotEmpty) ...[
-              RowHead.icon(s.t(key), icon: icon, ar: s.rtl),
+              _GroupHead(
+                label: key == 'morning' ? s.strings.meds.morning : s.strings.meds.evening,
+                icon: icon,
+                count: list.length,
+                ar: s.rtl,
+              ),
               PCard(
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -301,6 +328,36 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
             ],
           ],
         const SizedBox(height: 24),
+      ]),
+    );
+  }
+}
+
+/// Morning / evening section title with the accent icon square from the design.
+class _GroupHead extends StatelessWidget {
+  const _GroupHead({required this.label, required this.icon, required this.count, required this.ar});
+  final String label;
+  final IconData icon;
+  final int count;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppScope.of(context).accent;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      child: Row(children: [
+        Container(
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: accent.bg, borderRadius: BorderRadius.circular(T.rSm)),
+          child: Icon(icon, size: 15, color: accent.d),
+        ),
+        const SizedBox(width: 10),
+        Text(label, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+        const SizedBox(width: 6),
+        Text('· $count', style: Typo.meta(ar: ar)),
       ]),
     );
   }

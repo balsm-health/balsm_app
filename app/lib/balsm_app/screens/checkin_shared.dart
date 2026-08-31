@@ -92,3 +92,69 @@ class MoodCell extends StatelessWidget {
         ),
       );
 }
+
+const kMonthShortEn = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const kMonthShortAr = ['ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون', 'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس'];
+
+String checkInMonthShort(PatientAppState s, DateTime d) => (s.rtl ? kMonthShortAr : kMonthShortEn)[d.month - 1];
+
+/// Pain badge tone for a `.history-row` — mild / moderate / severe.
+PillKind painBadgeKind(int pain) {
+  if (pain <= 3) return PillKind.success;
+  if (pain <= 6) return PillKind.warn;
+  return PillKind.danger;
+}
+
+/// `.history-row` — day chip, vitals summary, mood face, pain badge.
+class CheckInHistoryRow extends StatelessWidget {
+  const CheckInHistoryRow({super.key, required this.checkIn, required this.first, this.onTap});
+  final CheckIn checkIn;
+  final bool first;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final d = checkIn.recordedAt.toLocal();
+    final v = checkIn.vitals;
+    final pain = checkIn.painLevel.value;
+    final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
+
+    final row = Container(
+      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(children: [
+        SizedBox(
+          width: 50,
+          child: Column(children: [
+            Text(d.day.toString(),
+                style: Typo.num(size: FS.lg, weight: FontWeight.w800, color: T.fg1).copyWith(height: 1)),
+            Text(checkInMonthShort(s, d),
+                style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, letterSpacing: s.rtl ? 0 : 1.1)),
+          ]),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            if (v.systolic != null && v.diastolic != null) ...[
+              const Icon(LucideIcons.activity, size: 14, color: T.petalViolet),
+              Text('${v.systolic}/${v.diastolic}',
+                  textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg1)),
+            ],
+            if (glucose != null) ...[
+              const Icon(LucideIcons.droplet, size: 14, color: T.petalMint600),
+              Text('$glucose', style: Typo.num(size: FS.sm, color: T.fg1)),
+            ],
+          ]),
+        ),
+        if (checkIn.mood != null) ...[
+          MoodFace(level: checkIn.mood!.score, size: 26, color: moodColors[checkIn.mood!.score - 1]),
+          const SizedBox(width: 10),
+        ],
+        Pill('$pain', kind: painBadgeKind(pain), small: true, dot: false, ar: s.rtl),
+      ]),
+    );
+    if (onTap == null) return row;
+    return Pressable(onTap: onTap, scale: 0.99, child: row);
+  }
+}

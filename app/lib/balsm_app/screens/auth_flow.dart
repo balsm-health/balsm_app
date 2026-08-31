@@ -10,8 +10,10 @@ import 'package:core/core.dart'
         StatusScreen,
         CountryCode,
         CountryCodeL10n,
+        LanguageCode,
         Gender,
-        showBalsmDatePicker;
+        showBalsmDatePicker,
+        BalsmWelcomeBackground;
 import 'package:disclosure/disclosure.dart' show acceptDisclosureUseCaseProvider, disclosureDaoProvider, DisclosureId;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,11 +21,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../app_state.dart';
+import '../assets.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/legal_sheet.dart';
-import '../widgets/balsm_flower.dart';
 import 'walkthrough_screen.dart';
 
 /// Routes the auth flow by `state.route`.
@@ -48,8 +50,7 @@ class _WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return DecoratedBox(
-      decoration: const BoxDecoration(color: T.cream50),
+    return BalsmWelcomeBackground(
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
@@ -58,29 +59,9 @@ class _WelcomeScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
               child: Column(children: [
-                const BalsmFlower(size: 92),
-                const SizedBox(height: 14),
-                // Bilingual lockup from the live Claude Design: Arabic name
-                // over Balsm.health (TLD one step lighter than the wordmark).
-                Text('بلسم',
-                    textAlign: TextAlign.center,
-                    style:
-                        Typo.display(ar: true).copyWith(fontSize: FS.xl, fontWeight: FontWeight.w700, color: T.ink800)),
-                const SizedBox(height: 2),
-                Text.rich(
-                  TextSpan(children: [
-                    TextSpan(
-                        text: 'Balsm',
-                        style: Typo.display().copyWith(
-                            fontSize: FS.lg, fontWeight: FontWeight.w800, color: T.ink800, letterSpacing: -0.3)),
-                    TextSpan(
-                        text: '.health',
-                        style: Typo.display().copyWith(
-                            fontSize: FS.sm, fontWeight: FontWeight.w600, color: T.ink600, letterSpacing: -0.2)),
-                  ]),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 28),
+                // `.wlogo` — canonical vertical lockup, not a reconstructed wordmark.
+                SvgPicture.asset(Assets.brand_logo_vertical, width: 92, height: 92),
+                const SizedBox(height: 22),
                 Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
                 const SizedBox(height: 12),
                 Text(s.strings.onboarding.w_sub,
@@ -144,6 +125,32 @@ class _WelcomeScreen extends StatelessWidget {
                 _trust(s, LucideIcons.lock, s.strings.settings.trust_private),
                 _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
               ]),
+            ),
+            const SizedBox(height: 16),
+            Pressable(
+              onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
+              child: Semantics(
+                button: true,
+                label: s.lang == LanguageCode.ar ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0x6B1A1A17),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: const Color(0x52FFFFFF)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(LucideIcons.languages, size: 17, color: Colors.white),
+                    const SizedBox(width: 7),
+                    Text(
+                      s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
+                      style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
+                          .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ]),
+                ),
+              ),
             ),
             const SizedBox(height: 28),
           ]),

@@ -4,8 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../assets.dart';
 import '../tokens.dart';
 
-/// The official Balsm five-petal flower mark, rendered from the bundled brand
-/// vector asset (`assets/brand/icon.svg`, mirrored from Balsm-Core/brand).
+/// The official Balsm five-figure ring mark (`assets/brand/icon.svg`).
 class BalsmFlower extends StatelessWidget {
   const BalsmFlower({super.key, this.size = 92, this.opacity = 1});
   final double size;

@@ -1,13 +1,11 @@
-import 'package:appointments/appointments.dart';
+import 'package:core/core.dart' show CountryCodeL10n;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
 import '../widgets/balsm_flower.dart';
-import 'appointments_screen.dart';
 
 /// Today's check-in, if one has been recorded. Drives the hero's two states.
 CheckIn? todayCheckIn(List<CheckIn> history) {
@@ -299,45 +297,42 @@ class HomeShortcut extends StatelessWidget {
   }
 }
 
-/// Next upcoming visit, as a compact strip. Hidden when nothing is scheduled.
-class UpcomingAppointmentStrip extends ConsumerWidget {
-  const UpcomingAppointmentStrip({super.key});
+/// Shown when the account country is not Egypt — Claude Design travel banner.
+class AwayBanner extends StatelessWidget {
+  const AwayBanner({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final all = ref.watch(appointmentListProvider).valueOrNull ?? const <Appointment>[];
-    final now = DateTime.now();
-    final upcoming = all.where((a) => a.isUpcoming(now)).toList()..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-    if (upcoming.isEmpty) return const SizedBox.shrink();
-    final next = upcoming.first;
-
-    return PCard(
-      margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      onTap: () => s.setTab('appts'),
+    if (s.isHomeCountry) return const SizedBox.shrink();
+    final emergency = s.country.emergencyNumber;
+    const ink = Color(0xFF3A2E05);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(color: T.sun500, borderRadius: BorderRadius.circular(T.rLg)),
       child: Row(children: [
-        Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
-          child: Icon(LucideIcons.calendar, size: 19, color: s.accent.main),
-        ),
-        const SizedBox(width: 13),
+        const Icon(LucideIcons.plane, size: 20, color: ink),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.strings.care.upcoming_appt.toUpperCase(), style: Typo.eyebrow(s.accent.main, ar: s.rtl)),
-            const SizedBox(height: 2),
             Text(
-              '${next.clinician} · ${formatAppointmentDate(next.startsAt, s)} ${formatAppointmentTime(next.startsAt)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
+              '${s.strings.home.away_banner} · ${s.country.name(kCatalog, locale: s.lang.value)}',
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: ink),
             ),
+            if (emergency.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text.rich(
+                TextSpan(children: [
+                  TextSpan(text: '${s.strings.emergency.emergency} '),
+                  TextSpan(text: emergency, style: Typo.num(size: FS.sm, weight: FontWeight.w800, color: ink)),
+                ]),
+                style: Typo.meta(ar: s.rtl).copyWith(color: ink.withValues(alpha: 0.85)),
+              ),
+            ],
           ]),
         ),
-        Chevron(rtl: s.rtl),
+        RoundBtn(icon: forwardArrow(context), bg: const Color(0x1F3A2E05), fg: ink, onTap: () => s.setTab('profile')),
       ]),
     );
   }

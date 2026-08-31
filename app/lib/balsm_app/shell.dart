@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'app_state.dart';
+import 'assets.dart';
 import 'kit.dart';
 import 'responsive.dart';
 import 'tokens.dart';
@@ -41,14 +42,14 @@ class _PatientAppState extends State<PatientApp> {
   late final PatientAppState state = widget.state;
   final _navKey = GlobalKey<NavigatorState>();
 
-  // Boot splash (app.jsx `DSLoadingOverlay open={booting}`) — branded petal
-  // spinner shown for ~1.7s on cold start, then fades out.
+  // Boot splash (auth.jsx `SplashScreen`) — watercolor + petal spinner,
+  // held ~2.3s on cold start, then fades out.
   bool _booting = true;
 
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(milliseconds: 1700), () {
+    Timer(const Duration(milliseconds: 2300), () {
       if (mounted) setState(() => _booting = false);
     });
   }
@@ -404,9 +405,8 @@ class _Placeholder extends StatelessWidget {
   }
 }
 
-/// Branded boot splash (`DSLoadingOverlay variant="brand" spinner="petal"`):
-/// petal spinner + "Preparing your health record" over the warm cream surface.
-/// Fades out over `--dur-slow` when [visible] flips false.
+/// Branded boot splash (`SplashScreen` in auth.jsx): watercolor petal
+/// backdrop, petal spinner, then fade over `--dur-slow`.
 class _BootSplash extends StatelessWidget {
   const _BootSplash({required this.state, required this.visible});
   final PatientAppState state;
@@ -420,20 +420,44 @@ class _BootSplash extends StatelessWidget {
         opacity: visible ? 1 : 0,
         duration: Motion.slow,
         curve: Motion.easeOut,
-        child: Container(
-          color: T.cream50,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const PetalSpinner(size: 72),
-            const SizedBox(height: 28),
-            Text(state.strings.boot.boot_preparing,
-                textAlign: TextAlign.center,
-                style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 6),
-            Text(state.strings.boot.boot_tagline, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
-          ]),
-        ),
+        child: Stack(fit: StackFit.expand, children: [
+          const ColoredBox(color: T.cream50),
+          Opacity(
+            opacity: 0.95,
+            child: Image.asset(
+              Assets.brand_background,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0, -0.2),
+                radius: 1.2,
+                colors: [
+                  Color(0x00FAFAF7),
+                  Color(0x57FAFAF7),
+                  Color(0xEBFAFAF7),
+                ],
+                stops: [0.0, 0.54, 1.0],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const PetalSpinner(size: 96),
+              const SizedBox(height: 28),
+              Text(state.strings.boot.boot_preparing,
+                  textAlign: TextAlign.center,
+                  style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Text(state.strings.boot.boot_tagline, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
+            ]),
+          ),
+        ]),
       ),
     );
   }

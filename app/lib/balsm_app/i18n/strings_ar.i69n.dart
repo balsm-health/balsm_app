@@ -372,6 +372,7 @@ class CheckinStrings_ar extends CheckinStrings {
   String get latest => "آخر القياسات";
   String get unit_bp => "ملم زئبق";
   String get unit_glu => "مجم/دل";
+  String get unit_kg => "كجم";
   String get bp_normal => "ضمن المعدل";
   String get bp_high => "أعلى قليلاً";
   String get q_mood_h => "اختاري الوجه الأقرب لحالتك.";
@@ -417,7 +418,12 @@ class CheckinStrings_ar extends CheckinStrings {
   String get no_checkins => "لا توجد متابعات بعد";
   String get no_readings => "لا توجد قراءات في هذه الفترة";
   String get symptoms => "الأعراض";
-  String get ql_title => "لنسجّل متابعتك";
+  String symptoms_n(String n) => "$n أعراض";
+  String get ql_title => "دعنا نطمئن عليك";
+  String get ql_search => "بحث";
+  String get ql_no_results => "لا توجد نتائج";
+  String get ql_vitals => "العلامات الحيوية";
+  String get ql_wellbeing => "الحالة العامة";
   String get ql_add_records => "أضف إلى السجلات";
   String get full_checkin => "المتابعة الكاملة";
   String get ql_full_sub => "المزاج · ضغط الدم · السكر · الأدوية · الأعراض";
@@ -473,6 +479,8 @@ class CheckinStrings_ar extends CheckinStrings {
         return unit_bp;
       case 'unit_glu':
         return unit_glu;
+      case 'unit_kg':
+        return unit_kg;
       case 'bp_normal':
         return bp_normal;
       case 'bp_high':
@@ -563,8 +571,18 @@ class CheckinStrings_ar extends CheckinStrings {
         return no_readings;
       case 'symptoms':
         return symptoms;
+      case 'symptoms_n':
+        return symptoms_n;
       case 'ql_title':
         return ql_title;
+      case 'ql_search':
+        return ql_search;
+      case 'ql_no_results':
+        return ql_no_results;
+      case 'ql_vitals':
+        return ql_vitals;
+      case 'ql_wellbeing':
+        return ql_wellbeing;
       case 'ql_add_records':
         return ql_add_records;
       case 'full_checkin':
@@ -935,7 +953,10 @@ class MedsStrings_ar extends MedsStrings {
   String get medications => "الأدوية";
   String get morning => "الصباح";
   String get evening => "المساء";
-  String get adherence => "هذا الأسبوع";
+  String get adherence => "الالتزام";
+  String get regimen => "نظامك اليومي";
+  String get last_7d => "آخر ٧ أيام";
+  String get rx_manage => "الوصفات والملفات";
   String get rx_active => "فعّالة";
   String get rx_expired => "منتهية";
   String get rx_valid_until => "صالحة حتى";
@@ -999,6 +1020,12 @@ class MedsStrings_ar extends MedsStrings {
         return evening;
       case 'adherence':
         return adherence;
+      case 'regimen':
+        return regimen;
+      case 'last_7d':
+        return last_7d;
+      case 'rx_manage':
+        return rx_manage;
       case 'rx_active':
         return rx_active;
       case 'rx_expired':
@@ -1115,6 +1142,8 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get w_or => "أو";
   String get w_apple => "المتابعة مع Apple";
   String get w_google => "المتابعة مع Google";
+  String get lang_to_en => "التبديل إلى الإنجليزية";
+  String get lang_to_ar => "التبديل إلى العربية";
   String get pf_title => "عرّفنا بنفسك";
   String get pf_help => "هذا يساعد فريق الرعاية على قراءة تقاريرك بدقة.";
   String get pf_fname => "الاسم الأول";
@@ -1155,6 +1184,10 @@ class OnboardingStrings_ar extends OnboardingStrings {
         return w_apple;
       case 'w_google':
         return w_google;
+      case 'lang_to_en':
+        return lang_to_en;
+      case 'lang_to_ar':
+        return lang_to_ar;
       case 'pf_title':
         return pf_title;
       case 'pf_help':
@@ -1434,6 +1467,7 @@ class ProfileStrings_ar extends ProfileStrings {
   String get m_mood => "الحالة";
   String get m_pain => "الألم";
   String get m_weight => "الوزن";
+  String get m_o2 => "الأكسجين";
   String get p_personal => "تفاصيل الحساب";
   String get pd_account => "الحساب";
   String get pd_share_qr => "شارك رمز QR الخاص بي";
@@ -1506,6 +1540,8 @@ class ProfileStrings_ar extends ProfileStrings {
         return m_pain;
       case 'm_weight':
         return m_weight;
+      case 'm_o2':
+        return m_o2;
       case 'p_personal':
         return p_personal;
       case 'pd_account':
@@ -1625,26 +1661,26 @@ class ProfileStrings_ar extends ProfileStrings {
 class EcosystemStrings_ar extends EcosystemStrings {
   final Strings_ar _parent;
   const EcosystemStrings_ar(this._parent) : super(_parent);
-  String get eco_row => "عن بَلسَم والمجتمع";
-  String get eco_title => "منظومة بَلسَم";
-  String get eco_hero => "بَلسَم أكبر من هذا التطبيق";
+  String get eco_row => "عن بلسم والمجتمع";
+  String get eco_title => "منظومة بلسم";
+  String get eco_hero => "بلسم أكبر من هذا التطبيق";
   String get eco_sub =>
       "نظام صحي مملوك للمجتمع في العالم العربي. شيفرة مفتوحة، وبياناتك ملكك، ولا وسيط بينك وبين رعايتك.";
   String get eco_p1h => "هذا التطبيق — لك";
   String get eco_p1b => "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك.";
-  String get eco_p2h => "بَلسَم للصيدليات";
+  String get eco_p2h => "بلسم للصيدليات";
   String get eco_p2b => "صرف الأدوية وإدارة المخزون يعملان حتى عندما ينقطع الإنترنت.";
-  String get eco_p3h => "بَلسَم للعيادات";
+  String get eco_p3h => "بلسم للعيادات";
   String get eco_p3b => "الأطباء والمختبرات على النظام المفتوح نفسه — لتكون رعايتك مترابطة.";
-  String get eco_help_t => "ساعد بَلسَم على الانتشار";
-  String get eco_help_sub => "بَلسَم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
+  String get eco_help_t => "ساعد بلسم على الانتشار";
+  String get eco_help_sub => "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
   String get eco_tagline => "مفتوح · عربي · موثوق";
   String get eco_a1h => "أخبر شخصاً تثق به";
-  String get eco_a1b => "العائلة والجيران هم طريق انتشار بَلسَم — توصية واحدة في كل مرة.";
+  String get eco_a1b => "العائلة والجيران هم طريق انتشار بلسم — توصية واحدة في كل مرة.";
   String get eco_a2h => "شارك ملاحظاتك";
   String get eco_a2b => "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
   String get eco_a3h => "اسأل صيدليتك أو عيادتك";
-  String get eco_a3b => "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بَلسَم في زيارتك القادمة — فهو مجاني وملك لهم.";
+  String get eco_a3b => "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بلسم في زيارتك القادمة — فهو مجاني وملك لهم.";
   String get eco_a4h => "ساهم في المشروع";
   String get eco_a4b => "مطوّرون ومترجمون وأطباء — الشيفرة وخارطة الطريق مفتوحتان للجميع.";
   Object operator [](String key) {
@@ -1705,7 +1741,7 @@ class FeedbackStrings_ar extends FeedbackStrings {
   final Strings_ar _parent;
   const FeedbackStrings_ar(this._parent) : super(_parent);
   String get fb_row => "التقييم والملاحظات";
-  String get fb_title => "كيف تجد بَلسَم؟";
+  String get fb_title => "كيف تجد بلسم؟";
   String get fb_rate_q => "اضغط على زهرة للتقييم";
   String get fb_r1 => "يحتاج تحسيناً";
   String get fb_r2 => "يمكن أن يكون أفضل";
@@ -1717,10 +1753,10 @@ class FeedbackStrings_ar extends FeedbackStrings {
   String get fb_note_lbl => "أخبرنا المزيد";
   String get fb_optional => "اختياري";
   String get fb_ph => "ما الذي أعجبك؟ وما الذي لم يعجبك؟";
-  String get fb_privacy => "يراجعها فريق بَلسَم داخل بَلسَم — وليس في متجر التطبيقات. بياناتك الصحية تبقى على جهازك.";
+  String get fb_privacy => "يراجعها فريق بلسم داخل بلسم — وليس في متجر التطبيقات. بياناتك الصحية تبقى على جهازك.";
   String get fb_send => "إرسال الملاحظات";
   String get fb_thanks => "وصلتنا. شكراً لك.";
-  String get fb_thanks_sub => "فريق بَلسَم يقرأ كل ملاحظة، وملاحظتك تساعد بَلسَم على خدمة الجميع بشكل أفضل.";
+  String get fb_thanks_sub => "فريق بلسم يقرأ كل ملاحظة، وملاحظتك تساعد بلسم على خدمة الجميع بشكل أفضل.";
   String get fb_done => "تم";
   String get fb_t_general => "عام";
   String get fb_t_ease => "سهولة الاستخدام";
