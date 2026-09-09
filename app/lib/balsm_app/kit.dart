@@ -359,8 +359,14 @@ class Pill extends StatelessWidget {
           Container(width: 7, height: 7, decoration: BoxDecoration(color: c.dot, shape: BoxShape.circle)),
           SizedBox(width: small ? 4 : 6),
         ],
-        Text(label,
-            style: Typo._body(ar).copyWith(fontSize: small ? FS.xs2 : FS.xs, fontWeight: FontWeight.w600, color: c.fg)),
+        // See PButton: a status label that cannot shrink overflows its parent
+        // rather than the pill simply getting narrower.
+        Flexible(
+          child: Text(label,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  Typo._body(ar).copyWith(fontSize: small ? FS.xs2 : FS.xs, fontWeight: FontWeight.w600, color: c.fg)),
+        ),
       ]),
     );
   }
@@ -402,9 +408,13 @@ class BChip extends StatelessWidget {
             const Icon(LucideIcons.check, size: 14, color: Colors.white),
             const SizedBox(width: 6),
           ],
-          Text(label,
-              style: Typo._body(ar)
-                  .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: active ? Colors.white : T.fg2)),
+          // See PButton: filter chips sit in constrained rows and clusters.
+          Flexible(
+            child: Text(label,
+                overflow: TextOverflow.ellipsis,
+                style: Typo._body(ar)
+                    .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: active ? Colors.white : T.fg2)),
+          ),
         ]),
       ),
     );
@@ -539,7 +549,18 @@ class PButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (icon != null) ...[Icon(icon, size: 20, color: fg), SizedBox(width: _gap)],
-          Text(label, style: Typo._body(ar).copyWith(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg)),
+          // Flexible, not a bare Text: inside an Expanded, a `block` button or
+          // a narrow screen the row is width-constrained, and an unyielding
+          // label overflows sideways instead of ellipsizing. Arabic runs longer
+          // than English for the same string, so it hits this first.
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: Typo._body(ar).copyWith(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
+            ),
+          ),
         ],
       ),
     );
