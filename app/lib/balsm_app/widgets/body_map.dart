@@ -99,22 +99,29 @@ class _BodyMapState extends State<BodyMap> {
     final selectedOnTissue = widget.selected.where((site) => site.tissue == tissue).map((site) => site.region).toSet();
     final selectedLabels = widget.selected.map((site) => site.label(messages, mid: c.list_mid)).toList();
     return Column(children: [
-      Row(children: [
-        _chip(s, c.body_view_front, view == BodyView.front, () => setState(() => view = BodyView.front)),
-        const SizedBox(width: 5),
-        _chip(s, c.body_view_back, view == BodyView.back, () => setState(() => view = BodyView.back)),
-      ]),
+      // Wraps for the same reason the layer strip does: a Row overflows
+      // sideways at narrow widths or large text scales, and a horizontal
+      // overflow is unreachable inside a vertically-scrolling sheet.
+      Wrap(
+        spacing: 5,
+        runSpacing: 5,
+        children: [
+          _chip(s, c.body_view_front, view == BodyView.front, () => setState(() => view = BodyView.front)),
+          _chip(s, c.body_view_back, view == BodyView.back, () => setState(() => view = BodyView.back)),
+        ],
+      ),
       const SizedBox(height: 8),
       // One scrolling row, never wrapping — the layer strip is a shelf.
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(bottom: 2),
-        child: Row(children: [
-          for (final (i, t) in BodyTissue.values.indexed) ...[
-            if (i > 0) const SizedBox(width: 5),
-            _chip(s, t.label(messages), tissue == t, () => setState(() => tissue = t), icon: _tissueIcon(t)),
-          ],
-        ]),
+        child: Row(
+          spacing: 5,
+          children: BodyTissue.values
+              .map<Widget>((t) =>
+                  _chip(s, t.label(messages), tissue == t, () => setState(() => tissue = t), icon: _tissueIcon(t)))
+              .toList(),
+        ),
       ),
       const SizedBox(height: 8),
       ConstrainedBox(
@@ -133,8 +140,13 @@ class _BodyMapState extends State<BodyMap> {
       const SizedBox(height: 8),
       // `.bm-host` centres the plate; design caps height at min(320px, 40vh).
       Center(
-        child: SizedBox(
-          height: (MediaQuery.sizeOf(context).height * 0.40).clamp(220.0, 320.0),
+        // Cap the height only. Pinning it makes AspectRatio derive a width the
+        // column may not have, and a horizontal overflow is exactly the kind a
+        // vertically-scrolling sheet can never reveal.
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: (MediaQuery.sizeOf(context).height * 0.40).clamp(220.0, 320.0),
+          ),
           child: AspectRatio(
             aspectRatio: 200 / 384,
             child: LayoutBuilder(builder: (context, constraints) {

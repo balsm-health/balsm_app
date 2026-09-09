@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:core/core.dart';
 
 import '../entities/dose_event.dart';
@@ -35,23 +36,15 @@ class ScheduleConfig {
 
   @override
   bool operator ==(Object other) =>
-      other is ScheduleConfig && _listEquals(other.times, times) && _listEquals(other.days, days);
+      other is ScheduleConfig &&
+      const ListEquality<String>().equals(other.times, times) &&
+      const ListEquality<int>().equals(other.days, days);
 
   @override
   int get hashCode => Object.hash(
         Object.hashAll(times),
         days == null ? null : Object.hashAll(days!),
       );
-}
-
-bool _listEquals<T>(List<T>? a, List<T>? b) {
-  if (identical(a, b)) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
 }
 
 /// Medication aggregate root.

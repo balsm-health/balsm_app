@@ -6,6 +6,9 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
 dependencies:
+  # slices() / splitBetween() — Dart team package, already in the tree
+  # transitively. Declared directly so it can be imported.
+  collection: ^1.19.0
   flutter:
     sdk: flutter
   flutter_localizations:

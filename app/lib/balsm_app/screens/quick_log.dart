@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:collection/collection.dart';
 import 'package:core/core.dart' show activeProfileProvider, currentProfileIdProvider, currentUserIdProvider;
 import 'package:records/records.dart' show RecordType;
 import 'package:self_report/self_report.dart';
@@ -114,17 +115,10 @@ class _QlGroup {
   final List<_QlItem> items;
 }
 
-List<_QlGroup> _groupItems(List<_QlItem> items) {
-  final groups = <_QlGroup>[];
-  for (final item in items) {
-    if (groups.isNotEmpty && groups.last.kind == item.kind) {
-      groups.last.items.add(item);
-    } else {
-      groups.add(_QlGroup(kind: item.kind, items: [item]));
-    }
-  }
-  return groups;
-}
+/// Consecutive items of the same kind collapse into one group — the list is
+/// already in display order, so this is about what sits next to what.
+List<_QlGroup> _groupItems(List<_QlItem> items) =>
+    items.splitBetween((a, b) => a.kind != b.kind).map((run) => _QlGroup(kind: run.first.kind, items: run)).toList();
 
 class _QuickLogSheet extends ConsumerStatefulWidget {
   const _QuickLogSheet({required this.s, required this.onFullCheckin, required this.onAddRecord});
@@ -219,9 +213,9 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   Widget build(BuildContext context) {
     final showBack = (active != null || activeSymptom != null) && savedValue == null;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
         decoration:
             const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
         child: Column(mainAxisSize: MainAxisSize.min, children: [

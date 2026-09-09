@@ -51,22 +51,21 @@ final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
     if (med.isExpired()) continue;
     final events = await dao.getDoseEvents(med.id, from: dayStart, to: dayEnd);
     // Latest event per scheduledAt wins (corrections supersede originals).
-    final latestBySlot = <String, DoseEvent>{};
-    for (final e in events) {
-      final key = e.scheduledAt.toIso8601String();
-      final existing = latestBySlot[key];
-      if (existing == null || e.recordedAt.isAfter(existing.recordedAt)) {
-        latestBySlot[key] = e;
-      }
-    }
+    // Ordering by recordedAt and letting the map literal overwrite expresses
+    // that directly; on an exact recordedAt tie the later-listed row wins.
+    final inOrder = [...events]..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+    final latestBySlot = {
+      for (final e in inOrder) e.scheduledAt.toIso8601String(): e,
+    };
 
-    for (final at in _occurrencesOn(med, dayStart, dayEnd)) {
-      doses.add(TodayDose(
-        medication: med,
-        scheduledAt: at,
-        event: latestBySlot[at.toIso8601String()],
-      ));
-    }
+    doses.addAll([
+      for (final at in _occurrencesOn(med, dayStart, dayEnd))
+        TodayDose(
+          medication: med,
+          scheduledAt: at,
+          event: latestBySlot[at.toIso8601String()],
+        ),
+    ]);
   }
 
   doses.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
@@ -120,7 +119,12 @@ final weekAdherenceProvider = FutureProvider<WeekAdherence>((ref) async {
 });
 
 /// Dose history for a single medication (most recent first).
-final doseHistoryProvider = FutureProvider.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
+///
+/// autoDispose: this is the only PHI cache keyed by something other than the
+/// active profile, so nothing recomputes it when the profile changes. Held
+/// past the screen it feeds it would both retain dose events in memory after
+/// sign-out and re-serve a stale list on the next visit.
+final doseHistoryProvider = FutureProvider.autoDispose.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
   return ref.watch(medicationsDataSourceProvider).getDoseEvents(medicationId);
 });
 

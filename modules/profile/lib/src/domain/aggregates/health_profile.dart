@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 
+import '../value_objects/allergy_severity.dart';
 import '../value_objects/ids.dart';
 
 /// Main PHI aggregate for the profile bounded context.
@@ -158,5 +159,7 @@ const List<String> kBloodTypes = [
   'O-',
 ];
 
-/// Valid allergy severity levels.
-const List<String> kAllergySeverities = ['mild', 'moderate', 'severe'];
+/// Valid allergy severity levels, in escalating order.
+///
+/// Derived from [AllergySeverity] so the list and the enum cannot drift apart.
+List<String> get kAllergySeverities => AllergySeverity.wireValues;

@@ -121,7 +121,7 @@ class _BalsmFieldState extends State<BalsmField> {
               boxShadow: _focused
                   ? [
                       BoxShadow(
-                        color: (hasError ? BalsmColors.danger : BalsmColors.appAccent).withOpacity(0.16),
+                        color: (hasError ? BalsmColors.danger : BalsmColors.appAccent).withValues(alpha: 0.16),
                         blurRadius: 0,
                         spreadRadius: 4,
                       ),

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:core/core.dart';
+
+import '../../application/ports/records_data_source.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,8 +23,7 @@ import '../../domain/value_objects/ids.dart';
 ///
 /// Fail-loud: backend failures surface as [StorageWriteException]; a row
 /// whose json/enum fields don't decode throws [StorageDecodeException].
-class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocument>
-    implements WatchableScopedDataSource<RecordDocumentId, RecordDocument, UserId> {
+class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocument> implements RecordsDataSource {
   DriftRecordsDataSource(this._db, this.activeUser);
 
   final AppDatabase _db;
@@ -248,7 +249,9 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
 
 /// DI: user-partitioned records vault bound to the active user port.
 /// The app composition root only needs `appDatabaseProvider` overridden.
-final recordsDataSourceProvider = Provider<DriftRecordsDataSource>((ref) {
+/// Exposed as the port, not the Drift class — callers must not be able to
+/// reach past the contract into the storage engine.
+final recordsDataSourceProvider = Provider<RecordsDataSource>((ref) {
   return DriftRecordsDataSource(
     ref.watch(appDatabaseProvider),
     () => ref.read(currentUserIdProvider),

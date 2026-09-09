@@ -133,19 +133,21 @@ class _RxCard extends StatelessWidget {
   }
 }
 
-Future<void> _deleteSelf(BuildContext context, Prescription rx) async {
-  final container = ProviderScope.containerOf(context);
-  await container.read(prescriptionsDataSourceProvider).delete(rx.id);
-  if (context.mounted) Navigator.of(context).pop();
-}
-
 /// One prescription in full, with the scannable reference.
-class PrescriptionDetailScreen extends StatelessWidget {
+class PrescriptionDetailScreen extends ConsumerWidget {
   const PrescriptionDetailScreen({super.key, required this.rx});
   final Prescription rx;
 
+  /// Deletion is domain policy (patient-entered rows only), so it goes through
+  /// the use case rather than the data source. Reaching for the container off
+  /// the BuildContext bypassed both the widget's own `ref` and that policy.
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    await ref.read(deletePrescriptionUseCaseProvider)(rx);
+    if (context.mounted) Navigator.of(context).pop();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final active = rx.isActive();
     return Scaffold(
@@ -162,7 +164,7 @@ class PrescriptionDetailScreen extends StatelessWidget {
                 icon: LucideIcons.trash2,
                 ghost: true,
                 iconSize: 18,
-                onTap: () => _deleteSelf(context, rx),
+                onTap: () => _delete(context, ref),
               )
             else
               Pill(active ? s.strings.meds.rx_active : s.strings.meds.rx_expired,

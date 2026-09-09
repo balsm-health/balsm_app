@@ -46,8 +46,14 @@ final accountRoutes = <RouteBase>[
       if (FlavorConfig.current.flavor != Flavor.dev) {
         return const SizedBox.shrink();
       }
-      final controller = ProviderScope.containerOf(context).read(balsmApiControllerProvider);
-      return ServerSelectorScreen(controller: controller);
+      // Consumer, not `ProviderScope.containerOf(...).read(...)`: the builder
+      // has no ref of its own, and a container read is a one-shot snapshot
+      // that never rebuilds if the controller is ever re-bound.
+      return Consumer(
+        builder: (_, ref, __) => ServerSelectorScreen(
+          controller: ref.watch(balsmApiControllerProvider),
+        ),
+      );
     },
   ),
 ];

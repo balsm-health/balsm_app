@@ -1,4 +1,4 @@
-import 'package:core/core.dart' show currentUserIdProvider, userFileStoreProvider;
+import 'package:core/core.dart' show currentUserIdProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -355,20 +355,15 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
   bool confirming = false;
   bool deleting = false;
 
-  /// Removes the row and its encrypted attachment. Both are PHI: the blob is
-  /// dropped first so a failed row delete can never orphan a readable file.
+  /// Delegates to the application layer — the blob-before-row ordering is
+  /// domain policy and does not belong in a sheet.
   Future<void> _delete() async {
     if (deleting) return;
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
     setState(() => deleting = true);
-    final record = widget.record;
-    final path = record.filePath;
     try {
-      if (path != null && path.isNotEmpty) {
-        await ref.read(userFileStoreProvider).delete(path, scope: userId);
-      }
-      await ref.read(recordsDataSourceProvider).delete(record.id, scope: userId);
+      await ref.read(deleteRecordDocumentUseCaseProvider)(widget.record, scope: userId);
     } catch (_) {
       if (mounted) setState(() => deleting = false);
       return;
@@ -389,7 +384,7 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
     final cfg = storageCfg(target);
 
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.92),
       decoration:
           const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -582,7 +577,7 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
     final s = AppScope.of(context);
     final r = s.strings.records;
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),

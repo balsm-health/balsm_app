@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/resolve_emergency_qr_token_use_case.dart';
 import '../../domain/aggregates/emergency_card_snapshot.dart';
+import '../../i18n/strings.dart';
 
 /// Public, no-auth landing screen reached by scanning an emergency QR.
 ///
@@ -14,7 +15,39 @@ import '../../domain/aggregates/emergency_card_snapshot.dart';
 /// The AES key is read from the URL fragment (`#k=...`) on web via
 /// [Uri.base.fragment]; on mobile the deeplink router forwards it as a query
 /// parameter / route extra (`key`). The fragment is never sent to the server.
-class PublicEmergencyResolveScreen extends ConsumerStatefulWidget {
+/// The scanned token plus the AES key that decrypts it.
+///
+/// A value type, so Riverpod's family cache keys on the pair rather than on
+/// object identity — the same scan re-resolves to the same request.
+@immutable
+class EmergencyQrRequest {
+  const EmergencyQrRequest({required this.tokenId, required this.keyBase64Url});
+
+  final String tokenId;
+  final String keyBase64Url;
+
+  @override
+  bool operator ==(Object other) =>
+      other is EmergencyQrRequest && other.tokenId == tokenId && other.keyBase64Url == keyBase64Url;
+
+  @override
+  int get hashCode => Object.hash(tokenId, keyBase64Url);
+}
+
+/// Resolves one scanned emergency QR.
+///
+/// autoDispose: the decrypted snapshot is somebody's medical emergency data on
+/// a public, unauthenticated screen. It must not outlive the route that shows
+/// it, and the next scan must hit the network rather than a warm cache.
+final emergencyQrSnapshotProvider =
+    FutureProvider.autoDispose.family<AppResult<EmergencyCardSnapshot>, EmergencyQrRequest>(
+  (ref, request) => ref.watch(resolveEmergencyQrTokenUseCaseProvider).call(
+        tokenId: request.tokenId,
+        keyBase64Url: request.keyBase64Url,
+      ),
+);
+
+class PublicEmergencyResolveScreen extends ConsumerWidget {
   const PublicEmergencyResolveScreen({
     super.key,
     required this.tokenId,
@@ -27,23 +60,9 @@ class PublicEmergencyResolveScreen extends ConsumerStatefulWidget {
   /// from the current URL fragment (web).
   final String? keyOverride;
 
-  @override
-  ConsumerState<PublicEmergencyResolveScreen> createState() => _PublicEmergencyResolveScreenState();
-}
-
-class _PublicEmergencyResolveScreenState extends ConsumerState<PublicEmergencyResolveScreen> {
-  late final Future<AppResult<EmergencyCardSnapshot>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _resolve();
-  }
-
   String _readFragmentKey() {
-    if (widget.keyOverride != null && widget.keyOverride!.isNotEmpty) {
-      return widget.keyOverride!;
-    }
+    final override = keyOverride;
+    if (override != null && override.isNotEmpty) return override;
     // Web: parse `k=` out of the URL fragment.
     if (kIsWeb) {
       final fragment = Uri.base.fragment; // e.g. "k=ABC123"
@@ -54,15 +73,12 @@ class _PublicEmergencyResolveScreenState extends ConsumerState<PublicEmergencyRe
     return '';
   }
 
-  Future<AppResult<EmergencyCardSnapshot>> _resolve() {
-    return ref.read(resolveEmergencyQrTokenUseCaseProvider).call(
-          tokenId: widget.tokenId,
-          keyBase64Url: _readFragmentKey(),
-        );
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The request is derived from the route, so watching it is stable across
+    // rebuilds — which is what the initState-cached Future was working around.
+    final request = EmergencyQrRequest(tokenId: tokenId, keyBase64Url: _readFragmentKey());
+    final result = ref.watch(emergencyQrSnapshotProvider(request));
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -70,17 +86,15 @@ class _PublicEmergencyResolveScreenState extends ConsumerState<PublicEmergencyRe
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
-        child: FutureBuilder<AppResult<EmergencyCardSnapshot>>(
-          future: _future,
-          builder: (context, snap) {
-            if (!snap.hasData) {
-              return const BalsmLoadingIndicator();
-            }
-            return snap.data!.fold(
-              (snapshot) => _ResolvedView(snapshot: snapshot),
-              (failure) => _UnavailableView(message: failure.message),
-            );
-          },
+        child: result.when(
+          loading: () => const BalsmLoadingIndicator(),
+          // A thrown error is still "card unavailable" to a bystander; the
+          // reason belongs in telemetry, not on a stranger's screen.
+          error: (_, __) => _UnavailableView(message: emergencyCardStrings.current.unavailable),
+          data: (value) => value.fold(
+            (snapshot) => _ResolvedView(snapshot: snapshot),
+            (failure) => _UnavailableView(message: failure.message),
+          ),
         ),
       ),
     );

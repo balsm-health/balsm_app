@@ -3,6 +3,5 @@
   "_i69n_language": "en",
   "title": "Active sessions",
   "current": "Current session",
-  "revoke": "Sign out",
-  "signOutAll": "Sign out of all devices"
+  "revoke": "Sign out"
 }

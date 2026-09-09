@@ -85,7 +85,7 @@ class BalsmHeroCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDone ? BalsmColors.appAccent : Colors.white.withOpacity(0.9),
+                      color: isDone ? BalsmColors.appAccent : Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -125,7 +125,7 @@ class BalsmHeroCard extends StatelessWidget {
                       clockMeta!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDone ? BalsmColors.fg3 : Colors.white.withOpacity(0.7),
+                        color: isDone ? BalsmColors.fg3 : Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'dart:convert';
 
+import '../../application/ports/prescriptions_data_source.dart';
 import '../../domain/aggregates/prescription.dart';
 import '../../domain/value_objects/ids.dart';
 
@@ -14,8 +15,7 @@ import '../../domain/value_objects/ids.dart';
 /// Scope semantics match the records vault: `scope == null` resolves the
 /// ACTIVE user; no active user → mutations throw [NoActiveUserException] and
 /// reads return null/empty. Every query filters on `user_id`.
-class DriftPrescriptionsDataSource extends UserDataSource<PrescriptionId, Prescription>
-    implements WatchableScopedDataSource<PrescriptionId, Prescription, UserId> {
+class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
   DriftPrescriptionsDataSource(this._db, this.activeUser);
 
   final AppDatabase _db;
@@ -198,7 +198,7 @@ class DriftPrescriptionsDataSource extends UserDataSource<PrescriptionId, Prescr
 }
 
 /// DI: user-partitioned prescriptions bound to the active user port.
-final prescriptionsDataSourceProvider = Provider<DriftPrescriptionsDataSource>((ref) {
+final prescriptionsDataSourceProvider = Provider<PrescriptionsDataSource>((ref) {
   return DriftPrescriptionsDataSource(
     ref.watch(appDatabaseProvider),
     () => ref.read(currentUserIdProvider),

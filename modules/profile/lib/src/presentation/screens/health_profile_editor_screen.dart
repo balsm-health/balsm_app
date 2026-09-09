@@ -10,6 +10,8 @@ import '../../application/use_cases/remove_chronic_condition_use_case.dart';
 import '../../application/use_cases/update_health_profile_use_case.dart';
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
+import '../../domain/value_objects/allergy_severity.dart';
+import '../../i18n/strings.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 
 /// FR-213: convert any Arabic-Indic digits (٠-٩) in [input] to Western Arabic.
@@ -292,30 +294,17 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
     );
   }
 
-  static String _severityLabel(String severity) {
-    switch (severity) {
-      case 'mild':
-        return 'Mild';
-      case 'moderate':
-        return 'Moderate';
-      case 'severe':
-        return 'Severe';
-      default:
-        return severity;
-    }
-  }
+  /// The scale itself is domain (see [AllergySeverity]); how loud each level
+  /// looks is not. An unrecognised stored value keeps its raw text and a
+  /// neutral pill rather than being silently reclassified.
+  static String _severityLabel(String severity) =>
+      AllergySeverity.fromWire(severity)?.label(profileStrings.current) ?? severity;
 
-  static BalsmPillVariant _severityVariant(String severity) {
-    switch (severity) {
-      case 'severe':
-        return BalsmPillVariant.danger;
-      case 'moderate':
-        return BalsmPillVariant.warn;
-      case 'mild':
-      default:
-        return BalsmPillVariant.neutral;
-    }
-  }
+  static BalsmPillVariant _severityVariant(String severity) => switch (AllergySeverity.fromWire(severity)) {
+        AllergySeverity.severe => BalsmPillVariant.danger,
+        AllergySeverity.moderate => BalsmPillVariant.warn,
+        AllergySeverity.mild || null => BalsmPillVariant.neutral,
+      };
 }
 
 // ---------------------------------------------------------------------------
@@ -603,7 +592,7 @@ class _SheetScaffold extends StatelessWidget {
         left: 20,
         right: 20,
         top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

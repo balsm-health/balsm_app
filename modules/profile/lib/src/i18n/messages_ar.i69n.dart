@@ -12,9 +12,9 @@ class Messages_ar extends Messages {
   String get title => "الملف الصحي";
   String get bloodType => "فصيلة الدم";
   AllergiesMessages_ar get allergies => AllergiesMessages_ar(this);
+  SeverityMessages_ar get severity => SeverityMessages_ar(this);
   String get conditions => "الحالات الصحية";
   String get contacts => "جهات اتصال الطوارئ";
-  SeverityMessages_ar get severity => SeverityMessages_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -27,12 +27,12 @@ class Messages_ar extends Messages {
         return bloodType;
       case 'allergies':
         return allergies;
+      case 'severity':
+        return severity;
       case 'conditions':
         return conditions;
       case 'contacts':
         return contacts;
-      case 'severity':
-        return severity;
       default:
         return super[key];
     }

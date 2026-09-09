@@ -110,8 +110,10 @@ class _PatientAppState extends State<PatientApp> {
       if (screen.isEmpty || screen == 'close') {
         return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'screen': screen}));
       }
+      // Re-read AND re-check after the pop's async gap: the navigator this
+      // context belongs to may have been torn down while we waited.
       final next = _navKey.currentContext;
-      if (next == null) {
+      if (next == null || !next.mounted) {
         return developer.ServiceExtensionResponse.error(1, 'no navigator');
       }
       switch (screen) {
@@ -405,7 +407,7 @@ class _TabBar extends StatelessWidget {
         ),
       ),
       Padding(
-        padding: EdgeInsets.only(bottom: 22 + MediaQuery.of(context).padding.bottom.clamp(0, 12)),
+        padding: EdgeInsets.only(bottom: 22 + MediaQuery.paddingOf(context).bottom.clamp(0, 12)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
           _Tab(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
@@ -576,14 +578,15 @@ class _BootSplash extends StatelessWidget {
         curve: Motion.easeOut,
         child: Stack(fit: StackFit.expand, children: [
           const ColoredBox(color: T.cream50),
-          Opacity(
-            opacity: 0.95,
-            child: Image.asset(
-              Assets.brand_background,
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
+          // Image's own `opacity`, not an Opacity wrapper: wrapping a
+          // full-bleed image forces a saveLayer offscreen composite every
+          // frame, while this folds the alpha into the paint.
+          Image.asset(
+            Assets.brand_background,
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            opacity: const AlwaysStoppedAnimation(0.95),
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
           const DecoratedBox(
             decoration: BoxDecoration(

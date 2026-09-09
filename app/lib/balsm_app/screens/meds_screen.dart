@@ -470,7 +470,7 @@ class _SheetChrome extends StatelessWidget {
   Widget build(BuildContext context) {
     final st = s ?? AppScope.of(context);
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
       decoration:
           const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [

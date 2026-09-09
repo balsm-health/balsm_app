@@ -187,7 +187,7 @@ class LocaleFactory<T> {
   Future<void> ensureLoaded() async {
     if (_instance != null) return;
     if (_load != null && !_loaded) {
-      await _load!();
+      await _load();
       _loaded = true;
     }
     _instance = _create();

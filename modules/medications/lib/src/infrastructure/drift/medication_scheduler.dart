@@ -131,7 +131,11 @@ class MedicationScheduler {
 }
 
 /// Provider factory — caller supplies the active [userId].
-final medicationSchedulerProvider = Provider.family<MedicationScheduler, UserId>((ref, userId) {
+///
+/// autoDispose: keyed by user, and the account switcher means a session can
+/// see several. Without it every user ever signed in this launch leaves a
+/// scheduler (and the data source it holds) cached for the process lifetime.
+final medicationSchedulerProvider = Provider.autoDispose.family<MedicationScheduler, UserId>((ref, userId) {
   return MedicationScheduler(
     notifications: ref.watch(notificationServiceProvider),
     dao: ref.watch(medicationsDataSourceProvider),

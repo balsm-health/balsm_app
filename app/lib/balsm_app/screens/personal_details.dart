@@ -903,9 +903,9 @@ class _NationalitySheetState extends State<_NationalitySheet> {
     return Directionality(
       textDirection: s.dir,
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
           decoration: const BoxDecoration(
               color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
           padding: const EdgeInsets.only(bottom: 24),
@@ -991,7 +991,7 @@ class _RelationshipSheet extends StatelessWidget {
     return Directionality(
       textDirection: s.dir,
       child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
         decoration:
             const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
         padding: const EdgeInsets.only(bottom: 24),
@@ -1200,7 +1200,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     }
 
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.92),
       decoration:
           const BoxDecoration(color: T.cream50, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       child: Stack(children: [
@@ -1227,7 +1227,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           ),
           Flexible(
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 6, 20, 22 + MediaQuery.of(context).padding.bottom),
+              padding: EdgeInsets.fromLTRB(20, 6, 20, 22 + MediaQuery.paddingOf(context).bottom),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Padding(
                   padding: const EdgeInsets.only(bottom: 18),
@@ -1250,7 +1250,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           PositionedDirectional(
             start: 20,
             end: 20,
-            bottom: 24 + MediaQuery.of(context).padding.bottom,
+            bottom: 24 + MediaQuery.paddingOf(context).bottom,
             child: RiseIn(
                 child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1433,12 +1433,10 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
             color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
-        child: Row(children: [
-          for (var i = 0; i < _emergencyTtlOptions.length; i++) ...[
-            if (i > 0) const SizedBox(width: 6),
-            Expanded(child: _ttlSeg(_emergencyTtlOptions[i])),
-          ],
-        ]),
+        child: Row(
+          spacing: 6,
+          children: _emergencyTtlOptions.map((opt) => Expanded(child: _ttlSeg(opt))).toList(),
+        ),
       );
 
   Widget _ttlSeg(({String key, int seconds}) opt) {

@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 import '../app_failure.dart';
 import '../app_result.dart';
 import 'country_code.dart';
@@ -74,12 +76,10 @@ class PhoneNumber extends ValueObject {
   /// Human-friendly grouping: `+20 123 456 7890` (dial code then national
   /// number split into 3-4-… groups). Phone numbers stay LTR under RTL.
   String display() {
-    final buf = StringBuffer(country.dialCode)..write(' ');
-    for (var i = 0; i < nationalNumber.length; i += 3) {
-      if (i > 0) buf.write(' ');
-      buf.write(nationalNumber.substring(i, (i + 3).clamp(0, nationalNumber.length)));
-    }
-    return buf.toString();
+    // Digits only by construction (see _normalize), so splitting by code unit
+    // cannot break a grapheme here.
+    final groups = nationalNumber.split('').slices(3).map((g) => g.join());
+    return '${country.dialCode} ${groups.join(' ')}';
   }
 
   // ── Normalization helpers ────────────────────────────────────────────────

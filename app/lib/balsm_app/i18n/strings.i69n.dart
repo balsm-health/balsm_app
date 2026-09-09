@@ -78,18 +78,12 @@ class Strings implements i69n.I69nMessageBundle {
 class AuthStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const AuthStrings(this._parent);
-  String get use_phone => "Use phone instead";
-  String get use_email => "Use email instead";
   String get un_label => "Handle";
   String get un_ph => "e.g. layla_hassan";
   String get un_avail => "Available";
   String get un_taken => "Already taken";
   String get un_checking => "Checking…";
   String get un_invalid => "Only letters, numbers, and _ (3–20 chars)";
-  String get ph_title => "What's your number?";
-  String get ph_help => "We'll text you a code to confirm it's you.";
-  String get ph_label => "Mobile number";
-  String get ph_terms => "By continuing you agree to Balsm's terms and privacy policy.";
   String get ph_terms_pre => "By continuing you agree to Balsm's";
   String get ph_terms_link => "terms";
   String get ph_terms_and => "and";
@@ -98,23 +92,16 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get legal_priv_t => "Privacy policy";
   String get legal_updated => "Notice version";
   String get otp_title => "Enter your code";
-  String get otp_help => "We sent a 6-digit code to";
   String get otp_resend => "Resend code";
   String get otp_in => "Resend in";
-  String get otp_wrong => "Wrong number?";
   String get verify => "Verify";
   String get pw_label => "Password";
   String get pw_ph => "Enter your password";
-  String get pw_show => "Show password";
-  String get pw_hide => "Hide password";
   String get forgot_pw => "Forgot password?";
-  String get use_code => "Use a one-time code instead";
-  String get use_password => "Use a password instead";
   String get pw_signin => "Sign in";
   String get pw_signup => "Sign up";
   String get pw_signing_in => "Signing in…";
   String get otp_verifying => "Verifying…";
-  String get pw_min => "At least 8 characters";
   String get pw_invalid_creds => "Invalid email or password.";
   String get fp_title => "Reset your password";
   String get fp_help => "Enter your email — we'll send a code to reset your password.";
@@ -125,20 +112,13 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get fp_sent_help => "We sent a reset code to";
   String get fp_done => "Done";
   String get fp_success => "Password updated. Sign in with your new password.";
-  String get dial_title => "Country code";
-  String get dial_search => "Search country";
   String auth_locked_retry(String secs) => "Account temporarily locked. Try again in ${secs}s.";
-  String get auth_phone_soon => "Phone sign-in isn't available yet — please use email.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'use_phone':
-        return use_phone;
-      case 'use_email':
-        return use_email;
       case 'un_label':
         return un_label;
       case 'un_ph':
@@ -151,14 +131,6 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return un_checking;
       case 'un_invalid':
         return un_invalid;
-      case 'ph_title':
-        return ph_title;
-      case 'ph_help':
-        return ph_help;
-      case 'ph_label':
-        return ph_label;
-      case 'ph_terms':
-        return ph_terms;
       case 'ph_terms_pre':
         return ph_terms_pre;
       case 'ph_terms_link':
@@ -175,30 +147,18 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return legal_updated;
       case 'otp_title':
         return otp_title;
-      case 'otp_help':
-        return otp_help;
       case 'otp_resend':
         return otp_resend;
       case 'otp_in':
         return otp_in;
-      case 'otp_wrong':
-        return otp_wrong;
       case 'verify':
         return verify;
       case 'pw_label':
         return pw_label;
       case 'pw_ph':
         return pw_ph;
-      case 'pw_show':
-        return pw_show;
-      case 'pw_hide':
-        return pw_hide;
       case 'forgot_pw':
         return forgot_pw;
-      case 'use_code':
-        return use_code;
-      case 'use_password':
-        return use_password;
       case 'pw_signin':
         return pw_signin;
       case 'pw_signup':
@@ -207,8 +167,6 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return pw_signing_in;
       case 'otp_verifying':
         return otp_verifying;
-      case 'pw_min':
-        return pw_min;
       case 'pw_invalid_creds':
         return pw_invalid_creds;
       case 'fp_title':
@@ -229,14 +187,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return fp_done;
       case 'fp_success':
         return fp_success;
-      case 'dial_title':
-        return dial_title;
-      case 'dial_search':
-        return dial_search;
       case 'auth_locked_retry':
         return auth_locked_retry;
-      case 'auth_phone_soon':
-        return auth_phone_soon;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -271,28 +223,22 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get to_doctor => "A copy reaches Dr. Sara at your next visit.";
   String get to_home => "Back to home";
   String get care_intro => "The doctors following your condition and who can see your reports.";
-  String get care_primary => "Primary";
-  String get care_message => "Message";
-  String get care_book => "Book";
   String get care_find => "Find a new doctor";
   String get appts => "Appointments";
   String get upcoming_appt => "Upcoming appointment";
   String get past_appts => "Past visits";
-  String get book_appt => "Book";
   String get follow_up => "Follow-up";
   String get check_up => "Check-up";
   String get book_via_doctor => "Your care team will schedule appointments for you.";
   String get map_nearby => "Nearby care";
   String get map_search_ph => "Search clinics, pharmacies…";
   String get map_all => "All";
-  String get map_open_now => "Open now";
   String get map_distance => "away";
   String get map_call => "Call";
   String get map_directions => "Directions";
   String get map_list => "List";
   String get map_map => "Map";
   String get map_found => "places nearby";
-  String get map_your_loc => "Your location";
   String get map_no_results => "No places found";
   String get map_no_res_h => "Try a different search or filter.";
   String map_n_types(String n) => "$n types";
@@ -313,12 +259,6 @@ class CareStrings implements i69n.I69nMessageBundle {
         return to_home;
       case 'care_intro':
         return care_intro;
-      case 'care_primary':
-        return care_primary;
-      case 'care_message':
-        return care_message;
-      case 'care_book':
-        return care_book;
       case 'care_find':
         return care_find;
       case 'appts':
@@ -327,8 +267,6 @@ class CareStrings implements i69n.I69nMessageBundle {
         return upcoming_appt;
       case 'past_appts':
         return past_appts;
-      case 'book_appt':
-        return book_appt;
       case 'follow_up':
         return follow_up;
       case 'check_up':
@@ -341,8 +279,6 @@ class CareStrings implements i69n.I69nMessageBundle {
         return map_search_ph;
       case 'map_all':
         return map_all;
-      case 'map_open_now':
-        return map_open_now;
       case 'map_distance':
         return map_distance;
       case 'map_call':
@@ -355,8 +291,6 @@ class CareStrings implements i69n.I69nMessageBundle {
         return map_map;
       case 'map_found':
         return map_found;
-      case 'map_your_loc':
-        return map_your_loc;
       case 'map_no_results':
         return map_no_results;
       case 'map_no_res_h':
@@ -409,14 +343,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get pain_worst => "Worst";
   String get note_lbl => "Anything else? (optional)";
   String get note_ph => "Add a note for your doctor…";
-  String get s_headache => "Headache";
-  String get s_dizzy => "Dizziness";
-  String get s_fatigue => "Fatigue";
-  String get s_blurred => "Blurred vision";
-  String get s_swelling => "Swelling";
-  String get s_chest => "Chest tightness";
-  String get s_nausea => "Nausea";
-  String get s_thirst => "Excess thirst";
   String get s_none => "Nothing";
   String get view_trends => "View trends";
   String get trends => "Trends";
@@ -444,8 +370,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get body_location => "Where does it hurt?";
   String get body_view_front => "Front";
   String get body_view_back => "Back";
-  String get body_sex_female => "♀";
-  String get body_sex_male => "♂";
   String get body_tap => "Tap to mark location";
   String get list_sep => ", ";
   String get list_mid => " · ";
@@ -459,11 +383,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get cond_onset_hint => "Onset yr";
   String get q_vitals_t => "Your vitals";
   String get q_vitals_h => "Enter any readings you took today — all optional.";
-  String get vital_hr => "Heart rate";
-  String get unit_hr => "bpm";
-  String get vital_temp => "Temperature";
-  String get unit_temp => "°C";
-  String get vital_spo2 => "Oxygen (SpO₂)";
   String get unit_spo2 => "%";
   String get sym_headache => "Headache";
   String get sym_dizzy => "Dizziness";
@@ -543,22 +462,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return note_lbl;
       case 'note_ph':
         return note_ph;
-      case 's_headache':
-        return s_headache;
-      case 's_dizzy':
-        return s_dizzy;
-      case 's_fatigue':
-        return s_fatigue;
-      case 's_blurred':
-        return s_blurred;
-      case 's_swelling':
-        return s_swelling;
-      case 's_chest':
-        return s_chest;
-      case 's_nausea':
-        return s_nausea;
-      case 's_thirst':
-        return s_thirst;
       case 's_none':
         return s_none;
       case 'view_trends':
@@ -613,10 +516,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return body_view_front;
       case 'body_view_back':
         return body_view_back;
-      case 'body_sex_female':
-        return body_sex_female;
-      case 'body_sex_male':
-        return body_sex_male;
       case 'body_tap':
         return body_tap;
       case 'list_sep':
@@ -643,16 +542,6 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return q_vitals_t;
       case 'q_vitals_h':
         return q_vitals_h;
-      case 'vital_hr':
-        return vital_hr;
-      case 'unit_hr':
-        return unit_hr;
-      case 'vital_temp':
-        return vital_temp;
-      case 'unit_temp':
-        return unit_temp;
-      case 'vital_spo2':
-        return vital_spo2;
       case 'unit_spo2':
         return unit_spo2;
       case 'sym_headache':
@@ -690,15 +579,12 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get done_q => "Check-in complete";
   String get recent => "Recent reports";
   String get see_all => "See all";
-  String get yesterday => "vs yesterday";
   String get step_of => "of";
   String get back => "Back";
   String get finish => "Finish check-in";
   String get saved_t => "Check-in saved";
   String get saved_local => "Saved locally. Will sync when you reconnect.";
-  String get no_symptoms => "No symptoms";
   String get profile => "Profile";
-  String get since => "Balsm patient since";
   String get no_appts => "No upcoming appointments";
   String get your_accounts => "Your accounts";
   String get pages => "pages";
@@ -747,8 +633,6 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return recent;
       case 'see_all':
         return see_all;
-      case 'yesterday':
-        return yesterday;
       case 'step_of':
         return step_of;
       case 'back':
@@ -759,12 +643,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return saved_t;
       case 'saved_local':
         return saved_local;
-      case 'no_symptoms':
-        return no_symptoms;
       case 'profile':
         return profile;
-      case 'since':
-        return since;
       case 'no_appts':
         return no_appts;
       case 'your_accounts':
@@ -834,8 +714,6 @@ class CommonStrings implements i69n.I69nMessageBundle {
 class EmergencyStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const EmergencyStrings(this._parent);
-  String get em_title => "What's your email?";
-  String get em_help => "We'll send you a code to verify it's you.";
   String get em_label => "Email address";
   String get em_ph => "you@example.com";
   String get em_otp_h => "We sent a 6-digit code to";
@@ -883,10 +761,6 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'em_title':
-        return em_title;
-      case 'em_help':
-        return em_help;
       case 'em_label':
         return em_label;
       case 'em_ph':
@@ -983,7 +857,6 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get streak => "day streak";
   String streak_help(Gender gender, int checked) => "Checked in ${checked} of the last 7 days";
   String get on_track => "On track";
-  String get experience => "experience";
   String get away_banner => "You're away from home";
   String hero_q(Gender gender) => "How are you feeling today?";
   String hero_cta(Gender gender) => "Start check-in";
@@ -1016,8 +889,6 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return streak_help;
       case 'on_track':
         return on_track;
-      case 'experience':
-        return experience;
       case 'away_banner':
         return away_banner;
       case 'hero_q':
@@ -1068,8 +939,6 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get rx_date => "Date issued";
   String get rx_expiry => "Expiration";
   String get rx_added => "Prescription added";
-  String get rx_med_dose => "Dose";
-  String get rx_details => "Details";
   String get rx_upload => "Upload a file";
   String get rx_manual => "Type it in";
   String get rx_or_paste_url => "or paste a link";
@@ -1101,7 +970,6 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get rx_self_added => "Self-added";
   String get rx_self_note => "Added by you — not verified by a pharmacy.";
   String get rx_my_prescriptions => "My prescriptions";
-  String get rx_delete => "Delete prescription";
   String get rx_take_photo => "Take photo";
   String get rx_from_files => "Choose file";
   String get rx_prescribed_by => "Prescribed by";
@@ -1203,10 +1071,6 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return rx_expiry;
       case 'rx_added':
         return rx_added;
-      case 'rx_med_dose':
-        return rx_med_dose;
-      case 'rx_details':
-        return rx_details;
       case 'rx_upload':
         return rx_upload;
       case 'rx_manual':
@@ -1269,8 +1133,6 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return rx_self_note;
       case 'rx_my_prescriptions':
         return rx_my_prescriptions;
-      case 'rx_delete':
-        return rx_delete;
       case 'rx_take_photo':
         return rx_take_photo;
       case 'rx_from_files':
@@ -1392,13 +1254,11 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   String get pf_gender => "Gender";
   String get pf_female => "Female";
   String get pf_male => "Male";
-  String get pf_gov => "Governorate";
   String get pf_create => "Create my profile";
   String get pf_creating => "Creating your account…";
   String get pf_secure => "Your details stay on this device.";
   String get dob_title => "Date of birth";
   String get dob_confirm => "Confirm";
-  String get dob_select => "Select a date";
   String get age_gate_body =>
       "Balsm is currently available for ages 18 and older. We're working on a version for younger users with parental consent.";
   String w_start(Gender gender) => "Get started";
@@ -1446,8 +1306,6 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
         return pf_female;
       case 'pf_male':
         return pf_male;
-      case 'pf_gov':
-        return pf_gov;
       case 'pf_create':
         return pf_create;
       case 'pf_creating':
@@ -1458,8 +1316,6 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
         return dob_title;
       case 'dob_confirm':
         return dob_confirm;
-      case 'dob_select':
-        return dob_select;
       case 'age_gate_body':
         return age_gate_body;
       case 'w_start':
@@ -1720,7 +1576,6 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get pd_handle_hint => "Your unique handle on Balsm";
   String get pd_share_qr => "Emergency QR";
   String get pd_share_qr_h => "Show an encrypted code to staff";
-  String get pd_qr_scan => "Scan to connect on Balsm";
   String get pd_nationality => "Nationality";
   String get pd_blood => "Blood type";
   String get pd_weight => "Weight";
@@ -1746,8 +1601,6 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get conn_apple => "Apple ID";
   String get conn_google => "Google account";
   String get conn_connect => "Connect";
-  String get conn_remove => "Remove";
-  String get conn_primary => "Used to sign in";
   String get p_cond => "Medical profile";
   String get p_care => "Care team";
   String get p_notif => "Reminders";
@@ -1770,13 +1623,11 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get bmi_normal => "Healthy";
   String get bmi_over => "Overweight";
   String get bmi_obese => "Obese";
-  String get switch_account => "Switch account";
   String get p_country => "Country";
   String get pd_primary => "Primary";
   String get pd_basic_info => "Basic info";
   String get pd_contact_section => "Contact";
   String get pd_add_contact => "Add contact";
-  String get pd_change_photo => "Change photo";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1805,8 +1656,6 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return pd_share_qr;
       case 'pd_share_qr_h':
         return pd_share_qr_h;
-      case 'pd_qr_scan':
-        return pd_qr_scan;
       case 'pd_nationality':
         return pd_nationality;
       case 'pd_blood':
@@ -1855,10 +1704,6 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return conn_google;
       case 'conn_connect':
         return conn_connect;
-      case 'conn_remove':
-        return conn_remove;
-      case 'conn_primary':
-        return conn_primary;
       case 'p_cond':
         return p_cond;
       case 'p_care':
@@ -1903,8 +1748,6 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return bmi_over;
       case 'bmi_obese':
         return bmi_obese;
-      case 'switch_account':
-        return switch_account;
       case 'p_country':
         return p_country;
       case 'pd_primary':
@@ -1915,8 +1758,6 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return pd_contact_section;
       case 'pd_add_contact':
         return pd_add_contact;
-      case 'pd_change_photo':
-        return pd_change_photo;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -1935,8 +1776,6 @@ class EcosystemStrings implements i69n.I69nMessageBundle {
   String get eco_p1b => "Your records, medications and appointments, whole and in your language.";
   String get eco_p2h => "Balsm Pro — for pharmacies & clinics";
   String get eco_p2b => "Dispensing, inventory and encounters on the same open system — offline-first, on the roadmap.";
-  String get eco_p3h => "Balsm for clinics";
-  String get eco_p3b => "Doctors and labs on the same open system — so your care connects.";
   String get eco_help_t => "Help Balsm grow";
   String get eco_help_sub => "Balsm belongs to the people who use it. Every one of these makes it stronger.";
   String get eco_tagline => "Open · Arab · Trusted";
@@ -1971,10 +1810,6 @@ class EcosystemStrings implements i69n.I69nMessageBundle {
         return eco_p2h;
       case 'eco_p2b':
         return eco_p2b;
-      case 'eco_p3h':
-        return eco_p3h;
-      case 'eco_p3b':
-        return eco_p3b;
       case 'eco_help_t':
         return eco_help_t;
       case 'eco_help_sub':
@@ -2028,7 +1863,6 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
   String get fb_t_general => "General";
   String get fb_t_ease => "Ease of use";
   String get fb_t_records => "Records";
-  String get fb_t_appts => "Appointments";
   String get fb_t_meds => "Medications";
   String get fb_t_arabic => "Arabic & language";
   Object operator [](String key) {
@@ -2079,8 +1913,6 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
         return fb_t_ease;
       case 'fb_t_records':
         return fb_t_records;
-      case 'fb_t_appts':
-        return fb_t_appts;
       case 'fb_t_meds':
         return fb_t_meds;
       case 'fb_t_arabic':
@@ -2097,17 +1929,14 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get rec_documents => "documents";
   String get reports => "Past reports";
   String get rec_search_ph => "Search records, tags, results…";
-  String get rec_search_clear => "Clear search";
   String get rec_tags => "Tags";
   String get rec_tags_ph => "Add a tag and press Enter";
-  String get rec_date => "Date";
   String get rec_no_results => "No matching records";
   String get rec_no_results_h => "No records match";
   String get rec_no_results_h2 => "Nothing in this category yet.";
   String get rec_clear_filters => "Clear filters";
   String get prescriptions => "Prescriptions";
   String get records => "Health records";
-  String get records_short => "Records";
   String get all_records => "All";
   String get rec_lab => "Lab tests";
   String get rec_scan => "Scans";
@@ -2154,14 +1983,10 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return reports;
       case 'rec_search_ph':
         return rec_search_ph;
-      case 'rec_search_clear':
-        return rec_search_clear;
       case 'rec_tags':
         return rec_tags;
       case 'rec_tags_ph':
         return rec_tags_ph;
-      case 'rec_date':
-        return rec_date;
       case 'rec_no_results':
         return rec_no_results;
       case 'rec_no_results_h':
@@ -2174,8 +1999,6 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return prescriptions;
       case 'records':
         return records;
-      case 'records_short':
-        return records_short;
       case 'all_records':
         return all_records;
       case 'rec_lab':
@@ -2257,7 +2080,6 @@ class SettingsStrings implements i69n.I69nMessageBundle {
   String get trust_offline => "Works offline";
   String get trust_device => "Yours, always";
   String get add_photo => "Add a photo";
-  String get nat_egyptian => "Egyptian";
   String get add_member => "Add family member";
   String get choose_lang => "Choose language";
   String get choose_country => "Where are you now?";
@@ -2287,8 +2109,6 @@ class SettingsStrings implements i69n.I69nMessageBundle {
         return trust_device;
       case 'add_photo':
         return add_photo;
-      case 'nat_egyptian':
-        return nat_egyptian;
       case 'add_member':
         return add_member;
       case 'choose_lang':
@@ -2328,27 +2148,16 @@ class SettingsStrings implements i69n.I69nMessageBundle {
 class StorageStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const StorageStrings(this._parent);
-  String get store_backup_to => "Back up to";
-  String get store_move_to => "Move to";
-  String get store_remove_cloud => "Remove from cloud";
-  String get store_remove_dev => "Remove from device";
-  String get store_delete_all => "Delete everywhere";
   String get store_delete_rec => "Delete record";
   String get store_delete_rec_h =>
       "This permanently deletes the record and its attachment from this device. It cannot be undone.";
   String get store_deleted_rec => "Record deleted";
   String get store_manage => "Manage storage";
   String get storage => "Storage & sync";
-  String get storage_short => "Storage";
-  String get storage_icloud => "iCloud";
-  String get storage_gdrive => "Google Drive";
-  String get storage_balsm_cloud => "Balsm Cloud";
-  String get storage_device => "On this device";
   String get store_local => "On this device";
   String get store_icloud => "iCloud";
   String get store_gdrive => "Google Drive";
   String get store_balsm_cloud => "Balsm Cloud";
-  String get store_synced => "Synced";
   String get store_local_only => "Local only";
   String get store_backed => "Backed up";
   String get store_step_prepare => "Preparing…";
@@ -2362,7 +2171,6 @@ class StorageStrings implements i69n.I69nMessageBundle {
   String get store_available_soon => "Available soon";
   String get store_always_on => "Always on";
   String get store_no_backup => "No backup";
-  String get store_tap_connect => "Tap to connect";
   String store_connecting(String target) => "Connecting to $target…";
   String get store_auto_start => "Backup will start automatically.";
   String get store_migrating => "Migrating";
@@ -2380,16 +2188,6 @@ class StorageStrings implements i69n.I69nMessageBundle {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'store_backup_to':
-        return store_backup_to;
-      case 'store_move_to':
-        return store_move_to;
-      case 'store_remove_cloud':
-        return store_remove_cloud;
-      case 'store_remove_dev':
-        return store_remove_dev;
-      case 'store_delete_all':
-        return store_delete_all;
       case 'store_delete_rec':
         return store_delete_rec;
       case 'store_delete_rec_h':
@@ -2400,16 +2198,6 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_manage;
       case 'storage':
         return storage;
-      case 'storage_short':
-        return storage_short;
-      case 'storage_icloud':
-        return storage_icloud;
-      case 'storage_gdrive':
-        return storage_gdrive;
-      case 'storage_balsm_cloud':
-        return storage_balsm_cloud;
-      case 'storage_device':
-        return storage_device;
       case 'store_local':
         return store_local;
       case 'store_icloud':
@@ -2418,8 +2206,6 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_gdrive;
       case 'store_balsm_cloud':
         return store_balsm_cloud;
-      case 'store_synced':
-        return store_synced;
       case 'store_local_only':
         return store_local_only;
       case 'store_backed':
@@ -2444,8 +2230,6 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_always_on;
       case 'store_no_backup':
         return store_no_backup;
-      case 'store_tap_connect':
-        return store_tap_connect;
       case 'store_connecting':
         return store_connecting;
       case 'store_auto_start':

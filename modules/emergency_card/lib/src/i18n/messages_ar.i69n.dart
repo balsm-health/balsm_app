@@ -11,9 +11,8 @@ class Messages_ar extends Messages {
   const Messages_ar();
   String get title => "بطاقة الطوارئ";
   String get generate => "إنشاء البطاقة";
-  String get ttl => "تنتهي خلال";
   String get revoke => "إلغاء البطاقة";
-  String get expired => "انتهت صلاحية هذه البطاقة";
+  String get unavailable => "بطاقة الطوارئ هذه غير متاحة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -24,12 +23,10 @@ class Messages_ar extends Messages {
         return title;
       case 'generate':
         return generate;
-      case 'ttl':
-        return ttl;
       case 'revoke':
         return revoke;
-      case 'expired':
-        return expired;
+      case 'unavailable':
+        return unavailable;
       default:
         return super[key];
     }

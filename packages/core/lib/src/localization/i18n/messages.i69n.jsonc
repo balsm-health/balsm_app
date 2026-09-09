@@ -10,19 +10,14 @@
     "done": "Done",
     "retry": "Retry",
     "save": "Save",
-    "delete": "Delete",
-    "edit": "Edit"
+    "delete": "Delete"
   },
   "error": {
-    "network": "Network error. Please check your connection.",
-    "unknown": "Something went wrong. Please try again.",
-    "validation": "Please check the information you entered.",
-    "geofence": "This service is not available in your region."
+    "unknown": "Something went wrong. Please try again."
   },
   "notfound": {
     "title": "Page not found",
-    "body": "The page you are looking for does not exist.",
-    "cta": "Go home"
+    "body": "The page you are looking for does not exist."
   },
   "country": {
     "eg": {

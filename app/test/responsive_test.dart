@@ -34,9 +34,9 @@ void main() {
           home: Scaffold(
             body: SizedBox(
               width: width,
-              child: AdaptiveRow(
+              child: const AdaptiveRow(
                 breakpoint: Bp.sm,
-                children: const [
+                children: [
                   SizedBox(key: Key('a'), height: 10),
                   SizedBox(key: Key('b'), height: 10),
                 ],
@@ -68,10 +68,10 @@ void main() {
           home: Scaffold(
             body: SizedBox(
               width: width,
-              child: AdaptiveSplit(
+              child: const AdaptiveSplit(
                 breakpoint: Bp.md,
-                primary: const SizedBox(key: Key('primary'), height: 20),
-                aside: const SizedBox(key: Key('aside'), height: 20),
+                primary: SizedBox(key: Key('primary'), height: 20),
+                aside: SizedBox(key: Key('aside'), height: 20),
               ),
             ),
           ),

@@ -50,7 +50,6 @@ class CommonMessages implements i69n.I69nMessageBundle {
   String get retry => "Retry";
   String get save => "Save";
   String get delete => "Delete";
-  String get edit => "Edit";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -75,8 +74,6 @@ class CommonMessages implements i69n.I69nMessageBundle {
         return save;
       case 'delete':
         return delete;
-      case 'edit':
-        return edit;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -86,24 +83,15 @@ class CommonMessages implements i69n.I69nMessageBundle {
 class ErrorMessages implements i69n.I69nMessageBundle {
   final Messages _parent;
   const ErrorMessages(this._parent);
-  String get network => "Network error. Please check your connection.";
   String get unknown => "Something went wrong. Please try again.";
-  String get validation => "Please check the information you entered.";
-  String get geofence => "This service is not available in your region.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'network':
-        return network;
       case 'unknown':
         return unknown;
-      case 'validation':
-        return validation;
-      case 'geofence':
-        return geofence;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -115,7 +103,6 @@ class NotfoundMessages implements i69n.I69nMessageBundle {
   const NotfoundMessages(this._parent);
   String get title => "Page not found";
   String get body => "The page you are looking for does not exist.";
-  String get cta => "Go home";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -126,8 +113,6 @@ class NotfoundMessages implements i69n.I69nMessageBundle {
         return title;
       case 'body':
         return body;
-      case 'cta':
-        return cta;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

@@ -138,7 +138,7 @@ class _BalsmDatePickerSheetState extends State<_BalsmDatePickerSheet> {
     return Directionality(
       textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
       child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.82),
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.82),
         decoration: const BoxDecoration(
           color: BalsmColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(BalsmRadius.xl)),
@@ -277,7 +277,7 @@ class _BalsmDatePickerSheetState extends State<_BalsmDatePickerSheet> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).padding.bottom + 20),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.paddingOf(context).bottom + 20),
             child: Opacity(
               opacity: _sel != null ? 1 : 0.4,
               child: GestureDetector(

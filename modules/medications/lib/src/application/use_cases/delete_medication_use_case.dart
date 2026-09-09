@@ -21,7 +21,8 @@ class DeleteMedicationUseCase {
   }
 }
 
-final deleteMedicationUseCaseProvider = Provider.family<DeleteMedicationUseCase, UserId>((ref, userId) {
+// autoDispose: see [addMedicationUseCaseProvider].
+final deleteMedicationUseCaseProvider = Provider.autoDispose.family<DeleteMedicationUseCase, UserId>((ref, userId) {
   return DeleteMedicationUseCase(
     dao: ref.watch(medicationsDataSourceProvider),
     scheduler: ref.watch(medicationSchedulerProvider(userId)),

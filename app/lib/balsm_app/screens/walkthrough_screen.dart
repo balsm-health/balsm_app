@@ -376,20 +376,18 @@ class _WtDayDemoState extends State<_WtDayDemo> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(color: T.cream100, borderRadius: BorderRadius.circular(T.rLg)),
-              child: Row(children: [
-                for (var i = 0; i < tabs.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 4),
+              child: Row(spacing: 4, children: [
+                for (final (i, tab) in tabs.indexed)
                   Expanded(
                     child: _DemoTab(
-                      icon: tabs[i].$1,
-                      label: tabs[i].$2,
+                      icon: tab.$1,
+                      label: tab.$2,
                       on: i == _tab,
                       accent: widget.accent,
                       ar: widget.ar,
                       onTap: () => _pick(i),
                     ),
                   ),
-                ],
               ]),
             ),
             const SizedBox(height: 10),
@@ -540,11 +538,9 @@ class _DemoCheckin extends StatelessWidget {
             child: CustomPaint(painter: _SparklinePainter(color: accent.main)),
           ),
           const SizedBox(height: 12),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            for (var i = 0; i < moods.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              _MoodButton(icon: moods[i].$1, label: moods[i].$2, on: i == mood, accent: accent, onTap: () => onMood(i)),
-            ],
+          Row(mainAxisAlignment: MainAxisAlignment.center, spacing: 8, children: [
+            for (final (i, m) in moods.indexed)
+              _MoodButton(icon: m.$1, label: m.$2, on: i == mood, accent: accent, onTap: () => onMood(i)),
           ]),
         ]));
   }

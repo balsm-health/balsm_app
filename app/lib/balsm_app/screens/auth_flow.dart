@@ -1431,7 +1431,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
     return Directionality(
       textDirection: s.dir,
       child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: Container(
           decoration: const BoxDecoration(
               color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),

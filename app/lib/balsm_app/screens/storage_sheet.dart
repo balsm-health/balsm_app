@@ -107,7 +107,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
   Widget build(BuildContext context) {
     final canClose = phase == 'idle' || phase == 'done' || phase == 'confirm_disconnect';
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.92),
       decoration:
           const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [

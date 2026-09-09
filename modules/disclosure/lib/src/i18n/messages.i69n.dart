@@ -14,7 +14,6 @@ class Messages implements i69n.I69nMessageBundle {
   String get scrollToContinue => "Scroll to the end to continue";
   String get accept => "I have read and accept";
   SectionMessages get section => SectionMessages(this);
-  AuthorityMessages get authority => AuthorityMessages(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -33,8 +32,6 @@ class Messages implements i69n.I69nMessageBundle {
         return accept;
       case 'section':
         return section;
-      case 'authority':
-        return authority;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -197,30 +194,6 @@ class DeletionSectionMessages implements i69n.I69nMessageBundle {
         return title;
       case 'body':
         return body;
-      default:
-        throw Exception('Message $key doesn\'t exist in $this');
-    }
-  }
-}
-
-class AuthorityMessages implements i69n.I69nMessageBundle {
-  final Messages _parent;
-  const AuthorityMessages(this._parent);
-  String get eg => "Egyptian Ministry of Health and Population";
-  String get sa => "Saudi Ministry of Health";
-  String get ae => "UAE Ministry of Health and Prevention";
-  Object operator [](String key) {
-    var index = key.indexOf('.');
-    if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
-    }
-    switch (key) {
-      case 'eg':
-        return eg;
-      case 'sa':
-        return sa;
-      case 'ae':
-        return ae;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

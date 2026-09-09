@@ -224,7 +224,16 @@ class _ImagePreview extends StatelessWidget {
     return Stack(children: [
       ClipRRect(
         borderRadius: BorderRadius.circular(T.rMd),
-        child: Image.memory(bytes, width: double.infinity, height: height, fit: BoxFit.cover),
+        child: Image.memory(
+          bytes,
+          width: double.infinity,
+          height: height,
+          fit: BoxFit.cover,
+          // Decode to the box, not to the sensor. A phone-camera capture is
+          // ~12 MP — about 48 MB once decoded — for a 130pt strip. Only one
+          // axis is given, so the aspect ratio is preserved.
+          cacheHeight: (height * MediaQuery.devicePixelRatioOf(context)).round(),
+        ),
       ),
       Positioned(
         top: 8,
@@ -283,6 +292,17 @@ class _FileChip extends StatelessWidget {
   }
 }
 
+/// One decrypted vault blob, keyed by path.
+///
+/// `FutureBuilder(future: ref.read(...).read(path))` rebuilt the future on
+/// every rebuild, so the blob was decrypted again on each frame that touched
+/// the widget. A family provider caches per path, dedupes concurrent readers,
+/// and `autoDispose` drops the plaintext from memory as soon as nothing is
+/// showing it — which is what we want for PHI.
+final vaultBlobProvider = FutureProvider.autoDispose.family<Uint8List?, String>(
+  (ref, path) => ref.watch(userFileStoreProvider).read(path),
+);
+
 /// Renders an encrypted vault image. Bytes are never logged.
 class VaultImage extends ConsumerWidget {
   const VaultImage({
@@ -300,26 +320,28 @@ class VaultImage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final radius = borderRadius ?? BorderRadius.circular(T.rLg);
-    return FutureBuilder<Uint8List?>(
-      future: ref.read(userFileStoreProvider).read(path),
-      builder: (context, snap) {
-        final bytes = snap.data;
-        if (bytes == null) {
-          return Container(
-            height: height ?? 180,
-            decoration: BoxDecoration(color: T.cream100, borderRadius: radius),
-          );
-        }
-        return ClipRRect(
-          borderRadius: radius,
-          child: Image.memory(
-            bytes,
-            width: double.infinity,
-            height: height,
-            fit: fit,
-          ),
-        );
-      },
+    final placeholder = Container(
+      height: height ?? 180,
+      decoration: BoxDecoration(color: T.cream100, borderRadius: radius),
+    );
+    // A failed decrypt shows the placeholder rather than an error surface: the
+    // caller already frames this as an attachment, and the reason is not
+    // something to render over PHI.
+    final bytes = ref.watch(vaultBlobProvider(path)).valueOrNull;
+    if (bytes == null) return placeholder;
+    final h = height;
+    return ClipRRect(
+      borderRadius: radius,
+      child: Image.memory(
+        bytes,
+        width: double.infinity,
+        height: h,
+        fit: fit,
+        // See [_ImagePreview]: record scans are camera-resolution, and several
+        // thumbnails at full decode will evict everything else from the image
+        // cache. Unbounded only when the caller lets the image size itself.
+        cacheHeight: h == null ? null : (h * MediaQuery.devicePixelRatioOf(context)).round(),
+      ),
     );
   }
 }

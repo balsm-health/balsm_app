@@ -62,7 +62,6 @@ class EmailMessages_ar extends EmailMessages {
   const EmailMessages_ar(this._parent) : super(_parent);
   String get title => "أدخل بريدك الإلكتروني";
   String get label => "البريد الإلكتروني";
-  String get cta => "إرسال الرمز";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -73,8 +72,6 @@ class EmailMessages_ar extends EmailMessages {
         return title;
       case 'label':
         return label;
-      case 'cta':
-        return cta;
       default:
         return super[key];
     }
@@ -86,7 +83,6 @@ class OtpMessages_ar extends OtpMessages {
   const OtpMessages_ar(this._parent) : super(_parent);
   String get title => "أدخل رمز التحقق";
   String get subtitle => "أرسلنا رمزًا إلى بريدك الإلكتروني";
-  String get resend => "إعادة إرسال الرمز";
   ErrorOtpMessages_ar get error => ErrorOtpMessages_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -98,8 +94,6 @@ class OtpMessages_ar extends OtpMessages {
         return title;
       case 'subtitle':
         return subtitle;
-      case 'resend':
-        return resend;
       case 'error':
         return error;
       default:
@@ -112,7 +106,6 @@ class ErrorOtpMessages_ar extends ErrorOtpMessages {
   final OtpMessages_ar _parent;
   const ErrorOtpMessages_ar(this._parent) : super(_parent);
   String get invalid => "رمز غير صحيح. حاول مرة أخرى.";
-  String get expired => "انتهت صلاحية هذا الرمز. اطلب رمزًا جديدًا.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -121,8 +114,6 @@ class ErrorOtpMessages_ar extends ErrorOtpMessages {
     switch (key) {
       case 'invalid':
         return invalid;
-      case 'expired':
-        return expired;
       default:
         return super[key];
     }
@@ -134,7 +125,6 @@ class SocialMessages_ar extends SocialMessages {
   const SocialMessages_ar(this._parent) : super(_parent);
   String get google => "المتابعة باستخدام Google";
   String get apple => "المتابعة باستخدام Apple";
-  String get divider => "أو";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -145,8 +135,6 @@ class SocialMessages_ar extends SocialMessages {
         return google;
       case 'apple':
         return apple;
-      case 'divider':
-        return divider;
       default:
         return super[key];
     }
@@ -158,7 +146,6 @@ class LockoutMessages_ar extends LockoutMessages {
   const LockoutMessages_ar(this._parent) : super(_parent);
   String get title => "محاولات كثيرة جدًا";
   String get body => "تم قفل حسابك مؤقتًا. حاول مرة أخرى لاحقًا.";
-  String get support => "تواصل مع الدعم";
   String get retry => "حاول مرة أخرى";
   String get needHelp => "تحتاج مساعدة؟";
   String contactSupport(String email) => "راسل $email";
@@ -173,8 +160,6 @@ class LockoutMessages_ar extends LockoutMessages {
         return title;
       case 'body':
         return body;
-      case 'support':
-        return support;
       case 'retry':
         return retry;
       case 'needHelp':

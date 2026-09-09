@@ -68,66 +68,59 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
     // `findAll` is newest-first; charts read left-to-right in time order.
     final inRange = history.where((c) => c.recordedAt.isAfter(cutoff)).toList().reversed.toList();
 
-    final sys = <double>[], dia = <double>[], glucose = <double>[], pain = <double>[], weight = <double>[];
-    for (final c in inRange) {
-      final v = c.vitals;
-      if (v.systolic != null && v.diastolic != null) {
-        sys.add(v.systolic!.toDouble());
-        dia.add(v.diastolic!.toDouble());
-      }
-      final g = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
-      if (g != null) glucose.add(g.toDouble());
-      pain.add(c.painLevel.value.toDouble());
-      if (v.weightKg != null) weight.add(v.weightKg!);
-    }
+    // Systolic and diastolic are charted as a pair, so a reading missing either
+    // contributes to neither — filter once and read both off the same rows.
+    final bp = inRange.where((c) => c.vitals.systolic != null && c.vitals.diastolic != null);
+    final sys = bp.map((c) => c.vitals.systolic!.toDouble()).toList();
+    final dia = bp.map((c) => c.vitals.diastolic!.toDouble()).toList();
+    final glucose = inRange
+        .map((c) => c.vitals.glucoseFasting ?? c.vitals.glucosePostMeal ?? c.vitals.glucoseRandom)
+        .nonNulls
+        .map((g) => g.toDouble())
+        .toList();
+    final pain = inRange.map((c) => c.painLevel.value.toDouble()).toList();
+    final weight = inRange.map((c) => c.vitals.weightKg).nonNulls.toList();
 
-    final charts = <Widget>[];
-    void addChart(Widget card) {
-      charts.add(card);
-    }
-
-    const firstMargin = EdgeInsets.fromLTRB(20, 0, 20, 0);
-    const nextMargin = EdgeInsets.fromLTRB(20, 14, 20, 0);
-    EdgeInsetsGeometry margin() => charts.isEmpty ? firstMargin : nextMargin;
-
-    if (_visible.contains(_TrendMetric.bp) && sys.isNotEmpty) {
-      addChart(_ChartCard(
-        title: s.strings.profile.m_bp,
-        value: '${_avg(sys).round()}/${_avg(dia).round()}',
-        unit: s.strings.checkin.unit_bp,
-        series: [ChartSeries(sys, T.petalViolet), ChartSeries(dia, T.petalBlue)],
-        legend: [(s.strings.checkin.sys, T.petalViolet), (s.strings.checkin.dia, T.petalBlue)],
-        margin: margin(),
-      ));
-    }
-    if (_visible.contains(_TrendMetric.glucose) && glucose.isNotEmpty) {
-      addChart(_ChartCard(
-        title: s.strings.profile.m_glucose,
-        value: _avg(glucose).round().toString(),
-        unit: s.strings.checkin.unit_glu,
-        series: [ChartSeries(glucose, T.petalMint600)],
-        margin: margin(),
-      ));
-    }
-    if (_visible.contains(_TrendMetric.pain) && pain.isNotEmpty) {
-      addChart(_ChartCard(
-        title: s.strings.profile.m_pain,
-        value: _avg(pain).toStringAsFixed(1),
-        unit: '/10',
-        series: [ChartSeries(pain, T.danger)],
-        margin: margin(),
-      ));
-    }
-    if (_visible.contains(_TrendMetric.weight) && weight.isNotEmpty) {
-      addChart(_ChartCard(
-        title: s.strings.profile.m_weight,
-        value: _fmtWeight(weight.last),
-        unit: s.strings.checkin.unit_kg,
-        series: [ChartSeries(weight, T.petalBlue)],
-        margin: margin(),
-        showAvg: false,
-      ));
-    }
+    // Every metric that can appear is one line of this literal: switched on and
+    // holding readings. Spacing between cards is applied where they are laid
+    // out, so nothing here depends on how many came before it.
+    const chartMargin = EdgeInsets.fromLTRB(20, 0, 20, 0);
+    final charts = <Widget>[
+      if (_visible.contains(_TrendMetric.bp) && sys.isNotEmpty)
+        _ChartCard(
+          title: s.strings.profile.m_bp,
+          value: '${_avg(sys).round()}/${_avg(dia).round()}',
+          unit: s.strings.checkin.unit_bp,
+          series: [ChartSeries(sys, T.petalViolet), ChartSeries(dia, T.petalBlue)],
+          legend: [(s.strings.checkin.sys, T.petalViolet), (s.strings.checkin.dia, T.petalBlue)],
+          margin: chartMargin,
+        ),
+      if (_visible.contains(_TrendMetric.glucose) && glucose.isNotEmpty)
+        _ChartCard(
+          title: s.strings.profile.m_glucose,
+          value: _avg(glucose).round().toString(),
+          unit: s.strings.checkin.unit_glu,
+          series: [ChartSeries(glucose, T.petalMint600)],
+          margin: chartMargin,
+        ),
+      if (_visible.contains(_TrendMetric.pain) && pain.isNotEmpty)
+        _ChartCard(
+          title: s.strings.profile.m_pain,
+          value: _avg(pain).toStringAsFixed(1),
+          unit: '/10',
+          series: [ChartSeries(pain, T.danger)],
+          margin: chartMargin,
+        ),
+      if (_visible.contains(_TrendMetric.weight) && weight.isNotEmpty)
+        _ChartCard(
+          title: s.strings.profile.m_weight,
+          value: _fmtWeight(weight.last),
+          unit: s.strings.checkin.unit_kg,
+          series: [ChartSeries(weight, T.petalBlue)],
+          margin: chartMargin,
+          showAvg: false,
+        ),
+    ];
 
     return ContentColumn(
       maxWidth: 720,
@@ -149,7 +142,11 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
             child: _MetricsDropdown(visible: _visible, onToggle: _toggle),
           ),
         ),
-        if (charts.isEmpty) _NoReadings(range: _range) else ...charts,
+        if (charts.isEmpty)
+          _NoReadings(range: _range)
+        else
+          // Flex.spacing gives the 14pt between cards; the first card gets none.
+          Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: charts),
         RowHead(s.strings.records.reports, ar: s.rtl),
         if (history.isEmpty)
           PCard(

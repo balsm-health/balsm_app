@@ -51,7 +51,6 @@ class CommonMessages_ar extends CommonMessages {
   String get retry => "إعادة المحاولة";
   String get save => "حفظ";
   String get delete => "حذف";
-  String get edit => "تعديل";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -76,8 +75,6 @@ class CommonMessages_ar extends CommonMessages {
         return save;
       case 'delete':
         return delete;
-      case 'edit':
-        return edit;
       default:
         return super[key];
     }
@@ -87,24 +84,15 @@ class CommonMessages_ar extends CommonMessages {
 class ErrorMessages_ar extends ErrorMessages {
   final Messages_ar _parent;
   const ErrorMessages_ar(this._parent) : super(_parent);
-  String get network => "خطأ في الشبكة. تحقق من اتصالك.";
   String get unknown => "حدث خطأ ما. حاول مرة أخرى.";
-  String get validation => "يرجى التحقق من المعلومات التي أدخلتها.";
-  String get geofence => "هذه الخدمة غير متاحة في منطقتك.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'network':
-        return network;
       case 'unknown':
         return unknown;
-      case 'validation':
-        return validation;
-      case 'geofence':
-        return geofence;
       default:
         return super[key];
     }
@@ -116,7 +104,6 @@ class NotfoundMessages_ar extends NotfoundMessages {
   const NotfoundMessages_ar(this._parent) : super(_parent);
   String get title => "الصفحة غير موجودة";
   String get body => "الصفحة التي تبحث عنها غير موجودة.";
-  String get cta => "العودة للرئيسية";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -127,8 +114,6 @@ class NotfoundMessages_ar extends NotfoundMessages {
         return title;
       case 'body':
         return body;
-      case 'cta':
-        return cta;
       default:
         return super[key];
     }

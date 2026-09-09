@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:core/core.dart' show CountryCodeL10n;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -27,11 +28,7 @@ int checkInsLastDays(List<CheckIn> history, int n) {
     final d = c.recordedAt.toLocal();
     return DateTime(d.year, d.month, d.day);
   }).toSet();
-  var count = 0;
-  for (var i = 0; i < n; i++) {
-    if (days.contains(start.add(Duration(days: i)))) count++;
-  }
-  return count;
+  return Iterable.generate(n, (i) => start.add(Duration(days: i))).where(days.contains).length;
 }
 
 /// Consecutive days ending today (or yesterday) that have a check-in.
@@ -208,20 +205,20 @@ class MetricGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = <Widget>[];
-    for (var i = 0; i < tiles.length; i += 2) {
-      if (rows.isNotEmpty) rows.add(SizedBox(height: gap));
-      final trailing = i + 1 < tiles.length ? tiles[i + 1] : null;
-      rows.add(IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Expanded(child: tiles[i]),
-          SizedBox(width: gap),
-          // An odd final tile keeps its single column rather than stretching.
-          Expanded(child: trailing ?? const SizedBox.shrink()),
-        ]),
-      ));
-    }
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: gap,
+      children: tiles
+          .slices(2)
+          .map<Widget>((pair) => IntrinsicHeight(
+                child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: gap, children: [
+                  Expanded(child: pair.first),
+                  // An odd final tile keeps its single column rather than stretching.
+                  Expanded(child: pair.length > 1 ? pair[1] : const SizedBox.shrink()),
+                ]),
+              ))
+          .toList(),
+    );
   }
 }
 

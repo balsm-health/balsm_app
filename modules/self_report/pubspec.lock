@@ -739,13 +739,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.13.0"
-  medications:
-    dependency: "direct main"
-    description:
-      path: "../medications"
-      relative: true
-    source: path
-    version: "0.0.0"
   meta:
     dependency: transitive
     description:
@@ -986,13 +979,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.0"
-  records:
-    dependency: "direct main"
-    description:
-      path: "../records"
-      relative: true
-    source: path
-    version: "0.0.0"
   riverpod:
     dependency: transitive
     description:

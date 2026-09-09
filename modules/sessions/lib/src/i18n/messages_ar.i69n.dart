@@ -12,7 +12,6 @@ class Messages_ar extends Messages {
   String get title => "الجلسات النشطة";
   String get current => "الجلسة الحالية";
   String get revoke => "تسجيل الخروج";
-  String get signOutAll => "تسجيل الخروج من جميع الأجهزة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -25,8 +24,6 @@ class Messages_ar extends Messages {
         return current;
       case 'revoke':
         return revoke;
-      case 'signOutAll':
-        return signOutAll;
       default:
         return super[key];
     }

@@ -13,10 +13,6 @@ dependencies:
     sdk: flutter
   core:
     path: ../../packages/core
-  medications:
-    path: ../medications
-  records:
-    path: ../records
   flutter_riverpod: ^2.6.1
   intl: ^0.20.0
   drift: ^2.29.0

@@ -207,7 +207,7 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () => _pushGovernance(
                   context,
                   ServerSelectorScreen(
-                    controller: ref.read(balsmApiControllerProvider),
+                    controller: ref.watch(balsmApiControllerProvider),
                   ),
                 ),
               ),
@@ -617,7 +617,7 @@ class _SheetShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
       decoration:
           const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       padding: const EdgeInsets.only(bottom: 38),

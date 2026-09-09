@@ -11,9 +11,9 @@ class Messages implements i69n.I69nMessageBundle {
   String get title => "Health profile";
   String get bloodType => "Blood type";
   AllergiesMessages get allergies => AllergiesMessages(this);
+  SeverityMessages get severity => SeverityMessages(this);
   String get conditions => "Conditions";
   String get contacts => "Emergency contacts";
-  SeverityMessages get severity => SeverityMessages(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -26,12 +26,12 @@ class Messages implements i69n.I69nMessageBundle {
         return bloodType;
       case 'allergies':
         return allergies;
+      case 'severity':
+        return severity;
       case 'conditions':
         return conditions;
       case 'contacts':
         return contacts;
-      case 'severity':
-        return severity;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

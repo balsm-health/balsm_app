@@ -1195,7 +1195,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   }
 
   void _copyReport() {
-    final size = MediaQuery.of(context).size;
+    final size = MediaQuery.sizeOf(context);
     final report = DevDiagnostics.buildBugReport(
       title: _bugTitleCtrl.text,
       steps: _bugStepsCtrl.text,

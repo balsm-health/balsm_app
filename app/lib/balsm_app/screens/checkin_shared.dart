@@ -49,13 +49,17 @@ String symptomLabel(PatientAppState s, SymptomId id) {
   return id.id;
 }
 
+/// Copy + colour for a pain score. The banding itself is [PainLevel.band] —
+/// this only picks how each band reads and looks.
 ({String lbl, Color color}) painInfo(PatientAppState s, int n) {
   final c = s.strings.checkin;
-  if (n == 0) return (lbl: c.pain_0, color: T.petalMint);
-  if (n <= 3) return (lbl: c.pain_mild, color: T.petalMint600);
-  if (n <= 6) return (lbl: c.pain_mod, color: T.sun600);
-  if (n <= 9) return (lbl: c.pain_sev, color: T.expiring);
-  return (lbl: c.pain_worst, color: T.danger);
+  return switch (PainLevel(n).band) {
+    PainBand.none => (lbl: c.pain_0, color: T.petalMint),
+    PainBand.mild => (lbl: c.pain_mild, color: T.petalMint600),
+    PainBand.moderate => (lbl: c.pain_mod, color: T.sun600),
+    PainBand.severe => (lbl: c.pain_sev, color: T.expiring),
+    PainBand.worst => (lbl: c.pain_worst, color: T.danger),
+  };
 }
 
 /// One of the five mood faces (`.mood` cell) — shared by the full check-in

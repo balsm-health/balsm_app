@@ -20,15 +20,16 @@ class BalsmWelcomeBackground extends StatelessWidget {
         // Cream surface
         Container(color: BalsmColors.cream50),
         // `.wbg` — full-bleed cover, then `.wgrad` fades it to cream.
+        // Image's own `opacity`, not an Opacity wrapper: wrapping a
+        // full-bleed image forces a saveLayer offscreen composite every frame,
+        // while this folds the alpha into the paint.
         Positioned.fill(
-          child: Opacity(
-            opacity: 0.9,
-            child: Image.asset(
-              'packages/core/assets/brand/balsm-background.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
+          child: Image.asset(
+            'packages/core/assets/brand/balsm-background.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            opacity: const AlwaysStoppedAnimation(0.9),
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
         ),
         // Gradient fade to cream

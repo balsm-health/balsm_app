@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:collection/collection.dart';
 import 'package:core/core.dart' show currentUserIdProvider;
 import 'package:profile/profile.dart'
     show
+        Bmi,
+        BmiCategory,
         HealthProfile,
         Allergy,
         ChronicCondition,
@@ -258,21 +261,28 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     }
   }
 
+  /// Gauge scale — the visible span of the bar, not a clinical boundary.
+  static const _gaugeMin = 15.0;
+  static const _gaugeMax = 35.0;
+
+  /// Presentation for the live BMI of whatever is currently typed.
+  ///
+  /// The number and its category come from [Bmi] in the profile domain; this
+  /// only chooses a colour, a copy key and where the needle sits.
   ({String value, double pct, Color color, Color bg, String key})? get _bmi {
-    final w = double.tryParse(weight.text) ?? 0;
-    final h = (double.tryParse(height.text) ?? 0) / 100;
-    if (w <= 0 || h <= 0) return null;
-    final v = w / (h * h);
-    if (!v.isFinite) return null;
-    final (key, color, bg) = v < 18.5
-        ? ('profile.bmi_under', T.petalBlue, T.petalBlue50)
-        : v < 25
-            ? ('profile.bmi_normal', T.petalMint600, T.petalMint50)
-            : v < 30
-                ? ('profile.bmi_over', const Color(0xFFD97A20), const Color(0xFFFBF0E2))
-                : ('profile.bmi_obese', T.danger, const Color(0xFFFBEBE7));
-    final pct = (((v - 15) / 20) * 100).clamp(2.0, 98.0);
-    return (value: v.toStringAsFixed(1), pct: pct, color: color, bg: bg, key: key);
+    final bmi = Bmi.fromMeasurements(
+      weightKg: double.tryParse(weight.text),
+      heightCm: double.tryParse(height.text),
+    );
+    if (bmi == null) return null;
+    final (key, color, bg) = switch (bmi.category) {
+      BmiCategory.underweight => ('profile.bmi_under', T.petalBlue, T.petalBlue50),
+      BmiCategory.normal => ('profile.bmi_normal', T.petalMint600, T.petalMint50),
+      BmiCategory.overweight => ('profile.bmi_over', const Color(0xFFD97A20), const Color(0xFFFBF0E2)),
+      BmiCategory.obese => ('profile.bmi_obese', T.danger, const Color(0xFFFBEBE7)),
+    };
+    final pct = ((bmi.value - _gaugeMin) / (_gaugeMax - _gaugeMin) * 100).clamp(2.0, 98.0);
+    return (value: bmi.value.toStringAsFixed(1), pct: pct, color: color, bg: bg, key: key);
   }
 
   @override
@@ -433,25 +443,29 @@ class _BloodTypeGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = <TableRow>[];
-    for (var i = 0; i < kBloodTypes.length; i += _cols) {
-      rows.add(TableRow(
-        children: [
-          for (var c = 0; c < _cols; c++)
-            Padding(
-              padding: EdgeInsets.only(
-                left: c == 0 ? 0 : 4,
-                right: c == _cols - 1 ? 0 : 4,
-                bottom: i + _cols < kBloodTypes.length ? 8 : 0,
-              ),
-              child: _cell(kBloodTypes[i + c]),
-            ),
-        ],
-      ));
-    }
+    final rows = kBloodTypes.slices(_cols).toList();
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Table(children: rows),
+      child: Table(
+        children: rows.indexed
+            .map((r) => TableRow(
+                  // Table requires every row to hold the same number of cells,
+                  // so a list that does not divide by _cols is padded with
+                  // blanks rather than throwing.
+                  children: List.generate(_cols, (c) {
+                    final bt = c < r.$2.length ? r.$2[c] : null;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        left: c == 0 ? 0 : 4,
+                        right: c == _cols - 1 ? 0 : 4,
+                        bottom: r.$1 == rows.length - 1 ? 0 : 8,
+                      ),
+                      child: bt == null ? const SizedBox.shrink() : _cell(bt),
+                    );
+                  }),
+                ))
+            .toList(),
+      ),
     );
   }
 

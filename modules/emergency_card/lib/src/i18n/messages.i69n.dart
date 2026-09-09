@@ -10,9 +10,8 @@ class Messages implements i69n.I69nMessageBundle {
   const Messages();
   String get title => "Emergency card";
   String get generate => "Generate card";
-  String get ttl => "Expires in";
   String get revoke => "Revoke card";
-  String get expired => "This card has expired";
+  String get unavailable => "This emergency card is unavailable";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -23,12 +22,10 @@ class Messages implements i69n.I69nMessageBundle {
         return title;
       case 'generate':
         return generate;
-      case 'ttl':
-        return ttl;
       case 'revoke':
         return revoke;
-      case 'expired':
-        return expired;
+      case 'unavailable':
+        return unavailable;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

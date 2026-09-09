@@ -261,7 +261,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
                     boxShadow: [BoxShadow(color: Color(0x2414202B), blurRadius: 32, offset: Offset(0, -4))]),
-                padding: EdgeInsets.fromLTRB(18, 10, 18, 24 + MediaQuery.of(context).padding.bottom),
+                padding: EdgeInsets.fromLTRB(18, 10, 18, 24 + MediaQuery.paddingOf(context).bottom),
                 child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Center(
                       child: Container(

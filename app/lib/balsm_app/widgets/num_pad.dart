@@ -42,7 +42,7 @@ class NumPad extends StatelessWidget {
   /// Column width → aspect ratio that lands each key on the design's fixed
   /// 52pt height, whatever the available width.
   static double _keyRatio(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     // 3 columns, 8pt gutters, inside the flow's 24pt side padding.
     final key = ((width - 48 - 16) / 3).clamp(48.0, 120.0);
     return key / 52.0;

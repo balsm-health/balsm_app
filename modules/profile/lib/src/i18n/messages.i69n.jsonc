@@ -7,11 +7,11 @@
     "label": "Allergies",
     "add": "Add allergy"
   },
-  "conditions": "Conditions",
-  "contacts": "Emergency contacts",
   "severity": {
     "mild": "Mild",
     "moderate": "Moderate",
     "severe": "Severe"
-  }
+  },
+  "conditions": "Conditions",
+  "contacts": "Emergency contacts"
 }

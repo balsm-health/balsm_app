@@ -4,6 +4,7 @@ import 'package:core/core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/ports/appointments_data_source.dart';
 import '../../domain/aggregates/appointment.dart';
 import '../../domain/value_objects/ids.dart';
 
@@ -12,8 +13,7 @@ import '../../domain/value_objects/ids.dart';
 /// Scope semantics match the records vault: `scope == null` resolves the
 /// ACTIVE user; no active user → mutations throw [NoActiveUserException] and
 /// reads return null/empty. Every query filters on `user_id`.
-class DriftAppointmentsDataSource extends UserDataSource<AppointmentId, Appointment>
-    implements WatchableScopedDataSource<AppointmentId, Appointment, UserId> {
+class DriftAppointmentsDataSource extends AppointmentsDataSource {
   DriftAppointmentsDataSource(this._db, this.activeUser);
 
   final AppDatabase _db;
@@ -185,7 +185,7 @@ class DriftAppointmentsDataSource extends UserDataSource<AppointmentId, Appointm
 }
 
 /// DI: user-partitioned appointments bound to the active user port.
-final appointmentsDataSourceProvider = Provider<DriftAppointmentsDataSource>((ref) {
+final appointmentsDataSourceProvider = Provider<AppointmentsDataSource>((ref) {
   return DriftAppointmentsDataSource(
     ref.watch(appDatabaseProvider),
     () => ref.read(currentUserIdProvider),

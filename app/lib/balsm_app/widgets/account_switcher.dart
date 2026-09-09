@@ -244,7 +244,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 32 + MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.fromLTRB(20, 10, 20, 32 + MediaQuery.viewInsetsOf(context).bottom),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
             width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),

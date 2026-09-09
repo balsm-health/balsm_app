@@ -11,7 +11,6 @@ class Messages implements i69n.I69nMessageBundle {
   String get title => "Delete account";
   String get confirm => "Confirm deletion";
   String get cancelled => "Deletion cancelled";
-  String get grace => "Your account will be deleted after the grace period";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -24,8 +23,6 @@ class Messages implements i69n.I69nMessageBundle {
         return confirm;
       case 'cancelled':
         return cancelled;
-      case 'grace':
-        return grace;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

@@ -56,13 +56,6 @@ abstract class ScopedDataSource<K, V, S> extends DataSourceBase<K, V> {
   Future<void> clearAll();
 }
 
-/// Reactive-read capability for unscoped sources. Implementations emit the
-/// current value on every write, and `null` when a watched key is deleted.
-abstract class WatchableDataSource<K, V> {
-  Stream<V?> watch(K key);
-  Stream<List<V>> watchAll();
-}
-
 /// Reactive-read capability for scoped sources. Same null-scope semantics as
 /// [ScopedDataSource]: `scope == null` watches the ACTIVE partition.
 abstract class WatchableScopedDataSource<K, V, S> {

@@ -7,27 +7,22 @@
   },
   "email": {
     "title": "Enter your email",
-    "label": "Email address",
-    "cta": "Send code"
+    "label": "Email address"
   },
   "otp": {
     "title": "Enter verification code",
     "subtitle": "We sent a code to your email",
-    "resend": "Resend code",
     "error": {
-      "invalid": "Invalid code. Please try again.",
-      "expired": "This code has expired. Request a new one."
+      "invalid": "Invalid code. Please try again."
     }
   },
   "social": {
     "google": "Continue with Google",
-    "apple": "Continue with Apple",
-    "divider": "or"
+    "apple": "Continue with Apple"
   },
   "lockout": {
     "title": "Too many attempts",
     "body": "Your account is temporarily locked. Please try again later.",
-    "support": "Contact support",
     "retry": "Try again",
     "needHelp": "Need help?",
     "contactSupport(String email)": "Email $email",

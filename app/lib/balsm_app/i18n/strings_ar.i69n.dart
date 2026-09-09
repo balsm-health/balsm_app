@@ -81,18 +81,12 @@ class Strings_ar extends Strings {
 class AuthStrings_ar extends AuthStrings {
   final Strings_ar _parent;
   const AuthStrings_ar(this._parent) : super(_parent);
-  String get use_phone => "استخدم رقم الهاتف";
-  String get use_email => "استخدم البريد الإلكتروني";
   String get un_label => "المعرّف";
   String get un_ph => "مثال: layla_hassan";
   String get un_avail => "متاح";
   String get un_taken => "مأخوذ بالفعل";
   String get un_checking => "جارٍ التحقق…";
   String get un_invalid => "أحرف وأرقام و_ فقط (3–20 حرفاً)";
-  String get ph_title => "ما رقم هاتفك؟";
-  String get ph_help => "سنرسل لك رمزاً عبر رسالة للتأكد من هويتك.";
-  String get ph_label => "رقم الموبايل";
-  String get ph_terms => "بالمتابعة فإنك توافق على شروط بلسم وسياسة الخصوصية.";
   String get ph_terms_pre => "بالمتابعة فإنك توافق على";
   String get ph_terms_link => "شروط بلسم";
   String get ph_terms_and => "و";
@@ -101,23 +95,16 @@ class AuthStrings_ar extends AuthStrings {
   String get legal_priv_t => "سياسة الخصوصية";
   String get legal_updated => "إصدار الإشعار";
   String get otp_title => "أدخل رمز التحقق";
-  String get otp_help => "أرسلنا رمزاً من 6 أرقام إلى";
   String get otp_resend => "إعادة إرسال الرمز";
   String get otp_in => "إعادة الإرسال خلال";
-  String get otp_wrong => "الرقم غير صحيح؟";
   String get verify => "تأكيد";
   String get pw_label => "كلمة المرور";
   String get pw_ph => "أدخل كلمة المرور";
-  String get pw_show => "إظهار كلمة المرور";
-  String get pw_hide => "إخفاء كلمة المرور";
   String get forgot_pw => "نسيت كلمة المرور؟";
-  String get use_code => "استخدم رمزًا لمرة واحدة بدلاً من ذلك";
-  String get use_password => "استخدم كلمة مرور بدلاً من ذلك";
   String get pw_signin => "تسجيل الدخول";
   String get pw_signup => "إنشاء حساب";
   String get pw_signing_in => "جارٍ تسجيل الدخول…";
   String get otp_verifying => "جارٍ التحقق…";
-  String get pw_min => "٨ أحرف على الأقل";
   String get pw_invalid_creds => "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
   String get fp_title => "إعادة تعيين كلمة المرور";
   String get fp_help => "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
@@ -128,20 +115,13 @@ class AuthStrings_ar extends AuthStrings {
   String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
   String get fp_done => "تم";
   String get fp_success => "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
-  String get dial_title => "رمز الدولة";
-  String get dial_search => "ابحث عن دولة";
   String auth_locked_retry(String secs) => "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
-  String get auth_phone_soon => "تسجيل الدخول عبر الهاتف غير متاح بعد — استخدم البريد الإلكتروني.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'use_phone':
-        return use_phone;
-      case 'use_email':
-        return use_email;
       case 'un_label':
         return un_label;
       case 'un_ph':
@@ -154,14 +134,6 @@ class AuthStrings_ar extends AuthStrings {
         return un_checking;
       case 'un_invalid':
         return un_invalid;
-      case 'ph_title':
-        return ph_title;
-      case 'ph_help':
-        return ph_help;
-      case 'ph_label':
-        return ph_label;
-      case 'ph_terms':
-        return ph_terms;
       case 'ph_terms_pre':
         return ph_terms_pre;
       case 'ph_terms_link':
@@ -178,30 +150,18 @@ class AuthStrings_ar extends AuthStrings {
         return legal_updated;
       case 'otp_title':
         return otp_title;
-      case 'otp_help':
-        return otp_help;
       case 'otp_resend':
         return otp_resend;
       case 'otp_in':
         return otp_in;
-      case 'otp_wrong':
-        return otp_wrong;
       case 'verify':
         return verify;
       case 'pw_label':
         return pw_label;
       case 'pw_ph':
         return pw_ph;
-      case 'pw_show':
-        return pw_show;
-      case 'pw_hide':
-        return pw_hide;
       case 'forgot_pw':
         return forgot_pw;
-      case 'use_code':
-        return use_code;
-      case 'use_password':
-        return use_password;
       case 'pw_signin':
         return pw_signin;
       case 'pw_signup':
@@ -210,8 +170,6 @@ class AuthStrings_ar extends AuthStrings {
         return pw_signing_in;
       case 'otp_verifying':
         return otp_verifying;
-      case 'pw_min':
-        return pw_min;
       case 'pw_invalid_creds':
         return pw_invalid_creds;
       case 'fp_title':
@@ -232,14 +190,8 @@ class AuthStrings_ar extends AuthStrings {
         return fp_done;
       case 'fp_success':
         return fp_success;
-      case 'dial_title':
-        return dial_title;
-      case 'dial_search':
-        return dial_search;
       case 'auth_locked_retry':
         return auth_locked_retry;
-      case 'auth_phone_soon':
-        return auth_phone_soon;
       default:
         return super[key];
     }
@@ -274,28 +226,22 @@ class CareStrings_ar extends CareStrings {
   String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
   String get to_home => "العودة للرئيسية";
   String get care_intro => "الأطباء الذين يتابعون حالتك ويرون تقاريرك.";
-  String get care_primary => "الطبيب الأساسي";
-  String get care_message => "رسالة";
-  String get care_book => "حجز";
   String get care_find => "ابحث عن طبيب جديد";
   String get appts => "المواعيد";
   String get upcoming_appt => "الموعد القادم";
   String get past_appts => "الزيارات السابقة";
-  String get book_appt => "حجز";
   String get follow_up => "متابعة";
   String get check_up => "فحص دوري";
   String get book_via_doctor => "سيقوم فريق رعايتك بجدولة المواعيد لك.";
   String get map_nearby => "رعاية قريبة";
   String get map_search_ph => "ابحث عن عيادة أو صيدلية…";
   String get map_all => "الكل";
-  String get map_open_now => "مفتوح الآن";
   String get map_distance => "بُعد";
   String get map_call => "اتصال";
   String get map_directions => "اتجاهات";
   String get map_list => "قائمة";
   String get map_map => "خريطة";
   String get map_found => "مكان بالقرب منك";
-  String get map_your_loc => "موقعك";
   String get map_no_results => "لا توجد أماكن";
   String get map_no_res_h => "جرّب بحثًا أو تصنيفًا آخر.";
   String map_n_types(String n) => "$n أنواع";
@@ -316,12 +262,6 @@ class CareStrings_ar extends CareStrings {
         return to_home;
       case 'care_intro':
         return care_intro;
-      case 'care_primary':
-        return care_primary;
-      case 'care_message':
-        return care_message;
-      case 'care_book':
-        return care_book;
       case 'care_find':
         return care_find;
       case 'appts':
@@ -330,8 +270,6 @@ class CareStrings_ar extends CareStrings {
         return upcoming_appt;
       case 'past_appts':
         return past_appts;
-      case 'book_appt':
-        return book_appt;
       case 'follow_up':
         return follow_up;
       case 'check_up':
@@ -344,8 +282,6 @@ class CareStrings_ar extends CareStrings {
         return map_search_ph;
       case 'map_all':
         return map_all;
-      case 'map_open_now':
-        return map_open_now;
       case 'map_distance':
         return map_distance;
       case 'map_call':
@@ -358,8 +294,6 @@ class CareStrings_ar extends CareStrings {
         return map_map;
       case 'map_found':
         return map_found;
-      case 'map_your_loc':
-        return map_your_loc;
       case 'map_no_results':
         return map_no_results;
       case 'map_no_res_h':
@@ -412,14 +346,6 @@ class CheckinStrings_ar extends CheckinStrings {
   String get pain_worst => "الأسوأ";
   String get note_lbl => "أي شيء آخر؟ (اختياري)";
   String get note_ph => "اكتبي ملاحظة لطبيبك…";
-  String get s_headache => "صداع";
-  String get s_dizzy => "دوخة";
-  String get s_fatigue => "إرهاق";
-  String get s_blurred => "تشوش الرؤية";
-  String get s_swelling => "تورّم";
-  String get s_chest => "ضيق بالصدر";
-  String get s_nausea => "غثيان";
-  String get s_thirst => "عطش زائد";
   String get s_none => "لا شيء";
   String get view_trends => "عرض الرسوم";
   String get trends => "الرسوم البيانية";
@@ -447,8 +373,6 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_location => "أين يؤلمك؟";
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
-  String get body_sex_female => "أنثى";
-  String get body_sex_male => "ذكر";
   String get body_tap => "انقر لتحديد الموقع";
   String get list_sep => "، ";
   String get list_mid => " · ";
@@ -462,11 +386,6 @@ class CheckinStrings_ar extends CheckinStrings {
   String get cond_onset_hint => "سنة البدء";
   String get q_vitals_t => "مؤشراتك الحيوية";
   String get q_vitals_h => "أدخل أي قياسات أخذتها اليوم — كلها اختيارية.";
-  String get vital_hr => "معدل النبض";
-  String get unit_hr => "نبضة/د";
-  String get vital_temp => "درجة الحرارة";
-  String get unit_temp => "°م";
-  String get vital_spo2 => "الأكسجين (SpO₂)";
   String get unit_spo2 => "%";
   String get sym_headache => "صداع";
   String get sym_dizzy => "دوخة";
@@ -549,22 +468,6 @@ class CheckinStrings_ar extends CheckinStrings {
         return note_lbl;
       case 'note_ph':
         return note_ph;
-      case 's_headache':
-        return s_headache;
-      case 's_dizzy':
-        return s_dizzy;
-      case 's_fatigue':
-        return s_fatigue;
-      case 's_blurred':
-        return s_blurred;
-      case 's_swelling':
-        return s_swelling;
-      case 's_chest':
-        return s_chest;
-      case 's_nausea':
-        return s_nausea;
-      case 's_thirst':
-        return s_thirst;
       case 's_none':
         return s_none;
       case 'view_trends':
@@ -619,10 +522,6 @@ class CheckinStrings_ar extends CheckinStrings {
         return body_view_front;
       case 'body_view_back':
         return body_view_back;
-      case 'body_sex_female':
-        return body_sex_female;
-      case 'body_sex_male':
-        return body_sex_male;
       case 'body_tap':
         return body_tap;
       case 'list_sep':
@@ -649,16 +548,6 @@ class CheckinStrings_ar extends CheckinStrings {
         return q_vitals_t;
       case 'q_vitals_h':
         return q_vitals_h;
-      case 'vital_hr':
-        return vital_hr;
-      case 'unit_hr':
-        return unit_hr;
-      case 'vital_temp':
-        return vital_temp;
-      case 'unit_temp':
-        return unit_temp;
-      case 'vital_spo2':
-        return vital_spo2;
       case 'unit_spo2':
         return unit_spo2;
       case 'sym_headache':
@@ -696,15 +585,12 @@ class CommonStrings_ar extends CommonStrings {
   String get done_q => "اكتملت المتابعة";
   String get recent => "آخر التقارير";
   String get see_all => "عرض الكل";
-  String get yesterday => "عن أمس";
   String get step_of => "من";
   String get back => "رجوع";
   String get finish => "إنهاء المتابعة";
   String get saved_t => "تم حفظ المتابعة";
   String get saved_local => "حُفظ محلياً — ستتم المزامنة عند الاتصال.";
-  String get no_symptoms => "لا أعراض";
   String get profile => "الملف الشخصي";
-  String get since => "مريضة بلسم منذ";
   String get no_appts => "لا مواعيد قادمة";
   String get your_accounts => "حساباتك";
   String get pages => "صفحات";
@@ -753,8 +639,6 @@ class CommonStrings_ar extends CommonStrings {
         return recent;
       case 'see_all':
         return see_all;
-      case 'yesterday':
-        return yesterday;
       case 'step_of':
         return step_of;
       case 'back':
@@ -765,12 +649,8 @@ class CommonStrings_ar extends CommonStrings {
         return saved_t;
       case 'saved_local':
         return saved_local;
-      case 'no_symptoms':
-        return no_symptoms;
       case 'profile':
         return profile;
-      case 'since':
-        return since;
       case 'no_appts':
         return no_appts;
       case 'your_accounts':
@@ -840,8 +720,6 @@ class CommonStrings_ar extends CommonStrings {
 class EmergencyStrings_ar extends EmergencyStrings {
   final Strings_ar _parent;
   const EmergencyStrings_ar(this._parent) : super(_parent);
-  String get em_title => "ما هو بريدك الإلكتروني؟";
-  String get em_help => "سنرسل لك رمزاً للتحقق من هويتك.";
   String get em_label => "البريد الإلكتروني";
   String get em_ph => "you@example.com";
   String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
@@ -887,10 +765,6 @@ class EmergencyStrings_ar extends EmergencyStrings {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'em_title':
-        return em_title;
-      case 'em_help':
-        return em_help;
       case 'em_label':
         return em_label;
       case 'em_ph':
@@ -988,7 +862,6 @@ class HomeStrings_ar extends HomeStrings {
   String streak_help(Gender gender, int checked) =>
       "${_select(gender, {'male': 'تابعت', 'female': 'تابعتِ', 'other': 'تابعت'})} ${checked} من آخر 7 أيام";
   String get on_track => "ملتزمة";
-  String get experience => "خبرة";
   String get away_banner => "أنت خارج بلدك";
   String hero_q(Gender gender) =>
       "${_select(gender, {'male': 'كيف تشعر اليوم؟', 'female': 'كيف تشعرين اليوم؟', 'other': 'كيف تشعر اليوم؟'})}";
@@ -1023,8 +896,6 @@ class HomeStrings_ar extends HomeStrings {
         return streak_help;
       case 'on_track':
         return on_track;
-      case 'experience':
-        return experience;
       case 'away_banner':
         return away_banner;
       case 'hero_q':
@@ -1075,8 +946,6 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_date => "تاريخ الإصدار";
   String get rx_expiry => "تاريخ الانتهاء";
   String get rx_added => "تمت إضافة الروشتة";
-  String get rx_med_dose => "الجرعة";
-  String get rx_details => "التفاصيل";
   String get rx_upload => "رفع ملف";
   String get rx_manual => "كتابتها يدوياً";
   String get rx_or_paste_url => "أو أضف رابطاً";
@@ -1108,7 +977,6 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_self_added => "أضفتها أنت";
   String get rx_self_note => "أضفتها أنت — غير موثقة من صيدلية.";
   String get rx_my_prescriptions => "روشتاتي";
-  String get rx_delete => "حذف الروشتة";
   String get rx_take_photo => "التقاط صورة";
   String get rx_from_files => "اختيار ملف";
   String get rx_prescribed_by => "بواسطة";
@@ -1210,10 +1078,6 @@ class MedsStrings_ar extends MedsStrings {
         return rx_expiry;
       case 'rx_added':
         return rx_added;
-      case 'rx_med_dose':
-        return rx_med_dose;
-      case 'rx_details':
-        return rx_details;
       case 'rx_upload':
         return rx_upload;
       case 'rx_manual':
@@ -1276,8 +1140,6 @@ class MedsStrings_ar extends MedsStrings {
         return rx_self_note;
       case 'rx_my_prescriptions':
         return rx_my_prescriptions;
-      case 'rx_delete':
-        return rx_delete;
       case 'rx_take_photo':
         return rx_take_photo;
       case 'rx_from_files':
@@ -1398,13 +1260,11 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get pf_gender => "النوع";
   String get pf_female => "أنثى";
   String get pf_male => "ذكر";
-  String get pf_gov => "المحافظة";
   String get pf_create => "إنشاء ملفّي";
   String get pf_creating => "جارٍ إنشاء حسابك…";
   String get pf_secure => "تبقى بياناتك على هذا الجهاز.";
   String get dob_title => "تاريخ الميلاد";
   String get dob_confirm => "تأكيد";
-  String get dob_select => "اختر تاريخاً";
   String get age_gate_body =>
       "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
   String w_start(Gender gender) =>
@@ -1453,8 +1313,6 @@ class OnboardingStrings_ar extends OnboardingStrings {
         return pf_female;
       case 'pf_male':
         return pf_male;
-      case 'pf_gov':
-        return pf_gov;
       case 'pf_create':
         return pf_create;
       case 'pf_creating':
@@ -1465,8 +1323,6 @@ class OnboardingStrings_ar extends OnboardingStrings {
         return dob_title;
       case 'dob_confirm':
         return dob_confirm;
-      case 'dob_select':
-        return dob_select;
       case 'age_gate_body':
         return age_gate_body;
       case 'w_start':
@@ -1720,7 +1576,6 @@ class ProfileStrings_ar extends ProfileStrings {
   String get pd_handle_hint => "معرّفك الفريد على بلسم";
   String get pd_share_qr => "رمز الطوارئ";
   String get pd_share_qr_h => "أظهر رمزاً مشفراً للطاقم";
-  String get pd_qr_scan => "امسح للتواصل عبر بلسم";
   String get pd_nationality => "الجنسية";
   String get pd_blood => "فصيلة الدم";
   String get pd_weight => "الوزن";
@@ -1746,8 +1601,6 @@ class ProfileStrings_ar extends ProfileStrings {
   String get conn_apple => "Apple ID";
   String get conn_google => "حساب Google";
   String get conn_connect => "ربط";
-  String get conn_remove => "إلغاء الربط";
-  String get conn_primary => "يُستخدم لتسجيل الدخول";
   String get p_cond => "الملف الطبي";
   String get p_care => "فريق الرعاية";
   String get p_notif => "التذكيرات";
@@ -1770,13 +1623,11 @@ class ProfileStrings_ar extends ProfileStrings {
   String get bmi_normal => "صحي";
   String get bmi_over => "زيادة وزن";
   String get bmi_obese => "سمنة";
-  String get switch_account => "تبديل الحساب";
   String get p_country => "الدولة";
   String get pd_primary => "أساسي";
   String get pd_basic_info => "المعلومات الأساسية";
   String get pd_contact_section => "معلومات الاتصال";
   String get pd_add_contact => "إضافة جهة اتصال";
-  String get pd_change_photo => "تغيير الصورة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1805,8 +1656,6 @@ class ProfileStrings_ar extends ProfileStrings {
         return pd_share_qr;
       case 'pd_share_qr_h':
         return pd_share_qr_h;
-      case 'pd_qr_scan':
-        return pd_qr_scan;
       case 'pd_nationality':
         return pd_nationality;
       case 'pd_blood':
@@ -1855,10 +1704,6 @@ class ProfileStrings_ar extends ProfileStrings {
         return conn_google;
       case 'conn_connect':
         return conn_connect;
-      case 'conn_remove':
-        return conn_remove;
-      case 'conn_primary':
-        return conn_primary;
       case 'p_cond':
         return p_cond;
       case 'p_care':
@@ -1903,8 +1748,6 @@ class ProfileStrings_ar extends ProfileStrings {
         return bmi_over;
       case 'bmi_obese':
         return bmi_obese;
-      case 'switch_account':
-        return switch_account;
       case 'p_country':
         return p_country;
       case 'pd_primary':
@@ -1915,8 +1758,6 @@ class ProfileStrings_ar extends ProfileStrings {
         return pd_contact_section;
       case 'pd_add_contact':
         return pd_add_contact;
-      case 'pd_change_photo':
-        return pd_change_photo;
       default:
         return super[key];
     }
@@ -1935,8 +1776,6 @@ class EcosystemStrings_ar extends EcosystemStrings {
   String get eco_p1b => "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك.";
   String get eco_p2h => "بَلسَم برو — للصيدليات والعيادات";
   String get eco_p2b => "الصرف والمخزون والزيارات على النظام المفتوح نفسه — يعمل بلا إنترنت، وهو على خارطة الطريق.";
-  String get eco_p3h => "بلسم للعيادات";
-  String get eco_p3b => "الأطباء والمختبرات على النظام المفتوح نفسه — لتكون رعايتك مترابطة.";
   String get eco_help_t => "ساعد بلسم على الانتشار";
   String get eco_help_sub => "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
   String get eco_tagline => "مفتوح · عربي · موثوق";
@@ -1970,10 +1809,6 @@ class EcosystemStrings_ar extends EcosystemStrings {
         return eco_p2h;
       case 'eco_p2b':
         return eco_p2b;
-      case 'eco_p3h':
-        return eco_p3h;
-      case 'eco_p3b':
-        return eco_p3b;
       case 'eco_help_t':
         return eco_help_t;
       case 'eco_help_sub':
@@ -2026,7 +1861,6 @@ class FeedbackStrings_ar extends FeedbackStrings {
   String get fb_t_general => "عام";
   String get fb_t_ease => "سهولة الاستخدام";
   String get fb_t_records => "السجلات";
-  String get fb_t_appts => "المواعيد";
   String get fb_t_meds => "الأدوية";
   String get fb_t_arabic => "العربية واللغة";
   Object operator [](String key) {
@@ -2077,8 +1911,6 @@ class FeedbackStrings_ar extends FeedbackStrings {
         return fb_t_ease;
       case 'fb_t_records':
         return fb_t_records;
-      case 'fb_t_appts':
-        return fb_t_appts;
       case 'fb_t_meds':
         return fb_t_meds;
       case 'fb_t_arabic':
@@ -2095,17 +1927,14 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_documents => "مستند";
   String get reports => "التقارير السابقة";
   String get rec_search_ph => "ابحث في السجلات والوسوم والنتائج…";
-  String get rec_search_clear => "مسح البحث";
   String get rec_tags => "الوسوم";
   String get rec_tags_ph => "أضف وسماً واضغط Enter";
-  String get rec_date => "التاريخ";
   String get rec_no_results => "لا سجلات مطابقة";
   String get rec_no_results_h => "لا سجلات تطابق";
   String get rec_no_results_h2 => "لا شيء في هذه الفئة بعد.";
   String get rec_clear_filters => "مسح عوامل التصفية";
   String get prescriptions => "الوصفات الطبية";
   String get records => "السجلات الصحية";
-  String get records_short => "السجلات";
   String get all_records => "الكل";
   String get rec_lab => "تحاليل";
   String get rec_scan => "أشعة";
@@ -2152,14 +1981,10 @@ class RecordsStrings_ar extends RecordsStrings {
         return reports;
       case 'rec_search_ph':
         return rec_search_ph;
-      case 'rec_search_clear':
-        return rec_search_clear;
       case 'rec_tags':
         return rec_tags;
       case 'rec_tags_ph':
         return rec_tags_ph;
-      case 'rec_date':
-        return rec_date;
       case 'rec_no_results':
         return rec_no_results;
       case 'rec_no_results_h':
@@ -2172,8 +1997,6 @@ class RecordsStrings_ar extends RecordsStrings {
         return prescriptions;
       case 'records':
         return records;
-      case 'records_short':
-        return records_short;
       case 'all_records':
         return all_records;
       case 'rec_lab':
@@ -2255,7 +2078,6 @@ class SettingsStrings_ar extends SettingsStrings {
   String get trust_offline => "يعمل دون إنترنت";
   String get trust_device => "ملكك دائماً";
   String get add_photo => "إضافة صورة";
-  String get nat_egyptian => "مصري";
   String get add_member => "إضافة فرد من الأسرة";
   String get choose_lang => "اختر اللغة";
   String get choose_country => "أين أنت الآن؟";
@@ -2285,8 +2107,6 @@ class SettingsStrings_ar extends SettingsStrings {
         return trust_device;
       case 'add_photo':
         return add_photo;
-      case 'nat_egyptian':
-        return nat_egyptian;
       case 'add_member':
         return add_member;
       case 'choose_lang':
@@ -2326,26 +2146,15 @@ class SettingsStrings_ar extends SettingsStrings {
 class StorageStrings_ar extends StorageStrings {
   final Strings_ar _parent;
   const StorageStrings_ar(this._parent) : super(_parent);
-  String get store_backup_to => "نسخ إلى";
-  String get store_move_to => "نقل إلى";
-  String get store_remove_cloud => "حذف من السحابة";
-  String get store_remove_dev => "حذف من الجهاز";
-  String get store_delete_all => "حذف من كل مكان";
   String get store_delete_rec => "حذف السجل";
   String get store_delete_rec_h => "سيُحذف السجل ومرفقه نهائياً من هذا الجهاز. لا يمكن التراجع عن ذلك.";
   String get store_deleted_rec => "تم حذف السجل";
   String get store_manage => "إدارة التخزين";
   String get storage => "التخزين والمزامنة";
-  String get storage_short => "التخزين";
-  String get storage_icloud => "آي كلاود";
-  String get storage_gdrive => "جوجل درايف";
-  String get storage_balsm_cloud => "سحابة بلسم";
-  String get storage_device => "على هذا الجهاز";
   String get store_local => "على هذا الجهاز";
   String get store_icloud => "آي كلاود";
   String get store_gdrive => "جوجل درايف";
   String get store_balsm_cloud => "سحابة بلسم";
-  String get store_synced => "تمت المزامنة";
   String get store_local_only => "محلي فقط";
   String get store_backed => "محفوظ احتياطياً";
   String get store_step_prepare => "جارٍ التحضير…";
@@ -2359,7 +2168,6 @@ class StorageStrings_ar extends StorageStrings {
   String get store_available_soon => "متوفر قريباً";
   String get store_always_on => "دائمًا";
   String get store_no_backup => "لا نسخة احتياطية";
-  String get store_tap_connect => "اضغط للربط";
   String store_connecting(String target) => "جارٍ الربط بـ $target…";
   String get store_auto_start => "سيبدأ النسخ الاحتياطي تلقائياً.";
   String get store_migrating => "جارٍ النقل";
@@ -2377,16 +2185,6 @@ class StorageStrings_ar extends StorageStrings {
       return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
-      case 'store_backup_to':
-        return store_backup_to;
-      case 'store_move_to':
-        return store_move_to;
-      case 'store_remove_cloud':
-        return store_remove_cloud;
-      case 'store_remove_dev':
-        return store_remove_dev;
-      case 'store_delete_all':
-        return store_delete_all;
       case 'store_delete_rec':
         return store_delete_rec;
       case 'store_delete_rec_h':
@@ -2397,16 +2195,6 @@ class StorageStrings_ar extends StorageStrings {
         return store_manage;
       case 'storage':
         return storage;
-      case 'storage_short':
-        return storage_short;
-      case 'storage_icloud':
-        return storage_icloud;
-      case 'storage_gdrive':
-        return storage_gdrive;
-      case 'storage_balsm_cloud':
-        return storage_balsm_cloud;
-      case 'storage_device':
-        return storage_device;
       case 'store_local':
         return store_local;
       case 'store_icloud':
@@ -2415,8 +2203,6 @@ class StorageStrings_ar extends StorageStrings {
         return store_gdrive;
       case 'store_balsm_cloud':
         return store_balsm_cloud;
-      case 'store_synced':
-        return store_synced;
       case 'store_local_only':
         return store_local_only;
       case 'store_backed':
@@ -2441,8 +2227,6 @@ class StorageStrings_ar extends StorageStrings {
         return store_always_on;
       case 'store_no_backup':
         return store_no_backup;
-      case 'store_tap_connect':
-        return store_tap_connect;
       case 'store_connecting':
         return store_connecting;
       case 'store_auto_start':

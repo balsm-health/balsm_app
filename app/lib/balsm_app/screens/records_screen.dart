@@ -124,7 +124,7 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
       if (!async.isLoading && all.isNotEmpty)
         PositionedDirectional(
           end: 20,
-          bottom: MediaQuery.of(context).padding.bottom + 24,
+          bottom: MediaQuery.paddingOf(context).bottom + 24,
           child: _RecordFab(onTap: () => _openAdd(context)),
         ),
     ]);

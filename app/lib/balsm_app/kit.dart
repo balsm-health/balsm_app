@@ -174,7 +174,7 @@ class PadTop extends StatelessWidget {
   const PadTop({super.key});
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.of(context).padding.top;
+    final top = MediaQuery.paddingOf(context).top;
     return SizedBox(height: (top > 0 ? top + 6 : 24).clamp(24, 80).toDouble());
   }
 }
@@ -1254,6 +1254,7 @@ class BCheck extends StatelessWidget {
 /// (the design's `.flow-foot` is 38px) and the inset is added on top.
 /// `viewInsets` lifts the body clear of the keyboard when one is open.
 double sheetBottomInset(BuildContext context, {double base = 38}) {
-  final mq = MediaQuery.of(context);
-  return mq.viewInsets.bottom + mq.padding.bottom + base;
+  // Aspect-scoped reads: a sheet that took the whole MediaQueryData rebuilt on
+  // every rotation, brightness and text-scale change too.
+  return MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom + base;
 }

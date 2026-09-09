@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../application/use_cases/add_medication_use_case.dart';
 import '../../domain/aggregates/medication.dart';
 import '../../domain/value_objects/ids.dart';
-import '../providers.dart';
 
 /// Form to add a new medication: name, dose, schedule type (segmented),
 /// reminder times, start/end dates, and a controlled-substance toggle.
@@ -119,7 +118,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             contentPadding: EdgeInsets.zero,
             title: const Text('Controlled substance'),
             value: _isControlled,
-            activeColor: BalsmColors.controlled,
+            activeThumbColor: BalsmColors.controlled,
             onChanged: (v) => setState(() => _isControlled = v),
           ),
           const SizedBox(height: 24),

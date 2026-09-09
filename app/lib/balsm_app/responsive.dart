@@ -40,15 +40,6 @@ class Space {
   static const s24 = 96.0;
 }
 
-extension ResponsiveContext on BuildContext {
-  double get screenWidth => MediaQuery.sizeOf(this).width;
-
-  /// Heuristic for a coarse (touch) primary pointer — bump touch targets to 48
-  /// per `@media (pointer: coarse)`. Flutter exposes no pointer-kind query, so
-  /// we treat narrow widths as touch-first.
-  bool get coarsePointer => screenWidth < Bp.md;
-}
-
 /// `.adaptive-cluster` — items flow and wrap onto new lines, never h-scroll.
 class AdaptiveCluster extends StatelessWidget {
   const AdaptiveCluster({
@@ -98,15 +89,12 @@ class AdaptiveRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, c) {
       final row = c.maxWidth >= breakpoint;
-      final sep = SizedBox(width: row ? gap : 0, height: row ? 0 : gap);
-      final laid = <Widget>[];
-      for (var i = 0; i < children.length; i++) {
-        if (i > 0) laid.add(sep);
-        laid.add(row && expand ? Expanded(child: children[i]) : children[i]);
-      }
+      // Flex.spacing runs along the main axis, which is the axis the gap was
+      // always meant for — horizontal as a Row, vertical as a Column.
+      final laid = children.map<Widget>((child) => row && expand ? Expanded(child: child) : child).toList();
       return row
-          ? Row(crossAxisAlignment: rowCrossAxisAlignment, children: laid)
-          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: laid);
+          ? Row(crossAxisAlignment: rowCrossAxisAlignment, spacing: gap, children: laid)
+          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: gap, children: laid);
     });
   }
 }

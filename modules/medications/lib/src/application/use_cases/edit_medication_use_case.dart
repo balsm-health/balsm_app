@@ -19,7 +19,8 @@ class EditMedicationUseCase {
   }
 }
 
-final editMedicationUseCaseProvider = Provider.family<EditMedicationUseCase, UserId>((ref, userId) {
+// autoDispose: see [addMedicationUseCaseProvider].
+final editMedicationUseCaseProvider = Provider.autoDispose.family<EditMedicationUseCase, UserId>((ref, userId) {
   return EditMedicationUseCase(
     dao: ref.watch(medicationsDataSourceProvider),
     scheduler: ref.watch(medicationSchedulerProvider(userId)),

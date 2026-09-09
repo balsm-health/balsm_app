@@ -61,7 +61,7 @@ class BalsmBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: Color(0xEAFFFFFF), // 92% white

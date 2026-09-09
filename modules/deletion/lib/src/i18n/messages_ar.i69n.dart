@@ -12,7 +12,6 @@ class Messages_ar extends Messages {
   String get title => "حذف الحساب";
   String get confirm => "تأكيد الحذف";
   String get cancelled => "تم إلغاء الحذف";
-  String get grace => "سيتم حذف حسابك بعد انتهاء فترة السماح";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -25,8 +24,6 @@ class Messages_ar extends Messages {
         return confirm;
       case 'cancelled':
         return cancelled;
-      case 'grace':
-        return grace;
       default:
         return super[key];
     }

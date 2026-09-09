@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import '../tokens.dart';
 
@@ -5,6 +6,14 @@ class ChartSeries {
   const ChartSeries(this.data, this.color);
   final List<double> data;
   final Color color;
+
+  /// By value: the painter compares series to decide whether to repaint, and
+  /// callers rebuild these from a fresh list on every read.
+  @override
+  bool operator ==(Object other) => other is ChartSeries && other.color == color && listEquals(other.data, data);
+
+  @override
+  int get hashCode => Object.hash(color, Object.hashAll(data));
 }
 
 /// Minimal multi-series line chart (home.jsx LineChart). RTL mirrors the x-axis.
@@ -14,10 +23,14 @@ class LineChartView extends StatelessWidget {
   final bool rtl;
   final double height;
   @override
-  Widget build(BuildContext context) => SizedBox(
-        height: height,
-        width: double.infinity,
-        child: CustomPaint(painter: _LinePainter(series, rtl)),
+  Widget build(BuildContext context) => RepaintBoundary(
+        // The chart is a leaf that changes far less often than the screens it
+        // sits in; its own layer keeps a sibling rebuild from repainting it.
+        child: SizedBox(
+          height: height,
+          width: double.infinity,
+          child: CustomPaint(painter: _LinePainter(series, rtl)),
+        ),
       );
 }
 
@@ -83,6 +96,8 @@ class _LinePainter extends CustomPainter {
     }
   }
 
+  /// `=> true` repainted on every parent repaint, and [paint] walks every
+  /// series to find the min/max before it draws anything.
   @override
-  bool shouldRepaint(_LinePainter old) => true;
+  bool shouldRepaint(_LinePainter old) => old.rtl != rtl || !listEquals(old.series, series);
 }

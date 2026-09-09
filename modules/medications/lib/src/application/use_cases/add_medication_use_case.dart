@@ -31,7 +31,9 @@ class AddMedicationUseCase {
   }
 }
 
-final addMedicationUseCaseProvider = Provider.family<AddMedicationUseCase, UserId>((ref, userId) {
+// autoDispose for the same reason as [medicationSchedulerProvider]: one
+// cached instance per user id, retained for the process lifetime otherwise.
+final addMedicationUseCaseProvider = Provider.autoDispose.family<AddMedicationUseCase, UserId>((ref, userId) {
   return AddMedicationUseCase(
     dao: ref.watch(medicationsDataSourceProvider),
     bus: ref.watch(eventBusProvider),

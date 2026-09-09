@@ -118,7 +118,7 @@ class _BalsmOtpRowState extends State<BalsmOtpRow> {
                         boxShadow: isFocused
                             ? [
                                 BoxShadow(
-                                  color: BalsmColors.appAccent.withOpacity(0.16),
+                                  color: BalsmColors.appAccent.withValues(alpha: 0.16),
                                   blurRadius: 0,
                                   spreadRadius: 4,
                                 ),

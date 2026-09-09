@@ -11,7 +11,6 @@ class Messages implements i69n.I69nMessageBundle {
   String get title => "Active sessions";
   String get current => "Current session";
   String get revoke => "Sign out";
-  String get signOutAll => "Sign out of all devices";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -24,8 +23,6 @@ class Messages implements i69n.I69nMessageBundle {
         return current;
       case 'revoke':
         return revoke;
-      case 'signOutAll':
-        return signOutAll;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
