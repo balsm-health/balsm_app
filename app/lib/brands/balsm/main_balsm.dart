@@ -26,7 +26,10 @@ final _sessionUserIdProvider = StateProvider<UserId?>((ref) => null);
 /// Run: flutter run -t lib/brands/balsm/main_balsm.dart --flavor balsm \
 ///        --dart-define-from-file=env/balsm/dev.json \
 ///        --dart-define-from-file=env/shared.json
-Future<void> main() async {
+/// Boots the app. [extraOverrides] is appended AFTER the production overrides,
+/// so an entry for the same provider wins — that is the seam the e2e build and
+/// the Patrol tests use to swap the API layer for fakes.
+Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   WidgetsFlutterBinding.ensureInitialized();
   FlavorConfig.initFromEnvironment();
 
@@ -118,6 +121,7 @@ Future<void> main() async {
           storage: ref.watch(secureStorageProvider),
           userId: ref.watch(currentUserIdProvider)?.value ?? 'local',
         )),
+    ...extraOverrides,
   ]);
   final analytics = container.read(analyticsLoggerProvider);
 
@@ -237,3 +241,6 @@ class _GeofenceDeniedCountriesPort implements DeniedCountriesPort {
   @override
   Future<bool> isDenied(String countryCode) => _repo.isDenied(countryCode);
 }
+
+/// Production entrypoint. See [bootstrap].
+Future<void> main() => bootstrap();
