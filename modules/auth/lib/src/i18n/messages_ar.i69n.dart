@@ -123,8 +123,40 @@ class ErrorOtpMessages_ar extends ErrorOtpMessages {
 class SocialMessages_ar extends SocialMessages {
   final Messages_ar _parent;
   const SocialMessages_ar(this._parent) : super(_parent);
+  String get title => "تابع باستخدام";
+  String get subtitle => "استخدم حساب Google أو Apple لتسجيل الدخول بأمان.";
   String get google => "المتابعة باستخدام Google";
   String get apple => "المتابعة باستخدام Apple";
+  ErrorSocialMessages_ar get error => ErrorSocialMessages_ar(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'google':
+        return google;
+      case 'apple':
+        return apple;
+      case 'error':
+        return error;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class ErrorSocialMessages_ar extends ErrorSocialMessages {
+  final SocialMessages_ar _parent;
+  const ErrorSocialMessages_ar(this._parent) : super(_parent);
+  String get google => "تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.";
+  String get googleToken => "تعذّر الحصول على رمز تسجيل الدخول من Google. حاول مرة أخرى.";
+  String get apple => "تعذّر تسجيل الدخول عبر Apple. حاول مرة أخرى.";
+  String get appleToken => "تعذّر الحصول على رمز تسجيل الدخول من Apple. حاول مرة أخرى.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -133,8 +165,12 @@ class SocialMessages_ar extends SocialMessages {
     switch (key) {
       case 'google':
         return google;
+      case 'googleToken':
+        return googleToken;
       case 'apple':
         return apple;
+      case 'appleToken':
+        return appleToken;
       default:
         return super[key];
     }

@@ -17,8 +17,16 @@
     }
   },
   "social": {
+    "title": "Continue with",
+    "subtitle": "Use your Google or Apple account to sign in securely.",
     "google": "Continue with Google",
-    "apple": "Continue with Apple"
+    "apple": "Continue with Apple",
+    "error": {
+      "google": "Google sign-in failed. Please try again.",
+      "googleToken": "Could not get a Google sign-in token. Please try again.",
+      "apple": "Apple sign-in failed. Please try again.",
+      "appleToken": "Could not get an Apple sign-in token. Please try again."
+    }
   },
   "lockout": {
     "title": "Too many attempts",

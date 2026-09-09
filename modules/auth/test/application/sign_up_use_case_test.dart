@@ -79,13 +79,14 @@ void main() {
 
   group('signUpWithGoogle', () {
     test('success persists tokens and publishes UserSignedUp(google)', () async {
-      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label))
+      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label, 'SA'))
           .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U9', isNewUser: true));
 
       final r = await usecase.signUpWithGoogle(idToken: 'idtok', countryCode: 'SA', email: 'g@b.com');
       await flush();
 
       expect(r.isSuccess, isTrue);
+      verify(() => adapter.signInWithGoogle('idtok', 'dev-1', _label, 'SA')).called(1);
       final signedUp = events.whereType<UserSignedUp>().single;
       expect(signedUp.provider, 'google');
       expect(signedUp.countryCode, 'SA');

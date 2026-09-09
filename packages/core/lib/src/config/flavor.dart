@@ -44,6 +44,30 @@ class FlavorConfig {
   /// renders read-only diagnostics with switching disabled.
   final bool serverSwitchingEnabled;
 
+  /// Whether Apple/Google sign-in is offered at all.
+  ///
+  /// Off by default. The full flow is implemented on both client and API, but
+  /// an Apple account's identifier is scoped to the developer team that owns
+  /// the app — transferring the app to another team changes it, and every user
+  /// signed in that way needs a migration through Apple to keep their account.
+  /// Until app ownership is settled, not accruing those users is cheaper than
+  /// migrating them. Flip `SOCIAL_SIGN_IN_ENABLED` to re-enable; see
+  /// `docs/social-sign-in-setup.md`.
+  final bool socialSignInEnabled;
+
+  /// Google OAuth **web** client id, passed to `GoogleSignIn` as its
+  /// `serverClientId`. Two reasons it must be set: Android returns a null
+  /// `idToken` without it, and it pins the token's `aud` to one value on every
+  /// platform so the API can validate against a single configured audience.
+  ///
+  /// Not a secret — an OAuth client id is public by design. Empty disables the
+  /// Google button.
+  final String googleServerClientId;
+
+  /// Google OAuth **iOS** client id. Only consumed on iOS, where the SDK needs
+  /// the platform client alongside the server one. Empty elsewhere.
+  final String googleIosClientId;
+
   const FlavorConfig({
     required this.brand,
     required this.flavor,
@@ -52,6 +76,9 @@ class FlavorConfig {
     required this.appName,
     required this.appNameSuffix,
     required this.serverSwitchingEnabled,
+    this.socialSignInEnabled = false,
+    this.googleServerClientId = '',
+    this.googleIosClientId = '',
   });
 
   static FlavorConfig? _current;
@@ -115,9 +142,15 @@ class FlavorConfig {
     required AppBrand brand,
     required Flavor flavor,
     List<ServerPreset>? servers,
+    bool? socialSignInEnabled,
+    String? googleServerClientId,
+    String? googleIosClientId,
   }) {
     const serversRaw = String.fromEnvironment('ENVS', defaultValue: '');
     const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
+    const envSocialSignInEnabled = bool.fromEnvironment('SOCIAL_SIGN_IN_ENABLED');
+    const envGoogleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
+    const envGoogleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID', defaultValue: '');
     final resolved = (servers != null && servers.isNotEmpty) ? servers : _parseServers(serversRaw);
     final base = brand == AppBrand.balsm_pro ? 'Balsm Pro' : 'Balsm';
     final envSuffix = switch (flavor) { Flavor.dev => ' Dev', Flavor.staging => ' Staging', Flavor.prod => '' };
@@ -129,6 +162,9 @@ class FlavorConfig {
       appName: '$base$envSuffix',
       appNameSuffix: envSuffix,
       serverSwitchingEnabled: flavor == Flavor.dev || flavor == Flavor.staging,
+      socialSignInEnabled: socialSignInEnabled ?? envSocialSignInEnabled,
+      googleServerClientId: googleServerClientId ?? envGoogleServerClientId,
+      googleIosClientId: googleIosClientId ?? envGoogleIosClientId,
     );
   }
 }

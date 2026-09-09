@@ -122,8 +122,40 @@ class ErrorOtpMessages implements i69n.I69nMessageBundle {
 class SocialMessages implements i69n.I69nMessageBundle {
   final Messages _parent;
   const SocialMessages(this._parent);
+  String get title => "Continue with";
+  String get subtitle => "Use your Google or Apple account to sign in securely.";
   String get google => "Continue with Google";
   String get apple => "Continue with Apple";
+  ErrorSocialMessages get error => ErrorSocialMessages(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'google':
+        return google;
+      case 'apple':
+        return apple;
+      case 'error':
+        return error;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class ErrorSocialMessages implements i69n.I69nMessageBundle {
+  final SocialMessages _parent;
+  const ErrorSocialMessages(this._parent);
+  String get google => "Google sign-in failed. Please try again.";
+  String get googleToken => "Could not get a Google sign-in token. Please try again.";
+  String get apple => "Apple sign-in failed. Please try again.";
+  String get appleToken => "Could not get an Apple sign-in token. Please try again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -132,8 +164,12 @@ class SocialMessages implements i69n.I69nMessageBundle {
     switch (key) {
       case 'google':
         return google;
+      case 'googleToken':
+        return googleToken;
       case 'apple':
         return apple;
+      case 'appleToken':
+        return appleToken;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

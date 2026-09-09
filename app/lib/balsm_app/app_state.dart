@@ -54,6 +54,10 @@ class PatientAppState extends ChangeNotifier {
   /// persisted); cleared after use.
   String? authPassword;
 
+  /// One-shot name prefill from a social provider; see [setSocialName].
+  String? socialGivenName;
+  String? socialFamilyName;
+
   CountryCode country = kHomeCountry;
 
   /// User gender — drives grammatically-gendered copy (Arabic). Passed to i69n
@@ -180,6 +184,16 @@ class PatientAppState extends ChangeNotifier {
   void setAuthIntent(AuthIntent intent) {
     authIntent = intent;
     notifyListeners();
+  }
+
+  /// Name parts handed over by a social provider, for prefilling profile setup.
+  ///
+  /// Apple returns the name **only on the first authorization** for an Apple ID
+  /// and never again, so it is captured on the way through rather than fetched
+  /// when the profile screen needs it. Transient — cleared once consumed.
+  void setSocialName({String? givenName, String? familyName}) {
+    socialGivenName = givenName;
+    socialFamilyName = familyName;
   }
 
   /// Stash/clear the transient sign-up password (not UI-bound, no notify).

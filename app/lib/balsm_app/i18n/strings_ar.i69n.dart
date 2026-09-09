@@ -118,6 +118,8 @@ class AuthStrings_ar extends AuthStrings {
   String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
   String get fp_done => "تم";
   String get fp_success => "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
+  String get social_failed => "تعذّر تسجيل الدخول. حاول مرة أخرى.";
+  String get social_unavailable => "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.";
   String auth_locked_retry(String secs) => "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -193,6 +195,10 @@ class AuthStrings_ar extends AuthStrings {
         return fp_done;
       case 'fp_success':
         return fp_success;
+      case 'social_failed':
+        return social_failed;
+      case 'social_unavailable':
+        return social_unavailable;
       case 'auth_locked_retry':
         return auth_locked_retry;
       default:

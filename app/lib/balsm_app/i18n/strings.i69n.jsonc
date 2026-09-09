@@ -36,6 +36,8 @@
     "fp_sent_help": "We sent a reset code to",
     "fp_done": "Done",
     "fp_success": "Password updated. Sign in with your new password.",
+    "social_failed": "Sign-in failed. Please try again.",
+    "social_unavailable": "Sign-in is unavailable right now. Use your email instead.",
     "auth_locked_retry(String secs)": "Account temporarily locked. Try again in ${secs}s."
   },
   "boot": {

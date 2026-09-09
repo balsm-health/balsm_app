@@ -16,5 +16,18 @@
   </array>
   <key>com.apple.security.application-groups</key>
   <array><string>group.app.balsm.health</string></array>
+  <!--
+    Sign in with Apple is DISABLED (SOCIAL_SIGN_IN_ENABLED=false). The
+    entitlement is intentionally absent: it only signs if the capability is
+    enabled on the App ID (app.balsm.health) in the Apple Developer portal, and
+    a build carrying it without that fails provisioning. Restore alongside the
+    flag — see docs/social-sign-in-setup.md:
+
+      <key>com.apple.developer.applesignin</key>
+      <array><string>Default</string></array>
+
+    Note it must stay out of Runner-Personal.entitlements even then: free
+    personal-team signing rejects it.
+  -->
 </dict>
 </plist>

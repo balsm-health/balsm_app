@@ -95,7 +95,7 @@ class SignUpUseCase {
       final deviceId = await _ensureDeviceId();
       final deviceLabel = await _deviceLabel();
 
-      final tokens = await _adapter.signInWithGoogle(idToken, deviceId, deviceLabel);
+      final tokens = await _adapter.signInWithGoogle(idToken, deviceId, deviceLabel, countryCode);
 
       await _persistTokens(
         accessToken: tokens.accessToken,
@@ -132,7 +132,7 @@ class SignUpUseCase {
       final deviceId = await _ensureDeviceId();
       final deviceLabel = await _deviceLabel();
 
-      final tokens = await _adapter.signInWithApple(idToken, authCode, deviceId, deviceLabel);
+      final tokens = await _adapter.signInWithApple(idToken, authCode, deviceId, deviceLabel, countryCode);
 
       await _persistTokens(
         accessToken: tokens.accessToken,

@@ -42,7 +42,7 @@ void main() {
     final adapter = FakeHttpAdapter(
         (_) => jsonResponse('{"data": {"access_token": "at", "refresh_token": "rt", "user_id": "u1"}}'));
     final res = await DioAuthApi(net: fakeNet(adapter))
-        .signInWithGoogle(const GoogleSignInRequest(idToken: 't', deviceId: 'd', deviceLabel: 'l'));
+        .signInWithGoogle(const GoogleSignInRequest(idToken: 't', deviceId: 'd', deviceLabel: 'l', countryCode: 'EG'));
     expect(res.isNewUser, isFalse);
   });
 
@@ -94,6 +94,50 @@ void main() {
       'device_label': 'l',
     });
     expect(r2.refreshToken, 'rt2');
+  });
+
+  test('signInWithGoogle posts the id token and the account country', () async {
+    final adapter = FakeHttpAdapter((_) =>
+        jsonResponse('{"data": {"access_token": "at", "refresh_token": "rt", "user_id": "u1", "is_new_user": true}}'));
+    final api = DioAuthApi(net: fakeNet(adapter));
+
+    final res = await api.signInWithGoogle(
+      const GoogleSignInRequest(idToken: 'gid', deviceId: 'd1', deviceLabel: 'iPhone', countryCode: 'EG'),
+    );
+
+    expect(adapter.requests.single.path, '/auth/google');
+    expect(adapter.requests.single.data, {
+      'id_token': 'gid',
+      'device_id': 'd1',
+      'device_label': 'iPhone',
+      'country_code': 'EG',
+    });
+    expect(res.isNewUser, isTrue);
+  });
+
+  test('signInWithApple posts the id token, auth code and the account country', () async {
+    final adapter = FakeHttpAdapter(
+        (_) => jsonResponse('{"data": {"access_token": "at", "refresh_token": "rt", "user_id": "u1"}}'));
+    final api = DioAuthApi(net: fakeNet(adapter));
+
+    await api.signInWithApple(
+      const AppleSignInRequest(
+        idToken: 'aid',
+        authorizationCode: 'code',
+        deviceId: 'd1',
+        deviceLabel: 'iPhone',
+        countryCode: 'EG',
+      ),
+    );
+
+    expect(adapter.requests.single.path, '/auth/apple');
+    expect(adapter.requests.single.data, {
+      'id_token': 'aid',
+      'authorization_code': 'code',
+      'device_id': 'd1',
+      'device_label': 'iPhone',
+      'country_code': 'EG',
+    });
   });
 
   test('signOut posts empty body', () async {

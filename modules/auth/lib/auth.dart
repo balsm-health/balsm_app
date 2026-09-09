@@ -14,6 +14,7 @@ export 'src/domain/events/user_signed_up.dart';
 export 'src/domain/repositories/read_auth_repository.dart';
 
 // ── Application ─────────────────────────────────────────────────────────────
+export 'src/application/ports/social_credentials_port.dart';
 export 'src/application/use_cases/age_gate_use_case.dart';
 export 'src/application/use_cases/recovery_claim_use_case.dart';
 export 'src/application/use_cases/sign_in_use_case.dart';

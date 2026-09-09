@@ -55,38 +55,54 @@ class VerifyLinkRequest {
       };
 }
 
+/// POST /auth/google — the Google ID token obtained natively.
+///
+/// [countryCode] is the jurisdiction the account is being created under; the
+/// server geofences on it and stamps it on a first-time account, so it is
+/// required on every call (not only sign-up).
 class GoogleSignInRequest {
   const GoogleSignInRequest({
     required this.idToken,
     required this.deviceId,
     required this.deviceLabel,
+    required this.countryCode,
   });
   final String idToken;
   final String deviceId;
   final String deviceLabel;
+  final String countryCode;
   Map<String, dynamic> toJson() => {
         'id_token': idToken,
         'device_id': deviceId,
         'device_label': deviceLabel,
+        'country_code': countryCode,
       };
 }
 
+/// POST /auth/apple — the Apple ID token plus its authorization code.
+///
+/// The server only validates the ID token today; [authorizationCode] is sent so
+/// it can be exchanged for an Apple refresh token when account deletion ships
+/// (Apple requires token revocation on delete).
 class AppleSignInRequest {
   const AppleSignInRequest({
     required this.idToken,
     required this.authorizationCode,
     required this.deviceId,
     required this.deviceLabel,
+    required this.countryCode,
   });
   final String idToken;
   final String authorizationCode;
   final String deviceId;
   final String deviceLabel;
+  final String countryCode;
   Map<String, dynamic> toJson() => {
         'id_token': idToken,
         'authorization_code': authorizationCode,
         'device_id': deviceId,
         'device_label': deviceLabel,
+        'country_code': countryCode,
       };
 }
 

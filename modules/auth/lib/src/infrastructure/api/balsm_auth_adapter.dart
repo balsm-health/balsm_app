@@ -76,7 +76,8 @@ class BalsmAuthAdapter {
   Future<AuthTokens> signInWithGoogle(
     String idToken,
     String deviceId,
-    String deviceLabel, {
+    String deviceLabel,
+    String countryCode, {
     CancelToken? cancelToken,
   }) =>
       _guard(() async => _toAuthTokens(await _api.signInWithGoogle(
@@ -84,6 +85,7 @@ class BalsmAuthAdapter {
               idToken: idToken,
               deviceId: deviceId,
               deviceLabel: deviceLabel,
+              countryCode: countryCode,
             ),
             cancelToken: cancelToken,
           )));
@@ -93,7 +95,8 @@ class BalsmAuthAdapter {
     String idToken,
     String authCode,
     String deviceId,
-    String deviceLabel, {
+    String deviceLabel,
+    String countryCode, {
     CancelToken? cancelToken,
   }) =>
       _guard(() async => _toAuthTokens(await _api.signInWithApple(
@@ -102,6 +105,7 @@ class BalsmAuthAdapter {
               authorizationCode: authCode,
               deviceId: deviceId,
               deviceLabel: deviceLabel,
+              countryCode: countryCode,
             ),
             cancelToken: cancelToken,
           )));

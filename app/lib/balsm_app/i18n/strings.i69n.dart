@@ -115,6 +115,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get fp_sent_help => "We sent a reset code to";
   String get fp_done => "Done";
   String get fp_success => "Password updated. Sign in with your new password.";
+  String get social_failed => "Sign-in failed. Please try again.";
+  String get social_unavailable => "Sign-in is unavailable right now. Use your email instead.";
   String auth_locked_retry(String secs) => "Account temporarily locked. Try again in ${secs}s.";
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -190,6 +192,10 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return fp_done;
       case 'fp_success':
         return fp_success;
+      case 'social_failed':
+        return social_failed;
+      case 'social_unavailable':
+        return social_unavailable;
       case 'auth_locked_retry':
         return auth_locked_retry;
       default:

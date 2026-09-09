@@ -123,15 +123,55 @@ void main() {
 
   group('signInWithGoogle', () {
     test('success persists tokens and publishes UserSignedIn(google)', () async {
-      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label))
+      when(() => adapter.signInWithGoogle('idtok', 'dev-1', _label, 'EG'))
           .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U9', isNewUser: false));
 
-      final r = await usecase.signInWithGoogle(idToken: 'idtok', email: 'g@b.com');
+      final r = await usecase.signInWithGoogle(idToken: 'idtok', email: 'g@b.com', countryCode: 'EG');
       await flush();
 
       expect(r.value, isA<SignInSuccess>());
       verify(() => storage.writeToken(_uid, 'U9')).called(1);
       expect(events.whereType<UserSignedIn>().single.provider, 'google');
+    });
+
+    test('forwards the account country to the adapter', () async {
+      when(() => adapter.signInWithGoogle(any(), any(), any(), any()))
+          .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U9', isNewUser: true));
+
+      await usecase.signInWithGoogle(idToken: 'idtok', email: 'g@b.com', countryCode: 'SA');
+      await flush();
+
+      verify(() => adapter.signInWithGoogle('idtok', 'dev-1', _label, 'SA')).called(1);
+    });
+  });
+
+  group('signInWithApple', () {
+    test('success persists tokens and publishes UserSignedIn(apple)', () async {
+      when(() => adapter.signInWithApple('idtok', 'authcode', 'dev-1', _label, 'EG'))
+          .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U7', isNewUser: true));
+
+      final r = await usecase.signInWithApple(
+        idToken: 'idtok',
+        authCode: 'authcode',
+        email: 'a@privaterelay.appleid.com',
+        countryCode: 'EG',
+      );
+      await flush();
+
+      expect(r.value, isA<SignInSuccess>());
+      expect((r.value as SignInSuccess).isNewUser, isTrue);
+      verify(() => storage.writeToken(_uid, 'U7')).called(1);
+      expect(events.whereType<UserSignedIn>().single.provider, 'apple');
+    });
+
+    test('forwards the account country to the adapter', () async {
+      when(() => adapter.signInWithApple(any(), any(), any(), any(), any()))
+          .thenAnswer((_) async => (accessToken: 'AT', refreshToken: 'RT', userId: 'U7', isNewUser: false));
+
+      await usecase.signInWithApple(idToken: 'idtok', authCode: 'authcode', email: '', countryCode: 'SA');
+      await flush();
+
+      verify(() => adapter.signInWithApple('idtok', 'authcode', 'dev-1', _label, 'SA')).called(1);
     });
   });
 

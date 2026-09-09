@@ -104,6 +104,21 @@
 				<string>balsm</string>
 			</array>
 		</dict>
+		<!--
+			Google sign-in redirect. The scheme is the iOS OAuth client id with its
+			dot-separated parts reversed, i.e. the REVERSED_CLIENT_ID from the Google
+			Cloud console. Must match GOOGLE_IOS_CLIENT_ID in app/env/shared.json.
+		-->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>health.balsm.auth.google</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.REPLACE_ME</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
