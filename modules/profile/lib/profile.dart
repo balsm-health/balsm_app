@@ -14,6 +14,7 @@ export 'src/application/use_cases/update_health_profile_use_case.dart';
 export 'src/application/use_cases/add_allergy_use_case.dart';
 export 'src/application/use_cases/remove_allergy_use_case.dart';
 export 'src/application/use_cases/add_chronic_condition_use_case.dart';
+export 'src/application/use_cases/remove_chronic_condition_use_case.dart';
 export 'src/application/use_cases/add_emergency_contact_use_case.dart';
 
 // Infrastructure — read access for app-shell seams (e.g. emergency snapshot).

@@ -31,6 +31,8 @@ class AppDatabase extends _$AppDatabase {
           // alter a pre-existing table, so add any missing columns for dev DBs.
           await _ensureColumn('chronic_condition', 'icd10_code', 'TEXT');
           await _ensureColumn('chronic_condition', 'onset_year', 'INTEGER');
+          await _ensureColumn('health_profile', 'weight_kg', 'REAL');
+          await _ensureColumn('health_profile', 'height_cm', 'REAL');
           // Dependants seam (P00X forward-compat): medications + health_record
           // anchor to health_profile, not just user_id. Nullable until a self
           // profile row is guaranteed at sign-in (F1); the convergent backfill
@@ -38,6 +40,10 @@ class AppDatabase extends _$AppDatabase {
           // user_id — re-keying the DAOs lands with the dependants feature.
           await _ensureColumn('medications', 'health_profile_id', 'TEXT');
           await _ensureColumn('health_record', 'health_profile_id', 'TEXT');
+          await _ensureColumn('prescription', 'title', 'TEXT');
+          await _ensureColumn('prescription', 'source', 'TEXT');
+          await _ensureColumn('prescription', 'attachment_path', 'TEXT');
+          await _ensureColumn('prescription', 'attachment_kind', 'TEXT');
           await _ensurePainSitePk();
           // These indexes must be created AFTER the column patches above — on a
           // pre-existing DB the `medications`/`health_record` tables predate
@@ -147,6 +153,8 @@ const _phiSchema = <String>[
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     blood_type TEXT,
+    weight_kg REAL,
+    height_cm REAL,
     updated_at TEXT NOT NULL
   )''',
   '''

@@ -64,18 +64,21 @@ class CheckInMetric {
   );
 
   /// 0–10 scale + body map (quick-log pain template).
+  ///
+  /// Not in the default full check-in: the design's wizard is mood → bp →
+  /// glucose (+ meds). Pain stays a first-class quick-log template and remains
+  /// selectable once the patient can choose their tracked set.
   static const pain = CheckInMetric._(
     'pain',
     kind: CheckInMetricKind.journal,
-    inDefaultFullCheckup: true,
     wizardReady: true,
   );
 
-  /// Curated symptom chips (quick-log symptoms template).
+  /// Curated symptom chips (quick-log symptoms template). Not in the default
+  /// full check-in — see [pain].
   static const symptoms = CheckInMetric._(
     'symptoms',
     kind: CheckInMetricKind.journal,
-    inDefaultFullCheckup: true,
     wizardReady: true,
   );
 
@@ -92,13 +95,13 @@ class CheckInMetric {
     symptoms,
   ];
 
-  static const defaultFullCheckup = <CheckInMetric>[
-    mood,
-    bloodPressure,
-    glucose,
-    pain,
-    symptoms,
-  ];
+  /// Derived from [inDefaultFullCheckup] so the flag and the list can never
+  /// disagree — they previously drifted when the wizard was trimmed to the
+  /// design's mood → bp → glucose and the per-metric flags were left behind.
+  /// Order follows [catalog].
+  static final List<CheckInMetric> defaultFullCheckup = List.unmodifiable(
+    catalog.where((m) => m.inDefaultFullCheckup),
+  );
 
   static final Map<String, CheckInMetric> _byId = {
     for (final m in catalog) m.id: m,

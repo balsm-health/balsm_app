@@ -14,7 +14,13 @@ Future<void> showEcosystemSheet(BuildContext context) => showModalBottomSheet<vo
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _EcosystemSheet(),
+      builder: (_) => Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: const _EcosystemSheet(),
+        ),
+      ),
     );
 
 class _EcosystemSheet extends StatelessWidget {
@@ -25,10 +31,23 @@ class _EcosystemSheet extends StatelessWidget {
     final s = AppScope.of(context);
     final e = s.strings.ecosystem;
 
-    final parts = <({IconData icon, Color fg, Color bg, String head, String body})>[
-      (icon: LucideIcons.smartphone, fg: T.petalBlue, bg: T.petalBlue50, head: e.eco_p1h, body: e.eco_p1b),
-      (icon: LucideIcons.pill, fg: T.petalAqua, bg: T.petalAqua50, head: e.eco_p2h, body: e.eco_p2b),
-      (icon: LucideIcons.stethoscope, fg: T.petalEmerald, bg: T.petalEmerald50, head: e.eco_p3h, body: e.eco_p3b),
+    final parts = <({IconData icon, Color fg, Color bg, String head, String body, bool roadmap})>[
+      (
+        icon: LucideIcons.smartphone,
+        fg: T.petalBlue,
+        bg: T.petalBlue50,
+        head: e.eco_p1h,
+        body: e.eco_p1b,
+        roadmap: false
+      ),
+      (
+        icon: LucideIcons.building2,
+        fg: T.petalAqua,
+        bg: T.petalAqua50,
+        head: e.eco_p2h,
+        body: e.eco_p2b,
+        roadmap: true
+      ),
     ];
 
     final actions = <({IconData icon, String head, String body, VoidCallback? onTap})>[
@@ -53,8 +72,12 @@ class _EcosystemSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        Container(
+            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SizedBox(height: 12),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 16, 10),
+          padding: const EdgeInsets.fromLTRB(20, 0, 16, 10),
           child: Row(children: [
             Expanded(child: Text(e.eco_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
             RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.of(context).pop()),
@@ -63,7 +86,7 @@ class _EcosystemSheet extends StatelessWidget {
         const Divider(height: 1, color: T.ink100),
         Flexible(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
+            padding: EdgeInsets.fromLTRB(20, 10, 20, sheetBottomInset(context, base: 32)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               // Brand moment — all five petals.
               Column(children: [
@@ -78,7 +101,7 @@ class _EcosystemSheet extends StatelessWidget {
               ]),
               const SizedBox(height: 18),
               for (final p in parts) ...[
-                _PartRow(icon: p.icon, fg: p.fg, bg: p.bg, head: p.head, body: p.body),
+                _PartRow(icon: p.icon, fg: p.fg, bg: p.bg, head: p.head, body: p.body, roadmap: p.roadmap),
                 const SizedBox(height: 10),
               ],
               const SizedBox(height: 14),
@@ -119,25 +142,43 @@ class _PartRow extends StatelessWidget {
     required this.bg,
     required this.head,
     required this.body,
+    this.roadmap = false,
   });
   final IconData icon;
   final Color fg;
   final Color bg;
   final String head;
   final String body;
+  final bool roadmap;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+      // The design asks for `background: var(--bg2)`, but `--bg2` is not
+      // defined anywhere in the token layers — it resolves to nothing, so these
+      // rows render on the sheet's white. Matching what the design actually
+      // paints. (Sibling styles use `var(--bg3, var(--balsm-ink-50))` with a
+      // fallback, so the missing `--bg2` looks like an authoring slip; if a
+      // tint is wanted later, T.ink50 is the value the rest of the kit uses.)
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(T.rMd)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         IconSquare(icon, bg: bg, fg: fg),
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(head, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+            Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, children: [
+              Text(head, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+              if (roadmap)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
+                  child: Text(s.strings.common.roadmap,
+                      style: Typo.meta(ar: s.rtl)
+                          .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.4)),
+                ),
+            ]),
             const SizedBox(height: 2),
             Text(body, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
           ]),

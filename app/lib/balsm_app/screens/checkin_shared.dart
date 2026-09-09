@@ -93,10 +93,11 @@ class MoodCell extends StatelessWidget {
       );
 }
 
-const kMonthShortEn = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-const kMonthShortAr = ['ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون', 'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس'];
-
-String checkInMonthShort(PatientAppState s, DateTime d) => (s.rtl ? kMonthShortAr : kMonthShortEn)[d.month - 1];
+/// Localized 3-letter month abbreviation (i69n `settings.cal_months_short`) —
+/// was a hardcoded EN/AR ternary; routed through the string bundle so a new
+/// locale doesn't need a Dart-side edit (CODING_STANDARDS: no inline
+/// bilingual ternaries).
+String checkInMonthShort(PatientAppState s, DateTime d) => s.strings.settings.cal_months_short.split('|')[d.month - 1];
 
 /// Pain badge tone for a `.history-row` — mild / moderate / severe.
 PillKind painBadgeKind(int pain) {

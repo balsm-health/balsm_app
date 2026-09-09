@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:core/core.dart' show currentUserIdProvider;
 import 'package:profile/profile.dart'
     show
@@ -13,7 +14,9 @@ import 'package:profile/profile.dart'
         updateHealthProfileUseCaseProvider,
         addAllergyUseCaseProvider,
         removeAllergyUseCaseProvider,
-        addChronicConditionUseCaseProvider;
+        addChronicConditionUseCaseProvider,
+        removeChronicConditionUseCaseProvider,
+        ChronicConditionId;
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -33,7 +36,8 @@ void _push(BuildContext context, Widget Function(PatientAppState s) build) {
 
 void openMedicalProfile(BuildContext context) => _push(context, (s) => MedicalProfileScreen(s: s));
 void openCareTeam(BuildContext context) => _push(context, (s) => CareTeamScreen(s: s));
-void openPrivacyData(BuildContext context) => _push(context, (s) => PrivacyDataScreen(s: s));
+void openPrivacyData(BuildContext context, {VoidCallback? onDeleteAccount}) =>
+    _push(context, (s) => PrivacyDataScreen(s: s, onDeleteAccount: onDeleteAccount));
 void openEmergency(BuildContext context) => _push(context, (s) => EmergencyScreen(s: s));
 
 /// Shared scaffold: status-bar spacer + back app bar + width-capped scroll body.
@@ -87,7 +91,10 @@ class _SectionHead extends StatelessWidget {
 /// Reads the current user's on-device [HealthProfile] (SQLCipher-backed PHI).
 /// Re-runs when the signed-in user changes; emits `null` when signed out.
 /// Writes go through the profile use-cases, which invalidate this provider.
-final _medProfileProvider = FutureProvider.autoDispose<HealthProfile?>((ref) async {
+///
+/// Shared with the profile tab, which shows the patient their own chronic
+/// conditions as chips (home.jsx `profile-head`).
+final healthProfileProvider = FutureProvider.autoDispose<HealthProfile?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
   return ref.watch(profileDataSourceProvider).getProfile(userId);
@@ -103,10 +110,12 @@ class MedicalProfileScreen extends ConsumerStatefulWidget {
 class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   PatientAppState get s => widget.s;
   final algInput = TextEditingController();
-  // Measurements are local-only (no on-device schema for weight/height/BMI).
-  final weight = TextEditingController(text: '78');
-  final height = TextEditingController(text: '162');
+  // Measurements persist on-device with the health profile (SQLCipher).
+  // Empty until the patient enters them — never pre-fill sample PHI.
+  final weight = TextEditingController();
+  final height = TextEditingController();
   bool saving = false, saved = false;
+  bool _measurementsSeeded = false;
 
   @override
   void dispose() {
@@ -128,7 +137,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   Future<void> _setBloodType(String bt) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
-    final current = ref.read(_medProfileProvider).valueOrNull?.bloodType;
+    final current = ref.read(healthProfileProvider).valueOrNull?.bloodType;
     final toClear = current == bt;
     final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
           userId: userId,
@@ -137,7 +146,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         );
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(_medProfileProvider);
+      ref.invalidate(healthProfileProvider);
     } else {
       _snack(result.error.message);
     }
@@ -155,7 +164,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         );
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(_medProfileProvider);
+      ref.invalidate(healthProfileProvider);
     } else {
       _snack(result.error.message);
     }
@@ -167,7 +176,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     final result = await ref.read(removeAllergyUseCaseProvider).execute(userId: userId, allergyId: id);
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(_medProfileProvider);
+      ref.invalidate(healthProfileProvider);
     } else {
       _snack(result.error.message);
     }
@@ -185,25 +194,68 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
         );
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(_medProfileProvider);
+      ref.invalidate(healthProfileProvider);
     } else {
       _snack(result.error.message);
     }
   }
 
-  void _save() {
+  Future<void> _removeCondition(ChronicConditionId id) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref.read(removeChronicConditionUseCaseProvider).execute(userId: userId, conditionId: id);
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  void _seedMeasurements(HealthProfile? profile) {
+    if (_measurementsSeeded || profile == null) return;
+    _measurementsSeeded = true;
+    if (profile.weightKg != null) weight.text = _fmtMeasure(profile.weightKg!);
+    if (profile.heightCm != null) height.text = _fmtMeasure(profile.heightCm!);
+  }
+
+  String _fmtMeasure(double v) => v == v.roundToDouble() ? '${v.round()}' : '$v';
+
+  Future<void> _save() async {
     if (saving) return;
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final wText = weight.text.trim();
+    final hText = height.text.trim();
+    final w = wText.isEmpty ? null : double.tryParse(wText);
+    final h = hText.isEmpty ? null : double.tryParse(hText);
+    if (wText.isNotEmpty && w == null) {
+      _snack(s.strings.profile.pd_number_invalid);
+      return;
+    }
+    if (hText.isNotEmpty && h == null) {
+      _snack(s.strings.profile.pd_number_invalid);
+      return;
+    }
     setState(() => saving = true);
-    Future.delayed(const Duration(milliseconds: 850), () {
-      if (!mounted) return;
-      setState(() {
-        saving = false;
-        saved = true;
-      });
+    final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
+          userId: userId,
+          weightKg: w,
+          clearWeight: wText.isEmpty,
+          heightCm: h,
+          clearHeight: hText.isEmpty,
+        );
+    if (!mounted) return;
+    setState(() => saving = false);
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+      setState(() => saved = true);
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => saved = false);
       });
-    });
+    } else {
+      _snack(result.error.message);
+    }
   }
 
   ({String value, double pct, Color color, Color bg, String key})? get _bmi {
@@ -227,7 +279,8 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   Widget build(BuildContext context) {
     final bmi = _bmi;
     // Real on-device PHI. `null` while loading or when signed out (empty state).
-    final profile = ref.watch(_medProfileProvider).valueOrNull;
+    final profile = ref.watch(healthProfileProvider).valueOrNull;
+    _seedMeasurements(profile);
     final allergyList = profile?.allergies ?? const <Allergy>[];
     final conditionList = profile?.conditions ?? const <ChronicCondition>[];
     final selectedBlood = profile?.bloodType;
@@ -238,7 +291,13 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
       trailing: saved ? Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl) : null,
       children: [
         _SectionHead(LucideIcons.clipboardList, s.strings.profile.pd_conditions, s: s),
-        _ConditionEditor(s: s, conditions: conditionList, bg: s.accent.bg, fg: s.accent.d, onAdd: _addCondition),
+        _ConditionEditor(
+            s: s,
+            conditions: conditionList,
+            bg: s.accent.bg,
+            fg: s.accent.d,
+            onAdd: _addCondition,
+            onRemove: _removeCondition),
         _SectionHead(LucideIcons.alertOctagon, s.strings.profile.pd_allergies, s: s),
         _ChipEditor(
             s: s,
@@ -315,7 +374,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
               ],
             ])),
         const SizedBox(height: 22),
-        PButton(saving ? '…' : (saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save),
+        PButton(saving ? s.strings.profile.pd_saving : (saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save),
             icon: saved ? LucideIcons.check : LucideIcons.save,
             variant: BtnVariant.primary,
             large: true,
@@ -517,17 +576,21 @@ class _ChipEditor extends StatelessWidget {
 }
 
 /// Chronic-condition editor (G7). Renders existing conditions as chips showing
-/// name + optional ICD-10 code + onset year, and an add form with a name field
-/// plus optional ICD-10 code / onset-year fields. Add persists via
-/// AddChronicConditionUseCase. (No remove: the module exposes no remove-condition
-/// use-case yet, so condition chips are display-only.) Prototype field styling.
+/// name + optional ICD-10 code + onset year, with × to remove (on-device only).
 class _ConditionEditor extends StatefulWidget {
-  const _ConditionEditor(
-      {required this.s, required this.conditions, required this.bg, required this.fg, required this.onAdd});
+  const _ConditionEditor({
+    required this.s,
+    required this.conditions,
+    required this.bg,
+    required this.fg,
+    required this.onAdd,
+    required this.onRemove,
+  });
   final PatientAppState s;
   final List<ChronicCondition> conditions;
   final Color bg, fg;
   final Future<void> Function(String name, String? icd10Code, int? onsetYear) onAdd;
+  final Future<void> Function(ChronicConditionId id) onRemove;
   @override
   State<_ConditionEditor> createState() => _ConditionEditorState();
 }
@@ -596,7 +659,7 @@ class _ConditionEditorState extends State<_ConditionEditor> {
       if (c.onsetYear != null) c.onsetYear!.toString(),
     ].join(' · ');
     return Container(
-      padding: const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6),
+      padding: const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
       decoration: BoxDecoration(color: widget.bg, borderRadius: BorderRadius.circular(T.rPill)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Text(c.name,
@@ -607,6 +670,11 @@ class _ConditionEditorState extends State<_ConditionEditor> {
               textDirection: TextDirection.ltr,
               style: Typo.num(size: FS.xs2, weight: FontWeight.w700, color: widget.fg)),
         ],
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: () => widget.onRemove(c.id),
+          child: Icon(LucideIcons.x, size: 13, color: widget.fg),
+        ),
       ]),
     );
   }
@@ -667,19 +735,18 @@ class CareTeamScreen extends StatelessWidget {
               Navigator.pop(context);
               s.setTab('map');
             },
-            child: Container(
-              height: 52,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(T.rMd),
-                border: Border.all(color: T.borderStrong, width: 1.5, style: BorderStyle.solid),
+            // Design: `1px dashed` in --balsm-border, radius-md, 52 tall.
+            child: DashedBorder(
+              child: Container(
+                height: 52,
+                alignment: Alignment.center,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(LucideIcons.userPlus, size: 17, color: T.fg1),
+                  const SizedBox(width: 8),
+                  Text(s.strings.care.care_find,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                ]),
               ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-                const Icon(LucideIcons.userPlus, size: 17, color: T.fg1),
-                const SizedBox(width: 8),
-                Text(s.strings.care.care_find,
-                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              ]),
             ),
           ),
         ],
@@ -688,8 +755,9 @@ class CareTeamScreen extends StatelessWidget {
 
 // ── Privacy & data ───────────────────────────────────────────
 class PrivacyDataScreen extends StatefulWidget {
-  const PrivacyDataScreen({super.key, required this.s});
+  const PrivacyDataScreen({super.key, required this.s, this.onDeleteAccount});
   final PatientAppState s;
+  final VoidCallback? onDeleteAccount;
   @override
   State<PrivacyDataScreen> createState() => _PrivacyDataScreenState();
 }
@@ -715,6 +783,12 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
           ]),
           _SectionHead(LucideIcons.lock, s.strings.privacy.pv_security, s: s),
           _listCard([
+            _action(
+              LucideIcons.mail,
+              s.strings.emergency.em_label,
+              s.authEmail.isEmpty ? '—' : s.authEmail,
+              ltrDesc: true,
+            ),
             _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
             _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v),
                 last: true),
@@ -729,7 +803,7 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
           _SectionHead(LucideIcons.alertTriangle, s.strings.privacy.pv_danger, s: s),
           _listCard([
             _action(LucideIcons.trash2, s.strings.privacy.pv_delete, s.strings.privacy.pv_delete_h,
-                danger: true, last: true),
+                danger: true, last: true, onTap: widget.onDeleteAccount),
           ]),
           Padding(
             padding: const EdgeInsets.only(top: 18),
@@ -764,23 +838,28 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
         _PSwitch(on: on, accent: s.accent.main, onTap: () => set(!on)),
       ], last);
 
-  Widget _action(IconData icon, String title, String desc, {bool danger = false, bool last = false}) => _row([
-        Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: danger ? T.dangerBg : T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
-            child: Icon(icon, size: 18, color: danger ? T.danger : T.fg2)),
-        const SizedBox(width: 14),
-        Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title,
-              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: danger ? T.danger : T.fg1)),
-          const SizedBox(height: 2),
-          Text(desc, style: Typo.meta(ar: s.rtl)),
-        ])),
-        Chevron(rtl: s.rtl),
-      ], last);
+  Widget _action(IconData icon, String title, String desc,
+      {bool danger = false, bool last = false, bool ltrDesc = false, VoidCallback? onTap}) {
+    final row = _row([
+      Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: danger ? T.dangerBg : T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+          child: Icon(icon, size: 18, color: danger ? T.danger : T.fg2)),
+      const SizedBox(width: 14),
+      Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title,
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: danger ? T.danger : T.fg1)),
+        const SizedBox(height: 2),
+        Text(desc, textDirection: ltrDesc ? TextDirection.ltr : null, style: Typo.meta(ar: s.rtl)),
+      ])),
+      if (onTap != null) Chevron(rtl: s.rtl),
+    ], last);
+    if (onTap == null) return row;
+    return Pressable(onTap: onTap, scale: 0.99, child: row);
+  }
 }
 
 /// Pill toggle switch.
@@ -835,15 +914,17 @@ class EmergencyScreen extends StatelessWidget {
           ),
           // `.emergency-grid` is two columns at every width — these are
           // thumb-sized call targets, not a responsive card grid.
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.34,
-            children: _contacts.map(_tile).toList(),
-          ),
+          LayoutBuilder(builder: (context, c) {
+            const gap = 12.0;
+            final tileW = (c.maxWidth - gap) / 2;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final ct in _contacts) SizedBox(width: tileW, child: _tile(ct)),
+              ],
+            );
+          }),
           Padding(
             padding: const EdgeInsets.only(top: 18),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -857,7 +938,7 @@ class EmergencyScreen extends StatelessWidget {
 
   // `.emergency-tile:active { transform: scale(0.98) }` — tap-to-call tile.
   Widget _tile((String, IconData, String, Color, Color) ct) => Pressable(
-      onTap: () {},
+      onTap: () => launchUrl(Uri(scheme: 'tel', path: ct.$3)),
       scale: 0.98,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -866,7 +947,7 @@ class EmergencyScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(T.rLg),
             border: Border.all(color: T.border),
             boxShadow: T.shadowSm),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
               width: 44,
               height: 44,

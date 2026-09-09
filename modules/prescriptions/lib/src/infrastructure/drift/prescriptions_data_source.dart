@@ -45,8 +45,12 @@ class DriftPrescriptionsDataSource extends UserDataSource<PrescriptionId, Prescr
         id: PrescriptionId.value(row['id'] as String),
         userId: UserId.value(row['user_id'] as String),
         clinician: row['clinician'] as String,
+        title: row['title'] as String?,
         specialty: row['specialty'] as String?,
         reference: row['reference'] as String?,
+        source: row['source'] as String?,
+        attachmentPath: row['attachment_path'] as String?,
+        attachmentKind: row['attachment_kind'] as String?,
         items: [
           for (final e in jsonDecode(row['items'] as String) as List)
             PrescribedItem.fromJson((e as Map).cast<String, dynamic>()),
@@ -125,14 +129,18 @@ class DriftPrescriptionsDataSource extends UserDataSource<PrescriptionId, Prescr
     final user = _require(scope);
     await _db.customInsert(
       'INSERT OR REPLACE INTO $_table '
-      '(id, user_id, clinician, specialty, reference, items, issued_at, valid_until, created_at) '
-      'VALUES (?,?,?,?,?,?,?,?,?)',
+      '(id, user_id, clinician, title, specialty, reference, source, attachment_path, attachment_kind, items, issued_at, valid_until, created_at) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(key.value),
         Variable<String>(user.value),
         Variable<String>(value.clinician),
+        Variable<String>(value.title),
         Variable<String>(value.specialty),
         Variable<String>(value.reference),
+        Variable<String>(value.source),
+        Variable<String>(value.attachmentPath),
+        Variable<String>(value.attachmentKind),
         Variable<String>(jsonEncode([for (final i in value.items) i.toJson()])),
         Variable<String>(value.issuedAt.toUtc().toIso8601String()),
         Variable<String>(value.validUntil?.toUtc().toIso8601String()),

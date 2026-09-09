@@ -11,19 +11,19 @@ class T {
   static const petalEmerald = Color(0xFF01C4A2);
   static const petalBlue = Color(0xFF1283FF);
   static const petalMint = Color(0xFF55D77F);
-  static const petalViolet = Color(0xFF724DD0);
+  static const petalViolet = Color(0xFF8350DE);
 
   static const petalAqua600 = Color(0xFF029E99);
   static const petalEmerald600 = Color(0xFF019A7F);
   static const petalBlue600 = Color(0xFF0F6BCC);
   static const petalMint600 = Color(0xFF3FC366);
-  static const petalViolet600 = Color(0xFF5C3AB0);
+  static const petalViolet600 = Color(0xFF6A3DBB);
 
   static const petalAqua50 = Color(0xFFE2F8F6);
   static const petalEmerald50 = Color(0xFFE1F8F1);
   static const petalBlue50 = Color(0xFFE4F0FF);
   static const petalMint50 = Color(0xFFE8F9EE);
-  static const petalViolet50 = Color(0xFFECE6FA);
+  static const petalViolet50 = Color(0xFFEEE7FB);
 
   // ── Warm olive-gray neutrals ───────────────────────────────
   static const ink900 = Color(0xFF14202B);
@@ -139,7 +139,7 @@ class Accent {
   static const blue = Accent(T.petalBlue, T.petalBlue600, T.petalBlue50, Color(0x421283FF));
   static const aqua = Accent(T.petalAqua, T.petalAqua600, T.petalAqua50, Color(0x4202BBB5));
   static const emerald = Accent(T.petalEmerald, T.petalEmerald600, T.petalEmerald50, Color(0x4201C4A2));
-  static const violet = Accent(T.petalViolet, T.petalViolet600, T.petalViolet50, Color(0x42724DD0));
+  static const violet = Accent(T.petalViolet, T.petalViolet600, T.petalViolet50, Color(0x428350DE));
   static const mint = Accent(T.petalMint600, Color(0xFF2FA552), T.petalMint50, Color(0x4D55D77F));
 
   List<BoxShadow> get boxShadow => [BoxShadow(color: shadow, blurRadius: 22, offset: const Offset(0, 8))];

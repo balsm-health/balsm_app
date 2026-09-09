@@ -73,7 +73,19 @@ Future<void> main(List<String> argv) async {
       'apk' => ['build', 'apk', '--release', ...flavor, '-t', target, ...defines],
       'aab' => ['build', 'appbundle', '--release', ...flavor, '-t', target, ...defines],
       'ios' => ['build', 'ios', '--release', '--no-codesign', ...flavor, '-t', target, ...defines],
-      'web' => ['build', 'web', '--release', '-t', target, ...defines], // web: no flavor
+      'web' => [
+          'build',
+          'web',
+          '--release',
+          '-t',
+          target,
+          ...defines,
+          // Hosted at https://balsm.health/apps/balsm — asset URLs must be
+          // prefixed or flutter.js 404s under the site's locale router.
+          if (env == 'prod') '--base-href=/apps/balsm/',
+          // Local canvaskit — gstatic.com is blocked by the site CSP.
+          if (env == 'prod') '--no-web-resources-cdn',
+        ], // web: no flavor
       'test' => ['test'],
       'integration' => ['test', 'integration_test', ...flavor],
       _ => const <String>[],

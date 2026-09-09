@@ -108,7 +108,12 @@ void main() {
               dir: dir,
               brightness: brightness,
             ),
-            surfaceSize: const Size(375, 80),
+            // 80 was too tight: _wrap()'s Center+EdgeInsets.all(16) already
+            // costs 32px, and the bar itself needs the full 60px tab height
+            // plus its own 10px bottom inset (70) — the combination clipped
+            // the label baseline (RenderFlex overflow) despite the bar
+            // rendering correctly at real device heights.
+            surfaceSize: const Size(375, 120),
           );
           await screenMatchesGolden(tester, 'balsm_bottom_nav_$suffix');
         });

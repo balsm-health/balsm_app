@@ -105,6 +105,9 @@ void main() {
     // The row hydrates through the profile DAO shape (updated_at is int).
     final hp = await db.customSelect('SELECT updated_at FROM health_profile').getSingle();
     expect(hp.read<int>('updated_at'), isA<int>());
+
+    final cols = await db.customSelect('PRAGMA table_info(health_profile)').get();
+    expect(cols.map((r) => r.read<String>('name')), containsAll(['weight_kg', 'height_cm']));
   });
 
   test('backfill statement anchors NULL rows and never overwrites', () async {

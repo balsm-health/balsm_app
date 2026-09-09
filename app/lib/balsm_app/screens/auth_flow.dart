@@ -8,8 +8,6 @@ import 'package:core/core.dart'
         accountSummaryProvider,
         countryRegistryProvider,
         StatusScreen,
-        CountryCode,
-        CountryCodeL10n,
         LanguageCode,
         Gender,
         showBalsmDatePicker,
@@ -55,12 +53,13 @@ class _WelcomeScreen extends StatelessWidget {
         child: ContentColumn(
           maxWidth: 440,
           child: Column(children: [
-            const SizedBox(height: 36),
+            // `.wbody { margin-top: auto }` — lockup + CTAs sit on the cream
+            // fade; watercolor fills the space above.
+            const Spacer(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(28, 0, 28, 8),
+              padding: const EdgeInsets.fromLTRB(28, 0, 28, 40),
               child: Column(children: [
-                // `.wlogo` — canonical vertical lockup, not a reconstructed wordmark.
-                SvgPicture.asset(Assets.brand_logo_vertical, width: 92, height: 92),
+                SvgPicture.asset(Assets.brand_logo_vertical, width: 92, height: 92, fit: BoxFit.contain),
                 const SizedBox(height: 22),
                 Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
                 const SizedBox(height: 12),
@@ -68,22 +67,15 @@ class _WelcomeScreen extends StatelessWidget {
                     textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
                 const SizedBox(height: 28),
                 PButton(s.strings.onboarding.w_start(s.gender),
-                    variant: BtnVariant.primary,
-                    large: true,
-                    block: true,
-                    gradient: true,
-                    accent: s.accent,
-                    ar: s.rtl, onTap: () {
+                    variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
                   s.setAuthIntent('signup');
                   s.go('phone');
                 }),
-                const SizedBox(height: 14),
-                Text(s.strings.onboarding.w_or,
-                    style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 14),
-                // Social sign-in has no real backend wired here (no google_sign_in /
-                // sign_in_with_apple tokens available), and must NOT bypass the
-                // fail-closed DOB/age gate. Funnel into the real email sign-up flow.
+                const SizedBox(height: 16),
+                _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
+                const SizedBox(height: 16),
+                // Social has no live backend here and must not skip the
+                // fail-closed DOB/age gate — funnel into email sign-up.
                 _SocialButton(
                     label: s.strings.onboarding.w_apple,
                     dark: true,
@@ -101,7 +93,7 @@ class _WelcomeScreen extends StatelessWidget {
                       s.setAuthIntent('signup');
                       s.go('phone');
                     }),
-                const SizedBox(height: 14),
+                const SizedBox(height: 18),
                 GestureDetector(
                   onTap: () {
                     s.setAuthIntent('signin');
@@ -117,16 +109,16 @@ class _WelcomeScreen extends StatelessWidget {
                 ),
               ]),
             ),
-            const Spacer(),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 26),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 _trust(s, LucideIcons.smartphone, s.strings.settings.trust_device),
+                const SizedBox(width: 22),
                 _trust(s, LucideIcons.lock, s.strings.settings.trust_private),
+                const SizedBox(width: 22),
                 _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
               ]),
             ),
-            const SizedBox(height: 16),
             Pressable(
               onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
               child: Semantics(
@@ -152,7 +144,7 @@ class _WelcomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 4),
           ]),
         ),
       ),
@@ -162,13 +154,30 @@ class _WelcomeScreen extends StatelessWidget {
   Widget _trust(PatientAppState s, IconData icon, String label) => SizedBox(
         width: 84,
         child: Column(children: [
-          Icon(icon, size: 22, color: T.fg3),
+          Icon(icon, size: 22, color: s.accent.main),
           const SizedBox(height: 6),
           Text(label,
               textAlign: TextAlign.center,
               style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
         ]),
       );
+}
+
+/// Welcome `.wactions` hairline divider — `or` between 28% white rules.
+class _OrDivider extends StatelessWidget {
+  const _OrDivider({required this.label, required this.ar});
+  final String label;
+  final bool ar;
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        const Expanded(child: ColoredBox(color: Color(0x47FFFFFF), child: SizedBox(height: 1))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(label,
+              style: Typo.meta(ar: ar).copyWith(color: const Color(0xB3FFFFFF), fontWeight: FontWeight.w500)),
+        ),
+        const Expanded(child: ColoredBox(color: Color(0x47FFFFFF), child: SizedBox(height: 1))),
+      ]);
 }
 
 class _SocialButton extends StatelessWidget {
@@ -192,7 +201,7 @@ class _SocialButton extends StatelessWidget {
           border: dark ? null : Border.all(color: const Color(0x2E3C3C3A), width: 1.5),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          if (googleG) const _GoogleMark() else Icon(icon, size: 19, color: Colors.white),
+          if (googleG) const _GoogleMark() else Icon(icon, size: 18, color: Colors.white),
           const SizedBox(width: 10),
           Text(label,
               style: Typo.body(ar: s.rtl)
@@ -332,11 +341,10 @@ class _UnderEighteenScreen extends StatelessWidget {
   }
 }
 
-// ── Phone / email ────────────────────────────────────────────
-// Sign-up step (real auth). Collects the contact + date of birth, runs the
-// fail-closed age gate BEFORE any session can exist, and — on the email path —
-// requests a real OTP via [signUpUseCaseProvider]. The phone path has no OTP
-// backend (email + social only) so it is blocked rather than faked.
+// ── Email + password ─────────────────────────────────────────
+// Claude Design `PhoneScreen` is email-only in this phase (no mobile
+// signup/login). Collects email + password; sign-up still verifies by OTP
+// before a session exists; sign-in uses the password path.
 class _PhoneScreen extends ConsumerStatefulWidget {
   const _PhoneScreen();
   @override
@@ -344,19 +352,11 @@ class _PhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
-  bool email = true; // Email is the only path with a real OTP/password backend.
-  String emailAuth = 'password'; // email sub-mode: 'password' | 'code'
   final ctrl = TextEditingController();
   final pwCtrl = TextEditingController();
   bool _showPw = false;
   String? _error;
   bool _submitting = false;
-  // Selected phone dial-code country; defaults to the home country (EG).
-  CountryCode _dialCountry = kHomeCountry;
-
-  /// Email + password sign-in sub-mode (returning users). Phone + the email
-  /// one-time-code path are NOT password mode.
-  bool get isPw => email && emailAuth == 'password';
 
   @override
   void dispose() {
@@ -366,23 +366,8 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   }
 
   bool get ok {
-    final v = ctrl.text.trim();
-    final contactOk =
-        email ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v) : v.replaceAll(RegExp(r'\D'), '').length >= 10;
-    // Password sign-in also needs a password (>=8). The one-time-code path
-    // needs only a valid contact — the age gate runs at profile setup.
-    return isPw ? contactOk && pwCtrl.text.length >= 8 : contactOk;
-  }
-
-  Future<void> _pickDialCode(PatientAppState s) async {
-    final picked = await showModalBottomSheet<CountryCode>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C14202B),
-      isScrollControlled: true,
-      builder: (_) => _DialCodeSheet(current: _dialCountry, s: s),
-    );
-    if (picked != null && mounted) setState(() => _dialCountry = picked);
+    final emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(ctrl.text.trim());
+    return emailOk && pwCtrl.text.length >= 8;
   }
 
   void _showForgotPassword(String email) {
@@ -392,20 +377,22 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       backgroundColor: Colors.transparent,
       barrierColor: const Color(0x5C14202B),
       isScrollControlled: true,
-      builder: (_) => _ForgotPasswordSheet(initialEmail: email, s: s),
+      builder: (_) => Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: _ForgotPasswordSheet(initialEmail: email, s: s),
+        ),
+      ),
     );
   }
 
   Future<void> _continue() async {
     final s = AppScope.of(context);
     final isSignup = s.authIntent == 'signup';
+    final address = ctrl.text.trim();
 
-    // ── Email + password → sign IN a returning user. No DOB / age gate here
-    // (the account passed it at sign-up); still routed through the shared
-    // fail-closed disclosure gate before 'app'. Sign-UP with a password takes
-    // the OTP path below, then applies setPassword after verify.
-    if (isPw && !isSignup) {
-      final address = ctrl.text.trim();
+    if (!isSignup) {
       setState(() {
         _submitting = true;
         _error = null;
@@ -424,24 +411,11 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
               setState(() => _error = s.strings.auth.auth_locked_retry(secsLeft.toString()));
           }
         },
-        // Uniform message — never reveal whether the account or password is wrong.
         (_) => setState(() => _error = s.strings.auth.pw_invalid_creds),
       );
       return;
     }
 
-    // One-time-code path (email or phone). No age gate here — it runs at
-    // profile setup for a NEW account (design-aligned): a returning user
-    // signing in with a code isn't asked for DOB.
-
-    // Phone OTP is not backed by the real API (email + Google/Apple only).
-    if (!email) {
-      setState(() => _error = s.strings.auth.auth_phone_soon);
-      return;
-    }
-
-    // Email path — request a real OTP via the auth module.
-    final address = ctrl.text.trim();
     setState(() {
       _submitting = true;
       _error = null;
@@ -452,9 +426,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     result.fold(
       (_) {
         s.setAuthContact(method: 'email', email: address);
-        // Password sign-up: stash the chosen password; applied via setPassword
-        // once OTP verify establishes the session.
-        s.setAuthPassword(isPw ? pwCtrl.text : null);
+        s.setAuthPassword(pwCtrl.text);
         s.go('otp');
       },
       (failure) => setState(() => _error = failure.message),
@@ -464,6 +436,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final isSignup = s.authIntent == 'signup';
     return Container(
       color: T.cream50,
       child: SafeArea(
@@ -475,113 +448,48 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const SizedBox(height: 10),
-                _Segmented<bool>(
-                  left: s.strings.auth.ph_label,
-                  leftIcon: LucideIcons.phone,
-                  right: s.strings.emergency.em_label,
-                  rightIcon: LucideIcons.mail,
-                  leftValue: false,
-                  rightValue: true,
-                  value: email,
-                  onChanged: (r) => setState(() {
-                    email = r;
-                    ctrl.clear();
-                    pwCtrl.clear();
-                    _error = null;
-                  }),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                    isPw
-                        ? s.strings.emergency.em_pw_title
-                        : (email ? s.strings.emergency.em_title : s.strings.auth.ph_title),
+                const SizedBox(height: 18),
+                Text(isSignup ? s.strings.emergency.em_pw_signup_title : s.strings.emergency.em_pw_title,
                     style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 8),
-                Text(
-                    isPw
-                        ? s.strings.emergency.em_pw_help
-                        : (email ? s.strings.emergency.em_help : s.strings.auth.ph_help),
+                Text(isSignup ? s.strings.emergency.em_pw_signup_help : s.strings.emergency.em_pw_help,
                     style: Typo.body(ar: s.rtl)),
                 const SizedBox(height: 24),
-                _Label(email ? s.strings.emergency.em_label : s.strings.auth.ph_label, ar: s.rtl),
+                _Label(s.strings.emergency.em_label, ar: s.rtl),
                 const SizedBox(height: 8),
-                if (email)
-                  _Input(
-                      controller: ctrl,
-                      hint: s.strings.emergency.em_ph,
-                      keyboard: TextInputType.emailAddress,
-                      forceLtr: true,
-                      accent: s.accent,
-                      onChanged: (_) => setState(() {}))
-                else
-                  Row(children: [
-                    _DialCodeButton(
-                      country: _dialCountry,
-                      onTap: _submitting ? null : () => _pickDialCode(s),
+                _Input(
+                    controller: ctrl,
+                    hint: s.strings.emergency.em_ph,
+                    keyboard: TextInputType.emailAddress,
+                    forceLtr: true,
+                    accent: s.accent,
+                    onChanged: (_) => setState(() {})),
+                const SizedBox(height: 16),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  _Label(s.strings.auth.pw_label, ar: s.rtl),
+                  if (!isSignup)
+                    GestureDetector(
+                      onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
+                      child: Text(s.strings.auth.forgot_pw,
+                          style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: _Input(
-                            controller: ctrl,
-                            hint: '10 1234 5678',
-                            keyboard: TextInputType.phone,
-                            mono: true,
-                            forceLtr: true,
-                            accent: s.accent,
-                            onChanged: (_) => setState(() {}))),
-                  ]),
-
-                // Email + password → password field + forgot link.
-                if (isPw) ...[
-                  const SizedBox(height: 20),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    _Label(s.strings.auth.pw_label, ar: s.rtl),
-                    // No "forgot password" on sign-up — nothing to recover yet.
-                    if (s.authIntent != 'signup')
-                      GestureDetector(
-                        onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
-                        child: Text(s.strings.auth.forgot_pw,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
-                      ),
-                  ]),
-                  const SizedBox(height: 8),
-                  _Input(
-                      controller: pwCtrl,
-                      hint: s.strings.auth.pw_ph,
-                      obscure: !_showPw,
-                      forceLtr: true,
-                      accent: s.accent,
-                      suffixIcon: GestureDetector(
-                        onTap: () => setState(() => _showPw = !_showPw),
-                        child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3),
-                      ),
-                      onChanged: (_) => setState(() {})),
-                ],
-
-                // Sign-UP only: switch between one-time-code and also-set-a-password.
-                // Sign-IN email is password-only — email-OTP login was removed to
-                // conserve email quota; passwordless returning users recover via
-                // the "forgot password" link above.
-                if (email && s.authIntent == 'signup') ...[
-                  const SizedBox(height: 16),
-                  Center(
-                    child: GestureDetector(
-                      onTap: _submitting
-                          ? null
-                          : () => setState(() {
-                                emailAuth = isPw ? 'code' : 'password';
-                                _error = null;
-                              }),
-                      child: Text(isPw ? s.strings.auth.use_code : s.strings.auth.use_password,
-                          style: Typo.bodySm(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                ]),
+                const SizedBox(height: 8),
+                _Input(
+                    controller: pwCtrl,
+                    hint: s.strings.auth.pw_ph,
+                    obscure: !_showPw,
+                    forceLtr: true,
+                    accent: s.accent,
+                    suffixIcon: GestureDetector(
+                      onTap: () => setState(() => _showPw = !_showPw),
+                      child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
                     ),
-                  ),
-                ],
+                    onChanged: (_) => setState(() {})),
               ]),
             )),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
               child: Column(children: [
                 if (_error != null)
                   Padding(
@@ -593,7 +501,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 Opacity(
                     opacity: ok && !_submitting ? 1 : 0.4,
                     child: PButton(
-                        isPw && s.authIntent != 'signup' ? s.strings.auth.pw_signin : s.strings.common.continue_,
+                        _submitting && !isSignup
+                            ? s.strings.auth.pw_signing_in
+                            : (isSignup ? s.strings.auth.pw_signup : s.strings.auth.pw_signin),
                         variant: BtnVariant.primary,
                         large: true,
                         block: true,
@@ -755,8 +665,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final code = ctrl.text;
-    final contact =
-        s.authMethod == 'email' ? (s.authEmail.isEmpty ? 'you@example.com' : s.authEmail) : '+20 10 1234 5678';
+    final contact = s.authEmail.isEmpty ? 'you@example.com' : s.authEmail;
     return Container(
       color: T.cream50,
       child: SafeArea(
@@ -773,7 +682,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                 const SizedBox(height: 8),
                 RichText(
                     text: TextSpan(style: Typo.body(ar: s.rtl), children: [
-                  TextSpan(text: '${s.strings.auth.otp_help} '),
+                  TextSpan(text: '${s.strings.emergency.em_otp_h} '),
                   TextSpan(text: contact, style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
                 ])),
                 const SizedBox(height: 28),
@@ -834,7 +743,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
               child: Opacity(
                   opacity: code.length == 6 && !_verifying ? 1 : 0.4,
-                  child: PButton(s.strings.auth.verify,
+                  child: PButton(_verifying ? s.strings.auth.otp_verifying : s.strings.auth.verify,
                       variant: BtnVariant.primary,
                       large: true,
                       block: true,
@@ -1115,7 +1024,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   final handle = TextEditingController();
   final dob = TextEditingController();
   DateTime? _dobDate;
-  Gender gender = Gender.male;
+  Gender gender = Gender.female;
   String unStatus = 'idle'; // idle | checking | available | taken | invalid
   Timer? debounce;
   static const _taken = {
@@ -1304,14 +1213,14 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
               child: Column(children: [
                 Opacity(
-                    opacity: ok ? 1 : 0.4,
-                    child: PButton(s.strings.onboarding.pf_create,
+                    opacity: ok && !_creating ? 1 : 0.4,
+                    child: PButton(_creating ? s.strings.onboarding.pf_creating : s.strings.onboarding.pf_create,
                         variant: BtnVariant.primary,
                         large: true,
                         block: true,
                         accent: s.accent,
                         ar: s.rtl,
-                        onTap: ok ? _createAccount : null)),
+                        onTap: ok && !_creating ? _createAccount : null)),
                 const SizedBox(height: 12),
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),
@@ -1370,8 +1279,7 @@ class _UsernameField extends StatelessWidget {
               child: Row(children: [
                 const Icon(LucideIcons.link, size: 12, color: T.fg4),
                 const SizedBox(width: 5),
-                Text('balsm.health/@${controller.text}',
-                    textDirection: TextDirection.ltr, style: Typo.num(size: FS.xs, color: T.fg3)),
+                Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
               ]),
             ),
         ]));
@@ -1457,106 +1365,6 @@ class _Field extends StatelessWidget {
         const SizedBox(height: 8),
         child,
       ]);
-}
-
-// ── Dial-code picker (phone) ─────────────────────────────────
-/// Regional-indicator flag emoji from a 2-letter ISO country code.
-String _flagEmoji(String code) {
-  if (code.length != 2) return '🏳️';
-  return String.fromCharCodes(code.toUpperCase().codeUnits.map((c) => 0x1F1E6 + (c - 0x41)));
-}
-
-class _DialCodeButton extends StatelessWidget {
-  const _DialCodeButton({required this.country, required this.onTap});
-  final CountryCode country;
-  final VoidCallback? onTap;
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 54,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: T.border, width: 1.5)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(_flagEmoji(country.value), style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 6),
-          Text(country.dialCode,
-              textDirection: TextDirection.ltr,
-              style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600)),
-          const SizedBox(width: 2),
-          const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-        ]),
-      ),
-    );
-  }
-}
-
-class _DialCodeSheet extends StatelessWidget {
-  const _DialCodeSheet({required this.current, required this.s});
-  final CountryCode current;
-  final PatientAppState s;
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: s.dir,
-      child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-        decoration:
-            const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          Container(
-              width: 38,
-              height: 4,
-              decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
-          const SizedBox(height: 12),
-          Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(s.strings.auth.dial_title,
-                      style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)))),
-          const SizedBox(height: 8),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: CountryCode.known
-                  .map((c) => GestureDetector(
-                        onTap: () => Navigator.pop(context, c),
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                          child: Row(children: [
-                            Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: Text(c.name(kCatalog, locale: s.lang.value),
-                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
-                            Text(c.dialCode,
-                                textDirection: TextDirection.ltr,
-                                style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3)),
-                            if (c == current)
-                              Padding(
-                                  padding: const EdgeInsetsDirectional.only(start: 8),
-                                  child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
-                          ]),
-                        ),
-                      ))
-                  .toList(),
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
 }
 
 // ── Forgot-password (email-only reset via OTP code) ──────────

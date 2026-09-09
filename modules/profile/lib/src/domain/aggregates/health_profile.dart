@@ -9,6 +9,8 @@ class HealthProfile {
     required this.id,
     required this.userId,
     required this.bloodType,
+    this.weightKg,
+    this.heightCm,
     required this.allergies,
     required this.conditions,
     required this.emergencyContacts,
@@ -25,6 +27,12 @@ class HealthProfile {
   /// 'A+'|'A-'|'B+'|'B-'|'AB+'|'AB-'|'O+'|'O-' or null (unknown).
   final String? bloodType;
 
+  /// Optional body weight in kilograms. On-device PHI only.
+  final double? weightKg;
+
+  /// Optional height in centimetres. On-device PHI only.
+  final double? heightCm;
+
   /// Up to 50 allergies (validation enforced in use-cases).
   final List<Allergy> allergies;
 
@@ -36,13 +44,17 @@ class HealthProfile {
   final DateTime updatedAt;
 
   /// Returns true when at least one PHI field is populated.
-  bool get hasMinimalInfo => bloodType != null || allergies.isNotEmpty;
+  bool get hasMinimalInfo => bloodType != null || weightKg != null || heightCm != null || allergies.isNotEmpty;
 
   HealthProfile copyWith({
     HealthProfileId? id,
     UserId? userId,
     String? bloodType,
     bool clearBloodType = false,
+    double? weightKg,
+    bool clearWeight = false,
+    double? heightCm,
+    bool clearHeight = false,
     List<Allergy>? allergies,
     List<ChronicCondition>? conditions,
     List<EmergencyContact>? emergencyContacts,
@@ -52,6 +64,8 @@ class HealthProfile {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       bloodType: clearBloodType ? null : (bloodType ?? this.bloodType),
+      weightKg: clearWeight ? null : (weightKg ?? this.weightKg),
+      heightCm: clearHeight ? null : (heightCm ?? this.heightCm),
       allergies: allergies ?? this.allergies,
       conditions: conditions ?? this.conditions,
       emergencyContacts: emergencyContacts ?? this.emergencyContacts,

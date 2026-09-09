@@ -6,9 +6,11 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:medications/medications.dart' show medicationListProvider;
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
+import 'report_flow.dart' show openCheckin;
 import 'day_records_screen.dart';
 import 'home_widgets.dart';
 import 'records_screen.dart';
+import '../care/care_entity.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -36,8 +38,10 @@ class HomeScreen extends ConsumerWidget {
     // Real account summary → greeting name. Null while loading / signed out;
     // the greeting label still renders, just without a name.
     final summary = ref.watch(accountSummaryProvider).valueOrNull;
-    final displayName = (summary?.displayName ?? '').trim();
+    final member = s.activeFamilyMember;
+    final displayName = (member?.name ?? summary?.displayName ?? '').trim();
     final firstName = displayName.split(' ').first;
+    final avatarColor = member?.color ?? T.petalAqua;
 
     return ContentColumn(
       maxWidth: 720,
@@ -48,7 +52,12 @@ class HomeScreen extends ConsumerWidget {
 
           // App bar: avatar (account switcher) + greeting + bell.
           AppBarRow(children: [
-            _AvatarButton(initials: accountInitials(displayName), onTap: () => showAccountSwitcher(context)),
+            _AvatarButton(
+              initials: accountInitials(displayName),
+              color: avatarColor,
+              showBadge: s.extraFamily.isNotEmpty,
+              onTap: () => showAccountSwitcher(context),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -70,14 +79,7 @@ class HomeScreen extends ConsumerWidget {
           const _NudgeSection(),
 
           // Nearby care + records shortcuts.
-          HomeShortcut(
-            icon: LucideIcons.mapPin,
-            iconBg: T.petalBlue50,
-            iconFg: T.petalBlue,
-            title: s.strings.care.map_nearby,
-            subtitle: s.strings.care.map_sub,
-            onTap: () => s.setTab('map'),
-          ),
+          const _NearbyShortcut(),
           const _RecordsShortcut(),
 
           // Latest readings — only once something has been logged.
@@ -155,18 +157,48 @@ class _NudgeSection extends ConsumerWidget {
 }
 
 class _AvatarButton extends StatelessWidget {
-  const _AvatarButton({required this.initials, required this.onTap});
+  const _AvatarButton({
+    required this.initials,
+    required this.color,
+    required this.showBadge,
+    required this.onTap,
+  });
   final String initials;
+  final Color color;
+  final bool showBadge;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    // P001 is single-account, so no multi-account badge dot. Initials come from
-    // the real account summary; empty while loading / signed out.
     return Pressable(
       onTap: onTap,
       scale: 0.95,
-      child: Avatar(initials: initials, color: T.petalAqua, ar: s.rtl),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Avatar(initials: initials, color: color, ar: s.rtl),
+          if (showBadge)
+            PositionedDirectional(
+              bottom: -1,
+              end: -1,
+              child: Container(
+                width: 14,
+                height: 14,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -221,12 +253,31 @@ class _CheckInSection extends ConsumerWidget {
     return Column(children: [
       HomeHero(
         done: done,
-        onStart: () => s.setTab('checkin'),
+        onStart: () => openCheckin(context),
         onReview: () => s.setTab('trends'),
       ),
       // A streak of zero is not an achievement worth a card.
-      if (streak > 0) HomeStreak(days: streak),
+      if (streak > 0) HomeStreak(days: streak, checkedLast7: checkInsLastDays(history, 7)),
     ]);
+  }
+}
+
+/// Nearby-care shortcut, with a live directory count.
+class _NearbyShortcut extends ConsumerWidget {
+  const _NearbyShortcut();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final count = (ref.watch(careDirectoryProvider).valueOrNull ?? const <CareEntity>[]).length;
+    return HomeShortcut(
+      icon: LucideIcons.mapPin,
+      iconBg: T.petalBlue50,
+      iconFg: T.petalBlue,
+      title: s.strings.care.map_nearby,
+      subtitle: '$count ${s.strings.care.map_sub}',
+      onTap: () => s.setTab('map'),
+    );
   }
 }
 
@@ -270,6 +321,8 @@ class _LatestMetrics extends ConsumerWidget {
           label: s.strings.profile.m_bp,
           value: '${v.systolic}/${v.diastolic}',
           unit: s.strings.checkin.unit_bp,
+          foot: (v.systolic! >= 130 || v.diastolic! >= 85) ? s.strings.checkin.bp_high : s.strings.checkin.bp_normal,
+          footTone: v.systolic! >= 130 || v.diastolic! >= 85,
         ),
       if (glucose != null)
         MetricTile(
@@ -277,6 +330,8 @@ class _LatestMetrics extends ConsumerWidget {
           label: s.strings.profile.m_glucose,
           value: '$glucose',
           unit: s.strings.checkin.unit_glu,
+          foot: glucose >= 140 ? s.strings.checkin.bp_high : s.strings.checkin.bp_normal,
+          footTone: glucose >= 140,
         ),
       if (v.spo2 != null)
         MetricTile(
@@ -291,11 +346,12 @@ class _LatestMetrics extends ConsumerWidget {
           label: s.strings.profile.m_mood,
           value: moodLabel(s, latest.mood!.score),
         ),
-      MetricTile(
-        icon: LucideIcons.thermometer,
-        label: s.strings.profile.m_pain,
-        value: '${latest.painLevel.value}/10',
-      ),
+      if (latest.painLevel.value > 0)
+        MetricTile(
+          icon: LucideIcons.thermometer,
+          label: s.strings.profile.m_pain,
+          value: '${latest.painLevel.value}/10',
+        ),
     ];
     if (tiles.isEmpty) return const SizedBox.shrink();
 
@@ -303,15 +359,7 @@ class _LatestMetrics extends ConsumerWidget {
       RowHead(s.strings.checkin.latest, ar: s.rtl),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.72,
-          children: tiles,
-        ),
+        child: MetricGrid(tiles: tiles),
       ),
     ]);
   }

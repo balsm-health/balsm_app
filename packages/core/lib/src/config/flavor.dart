@@ -20,14 +20,20 @@ class FlavorConfig {
   /// them.
   final List<ServerPreset> servers;
 
-  /// The server the app boots against when no preset was saved: the FIRST
-  /// [servers] entry. Runtime resolution is `saved preset ?? defaultServer`
-  /// (see `BalsmApiController.init`).
-  ///
-  /// ⚠️ Ordering contract: the first `ENVS` entry must be the correct default
-  /// for the build being shipped — a prod build whose env list starts with a
-  /// Local entry would boot against localhost.
-  ServerPreset get defaultServer => servers.first;
+  /// Boot target when no preset was saved (or switching is disabled).
+  /// Matches the [flavor] label in [servers] (`Local` / `Staging` /
+  /// `Production`); falls back to the first entry if the label is missing.
+  ServerPreset get defaultServer {
+    final want = switch (flavor) {
+      Flavor.prod => 'production',
+      Flavor.staging => 'staging',
+      Flavor.dev => 'local',
+    };
+    for (final s in servers) {
+      if (s.label.toLowerCase() == want) return s;
+    }
+    return servers.first;
+  }
 
   final String? sentryDsn;
   final String appName;
@@ -105,16 +111,20 @@ class FlavorConfig {
   }
 
   /// Explicit init (used by [initFromEnvironment] and tests).
-  static void init({required AppBrand brand, required Flavor flavor}) {
+  static void init({
+    required AppBrand brand,
+    required Flavor flavor,
+    List<ServerPreset>? servers,
+  }) {
     const serversRaw = String.fromEnvironment('ENVS', defaultValue: '');
     const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
-    final servers = _parseServers(serversRaw);
+    final resolved = (servers != null && servers.isNotEmpty) ? servers : _parseServers(serversRaw);
     final base = brand == AppBrand.balsm_pro ? 'Balsm Pro' : 'Balsm';
     final envSuffix = switch (flavor) { Flavor.dev => ' Dev', Flavor.staging => ' Staging', Flavor.prod => '' };
     _current = FlavorConfig(
       brand: brand,
       flavor: flavor,
-      servers: servers,
+      servers: resolved,
       sentryDsn: sentryDsn.isEmpty ? null : sentryDsn,
       appName: '$base$envSuffix',
       appNameSuffix: envSuffix,

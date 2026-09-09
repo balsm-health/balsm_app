@@ -13,7 +13,7 @@ class HealthProfileUpdated extends AppEvent {
 
   /// Coarse tag describing which field changed. One of:
   /// 'blood_type' | 'allergy_added' | 'allergy_removed' |
-  /// 'condition_added' | 'contact_added'
+  /// 'condition_added' | 'condition_removed' | 'contact_added' | 'measurements'
   final String fieldChanged;
 
   @override

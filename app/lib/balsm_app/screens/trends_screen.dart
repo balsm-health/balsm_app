@@ -139,22 +139,14 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
           _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),
         ]),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-          child: Row(
-            children: _TrendMetric.values
-                .map((m) => Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 8),
-                      child: BChip(
-                        m.label(s),
-                        active: _visible.contains(m),
-                        accent: s.accent.main,
-                        ar: s.rtl,
-                        onTap: () => _toggle(m),
-                      ),
-                    ))
-                .toList(),
+        // Metric filter — a dropdown selector (the design replaced the chip
+        // row with one): trigger summarising the selection, opening a
+        // checkbox panel that closes on an outside tap.
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+            child: _MetricsDropdown(visible: _visible, onToggle: _toggle),
           ),
         ),
         if (charts.isEmpty) _NoReadings(range: _range) else ...charts,
@@ -293,6 +285,94 @@ class _NoReadings extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
       ]),
+    );
+  }
+}
+
+/// Trends metric selector — trigger + checkbox panel (replaces the chip row).
+class _MetricsDropdown extends StatelessWidget {
+  const _MetricsDropdown({required this.visible, required this.onToggle});
+
+  final Set<_TrendMetric> visible;
+  final ValueChanged<_TrendMetric> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final all = _TrendMetric.values.length;
+    final label = visible.length == all
+        ? s.strings.checkin.trend_all_metrics
+        : s.strings.checkin.trend_n_metrics('${visible.length}');
+
+    return MenuAnchor(
+      alignmentOffset: const Offset(0, 6),
+      style: MenuStyle(
+        backgroundColor: const WidgetStatePropertyAll(Colors.white),
+        elevation: const WidgetStatePropertyAll(6),
+        shadowColor: const WidgetStatePropertyAll(Color(0x2414202B)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.all(6)),
+        minimumSize: const WidgetStatePropertyAll(Size(210, 0)),
+        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(T.rLg),
+          side: const BorderSide(color: T.border),
+        )),
+      ),
+      builder: (context, controller, _) => Pressable(
+        onTap: () => controller.isOpen ? controller.close() : controller.open(),
+        scale: 0.99,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rMd),
+            border: Border.all(color: T.border, width: 1.5),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.slidersHorizontal, size: 15, color: T.fg3),
+            const SizedBox(width: 8),
+            Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            const SizedBox(width: 8),
+            AnimatedRotation(
+              turns: controller.isOpen ? 0.5 : 0,
+              duration: Motion.base,
+              curve: Motion.easeOut,
+              child: const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
+            ),
+          ]),
+        ),
+      ),
+      menuChildren: [
+        for (final m in _TrendMetric.values)
+          MenuItemButton(
+            closeOnActivate: false,
+            onPressed: () => onToggle(m),
+            style: ButtonStyle(
+              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 10)),
+              minimumSize: const WidgetStatePropertyAll(Size(198, 0)),
+              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(T.rSm))),
+            ),
+            child: Row(children: [
+              // 18px checkbox: accent fill + white tick when on, else outline.
+              Container(
+                width: 18,
+                height: 18,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: visible.contains(m) ? s.accent.main : Colors.transparent,
+                  borderRadius: BorderRadius.circular(5),
+                  border: visible.contains(m) ? null : Border.all(color: T.borderStrong, width: 1.5),
+                ),
+                child: visible.contains(m) ? const Icon(LucideIcons.check, size: 12, color: Colors.white) : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child:
+                    Text(m.label(s), style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: T.fg1)),
+              ),
+            ]),
+          ),
+      ],
     );
   }
 }

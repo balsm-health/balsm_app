@@ -1,8 +1,8 @@
 {
   "ENVS": [
+    { "name": "Local", "url": "http://localhost:5050" },
     { "name": "Production", "url": "https://api.balsm.health" },
-    { "name": "Staging", "url": "https://api-stg-balsm-health.mosalam.com" },
-    { "name": "Local", "url": "http://localhost:5000" }
+    { "name": "Staging", "url": "https://api-stg-balsm-health.mosalam.com" }
   ],
   "SENTRY_DSN": "https://0ce41a174a7ea74463ea4b2d2ffadb3d@o4511072882851841.ingest.de.sentry.io/4511532477055056"
 }

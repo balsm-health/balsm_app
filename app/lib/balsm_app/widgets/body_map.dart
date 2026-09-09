@@ -131,11 +131,10 @@ class _BodyMapState extends State<BodyMap> {
         ),
       ),
       const SizedBox(height: 8),
-      // `.bm-host` centres the plate; the art is capped at 190 wide / 360 tall,
-      // and 360 is the binding constraint at this aspect (190 → 364.8).
+      // `.bm-host` centres the plate; design caps height at min(320px, 40vh).
       Center(
         child: SizedBox(
-          height: 360,
+          height: (MediaQuery.sizeOf(context).height * 0.40).clamp(220.0, 320.0),
           child: AspectRatio(
             aspectRatio: 200 / 384,
             child: LayoutBuilder(builder: (context, constraints) {

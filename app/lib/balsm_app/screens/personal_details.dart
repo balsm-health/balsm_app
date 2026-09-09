@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:core/core.dart'
     show
@@ -417,9 +418,6 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                           color: T.petalAqua,
                           size: 72,
                           fontSize: 26),
-                      const SizedBox(height: 10),
-                      PButton(s.strings.profile.pd_change_photo,
-                          icon: LucideIcons.camera, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl),
                     ])),
                     // Account (handle + QR share)
                     _section(LucideIcons.atSign, s.strings.profile.pd_account),
@@ -432,8 +430,16 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                             onChanged: _setHandle,
                             style: Typo.num(size: FS.lg),
                             decoration: InputDecoration(
-                              isDense: true, prefixText: '@',
-                              prefixStyle: Typo.num(size: FS.lg, weight: FontWeight.w700, color: T.fg3),
+                              isDense: true,
+                              // `UsernameField` paints the "@" as an always-on glyph inside
+                              // the input. `prefixText` only appears once the field is focused
+                              // or non-empty, so an empty handle lost the affordance entirely;
+                              // prefixIcon renders unconditionally.
+                              prefixIcon: Padding(
+                                padding: const EdgeInsetsDirectional.only(start: 14, end: 2),
+                                child: Text('@', style: Typo.num(size: FS.lg, weight: FontWeight.w700, color: T.fg3)),
+                              ),
+                              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
                               // Status icon: spinner while checking, then check / x / alert.
                               suffixIcon: _handleSuffix(),
                               suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
@@ -469,8 +475,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       Row(children: [
                         const Icon(LucideIcons.info, size: 12, color: T.fg3),
                         const SizedBox(width: 5),
-                        Text('balsm.health/@${handle.text}',
-                            textDirection: TextDirection.ltr, style: Typo.num(size: FS.xs, color: T.fg3)),
+                        Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
                       ]),
                       const SizedBox(height: 14),
                       Pressable(
@@ -505,6 +510,23 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         ),
                       ),
                     ]),
+                    // Connected accounts — visual match of home.jsx. Connect is
+                    // shown disconnected until a real Apple/Google link API exists;
+                    // do not fake a connected session.
+                    _section(LucideIcons.link, s.strings.profile.conn_accounts),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(T.rLg),
+                          border: Border.all(color: T.border),
+                          boxShadow: T.shadowSm),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(children: [
+                        _connectedRow(apple: true, label: s.strings.profile.conn_apple, last: false),
+                        _connectedRow(apple: false, label: s.strings.profile.conn_google, last: true),
+                      ]),
+                    ),
                     // Basic info — name (→ display_name), date of birth (PHI, 18+),
                     // gender. All persisted via PATCH /account/profile.
                     _section(LucideIcons.user, s.strings.profile.pd_basic_info),
@@ -590,6 +612,34 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _connectedRow({required bool apple, required String label, required bool last}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink100))),
+      child: Row(children: [
+        Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: apple ? const Color(0xFF1A1A17) : Colors.white,
+            borderRadius: BorderRadius.circular(T.rMd),
+            border: apple ? null : Border.all(color: T.ink100),
+          ),
+          child: apple
+              ? const Icon(Icons.apple, size: 20, color: Colors.white)
+              : SvgPicture.string(_kGoogleGSvg, width: 18, height: 18),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+        ),
+        PButton(s.strings.profile.conn_connect,
+            variant: BtnVariant.soft, size: BtnSize.sm, accent: s.accent, ar: s.rtl, onTap: () {}),
+      ]),
     );
   }
 
@@ -1559,3 +1609,12 @@ class _HandleChangeSheet extends StatelessWidget {
         ]),
       );
 }
+
+const _kGoogleGSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+</svg>
+''';

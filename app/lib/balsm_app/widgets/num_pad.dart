@@ -20,6 +20,10 @@ class NumPad extends StatelessWidget {
         crossAxisCount: 3,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        // See home_screen's metric grid: a nested BoxScrollView with a null
+        // `padding` inherits MediaQuery's vertical padding (the notch/home
+        // indicator insets), which would push the keypad off-centre.
+        padding: EdgeInsets.zero,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         // `.numpad-key { height: 52px }` — the key height is fixed, so derive

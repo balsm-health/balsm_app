@@ -76,6 +76,32 @@ void main() {
     expect(await ds.findAll(scope: const UserId.value('u-2')), isEmpty);
   });
 
+  test('self-added scripts keep title, source, and attachment', () async {
+    final rx = Prescription(
+      id: const PrescriptionId.value('self-1'),
+      userId: user,
+      clinician: 'Dr. Sara',
+      title: 'Clinic visit',
+      source: 'self',
+      attachmentPath: 'u-1/rx.jpg.enc',
+      attachmentKind: 'image',
+      items: const [PrescribedItem(name: 'Amoxicillin', dose: '500 mg · One time', notes: 'with food')],
+      issuedAt: DateTime.utc(2026, 9, 1),
+      createdAt: DateTime.utc(2026, 9, 1),
+    );
+    await ds.put(rx.id, rx);
+    final got = await ds.find(rx.id);
+    expect(got, isNotNull);
+    expect(got!.isSelf, isTrue);
+    expect(got.title, 'Clinic visit');
+    expect(got.attachmentKind, 'image');
+    expect(got.items.single.notes, 'with food');
+  });
+
+  test('a clinic script with a reference is not self-added', () {
+    expect(sample('clinic').isSelf, isFalse);
+  });
+
   test('mutations with no active user throw', () async {
     final signedOut = DriftPrescriptionsDataSource(db, () => null);
     expect(() => signedOut.put(const PrescriptionId.value('x'), sample('x')), throwsA(isA<NoActiveUserException>()));

@@ -100,16 +100,20 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     final now = DateTime.now().millisecondsSinceEpoch;
     await _db.customInsert(
       '''
-      INSERT INTO health_profile (id, user_id, blood_type, updated_at)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO health_profile (id, user_id, blood_type, weight_kg, height_cm, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         blood_type = excluded.blood_type,
+        weight_kg = excluded.weight_kg,
+        height_cm = excluded.height_cm,
         updated_at = excluded.updated_at
       ''',
       variables: [
         Variable.withString(key.value),
         Variable.withString(user.value),
         value.bloodType != null ? Variable.withString(value.bloodType!) : const Variable(null),
+        value.weightKg != null ? Variable.withReal(value.weightKg!) : const Variable(null),
+        value.heightCm != null ? Variable.withReal(value.heightCm!) : const Variable(null),
         Variable.withInt(now),
       ],
     );
@@ -219,6 +223,8 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       id: profileId,
       userId: UserId.value(row.read<String>('user_id')),
       bloodType: row.readNullable<String>('blood_type'),
+      weightKg: (row.data['weight_kg'] as num?)?.toDouble(),
+      heightCm: (row.data['height_cm'] as num?)?.toDouble(),
       allergies: allergies,
       conditions: conditions,
       emergencyContacts: contacts,
@@ -333,6 +339,15 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       ],
     );
     return id;
+  }
+
+  /// Deletes the chronic-condition row with the given [conditionId].
+  @override
+  Future<void> removeCondition(ChronicConditionId conditionId) async {
+    await _db.customUpdate(
+      'DELETE FROM chronic_condition WHERE id = ?',
+      variables: [Variable.withString(conditionId.value)],
+    );
   }
 
   // -----------------------------------------------------------------------

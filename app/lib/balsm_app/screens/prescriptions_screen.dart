@@ -7,6 +7,8 @@ import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../widgets/photo_attach.dart';
+import 'add_prescription_sheet.dart';
 import 'appointments_screen.dart' show formatAppointmentDate;
 
 /// Prescriptions the patient holds — grouped active / expired.
@@ -21,7 +23,8 @@ class PrescriptionsScreen extends ConsumerWidget {
     final s = AppScope.of(context);
     final all = ref.watch(prescriptionListProvider).valueOrNull ?? const <Prescription>[];
     final now = DateTime.now();
-    final active = all.where((r) => r.isActive(now)).toList();
+    final clinic = all.where((r) => !r.isSelf && r.isActive(now)).toList();
+    final mine = all.where((r) => r.isSelf && r.isActive(now)).toList();
     final expired = all.where((r) => !r.isActive(now)).toList();
 
     return ContentColumn(
@@ -32,22 +35,32 @@ class PrescriptionsScreen extends ConsumerWidget {
           RoundBtn(icon: backArrow(context), onTap: () => s.setTab('meds')),
           const SizedBox(width: 12),
           Expanded(child: Text(s.strings.records.prescriptions, style: Typo.heading(ar: s.rtl))),
+          RoundBtn(
+            icon: LucideIcons.plus,
+            onTap: () => showAddPrescription(context),
+          ),
         ]),
         if (all.isEmpty)
           PCard(
             margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(children: [
               const Icon(LucideIcons.fileText, size: 36, color: T.fg4),
               const SizedBox(height: 14),
-              Text(s.strings.records.prescriptions,
+              Text(s.strings.meds.rx_empty,
                   textAlign: TextAlign.center,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+              const SizedBox(height: 8),
+              Text(s.strings.meds.rx_empty_h, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
             ]),
           ),
-        if (active.isNotEmpty) ...[
+        if (clinic.isNotEmpty) ...[
           RowHead(s.strings.meds.rx_active, ar: s.rtl),
-          for (final rx in active) _RxCard(rx: rx, dim: false),
+          for (final rx in clinic) _RxCard(rx: rx, dim: false),
+        ],
+        if (mine.isNotEmpty) ...[
+          RowHead(s.strings.meds.rx_my_prescriptions, ar: s.rtl),
+          for (final rx in mine) _RxCard(rx: rx, dim: false),
         ],
         if (expired.isNotEmpty) ...[
           RowHead(s.strings.meds.rx_expired, ar: s.rtl),
@@ -77,11 +90,20 @@ class _RxCard extends StatelessWidget {
           MaterialPageRoute(builder: (_) => PrescriptionDetailScreen(rx: rx)),
         ),
         child: Row(children: [
-          Avatar(initials: _initials(rx.clinician), color: T.petalAqua, size: 44, fontSize: FS.md, ar: s.rtl),
+          rx.isSelf
+              ? Container(
+                  width: 46,
+                  height: 46,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(color: T.petalBlue50, shape: BoxShape.circle),
+                  child: Icon(rx.attachmentPath != null ? LucideIcons.fileText : LucideIcons.pill,
+                      size: 21, color: T.petalBlue),
+                )
+              : Avatar(initials: _initials(rx.clinician), color: T.petalAqua, size: 44, fontSize: FS.md, ar: s.rtl),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(rx.clinician,
+              Text(rx.isSelf ? (rx.title ?? rx.clinician) : rx.clinician,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
@@ -91,8 +113,11 @@ class _RxCard extends StatelessWidget {
             ]),
           ),
           const SizedBox(width: 8),
-          Pill(active ? s.strings.meds.rx_active : s.strings.meds.rx_expired,
-              kind: active ? PillKind.success : PillKind.neutral, ar: s.rtl),
+          Pill(
+            rx.isSelf ? s.strings.meds.rx_self_added : (active ? s.strings.meds.rx_active : s.strings.meds.rx_expired),
+            kind: !rx.isSelf && active ? PillKind.success : PillKind.neutral,
+            ar: s.rtl,
+          ),
           const SizedBox(width: 6),
           Chevron(rtl: s.rtl),
         ]),
@@ -106,6 +131,12 @@ class _RxCard extends StatelessWidget {
     if (parts.length == 1) return parts.first.characters.first.toUpperCase();
     return (parts.first.characters.first + parts.last.characters.first).toUpperCase();
   }
+}
+
+Future<void> _deleteSelf(BuildContext context, Prescription rx) async {
+  final container = ProviderScope.containerOf(context);
+  await container.read(prescriptionsDataSourceProvider).delete(rx.id);
+  if (context.mounted) Navigator.of(context).pop();
 }
 
 /// One prescription in full, with the scannable reference.
@@ -126,8 +157,16 @@ class PrescriptionDetailScreen extends StatelessWidget {
           AppBarRow(children: [
             RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).pop()),
             const Spacer(),
-            Pill(active ? s.strings.meds.rx_active : s.strings.meds.rx_expired,
-                kind: active ? PillKind.success : PillKind.neutral, ar: s.rtl),
+            if (rx.isSelf)
+              RoundBtn(
+                icon: LucideIcons.trash2,
+                ghost: true,
+                iconSize: 18,
+                onTap: () => _deleteSelf(context, rx),
+              )
+            else
+              Pill(active ? s.strings.meds.rx_active : s.strings.meds.rx_expired,
+                  kind: active ? PillKind.success : PillKind.neutral, ar: s.rtl),
           ]),
           Expanded(
             child: ListView(padding: EdgeInsets.zero, children: [
@@ -135,21 +174,40 @@ class PrescriptionDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    Avatar(
-                        initials: _RxCard._initials(rx.clinician),
-                        color: T.petalAqua,
-                        size: 50,
-                        fontSize: FS.lg,
-                        ar: s.rtl),
+                    rx.isSelf
+                        ? Container(
+                            width: 50,
+                            height: 50,
+                            alignment: Alignment.center,
+                            decoration: const BoxDecoration(color: T.petalBlue50, shape: BoxShape.circle),
+                            child: const Icon(LucideIcons.user, size: 22, color: T.petalBlue),
+                          )
+                        : Avatar(
+                            initials: _RxCard._initials(rx.clinician),
+                            color: T.petalAqua,
+                            size: 50,
+                            fontSize: FS.lg,
+                            ar: s.rtl),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(rx.clinician,
+                        Text(rx.isSelf ? (rx.title ?? rx.clinician) : rx.clinician,
                             style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                        if (rx.specialty != null && rx.specialty!.isNotEmpty)
+                        if (rx.isSelf && rx.clinician != rx.title && rx.clinician.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text('${s.strings.meds.rx_prescribed_by} ${rx.clinician}',
+                                style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                          ),
+                        if (!rx.isSelf && rx.specialty != null && rx.specialty!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(rx.specialty!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                          ),
+                        if (rx.isSelf)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Pill(s.strings.meds.rx_self_added, kind: PillKind.neutral, ar: s.rtl),
                           ),
                       ]),
                     ),
@@ -167,15 +225,39 @@ class PrescriptionDetailScreen extends StatelessWidget {
                   ]),
                 ]),
               ),
-              if (active && (rx.reference ?? '').isNotEmpty) _QrBlock(reference: rx.reference!),
-              RowHead(s.strings.meds.medications, ar: s.rtl),
-              PCard(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(children: [
-                  for (final (i, item) in rx.items.indexed) _ItemRow(item: item, first: i == 0),
-                ]),
-              ),
-              if (active && (rx.reference ?? '').isNotEmpty)
+              if (rx.isSelf)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    decoration: BoxDecoration(color: T.cream100, borderRadius: BorderRadius.circular(T.rMd)),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Icon(LucideIcons.info, size: 16, color: T.fg3),
+                      const SizedBox(width: 10),
+                      Expanded(
+                          child:
+                              Text(s.strings.meds.rx_self_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3))),
+                    ]),
+                  ),
+                ),
+              if (rx.isSelf && rx.attachmentPath != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: rx.attachmentKind == 'image'
+                      ? VaultImage(path: rx.attachmentPath!, height: 240)
+                      : _LinkAttach(path: rx.attachmentPath!, kind: rx.attachmentKind ?? 'url'),
+                ),
+              if (active && !rx.isSelf && (rx.reference ?? '').isNotEmpty) _QrBlock(reference: rx.reference!),
+              if (rx.items.isNotEmpty) ...[
+                RowHead(s.strings.meds.medications, ar: s.rtl),
+                PCard(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(children: [
+                    for (final (i, item) in rx.items.indexed) _ItemRow(item: item, first: i == 0),
+                  ]),
+                ),
+              ],
+              if (active && !rx.isSelf && (rx.reference ?? '').isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: PButton(s.strings.meds.rx_show,
@@ -281,6 +363,46 @@ class _QrBlock extends StatelessWidget {
   }
 }
 
+class _LinkAttach extends StatelessWidget {
+  const _LinkAttach({required this.path, required this.kind});
+  final String path;
+  final String kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final isPdf = kind == 'pdf';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(T.rLg),
+        border: Border.all(color: T.border),
+      ),
+      child: Row(children: [
+        Container(
+          width: 42,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: T.petalViolet50, borderRadius: BorderRadius.circular(T.rMd)),
+          child: Icon(isPdf ? LucideIcons.fileText : LucideIcons.link, size: 20, color: T.petalViolet),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(path,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            Text(isPdf ? 'PDF' : 'Link', style: Typo.meta(ar: s.rtl)),
+          ]),
+        ),
+        const Icon(LucideIcons.externalLink, size: 16, color: T.fg4),
+      ]),
+    );
+  }
+}
+
 class _Fact extends StatelessWidget {
   const _Fact({required this.label, required this.value, this.color});
   final String label;
@@ -323,6 +445,11 @@ class _ItemRow extends StatelessWidget {
             Text(item.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
             if (item.dose != null && item.dose!.isNotEmpty)
               Text(item.dose!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            if (item.notes != null && item.notes!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(item.notes!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+              ),
           ]),
         ),
       ]),

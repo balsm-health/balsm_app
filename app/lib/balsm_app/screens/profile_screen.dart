@@ -36,19 +36,36 @@ class ProfileScreen extends ConsumerWidget {
     final s = AppScope.of(context);
     // Real account summary → profile head (name + handle). Null while loading /
     // signed out, in which case the head renders neutrally.
-    final summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final account = ref.watch(accountSummaryProvider);
+    final summary = account.valueOrNull;
     final displayName = (summary?.displayName ?? '').trim();
     final curLang = s.lang;
     // Reflects the active backup target (StorageTarget).
     final stCfg = storageCfg(s.storageProvider);
+    // Design order (home.jsx ProfileScreen): personal → conditions → care →
+    // emergency → notif → privacy → feedback → ecosystem → help.
+    // Appointments stays as a Flutter-only extra (design never opens that
+    // screen from profile). Governance stays in its own card below.
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
-      (LucideIcons.calendar, 'care.appts', () => s.setTab('appts'), false),
       (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
+      // Flutter-only row. The design defines an AppointmentsScreen but never
+      // navigates to it (app.jsx calls it a sub-screen "reached from
+      // Home/Profile", yet nothing links there), so the app surfaces it — next
+      // to Care team, which schedules the visits. Every design row keeps its
+      // relative order.
+      (LucideIcons.calendar, 'care.appts', () => s.setTab('appts'), false),
       (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'profile.p_notif', null, false),
-      (LucideIcons.shieldCheck, 'profile.p_privacy', () => openPrivacyData(context), false),
+      (
+        LucideIcons.shieldCheck,
+        'profile.p_privacy',
+        () => openPrivacyData(context, onDeleteAccount: () => openAccountDeletion(context)),
+        false
+      ),
+      (LucideIcons.star, 'feedback.fb_row', () => showFeedbackSheet(context), false),
+      (LucideIcons.flower2, 'ecosystem.eco_row', () => showEcosystemSheet(context), false),
       (LucideIcons.lifeBuoy, 'profile.p_help', null, false),
     ];
     return ContentColumn(
@@ -59,9 +76,10 @@ class ProfileScreen extends ConsumerWidget {
             Expanded(child: Text(s.strings.common.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
           ]),
 
-          // Profile head — real account summary (name + handle). No fabricated
-          // "member since" / conditions strip; conditions live on the medical
-          // profile sub-screen (real on-device PHI).
+          // Profile head — real account summary (name + handle) plus the
+          // patient's own chronic conditions (`.profile-head`). Everything here
+          // is real data: the design's "patient since" line has no counterpart
+          // on AccountSummary, so it is omitted rather than fabricated.
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             child: Column(children: [
@@ -70,11 +88,34 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2, fontWeight: FontWeight.w800)),
               ],
+              // A failed `GET /account/self` used to render exactly like a
+              // signed-out or still-loading head — a nameless avatar, forever,
+              // with no way to retry. Say so, and offer the retry.
+              if (account.hasError) ...[
+                const SizedBox(height: 14),
+                Text(s.strings.profile.acct_load_failed,
+                    textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                const SizedBox(height: 8),
+                PButton(s.strings.profile.acct_retry,
+                    icon: LucideIcons.rotateCcw,
+                    variant: BtnVariant.soft,
+                    size: BtnSize.sm,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: () => ref.invalidate(accountSummaryProvider)),
+              ],
               if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text('@${summary.handle}',
                     textDirection: TextDirection.ltr, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
               ],
+              // `.profile-head .chip-wrap` — the patient's own chronic
+              // conditions. Real on-device PHI shown to the data subject; the
+              // strip stays hidden until the profile actually has conditions,
+              // so nothing is ever fabricated. (There is no "patient since"
+              // line: AccountSummary carries no creation date, and inventing
+              // one would be fake data.)
+              const _ConditionChips(),
             ]),
           ),
 
@@ -123,24 +164,10 @@ class ProfileScreen extends ConsumerWidget {
                 .toList(),
           ),
 
-          // Account & security — real governance screens (sessions, service status,
-          // account deletion). These push the REAL module screens (their own design
-          // system + re-auth), same MaterialPageRoute pattern as the lockout / 404
-          // Community: rate the app and read the ecosystem story. Neither is
-          // PHI — feedback keeps only a rating + date in the KV prefs group.
-          _ListCard(children: [
-            _ListRow(
-              icon: LucideIcons.star,
-              label: s.strings.feedback.fb_row,
-              first: true,
-              onTap: () => showFeedbackSheet(context),
-            ),
-            _ListRow(
-              icon: LucideIcons.flower2,
-              label: s.strings.ecosystem.eco_row,
-              onTap: () => showEcosystemSheet(context),
-            ),
-          ]),
+          // Account & security — real governance screens (sessions, service
+          // status, account deletion). Flutter-only extras; not in the design
+          // profile list. These push the module screens (their own design
+          // system + re-auth).
 
           // → StatusScreen hop.
           _ListCard(children: [
@@ -311,6 +338,8 @@ class _ScopedShellExitObserver extends NavigatorObserver {
 /// out of the first screen) lands on the base — [_ScopedDeletionHost] watches
 /// the router and, the moment the location returns to `/`, dismisses the outer
 /// route back to the prototype shell.
+void openAccountDeletion(BuildContext context) => _pushDeletionRouted(context);
+
 void _pushDeletionRouted(BuildContext context) {
   final s = AppScope.of(context);
   final theme = Theme.of(context);
@@ -475,6 +504,36 @@ class _ListRow extends StatelessWidget {
   }
 }
 
+/// `.profile-head .chip-wrap` — the patient's chronic conditions as centred
+/// badges (`--balsm-ink-100` on `--balsm-ink-700`). Renders nothing until the
+/// on-device health profile actually holds conditions.
+class _ConditionChips extends ConsumerWidget {
+  const _ConditionChips();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final conditions = ref.watch(healthProfileProvider).valueOrNull?.conditions ?? const [];
+    if (conditions.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final c in conditions)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rPill)),
+              child: Text(c.name, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.ink700)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Language sheet ───────────────────────────────────────────
 void _showLanguageSheet(BuildContext context) {
   final s = AppScope.of(context);
@@ -484,24 +543,30 @@ void _showLanguageSheet(BuildContext context) {
     barrierColor: const Color(0x5C14202B),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
-      child: _SheetShell(title: s.strings.settings.choose_lang, children: [
-        ...LanguageCode.supported.indexed.map((e) => _SelectRow(
-              label: e.$2.nativeName,
-              sub: e.$2.name(kCatalog),
-              code: e.$2.value.toUpperCase(),
-              selected: e.$2 == s.lang,
-              last: e.$1 == LanguageCode.supported.length - 1,
-              badge: e.$2.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
-              badgeOk: e.$2.isFullySupported,
-              enabled: e.$2.isFullySupported,
-              onTap: e.$2.isFullySupported
-                  ? () {
-                      s.setLang(e.$2);
-                      Navigator.pop(ctx);
-                    }
-                  : null,
-            )),
-      ]),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: _SheetShell(title: s.strings.settings.choose_lang, children: [
+            ...LanguageCode.supported.indexed.map((e) => _SelectRow(
+                  label: e.$2.nativeName,
+                  sub: e.$2.name(kCatalog),
+                  code: e.$2.value.toUpperCase(),
+                  selected: e.$2 == s.lang,
+                  last: e.$1 == LanguageCode.supported.length - 1,
+                  badge: e.$2.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
+                  badgeOk: e.$2.isFullySupported,
+                  enabled: e.$2.isFullySupported,
+                  onTap: e.$2.isFullySupported
+                      ? () {
+                          s.setLang(e.$2);
+                          Navigator.pop(ctx);
+                        }
+                      : null,
+                )),
+          ]),
+        ),
+      ),
     ),
   );
 }
@@ -514,22 +579,31 @@ void _showCountrySheet(BuildContext context) {
     barrierColor: const Color(0x5C14202B),
     builder: (ctx) => Directionality(
       textDirection: s.dir,
-      child: _SheetShell(title: s.strings.settings.choose_country, subtitle: s.strings.settings.travel_help, children: [
-        ...CountryCode.known.indexed.map((e) => _SelectRow(
-              label: e.$2.name(kCatalog, locale: s.lang.value),
-              sub: '${e.$2.dialCode}   ${s.strings.emergency.emergency} ${e.$2.emergencyNumber}',
-              code: e.$2.value.toUpperCase(),
-              codeMono: true,
-              selected: e.$2 == s.country,
-              last: e.$1 == CountryCode.known.length - 1,
-              badge: e.$2 == kHomeCountry ? s.strings.settings.home_country : null,
-              badgeOk: true,
-              onTap: () {
-                s.setCountry(e.$2);
-                Navigator.pop(ctx);
-              },
-            )),
-      ]),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: _SheetShell(
+              title: s.strings.settings.choose_country,
+              subtitle: s.strings.settings.travel_help,
+              children: [
+                ...CountryCode.known.indexed.map((e) => _SelectRow(
+                      label: e.$2.name(kCatalog, locale: s.lang.value),
+                      sub: '${e.$2.dialCode}   ${s.strings.emergency.emergency} ${e.$2.emergencyNumber}',
+                      code: e.$2.value.toUpperCase(),
+                      codeMono: true,
+                      selected: e.$2 == s.country,
+                      last: e.$1 == CountryCode.known.length - 1,
+                      badge: e.$2 == kHomeCountry ? s.strings.settings.home_country : null,
+                      badgeOk: true,
+                      onTap: () {
+                        s.setCountry(e.$2);
+                        Navigator.pop(ctx);
+                      },
+                    )),
+              ]),
+        ),
+      ),
     ),
   );
 }

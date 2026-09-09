@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:core/core.dart' show currentProfileIdProvider;
+import 'package:core/core.dart' show activeProfileProvider, currentProfileIdProvider, currentUserIdProvider;
 import 'package:records/records.dart' show RecordType;
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
@@ -14,6 +15,7 @@ import 'checkin_shared.dart';
 import 'metric_log.dart';
 import 'records_detail.dart' show showAddRecord;
 import 'records_screen.dart' show recordTypeLabelOne, recordTypeStyle;
+import '../vault/vault_blob.dart';
 import 'report_flow.dart' show openCheckin;
 
 /// Opens the quick-log sheet (quicklog.jsx `QuickLogSheet`) — what the "+"
@@ -160,22 +162,46 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
 
   /// Persists the single metric as a check-in on-device, then flashes the
   /// confirmation and closes. PHI: the captured values are never logged.
+  ///
+  /// [currentProfileIdProvider] is a plain (non-async) read of whatever
+  /// [activeProfileProvider] has resolved so far — on a cold session that
+  /// FutureProvider may not have finished ensuring the self health profile
+  /// yet, so a one-shot `ref.read` here could still be null even for a
+  /// signed-in user, and the tap would silently do nothing. Await the
+  /// provider's own future instead so the first save after launch waits for
+  /// it rather than dropping the capture.
   Future<void> _save(MetricLogCapture capture) async {
     if (saving) return;
-    final profileId = ref.read(currentProfileIdProvider);
-    if (profileId == null) return;
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
     setState(() => saving = true);
+    final profileId = await ref.read(activeProfileProvider.future);
+    if (profileId == null) {
+      if (mounted) setState(() => saving = false);
+      return;
+    }
+    if (!mounted) return;
+
+    String? photoRecordId;
+    if (capture.photoBytes != null) {
+      photoRecordId = await persistPhotoRecord(
+        ref,
+        bytes: Uint8List.fromList(capture.photoBytes!),
+        title: AppScope.of(context).strings.settings.add_photo,
+      );
+    }
 
     await ref.read(saveCheckInUseCaseProvider).call(CheckIn(
           id: CheckInId.uuid(),
           healthProfileId: profileId,
-          recordedAt: DateTime.now(),
+          recordedAt: capture.when ?? DateTime.now(),
           mood: capture.mood,
           painLevel: capture.painLevel,
           painSites: capture.painSites,
           symptoms: capture.symptoms,
           vitals: capture.vitals,
           note: capture.note,
+          photoRecordId: photoRecordId,
         ));
 
     if (!mounted) return;
@@ -236,7 +262,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
           ),
           Flexible(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 38),
+              padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context)),
               child: RiseIn(key: ValueKey('${active}_${activeSymptom}_${savedValue != null}'), child: _body()),
             ),
           ),
@@ -440,7 +466,10 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 2, 12, 8),
-          child: Text(label, style: Typo.eyebrow(T.fg4, ar: ar).copyWith(letterSpacing: ar ? 0 : 0.88)),
+          // `text-transform: uppercase` on the group header (quicklog.jsx).
+          // Applied here, not baked into the bundle: `symptoms` is shared
+          // with rows and chips that must stay sentence case.
+          child: Text(label.toUpperCase(), style: Typo.eyebrow(T.fg4, ar: ar).copyWith(letterSpacing: ar ? 0 : 0.88)),
         ),
         PCard(
           padding: EdgeInsets.zero,

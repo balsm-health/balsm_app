@@ -9,6 +9,8 @@ import '../kit.dart';
 import '../tokens.dart';
 import '../widgets/body_map.dart';
 import '../widgets/num_pad.dart';
+import '../widgets/date_time_row.dart';
+import '../widgets/photo_attach.dart';
 import 'checkin_shared.dart';
 
 /// How a metric capture is hosted.
@@ -31,6 +33,8 @@ class MetricLogCapture {
     this.painSites = const {},
     this.symptoms = const {},
     this.vitals = Vitals.empty,
+    this.when,
+    this.photoBytes,
   });
 
   final String summary;
@@ -40,6 +44,10 @@ class MetricLogCapture {
   final Set<PainSite> painSites;
   final Set<SymptomId> symptoms;
   final Vitals vitals;
+  final DateTime? when;
+
+  /// Local preview bytes for a note photo. Never log these.
+  final List<int>? photoBytes;
 
   @override
   bool operator ==(Object other) =>
@@ -109,6 +117,7 @@ class MetricLog extends StatelessWidget {
     this.onSave,
     this.onChanged,
     this.focusedSymptom,
+    this.belowField,
   });
 
   final CheckInMetric metric;
@@ -121,37 +130,42 @@ class MetricLog extends StatelessWidget {
   /// just this catalog entry (body map only when the design marks it located).
   final SymptomId? focusedSymptom;
 
+  /// Passed straight through to the metric's chrome — see
+  /// [_MetricLogState.belowField].
+  final Widget? belowField;
+
   @override
   Widget build(BuildContext context) {
     if (focusedSymptom != null) {
       return _OneSymptomLog(
         s: s,
         host: host,
+        belowField: belowField,
         symptom: focusedSymptom!,
         onSave: onSave,
         onChanged: onChanged,
       );
     }
     if (metric == CheckInMetric.mood) {
-      return _MoodLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
+      return _MoodLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
     }
     if (metric == CheckInMetric.bloodPressure) {
-      return _BpLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
+      return _BpLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
     }
     if (metric == CheckInMetric.glucose) {
-      return _GlucoseLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
+      return _GlucoseLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
     }
     if (metric == CheckInMetric.weight) {
-      return _WeightLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
+      return _WeightLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
     }
     if (metric == CheckInMetric.spo2) {
-      return _O2Log(s: s, host: host, onSave: onSave, onChanged: onChanged);
+      return _O2Log(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
     }
     if (metric == CheckInMetric.pain) {
-      return _PainLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
+      return _PainLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
     }
     if (metric == CheckInMetric.symptoms) {
-      return _SymptomsLog(s: s, host: host, onSave: onSave, onChanged: onChanged);
+      return _SymptomsLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
     }
     return const SizedBox.shrink();
   }
@@ -169,6 +183,10 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   bool get valid;
   MetricLogCapture get capture;
 
+  /// Rendered between the field and the date/time group. The full check-in
+  /// puts its "I didn't measure this today" row here (report.jsx).
+  Widget? get belowField => null;
+
   @override
   void initState() {
     super.initState();
@@ -182,25 +200,52 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   }
 
   Widget chrome({required Widget child}) {
+    // report.jsx cards only the numeric-vital steps (`.card.card-pad` around
+    // BPField / GlucoseField) — mood, pain and symptoms stay bare on the flow
+    // surface, and a card there squeezed the mood tiles into an overflow.
+    // Those are exactly the steps that carry a skip row, so the two travel
+    // together rather than needing a second flag.
+    final field = belowField == null
+        ? child
+        : PCard(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18), child: child);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      child,
-      _NoteField(s: s, controller: noteCtrl),
-      if (host == MetricLogHost.standalone)
+      field,
+      if (belowField != null) belowField!,
+      DateTimeWhen(
+          when: when,
+          onChanged: (v) {
+            setState(() => when = v);
+            emit();
+          }),
+      if (host == MetricLogHost.standalone) ...[
+        _NoteField(
+            s: s,
+            controller: noteCtrl,
+            photo: photo,
+            onPhoto: (p) {
+              setState(() => photo = p);
+              emit();
+            }),
         _SaveButton(
           s: s,
           enabled: valid,
           onTap: () => onSave?.call(capture),
         ),
+      ],
     ]);
   }
 
+  DateTime when = DateTime.now();
+  PickedAttach? photo;
   TextEditingController get noteCtrl;
 }
 
 class _NoteField extends StatelessWidget {
-  const _NoteField({required this.s, required this.controller});
+  const _NoteField({required this.s, required this.controller, required this.photo, required this.onPhoto});
   final PatientAppState s;
   final TextEditingController controller;
+  final PickedAttach? photo;
+  final ValueChanged<PickedAttach?> onPhoto;
   @override
   Widget build(BuildContext context) {
     final ar = s.rtl;
@@ -230,6 +275,7 @@ class _NoteField extends StatelessWidget {
               borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       ),
+      NotePhotoAttach(photo: photo, onChanged: onPhoto),
     ]);
   }
 }
@@ -319,8 +365,9 @@ String? _trimmedNote(TextEditingController c) {
 // ── Mood ─────────────────────────────────────────────────────
 
 class _MoodLog extends StatefulWidget {
-  const _MoodLog({required this.s, required this.host, this.onSave, this.onChanged});
+  const _MoodLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
   final PatientAppState s;
+  final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -331,6 +378,8 @@ class _MoodLog extends StatefulWidget {
 class _MoodLogState extends State<_MoodLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
   @override
   MetricLogHost get host => widget.host;
   @override
@@ -350,6 +399,8 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
         summary: mood > 0 ? moodLabel(s, mood) : '',
         note: _trimmedNote(noteCtrl),
         mood: mood > 0 ? Mood(mood) : null,
+        when: when,
+        photoBytes: photo?.bytes,
       );
 
   @override
@@ -382,8 +433,9 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
 // ── Blood pressure ───────────────────────────────────────────
 
 class _BpLog extends StatefulWidget {
-  const _BpLog({required this.s, required this.host, this.onSave, this.onChanged});
+  const _BpLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
   final PatientAppState s;
+  final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -394,6 +446,8 @@ class _BpLog extends StatefulWidget {
 class _BpLogState extends State<_BpLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
   @override
   MetricLogHost get host => widget.host;
   @override
@@ -416,6 +470,8 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
             valid ? s.strings.checkin.reading_unit(s.strings.checkin.bp_pair(sys, dia), s.strings.checkin.unit_bp) : '',
         note: _trimmedNote(noteCtrl),
         vitals: valid ? Vitals(systolic: int.parse(sys), diastolic: int.parse(dia)) : Vitals.empty,
+        when: when,
+        photoBytes: photo?.bytes,
       );
 
   @override
@@ -483,8 +539,9 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
 enum _GluCtx { fasting, meal, random }
 
 class _GlucoseLog extends StatefulWidget {
-  const _GlucoseLog({required this.s, required this.host, this.onSave, this.onChanged});
+  const _GlucoseLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
   final PatientAppState s;
+  final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -533,6 +590,8 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
         summary: valid ? s.strings.checkin.reading_unit_ctx(glu, s.strings.checkin.unit_glu, _ctxLabel) : '',
         note: _trimmedNote(noteCtrl),
         vitals: _vitals(),
+        when: when,
+        photoBytes: photo?.bytes,
       );
 
   @override
@@ -586,8 +645,9 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
 // ── Weight ───────────────────────────────────────────────────
 
 class _WeightLog extends StatefulWidget {
-  const _WeightLog({required this.s, required this.host, this.onSave, this.onChanged});
+  const _WeightLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
   final PatientAppState s;
+  final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -598,6 +658,8 @@ class _WeightLog extends StatefulWidget {
 class _WeightLogState extends State<_WeightLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
   @override
   MetricLogHost get host => widget.host;
   @override
@@ -621,6 +683,8 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
         summary: valid ? s.strings.checkin.reading_unit(display, s.strings.profile.pd_kg) : '',
         note: _trimmedNote(noteCtrl),
         vitals: valid ? Vitals(weightKg: double.parse(display)) : Vitals.empty,
+        when: when,
+        photoBytes: photo?.bytes,
       );
 
   @override
@@ -670,8 +734,9 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
 // ── SpO₂ ─────────────────────────────────────────────────────
 
 class _O2Log extends StatefulWidget {
-  const _O2Log({required this.s, required this.host, this.onSave, this.onChanged});
+  const _O2Log({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
   final PatientAppState s;
+  final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -682,6 +747,8 @@ class _O2Log extends StatefulWidget {
 class _O2LogState extends State<_O2Log> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
   @override
   MetricLogHost get host => widget.host;
   @override
@@ -706,6 +773,8 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
         summary: valid ? '$digits${s.strings.checkin.unit_spo2}' : '',
         note: _trimmedNote(noteCtrl),
         vitals: valid ? Vitals(spo2: _pct) : Vitals.empty,
+        when: when,
+        photoBytes: photo?.bytes,
       );
 
   @override
@@ -715,7 +784,10 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
   }
 
   void _key(String d) => setState(() {
-        if (digits.length < 3) digits += d;
+        // Two digits for 11–99; a third digit only completes 10 → 100.
+        if (digits.length >= 3) return;
+        if (digits.length == 2 && (digits != '10' || d != '0')) return;
+        digits += d;
         emit();
       });
 
@@ -740,8 +812,9 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
 // ── Pain ─────────────────────────────────────────────────────
 
 class _PainLog extends StatefulWidget {
-  const _PainLog({required this.s, required this.host, this.onSave, this.onChanged});
+  const _PainLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
   final PatientAppState s;
+  final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -752,6 +825,8 @@ class _PainLog extends StatefulWidget {
 class _PainLogState extends State<_PainLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
   @override
   MetricLogHost get host => widget.host;
   @override
@@ -777,6 +852,8 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
       note: _trimmedNote(noteCtrl),
       painLevel: PainLevel(pain.round()),
       painSites: locations,
+      when: when,
+      photoBytes: photo?.bytes,
     );
   }
 
@@ -826,8 +903,9 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
 // ── Symptoms ─────────────────────────────────────────────────
 
 class _SymptomsLog extends StatefulWidget {
-  const _SymptomsLog({required this.s, required this.host, this.onSave, this.onChanged});
+  const _SymptomsLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
   final PatientAppState s;
+  final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -838,6 +916,8 @@ class _SymptomsLog extends StatefulWidget {
 class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
   @override
   MetricLogHost get host => widget.host;
   @override
@@ -871,6 +951,8 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
       note: _trimmedNote(noteCtrl),
       symptoms: Set.unmodifiable(symptoms),
       painSites: locations,
+      when: when,
+      photoBytes: photo?.bytes,
     );
   }
 
@@ -952,9 +1034,11 @@ class _OneSymptomLog extends StatefulWidget {
     required this.symptom,
     this.onSave,
     this.onChanged,
+    this.belowField,
   });
   final PatientAppState s;
   final MetricLogHost host;
+  final Widget? belowField;
   final SymptomId symptom;
   final MetricLogSave? onSave;
   final MetricLogChanged? onChanged;
@@ -965,6 +1049,8 @@ class _OneSymptomLog extends StatefulWidget {
 class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
   @override
   PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
   @override
   MetricLogHost get host => widget.host;
   @override
@@ -990,6 +1076,8 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
       note: _trimmedNote(noteCtrl),
       symptoms: {widget.symptom},
       painSites: locations,
+      when: when,
+      photoBytes: photo?.bytes,
     );
   }
 

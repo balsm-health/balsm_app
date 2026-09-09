@@ -36,7 +36,11 @@ class BalsmApiController {
   BalsmApiClient get client => _client;
 
   Future<void> init() async {
-    final preset = await _store.read() ?? _store.defaultPreset;
+    // Prod cannot switch servers — never honour a leftover Local preset
+    // from a previous Dev Config session (that is what pointed the hosted
+    // web shell at http://localhost:5050).
+    final saved = FlavorConfig.current.serverSwitchingEnabled ? await _store.read() : null;
+    final preset = saved ?? _store.defaultPreset;
     _client.baseUrl = preset.apiBaseUrl;
   }
 

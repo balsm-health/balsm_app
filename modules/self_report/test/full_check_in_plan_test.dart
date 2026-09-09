@@ -24,14 +24,14 @@ void main() {
     test('defaults match today\'s wizard without meds', () {
       expect(
         fullCheckInSteps(tracked: CheckInMetric.defaultFullCheckup, hasMeds: false),
-        ['mood', 'bp', 'glucose', 'pain', 'symptoms'],
+        ['mood', 'bp', 'glucose'],
       );
     });
 
     test('inserts meds before the first journal metric', () {
       expect(
         fullCheckInSteps(tracked: CheckInMetric.defaultFullCheckup, hasMeds: true),
-        ['mood', 'bp', 'glucose', 'meds', 'pain', 'symptoms'],
+        ['mood', 'bp', 'glucose', 'meds'],
       );
     });
 

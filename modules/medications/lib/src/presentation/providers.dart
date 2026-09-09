@@ -60,7 +60,7 @@ final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
       }
     }
 
-    for (final at in _todayOccurrences(med, dayStart, dayEnd)) {
+    for (final at in _occurrencesOn(med, dayStart, dayEnd)) {
       doses.add(TodayDose(
         medication: med,
         scheduledAt: at,
@@ -73,17 +73,64 @@ final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
   return doses;
 });
 
+/// Taken ÷ scheduled over the last 7 calendar days, including today.
+class WeekAdherence {
+  const WeekAdherence({required this.scheduled, required this.taken});
+  final int scheduled;
+  final int taken;
+  double get ratio => scheduled == 0 ? 0.0 : taken / scheduled;
+  int get percent => (ratio * 100).round();
+}
+
+final weekAdherenceProvider = FutureProvider<WeekAdherence>((ref) async {
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return const WeekAdherence(scheduled: 0, taken: 0);
+  final dao = ref.watch(medicationsDataSourceProvider);
+  final meds = await dao.findAll(scope: profileId);
+
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final rangeStart = todayStart.subtract(const Duration(days: 6));
+  final rangeEnd = todayStart.add(const Duration(days: 1));
+
+  var scheduled = 0;
+  var taken = 0;
+  for (final med in meds) {
+    final events = await dao.getDoseEvents(med.id, from: rangeStart, to: rangeEnd);
+    final latestBySlot = <String, DoseEvent>{};
+    for (final e in events) {
+      final key = e.scheduledAt.toIso8601String();
+      final existing = latestBySlot[key];
+      if (existing == null || e.recordedAt.isAfter(existing.recordedAt)) {
+        latestBySlot[key] = e;
+      }
+    }
+    for (var i = 0; i < 7; i++) {
+      final dayStart = rangeStart.add(Duration(days: i));
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      for (final at in _occurrencesOn(med, dayStart, dayEnd)) {
+        scheduled += 1;
+        if (latestBySlot[at.toIso8601String()]?.outcome == DoseOutcome.taken) {
+          taken += 1;
+        }
+      }
+    }
+  }
+  return WeekAdherence(scheduled: scheduled, taken: taken);
+});
+
 /// Dose history for a single medication (most recent first).
 final doseHistoryProvider = FutureProvider.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
   return ref.watch(medicationsDataSourceProvider).getDoseEvents(medicationId);
 });
 
-Iterable<DateTime> _todayOccurrences(
+Iterable<DateTime> _occurrencesOn(
   Medication med,
   DateTime dayStart,
   DateTime dayEnd,
 ) sync* {
   if (med.startDate.isAfter(dayEnd)) return;
+  if (med.endDate != null && !med.endDate!.isAfter(dayStart)) return;
   final cfg = med.scheduleConfig;
   final matchesDay = switch (med.scheduleType) {
     ScheduleType.daily => true,
@@ -103,6 +150,7 @@ Iterable<DateTime> _todayOccurrences(
       minute,
     );
     if (med.startDate.isAfter(at)) continue;
+    if (med.endDate != null && at.isAfter(med.endDate!)) continue;
     yield at;
   }
 }

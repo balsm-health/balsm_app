@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../_tokens.dart';
 
 /// Welcome background porting prototype `.wbg` / `.wgrad`.
-/// Watercolor petal pattern at top-right with gradient fade to cream surface.
+/// Full-bleed watercolor wash with a vertical fade to the cream surface.
 /// Asset: `packages/core/assets/brand/balsm-background.png`
 class BalsmWelcomeBackground extends StatelessWidget {
   const BalsmWelcomeBackground({
@@ -19,18 +19,14 @@ class BalsmWelcomeBackground extends StatelessWidget {
       children: [
         // Cream surface
         Container(color: BalsmColors.cream50),
-        // Watercolor petal at top-right
-        Positioned(
-          top: 0,
-          right: 0,
-          left: 0,
-          height: MediaQuery.of(context).size.height * 0.55,
+        // `.wbg` — full-bleed cover, then `.wgrad` fades it to cream.
+        Positioned.fill(
           child: Opacity(
             opacity: 0.9,
             child: Image.asset(
               'packages/core/assets/brand/balsm-background.png',
               fit: BoxFit.cover,
-              alignment: Alignment.topRight,
+              alignment: Alignment.center,
               errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
           ),

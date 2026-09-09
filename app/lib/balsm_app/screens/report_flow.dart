@@ -1,7 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:core/core.dart' show currentProfileIdProvider;
+import 'package:core/core.dart' show activeProfileProvider, currentProfileIdProvider, currentUserIdProvider;
 import 'package:medications/medications.dart'
     show Medication, DoseOutcome, medicationListProvider, recordDoseOutcomeUseCaseProvider;
 import 'package:self_report/self_report.dart';
@@ -10,6 +12,7 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart' show AdaptiveFrame;
+import '../vault/vault_blob.dart';
 import 'metric_log.dart';
 
 export 'checkin_shared.dart' show MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
@@ -134,9 +137,20 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   /// Never logs the captured PHI.
   Future<void> _finish() async {
     if (saving) return;
-    final profileId = ref.read(currentProfileIdProvider);
-    if (profileId == null) return;
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
     setState(() => saving = true);
+    // `canFinish` already gates this button on the reactive
+    // currentProfileIdProvider, but that read is a snapshot of whatever
+    // activeProfileProvider has resolved so far — await its future directly
+    // rather than re-reading the snapshot, so a signed-in tap never drops
+    // the check-in if the ensure-profile future is still in flight.
+    final profileId = await ref.read(activeProfileProvider.future);
+    if (profileId == null) {
+      if (mounted) setState(() => saving = false);
+      return;
+    }
+    if (!mounted) return;
 
     Mood? mood;
     var painLevel = PainLevel.none;
@@ -156,16 +170,27 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       if (n != null && n.isNotEmpty) notes.add(n);
     }
 
+    String? photoRecordId;
+    final photo = _captures.values.map((c) => c.photoBytes).whereType<List<int>>().firstOrNull;
+    if (photo != null) {
+      photoRecordId = await persistPhotoRecord(
+        ref,
+        bytes: Uint8List.fromList(photo),
+        title: AppScope.of(context).strings.settings.add_photo,
+      );
+    }
+
     final checkIn = CheckIn(
       id: CheckInId.uuid(),
       healthProfileId: profileId,
-      recordedAt: DateTime.now(),
+      recordedAt: _captures.values.map((c) => c.when).whereType<DateTime>().firstOrNull ?? DateTime.now(),
       mood: mood,
       painLevel: painLevel,
       painSites: painSites,
       symptoms: symptoms,
       vitals: _mergedVitals(),
       note: notes.isEmpty ? null : notes.join('\n'),
+      photoRecordId: photoRecordId,
     );
     await ref.read(saveCheckInUseCaseProvider).call(checkIn);
 
@@ -235,10 +260,14 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
               const SizedBox(width: 12),
               Expanded(child: LinearProgress(value: pct, color: s.accent.main)),
               const SizedBox(width: 12),
-              SizedBox(
-                  width: 40,
+              // `.meta.num { min-width: 38px }` — a floor, not a cap. A fixed
+              // width wrapped "1 of 3" onto two lines.
+              ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 38),
                   child: Text('${step + 1} ${s.strings.common.step_of} ${_steps.length}',
                       textAlign: TextAlign.center,
+                      maxLines: 1,
+                      softWrap: false,
                       style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
             ]),
           ),
@@ -281,6 +310,20 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     );
   }
 
+  /// The design's per-step question copy (`q-title` / `q-help` in report.jsx).
+  /// Vitals the wizard can capture but the design never storyboarded fall back
+  /// to the shared "Your vitals" heading rather than shipping an untitled page.
+  (String, String) _question(CheckInMetric metric) {
+    final c = s.strings.checkin;
+    return switch (metric) {
+      CheckInMetric.mood => (c.q_mood_t(s.gender), c.q_mood_h),
+      CheckInMetric.bloodPressure => (c.q_bp_t, c.q_bp_h),
+      CheckInMetric.glucose => (c.q_glu_t, c.q_glu_h),
+      CheckInMetric.pain || CheckInMetric.symptoms => (c.q_sym_t, c.q_sym_h(s.gender)),
+      _ => (c.q_vitals_t, c.q_vitals_h),
+    };
+  }
+
   Widget _title(String t, String h) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(t, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
         const SizedBox(height: 6),
@@ -297,26 +340,25 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     }
     final metric = CheckInMetric.fromId(id);
     if (metric == null) return const SizedBox.shrink();
-    final log = MetricLog(
-      metric: metric,
-      s: s,
-      host: MetricLogHost.embedded,
-      onChanged: (capture, {required valid}) => _onCapture(id, capture, valid: valid),
-    );
-    if (!_skippable.contains(metric)) return log;
-    final skipped = _skipped.contains(id);
+    final head = _question(metric);
+    final skippable = _skippable.contains(metric);
+    final skipped = skippable && _skipped.contains(id);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      // `.card.is-disabled { opacity: .4 }` while the step is skipped.
-      IgnorePointer(
-        ignoring: skipped,
-        child: AnimatedOpacity(
-          opacity: skipped ? 0.4 : 1,
-          duration: Motion.base,
-          curve: Motion.easeOut,
-          child: log,
-        ),
+      _title(head.$1, head.$2),
+      MetricLog(
+        metric: metric,
+        s: s,
+        host: MetricLogHost.embedded,
+        onChanged: (capture, {required valid}) => _onCapture(id, capture, valid: valid),
+        // `SkipRow` sits between the field card and the date/time group
+        // (report.jsx), so it threads through the metric's own chrome.
+        belowField: skippable ? _skipRow(id, skipped: skipped) : null,
       ),
-      Padding(
+    ]);
+  }
+
+  /// `SkipRow` — "I didn't measure this today" under a vital's field card.
+  Widget _skipRow(String id, {required bool skipped}) => Padding(
         padding: const EdgeInsets.only(top: 14),
         child: Center(
           child: PButton(s.strings.meds.skip_q,
@@ -326,9 +368,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
               ar: s.rtl,
               onTap: () => _toggleSkip(id)),
         ),
-      ),
-    ]);
-  }
+      );
 
   Widget _medCheck(Medication m) {
     final st = medMarks[m.id.value] ?? '';

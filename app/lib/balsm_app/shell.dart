@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -20,6 +23,14 @@ import 'screens/trends_screen.dart';
 import 'screens/quick_log.dart' show showQuickLog;
 import 'screens/appointments_screen.dart';
 import 'screens/auth_flow.dart';
+import 'screens/personal_details.dart';
+import 'screens/profile_subscreens.dart';
+import 'screens/ecosystem_sheet.dart';
+import 'screens/feedback_sheet.dart';
+import 'screens/storage_sheet.dart';
+import 'screens/add_prescription_sheet.dart';
+import 'screens/report_flow.dart' show openCheckin;
+import 'widgets/account_switcher.dart';
 import 'deep_link_handler.dart';
 import 'dev/shake_to_dev_config.dart';
 
@@ -49,8 +60,88 @@ class _PatientAppState extends State<PatientApp> {
   @override
   void initState() {
     super.initState();
+    _bindDebugServiceExtensions();
     Timer(const Duration(milliseconds: 2300), () {
       if (mounted) setState(() => _booting = false);
+    });
+  }
+
+  /// Debug-only VM hooks so design QA can switch tabs and open nested
+  /// screens without accessibility taps.
+  void _bindDebugServiceExtensions() {
+    if (!kDebugMode) return;
+    developer.registerExtension('ext.balsm.setTab', (method, params) async {
+      state.setTab(params['tab'] ?? 'home');
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true}));
+    });
+    developer.registerExtension('ext.balsm.go', (method, params) async {
+      final ctx = _navKey.currentContext;
+      if (ctx != null) {
+        Navigator.of(ctx, rootNavigator: true).popUntil((route) => route.isFirst);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      state.go(params['route'] ?? 'app');
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true}));
+    });
+    developer.registerExtension('ext.balsm.scroll', (method, params) async {
+      final ctx = _navKey.currentContext;
+      final c = ctx == null ? null : PrimaryScrollController.maybeOf(ctx);
+      if (c != null && c.hasClients) {
+        await c.animateTo(
+          c.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+        );
+      }
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'scrolled': c?.hasClients == true}));
+    });
+    developer.registerExtension('ext.balsm.checkinNext', (method, params) async {
+      state.qaCheckinAdvance?.call();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': state.qaCheckinAdvance != null}));
+    });
+    developer.registerExtension('ext.balsm.open', (method, params) async {
+      final screen = params['screen'] ?? '';
+      final ctx = _navKey.currentContext;
+      if (ctx != null) {
+        Navigator.of(ctx, rootNavigator: true).popUntil((route) => route.isFirst);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      if (screen.isEmpty || screen == 'close') {
+        return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'screen': screen}));
+      }
+      final next = _navKey.currentContext;
+      if (next == null) {
+        return developer.ServiceExtensionResponse.error(1, 'no navigator');
+      }
+      switch (screen) {
+        case 'personal':
+          openPersonalDetails(next);
+        case 'medical':
+          openMedicalProfile(next);
+        case 'care':
+          openCareTeam(next);
+        case 'emergency':
+          openEmergency(next);
+        case 'privacy':
+          openPrivacyData(next, onDeleteAccount: () => openAccountDeletion(next));
+        case 'feedback':
+          showFeedbackSheet(next);
+        case 'ecosystem':
+          showEcosystemSheet(next);
+        case 'storage':
+          showStorageSync(next);
+        case 'quicklog':
+          showQuickLog(next);
+        case 'checkin':
+          openCheckin(next);
+        case 'addRx':
+          showAddPrescription(next);
+        case 'switcher':
+          showAccountSwitcher(next);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'screen': screen}));
     });
   }
 
@@ -100,13 +191,19 @@ class _PatientAppState extends State<PatientApp> {
           home: DeepLinkHandler(
             child: Directionality(
               textDirection: state.dir,
-              child: AdaptiveFrame(
-                child: Scaffold(
-                  backgroundColor: Colors.white,
-                  body: Stack(children: [
-                    state.route == 'app' ? const _MainApp() : const AuthRouter(),
-                    Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
-                  ]),
+              // Publishes `--app-accent` to the kit so accent-driven widgets
+              // (row-head actions, spinners, progress fills, default buttons)
+              // follow the app accent instead of a hardcoded petal.
+              child: AccentScope(
+                accent: state.accent,
+                child: AdaptiveFrame(
+                  child: Scaffold(
+                    backgroundColor: Colors.white,
+                    body: Stack(children: [
+                      state.route == 'app' ? const _MainApp() : const AuthRouter(),
+                      Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                    ]),
+                  ),
                 ),
               ),
             ),
@@ -191,7 +288,7 @@ class _MainAppState extends State<_MainApp> {
       'home' => const HomeScreen(),
       'map' => const MapScreen(),
       'meds' => const MedsScreen(),
-      'records' => const RecordsScreen(),
+      'records' => RecordsScreen(onBack: () => s.setTab('home')),
       'trends' => const TrendsScreen(),
       'appts' => const AppointmentsScreen(),
       'rx' => const PrescriptionsScreen(),
@@ -206,13 +303,17 @@ class _MainAppState extends State<_MainApp> {
         // stays reachable (persistent-nav).
         return Row(children: [
           const _SideNav(),
-          Expanded(child: screen),
+          Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
         ]);
       }
-      // Phone: full-bleed screen + bottom tab bar.
+      // Phone: full-bleed screen + bottom tab bar. Hide the bar on full-screen
+      // sub-screens (trends / records / appointments / prescriptions).
+      // Design `app.jsx`: hide on trends/records (and Flutter's appointments
+      // sub-screen). Prescriptions stay on the meds path with the tab bar.
+      final hideTabBar = s.tab == 'trends' || s.tab == 'records' || s.tab == 'appts';
       return Column(children: [
-        Expanded(child: screen),
-        const _TabBar(),
+        Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
+        if (!hideTabBar) const _TabBar(),
       ]);
     });
 
@@ -225,6 +326,59 @@ class _MainAppState extends State<_MainApp> {
         child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
       ),
     ]);
+  }
+}
+
+/// Claude Design `ScreenSkeleton` — placeholder chrome while a tab settles.
+class _ScreenSkeleton extends StatelessWidget {
+  const _ScreenSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget bar({double w = 140, double h = 14}) => Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rSm)),
+        );
+    Widget circle(double size) =>
+        Container(width: size, height: size, decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle));
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
+      children: [
+        bar(w: 140, h: 26),
+        const SizedBox(height: 16),
+        PCard(
+          padding: const EdgeInsets.all(20),
+          child: Row(children: [
+            circle(52),
+            const SizedBox(width: 16),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [bar(w: 160), const SizedBox(height: 8), bar(w: 110, h: 10)])),
+          ]),
+        ),
+        const SizedBox(height: 16),
+        PCard(
+          padding: EdgeInsets.zero,
+          child: Column(children: [
+            for (var i = 0; i < 3; i++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(children: [
+                  circle(40),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [bar(w: 150), const SizedBox(height: 8), bar(w: 80, h: 10)])),
+                ]),
+              ),
+          ]),
+        ),
+      ],
+    );
   }
 }
 

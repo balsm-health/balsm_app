@@ -300,6 +300,8 @@ jobs:
           flutter build web --release -t "$ENTRY" \
             --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
             --dart-define-from-file=env/shared.json \
+            --base-href=/apps/balsm/ \
+            --no-web-resources-cdn \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p ../dist

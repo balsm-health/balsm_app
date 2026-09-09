@@ -90,7 +90,7 @@ class _LegalSheet extends ConsumerWidget {
         const Divider(height: 1, color: T.ink100),
         Flexible(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 34),
+            padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context, base: 34)),
             children: [
               for (final (i, sec) in sections.indexed)
                 Padding(

@@ -6,6 +6,7 @@ import '../../application/use_cases/add_allergy_use_case.dart';
 import '../../application/use_cases/add_chronic_condition_use_case.dart';
 import '../../application/use_cases/add_emergency_contact_use_case.dart';
 import '../../application/use_cases/remove_allergy_use_case.dart';
+import '../../application/use_cases/remove_chronic_condition_use_case.dart';
 import '../../application/use_cases/update_health_profile_use_case.dart';
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
@@ -107,6 +108,17 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
     final result = await ref.read(addChronicConditionUseCaseProvider).execute(
           userId: userId,
           name: name,
+        );
+    if (!result.isSuccess) _showError(result.error);
+  }
+
+  Future<void> _removeCondition(ChronicConditionId conditionId) async {
+    final userId = _userId;
+    if (userId == null) return;
+    _clearError();
+    final result = await ref.read(removeChronicConditionUseCaseProvider).execute(
+          userId: userId,
+          conditionId: conditionId,
         );
     if (!result.isSuccess) _showError(result.error);
   }
@@ -236,7 +248,15 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
           BalsmListCard(
             children: [
               ...conditions.map(
-                (c) => BalsmListRow(label: c.name, showChevron: false),
+                (c) => BalsmListRow(
+                  label: c.name,
+                  showChevron: false,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close, size: 18, color: BalsmColors.fg4),
+                    onPressed: () => _removeCondition(c.id),
+                    tooltip: 'Remove',
+                  ),
+                ),
               ),
             ],
           ),

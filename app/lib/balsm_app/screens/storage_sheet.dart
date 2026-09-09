@@ -138,7 +138,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
         Flexible(
           child: SingleChildScrollView(
             physics: phase == 'idle' ? null : const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 36),
+            padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 36)),
             child: switch (phase) {
               'connecting' => _connecting(),
               'migrating' => _migrating(),
@@ -170,65 +170,87 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     final cfg = storageCfg(p);
     final isActive = active == p;
     final isLocal = p.isLocal;
+    // Cloud backup is switched off in the design: iCloud, Google Drive and
+    // Balsm Cloud are shown but not selectable. There is no cloud backup
+    // backend in P001 — the connect flow was a simulated progress animation,
+    // so tapping one told the patient their health record was backed up when
+    // nothing had left the device. Local stays the only real target.
+    final unavailable = !isLocal;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Pressable(
-        onTap: isActive ? null : () => _select(p),
-        scale: isActive ? 1.0 : 0.99,
-        // `transition: all var(--dur-base) var(--ease-out)` on active swap.
-        child: AnimatedContainer(
-          duration: Motion.base,
-          curve: Motion.easeOut,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isActive ? cfg.bg : Colors.white,
-            borderRadius: BorderRadius.circular(T.rXl),
-            border: Border.all(color: isActive ? cfg.color : T.border, width: 1.5),
-          ),
-          child: Row(children: [
-            AnimatedContainer(
-              duration: Motion.base,
-              curve: Motion.easeOut,
-              width: 46,
-              height: 46,
-              alignment: Alignment.center,
-              decoration:
-                  BoxDecoration(color: isActive ? cfg.color : T.ink100, borderRadius: BorderRadius.circular(T.rMd)),
-              child: Icon(cfg.icon, size: 22, color: isActive ? Colors.white : T.fg3),
+      child: Opacity(
+        opacity: unavailable ? 0.55 : 1,
+        child: Pressable(
+          onTap: (isActive || unavailable) ? null : () => _select(p),
+          scale: (isActive || unavailable) ? 1.0 : 0.99,
+          // `transition: all var(--dur-base) var(--ease-out)` on active swap.
+          child: AnimatedContainer(
+            duration: Motion.base,
+            curve: Motion.easeOut,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isActive ? cfg.bg : Colors.white,
+              borderRadius: BorderRadius.circular(T.rXl),
+              border: Border.all(color: isActive ? cfg.color : T.border, width: 1.5),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(p.label(s.strings.storage),
-                    style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                if (isLocal) ...[
-                  const SizedBox(width: 8),
-                  Pill(s.strings.storage.store_always_on,
-                      kind: PillKind.neutral,
-                      dot: false,
-                      ar: ar,
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
-                ],
-              ]),
-              const SizedBox(height: 3),
-              Row(children: [
-                if (isActive) ...[
-                  Icon(LucideIcons.checkCircle, size: 12, color: cfg.color),
-                  const SizedBox(width: 5),
-                ],
-                Text(
-                    isActive
-                        ? (isLocal ? s.strings.storage.store_local_only : s.strings.storage.store_backed)
-                        : (isLocal ? s.strings.storage.store_no_backup : s.strings.storage.store_tap_connect),
-                    style: Typo.meta(ar: ar).copyWith(
-                        fontSize: FS.xs,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                        color: isActive ? cfg.color : T.fg4)),
-              ]),
-            ])),
-            if (isActive) Icon(LucideIcons.checkCircle2, size: 22, color: cfg.color) else Chevron(rtl: ar),
-          ]),
+            child: Row(children: [
+              AnimatedContainer(
+                duration: Motion.base,
+                curve: Motion.easeOut,
+                width: 46,
+                height: 46,
+                alignment: Alignment.center,
+                decoration:
+                    BoxDecoration(color: isActive ? cfg.color : T.ink100, borderRadius: BorderRadius.circular(T.rMd)),
+                child: Icon(cfg.icon, size: 22, color: isActive ? Colors.white : T.fg3),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text(p.label(s.strings.storage),
+                      style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                  if (isLocal) ...[
+                    const SizedBox(width: 8),
+                    Pill(s.strings.storage.store_always_on,
+                        kind: PillKind.neutral,
+                        dot: false,
+                        ar: ar,
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
+                  ],
+                  if (unavailable) ...[
+                    const SizedBox(width: 8),
+                    Pill(s.strings.storage.store_coming_soon,
+                        kind: PillKind.neutral,
+                        dot: false,
+                        ar: ar,
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
+                  ],
+                ]),
+                const SizedBox(height: 3),
+                Row(children: [
+                  if (isActive) ...[
+                    Icon(LucideIcons.checkCircle, size: 12, color: cfg.color),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                      isActive
+                          ? (isLocal ? s.strings.storage.store_local_only : s.strings.storage.store_backed)
+                          // Design: unavailable targets read "Available soon"
+                          // rather than inviting a tap that does nothing.
+                          : (isLocal ? s.strings.storage.store_no_backup : s.strings.storage.store_available_soon),
+                      style: Typo.meta(ar: ar).copyWith(
+                          fontSize: FS.xs,
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                          color: isActive ? cfg.color : T.fg4)),
+                ]),
+              ])),
+              if (isActive)
+                Icon(LucideIcons.checkCircle2, size: 22, color: cfg.color)
+              else if (!unavailable)
+                Chevron(rtl: ar),
+            ]),
+          ),
         ),
       ),
     );

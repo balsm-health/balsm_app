@@ -15,7 +15,13 @@ Future<void> showFeedbackSheet(BuildContext context) => showModalBottomSheet<voi
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _FeedbackSheet(),
+      builder: (_) => Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: const _FeedbackSheet(),
+        ),
+      ),
     );
 
 /// Topic chips — ids are stable, labels come from the i69n bundle.
@@ -23,7 +29,6 @@ const _topics = <(String, String Function(PatientAppState))>[
   ('general', _tGeneral),
   ('ease', _tEase),
   ('records', _tRecords),
-  ('appts', _tAppts),
   ('meds', _tMeds),
   ('arabic', _tArabic),
 ];
@@ -31,7 +36,6 @@ const _topics = <(String, String Function(PatientAppState))>[
 String _tGeneral(PatientAppState s) => s.strings.feedback.fb_t_general;
 String _tEase(PatientAppState s) => s.strings.feedback.fb_t_ease;
 String _tRecords(PatientAppState s) => s.strings.feedback.fb_t_records;
-String _tAppts(PatientAppState s) => s.strings.feedback.fb_t_appts;
 String _tMeds(PatientAppState s) => s.strings.feedback.fb_t_meds;
 String _tArabic(PatientAppState s) => s.strings.feedback.fb_t_arabic;
 
@@ -117,7 +121,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
         const Divider(height: 1, color: T.ink100),
         Flexible(
           child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(context).viewInsets.bottom + 34),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, sheetBottomInset(context, base: 34)),
             child: _sent ? _thanks(s) : _form(s),
           ),
         ),

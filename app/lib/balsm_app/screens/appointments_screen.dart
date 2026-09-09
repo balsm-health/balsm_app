@@ -2,6 +2,7 @@ import 'package:appointments/appointments.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -43,8 +44,9 @@ class AppointmentsScreen extends ConsumerWidget {
           RowHead(s.strings.care.past_appts, ar: s.rtl),
           PCard(
             margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: EdgeInsets.zero,
             child: Column(children: [
-              for (final (i, a) in past.indexed) _PastRow(appointment: a, first: i == 0),
+              for (final (i, a) in past.indexed) _PastRow(appointment: a, zebra: i.isOdd),
             ]),
           ),
         ],
@@ -120,6 +122,32 @@ class _UpcomingHero extends StatelessWidget {
             const SizedBox(height: 10),
             _HeroFact(icon: LucideIcons.mapPin, label: a.location!, dim: true, iconSize: 13),
           ],
+          const SizedBox(height: 18),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(T.rMd),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(T.rMd),
+                onTap: () => _addToCalendar(a),
+                child: Container(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(T.rMd),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(LucideIcons.calendarPlus, size: 16, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(s.strings.settings.add_calendar,
+                        style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+              ),
+            ),
+          ),
         ]),
       ]),
     );
@@ -182,16 +210,16 @@ class _NoUpcoming extends StatelessWidget {
 }
 
 class _PastRow extends StatelessWidget {
-  const _PastRow({required this.appointment, required this.first});
+  const _PastRow({required this.appointment, required this.zebra});
   final Appointment appointment;
-  final bool first;
+  final bool zebra;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final a = appointment;
     return Container(
-      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
+      color: zebra ? T.ink50 : Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       child: Row(children: [
         Avatar(
@@ -220,24 +248,31 @@ class _PastRow extends StatelessWidget {
   }
 }
 
+Future<void> _addToCalendar(Appointment a) async {
+  String stamp(DateTime d) {
+    final u = d.toUtc();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${u.year}${two(u.month)}${two(u.day)}T${two(u.hour)}${two(u.minute)}${two(u.second)}Z';
+  }
+
+  final start = a.startsAt;
+  final end = start.add(const Duration(hours: 1));
+  final uri = Uri.https('calendar.google.com', '/calendar/render', {
+    'action': 'TEMPLATE',
+    'text': a.clinician,
+    'dates': '${stamp(start)}/${stamp(end)}',
+    if (a.location != null && a.location!.isNotEmpty) 'location': a.location!,
+  });
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+// Localized via i69n `settings.cal_months` (was a hardcoded EN/AR ternary;
+// CODING_STANDARDS: no inline bilingual ternaries) — the same bundle key the
+// date pickers in auth_flow.dart / personal_details.dart already use.
 String formatAppointmentDate(DateTime d, PatientAppState s) {
-  const en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const ar = [
-    'يناير',
-    'فبراير',
-    'مارس',
-    'أبريل',
-    'مايو',
-    'يونيو',
-    'يوليو',
-    'أغسطس',
-    'سبتمبر',
-    'أكتوبر',
-    'نوفمبر',
-    'ديسمبر'
-  ];
+  final months = s.strings.settings.cal_months.split('|');
   final l = d.toLocal();
-  return '${l.day.toString().padLeft(2, '0')} ${(s.rtl ? ar : en)[l.month - 1]} ${l.year}';
+  return '${l.day.toString().padLeft(2, '0')} ${months[l.month - 1]} ${l.year}';
 }
 
 String formatAppointmentTime(DateTime d) {

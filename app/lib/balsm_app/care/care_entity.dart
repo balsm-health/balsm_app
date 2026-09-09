@@ -18,7 +18,7 @@ enum CareEntityType {
   hospital('hospital', LucideIcons.building2, 0xFFD44A3C, 0xFFFAEAE8, (en: 'Hospitals', ar: 'مستشفيات')),
   clinic('clinic', LucideIcons.stethoscope, 0xFF1283FF, 0xFFE4F0FF, (en: 'Clinics', ar: 'عيادات')),
   pharmacy('pharmacy', LucideIcons.pill, 0xFF01C4A2, 0xFFE1F8F1, (en: 'Pharmacies', ar: 'صيدليات')),
-  lab('lab', LucideIcons.flaskConical, 0xFF724DD0, 0xFFECE6FA, (en: 'Labs', ar: 'مختبرات')),
+  lab('lab', LucideIcons.flaskConical, 0xFF8350DE, 0xFFEEE7FB, (en: 'Labs', ar: 'مختبرات')),
   scan('scan', LucideIcons.scanLine, 0xFF02BBB5, 0xFFE2F8F6, (en: 'Scan centers', ar: 'مراكز أشعة')),
   store('store', LucideIcons.shoppingBag, 0xFFD97A20, 0xFFFDF0E0, (en: 'Med. stores', ar: 'أدوات طبية'));
 

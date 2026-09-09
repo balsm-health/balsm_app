@@ -1,8 +1,30 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'tokens.dart';
+
+/// Ambient accent — the Flutter analogue of the CSS custom property
+/// `--app-accent`.
+///
+/// The kit is deliberately decoupled from `PatientAppState` (it takes `ar`
+/// explicitly rather than reading a scope), but accent behaves like an
+/// inherited cascade value in the design: `.row-head a`, spinners, progress
+/// fills and the default button tint all resolve `var(--app-accent)` rather
+/// than naming a petal. An [InheritedWidget] is the direct equivalent, so those
+/// widgets follow the app accent without every call site threading it through.
+///
+/// Falls back to [Accent.blue] when no scope is present (bare kit usage/tests).
+class AccentScope extends InheritedWidget {
+  const AccentScope({super.key, required this.accent, required super.child});
+
+  final Accent accent;
+
+  static Accent of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AccentScope>()?.accent ?? Accent.blue;
+
+  @override
+  bool updateShouldNotify(AccentScope oldWidget) => oldWidget.accent != accent;
+}
 
 // ── Font scale (app.css --pt-* at scale 1) ───────────────────
 class FS {
@@ -20,12 +42,31 @@ class FS {
 }
 
 /// Typography helpers. `ar` switches the family to IBM Plex Sans Arabic.
+///
+/// Families are **bundled** (`assets/fonts/`, declared in pubspec), not fetched
+/// at runtime. The design system self-hosts for the same reason its README
+/// gives: "offline-default is value #1 … nothing in the type stack touches the
+/// network at runtime". Loading these from Google would mean a signal-less
+/// device falls back to system glyphs, and every cold start reports the user
+/// to a third party — both at odds with what this product claims to be.
 class Typo {
   Typo._();
 
-  static TextStyle _display(bool ar) => ar ? GoogleFonts.ibmPlexSansArabic() : GoogleFonts.montserrat();
-  static TextStyle _body(bool ar) => ar ? GoogleFonts.ibmPlexSansArabic() : GoogleFonts.ibmPlexSans();
-  static TextStyle mono() => GoogleFonts.ibmPlexMono();
+  /// Design `--font-display` / `--font-arabic`.
+  static const _familyDisplay = 'Montserrat';
+
+  /// Design `--font-body`.
+  static const _familyBody = 'IBM Plex Sans';
+
+  /// Design `--font-arabic` — one family for both roles in Arabic.
+  static const _familyArabic = 'IBM Plex Sans Arabic';
+
+  /// Design `--font-mono` — numerics, IDs, batch codes.
+  static const _familyMono = 'IBM Plex Mono';
+
+  static TextStyle _display(bool ar) => TextStyle(fontFamily: ar ? _familyArabic : _familyDisplay);
+  static TextStyle _body(bool ar) => TextStyle(fontFamily: ar ? _familyArabic : _familyBody);
+  static TextStyle mono() => const TextStyle(fontFamily: _familyMono);
 
   static TextStyle display({bool ar = false}) => _display(ar)
       .copyWith(fontWeight: FontWeight.w800, fontSize: FS.xl3, height: 1.1, letterSpacing: -0.64, color: T.fg1);
@@ -42,6 +83,77 @@ class Typo {
       _body(ar).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 1.76, color: color);
   static TextStyle num({double size = FS.md, FontWeight weight = FontWeight.w600, Color color = T.fg1}) =>
       mono().copyWith(fontSize: size, fontWeight: weight, color: color);
+}
+
+/// A dashed rounded outline (`border: 1px dashed`). Flutter has no dashed
+/// border, so the stroke is walked along the rounded rect by hand.
+class DashedBorder extends StatelessWidget {
+  const DashedBorder({
+    super.key,
+    required this.child,
+    this.color = T.border,
+    this.radius = T.rMd,
+    this.strokeWidth = 1,
+    this.dash = 5,
+    this.gap = 4,
+  });
+
+  final Widget child;
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+  final double dash;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        painter: _DashedBorderPainter(color: color, radius: radius, strokeWidth: strokeWidth, dash: dash, gap: gap),
+        child: child,
+      );
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+    required this.dash,
+    required this.gap,
+  });
+
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+  final double dash;
+  final double gap;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Offset.zero & size,
+        Radius.circular(radius),
+      ));
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(metric.extractPath(d, math.min(d + dash, metric.length)), paint);
+        d += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) =>
+      old.color != color ||
+      old.radius != radius ||
+      old.strokeWidth != strokeWidth ||
+      old.dash != dash ||
+      old.gap != gap;
 }
 
 /// Lucide icon shorthand.
@@ -346,7 +458,7 @@ class PButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final a = accent ?? Accent.blue;
+    final a = accent ?? AccentScope.of(context);
     // `.b-btn:disabled { opacity: .4; pointer-events: none }`
     final enabled = onTap != null;
     Color bg, fg;
@@ -477,7 +589,7 @@ class RowHead extends StatelessWidget {
                   onTap: onAction,
                   child: Text(action!,
                       style: Typo._body(ar)
-                          .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: Accent.blue.main)),
+                          .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: AccentScope.of(context).main)),
                 ),
             ]),
       );
@@ -774,7 +886,7 @@ class _LinearProgressState extends State<LinearProgress> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final fill = widget.color ?? Accent.blue.main;
+    final fill = widget.color ?? AccentScope.of(context).main;
     final pill = BorderRadius.circular(T.rPill);
 
     Widget fillWidget;
@@ -909,7 +1021,7 @@ class _SpinnerState extends State<Spinner> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.color ?? Accent.blue.main;
+    final color = widget.color ?? AccentScope.of(context).main;
     return RepaintBoundary(
       child: SizedBox(
         width: widget.size,
@@ -967,7 +1079,7 @@ class LoadingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final inner = Column(mainAxisSize: MainAxisSize.min, children: [
-      Spinner(color: scrim ? Colors.white : Accent.blue.main),
+      Spinner(color: scrim ? Colors.white : AccentScope.of(context).main),
       if (message != null) ...[
         const SizedBox(height: 18),
         Text(message!,
@@ -1017,7 +1129,7 @@ class _TopLoadingBarState extends State<TopLoadingBar> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final color = widget.color ?? Accent.blue.main;
+    final color = widget.color ?? AccentScope.of(context).main;
     return IgnorePointer(
       child: AnimatedOpacity(
         opacity: widget.loading ? 1 : 0,
@@ -1131,4 +1243,17 @@ class BCheck extends StatelessWidget {
           ),
         ]),
       );
+}
+
+/// Bottom padding for a sheet's scrolling body.
+///
+/// The design's sheet footers clear the home indicator explicitly
+/// (`calc(env(safe-area-inset-bottom, 0px) + 24px)` in app.css); a flat pad
+/// leaves the last control — usually the primary CTA — sitting under the
+/// indicator, where iOS eats the touch. [base] keeps each sheet's own spacing
+/// (the design's `.flow-foot` is 38px) and the inset is added on top.
+/// `viewInsets` lifts the body clear of the keyboard when one is open.
+double sheetBottomInset(BuildContext context, {double base = 38}) {
+  final mq = MediaQuery.of(context);
+  return mq.viewInsets.bottom + mq.padding.bottom + base;
 }

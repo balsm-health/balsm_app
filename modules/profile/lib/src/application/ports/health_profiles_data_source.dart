@@ -37,6 +37,9 @@ abstract class HealthProfilesDataSource extends UserDataSource<HealthProfileId, 
   /// [ChronicConditionId].
   Future<ChronicConditionId> addCondition(HealthProfileId profileId, ChronicCondition condition);
 
+  /// Deletes the chronic-condition row with the given [conditionId].
+  Future<void> removeCondition(ChronicConditionId conditionId);
+
   /// Inserts [contact] under [profileId]. Returns the generated
   /// [EmergencyContactId].
   Future<EmergencyContactId> addContact(HealthProfileId profileId, EmergencyContact contact);

@@ -13,6 +13,7 @@ import 'package:profile/profile.dart' show EmergencyContact, profileDataSourcePr
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/shell.dart';
+import 'package:app/balsm_app/vault/bind_file_store.dart';
 
 /// In-session holder for the signed-in user id. `currentUserIdProvider` reads
 /// this, so an in-session sign-in / sign-out is reflected immediately (the
@@ -50,6 +51,12 @@ Future<void> main() async {
   // the platform secure store before the container is built.
   const secureStorage = FlutterSecureStorage();
   final userId = await secureStorage.read(key: 'balsm.user_id');
+  final keychain = SecureStorageWrapper();
+  UserId? containerUserId = UserId.fromString(userId);
+  final fileStore = await createUserFileStore(
+    activeUser: () => containerUserId,
+    keychain: keychain,
+  );
 
   final container = ProviderContainer(overrides: [
     // Fan out telemetry to a list of providers: Sentry always, plus a console
@@ -77,7 +84,8 @@ Future<void> main() async {
         bus: ref.watch(eventBusProvider),
       ),
     ),
-    secureStorageProvider.overrideWithValue(SecureStorageWrapper()),
+    secureStorageProvider.overrideWithValue(keychain),
+    userFileStoreProvider.overrideWithValue(fileStore),
     // Emergency card reads the on-device HealthProfile (PHI stays on-device).
     emergencySnapshotReaderProvider.overrideWith(
       (ref) => _ProfileEmergencySnapshotReader(ref),
@@ -141,9 +149,11 @@ Future<void> main() async {
   // every PHI reader (profile/meds/emergency/backup) sees the current user
   // without an app restart.
   container.read(eventBusProvider).on<UserSignedIn>().listen((e) {
+    containerUserId = e.userId;
     container.read(_sessionUserIdProvider.notifier).state = e.userId;
   });
   container.read(eventBusProvider).on<UserSignedOut>().listen((_) {
+    containerUserId = null;
     container.read(_sessionUserIdProvider.notifier).state = null;
   });
 
@@ -170,11 +180,13 @@ Future<void> main() async {
   // so every PHI reader goes null, and persist signed-out so the shell returns
   // to the auth flow on next resolution / relaunch.
   container.read(eventBusProvider).on<SessionExpired>().listen((_) {
+    containerUserId = null;
     container.read(_sessionUserIdProvider.notifier).state = null;
     paPrefs.setSignedIn(false);
   });
 
-  final state = await PatientAppState.load(paPrefs);
+  // Route on the credentials, not just the prefs flag — see load()'s doc.
+  final state = await PatientAppState.load(paPrefs, hasSession: containerUserId != null);
   runApp(
     UncontrolledProviderScope(
       container: container,

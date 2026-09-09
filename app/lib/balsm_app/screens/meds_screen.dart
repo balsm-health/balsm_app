@@ -12,6 +12,7 @@ import 'package:medications/medications.dart'
         DoseOutcome,
         TodayDose,
         todayDosesProvider,
+        weekAdherenceProvider,
         medicationListProvider,
         addMedicationUseCaseProvider,
         recordDoseOutcomeUseCaseProvider,
@@ -221,11 +222,11 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
       ('evening', LucideIcons.moon, evening),
     ];
 
-    // Adherence for today = resolved-as-taken / scheduled so far.
-    final total = doses.length;
-    final taken = doses.where((d) => d.event?.outcome == DoseOutcome.taken).length;
-    final adherence = total == 0 ? 1.0 : taken / total;
-    final adherencePct = (adherence * 100).round();
+    // Adherence over the last 7 calendar days (design MedsScreen `last_7d`).
+    final week = ref.watch(weekAdherenceProvider).valueOrNull;
+    final total = week?.scheduled ?? 0;
+    final adherence = week?.ratio ?? 0.0;
+    final adherencePct = week?.percent ?? 0;
 
     return ContentColumn(
       maxWidth: 720,
@@ -243,7 +244,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
           if (userId != null) RoundBtn(icon: LucideIcons.plus, iconSize: 20, onTap: () => _openAddMedication(userId)),
         ]),
 
-        // Adherence (today's taken / scheduled). Gradient card from the Claude Design.
+        // Adherence (last 7 days). Gradient card from the Claude Design.
         Container(
           margin: const EdgeInsets.fromLTRB(20, 4, 20, 16),
           padding: const EdgeInsets.all(20),
@@ -272,7 +273,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObse
                 const SizedBox(height: 2),
                 Text(s.strings.meds.last_7d, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
                 const SizedBox(height: 8),
-                Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
+                if (total > 0 && adherencePct >= 80) Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
               ]),
             ),
           ]),
@@ -346,7 +347,10 @@ class _GroupHead extends StatelessWidget {
     final accent = AppScope.of(context).accent;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-      child: Row(children: [
+      // `.row-head` keeps `justify-content: space-between`, so the three items
+      // spread across the row: icon chip at the start, label between, count at
+      // the far end — not clustered together.
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Container(
           width: 26,
           height: 26,
@@ -354,9 +358,15 @@ class _GroupHead extends StatelessWidget {
           decoration: BoxDecoration(color: accent.bg, borderRadius: BorderRadius.circular(T.rSm)),
           child: Icon(icon, size: 15, color: accent.d),
         ),
-        const SizedBox(width: 10),
-        Text(label, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-        const SizedBox(width: 6),
+        Flexible(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+          ),
+        ),
         Text('· $count', style: Typo.meta(ar: ar)),
       ]),
     );
@@ -489,7 +499,7 @@ class _SheetChrome extends StatelessWidget {
           // Add the keyboard inset to the bottom padding so the focused field
           // and the sheet's buttons scroll ABOVE the native keyboard.
           child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 14, 20, 38 + MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context)),
             child: child,
           ),
         ),

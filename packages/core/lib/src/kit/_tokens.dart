@@ -9,16 +9,16 @@ class BalsmColors {
   static const petalEmerald = Color(0xFF01C4A2);
   static const petalBlue = Color(0xFF1283FF);
   static const petalMint = Color(0xFF55D77F);
-  static const petalViolet = Color(0xFF724DD0);
+  static const petalViolet = Color(0xFF8350DE);
 
   static const petalBlue600 = Color(0xFF0F6BCC);
   static const petalMint600 = Color(0xFF3FC366);
-  static const petalViolet600 = Color(0xFF5C3AB0);
+  static const petalViolet600 = Color(0xFF6A3DBB);
 
   static const petalAqua50 = Color(0xFFE2F8F6);
   static const petalBlue50 = Color(0xFFE4F0FF);
   static const petalMint50 = Color(0xFFE8F9EE);
-  static const petalViolet50 = Color(0xFFECE6FA);
+  static const petalViolet50 = Color(0xFFEEE7FB);
 
   // App accent = petal-blue (primary CTA, focus, links)
   static const appAccent = petalBlue;

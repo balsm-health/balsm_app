@@ -17,6 +17,23 @@ CheckIn? todayCheckIn(List<CheckIn> history) {
   return null;
 }
 
+/// How many of the last [n] calendar days (including today) have a check-in.
+int checkInsLastDays(List<CheckIn> history, int n) {
+  if (history.isEmpty || n <= 0) return 0;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final start = today.subtract(Duration(days: n - 1));
+  final days = history.map((c) {
+    final d = c.recordedAt.toLocal();
+    return DateTime(d.year, d.month, d.day);
+  }).toSet();
+  var count = 0;
+  for (var i = 0; i < n; i++) {
+    if (days.contains(start.add(Duration(days: i)))) count++;
+  }
+  return count;
+}
+
 /// Consecutive days ending today (or yesterday) that have a check-in.
 ///
 /// Counting back from yesterday keeps the streak alive during the day before
@@ -106,6 +123,9 @@ class HomeHero extends StatelessWidget {
           const SizedBox(height: 2),
           Text(s.strings.home.hero_q(s.gender),
               style: Typo.title(ar: s.rtl).copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 2),
+          Text(s.strings.home.hero_disclaimer,
+              style: Typo.meta(ar: s.rtl).copyWith(color: Colors.white.withValues(alpha: 0.85))),
           const SizedBox(height: 14),
           Pressable(
             onTap: onStart,
@@ -139,8 +159,9 @@ class HomeHero extends StatelessWidget {
 
 /// `.streak` — ring + copy + flame.
 class HomeStreak extends StatelessWidget {
-  const HomeStreak({super.key, required this.days});
+  const HomeStreak({super.key, required this.days, required this.checkedLast7});
   final int days;
+  final int checkedLast7;
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +181,7 @@ class HomeStreak extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('$days ${s.strings.home.streak}', style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
             const SizedBox(height: 2),
-            Text(s.strings.home.streak_help, style: Typo.meta(ar: s.rtl)),
+            Text(s.strings.home.streak_help(s.gender, checkedLast7), style: Typo.meta(ar: s.rtl)),
           ]),
         ),
         const Icon(LucideIcons.flame, size: 24, color: T.sun500),
@@ -170,6 +191,40 @@ class HomeStreak extends StatelessWidget {
 }
 
 /// `.metric` tile — label, big value with unit, optional footnote.
+/// `.metric-grid` — `grid-template-columns: 1fr 1fr; gap: 12px`.
+///
+/// CSS grid rows are **auto height**: a row is as tall as its tallest item and
+/// no taller. A `GridView` with a fixed `childAspectRatio` cannot express that —
+/// it invents a height, which leaves dead space when the content is short and
+/// overflows when Dynamic Type makes it tall. Two `Expanded` cells inside an
+/// [IntrinsicHeight] row reproduce the grid exactly, including
+/// `align-items: stretch` (both tiles in a row share the taller height) and a
+/// lone trailing tile occupying only its own column.
+class MetricGrid extends StatelessWidget {
+  const MetricGrid({super.key, required this.tiles, this.gap = 12});
+
+  final List<Widget> tiles;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var i = 0; i < tiles.length; i += 2) {
+      if (rows.isNotEmpty) rows.add(SizedBox(height: gap));
+      final trailing = i + 1 < tiles.length ? tiles[i + 1] : null;
+      rows.add(IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(child: tiles[i]),
+          SizedBox(width: gap),
+          // An odd final tile keeps its single column rather than stretching.
+          Expanded(child: trailing ?? const SizedBox.shrink()),
+        ]),
+      ));
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
+  }
+}
+
 class MetricTile extends StatelessWidget {
   const MetricTile({
     super.key,
@@ -220,16 +275,29 @@ class MetricTile extends StatelessWidget {
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
           Flexible(
-            child: Text(value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                // Numbers stay LTR even in Arabic so "120/80" doesn't flip.
-                textDirection: numeric ? TextDirection.ltr : null,
-                style: Typo.title(ar: s.rtl).copyWith(fontWeight: FontWeight.w800, height: 1.1)),
+            // The reading is the hero of the tile — it must never be cut. A
+            // wide unit (Arabic "ملم زئبق" is ~3x "mmHg") plus a 3-digit
+            // systolic overflows the 143pt content box, and CSS would reflow
+            // where a fixed-height tile can only ellipsize. Scale the value
+            // down instead so the full number stays legible.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(value,
+                  maxLines: 1,
+                  // Numbers stay LTR even in Arabic so "120/80" doesn't flip.
+                  textDirection: numeric ? TextDirection.ltr : null,
+                  style: Typo.title(ar: s.rtl).copyWith(fontWeight: FontWeight.w800, height: 1.1)),
+            ),
           ),
           if (unit.isNotEmpty) ...[
             const SizedBox(width: 4),
-            Text(unit, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+            Flexible(
+              child: Text(unit,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+            ),
           ],
         ]),
         if (foot != null && foot!.isNotEmpty) ...[

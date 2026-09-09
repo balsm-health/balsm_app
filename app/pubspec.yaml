@@ -51,7 +51,6 @@ dependencies:
     git:
       url: https://github.com/balsm-health/i69n
       ref: master
-  google_fonts: ^6.2.1
   flutter_svg: ^2.0.10+1
   # Exact-artwork hit testing on the body map (see widgets/body_hit_map.dart).
   # Both are already in the tree via flutter_svg; declared because we import them.
@@ -62,6 +61,9 @@ dependencies:
   latlong2: ^0.9.1
   geolocator: ^13.0.1
   url_launcher: ^6.3.0
+  image_picker: ^1.1.2
+  file_picker: ^8.1.7
+  path_provider: ^2.1.5
   dio: ^5.8.0
   flutter_secure_storage: ^9.2.4
   sensors_plus: ^7.1.0
@@ -74,6 +76,7 @@ dev_dependencies:
   # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
   golden_toolkit: ^0.15.0
   flutter_lints: ^4.0.0
+  yaml: ^3.1.2
   build_runner: ^2.4.13
 dependency_overrides:
   # path_provider_foundation 2.6.0 migrated to package:objective_c + the
@@ -97,3 +100,35 @@ flutter:
   assets:
     - assets/body/
     - assets/brand/
+  # Self-hosted brand type, copied from the design system's own `fonts/`.
+  # The DS ships these deliberately: "offline-default is value #1 … nothing in
+  # the type stack touches the network at runtime". Fetching them from Google
+  # at runtime (the previous `google_fonts` setup) broke that promise — a
+  # signal-less pharmacy fell back to system glyphs. All SIL OFL 1.1.
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-VariableFont_wght.ttf
+    - family: IBM Plex Sans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-VariableFont_wdth_wght.ttf
+    - family: IBM Plex Sans Arabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+    - family: IBM Plex Mono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexMono-Bold.ttf
+          weight: 700
