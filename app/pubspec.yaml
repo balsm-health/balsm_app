@@ -59,6 +59,9 @@ dependencies:
   xml: ^6.6.1
   qr_flutter: ^4.1.0
   flutter_map: ^7.0.2
+  # Marker clustering for the care map — the directory holds ~19k places, so
+  # plotting them unclustered is unusable and janks the frame budget.
+  fluster: ^1.2.0
   latlong2: ^0.9.1
   geolocator: ^13.0.1
   url_launcher: ^6.3.0

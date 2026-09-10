@@ -27,12 +27,20 @@ void main() {
     _entity('c', CareEntityType.clinic, en: 'Nour Clinic', ar: 'عيادة نور'),
     _entity('p', CareEntityType.pharmacy, en: 'Zahran Pharmacy', ar: 'صيدلية زهران'),
     _entity('l', CareEntityType.lab, en: 'City Lab', ar: 'معمل المدينة'),
+    _entity('d', CareEntityType.dentist, en: 'Smile Dental', ar: 'عيادة الابتسامة للأسنان'),
   ];
 
   List<String> ids(List<CareEntity> r) => r.map((e) => e.id).toList();
 
   test('no types ticked shows everything', () {
-    expect(ids(filterCareEntities(all, query: '', types: {})), ['h', 'c', 'p', 'l']);
+    expect(ids(filterCareEntities(all, query: '', types: {})), ['h', 'c', 'p', 'l', 'd']);
+  });
+
+  test('dentist filters independently of clinic', () {
+    // Dentistry is ~7.4k of the ~38k Egyptian directory — the second largest
+    // category — so it is its own type rather than a slice of "Clinics".
+    expect(ids(filterCareEntities(all, query: '', types: {CareEntityType.dentist})), ['d']);
+    expect(ids(filterCareEntities(all, query: '', types: {CareEntityType.clinic})), ['c']);
   });
 
   test('one type narrows to that type', () {

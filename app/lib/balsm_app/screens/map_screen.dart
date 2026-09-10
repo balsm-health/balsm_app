@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:fluster/fluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
+import '../care/care_clustering.dart';
 import '../care/care_entity.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -33,11 +37,60 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _mapView = true; // map | list
   CareEntity? _selected;
 
+  /// Debounce for anything that triggers a network query. Typing and panning
+  /// both fire continuously; without this every keystroke and every frame of a
+  /// drag would hit the directory.
+  Timer? _debounce;
+  static const _debounceDelay = Duration(milliseconds: 400);
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     _mapController.dispose();
     super.dispose();
+  }
+
+  /// Pushes the current UI state into the query the directory provider watches.
+  /// [immediate] skips the debounce for discrete actions — ticking a type, or
+  /// clearing filters — where waiting would feel broken.
+  void _pushSearch({bool immediate = false, LatLng? focus, double? radiusKm}) {
+    void apply() {
+      if (!mounted) return;
+      final notifier = ref.read(careSearchProvider.notifier);
+      notifier.state = notifier.state.copyWith(
+        text: _query,
+        types: Set<CareEntityType>.from(_activeTypes),
+        focus: focus,
+        radiusKm: radiusKm,
+      );
+    }
+
+    _debounce?.cancel();
+    if (immediate) {
+      apply();
+    } else {
+      _debounce = Timer(_debounceDelay, apply);
+    }
+  }
+
+  /// Re-queries around wherever the user has panned to.
+  ///
+  /// "Nearby" has to mean the area being looked at, not only the device's own
+  /// position — someone planning a trip across Cairo needs results where they
+  /// are heading. The radius follows the visible bounds so zooming out widens
+  /// the search instead of showing a sparse patch in the middle.
+  void _onMapMoved(MapCamera camera, bool hasGesture) {
+    if (!hasGesture) return;
+    _pushSearch(focus: camera.center, radiusKm: _radiusForBounds(camera));
+  }
+
+  static double _radiusForBounds(MapCamera camera) {
+    final bounds = camera.visibleBounds;
+    final km = const Distance().as(LengthUnit.Kilometer, bounds.center, bounds.northEast);
+    // Floor keeps a deep zoom from querying a radius so small it returns
+    // nothing; the cap keeps a zoomed-out view from asking for the whole country.
+    return km.clamp(1.0, 50.0);
   }
 
   /// Center the map on the user's current position (recenter button).
@@ -54,6 +107,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         _query = '';
         _searchCtrl.clear();
         _activeTypes.clear();
+        _pushSearch(immediate: true);
       });
 
   @override
@@ -94,6 +148,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 controller: _searchCtrl,
                 onChanged: (v) => setState(() {
                   _query = v;
+                  _pushSearch();
                   _selected = null;
                 }),
                 style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, color: T.fg1),
@@ -111,6 +166,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             onTap: () => setState(() {
                               _query = '';
                               _searchCtrl.clear();
+                              _pushSearch(immediate: true);
                               _selected = null;
                             }),
                             child: Container(
@@ -152,6 +208,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       _activeTypes.add(t);
                     }
                     _selected = null;
+                    // A single ticked type is pushed server-side; several stay
+                    // client-side because the endpoint filters on one type.
+                    _pushSearch(immediate: true);
                   }),
                 ),
               ),
@@ -180,6 +239,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               entities: filtered,
               selectedId: _selected?.id,
               onPin: _select,
+              onMoved: _onMapMoved,
               userLocation: userLocation)),
       // Count badge.
       PositionedDirectional(
@@ -234,10 +294,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   const SizedBox(height: 2),
                   Text(pick(e.addr, ar: s.rtl), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
                   const SizedBox(height: 8),
+                  // Directory data has real gaps: no source supplies opening
+                  // hours or ratings, and ~8% of places have no phone. Omit the
+                  // row rather than rendering an empty icon or a bare "/ 5".
                   Wrap(spacing: 14, runSpacing: 4, children: [
-                    _metaBit(LucideIcons.navigation, e.distance, s),
-                    _metaBit(LucideIcons.clock, e.hours, s),
-                    _metaBit(LucideIcons.star, e.rating, s, star: true),
+                    if (e.distance.isNotEmpty) _metaBit(LucideIcons.navigation, e.distance, s),
+                    if (e.hours.isNotEmpty) _metaBit(LucideIcons.clock, e.hours, s),
+                    if (e.rating.isNotEmpty) _metaBit(LucideIcons.star, e.rating, s, star: true),
                   ]),
                 ]),
               ),
@@ -289,10 +352,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         icon: LucideIcons.x, ghost: true, iconSize: 16, onTap: () => setState(() => _selected = null)),
                   ]),
                   const SizedBox(height: 14),
-                  _detailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
-                  _detailRow(LucideIcons.clock, e.hours, s),
-                  _detailRow(LucideIcons.navigation, '${e.distance} ${s.strings.care.map_distance}', s),
-                  _detailRow(LucideIcons.star, '${e.rating} / 5', s, star: true),
+                  if (pick(e.addr, ar: s.rtl).isNotEmpty) _detailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
+                  if (e.hours.isNotEmpty) _detailRow(LucideIcons.clock, e.hours, s),
+                  if (e.distance.isNotEmpty)
+                    _detailRow(LucideIcons.navigation, '${e.distance} ${s.strings.care.map_distance}', s),
+                  if (e.rating.isNotEmpty) _detailRow(LucideIcons.star, '${e.rating} / 5', s, star: true),
                   const SizedBox(height: 18),
                   Row(children: [
                     Expanded(
@@ -426,12 +490,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
 /// Real OpenStreetMap tile map with a marker per entity. Centers on the first
 /// result (falls back to the market center); pins anchor at their lat/lng.
-class _TileMap extends StatelessWidget {
+class _TileMap extends StatefulWidget {
   const _TileMap({
     required this.controller,
     required this.entities,
     required this.selectedId,
     required this.onPin,
+    required this.onMoved,
     this.userLocation,
   });
   final MapController controller;
@@ -439,31 +504,91 @@ class _TileMap extends StatelessWidget {
   final String? selectedId;
   final void Function(CareEntity) onPin;
 
+  /// Fired when the user pans or zooms, so the directory can be re-queried
+  /// around wherever they are now looking.
+  final void Function(MapCamera camera, bool hasGesture) onMoved;
+
   /// "You are here" — null until the location resolves.
   final LatLng? userLocation;
 
   @override
+  State<_TileMap> createState() => _TileMapState();
+}
+
+class _TileMapState extends State<_TileMap> {
+  late Fluster<CarePoint> _clusters;
+  MapCamera? _camera;
+
+  @override
+  void initState() {
+    super.initState();
+    _clusters = buildCareClusters(widget.entities);
+  }
+
+  @override
+  void didUpdateWidget(_TileMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Indexing is the expensive half; only redo it when the places change.
+    if (!identical(oldWidget.entities, widget.entities)) {
+      _clusters = buildCareClusters(widget.entities);
+    }
+  }
+
+  void _handleMove(MapCamera camera, bool hasGesture) {
+    setState(() => _camera = camera);
+    widget.onMoved(camera, hasGesture);
+  }
+
+  List<CarePoint> get _visiblePoints {
+    final camera = _camera;
+    if (camera == null) {
+      // Before the first frame reports a camera, cluster at the initial zoom
+      // over everything rather than drawing 19k raw pins.
+      return careClustersFor(_clusters, const LatLng(-90, -180), const LatLng(90, 180), 13);
+    }
+    final bounds = camera.visibleBounds;
+    return careClustersFor(_clusters, bounds.southWest, bounds.northEast, camera.zoom);
+  }
+
+  /// Zooming into a cluster is how a user drills down; tapping one should feel
+  /// like opening it, not like a dead pin.
+  void _expand(CarePoint cluster) {
+    final target = (_camera?.zoom ?? 13) + 2;
+    widget.controller.move(cluster.position, target.clamp(3, 18));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final center = entities.isNotEmpty ? entities.first.position : kCareFallbackCenter;
+    final center = widget.entities.isNotEmpty ? widget.entities.first.position : kCareFallbackCenter;
     return FlutterMap(
-      mapController: controller,
+      mapController: widget.controller,
       options: MapOptions(
         initialCenter: center,
         initialZoom: 13,
         minZoom: 3,
         maxZoom: 18,
         interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+        onPositionChanged: (camera, hasGesture) => _handleMove(camera, hasGesture),
       ),
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'health.balsm.app',
         ),
+        // ODbL requires attributing the tile source; place data is Overture's,
+        // under CDLA-Permissive. Both notices are owed wherever the map renders.
+        const RichAttributionWidget(
+          alignment: AttributionAlignment.bottomLeft,
+          attributions: [
+            TextSourceAttribution('OpenStreetMap contributors'),
+            TextSourceAttribution('Overture Maps Foundation'),
+          ],
+        ),
         // Own-position dot sits under the entity pins, as in the design.
-        if (userLocation != null)
+        if (widget.userLocation != null)
           MarkerLayer(markers: [
             Marker(
-              point: userLocation!,
+              point: widget.userLocation!,
               width: 36,
               height: 36,
               alignment: Alignment.center,
@@ -471,8 +596,22 @@ class _TileMap extends StatelessWidget {
             ),
           ]),
         MarkerLayer(
-          markers: entities.map((e) {
-            final sel = e.id == selectedId;
+          markers: _visiblePoints.map((point) {
+            if (point.isCluster == true) {
+              return Marker(
+                point: point.position,
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                child: GestureDetector(
+                  onTap: () => _expand(point),
+                  child: _ClusterPin(count: point.count),
+                ),
+              );
+            }
+
+            final e = point.entity!;
+            final sel = e.id == widget.selectedId;
             final pinW = sel ? 40.0 : 32.0;
             return Marker(
               point: e.position,
@@ -480,7 +619,7 @@ class _TileMap extends StatelessWidget {
               height: pinW + 7,
               alignment: Alignment.topCenter, // tail tip sits on the coordinate
               child: GestureDetector(
-                onTap: () => onPin(e),
+                onTap: () => widget.onPin(e),
                 child: _Pin(type: e.type, selected: sel, size: pinW),
               ),
             );
@@ -491,8 +630,41 @@ class _TileMap extends StatelessWidget {
   }
 }
 
-/// "You are here" dot — the design's concentric petal-blue circles
-/// (r18 @10%, r10 @22%, r6 solid behind a white ring).
+/// A cluster marker: one dot standing in for several places, labelled with how
+/// many. Tapping zooms in rather than opening anything — the count is a promise
+/// that there is more underneath.
+class _ClusterPin extends StatelessWidget {
+  const _ClusterPin({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    // Large clusters read as denser; the step keeps the scale legible without
+    // letting a 5,000-place cluster dwarf the map.
+    final size = count >= 1000 ? 48.0 : (count >= 100 ? 44.0 : 38.0);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: T.petalBlue,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2.5),
+        boxShadow: T.shadowSm,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        count >= 1000 ? '${(count / 1000).toStringAsFixed(count >= 10000 ? 0 : 1)}k' : '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
 class _UserDot extends StatelessWidget {
   const _UserDot();
 
