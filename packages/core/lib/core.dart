@@ -107,3 +107,4 @@ export 'src/dev/dev_log_buffer.dart' show DevLogBuffer;
 // Test kit: gated by DEV environment flag.
 export 'src/test_kit/fakes.dart' if (dart.library.html) 'src/test_kit/fakes.dart';
 export 'src/test_kit/golden_helpers.dart';
+export 'src/test_kit/fake_apis.dart';
