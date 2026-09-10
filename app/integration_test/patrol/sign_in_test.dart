@@ -1,5 +1,6 @@
 import 'package:app/brands/balsm/main_balsm.dart' as app;
 import 'package:core/core.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
 
 /// New-account sign-in must land on profile setup, because that is where the
