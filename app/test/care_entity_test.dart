@@ -66,6 +66,24 @@ void main() {
       );
     });
 
+    test('a zoomed-out search is skipped, not answered badly', () {
+      // At country zoom the radius clamp (50km) covers a fraction of a ~1,000km
+      // viewport, and nearest-200 collapses the rest into a 1.4km knot — so the
+      // map showed one cluster on Cairo and an empty Egypt. Returning nothing
+      // and saying why beats returning something false.
+      expect(const CareSearch().tooZoomedOut, isFalse);
+      expect(const CareSearch(tooZoomedOut: true).tooZoomedOut, isTrue);
+      expect(const CareSearch(tooZoomedOut: true).copyWith(text: 'lab').tooZoomedOut, isTrue,
+          reason: 'an unrelated edit must not silently re-enable the query');
+      expect(const CareSearch(tooZoomedOut: true).copyWith(tooZoomedOut: false).tooZoomedOut, isFalse);
+    });
+
+    test('the query floor sits where a phone viewport still fits the radius clamp', () {
+      // Below zoom 10 a phone viewport is wider than the 50km the radius clamp
+      // allows, so the answer stops being representative of what is on screen.
+      expect(kCareMinQueryZoom, 10);
+    });
+
     test('copyWith can clear the map focus back to "near me"', () {
       const focused = CareSearch(focus: LatLng(30.1, 31.3));
       expect(focused.copyWith(clearFocus: true).focus, isNull);

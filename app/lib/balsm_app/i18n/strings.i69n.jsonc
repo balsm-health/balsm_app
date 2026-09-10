@@ -61,6 +61,8 @@
     "map_found": "places nearby",
     "map_no_results": "No places found",
     "map_no_res_h": "Try a different search or filter.",
+    "map_zoomed_out": "Zoom in to see places",
+    "map_zoomed_out_h": "The directory is searched around the area you are viewing.",
     "map_n_types(String n)": "$n types",
     "map_clear": "Clear search",
     "care_empty": "No care team yet",

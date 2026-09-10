@@ -237,6 +237,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get map_found => "places nearby";
   String get map_no_results => "No places found";
   String get map_no_res_h => "Try a different search or filter.";
+  String get map_zoomed_out => "Zoom in to see places";
+  String get map_zoomed_out_h => "The directory is searched around the area you are viewing.";
   String map_n_types(String n) => "$n types";
   String get map_clear => "Clear search";
   String get care_empty => "No care team yet";
@@ -283,6 +285,10 @@ class CareStrings implements i69n.I69nMessageBundle {
         return map_no_results;
       case 'map_no_res_h':
         return map_no_res_h;
+      case 'map_zoomed_out':
+        return map_zoomed_out;
+      case 'map_zoomed_out_h':
+        return map_zoomed_out_h;
       case 'map_n_types':
         return map_n_types;
       case 'map_clear':

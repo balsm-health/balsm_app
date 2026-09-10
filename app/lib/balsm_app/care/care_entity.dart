@@ -128,6 +128,19 @@ const double kCareDefaultRadiusKm = 10;
 /// JSON on mobile data. Nearest-N keeps the ones a patient could actually reach.
 const int kCareResultLimit = 200;
 
+/// Below this zoom the directory is not queried at all.
+///
+/// Two caps fight the viewport when zoomed out: the radius is clamped to 50 km
+/// while a country-wide view spans ~1,000 km, and nearest-200 then collapses the
+/// result into a knot a kilometre or two across. The map ends up showing one
+/// cluster over Cairo and an empty Egypt — which reads as "Alexandria and Aswan
+/// have no pharmacies" rather than "you are zoomed too far out". Saying nothing
+/// is better than saying something false.
+///
+/// At this zoom a phone viewport is roughly 50 km across, which is the widest
+/// the clamped radius can honestly cover.
+const double kCareMinQueryZoom = 10;
+
 /// What the directory is currently being asked for.
 ///
 /// [focus] is the map's centre once the user pans; until then it is null and the
@@ -139,6 +152,7 @@ class CareSearch {
     this.types = const {},
     this.focus,
     this.radiusKm = kCareDefaultRadiusKm,
+    this.tooZoomedOut = false,
   });
 
   final String text;
@@ -146,11 +160,17 @@ class CareSearch {
   final LatLng? focus;
   final double radiusKm;
 
+  /// Set when the map is zoomed out past [kCareMinQueryZoom]. The query is
+  /// skipped entirely rather than returning a result that misrepresents the
+  /// country.
+  final bool tooZoomedOut;
+
   CareSearch copyWith({
     String? text,
     Set<CareEntityType>? types,
     LatLng? focus,
     double? radiusKm,
+    bool? tooZoomedOut,
     bool clearFocus = false,
   }) =>
       CareSearch(
@@ -158,6 +178,7 @@ class CareSearch {
         types: types ?? this.types,
         focus: clearFocus ? null : (focus ?? this.focus),
         radiusKm: radiusKm ?? this.radiusKm,
+        tooZoomedOut: tooZoomedOut ?? this.tooZoomedOut,
       );
 
   /// The single type to push server-side. Only sent when exactly one is ticked —
@@ -177,6 +198,9 @@ final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref)
   final search = ref.watch(careSearchProvider);
   // "Near me" until the user pans the map, "near what I am looking at" after.
   final focus = search.focus;
+  // Zoomed too far out to answer honestly — see kCareMinQueryZoom.
+  if (search.tooZoomedOut) return const [];
+
   final LatLng center = focus ?? (await ref.watch(userLatLngProvider.future));
 
   final res = await ref.watch(careDirectoryApiProvider).nearby(

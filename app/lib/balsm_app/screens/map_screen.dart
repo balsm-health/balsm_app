@@ -43,6 +43,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Timer? _debounce;
   static const _debounceDelay = Duration(milliseconds: 400);
 
+  /// Last reported camera zoom, so the empty state can say WHY it is empty.
+  double _zoom = 13;
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -54,7 +57,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Pushes the current UI state into the query the directory provider watches.
   /// [immediate] skips the debounce for discrete actions — ticking a type, or
   /// clearing filters — where waiting would feel broken.
-  void _pushSearch({bool immediate = false, LatLng? focus, double? radiusKm}) {
+  void _pushSearch({bool immediate = false, LatLng? focus, double? radiusKm, bool? tooZoomedOut}) {
     void apply() {
       if (!mounted) return;
       final notifier = ref.read(careSearchProvider.notifier);
@@ -63,6 +66,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         types: Set<CareEntityType>.from(_activeTypes),
         focus: focus,
         radiusKm: radiusKm,
+        tooZoomedOut: tooZoomedOut,
       );
     }
 
@@ -82,7 +86,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// the search instead of showing a sparse patch in the middle.
   void _onMapMoved(MapCamera camera, bool hasGesture) {
     if (!hasGesture) return;
-    _pushSearch(focus: camera.center, radiusKm: _radiusForBounds(camera));
+    _zoom = camera.zoom;
+    _pushSearch(
+      focus: camera.center,
+      radiusKm: _radiusForBounds(camera),
+      tooZoomedOut: camera.zoom < kCareMinQueryZoom,
+    );
   }
 
   static double _radiusForBounds(MapCamera camera) {
@@ -407,29 +416,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// is the point: with server-side search an empty result is common, and the
   /// user needs to be able to move somewhere that HAS results without first
   /// clearing what they typed.
-  Widget _emptyOverlay(PatientAppState s) => Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
-        decoration: BoxDecoration(
-          color: const Color(0xF7FFFFFF),
-          borderRadius: BorderRadius.circular(T.rLg),
-          boxShadow: T.shadowSm,
+  Widget _emptyOverlay(PatientAppState s) {
+    // "Nothing here" and "you are too far out to ask" are different answers, and
+    // conflating them is what made a zoomed-out map read as an empty country.
+    final zoomedOut = _zoom < kCareMinQueryZoom;
+    return Container(
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+      decoration: BoxDecoration(
+        color: const Color(0xF7FFFFFF),
+        borderRadius: BorderRadius.circular(T.rLg),
+        boxShadow: T.shadowSm,
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(zoomedOut ? LucideIcons.zoomIn : LucideIcons.mapPinOff, size: 40, color: T.fg4),
+        const SizedBox(height: 12),
+        Text(zoomedOut ? s.strings.care.map_zoomed_out : s.strings.care.map_no_results,
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+        const SizedBox(height: 6),
+        SizedBox(
+          width: 200,
+          child: Text(zoomedOut ? s.strings.care.map_zoomed_out_h : s.strings.care.map_no_res_h,
+              textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
         ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(LucideIcons.mapPinOff, size: 40, color: T.fg4),
-          const SizedBox(height: 12),
-          Text(s.strings.care.map_no_results,
-              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: 200,
-            child: Text(s.strings.care.map_no_res_h,
-                textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-          ),
+        // Clearing filters cannot fix being zoomed out, so do not offer it there.
+        if (!zoomedOut) ...[
           const SizedBox(height: 16),
           _softButton(label: s.strings.care.map_clear, onTap: _clearFilters),
-        ]),
-      );
+        ],
+      ]),
+    );
+  }
 
   /// List view with nothing to show — a plain card, no action (map.jsx).
   Widget _emptyList(PatientAppState s) => ListView(
