@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons/lucide_icons.dart';
 
+import 'care_cache.dart';
+
 /// A bilingual label carried by directory data (names/addresses come from the
 /// care-directory API, not the i69n bundle). Resolve with [pick].
 typedef L10nText = ({String en, String ar});
@@ -194,14 +196,55 @@ final careSearchProvider = StateProvider<CareSearch>((ref) => const CareSearch()
 /// ship whole and filter on the device, and the server's Arabic search folds
 /// hamza spellings (أشعة/اشعة) that a naive client `contains` would miss.
 /// Multi-type selection stays client-side because the endpoint takes one type.
+/// Decimal places the query centre is rounded to before it is sent.
+///
+/// Three places is ~110m — far below the radius the directory is searched with,
+/// so rounding changes no result a user could notice. It makes small pans reuse
+/// the same cache entry, on the device AND in the server's output cache, which
+/// varies by query string. Without it every pixel of drift is a fresh key and
+/// neither cache ever hits.
+const int kCareCenterPrecision = 3;
+
+LatLng _roundCenter(LatLng c) => LatLng(
+      double.parse(c.latitude.toStringAsFixed(kCareCenterPrecision)),
+      double.parse(c.longitude.toStringAsFixed(kCareCenterPrecision)),
+    );
+
+/// Cache key for one directory query. Every field that changes the response is
+/// part of it; anything left out would serve one query's results for another.
+String careCacheKey(LatLng center, CareSearch search) => [
+      center.latitude.toStringAsFixed(kCareCenterPrecision),
+      center.longitude.toStringAsFixed(kCareCenterPrecision),
+      search.radiusKm.toStringAsFixed(1),
+      search.wireType ?? '',
+      search.text.trim().toLowerCase(),
+      kCareResultLimit,
+    ].join('|');
+
+/// Survives provider rebuilds — a plain [Provider], not autoDispose, or the
+/// cache would be thrown away on the very rebuild it exists to short-circuit.
+final careDirectoryCacheProvider = Provider<CareDirectoryCache>((ref) => CareDirectoryCache());
+
 final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref) async {
   final search = ref.watch(careSearchProvider);
-  // "Near me" until the user pans the map, "near what I am looking at" after.
-  final focus = search.focus;
   // Zoomed too far out to answer honestly — see kCareMinQueryZoom.
   if (search.tooZoomedOut) return const [];
 
-  final LatLng center = focus ?? (await ref.watch(userLatLngProvider.future));
+  // "Near me" until the user pans the map, "near what I am looking at" after.
+  final focus = search.focus;
+  final center = _roundCenter(focus ?? (await ref.watch(userLatLngProvider.future)));
+
+  final cache = ref.watch(careDirectoryCacheProvider);
+  final key = careCacheKey(center, search);
+
+  final cached = cache.get(key);
+  if (cached != null) return cached;
+
+  // Panning fires a query per settled gesture, so a slow response is routinely
+  // superseded before it lands. Riverpod discards the stale RESULT on rebuild,
+  // but without this the request itself still completes and spends the bytes.
+  final cancel = CancelToken();
+  ref.onDispose(cancel.cancel);
 
   final res = await ref.watch(careDirectoryApiProvider).nearby(
         NearbyCareQuery(
@@ -212,6 +255,10 @@ final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref)
           query: search.text.trim().isEmpty ? null : search.text.trim(),
           limit: kCareResultLimit,
         ),
+        cancelToken: cancel,
       );
-  return res.map(CareEntity.fromResponse).toList(growable: false);
+
+  final entities = res.map(CareEntity.fromResponse).toList(growable: false);
+  cache.put(key, entities);
+  return entities;
 });
