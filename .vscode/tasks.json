@@ -5,23 +5,36 @@
       "label": "Flutter: code generation",
       "type": "shell",
       "command": "dart",
-      "args": ["run", "tool/build.dart", "gen"],
+      "args": [
+        "run",
+        "tool/build.dart",
+        "gen"
+      ],
       "problemMatcher": []
     },
     {
       "label": "Flutter: code generation (watch)",
       "type": "shell",
       "command": "dart",
-      "args": ["run", "tool/build.dart", "gen", "--watch"],
+      "args": [
+        "run",
+        "tool/build.dart",
+        "gen",
+        "--watch"
+      ],
       "isBackground": true,
       "problemMatcher": []
     },
     {
-      "label": "Flutter: widget tests",
+      "label": "Flutter: widget tests (app only)",
       "type": "shell",
       "command": "dart",
-      "args": ["run", "tool/build.dart", "test"],
-      "group": { "kind": "test", "isDefault": true },
+      "args": [
+        "run",
+        "tool/build.dart",
+        "test"
+      ],
+      "group": "test",
       "problemMatcher": []
     },
     {
@@ -32,35 +45,70 @@
       "problemMatcher": []
     },
     {
-      "label": "Flutter: build APK (balsm · dev)",
+      "label": "Flutter: build APK (balsm \u00b7 dev)",
       "type": "shell",
       "command": "dart",
-      "args": ["run", "tool/build.dart", "apk", "balsm", "dev"],
+      "args": [
+        "run",
+        "tool/build.dart",
+        "apk",
+        "balsm",
+        "dev"
+      ],
       "group": "build",
       "problemMatcher": []
     },
     {
-      "label": "Flutter: build APK (balsm · prod)",
+      "label": "Flutter: build APK (balsm \u00b7 prod)",
       "type": "shell",
       "command": "dart",
-      "args": ["run", "tool/build.dart", "apk", "balsm", "prod"],
-      "group": { "kind": "build", "isDefault": true },
+      "args": [
+        "run",
+        "tool/build.dart",
+        "apk",
+        "balsm",
+        "prod"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": []
     },
     {
-      "label": "Flutter: build web (balsm · prod)",
+      "label": "Flutter: build web (balsm \u00b7 prod)",
       "type": "shell",
       "command": "dart",
-      "args": ["run", "tool/build.dart", "web", "balsm", "prod"],
+      "args": [
+        "run",
+        "tool/build.dart",
+        "web",
+        "balsm",
+        "prod"
+      ],
       "group": "build",
       "problemMatcher": []
-    }
-    , {
+    },
+    {
       "label": "Dart: format",
       "type": "shell",
       "command": "dart",
-      "args": ["format", "."],
+      "args": [
+        "format",
+        "."
+      ],
       "group": "format",
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: all tests",
+      "detail": "Every Dart test in the repo: each workspace package, then the root suites.",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/all_tests.sh",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
       "problemMatcher": []
     }
   ]
