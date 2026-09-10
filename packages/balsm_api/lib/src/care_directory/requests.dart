@@ -7,6 +7,7 @@ class NearbyCareQuery {
     this.radiusKm,
     this.type,
     this.query,
+    this.limit,
   });
 
   final double lat;
@@ -21,11 +22,17 @@ class NearbyCareQuery {
   /// Free-text name/address search.
   final String? query;
 
+  /// Cap on returned places, nearest first (server default and ceiling apply).
+  /// The directory matches thousands of places within a city radius, so an
+  /// uncapped response is megabytes of JSON per pan.
+  final int? limit;
+
   Map<String, dynamic> toQueryParameters() => {
         'lat': lat,
         'lng': lng,
         if (radiusKm != null) 'radius_km': radiusKm,
         if (type != null) 'type': type,
         if (query != null && query!.trim().isNotEmpty) 'q': query!.trim(),
+        if (limit != null) 'limit': limit,
       };
 }

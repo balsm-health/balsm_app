@@ -118,6 +118,11 @@ final userLatLngProvider = FutureProvider.autoDispose<LatLng>((ref) async {
 /// applies no default cutoff of its own.
 const double kCareDefaultRadiusKm = 10;
 
+/// Cap on places fetched per query. A 10 km radius around central Cairo matches
+/// ~3,900 places and 50 km matches ~9,000; fetching those whole is megabytes of
+/// JSON on mobile data. Nearest-N keeps the ones a patient could actually reach.
+const int kCareResultLimit = 200;
+
 /// What the directory is currently being asked for.
 ///
 /// [focus] is the map's centre once the user pans; until then it is null and the
@@ -176,6 +181,7 @@ final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref)
           radiusKm: search.radiusKm,
           type: search.wireType,
           query: search.text.trim().isEmpty ? null : search.text.trim(),
+          limit: kCareResultLimit,
         ),
       );
   return res.map(CareEntity.fromResponse).toList(growable: false);
