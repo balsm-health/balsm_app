@@ -27,7 +27,12 @@ String pick(L10nText t, {required bool ar}) {
 enum CareEntityType {
   hospital('hospital', LucideIcons.building2, 0xFFD44A3C, 0xFFFAEAE8, (en: 'Hospitals', ar: 'مستشفيات')),
   clinic('clinic', LucideIcons.stethoscope, 0xFF1283FF, 0xFFE4F0FF, (en: 'Clinics', ar: 'عيادات')),
-  dentist('dentist', LucideIcons.smile, 0xFFE0568F, 0xFFFCE9F1, (en: 'Dentists', ar: 'أطباء أسنان')),
+  // Mint is the one brand petal no other care type claims, and the 600 shade
+  // (not the base #55D77F) because the pin puts a white glyph on this colour
+  // when selected — the design system itself sets dark text on base mint.
+  // Icon: the DS iconography card is Lucide at stroke 1.75 and has no tooth
+  // glyph, nor does lucide_icons 0.257.0; `smile` is the documented stand-in.
+  dentist('dentist', LucideIcons.smile, 0xFF3FC366, 0xFFE8F9EE, (en: 'Dentists', ar: 'أطباء أسنان')),
   pharmacy('pharmacy', LucideIcons.pill, 0xFF01C4A2, 0xFFE1F8F1, (en: 'Pharmacies', ar: 'صيدليات')),
   lab('lab', LucideIcons.flaskConical, 0xFF8350DE, 0xFFEEE7FB, (en: 'Labs', ar: 'مختبرات')),
   scan('scan', LucideIcons.scanLine, 0xFF02BBB5, 0xFFE2F8F6, (en: 'Scan centers', ar: 'مراكز أشعة')),
