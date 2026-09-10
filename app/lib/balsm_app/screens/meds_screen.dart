@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:core/core.dart' show UserId, currentUserIdProvider, globalKVDataSourceProvider;
+import 'package:core/core.dart' show UserId, currentUserIdProvider;
 import 'package:prescriptions/prescriptions.dart' show Prescription, prescriptionListProvider;
 import 'package:medications/medications.dart'
     show
@@ -15,11 +15,9 @@ import 'package:medications/medications.dart'
         weekAdherenceProvider,
         medicationListProvider,
         addMedicationUseCaseProvider,
-        recordDoseOutcomeUseCaseProvider,
-        medicationSchedulerProvider;
+        recordDoseOutcomeUseCaseProvider;
 import '../app_state.dart';
 import '../kit.dart';
-import '../prefs.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 
@@ -40,93 +38,7 @@ class MedsScreen extends ConsumerStatefulWidget {
   ConsumerState<MedsScreen> createState() => _MedsScreenState();
 }
 
-class _MedsScreenState extends ConsumerState<MedsScreen> with WidgetsBindingObserver {
-  bool _tzBusy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // Opening the meds tab after travel is itself a "foreground" moment.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTimezoneShift());
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkTimezoneShift();
-  }
-
-  // ── G9 — timezone-shift detector (FR-023) ────────────────────────────────
-
-  /// On foreground: compare the current device timezone marker to the last
-  /// stored one. If it changed, ask (never silently rebuild) whether to
-  /// recompute reminder times; on accept, rebuild via the scheduler. The marker
-  /// is persisted so a shift is prompted at most once.
-  Future<void> _checkTimezoneShift() async {
-    if (_tzBusy || !mounted) return;
-    _tzBusy = true;
-    try {
-      final prefs = PatientAppPrefs(ref.read(globalKVDataSourceProvider));
-      // No `timezone`/`flutter_timezone` dep in the app package; the OS-backed
-      // marker updates whenever the device timezone changes at runtime.
-      final current = DateTime.now().timeZoneName;
-      final last = await prefs.lastTimezone();
-      if (last == null) {
-        await prefs.setLastTimezone(current);
-        return;
-      }
-      if (last == current) return;
-
-      final userId = ref.read(currentUserIdProvider);
-      // Signed out → no reminders to recompute; just refresh the marker so we
-      // don't prompt on the next sign-in.
-      if (userId == null) {
-        await prefs.setLastTimezone(current);
-        return;
-      }
-      if (!mounted) return;
-
-      final accept = await _showTimezoneConfirm(last, current);
-      if (accept == true && mounted) {
-        // Rebuilds OS reminder triggers for the new local clock times.
-        await ref.read(medicationSchedulerProvider(userId)).handleTimezoneShift(last);
-        ref.invalidate(todayDosesProvider);
-        ref.invalidate(medicationListProvider);
-      }
-      // One prompt per shift, whatever the choice (accept rebuilds, decline
-      // leaves schedules untouched).
-      await prefs.setLastTimezone(current);
-    } finally {
-      _tzBusy = false;
-    }
-  }
-
-  Future<bool?> _showTimezoneConfirm(String previous, String current) {
-    final s = AppScope.of(context);
-    return showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x6114202B),
-      builder: (ctx) => Directionality(
-        textDirection: s.dir,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: _TimezoneConfirmSheet(s: s, previous: previous, current: current),
-          ),
-        ),
-      ),
-    );
-  }
-
+class _MedsScreenState extends ConsumerState<MedsScreen> {
   // ── Real writes (on-device only; nothing sent to the cloud) ──────────────
 
   Future<void> _recordDose(TodayDose dose, DoseOutcome outcome) async {
@@ -583,42 +495,6 @@ class _DoseActionSheet extends StatelessWidget {
             label: s.strings.meds.med_skip,
             icon: LucideIcons.x,
             onTap: () => Navigator.pop(context, DoseOutcome.skipped)),
-      ]),
-    );
-  }
-}
-
-// ── Timezone-shift confirm sheet (G9 / FR-023) ───────────────────────────────
-
-class _TimezoneConfirmSheet extends StatelessWidget {
-  const _TimezoneConfirmSheet({required this.s, required this.previous, required this.current});
-  final PatientAppState s;
-  final String previous;
-  final String current;
-  @override
-  Widget build(BuildContext context) {
-    return _SheetChrome(
-      s: s,
-      title: s.strings.meds.tz_changed,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(
-              width: 46,
-              height: 46,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: T.petalBlue50, borderRadius: BorderRadius.circular(T.rMd)),
-              child: const Icon(LucideIcons.globe, size: 22, color: T.petalBlue)),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(s.strings.meds.meds_tz_moved(previous, current),
-                style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
-          ),
-        ]),
-        const SizedBox(height: 20),
-        _SheetButton(
-            s: s, label: s.strings.meds.tz_recompute, primary: true, onTap: () => Navigator.pop(context, true)),
-        const SizedBox(height: 10),
-        _SheetButton(s: s, label: s.strings.meds.tz_keep, onTap: () => Navigator.pop(context, false)),
       ]),
     );
   }

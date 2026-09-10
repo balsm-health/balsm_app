@@ -327,7 +327,6 @@
     "med_snooze15": "تأجيل 15 دقيقة",
     "med_skip": "تخطّي",
     "tz_changed": "تغيّرت المنطقة الزمنية",
-    "tz_recompute": "إعادة الحساب",
     "tz_keep": "الإبقاء كما هي",
     "med_add_title": "إضافة دواء",
     "med_field_name": "الاسم",
@@ -343,7 +342,6 @@
     "meds_signin_help": "سجّل الدخول لعرض أدويتك.",
     "meds_empty_help": "لا توجد أدوية بعد. أضف دواءً للبدء.",
     "meds_none_today": "لا جرعات مجدولة اليوم.",
-    "meds_tz_moved(String from, String to)": "انتقلت من $from إلى $to. هل نعيد حساب مواعيد تذكير الأدوية لتوقيتك المحلي الجديد؟"
   },
   "nav": {
     "tab_home": "الرئيسية",

@@ -327,7 +327,6 @@
     "med_snooze15": "Snooze 15 min",
     "med_skip": "Skip",
     "tz_changed": "Time zone changed",
-    "tz_recompute": "Recompute reminders",
     "tz_keep": "Keep as is",
     "med_add_title": "Add medication",
     "med_field_name": "Name",
@@ -343,7 +342,6 @@
     "meds_signin_help": "Sign in to view your medications.",
     "meds_empty_help": "No medications yet. Add one to get started.",
     "meds_none_today": "Nothing scheduled today.",
-    "meds_tz_moved(String from, String to)": "You moved from $from to $to. Recompute your medication reminder times for the new local time?"
   },
   "nav": {
     "tab_home": "Home",

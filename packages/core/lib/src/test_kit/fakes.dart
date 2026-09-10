@@ -4,14 +4,12 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:timezone/timezone.dart' as tz;
 import '../config/active_server.dart';
 import '../config/server_preset.dart';
 import '../domain/events/app_event.dart';
 import '../event_bus/event_bus.dart';
 import '../network/balsm_api_controller.dart';
 import '../secure_storage/secure_storage_wrapper.dart';
-import '../notifications/notification_service.dart';
 import '../localization/translation_catalog.dart';
 import '../localization/country_registry.dart';
 import '../backup/backup_adapter.dart';
@@ -62,31 +60,6 @@ class FakeSecureStorage extends SecureStorageWrapper {
 
   @override
   Future<void> clearAll() async => _store.clear();
-}
-
-class FakeNotificationService extends NotificationService {
-  final scheduled = <({int id, String title, String body})>[];
-  final cancelled = <int>[];
-
-  @override
-  Future<void> initialize({void Function(String? payload)? onTap}) async {}
-
-  @override
-  Future<void> zonedSchedule({
-    required int id,
-    required String title,
-    required String body,
-    required tz.TZDateTime dateTime,
-    String? channelId,
-  }) async {
-    scheduled.add((id: id, title: title, body: body));
-  }
-
-  @override
-  Future<void> cancel(int id) async => cancelled.add(id);
-
-  @override
-  Future<void> cancelAll() async => cancelled.clear();
 }
 
 class FakeTranslationCatalog extends TranslationCatalog {

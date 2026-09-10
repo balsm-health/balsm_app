@@ -70,7 +70,6 @@ export 'src/telemetry/event_bus_forwarder.dart';
 export 'src/telemetry/analytics_route_observer.dart';
 export 'src/telemetry/providers.dart';
 export 'src/secure_storage/secure_storage_wrapper.dart';
-export 'src/notifications/notification_service.dart';
 export 'src/notifications/permission_state.dart';
 export 'src/notifications/permission_change_event.dart';
 export 'src/config/flavor.dart';

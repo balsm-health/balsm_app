@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../application/use_cases/notify_missed_doses_use_case.dart';
 import '../../application/use_cases/record_dose_outcome_use_case.dart';
 import '../../domain/entities/dose_event.dart';
 import '../providers.dart';
@@ -29,32 +28,17 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   final _scrollController = ScrollController();
   final _itemKeys = <String, GlobalKey>{};
   String? _highlighted;
-  bool _missedRun = false;
 
   @override
   void initState() {
     super.initState();
     _highlighted = widget.highlightDoseId;
-    // Run missed-dose detection on foreground (every build of today screen for
-    // denied-permission users is handled inside the detector).
-    WidgetsBinding.instance.addPostFrameCallback((_) => _runMissedDetection());
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  Future<void> _runMissedDetection() async {
-    if (_missedRun) return;
-    _missedRun = true;
-    final userId = ref.read(currentUserIdProvider);
-    if (userId == null) return;
-    final newly = await ref.read(notifyMissedDosesUseCaseProvider).call(userId);
-    if (newly.isNotEmpty && mounted) {
-      ref.invalidate(todayDosesProvider);
-    }
   }
 
   void _scrollToHighlight() {
