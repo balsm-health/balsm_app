@@ -206,15 +206,35 @@ class AdaptiveGrid extends StatelessWidget {
 /// Centers and width-caps long-form content on large screens so a touch-first
 /// layout never stretches edge-to-edge on desktop/web.
 class ContentColumn extends StatelessWidget {
-  const ContentColumn({super.key, required this.child, this.maxWidth = 640});
+  const ContentColumn({super.key, required this.child, this.maxWidth = 640, this.maxHeight});
   final Widget child;
   final double maxWidth;
+
+  /// Optional height cap for screens whose content is a fixed block rather than
+  /// a scrolling list — onboarding, forms, gates.
+  ///
+  /// Without it the child stretches to the full viewport, so a `Spacer()` or a
+  /// bottom-pinned CTA that reads as deliberate on a phone leaves more than
+  /// half a 13-inch iPad empty. Capping the height and centring keeps the
+  /// phone's internal proportions and places that block in the middle of the
+  /// larger screen. Below the cap nothing changes, so phones are untouched.
+  ///
+  /// Leave null on scrolling screens: they should keep filling the viewport.
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) => Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
+          constraints: BoxConstraints(
+            maxWidth: maxWidth,
+            maxHeight: maxHeight ?? double.infinity,
+          ),
           child: child,
         ),
       );
 }
+
+/// Height cap for a fixed content block — see [ContentColumn.maxHeight].
+/// Comfortably above the tallest phone, so only tablets and desktop windows
+/// see any effect.
+const double kContentBlockMaxHeight = 900;

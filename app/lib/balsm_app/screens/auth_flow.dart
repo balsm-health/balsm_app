@@ -52,6 +52,7 @@ class _WelcomeScreen extends StatelessWidget {
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
             // `.wbody { margin-top: auto }` — lockup + CTAs sit on the cream
             // fade; watercolor fills the space above.
@@ -91,13 +92,18 @@ class _WelcomeScreen extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 26),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                _trust(s, LucideIcons.smartphone, s.strings.settings.trust_device),
-                const SizedBox(width: 22),
-                _trust(s, LucideIcons.lock, s.strings.settings.trust_private),
-                const SizedBox(width: 22),
-                _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
-              ]),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  // Labels are translated and wrap to different line counts;
+                  // top alignment keeps the three icons on one baseline.
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _trust(s, LucideIcons.smartphone, s.strings.settings.trust_device),
+                    const SizedBox(width: 22),
+                    _trust(s, LucideIcons.lock, s.strings.settings.trust_private),
+                    const SizedBox(width: 22),
+                    _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
+                  ]),
             ),
             Pressable(
               onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
@@ -207,6 +213,7 @@ class _UnderEighteenScreen extends StatelessWidget {
       body: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
@@ -374,6 +381,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
             _AuthHeader(onBack: () => s.go('welcome'), step: 1),
             Expanded(
@@ -605,6 +613,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
             _AuthHeader(onBack: () => s.go('phone'), step: 2),
             Expanded(
@@ -810,6 +819,7 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
       body: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
@@ -1078,6 +1088,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
             _AuthHeader(onBack: () => s.go('otp'), step: 3),
             Expanded(
