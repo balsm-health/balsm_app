@@ -55,7 +55,6 @@ class ProfileScreen extends ConsumerWidget {
       // Home/Profile", yet nothing links there), so the app surfaces it — next
       // to Care team, which schedules the visits. Every design row keeps its
       // relative order.
-      (LucideIcons.calendar, 'care.appts', () => s.setTab('appts'), false),
       (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'profile.p_notif', null, false),
       (

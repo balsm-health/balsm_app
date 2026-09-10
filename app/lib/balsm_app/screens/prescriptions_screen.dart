@@ -9,7 +9,6 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/photo_attach.dart';
 import 'add_prescription_sheet.dart';
-import 'appointments_screen.dart' show formatAppointmentDate;
 
 /// Prescriptions the patient holds — grouped active / expired.
 ///
@@ -108,7 +107,7 @@ class _RxCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
               const SizedBox(height: 2),
-              Text('${_itemCount(s, rx.items.length)} · ${formatAppointmentDate(rx.issuedAt, s)}',
+              Text('${_itemCount(s, rx.items.length)} · ${_formatShortDate(rx.issuedAt, s)}',
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),
           ),
@@ -216,12 +215,12 @@ class PrescriptionDetailScreen extends ConsumerWidget {
                   ]),
                   const SizedBox(height: 14),
                   Row(children: [
-                    _Fact(label: s.strings.meds.rx_issued, value: formatAppointmentDate(rx.issuedAt, s)),
+                    _Fact(label: s.strings.meds.rx_issued, value: _formatShortDate(rx.issuedAt, s)),
                     const SizedBox(width: 24),
                     if (rx.validUntil != null)
                       _Fact(
                         label: s.strings.meds.rx_valid_until,
-                        value: formatAppointmentDate(rx.validUntil!, s),
+                        value: _formatShortDate(rx.validUntil!, s),
                         color: active ? T.fg1 : T.danger,
                       ),
                   ]),
@@ -457,4 +456,14 @@ class _ItemRow extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// `dd MMM yyyy` in the active locale, via the i69n `settings.cal_months`
+/// bundle the date pickers already use (CODING_STANDARDS: no inline bilingual
+/// ternaries). Moved here when the appointments screen was removed — this is
+/// the only remaining caller.
+String _formatShortDate(DateTime d, PatientAppState s) {
+  final months = s.strings.settings.cal_months.split('|');
+  final l = d.toLocal();
+  return '${l.day.toString().padLeft(2, '0')} ${months[l.month - 1]} ${l.year}';
 }

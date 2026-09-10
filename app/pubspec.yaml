@@ -31,8 +31,6 @@ dependencies:
     path: ../modules/self_report
   records:
     path: ../modules/records
-  appointments:
-    path: ../modules/appointments
   prescriptions:
     path: ../modules/prescriptions
   sessions:

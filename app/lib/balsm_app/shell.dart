@@ -21,7 +21,6 @@ import 'screens/profile_screen.dart';
 import 'screens/records_screen.dart';
 import 'screens/trends_screen.dart';
 import 'screens/quick_log.dart' show showQuickLog;
-import 'screens/appointments_screen.dart';
 import 'screens/auth_flow.dart';
 import 'screens/personal_details.dart';
 import 'screens/profile_subscreens.dart';
@@ -292,7 +291,6 @@ class _MainAppState extends State<_MainApp> {
       'meds' => const MedsScreen(),
       'records' => RecordsScreen(onBack: () => s.setTab('home')),
       'trends' => const TrendsScreen(),
-      'appts' => const AppointmentsScreen(),
       'rx' => const PrescriptionsScreen(),
       'profile' => const ProfileScreen(),
       _ => _Placeholder(title: s.tab),
@@ -312,7 +310,7 @@ class _MainAppState extends State<_MainApp> {
       // sub-screens (trends / records / appointments / prescriptions).
       // Design `app.jsx`: hide on trends/records (and Flutter's appointments
       // sub-screen). Prescriptions stay on the meds path with the tab bar.
-      final hideTabBar = s.tab == 'trends' || s.tab == 'records' || s.tab == 'appts';
+      final hideTabBar = s.tab == 'trends' || s.tab == 'records';
       return Column(children: [
         Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
         if (!hideTabBar) const _TabBar(),
