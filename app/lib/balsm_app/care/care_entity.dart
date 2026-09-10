@@ -6,7 +6,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons/lucide_icons.dart';
 
-import 'care_cache.dart';
+import 'infrastructure/api_care_directory_data_source.dart';
+import 'infrastructure/caching_care_directory_repository.dart';
+import 'infrastructure/memory_care_directory_data_source.dart';
+import 'ports/care_directory_data_source.dart';
+import 'ports/care_directory_repository.dart';
 
 /// A bilingual label carried by directory data (names/addresses come from the
 /// care-directory API, not the i69n bundle). Resolve with [pick].
@@ -221,10 +225,29 @@ String careCacheKey(LatLng center, CareSearch search) => [
       kCareResultLimit,
     ].join('|');
 
-/// Survives provider rebuilds — a plain [Provider], not autoDispose, or the
-/// cache would be thrown away on the very rebuild it exists to short-circuit.
-final careDirectoryCacheProvider = Provider<CareDirectoryCache>((ref) => CareDirectoryCache());
+/// Retained results survive provider rebuilds — deliberately NOT autoDispose,
+/// or the retention would be discarded on the very rebuild it exists to
+/// short-circuit.
+final localCareDirectoryDataSourceProvider =
+    Provider<LocalCareDirectoryDataSource>((ref) => MemoryCareDirectoryDataSource());
 
+final remoteCareDirectoryDataSourceProvider = Provider<RemoteCareDirectoryDataSource>(
+  (ref) => ApiCareDirectoryDataSource(ref.watch(careDirectoryApiProvider)),
+);
+
+final careDirectoryRepositoryProvider = Provider<CareDirectoryRepository>(
+  (ref) => CachingCareDirectoryRepository(
+    remote: ref.watch(remoteCareDirectoryDataSourceProvider),
+    local: ref.watch(localCareDirectoryDataSourceProvider),
+  ),
+);
+
+/// Nearby health places for the current search.
+///
+/// Deliberately thin: it resolves the query centre, hands off to the
+/// repository, and cancels on rebuild. Where the answer comes from — retained
+/// locally or fetched — is the repository's decision, so the map screen stays
+/// ignorant of caching entirely.
 final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref) async {
   final search = ref.watch(careSearchProvider);
   // Zoomed too far out to answer honestly — see kCareMinQueryZoom.
@@ -234,31 +257,10 @@ final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref)
   final focus = search.focus;
   final center = _roundCenter(focus ?? (await ref.watch(userLatLngProvider.future)));
 
-  final cache = ref.watch(careDirectoryCacheProvider);
-  final key = careCacheKey(center, search);
-
-  final cached = cache.get(key);
-  if (cached != null) return cached;
-
   // Panning fires a query per settled gesture, so a slow response is routinely
-  // superseded before it lands. Riverpod discards the stale RESULT on rebuild,
-  // but without this the request itself still completes and spends the bytes.
+  // superseded before it lands. onDispose fires on rebuild as well as teardown.
   final cancel = CancelToken();
   ref.onDispose(cancel.cancel);
 
-  final res = await ref.watch(careDirectoryApiProvider).nearby(
-        NearbyCareQuery(
-          lat: center.latitude,
-          lng: center.longitude,
-          radiusKm: search.radiusKm,
-          type: search.wireType,
-          query: search.text.trim().isEmpty ? null : search.text.trim(),
-          limit: kCareResultLimit,
-        ),
-        cancelToken: cancel,
-      );
-
-  final entities = res.map(CareEntity.fromResponse).toList(growable: false);
-  cache.put(key, entities);
-  return entities;
+  return ref.watch(careDirectoryRepositoryProvider).nearby(center, search, cancelToken: cancel);
 });
