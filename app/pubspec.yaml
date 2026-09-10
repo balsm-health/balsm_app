@@ -71,6 +71,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   sensors_plus: ^7.1.0
 dev_dependencies:
+  patrol: ^4.9.0
   flutter_test:
     sdk: flutter
   integration_test:
@@ -135,3 +136,13 @@ flutter:
           weight: 600
         - asset: assets/fonts/IBMPlexMono-Bold.ttf
           weight: 700
+
+# Patrol native-automation config. app_name is the label Patrol uses when it
+# drives the app; the ids must match the Android applicationId and the iOS
+# bundle id (both app.balsm.health), NOT the gradle namespace.
+patrol:
+  app_name: Balsm
+  android:
+    package_name: app.balsm.health
+  ios:
+    bundle_id: app.balsm.health

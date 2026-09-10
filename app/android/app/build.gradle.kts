@@ -48,6 +48,15 @@ android {
         // placeholders are fixed here instead of per-flavor.
         manifestPlaceholders["appNameSuffix"] = ""
         manifestPlaceholders["BASE_URL"] = "app.balsm.health"
+        // Patrol's instrumentation runner — required by `patrol test`.
+        // clearPackageData wipes app storage between tests so the on-device
+        // database and secure storage do not leak state across them.
+        testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 
     signingConfigs {

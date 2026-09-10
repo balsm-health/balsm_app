@@ -459,6 +459,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 const SizedBox(height: 8),
                 _Input(
                     controller: ctrl,
+                    id: 'emailField',
                     hint: s.strings.emergency.em_ph,
                     keyboard: TextInputType.emailAddress,
                     forceLtr: true,
@@ -477,6 +478,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 const SizedBox(height: 8),
                 _Input(
                     controller: pwCtrl,
+                    id: 'passwordField',
                     hint: s.strings.auth.pw_ph,
                     obscure: !_showPw,
                     forceLtr: true,
@@ -1540,6 +1542,7 @@ class _Input extends StatelessWidget {
   const _Input(
       {required this.controller,
       required this.hint,
+      this.id,
       this.keyboard,
       this.mono = false,
       this.forceLtr = false,
@@ -1551,6 +1554,12 @@ class _Input extends StatelessWidget {
       this.onChanged});
   final TextEditingController controller;
   final String hint;
+
+  /// Stable test selector. Set it and the field becomes addressable by both
+  /// drivers: Patrol matches the Flutter [Key], Maestro matches the platform
+  /// accessibility identifier the semantics node exposes. Label text is not a
+  /// usable selector — it is translated, so an Arabic run would miss it.
+  final String? id;
   final TextInputType? keyboard;
   final bool mono;
   final bool forceLtr;
@@ -1563,7 +1572,8 @@ class _Input extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = mono ? Typo.num(size: FS.lg) : Typo.body(ar: false).copyWith(fontSize: FS.lg, color: T.fg1);
-    return TextField(
+    final field = TextField(
+      key: id == null ? null : Key(id!),
       controller: controller,
       keyboardType: keyboard,
       onChanged: onChanged,
@@ -1587,5 +1597,8 @@ class _Input extends StatelessWidget {
             borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: accent.main, width: 1.5)),
       ),
     );
+    // Maestro selects on the platform accessibility identifier, which only
+    // exists if a semantics node carries one; Patrol selects on the Key above.
+    return id == null ? field : Semantics(identifier: id, child: field);
   }
 }
