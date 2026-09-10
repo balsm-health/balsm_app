@@ -135,4 +135,41 @@ void main() {
 
     expect(identical(container.read(authApiProvider), auth), isTrue);
   });
+
+  group('FakeCareDirectoryApi.nearby', () {
+    // The fake has to narrow the way the real endpoint does. One that returned
+    // everything regardless of the query would let a broken search pass e2e.
+    final api = FakeCareDirectoryApi();
+
+    test('returns every seeded place when the query is unfiltered', () async {
+      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357));
+      expect(res, isNotEmpty);
+      expect(res.map((p) => p.type), contains('dentist'));
+    });
+
+    test('filters by type', () async {
+      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, type: 'pharmacy'));
+      expect(res, hasLength(1));
+      expect(res.single.type, 'pharmacy');
+    });
+
+    test('filters by radius', () async {
+      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, radiusKm: 1.0));
+      expect(res.every((p) => (p.distanceKm ?? 0) <= 1.0), isTrue);
+      expect(res.length, lessThan((await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357))).length));
+    });
+
+    test('matches free text in either script', () async {
+      final en = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, query: 'dental'));
+      expect(en.single.id, 'e2e-dentist-1');
+
+      final ar = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, query: 'صيدلية'));
+      expect(ar.single.type, 'pharmacy');
+    });
+
+    test('returns empty rather than everything when nothing matches', () async {
+      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, query: 'zzzz-no-match'));
+      expect(res, isEmpty);
+    });
+  });
 }

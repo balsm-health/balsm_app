@@ -231,7 +231,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   // ── Map view ──────────────────────────────────────────────
   Widget _mapBody(PatientAppState s, List<CareEntity> filtered, LatLng? userLocation) {
-    if (filtered.isEmpty) return _emptyMap(s);
+    // The map stays mounted even with no results. Replacing it with an empty
+    // panel strands the user: _TileMap is what reports panning, so with it gone
+    // they cannot move to an area that HAS results — the only way out is
+    // clearing the search. Now the message overlays a live map instead.
     return Stack(children: [
       Positioned.fill(
           child: _TileMap(
@@ -241,6 +244,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               onPin: _select,
               onMoved: _onMapMoved,
               userLocation: userLocation)),
+      if (filtered.isEmpty) Positioned.fill(child: Center(child: _emptyOverlay(s))),
       // Count badge.
       PositionedDirectional(
         top: 12,
@@ -397,10 +401,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Map view with nothing to plot — `map-x` over the cream stage, with the
   /// clear-search action (map.jsx). The list view uses a different empty
   /// state; the two are deliberately not shared.
-  Widget _emptyMap(PatientAppState s) => Container(
-        color: T.cream50,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(32),
+  /// No-results card, floated over a still-live map.
+  ///
+  /// Only the card itself takes hits — the map around it stays pannable, which
+  /// is the point: with server-side search an empty result is common, and the
+  /// user needs to be able to move somewhere that HAS results without first
+  /// clearing what they typed.
+  Widget _emptyOverlay(PatientAppState s) => Container(
+        margin: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+        decoration: BoxDecoration(
+          color: const Color(0xF7FFFFFF),
+          borderRadius: BorderRadius.circular(T.rLg),
+          boxShadow: T.shadowSm,
+        ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(LucideIcons.mapPinOff, size: 40, color: T.fg4),
           const SizedBox(height: 12),

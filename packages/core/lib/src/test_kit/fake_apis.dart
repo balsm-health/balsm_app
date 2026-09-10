@@ -254,10 +254,37 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
       distanceKm: 2.1,
       rating: 4.0,
     ),
+    CareEntityResponse(
+      id: 'e2e-dentist-1',
+      type: 'dentist',
+      nameEn: 'E2E Dental Clinic',
+      nameAr: 'عيادة الاختبار للأسنان',
+      addressEn: '4 Test Street, Cairo',
+      addressAr: '٤ شارع الاختبار، القاهرة',
+      lat: 30.0480,
+      lng: 31.2290,
+      hours: '10:00–18:00',
+      phone: '+20 2 0000 0004',
+      distanceKm: 1.8,
+      rating: 4.7,
+    ),
   ];
 
+  /// Applies the same narrowing the real endpoint does — radius, single type,
+  /// and free text over both scripts — so search can be exercised offline. A
+  /// fake that ignored the query would let a broken search look like it works.
   @override
-  Future<List<CareEntityResponse>> nearby(NearbyCareQuery query, {CancelToken? cancelToken}) async => _places;
+  Future<List<CareEntityResponse>> nearby(NearbyCareQuery query, {CancelToken? cancelToken}) async {
+    final text = query.query?.trim().toLowerCase() ?? '';
+    return _places.where((p) {
+      if (query.type != null && p.type != query.type) return false;
+      if (query.radiusKm != null && (p.distanceKm ?? 0) > query.radiusKm!) return false;
+      if (text.isEmpty) return true;
+      return (p.nameEn ?? '').toLowerCase().contains(text) ||
+          (p.nameAr ?? '').contains(query.query!.trim()) ||
+          (p.addressEn ?? '').toLowerCase().contains(text);
+    }).toList(growable: false);
+  }
 }
 
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force
