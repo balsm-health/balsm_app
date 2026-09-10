@@ -204,9 +204,60 @@ class FakeGeofenceApi implements GeofenceApi {
       DeniedCountriesResponse(deniedCodes: deniedCodes);
 }
 
+/// Care directory with a few fixed places around the fallback map centre
+/// (Cairo, 30.0444/31.2357).
+///
+/// Returning an empty list here left the map tab rendering tiles with no pins,
+/// which reads as "the map is broken" and makes the screen impossible to test
+/// offline. These are public business listings, not PHI.
 class FakeCareDirectoryApi implements CareDirectoryApi {
+  static const _places = [
+    CareEntityResponse(
+      id: 'e2e-hospital-1',
+      type: 'hospital',
+      nameEn: 'E2E General Hospital',
+      nameAr: 'مستشفى الاختبار العام',
+      addressEn: '1 Test Street, Cairo',
+      addressAr: '١ شارع الاختبار، القاهرة',
+      lat: 30.0459,
+      lng: 31.2243,
+      hours: '24/7',
+      phone: '+20 2 0000 0001',
+      distanceKm: 1.2,
+      rating: 4.5,
+    ),
+    CareEntityResponse(
+      id: 'e2e-pharmacy-1',
+      type: 'pharmacy',
+      nameEn: 'E2E Pharmacy',
+      nameAr: 'صيدلية الاختبار',
+      addressEn: '2 Test Street, Cairo',
+      addressAr: '٢ شارع الاختبار، القاهرة',
+      lat: 30.0402,
+      lng: 31.2357,
+      hours: '09:00–23:00',
+      phone: '+20 2 0000 0002',
+      distanceKm: 0.6,
+      rating: 4.2,
+    ),
+    CareEntityResponse(
+      id: 'e2e-lab-1',
+      type: 'lab',
+      nameEn: 'E2E Diagnostics Lab',
+      nameAr: 'معمل تحاليل الاختبار',
+      addressEn: '3 Test Street, Cairo',
+      addressAr: '٣ شارع الاختبار، القاهرة',
+      lat: 30.0512,
+      lng: 31.2401,
+      hours: '08:00–20:00',
+      phone: '+20 2 0000 0003',
+      distanceKm: 2.1,
+      rating: 4.0,
+    ),
+  ];
+
   @override
-  Future<List<CareEntityResponse>> nearby(NearbyCareQuery query, {CancelToken? cancelToken}) async => const [];
+  Future<List<CareEntityResponse>> nearby(NearbyCareQuery query, {CancelToken? cancelToken}) async => _places;
 }
 
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force
