@@ -29,3 +29,12 @@
 *.log
 app/ios/Runner/Runner.entitlements.prod.bak
 .gstack/
+
+# iOS signing config — team id and provisioning profile names.
+# Ignore the whole folder and re-admit only the templates, so anything dropped
+# in here later (a .p12, a .mobileprovision, an App Store Connect key) is
+# ignored by default rather than needing a new rule each time.
+app/ios/signing/*
+!app/ios/signing/adhoc.plist
+!app/ios/signing/appstore.plist
+!app/ios/signing/README.md

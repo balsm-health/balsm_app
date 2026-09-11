@@ -45,38 +45,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Flutter: build APK (balsm \u00b7 dev)",
-      "type": "shell",
-      "command": "dart",
-      "args": [
-        "run",
-        "tool/build.dart",
-        "apk",
-        "balsm",
-        "dev"
-      ],
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
-      "label": "Flutter: build APK (balsm \u00b7 prod)",
-      "type": "shell",
-      "command": "dart",
-      "args": [
-        "run",
-        "tool/build.dart",
-        "apk",
-        "balsm",
-        "prod"
-      ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Flutter: build web (balsm \u00b7 prod)",
+      "label": "Flutter: build web (balsm · prod)",
       "type": "shell",
       "command": "dart",
       "args": [
@@ -110,6 +79,99 @@
         "isDefault": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Build: Android APK (ad-hoc / direct install)",
+      "type": "shell",
+      "group": "build",
+      "command": "fvm flutter build apk --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": [],
+      "icon": {
+        "id": "device-mobile",
+        "color": "terminal.ansiGreen"
+      }
+    },
+    {
+      "label": "Build: Android App Bundle (Play store)",
+      "type": "shell",
+      "group": "build",
+      "command": "fvm flutter build appbundle --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": [],
+      "icon": {
+        "id": "package",
+        "color": "terminal.ansiGreen"
+      }
+    },
+    {
+      "label": "Build: iOS IPA (ad-hoc)",
+      "type": "shell",
+      "group": "build",
+      "command": "fvm flutter build ipa --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --export-options-plist=ios/signing/adhoc.plist --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": [],
+      "icon": {
+        "id": "device-mobile",
+        "color": "terminal.ansiBlue"
+      }
+    },
+    {
+      "label": "Build: iOS IPA (App Store / TestFlight)",
+      "type": "shell",
+      "group": "build",
+      "command": "fvm flutter build ipa --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --export-options-plist=ios/signing/appstore.plist --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": [],
+      "icon": {
+        "id": "cloud-upload",
+        "color": "terminal.ansiBlue"
+      }
+    },
+    {
+      "label": "Build: iOS archive only (export in Xcode Organizer)",
+      "type": "shell",
+      "group": "build",
+      "command": "fvm flutter build ipa --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --no-codesign --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": [],
+      "icon": {
+        "id": "archive",
+        "color": "terminal.ansiYellow"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "env",
+      "description": "Which environment config (env/balsm/*.json)",
+      "type": "pickString",
+      "options": [
+        "dev",
+        "staging",
+        "prod"
+      ],
+      "default": "dev"
+    },
+    {
+      "id": "servers",
+      "description": "Which server list (env/*.json) — tunnel adds the devtunnel + LAN presets",
+      "type": "pickString",
+      "options": [
+        "shared",
+        "shared.tunnel"
+      ],
+      "default": "shared"
     }
   ]
 }
