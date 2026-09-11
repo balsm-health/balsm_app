@@ -102,6 +102,7 @@ export 'src/backup/drive_backup_adapter.dart';
 // ignore: invalid_export_of_internal_element
 export 'src/dev/server_selector_screen.dart' if (dart.library.io) 'src/dev/server_selector_screen.dart';
 export 'src/dev/dev_log_buffer.dart' show DevLogBuffer;
+export 'src/dev/server_health.dart' show ServerHealthProbe, ServerHealthResult, ServerHealthy, ServerUnreachable;
 
 // Test kit: gated by DEV environment flag.
 export 'src/test_kit/fakes.dart' if (dart.library.html) 'src/test_kit/fakes.dart';

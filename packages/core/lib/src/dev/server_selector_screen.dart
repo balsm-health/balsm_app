@@ -10,6 +10,7 @@ import '../network/balsm_api_controller.dart';
 import 'dev_config_store.dart';
 import 'dev_diagnostics.dart';
 import 'dev_log_buffer.dart';
+import 'server_health.dart';
 
 // Dark "terminal" chrome from the Dev Config design (claude.ai/design · Balsm App).
 const _kTermBg = Color(0xFF1A1A17);
@@ -30,6 +31,10 @@ class ServerSelectorScreen extends StatefulWidget {
 }
 
 class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
+  // Connection check (design: Backend section, above the preset list).
+  _HealthState _health = _HealthState.idle;
+  String _healthMsg = '';
+
   final _store = DevConfigStore();
   final _buffer = DevLogBuffer.instance;
 
@@ -283,6 +288,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   List<Widget> _switcherBody(FlavorConfig cfg) => [
         _eyebrow('Backend'),
+        _healthRow(),
         ...cfg.servers.map((p) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: _presetCard(p, active: _currentBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
@@ -304,6 +310,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     );
     return [
       _eyebrow('Backend'),
+      _healthRow(),
       _presetCard(active, active: true, onTap: null),
       const SizedBox(height: 12),
       _readOnlyNote(),
@@ -1126,6 +1133,110 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     );
   }
 
+  // ── Connection check ────────────────────────────────────────────────────────
+  // Ports the design's Backend health row: a dark action button on the left and
+  // a live one-line status on the right. Checks the SELECTED base URL, which is
+  // usually not the one the app is currently pointed at — that is the whole
+  // point of checking before switching.
+  Widget _healthRow() => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: BalsmColors.border),
+        ),
+        child: Row(children: [
+          _healthButton(),
+          const SizedBox(width: 8),
+          Expanded(child: _healthStatus()),
+        ]),
+      );
+
+  Widget _healthButton() {
+    final checking = _health == _HealthState.checking;
+    return GestureDetector(
+      onTap: checking ? null : _runHealthCheck,
+      child: Opacity(
+        opacity: checking ? 0.6 : 1,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: BalsmColors.ink800,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (checking)
+              const SizedBox(
+                width: 13,
+                height: 13,
+                child: CircularProgressIndicator(strokeWidth: 1.6, color: Color(0xFFF4F3EC)),
+              )
+            else
+              const Icon(Icons.monitor_heart_outlined, size: 13, color: Color(0xFFF4F3EC)),
+            const SizedBox(width: 6),
+            Text(
+              checking ? 'Checking…' : 'Check connection',
+              style: const TextStyle(
+                fontFamily: _kMono,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFF4F3EC),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _healthStatus() {
+    const mono = TextStyle(fontFamily: _kMono, fontSize: 11);
+
+    // While checking, the design shows the URL under test rather than a
+    // placeholder — it is the one moment the developer wants it confirmed.
+    final (Color color, IconData? icon, String text) = switch (_health) {
+      _HealthState.idle => (BalsmColors.fg4, null, 'Not checked yet'),
+      _HealthState.checking => (BalsmColors.fg4, null, _currentBaseUrl),
+      _HealthState.ok => (const Color(0xFF1A6033), Icons.check_circle_outline, _healthMsg),
+      _HealthState.fail => (const Color(0xFFD44A3C), Icons.cancel_outlined, _healthMsg),
+    };
+
+    return Row(children: [
+      if (icon != null) ...[
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 5),
+      ],
+      Expanded(
+        child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: mono.copyWith(color: color)),
+      ),
+    ]);
+  }
+
+  Future<void> _runHealthCheck() async {
+    setState(() {
+      _health = _HealthState.checking;
+      _healthMsg = '';
+    });
+
+    final target = _currentBaseUrl;
+    final result = await const ServerHealthProbe().check(target);
+    if (!mounted) return;
+
+    setState(() {
+      switch (result) {
+        // A server that answers non-200 is reachable but unwell — worth telling
+        // apart from silence, so the status code is shown either way.
+        case ServerHealthy(:final statusCode, :final elapsed, :final isOk):
+          _health = isOk ? _HealthState.ok : _HealthState.fail;
+          _healthMsg = '$statusCode ${isOk ? 'OK' : 'Unhealthy'} · ${elapsed.inMilliseconds}ms';
+        case ServerUnreachable(:final reason):
+          _health = _HealthState.fail;
+          _healthMsg = reason;
+      }
+    });
+  }
+
   Widget _eyebrow(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(t.toUpperCase(),
@@ -1144,7 +1255,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   }
 
   Future<void> _select(ServerPreset preset) async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      // A result from the previous server would now be read as describing this
+      // one — "200 OK" next to a backend nobody has actually reached yet.
+      _health = _HealthState.idle;
+      _healthMsg = '';
+    });
     try {
       await widget.controller.reconfigure(preset);
     } finally {
@@ -1290,3 +1407,6 @@ class _EnvStyle {
     return const _EnvStyle(Color(0xFF526174), Color(0xFFF4F3EC), Color(0xFF3A3A34));
   }
 }
+
+/// States of the Dev Config connection check, per the design.
+enum _HealthState { idle, checking, ok, fail }

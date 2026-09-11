@@ -62,4 +62,10 @@ class ApiRoutes {
 
   // ── Care directory ────────────────────────────────────────────────────────
   static const care_entities = '/care/entities';
+
+  // ── Platform ──────────────────────────────────────────────────────────────
+  /// Host readiness probe. Anonymous, and the only endpoint safe to call
+  /// against a server the app is not signed in to — which is what the Dev
+  /// Config connection check does.
+  static const health = '/api/v1/health';
 }
