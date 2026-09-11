@@ -200,6 +200,51 @@ void main() {
     expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse);
   });
 
+  test('a network failure during refresh must NOT destroy the session', () async {
+    // The keychain entry is what routes the app to the shell on next launch.
+    // Wiping it because the server was briefly unreachable signs the patient out
+    // for good — they land on the welcome screen after a hot restart and have to
+    // re-enter credentials because their connection dropped.
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(seconds: -5)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+      'balsm.user_id': 'U1',
+    });
+    final h = harness(
+      storage,
+      (o) => throw DioException(requestOptions: o, type: DioExceptionType.connectionError),
+    );
+
+    await expectLater(
+      h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(await storage.read(key: 'balsm.refresh_token'), 'RT1', reason: 'credentials survive a blip');
+    expect(await storage.read(key: 'balsm.user_id'), 'U1', reason: 'the id that routes to the shell survives');
+  });
+
+  test('a REJECTED refresh does end the session', () async {
+    // 401 from /auth/refresh means the token is genuinely spent — that is the
+    // one case where clearing is right.
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(seconds: -5)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+      'balsm.user_id': 'U1',
+    });
+    final h = harness(storage, (o) => _json('{"title":"Unauthorized"}', status: 401));
+
+    await expectLater(
+      h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(await storage.read(key: 'balsm.refresh_token'), isNull);
+    expect(await storage.read(key: 'balsm.user_id'), isNull);
+  });
+
   for (final path in [ApiRoutes.auth_password_sign_in, ApiRoutes.auth_password_reset]) {
     test('$path issues tokens — it must not carry or refresh one', () async {
       // A stale bearer left over from a previous session must not ride along on

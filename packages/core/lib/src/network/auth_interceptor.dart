@@ -158,10 +158,24 @@ class AuthInterceptor extends Interceptor {
       await _storage.write(key: _kAccess, value: access);
       await _storage.write(key: _kRefresh, value: rotated);
       return access;
-    } on DioException {
-      await _signOut();
+    } on DioException catch (e) {
+      // Only a REJECTED refresh ends the session. A transport failure — timeout,
+      // unreachable server, DNS, TLS — says nothing about whether the refresh
+      // token is still valid, and treating it as a sign-out destroys the
+      // keychain entry: the next launch reads no user id, routes to the welcome
+      // screen, and the patient has to sign in again because their train went
+      // through a tunnel.
+      if (_isRejection(e)) {
+        await _signOut();
+      }
       return null;
     }
+  }
+
+  /// True when the SERVER answered and refused. Anything else is the network.
+  static bool _isRejection(DioException e) {
+    final status = e.response?.statusCode;
+    return status == 401 || status == 403;
   }
 
   Future<void> _signOut() async {
