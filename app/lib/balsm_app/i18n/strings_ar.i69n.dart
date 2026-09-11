@@ -240,6 +240,7 @@ class CareStrings_ar extends CareStrings {
   String get map_found => "مكان بالقرب منك";
   String get map_no_results => "لا توجد أماكن";
   String get map_no_res_h => "جرّب بحثًا أو تصنيفًا آخر.";
+  String get map_search_area => "ابحث في هذه المنطقة";
   String get map_zoomed_out => "قرّب لعرض الأماكن";
   String get map_zoomed_out_h => "يتم البحث في الدليل حول المنطقة التي تعرضها.";
   String map_n_types(String n) => "$n أنواع";
@@ -288,6 +289,8 @@ class CareStrings_ar extends CareStrings {
         return map_no_results;
       case 'map_no_res_h':
         return map_no_res_h;
+      case 'map_search_area':
+        return map_search_area;
       case 'map_zoomed_out':
         return map_zoomed_out;
       case 'map_zoomed_out_h':

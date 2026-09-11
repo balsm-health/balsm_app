@@ -48,6 +48,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Last reported camera zoom, so the empty state can say WHY it is empty.
   double _zoom = 13;
 
+  /// Camera as of the last pan, and the centre the current results were fetched
+  /// for. [_areaDirty] is what shows the "Search this area" button.
+  MapCamera? _pendingCamera;
+  LatLng? _lastSearched;
+  bool _areaDirty = false;
+  bool _wasZoomedOut = false;
+
+  /// How far the map must move before re-searching is worth offering. Roughly a
+  /// city block at street zoom — below it the results on screen still describe
+  /// what the user is looking at.
+  static const double _researchThresholdMeters = 600;
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -86,10 +98,38 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// position — someone planning a trip across Cairo needs results where they
   /// are heading. The radius follows the visible bounds so zooming out widens
   /// the search instead of showing a sparse patch in the middle.
+  /// Where the user has panned to, and whether that differs from what is
+  /// currently plotted.
+  ///
+  /// Panning does NOT re-query. It fired a request per settled gesture, which
+  /// spent bandwidth on areas the user was only passing over and made results
+  /// shift under them mid-drag. Instead this arms "Search this area", so moving
+  /// the map is free and fetching is a decision — the behaviour people already
+  /// know from other map apps.
   void _onMapMoved(MapCamera camera, bool hasGesture) {
     if (!hasGesture) return;
-    _zoom = camera.zoom;
+    final movedFar = _lastSearched == null ||
+        const Distance().as(LengthUnit.Meter, _lastSearched!, camera.center) > _researchThresholdMeters;
+    setState(() {
+      _zoom = camera.zoom;
+      _pendingCamera = camera;
+      // A nudge is not a new area; only offer the search once the view has
+      // actually moved somewhere else.
+      _areaDirty = movedFar || (camera.zoom < kCareMinQueryZoom) != _wasZoomedOut;
+      _wasZoomedOut = camera.zoom < kCareMinQueryZoom;
+    });
+  }
+
+  /// Runs the search the button offers.
+  void _searchThisArea() {
+    final camera = _pendingCamera;
+    if (camera == null) return;
+    setState(() {
+      _lastSearched = camera.center;
+      _areaDirty = false;
+    });
     _pushSearch(
+      immediate: true,
       focus: camera.center,
       radiusKm: _radiusForBounds(camera),
       tooZoomedOut: camera.zoom < kCareMinQueryZoom,
@@ -105,9 +145,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// Center the map on the user's current position (recenter button).
+  ///
+  /// Programmatic moves do not fire the gesture handler, so this searches
+  /// directly — recentring on yourself and then being asked to press a button
+  /// to see what is around you would be a strange thing to ask for.
   Future<void> _recenter() async {
     final loc = await ref.read(userLatLngProvider.future);
     _mapController.move(loc, 14);
+    setState(() {
+      _lastSearched = loc;
+      _areaDirty = false;
+      _pendingCamera = null;
+    });
+    _pushSearch(immediate: true, focus: loc, radiusKm: kCareDefaultRadiusKm, tooZoomedOut: false);
   }
 
   List<CareEntity> _filter(List<CareEntity> all) => filterCareEntities(all, query: _query, types: _activeTypes);
@@ -126,6 +176,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         _query = '';
         _searchCtrl.clear();
         _activeTypes.clear();
+        _areaDirty = false;
         _pushSearch(immediate: true);
       });
 
@@ -268,6 +319,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               onMoved: _onMapMoved,
               userLocation: userLocation)),
       if (pins.isEmpty) Positioned.fill(child: Center(child: _emptyOverlay(s))),
+      if (_areaDirty) _searchAreaButton(s),
       // Count badge.
       PositionedDirectional(
         top: 12,
@@ -452,6 +504,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Map view with nothing to plot — `map-x` over the cream stage, with the
   /// clear-search action (map.jsx). The list view uses a different empty
   /// state; the two are deliberately not shared.
+  /// "Search this area" — the pill that appears once the map has been moved.
+  ///
+  /// Centred near the top, under the controls, where the eye already is after a
+  /// pan and clear of the detail sheet at the bottom.
+  Widget _searchAreaButton(PatientAppState s) => PositionedDirectional(
+        top: 54,
+        start: 0,
+        end: 0,
+        child: Center(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _searchThisArea,
+              borderRadius: BorderRadius.circular(T.rPill),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(T.rPill),
+                  boxShadow: T.shadowSm,
+                  border: Border.all(color: T.border),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(LucideIcons.search, size: 15, color: s.accent.main),
+                  const SizedBox(width: 7),
+                  Text(
+                    s.strings.care.map_search_area,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.main),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ),
+      );
+
   /// No-results card, floated over a still-live map.
   ///
   /// Only the card itself takes hits — the map around it stays pannable, which
