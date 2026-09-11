@@ -129,10 +129,15 @@ final userLatLngProvider = FutureProvider.autoDispose<LatLng>((ref) async {
 /// applies no default cutoff of its own.
 const double kCareDefaultRadiusKm = 10;
 
-/// Cap on places fetched per query. A 10 km radius around central Cairo matches
-/// ~3,900 places and 50 km matches ~9,000; fetching those whole is megabytes of
-/// JSON on mobile data. Nearest-N keeps the ones a patient could actually reach.
-const int kCareResultLimit = 200;
+/// Cap on places fetched per query, matching the server default.
+///
+/// Nearest-N, because a wide radius around Cairo matches thousands and fetching
+/// those whole is megabytes on mobile data. But too tight a cap becomes the
+/// thing users notice: at 200 it bound at ~1.4 km in central Cairo, so a 25 km
+/// search drew a dense knot ringed by empty map, and smaller cities with real
+/// coverage looked deserted. 500 costs ~166 KB and returns everything most
+/// cities have.
+const int kCareResultLimit = 500;
 
 /// Below this zoom the directory is not queried at all.
 ///
