@@ -6,7 +6,7 @@ import 'care_entity.dart';
 /// covered refetches it — on a connection where that costs real money. Directory
 /// rows change only when an import runs, so a short-lived cache is safe.
 ///
-/// Keyed on a ROUNDED centre (see [careCacheKey]): a few metres of drift must
+/// Keyed on a ROUNDED centre (see `CareQueryId.of`): a few metres of drift must
 /// not miss. The same rounding is what lets the server's output cache, which
 /// varies by query string, hit as well.
 class CareDirectoryCache {
@@ -49,7 +49,17 @@ class CareDirectoryCache {
     }
   }
 
+  void remove(String key) => _entries.remove(key);
+
   void clear() => _entries.clear();
+
+  /// Every unexpired retained result. Expired entries are dropped on the way
+  /// out so a caller never sees one.
+  List<List<CareEntity>> get values {
+    final cutoff = _now();
+    _entries.removeWhere((_, e) => cutoff.difference(e.storedAt) > ttl);
+    return _entries.values.map((e) => e.value).toList(growable: false);
+  }
 
   int get length => _entries.length;
 }

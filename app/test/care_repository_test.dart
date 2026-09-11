@@ -2,6 +2,7 @@ import 'package:app/balsm_app/care/care_entity.dart';
 import 'package:app/balsm_app/care/infrastructure/caching_care_directory_repository.dart';
 import 'package:app/balsm_app/care/infrastructure/memory_care_directory_data_source.dart';
 import 'package:app/balsm_app/care/ports/care_directory_data_source.dart';
+import 'package:app/balsm_app/care/ports/care_query_id.dart';
 import 'package:balsm_api/balsm_api.dart' show CancelToken;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -42,6 +43,58 @@ class _FakeRemote implements RemoteCareDirectoryDataSource {
 
 void main() {
   const cairo = LatLng(30.044, 31.236);
+
+  group('MemoryCareDirectoryDataSource satisfies the core DataSource contract', () {
+    const a = CareQueryId.value('a');
+    const b = CareQueryId.value('b');
+
+    test('put / find / exists', () async {
+      final local = MemoryCareDirectoryDataSource();
+
+      expect(await local.find(a), isNull);
+      expect(await local.exists(a), isFalse);
+
+      await local.put(a, [_place('x')]);
+
+      expect((await local.find(a))!.single.id, 'x');
+      expect(await local.exists(a), isTrue);
+    });
+
+    test('putBulk / findMany / findAll', () async {
+      final local = MemoryCareDirectoryDataSource();
+      await local.putBulk({
+        a: [_place('x')],
+        b: [_place('y')],
+      });
+
+      expect(await local.findAll(), hasLength(2));
+      expect(await local.findMany([a, b]), hasLength(2));
+      // A miss is skipped, not surfaced as a null hole in the list.
+      expect(await local.findMany([a, const CareQueryId.value('missing')]), hasLength(1));
+    });
+
+    test('delete / deleteMany / clear', () async {
+      final local = MemoryCareDirectoryDataSource();
+      await local.putBulk({
+        a: [_place('x')],
+        b: [_place('y')],
+      });
+
+      await local.delete(a);
+      expect(await local.exists(a), isFalse);
+      expect(await local.exists(b), isTrue);
+
+      await local.putBulk({
+        a: [_place('x')],
+      });
+      await local.deleteMany([a, b]);
+      expect(local.length, 0);
+
+      await local.put(a, [_place('x')]);
+      await local.clear();
+      expect(local.length, 0);
+    });
+  });
 
   group('CachingCareDirectoryRepository', () {
     test('a miss fetches and retains', () async {

@@ -12,7 +12,7 @@ import '../care_entity.dart';
 abstract interface class CareDirectoryRepository {
   /// Places near [center] matching [search].
   ///
-  /// [center] is expected to be rounded by the caller (see [careCacheKey]);
+  /// [center] is expected to be rounded by the caller (see `CareQueryId.of`);
   /// unrounded coordinates defeat both this layer's retention and the server's
   /// vary-by-query cache.
   Future<List<CareEntity>> nearby(

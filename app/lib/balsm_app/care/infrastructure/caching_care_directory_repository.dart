@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart' hide Path;
 import '../care_entity.dart';
 import '../ports/care_directory_data_source.dart';
 import '../ports/care_directory_repository.dart';
+import '../ports/care_query_id.dart';
 
 /// [CareDirectoryRepository] that answers from the local data source when it
 /// can and the remote one when it must.
@@ -32,13 +33,13 @@ class CachingCareDirectoryRepository implements CareDirectoryRepository {
     CareSearch search, {
     CancelToken? cancelToken,
   }) async {
-    final key = careCacheKey(center, search);
+    final key = CareQueryId.of(center, search);
 
-    final retained = _local.read(key);
+    final retained = await _local.find(key);
     if (retained != null) return retained;
 
     final fetched = await _remote.nearby(center, search, cancelToken: cancelToken);
-    _local.write(key, fetched);
+    await _local.put(key, fetched);
     return fetched;
   }
 }

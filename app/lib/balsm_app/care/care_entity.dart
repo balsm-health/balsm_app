@@ -214,17 +214,6 @@ LatLng _roundCenter(LatLng c) => LatLng(
       double.parse(c.longitude.toStringAsFixed(kCareCenterPrecision)),
     );
 
-/// Cache key for one directory query. Every field that changes the response is
-/// part of it; anything left out would serve one query's results for another.
-String careCacheKey(LatLng center, CareSearch search) => [
-      center.latitude.toStringAsFixed(kCareCenterPrecision),
-      center.longitude.toStringAsFixed(kCareCenterPrecision),
-      search.radiusKm.toStringAsFixed(1),
-      search.wireType ?? '',
-      search.text.trim().toLowerCase(),
-      kCareResultLimit,
-    ].join('|');
-
 /// Retained results survive provider rebuilds — deliberately NOT autoDispose,
 /// or the retention would be discarded on the very rebuild it exists to
 /// short-circuit.

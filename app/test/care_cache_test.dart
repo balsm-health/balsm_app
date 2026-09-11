@@ -1,5 +1,6 @@
 import 'package:app/balsm_app/care/care_cache.dart';
 import 'package:app/balsm_app/care/care_entity.dart';
+import 'package:app/balsm_app/care/ports/care_query_id.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -62,49 +63,73 @@ void main() {
       expect(cache.length, 1);
       expect(cache.get('a')!.single.id, 'a2');
     });
+
+    test('remove drops a single entry', () {
+      final cache = CareDirectoryCache();
+      cache.put('a', [_place('a')]);
+      cache.put('b', [_place('b')]);
+
+      cache.remove('a');
+
+      expect(cache.get('a'), isNull);
+      expect(cache.get('b'), isNotNull);
+    });
+
+    test('values omits expired entries rather than returning them', () {
+      var now = DateTime(2026, 1, 1, 12);
+      final cache = CareDirectoryCache(ttl: const Duration(minutes: 10), clock: () => now);
+      cache.put('old', [_place('old')]);
+
+      now = now.add(const Duration(minutes: 11));
+      cache.put('fresh', [_place('fresh')]);
+
+      expect(cache.values, hasLength(1));
+      expect(cache.values.single.single.id, 'fresh');
+    });
   });
 
-  group('careCacheKey', () {
-    test('small pans collapse onto one key', () {
+  group('CareQueryId', () {
+    const cairo = LatLng(30.0444, 31.2357);
+
+    test('small pans collapse onto one id', () {
       // ~2m of drift. Rounding is what lets the device cache AND the server's
       // vary-by-query output cache hit at all.
       const a = LatLng(30.044412, 31.235711);
       const b = LatLng(30.044431, 31.235690);
 
-      expect(careCacheKey(a, const CareSearch()), careCacheKey(b, const CareSearch()));
+      expect(CareQueryId.of(a, const CareSearch()), CareQueryId.of(b, const CareSearch()));
     });
 
-    test('a real move produces a different key', () {
-      const cairo = LatLng(30.0444, 31.2357);
+    test('a real move produces a different id', () {
       const alexandria = LatLng(31.2001, 29.9187);
 
-      expect(careCacheKey(cairo, const CareSearch()), isNot(careCacheKey(alexandria, const CareSearch())));
-    });
-
-    test('every field that changes the response changes the key', () {
-      const c = LatLng(30.0444, 31.2357);
-      final base = careCacheKey(c, const CareSearch());
-
-      expect(careCacheKey(c, const CareSearch(text: 'lab')), isNot(base));
-      expect(careCacheKey(c, const CareSearch(types: {CareEntityType.dentist})), isNot(base));
-      expect(careCacheKey(c, const CareSearch(radiusKm: 25)), isNot(base));
-    });
-
-    test('text is matched case- and padding-insensitively', () {
-      const c = LatLng(30.0444, 31.2357);
       expect(
-        careCacheKey(c, const CareSearch(text: '  Lab ')),
-        careCacheKey(c, const CareSearch(text: 'lab')),
+        CareQueryId.of(cairo, const CareSearch()),
+        isNot(CareQueryId.of(alexandria, const CareSearch())),
       );
     });
 
-    test('multi-type selection shares one key, since the server sees no type', () {
+    test('every field that changes the response changes the id', () {
+      final base = CareQueryId.of(cairo, const CareSearch());
+
+      expect(CareQueryId.of(cairo, const CareSearch(text: 'lab')), isNot(base));
+      expect(CareQueryId.of(cairo, const CareSearch(types: {CareEntityType.dentist})), isNot(base));
+      expect(CareQueryId.of(cairo, const CareSearch(radiusKm: 25)), isNot(base));
+    });
+
+    test('text is matched case- and padding-insensitively', () {
+      expect(
+        CareQueryId.of(cairo, const CareSearch(text: '  Lab ')),
+        CareQueryId.of(cairo, const CareSearch(text: 'lab')),
+      );
+    });
+
+    test('multi-type selection shares one id, since the server sees no type', () {
       // wireType is null for several ticked types — the narrowing happens on the
       // device, so the SERVER response is the same and may be reused.
-      const c = LatLng(30.0444, 31.2357);
       expect(
-        careCacheKey(c, const CareSearch(types: {CareEntityType.dentist, CareEntityType.lab})),
-        careCacheKey(c, const CareSearch(types: {CareEntityType.hospital, CareEntityType.store})),
+        CareQueryId.of(cairo, const CareSearch(types: {CareEntityType.dentist, CareEntityType.lab})),
+        CareQueryId.of(cairo, const CareSearch(types: {CareEntityType.hospital, CareEntityType.store})),
       );
     });
   });
