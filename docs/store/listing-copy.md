@@ -26,9 +26,11 @@ Alternative if the em-dash renders badly: `Balsm: Your health record` (25).
 ### Subtitle — max 30
 
 ```
-Arabic-first, private by design
+Arabic-first, private, offline
 ```
-(30 exactly) Arabic: `عربي أولاً، وخصوصيتك أساس` (25)
+(30 — at the limit) Arabic: `عربي أولاً، خاص، ويعمل بلا إنترنت` (33)
+
+Rejected: "Arabic-first, private by design" is 31 and will not save.
 
 ### Promotional text — max 170, editable without review
 
@@ -38,7 +40,7 @@ Use this for the coverage number, since it changes between imports.
 Your records, your medications, and 34,000 nearby pharmacies, clinics and labs
 across Egypt. Saved on your phone, and it works offline.
 ```
-(149)
+(135)
 
 Arabic:
 ```
@@ -107,7 +109,7 @@ separately.
 ```
 صحة,طبيب,صيدلية,دواء,سجل طبي,عيادة,مستشفى,تحاليل,روشتة,مصر,health,pharmacy
 ```
-(97)
+(74)
 
 Rationale: Arabic terms carry the most weight in the Egyptian storefront and
 are under-served by competitors. `medical record`, `clinic`, `doctor` are
@@ -138,7 +140,7 @@ Balsm — Your health record
 ```
 Your health record, medications and nearby care. Arabic-first. Works offline.
 ```
-(76)
+(77)
 
 Arabic:
 ```
@@ -233,7 +235,9 @@ Required sizes are in `docs/store/` alongside the existing iPad renders under
   34,797 today; re-check after any re-import, and prefer the promotional text
   field for it since that edits without review.
 - **Arabic character counts** above are approximate — verify each against the
-  store's own counter, which counts differently for combined characters.
+  store's own counter, which counts differently for combined characters. The
+  Arabic subtitle is 33 and will need trimming to 30: try
+  `عربي أولاً، خاص، بلا إنترنت` (27).
 - **Age rating**: Balsm holds medical information but has no clinical advice,
   no user-generated content and no ads. Expect 4+ / Everyone, but the health
   questionnaire on both stores needs answering honestly about medical data.
