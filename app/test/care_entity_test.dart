@@ -54,6 +54,42 @@ void main() {
     });
   });
 
+  group('kCareCoverage', () {
+    test('contains Egyptian cities from Rafah to Halayib', () {
+      // Border and coastal cities are the ones a tight box clips.
+      for (final p in const [
+        LatLng(31.2001, 29.9187), // Alexandria
+        LatLng(31.2653, 32.3019), // Port Said
+        LatLng(31.2810, 34.2600), // Rafah, north-east corner
+        LatLng(22.3500, 36.5000), // Halayib, south-east
+        LatLng(22.0000, 25.0000), // south-west desert corner
+        LatLng(29.2032, 25.5195), // Siwa, western oasis
+      ]) {
+        expect(kCareCoverage.contains(p), isTrue, reason: '$p should be covered');
+      }
+    });
+
+    test('excludes places the directory has no data for', () {
+      for (final p in const [
+        LatLng(31.7683, 35.2137), // Jerusalem — just above Egypt's north coast
+        LatLng(31.9454, 35.9284), // Amman
+        LatLng(24.7136, 46.6753), // Riyadh
+        LatLng(25.2048, 55.2708), // Dubai
+        LatLng(33.8938, 35.5018), // Beirut
+        LatLng(51.5074, -0.1278), // London
+      ]) {
+        expect(kCareCoverage.contains(p), isFalse, reason: '$p should not be covered');
+      }
+    });
+
+    test('is a rectangle, so it cannot trace the border exactly', () {
+      // Documented, not a defect: any box covering Rafah and Halayib also
+      // covers Gaza. The constraint exists to stop a user wandering to another
+      // continent, not to assert a boundary.
+      expect(kCareCoverage.contains(const LatLng(31.5017, 34.4668)), isTrue, reason: 'Gaza is inside the box');
+    });
+  });
+
   group('CareSearch', () {
     test('sends a type server-side only when exactly one is ticked', () {
       // The endpoint filters on a single type; an empty set means "all", and

@@ -1,6 +1,7 @@
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart' show careDirectoryApiProvider;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -125,6 +126,25 @@ class CarePin {
   factory CarePin.of(CareEntity e) => CarePin(id: e.id, type: e.type, position: e.position);
 }
 
+/// The area the directory covers.
+///
+/// The map is constrained to this rather than left free to roam: the directory
+/// holds Egyptian places only, so panning beyond it can only ever produce an
+/// empty map. A user in Dubai or London would otherwise see a Cairo-looking
+/// basemap with no pins and nothing explaining why.
+///
+/// It is a RECTANGLE, not the border. Egypt's land boundary is not axis-aligned,
+/// so any box that covers Rafah in the north-east and Halayib in the south-east
+/// necessarily also covers Gaza, part of southern Israel and a sliver of
+/// north-west Saudi. That is acceptable for the purpose — the point is to keep a
+/// user from wandering to another continent and finding nothing, not to assert a
+/// border. The north edge sits at Egypt's northernmost land rather than being
+/// rounded up, which keeps Jerusalem and Amman out for free.
+final LatLngBounds kCareCoverage = LatLngBounds(
+  const LatLng(21.5, 24.5), // south-west, below Halayib
+  const LatLng(31.72, 37.0), // north-east: Egypt's northern coast, past Halayib
+);
+
 /// Home market fallback center (Cairo) when the device location is unavailable
 /// or permission is denied — the directory still returns nearby-to-Cairo data.
 const kCareFallbackCenter = LatLng(30.0444, 31.2357);
@@ -244,6 +264,14 @@ final careSearchProvider = StateProvider<CareSearch>((ref) => const CareSearch()
 /// neither cache ever hits.
 const int kCareCenterPrecision = 3;
 
+/// Falls back to the market centre for a position outside the covered area.
+///
+/// A device abroad — a traveller, a diaspora user, anyone testing from another
+/// country — would otherwise query a point the directory has nothing near and
+/// get a blank map. Showing Cairo is a truthful answer to "where does this app
+/// have data", and the map's own constraint keeps them there.
+LatLng _withinCoverage(LatLng c) => kCareCoverage.contains(c) ? c : kCareFallbackCenter;
+
 LatLng _roundCenter(LatLng c) => LatLng(
       double.parse(c.latitude.toStringAsFixed(kCareCenterPrecision)),
       double.parse(c.longitude.toStringAsFixed(kCareCenterPrecision)),
@@ -299,7 +327,7 @@ final carePinsProvider = FutureProvider.autoDispose<List<CarePin>>((ref) async {
   if (search.tooZoomedOut) return const [];
 
   final focus = search.focus;
-  final center = _roundCenter(focus ?? (await ref.watch(userLatLngProvider.future)));
+  final center = _roundCenter(_withinCoverage(focus ?? (await ref.watch(userLatLngProvider.future))));
 
   final cancel = CancelToken();
   ref.onDispose(cancel.cancel);

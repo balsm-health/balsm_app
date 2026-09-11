@@ -632,7 +632,10 @@ class _TileMapState extends State<_TileMap> {
 
   @override
   Widget build(BuildContext context) {
-    final center = widget.pins.isNotEmpty ? widget.pins.first.position : kCareFallbackCenter;
+    final first = widget.pins.isNotEmpty ? widget.pins.first.position : kCareFallbackCenter;
+    // A first pin outside the covered area would be rejected by the constraint
+    // and land the map somewhere arbitrary.
+    final center = kCareCoverage.contains(first) ? first : kCareFallbackCenter;
     return FlutterMap(
       mapController: widget.controller,
       options: MapOptions(
@@ -641,6 +644,11 @@ class _TileMapState extends State<_TileMap> {
         minZoom: 3,
         maxZoom: 18,
         interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+        // The directory covers Egypt only, so panning past it can only produce
+        // an empty map. containCenter rather than contain: at a country-wide
+        // zoom the viewport is legitimately wider than the country, and
+        // constraining the EDGES would fight the user at exactly that zoom.
+        cameraConstraint: CameraConstraint.containCenter(bounds: kCareCoverage),
         onPositionChanged: (camera, hasGesture) => _handleMove(camera, hasGesture),
       ),
       children: [
