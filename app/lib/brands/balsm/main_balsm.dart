@@ -54,8 +54,23 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   // the platform secure store before the container is built.
   const secureStorage = FlutterSecureStorage();
   final userId = await secureStorage.read(key: 'balsm.user_id');
+
+  // A session needs a REFRESH token to be revivable, not just an id. With the id
+  // alone the shell opens signed-in and stays broken: every read resolves to
+  // nothing, and the interceptor cannot mint a new access token, so on a
+  // network the app cannot reach there is no rejection to fire SessionExpired
+  // and nothing ever routes the patient out. Partial state like this comes from
+  // a sign-out interrupted mid-way — the three keys are deleted one at a time.
+  final refreshToken = await secureStorage.read(key: 'balsm.refresh_token');
+  final revivable = userId != null && userId.isNotEmpty && refreshToken != null && refreshToken.isNotEmpty;
+  if (userId != null && !revivable) {
+    // Unrecoverable remnant. Clear it so the next launch agrees with the
+    // keychain rather than repeating this.
+    await secureStorage.delete(key: 'balsm.user_id');
+    await secureStorage.delete(key: 'balsm.access_token');
+  }
   final keychain = SecureStorageWrapper();
-  UserId? containerUserId = UserId.fromString(userId);
+  UserId? containerUserId = revivable ? UserId.fromString(userId) : null;
   final fileStore = await createUserFileStore(
     activeUser: () => containerUserId,
     keychain: keychain,
@@ -179,18 +194,26 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   final paPrefs = PatientAppPrefs(globalKV);
   await paPrefs.migrate();
 
-  // A dead API session (token refresh failed) — the transport has already
-  // cleared the stored tokens; mirror that in-app: drop the in-session user id
-  // so every PHI reader goes null, and persist signed-out so the shell returns
-  // to the auth flow on next resolution / relaunch.
+  // Route on the credentials, not just the prefs flag — see load()'s doc.
+  final state = await PatientAppState.load(paPrefs, hasSession: containerUserId != null);
+
+  // A dead API session (the refresh was REJECTED — the transport has already
+  // cleared the stored tokens). Mirror it in-app: drop the in-session user id
+  // so every PHI reader goes null, persist signed-out, and leave the shell NOW.
+  //
+  // The route change is the part that was missing. Without it the patient sat
+  // in the signed-in shell with no session: every read resolved to nothing, and
+  // because the tokens were already gone there was no second failure to fire
+  // another event. The only escape was relaunching the app — and Profile, where
+  // the sign-out button lives, was one of the screens showing nothing.
+  //
+  // Declared after load() because it needs the state object it routes on.
   container.read(eventBusProvider).on<SessionExpired>().listen((_) {
     containerUserId = null;
     container.read(_sessionUserIdProvider.notifier).state = null;
     paPrefs.setSignedIn(false);
+    if (state.route == 'app') state.go('welcome');
   });
-
-  // Route on the credentials, not just the prefs flag — see load()'s doc.
-  final state = await PatientAppState.load(paPrefs, hasSession: containerUserId != null);
   runApp(
     UncontrolledProviderScope(
       container: container,
