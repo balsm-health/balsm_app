@@ -27,7 +27,13 @@ class DevFlag {
   final String desc;
 }
 
+/// Id of the flag that lifts the care map's zoom floor. Named so callers
+/// reference it rather than retyping the string.
+const kFlagMapNoZoomFloor = 'map_no_zoom_floor';
+
 const kDevFlags = <DevFlag>[
+  DevFlag(
+      kFlagMapNoZoomFloor, 'Map: no zoom floor', 'Query the care directory at any zoom, to inspect national coverage'),
   DevFlag('offline', 'Force offline mode', 'Simulate no network connectivity'),
   DevFlag('slow_net', 'Throttle to 3G', 'Limit API throughput to 400 kbps'),
   DevFlag('mock_api', 'Mock API responses', 'Serve fixture data instead of live'),
@@ -39,6 +45,11 @@ const kDevFlags = <DevFlag>[
 /// — it is a secret). Dev-tooling only.
 class DevConfigStore extends ChangeNotifier {
   DevConfigStore({FlutterSecureStorage? secureStorage}) : _secure = secureStorage ?? const FlutterSecureStorage();
+
+  /// Shared instance, so a flag toggled in Dev Config is visible to the code it
+  /// affects. The screen and the features that read flags must see the same
+  /// object or a toggle changes nothing outside the panel.
+  static final DevConfigStore instance = DevConfigStore();
 
   final FlutterSecureStorage _secure;
 

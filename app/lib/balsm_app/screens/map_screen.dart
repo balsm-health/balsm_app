@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:core/core.dart' show devFlagProvider, kFlagMapNoZoomFloor;
 import 'package:fluster/fluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -549,7 +550,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _emptyOverlay(PatientAppState s) {
     // "Nothing here" and "you are too far out to ask" are different answers, and
     // conflating them is what made a zoomed-out map read as an empty country.
-    final zoomedOut = _zoom < kCareMinQueryZoom;
+    // With the dev flag on there is no floor, so "zoom in" would be a lie.
+    final zoomedOut = _zoom < kCareMinQueryZoom && !ref.read(devFlagProvider(kFlagMapNoZoomFloor));
     return Container(
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),

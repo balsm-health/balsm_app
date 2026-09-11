@@ -1,5 +1,5 @@
 import 'package:balsm_api/balsm_api.dart';
-import 'package:core/core.dart' show careDirectoryApiProvider;
+import 'package:core/core.dart' show careDirectoryApiProvider, devFlagProvider, kFlagMapNoZoomFloor;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -189,6 +189,12 @@ const int kCareResultLimit = 500;
 /// than a dense knot around its centre.
 const int kCarePinLimit = 1500;
 
+/// The server's pin ceiling, used only when a debug build lifts the zoom floor.
+const int kCarePinLimitMax = 3000;
+
+/// Radius that covers Egypt end to end, for the same debug case.
+const double kCareMaxRadiusKm = 1200;
+
 /// Below this zoom the directory is not queried at all.
 ///
 /// Two caps fight the viewport when zoomed out: the radius is clamped to 50 km
@@ -324,7 +330,12 @@ final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref)
 /// coordinates, the list wants names and details for the nearest handful.
 final carePinsProvider = FutureProvider.autoDispose<List<CarePin>>((ref) async {
   final search = ref.watch(careSearchProvider);
-  if (search.tooZoomedOut) return const [];
+
+  // Lifting the floor also lifts the radius and pin caps to their ceilings:
+  // the point of inspecting coverage at country zoom is to see everything the
+  // API will return, not a nearest-N slice of it.
+  final noFloor = ref.watch(devFlagProvider(kFlagMapNoZoomFloor));
+  if (search.tooZoomedOut && !noFloor) return const [];
 
   final focus = search.focus;
   final center = _roundCenter(_withinCoverage(focus ?? (await ref.watch(userLatLngProvider.future))));
@@ -337,10 +348,10 @@ final carePinsProvider = FutureProvider.autoDispose<List<CarePin>>((ref) async {
         CarePinsQuery(
           lat: center.latitude,
           lng: center.longitude,
-          radiusKm: search.radiusKm,
+          radiusKm: noFloor ? kCareMaxRadiusKm : search.radiusKm,
           type: search.wireType,
           query: text.isEmpty ? null : text,
-          limit: kCarePinLimit,
+          limit: noFloor ? kCarePinLimitMax : kCarePinLimit,
         ),
         cancelToken: cancel,
       );

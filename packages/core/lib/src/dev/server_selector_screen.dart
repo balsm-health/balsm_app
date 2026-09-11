@@ -35,7 +35,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   _HealthState _health = _HealthState.idle;
   String _healthMsg = '';
 
-  final _store = DevConfigStore();
+  final _store = DevConfigStore.instance;
   final _buffer = DevLogBuffer.instance;
 
   String _tab = 'env'; // env | logs | bug
@@ -77,7 +77,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   void dispose() {
     _store.removeListener(_onChange);
     _buffer.removeListener(_onChange);
-    _store.dispose();
+    // Shared instance — outlives this screen, so it is not disposed here.
     _nameCtrl.dispose();
     _urlCtrl.dispose();
     _editNameCtrl.dispose();
