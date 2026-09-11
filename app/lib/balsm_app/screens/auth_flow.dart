@@ -343,14 +343,23 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
         (signIn) {
           switch (signIn) {
             case SignInSuccess():
+              // Credentials are proven good — this is what raises the platform
+              // "Save password?" prompt. Nothing before this point should, or a
+              // typo gets offered to the keychain.
+              TextInput.finishAutofillContext();
               s.setAuthContact(method: 'email', email: address);
               unawaited(enterAfterSignIn(context, ref, s));
             case SignInLockout(:final session):
+              TextInput.finishAutofillContext(shouldSave: false);
               final secsLeft = session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
               setState(() => _error = s.strings.auth.auth_locked_retry(secsLeft.toString()));
           }
         },
-        (_) => setState(() => _error = s.strings.auth.pw_invalid_creds),
+        (_) {
+          // Wrong password: discard, so the OS does not offer to save it.
+          TextInput.finishAutofillContext(shouldSave: false);
+          setState(() => _error = s.strings.auth.pw_invalid_creds);
+        },
       );
       return;
     }
@@ -378,7 +387,10 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     final isSignup = s.authIntent == 'signup';
     return Container(
       color: T.cream50,
-      child: SafeArea(
+      // Groups the email and password fields into one credential set, so the
+      // platform manager saves them as a pair rather than two loose values.
+      child: AutofillGroup(
+          child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
@@ -404,6 +416,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     keyboard: TextInputType.emailAddress,
                     forceLtr: true,
                     accent: s.accent,
+                    autofillHints: const [AutofillHints.username, AutofillHints.email],
                     onChanged: (_) => setState(() {})),
                 const SizedBox(height: 16),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -423,6 +436,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     obscure: !_showPw,
                     forceLtr: true,
                     accent: s.accent,
+                    // newPassword is what makes iOS offer to GENERATE a strong
+                    // one on sign-up; password asks it to fill an existing.
+                    autofillHints: [isSignup ? AutofillHints.newPassword : AutofillHints.password],
                     suffixIcon: GestureDetector(
                       onTap: () => setState(() => _showPw = !_showPw),
                       child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
@@ -462,7 +478,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
             ),
           ]),
         ),
-      ),
+      )),
     );
   }
 }
@@ -549,6 +565,9 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
       (signInResult) {
         switch (signInResult) {
           case SignInSuccess(:final isNewUser):
+            // The sign-up password is applied in _afterVerify; the account now
+            // exists, so the credentials are worth saving.
+            TextInput.finishAutofillContext();
             unawaited(_afterVerify(s, isNewUser: isNewUser));
           case SignInLockout(:final session):
             final secsLeft = session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
@@ -1494,7 +1513,8 @@ class _Input extends StatelessWidget {
       this.prefixIcon,
       this.suffixIcon,
       required this.accent,
-      this.onChanged});
+      this.onChanged,
+      this.autofillHints});
   final TextEditingController controller;
   final String hint;
 
@@ -1512,6 +1532,11 @@ class _Input extends StatelessWidget {
   final Widget? suffixIcon;
   final Accent accent;
   final ValueChanged<String>? onChanged;
+
+  /// Tells the OS what this field holds, so the platform password manager can
+  /// fill it and offer to save it. Null for fields that are not credentials —
+  /// an OTP code or a display name must never be offered to a keychain.
+  final List<String>? autofillHints;
   @override
   Widget build(BuildContext context) {
     final style = mono ? Typo.num(size: FS.lg) : Typo.body(ar: false).copyWith(fontSize: FS.lg, color: T.fg1);
@@ -1521,6 +1546,7 @@ class _Input extends StatelessWidget {
       keyboardType: keyboard,
       onChanged: onChanged,
       obscureText: obscure,
+      autofillHints: autofillHints,
       textDirection: forceLtr ? TextDirection.ltr : null,
       style: style,
       decoration: InputDecoration(

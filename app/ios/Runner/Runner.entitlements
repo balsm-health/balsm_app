@@ -3,7 +3,17 @@
 <plist version="1.0">
 <dict>
   <key>com.apple.developer.associated-domains</key>
-  <array><string>applinks:$(BASE_URL)</string></array>
+  <!-- webcredentials: lets the Passwords app save and fill balsm.health
+       credentials for this app, and share them with the website. It needs
+       https://balsm.health/.well-known/apple-app-site-association to list
+       8F78S7D344.app.balsm.health under "webcredentials".
+       The domain is literal here, unlike applinks below: a password is saved
+       against one identity, and a build variable that resolves differently per
+       flavour would strand saved credentials on the wrong domain. -->
+  <array>
+    <string>applinks:$(BASE_URL)</string>
+    <string>webcredentials:balsm.health</string>
+  </array>
   <key>com.apple.security.application-groups</key>
   <array><string>group.app.balsm.health</string></array>
 </dict>
