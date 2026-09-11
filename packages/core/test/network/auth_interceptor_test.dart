@@ -199,4 +199,45 @@ void main() {
     expect(h.adapter.requests.single.headers.containsKey('Authorization'), isFalse);
     expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse);
   });
+
+  for (final path in [ApiRoutes.auth_password_sign_in, ApiRoutes.auth_password_reset]) {
+    test('$path issues tokens — it must not carry or refresh one', () async {
+      // A stale bearer left over from a previous session must not ride along on
+      // a sign-in, and a 401 here means WRONG PASSWORD — refreshing and
+      // replaying it would resend the credentials and can sign the user out
+      // in the middle of signing in.
+      final storage = storageWith({
+        'balsm.access_token': 'STALE',
+        'balsm.refresh_token': 'RT1',
+        'balsm.device_id': 'DEV1',
+      });
+      final h = harness(storage, (o) => _json('{"title":"Unauthorized"}', status: 401));
+
+      await expectLater(
+        h.controller.client.dio.post<Map<String, dynamic>>(path),
+        throwsA(isA<DioException>()),
+      );
+
+      expect(h.adapter.requests.single.path, path);
+      expect(h.adapter.requests.single.headers.containsKey('Authorization'), isFalse,
+          reason: 'a token-issuing endpoint never consumes a token');
+      expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse,
+          reason: '401 here is a credential failure, not an expired access token');
+    });
+  }
+
+  test('setting a password DOES carry the token — it is an authorized call', () async {
+    // The guard must not overreach: POST /auth/password is [Authorize] and
+    // changes the signed-in user's password.
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(hours: 1)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    final h = harness(storage, (o) => _json('{"data":{"password_set":true}}'));
+
+    await h.controller.client.dio.post<Map<String, dynamic>>(ApiRoutes.auth_password);
+
+    expect(h.adapter.requests.single.headers['Authorization'], isNotNull);
+  });
 }

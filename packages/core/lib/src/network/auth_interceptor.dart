@@ -64,7 +64,14 @@ class AuthInterceptor extends Interceptor {
       path == ApiRoutes.auth_google ||
       path == ApiRoutes.auth_apple ||
       path == ApiRoutes.auth_refresh ||
-      path == ApiRoutes.auth_recovery_claim;
+      path == ApiRoutes.auth_recovery_claim ||
+      // Password sign-in and reset ISSUE tokens; they never consume one. Without
+      // them here a sign-in carries whatever stale bearer is left in storage, and
+      // a 401 meaning "wrong password" is mistaken for an expired access token —
+      // so the interceptor refreshes, replays the credentials, and can sign the
+      // user out mid-attempt.
+      path == ApiRoutes.auth_password_sign_in ||
+      path == ApiRoutes.auth_password_reset;
 
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
