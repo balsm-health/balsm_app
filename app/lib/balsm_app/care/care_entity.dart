@@ -102,6 +102,29 @@ class CareEntity {
       );
 }
 
+/// A map pin: a place reduced to what a dot on the map needs.
+///
+/// The directory is far too dense to ship whole rows for a whole viewport —
+/// ~99 bytes a pin against ~340 a row — so the map plots these and fetches the
+/// full [CareEntity] only when one is tapped.
+class CarePin {
+  const CarePin({required this.id, required this.type, required this.position});
+
+  final String id;
+  final CareEntityType type;
+  final LatLng position;
+
+  factory CarePin.fromResponse(CarePinResponse r) => CarePin(
+        id: r.id,
+        type: CareEntityType.fromWire(r.type),
+        position: LatLng(r.lat, r.lng),
+      );
+
+  /// A pin for an already-loaded place, so the list and the map agree without a
+  /// second fetch.
+  factory CarePin.of(CareEntity e) => CarePin(id: e.id, type: e.type, position: e.position);
+}
+
 /// Home market fallback center (Cairo) when the device location is unavailable
 /// or permission is denied — the directory still returns nearby-to-Cairo data.
 const kCareFallbackCenter = LatLng(30.0444, 31.2357);
@@ -138,6 +161,13 @@ const double kCareDefaultRadiusKm = 10;
 /// coverage looked deserted. 500 costs ~166 KB and returns everything most
 /// cities have.
 const int kCareResultLimit = 500;
+
+/// Cap on map pins per query, matching the server default.
+///
+/// Three times the row cap for fewer bytes: 1,500 pins measure ~145 KB against
+/// ~166 KB for 500 full rows. That is what lets the map cover a viewport rather
+/// than a dense knot around its centre.
+const int kCarePinLimit = 1500;
 
 /// Below this zoom the directory is not queried at all.
 ///
@@ -257,4 +287,56 @@ final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref)
   ref.onDispose(cancel.cancel);
 
   return ref.watch(careDirectoryRepositoryProvider).nearby(center, search, cancelToken: cancel);
+});
+
+/// Map pins for the current search.
+///
+/// Separate from [careDirectoryProvider] because the map and the list want
+/// different things: the map wants everything in view and needs only
+/// coordinates, the list wants names and details for the nearest handful.
+final carePinsProvider = FutureProvider.autoDispose<List<CarePin>>((ref) async {
+  final search = ref.watch(careSearchProvider);
+  if (search.tooZoomedOut) return const [];
+
+  final focus = search.focus;
+  final center = _roundCenter(focus ?? (await ref.watch(userLatLngProvider.future)));
+
+  final cancel = CancelToken();
+  ref.onDispose(cancel.cancel);
+
+  final text = search.text.trim();
+  final res = await ref.watch(careDirectoryApiProvider).pins(
+        CarePinsQuery(
+          lat: center.latitude,
+          lng: center.longitude,
+          radiusKm: search.radiusKm,
+          type: search.wireType,
+          query: text.isEmpty ? null : text,
+          limit: kCarePinLimit,
+        ),
+        cancelToken: cancel,
+      );
+
+  return res.map(CarePin.fromResponse).toList(growable: false);
+});
+
+/// Full detail for one place, fetched when its pin is tapped.
+///
+/// Pins carry no name or contact details, so this is where the detail sheet gets
+/// them. Null means the place has left the directory since the pin was drawn.
+final careEntityProvider = FutureProvider.autoDispose.family<CareEntity?, String>((ref, id) async {
+  final search = ref.watch(careSearchProvider);
+  final focus = search.focus;
+  final LatLng center = focus ?? (await ref.watch(userLatLngProvider.future));
+
+  final cancel = CancelToken();
+  ref.onDispose(cancel.cancel);
+
+  final res = await ref.watch(careDirectoryApiProvider).byId(
+        id,
+        lat: center.latitude,
+        lng: center.longitude,
+        cancelToken: cancel,
+      );
+  return res == null ? null : CareEntity.fromResponse(res);
 });

@@ -52,3 +52,29 @@ class CareEntityResponse {
         rating: (json['rating'] as num?)?.toDouble(),
       );
 }
+
+/// One map pin from `GET /care/pins`.
+///
+/// Deliberately minimal — a pin is a dot at a coordinate coloured by type. Name,
+/// address, phone and hours come from `GET /care/entities/{id}` when one is
+/// tapped, so they are not paid for on every pin in the viewport.
+class CarePinResponse {
+  const CarePinResponse({
+    required this.id,
+    required this.type,
+    required this.lat,
+    required this.lng,
+  });
+
+  final String id;
+  final String type;
+  final double lat;
+  final double lng;
+
+  factory CarePinResponse.fromJson(Map<String, dynamic> json) => CarePinResponse(
+        id: json['id'] as String,
+        type: json['type'] as String,
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+      );
+}

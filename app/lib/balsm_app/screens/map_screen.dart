@@ -35,7 +35,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// than stranding the map with nothing to plot.
   final Set<CareEntityType> _activeTypes = {};
   bool _mapView = true; // map | list
-  CareEntity? _selected;
+  /// Tapped pin's id. An id rather than an entity because the map now plots
+  /// pins, which carry no details — the sheet fetches them.
+  String? _selectedId;
 
   /// Debounce for anything that triggers a network query. Typing and panning
   /// both fire continuously; without this every keystroke and every frame of a
@@ -110,7 +112,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   List<CareEntity> _filter(List<CareEntity> all) => filterCareEntities(all, query: _query, types: _activeTypes);
 
-  void _select(CareEntity e) => setState(() => _selected = _selected?.id == e.id ? null : e);
+  /// Multi-type selection stays client-side (the endpoint filters on one type),
+  /// so pins need the same narrowing the list gets. Free text is already applied
+  /// server-side — a pin carries no name to match against here.
+  List<CarePin> _filterPins(List<CarePin> all) =>
+      _activeTypes.isEmpty ? all : all.where((p) => _activeTypes.contains(p.type)).toList(growable: false);
+
+  void _select(CareEntity e) => setState(() => _selectedId = _selectedId == e.id ? null : e.id);
+
+  void _selectPin(CarePin p) => setState(() => _selectedId = _selectedId == p.id ? null : p.id);
 
   void _clearFilters() => setState(() {
         _query = '';
@@ -145,7 +155,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   label: _mapView ? s.strings.care.map_list : s.strings.care.map_map,
                   onTap: () => setState(() {
                     _mapView = !_mapView;
-                    _selected = null;
+                    _selectedId = null;
                   }),
                 ),
               ]),
@@ -158,7 +168,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 onChanged: (v) => setState(() {
                   _query = v;
                   _pushSearch();
-                  _selected = null;
+                  _selectedId = null;
                 }),
                 style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, color: T.fg1),
                 decoration: InputDecoration(
@@ -176,7 +186,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               _query = '';
                               _searchCtrl.clear();
                               _pushSearch(immediate: true);
-                              _selected = null;
+                              _selectedId = null;
                             }),
                             child: Container(
                               width: 20,
@@ -216,7 +226,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     } else if (!_activeTypes.remove(t)) {
                       _activeTypes.add(t);
                     }
-                    _selected = null;
+                    _selectedId = null;
                     // A single ticked type is pushed server-side; several stay
                     // client-side because the endpoint filters on one type.
                     _pushSearch(immediate: true);
@@ -231,7 +241,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         // controls above.
         Expanded(
           child: _mapView
-              ? _mapBody(s, filtered, ref.watch(userLatLngProvider).valueOrNull)
+              // The map plots pins — cheap enough to cover the whole viewport —
+              // while the list shows full rows for the nearest few. Client-side
+              // type narrowing applies to both.
+              ? _mapBody(s, _filterPins(ref.watch(carePinsProvider).valueOrNull ?? const []),
+                  ref.watch(userLatLngProvider).valueOrNull)
               : ContentColumn(maxWidth: 720, child: _listBody(s, filtered)),
         ),
       ]),
@@ -239,7 +253,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   // ── Map view ──────────────────────────────────────────────
-  Widget _mapBody(PatientAppState s, List<CareEntity> filtered, LatLng? userLocation) {
+  Widget _mapBody(PatientAppState s, List<CarePin> pins, LatLng? userLocation) {
     // The map stays mounted even with no results. Replacing it with an empty
     // panel strands the user: _TileMap is what reports panning, so with it gone
     // they cannot move to an area that HAS results — the only way out is
@@ -248,12 +262,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       Positioned.fill(
           child: _TileMap(
               controller: _mapController,
-              entities: filtered,
-              selectedId: _selected?.id,
-              onPin: _select,
+              pins: pins,
+              selectedId: _selectedId,
+              onPin: _selectPin,
               onMoved: _onMapMoved,
               userLocation: userLocation)),
-      if (filtered.isEmpty) Positioned.fill(child: Center(child: _emptyOverlay(s))),
+      if (pins.isEmpty) Positioned.fill(child: Center(child: _emptyOverlay(s))),
       // Count badge.
       PositionedDirectional(
         top: 12,
@@ -262,18 +276,43 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
           decoration: BoxDecoration(
               color: const Color(0xF0FFFFFF), borderRadius: BorderRadius.circular(T.rPill), boxShadow: T.shadowSm),
-          child: Text('${filtered.length} ${s.strings.care.map_found}',
+          child: Text('${pins.length} ${s.strings.care.map_found}',
               style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg2)),
         ),
       ),
       // Recenter — decorative (real geolocation lands with the backend).
       PositionedDirectional(
-        bottom: _selected != null ? 220 : 20,
+        bottom: _selectedId != null ? 220 : 20,
         end: 14,
         child: RoundBtn(icon: LucideIcons.locateFixed, bg: Colors.white, fg: s.accent.main, onTap: _recenter),
       ),
-      if (_selected != null) _entityCard(s, _selected!),
+      if (_selectedId != null) _selectedCard(s),
     ]);
+  }
+
+  /// Detail sheet for the tapped pin. Pins carry no name or contact details, so
+  /// this resolves them on demand — a spinner for the moment it takes, and a
+  /// quiet dismissal if the place has left the directory since the pin drew.
+  Widget _selectedCard(PatientAppState s) {
+    final id = _selectedId!;
+    return ref.watch(careEntityProvider(id)).when(
+          data: (e) => e == null ? const SizedBox.shrink() : _entityCard(s, e),
+          error: (_, __) => const SizedBox.shrink(),
+          loading: () => PositionedDirectional(
+            start: 0,
+            end: 0,
+            bottom: 0,
+            child: Container(
+              height: 96,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.2)),
+            ),
+          ),
+        );
   }
 
   // ── List view ─────────────────────────────────────────────
@@ -285,7 +324,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final e = filtered[i];
-        final active = _selected?.id == e.id;
+        final active = _selectedId == e.id;
         return Pressable(
           onTap: () => _select(e),
           scale: 0.99,
@@ -327,7 +366,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // ── Entity detail card (bottom sheet look) ────────────────
   Widget _entityCard(PatientAppState s, CareEntity e) => Positioned.fill(
         child: Stack(children: [
-          GestureDetector(onTap: () => setState(() => _selected = null), child: const SizedBox.expand()),
+          GestureDetector(onTap: () => setState(() => _selectedId = null), child: const SizedBox.expand()),
           Align(
             alignment: Alignment.bottomCenter,
             child: RiseIn(
@@ -362,7 +401,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ]),
                     ),
                     RoundBtn(
-                        icon: LucideIcons.x, ghost: true, iconSize: 16, onTap: () => setState(() => _selected = null)),
+                        icon: LucideIcons.x,
+                        ghost: true,
+                        iconSize: 16,
+                        onTap: () => setState(() => _selectedId = null)),
                   ]),
                   const SizedBox(height: 14),
                   if (pick(e.addr, ar: s.rtl).isNotEmpty) _detailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
@@ -524,16 +566,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 class _TileMap extends StatefulWidget {
   const _TileMap({
     required this.controller,
-    required this.entities,
+    required this.pins,
     required this.selectedId,
     required this.onPin,
     required this.onMoved,
     this.userLocation,
   });
   final MapController controller;
-  final List<CareEntity> entities;
+  final List<CarePin> pins;
   final String? selectedId;
-  final void Function(CareEntity) onPin;
+  final void Function(CarePin) onPin;
 
   /// Fired when the user pans or zooms, so the directory can be re-queried
   /// around wherever they are now looking.
@@ -553,15 +595,15 @@ class _TileMapState extends State<_TileMap> {
   @override
   void initState() {
     super.initState();
-    _clusters = buildCareClusters(widget.entities);
+    _clusters = buildCareClusters(widget.pins);
   }
 
   @override
   void didUpdateWidget(_TileMap oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Indexing is the expensive half; only redo it when the places change.
-    if (!identical(oldWidget.entities, widget.entities)) {
-      _clusters = buildCareClusters(widget.entities);
+    if (!identical(oldWidget.pins, widget.pins)) {
+      _clusters = buildCareClusters(widget.pins);
     }
   }
 
@@ -590,7 +632,7 @@ class _TileMapState extends State<_TileMap> {
 
   @override
   Widget build(BuildContext context) {
-    final center = widget.entities.isNotEmpty ? widget.entities.first.position : kCareFallbackCenter;
+    final center = widget.pins.isNotEmpty ? widget.pins.first.position : kCareFallbackCenter;
     return FlutterMap(
       mapController: widget.controller,
       options: MapOptions(
@@ -641,7 +683,7 @@ class _TileMapState extends State<_TileMap> {
               );
             }
 
-            final e = point.entity!;
+            final e = point.pin!;
             final sel = e.id == widget.selectedId;
             final pinW = sel ? 40.0 : 32.0;
             return Marker(

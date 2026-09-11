@@ -3,16 +3,10 @@ import 'package:app/balsm_app/care/care_entity.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 
-CareEntity _place(String id, double lat, double lng) => CareEntity(
+CarePin _place(String id, double lat, double lng) => CarePin(
       id: id,
       type: CareEntityType.pharmacy,
       position: LatLng(lat, lng),
-      name: (en: 'Fixture $id', ar: ''),
-      addr: (en: 'Fixture Street', ar: ''),
-      hours: '',
-      distance: '',
-      rating: '',
-      phone: '',
     );
 
 void main() {
@@ -51,7 +45,7 @@ void main() {
 
     expect(points.every((p) => p.isCluster != true), isTrue,
         reason: 'above the cluster ceiling every place gets its own pin');
-    expect(points.first.entity, isNotNull);
+    expect(points.first.pin, isNotNull);
   });
 
   test('a single place is never wrapped in a cluster', () {

@@ -36,3 +36,35 @@ class NearbyCareQuery {
         if (limit != null) 'limit': limit,
       };
 }
+
+/// Query for `GET /care/pins` — map pins around a point.
+///
+/// Same narrowing as [NearbyCareQuery]; only the response shape differs.
+class CarePinsQuery {
+  const CarePinsQuery({
+    required this.lat,
+    required this.lng,
+    this.radiusKm,
+    this.type,
+    this.query,
+    this.limit,
+  });
+
+  final double lat;
+  final double lng;
+  final double? radiusKm;
+  final String? type;
+  final String? query;
+
+  /// Cap on returned pins, nearest first (server default 1500, ceiling 3000).
+  final int? limit;
+
+  Map<String, dynamic> toQueryParameters() => {
+        'lat': lat,
+        'lng': lng,
+        if (radiusKm != null) 'radius_km': radiusKm,
+        if (type != null) 'type': type,
+        if (query != null && query!.trim().isNotEmpty) 'q': query!.trim(),
+        if (limit != null) 'limit': limit,
+      };
+}

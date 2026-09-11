@@ -285,6 +285,30 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
           (p.addressEn ?? '').toLowerCase().contains(text);
     }).toList(growable: false);
   }
+
+  /// Same narrowing as [nearby], projected to pins — mirroring the real
+  /// endpoint, so a map bug cannot hide behind a fake that answers differently.
+  @override
+  Future<List<CarePinResponse>> pins(CarePinsQuery query, {CancelToken? cancelToken}) async {
+    final matched = await nearby(
+      NearbyCareQuery(
+        lat: query.lat,
+        lng: query.lng,
+        radiusKm: query.radiusKm,
+        type: query.type,
+        query: query.query,
+      ),
+    );
+    return matched.map((p) => CarePinResponse(id: p.id, type: p.type, lat: p.lat, lng: p.lng)).toList(growable: false);
+  }
+
+  @override
+  Future<CareEntityResponse?> byId(String id, {double? lat, double? lng, CancelToken? cancelToken}) async {
+    for (final p in _places) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
 }
 
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force

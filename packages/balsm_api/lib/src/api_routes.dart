@@ -61,7 +61,16 @@ class ApiRoutes {
   static const geofence_denied_countries = '/geofence/denied-countries';
 
   // ── Care directory ────────────────────────────────────────────────────────
-  static const care_entities = '/care/entities';
+  static const _care = '/care';
+  static const care_entities = '$_care/entities';
+
+  /// Map pins — the same search projected to id/type/lat/lng. ~99 bytes a pin
+  /// against ~340 a full row, so the viewport can be covered instead of a knot
+  /// around its centre.
+  static const care_pins = '$_care/pins';
+
+  /// One place by id — what a tapped pin fetches, since pins carry no details.
+  static String careEntity(String id) => '$care_entities/$id';
 
   // ── Platform ──────────────────────────────────────────────────────────────
   /// Host readiness probe. Anonymous, and the only endpoint safe to call
