@@ -965,6 +965,7 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get rx_self_note => "Added by you — not verified by a pharmacy.";
   String get rx_my_prescriptions => "My prescriptions";
   String get rx_take_photo => "Take photo";
+  String get rx_from_gallery => "Photos";
   String get rx_from_files => "Choose file";
   String get rx_prescribed_by => "Prescribed by";
   String get rx_default_title => "Prescription";
@@ -1126,6 +1127,8 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return rx_my_prescriptions;
       case 'rx_take_photo':
         return rx_take_photo;
+      case 'rx_from_gallery':
+        return rx_from_gallery;
       case 'rx_from_files':
         return rx_from_files;
       case 'rx_prescribed_by':

@@ -320,6 +320,7 @@
     "rx_self_note": "Added by you — not verified by a pharmacy.",
     "rx_my_prescriptions": "My prescriptions",
     "rx_take_photo": "Take photo",
+    "rx_from_gallery": "Photos",
     "rx_from_files": "Choose file",
     "rx_prescribed_by": "Prescribed by",
     "rx_default_title": "Prescription",

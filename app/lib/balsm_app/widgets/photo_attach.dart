@@ -143,9 +143,14 @@ class UploadDropzone extends StatelessWidget {
             Text(help!, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
           ],
           const SizedBox(height: 12),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Flexible(
-              child: PButton(
+          // Wrap, not Row: three labels at the largest text scale — and in
+          // Arabic, which runs longer — overflow a single line on a small phone.
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              PButton(
                 takePhotoLabel ?? s.strings.meds.rx_take_photo,
                 icon: LucideIcons.camera,
                 variant: BtnVariant.soft,
@@ -157,10 +162,21 @@ class UploadDropzone extends StatelessWidget {
                   if (picked != null) onAttach(picked);
                 },
               ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: PButton(
+              // The photo library is a separate source from Files: on iOS the
+              // document picker cannot see Photos, so a prescription
+              // photographed earlier was unreachable without this.
+              PButton(
+                s.strings.meds.rx_from_gallery,
+                icon: LucideIcons.image,
+                variant: BtnVariant.secondary,
+                size: BtnSize.sm,
+                ar: s.rtl,
+                onTap: () async {
+                  final picked = await pickImageAttach(camera: false);
+                  if (picked != null) onAttach(picked);
+                },
+              ),
+              PButton(
                 fromFilesLabel ?? s.strings.meds.rx_from_files,
                 icon: LucideIcons.folder,
                 variant: BtnVariant.secondary,
@@ -171,8 +187,8 @@ class UploadDropzone extends StatelessWidget {
                   if (picked != null) onAttach(picked);
                 },
               ),
-            ),
-          ]),
+            ],
+          ),
           if (orPasteLabel != null) ...[
             const SizedBox(height: 14),
             Row(children: [

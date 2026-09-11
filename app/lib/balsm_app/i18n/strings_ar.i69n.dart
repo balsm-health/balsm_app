@@ -972,6 +972,7 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_self_note => "أضفتها أنت — غير موثقة من صيدلية.";
   String get rx_my_prescriptions => "روشتاتي";
   String get rx_take_photo => "التقاط صورة";
+  String get rx_from_gallery => "الصور";
   String get rx_from_files => "اختيار ملف";
   String get rx_prescribed_by => "بواسطة";
   String get rx_default_title => "روشتة";
@@ -1133,6 +1134,8 @@ class MedsStrings_ar extends MedsStrings {
         return rx_my_prescriptions;
       case 'rx_take_photo':
         return rx_take_photo;
+      case 'rx_from_gallery':
+        return rx_from_gallery;
       case 'rx_from_files':
         return rx_from_files;
       case 'rx_prescribed_by':
