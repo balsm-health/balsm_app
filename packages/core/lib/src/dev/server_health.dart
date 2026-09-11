@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:balsm_api/balsm_api.dart' show ApiRoutes;
 import 'package:dio/dio.dart';
 
@@ -72,14 +74,35 @@ class ServerHealthProbe {
 
   // Short, developer-readable, and never the raw exception — a dio message can
   // carry the full URL and headers, which is noise in a one-line status.
+  //
+  // connectionError and unknown both wrap a SocketException, and the three cases
+  // underneath them need different fixes: a name that does not resolve is a
+  // wrong URL, a refused connection is a server that is not running, and
+  // anything else is the network. Collapsing them into "Cannot reach server"
+  // hides which one it is, which is the whole question the developer has.
   static String _describe(DioException e) => switch (e.type) {
         DioExceptionType.connectionTimeout => 'Connection timed out',
         DioExceptionType.receiveTimeout => 'Request timed out',
         DioExceptionType.sendTimeout => 'Request timed out',
         DioExceptionType.badCertificate => 'Bad TLS certificate',
-        DioExceptionType.connectionError => 'Cannot reach server',
         DioExceptionType.cancel => 'Cancelled',
         DioExceptionType.badResponse => 'Bad response',
-        DioExceptionType.unknown => 'Cannot reach server',
+        DioExceptionType.connectionError || DioExceptionType.unknown => _describeSocket(e.error),
       };
+
+  static String _describeSocket(Object? error) {
+    if (error is! SocketException) return 'Cannot reach server';
+
+    final message = error.message.toLowerCase();
+    if (message.contains('failed host lookup') || error.osError?.errorCode == 8) {
+      return 'Host not found — check the URL';
+    }
+    if (error.osError?.errorCode == 61 || message.contains('refused')) {
+      return 'Connection refused — is the server running?';
+    }
+    if (message.contains('network is unreachable') || error.osError?.errorCode == 51) {
+      return 'Network unreachable';
+    }
+    return 'Cannot reach server';
+  }
 }

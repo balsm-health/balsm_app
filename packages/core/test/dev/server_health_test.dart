@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:balsm_api/balsm_api.dart' show ApiRoutes;
@@ -9,18 +10,21 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Answers with a fixed status, or throws a chosen transport failure.
 class _StubAdapter implements HttpClientAdapter {
-  _StubAdapter.status(this.statusCode) : error = null;
-  _StubAdapter.failure(this.error) : statusCode = 0;
+  _StubAdapter.status(this.statusCode)
+      : error = null,
+        cause = null;
+  _StubAdapter.failure(this.error, {this.cause}) : statusCode = 0;
 
   final int statusCode;
   final DioExceptionType? error;
+  final Object? cause;
   RequestOptions? lastRequest;
 
   @override
   Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? stream, Future<void>? cancelFuture) async {
     lastRequest = options;
     if (error != null) {
-      throw DioException(requestOptions: options, type: error!);
+      throw DioException(requestOptions: options, type: error!, error: cause);
     }
     return ResponseBody.fromString(
       jsonEncode({
@@ -76,7 +80,6 @@ void main() {
       final cases = {
         DioExceptionType.connectionTimeout: 'Connection timed out',
         DioExceptionType.receiveTimeout: 'Request timed out',
-        DioExceptionType.connectionError: 'Cannot reach server',
         DioExceptionType.badCertificate: 'Bad TLS certificate',
       };
 
@@ -86,6 +89,39 @@ void main() {
         expect(result, isA<ServerUnreachable>(), reason: '${entry.key}');
         expect((result as ServerUnreachable).reason, entry.value);
       }
+    });
+
+    test('names the three ways a connection error actually happens', () async {
+      // These need different fixes, so collapsing them into one message hides
+      // the only thing the developer wants to know. A hostname that does not
+      // resolve is exactly how the Production preset fails today.
+      Future<String> reasonFor(SocketException cause) async {
+        final result = await ServerHealthProbe(
+          adapter: _StubAdapter.failure(DioExceptionType.connectionError, cause: cause),
+        ).check('http://x');
+        return (result as ServerUnreachable).reason;
+      }
+
+      expect(
+        await reasonFor(const SocketException('Failed host lookup: \'api.balsm.health\'')),
+        'Host not found — check the URL',
+      );
+      expect(
+        await reasonFor(const SocketException('Connection refused', osError: OSError('', 61))),
+        'Connection refused — is the server running?',
+      );
+      expect(
+        await reasonFor(const SocketException('Network is unreachable')),
+        'Network unreachable',
+      );
+    });
+
+    test('an unrecognised socket failure still reads sensibly', () async {
+      final result = await ServerHealthProbe(
+        adapter: _StubAdapter.failure(DioExceptionType.connectionError, cause: const SocketException('weird')),
+      ).check('http://x');
+
+      expect((result as ServerUnreachable).reason, 'Cannot reach server');
     });
 
     test('never throws, whatever the transport does', () async {
