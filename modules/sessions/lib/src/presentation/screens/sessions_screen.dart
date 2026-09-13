@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:balsm_api/balsm_api.dart' show isOfflineError;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,12 +48,22 @@ class SessionsScreen extends ConsumerWidget {
             Expanded(
               child: sessionsAsync.when(
                 loading: () => const BalsmLoadingIndicator(),
+                // No cached fallback here on purpose: a stale list of active
+                // sessions is a security-relevant lie — it could show a device
+                // as signed in that was revoked, or hide one that was added.
+                // Offline gets an explanation instead of a retry button that
+                // cannot succeed.
+                //
+                // NOTE: strings in this screen are inline English, matching the
+                // rest of the file; this module has no i69n bundle yet.
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(20),
-                  child: BalsmErrorBanner(
-                    message: 'Could not load sessions.',
-                    onRetry: () => ref.invalidate(sessionsProvider),
-                  ),
+                  child: isOfflineError(e)
+                      ? const BalsmErrorBanner(message: 'Sign-in activity needs a connection.')
+                      : BalsmErrorBanner(
+                          message: 'Could not load sessions.',
+                          onRetry: () => ref.invalidate(sessionsProvider),
+                        ),
                 ),
                 data: (sessions) => _SessionsList(sessions: sessions),
               ),

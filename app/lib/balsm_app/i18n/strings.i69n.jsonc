@@ -195,7 +195,11 @@
     "rel_mother": "Mother",
     "rel_sibling": "Sibling",
     "rel_grandparent": "Grandparent",
-    "rel_other": "Other"
+    "rel_other": "Other",
+    "offline_banner": "You're offline — showing saved data",
+    "offline_stale_places": "These places may be out of date",
+    "offline_sessions": "Sign-in activity needs a connection",
+    "offline_write": "You're offline. This needs a connection."
   },
   "emergency": {
     "em_label": "Email address",

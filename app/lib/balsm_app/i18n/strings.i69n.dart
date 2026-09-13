@@ -611,6 +611,10 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get rel_sibling => "Sibling";
   String get rel_grandparent => "Grandparent";
   String get rel_other => "Other";
+  String get offline_banner => "You're offline — showing saved data";
+  String get offline_stale_places => "These places may be out of date";
+  String get offline_sessions => "Sign-in activity needs a connection";
+  String get offline_write => "You're offline. This needs a connection.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -699,6 +703,14 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return rel_grandparent;
       case 'rel_other':
         return rel_other;
+      case 'offline_banner':
+        return offline_banner;
+      case 'offline_stale_places':
+        return offline_stale_places;
+      case 'offline_sessions':
+        return offline_sessions;
+      case 'offline_write':
+        return offline_write;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

@@ -195,7 +195,11 @@
     "rel_mother": "الأم",
     "rel_sibling": "الأخ/الأخت",
     "rel_grandparent": "الجد/الجدة",
-    "rel_other": "أخرى"
+    "rel_other": "أخرى",
+    "offline_banner": "لا يوجد اتصال — نعرض بيانات محفوظة",
+    "offline_stale_places": "قد تكون هذه الأماكن غير محدّثة",
+    "offline_sessions": "يحتاج سجل الدخول إلى اتصال",
+    "offline_write": "لا يوجد اتصال. هذا يحتاج إلى إنترنت."
   },
   "emergency": {
     "em_label": "البريد الإلكتروني",

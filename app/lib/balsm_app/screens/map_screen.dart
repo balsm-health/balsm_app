@@ -288,6 +288,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ]),
         ),
+        // Retained results past their TTL, served because the refetch could not
+        // reach the server. Driven by the result's own provenance, not by the
+        // connectivity stream: connectivity reports whether an interface is up,
+        // not whether these particular rows are old.
+        if (ref.watch(carePinsProvider).valueOrNull?.stale ?? false)
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
+            child: Row(children: [
+              const Icon(LucideIcons.clock, size: 13, color: T.ink500),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  s.strings.common.offline_stale_places,
+                  style: const TextStyle(fontSize: 12, color: T.ink500),
+                ),
+              ),
+            ]),
+          ),
         // The map itself stays full-bleed (real map UX never letterboxes); only
         // the list view — a column of cards — gets the same width cap as the
         // controls above.

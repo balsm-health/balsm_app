@@ -1,3 +1,4 @@
+import 'offline_banner.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
@@ -319,6 +320,15 @@ class _MainAppState extends State<_MainApp> {
 
     return Stack(children: [
       content,
+      // One mount covers both layouts — the phone Column and the tablet
+      // _SideNav Row are both inside `content`. Per-screen mounting would
+      // stack duplicates as the user moves between tabs.
+      PositionedDirectional(
+        top: 0,
+        start: 0,
+        end: 0,
+        child: OfflineBanner(message: s.strings.common.offline_banner),
+      ),
       PositionedDirectional(
         top: 0,
         start: 0,

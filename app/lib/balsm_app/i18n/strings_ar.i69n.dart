@@ -617,6 +617,10 @@ class CommonStrings_ar extends CommonStrings {
   String get rel_sibling => "الأخ/الأخت";
   String get rel_grandparent => "الجد/الجدة";
   String get rel_other => "أخرى";
+  String get offline_banner => "لا يوجد اتصال — نعرض بيانات محفوظة";
+  String get offline_stale_places => "قد تكون هذه الأماكن غير محدّثة";
+  String get offline_sessions => "يحتاج سجل الدخول إلى اتصال";
+  String get offline_write => "لا يوجد اتصال. هذا يحتاج إلى إنترنت.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -705,6 +709,14 @@ class CommonStrings_ar extends CommonStrings {
         return rel_grandparent;
       case 'rel_other':
         return rel_other;
+      case 'offline_banner':
+        return offline_banner;
+      case 'offline_stale_places':
+        return offline_stale_places;
+      case 'offline_sessions':
+        return offline_sessions;
+      case 'offline_write':
+        return offline_write;
       default:
         return super[key];
     }
