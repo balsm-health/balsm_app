@@ -41,3 +41,8 @@ app/ios/signing/*
 
 # Collected build artifacts (tool/build.dart) — reproducible from source.
 /output/
+
+# Build-time config: server URLs and the Sentry DSN. Local to each machine —
+# `shared*.json` also covers per-developer variants (e.g. shared.tunnel.json
+# for a devtunnel). See app/env/README.md for the shape.
+app/env/shared*.json

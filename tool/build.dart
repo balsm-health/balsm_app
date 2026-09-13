@@ -228,8 +228,9 @@ Future<void> main(List<String> argv) async {
   final servers = _takeOption(args, 'servers') ?? 'shared';
   final serversFile = File.fromUri(Platform.script.resolve('../app/env/$servers.json'));
   if (!serversFile.existsSync()) {
-    _fail("no server list 'env/$servers.json' — it is git-ignored, so a fresh "
-        'clone has to create it before this option works');
+    _fail("no server list 'app/env/$servers.json' — these are git-ignored, so a "
+        'fresh clone creates its own.\n'
+        '  the shape is in app/env/README.md');
   }
 
   final appDirEarly = Platform.script.resolve('../app').toFilePath();

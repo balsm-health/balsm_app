@@ -150,7 +150,7 @@
     },
     {
       "id": "servers",
-      "description": "Which server list (env/*.json) — tunnel adds the devtunnel + LAN presets",
+      "description": "Which server list (app/env/shared*.json — git-ignored, create your own; see app/env/README.md)",
       "type": "pickString",
       "options": [
         "shared",
