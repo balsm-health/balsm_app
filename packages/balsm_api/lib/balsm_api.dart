@@ -17,6 +17,7 @@ export 'src/transport/envelope.dart';
 export 'src/transport/network_manager.dart';
 export 'src/transport/phi_leak_interceptor.dart';
 export 'src/transport/http_log_interceptor.dart';
+export 'src/transport/file_downloader.dart';
 
 export 'src/emergency_qr/emergency_qr_api.dart';
 export 'src/emergency_qr/dio_emergency_qr_api.dart';

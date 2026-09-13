@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:balsm_api/balsm_api.dart';
@@ -8,7 +9,7 @@ import 'package:dio/dio.dart';
 class FakeHttpAdapter implements HttpClientAdapter {
   FakeHttpAdapter(this.handler);
 
-  final ResponseBody Function(RequestOptions options) handler;
+  final FutureOr<ResponseBody> Function(RequestOptions options) handler;
   final List<RequestOptions> requests = [];
 
   @override
@@ -18,7 +19,7 @@ class FakeHttpAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add(options);
-    return handler(options);
+    return await handler(options);
   }
 
   @override
