@@ -89,9 +89,19 @@ builds would silently change what a pack covers.
 The projection matches `CareEntityResponse` so the app decodes packs and API
 responses with one mapper.
 
-**Versioning.** `<governorate>-<YYYYMMDD>`, from the planet build date. The
-manifest carries a SHA-256 per pack; the app verifies after download, because
-a truncated pack that renders half a city is worse than a failed download.
+**Versioning.** `<governorate>-<YYYYMMDD>`, from the **date of the OSM data** —
+the archive's `planetiler:osm:osmosisreplicationtime`, not its
+`planetiler:buildtime`. The latter is inherited from the Protomaps build image
+and reads `2026-03-28` on an archive whose data is from `2026-09-13`; versioning
+on it would tell users their map is six months old when it is hours old.
+
+The manifest carries a SHA-256 per pack; the app verifies after download,
+because a truncated pack that renders half a city is worse than a failed one.
+
+**Measured** (2026-09-13, z0–15): Egypt is 254 MB in one 4m48s remote pull;
+the 27 packs total 297 MB and cut locally in 2.4s. Giza 26 MB and Cairo 25 MB
+are the largest, Port Said 2 MB the smallest. `--maxzoom 14` roughly halves
+each (Cairo 25 → 12 MB) and still renders past z14 by over-zooming.
 
 ## Manifest
 
@@ -165,8 +175,12 @@ over cellular asks first.
 
 ## Risks
 
-- **Pack size is unmeasured.** Cairo is the one to measure first; if a dense
-  governorate lands far above expectation, maxzoom is the lever.
+- ~~Pack size is unmeasured.~~ **Resolved.** Measured at 2–26 MB per pack,
+  297 MB for all 27 — an order of magnitude below the concern that motivated
+  per-governorate packs in the first place. That weakens the case against a
+  single national pack, but packs stay per-governorate: 297 MB is still a
+  hostile download on Egyptian mobile data, and the split costs nothing now
+  that it is built.
 - **Protomaps is a third-party dependency** for the source build. Mitigated by
   pulling once per build rather than at runtime, and by the output being a
   file on storage we own. If it disappears, Planetiler becomes the fallback at
