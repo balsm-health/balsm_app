@@ -75,4 +75,44 @@ void main() {
       throwsA(isA<DioException>().having((e) => e.type, 'type', DioExceptionType.cancel)),
     );
   });
+
+  group('resolveUrl', () {
+    // The catalogue mixes absolute CDN urls (basemaps) with root-relative
+    // ones (places snapshots a self-hosted server exports itself). A
+    // relative url reaching Dio unresolved has no scheme or host and the
+    // request throws, so this is the seam that keeps places downloadable.
+    test('passes absolute urls through untouched', () {
+      final downloader = DioFileDownloader(baseUrl: () => 'https://api.test');
+      expect(
+        downloader.resolveUrl('https://cdn.balsm.health/packs/cairo-20260913.pmtiles'),
+        'https://cdn.balsm.health/packs/cairo-20260913.pmtiles',
+      );
+      expect(downloader.resolveUrl('http://cdn.test/x.gz'), 'http://cdn.test/x.gz');
+    });
+
+    test('joins a root-relative url onto the base url', () {
+      final downloader = DioFileDownloader(baseUrl: () => 'http://192.168.1.5:5050');
+      expect(
+        downloader.resolveUrl('/care/packs/places/cairo-20260914.ndjson.gz'),
+        'http://192.168.1.5:5050/care/packs/places/cairo-20260914.ndjson.gz',
+      );
+    });
+
+    test('does not double the slash when the base url has a trailing one', () {
+      final downloader = DioFileDownloader(baseUrl: () => 'http://localhost:5050/');
+      expect(
+        downloader.resolveUrl('/care/packs/places/x.ndjson.gz'),
+        'http://localhost:5050/care/packs/places/x.ndjson.gz',
+      );
+    });
+
+    test('reads the base url per call, so a dev server switch is picked up', () {
+      var base = 'http://localhost:5050';
+      final downloader = DioFileDownloader(baseUrl: () => base);
+      expect(downloader.resolveUrl('/x.gz'), 'http://localhost:5050/x.gz');
+
+      base = 'http://192.168.1.5:5050';
+      expect(downloader.resolveUrl('/x.gz'), 'http://192.168.1.5:5050/x.gz');
+    });
+  });
 }

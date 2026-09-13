@@ -53,4 +53,13 @@ final careDirectoryApiProvider = Provider<CareDirectoryApi>((ref) {
   return DioCareDirectoryApi(net: ref.watch(networkManagerProvider));
 });
 
-final mapPackFileDownloaderProvider = Provider<FileDownloader>((ref) => DioFileDownloader());
+/// Map-pack bytes downloader.
+///
+/// Deliberately NOT built on [balsmApiClientProvider]'s Dio: basemaps come
+/// from a third-party CDN, and that client carries auth/PHI interceptors
+/// whose headers have no business travelling to another host. It only borrows
+/// the base url, to resolve the root-relative places urls the catalogue
+/// returns for snapshots this server exports itself.
+final mapPackFileDownloaderProvider = Provider<FileDownloader>(
+  (ref) => DioFileDownloader(baseUrl: () => ref.read(balsmApiClientProvider).baseUrl),
+);

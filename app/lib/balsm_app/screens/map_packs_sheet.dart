@@ -128,7 +128,7 @@ class _MapPacksSheetState extends ConsumerState<_MapPacksSheet> {
           ]),
         ),
         const SizedBox(width: 12),
-        _action(s, item),
+        _action(s, ar, item),
       ]),
     );
   }
@@ -141,19 +141,19 @@ class _MapPacksSheetState extends ConsumerState<_MapPacksSheet> {
         MapPackAvailability.downloading => '', // shown as a percentage instead, see _row
       };
 
-  Widget _action(PatientAppState s, MapPackListItem item) {
+  Widget _action(PatientAppState s, bool ar, MapPackListItem item) {
     final notifier = ref.read(mapPackDownloadControllerProvider.notifier);
     switch (item.availability) {
       case MapPackAvailability.notDownloaded:
-        return _btn(s, s.strings.map_packs.download, () => notifier.download(item.governorateId));
+        return _btn(s, ar, s.strings.map_packs.download, () => notifier.download(item.governorateId));
       case MapPackAvailability.updateAvailable:
-        return _btn(s, s.strings.map_packs.update, () => notifier.download(item.governorateId));
+        return _btn(s, ar, s.strings.map_packs.update, () => notifier.download(item.governorateId));
       case MapPackAvailability.failed:
-        return _btn(s, s.strings.map_packs.retry, () => notifier.download(item.governorateId));
+        return _btn(s, ar, s.strings.map_packs.retry, () => notifier.download(item.governorateId));
       case MapPackAvailability.downloading:
-        return _btn(s, s.strings.map_packs.cancel, () => notifier.cancel(item.governorateId));
+        return _btn(s, ar, s.strings.map_packs.cancel, () => notifier.cancel(item.governorateId));
       case MapPackAvailability.downloaded:
-        return _btn(s, s.strings.map_packs.delete, () => notifier.delete(item.governorateId), destructive: true);
+        return _btn(s, ar, s.strings.map_packs.delete, () => notifier.delete(item.governorateId), destructive: true);
     }
   }
 
@@ -161,7 +161,7 @@ class _MapPacksSheetState extends ConsumerState<_MapPacksSheet> {
   // tokens.dart); accent isn't a T constant — it's the user's chosen brand
   // accent, s.accent.{main,bg}, the same fields the recenter button
   // (RoundBtn(..., fg: s.accent.main, ...)) already reads.
-  Widget _btn(PatientAppState s, String label, VoidCallback onTap, {bool destructive = false}) => Pressable(
+  Widget _btn(PatientAppState s, bool ar, String label, VoidCallback onTap, {bool destructive = false}) => Pressable(
         onTap: onTap,
         scale: 0.97,
         child: Container(
@@ -171,7 +171,7 @@ class _MapPacksSheetState extends ConsumerState<_MapPacksSheet> {
             borderRadius: BorderRadius.circular(T.rPill),
           ),
           child: Text(label,
-              style: Typo.bodySm(ar: false)
+              style: Typo.bodySm(ar: ar)
                   .copyWith(fontWeight: FontWeight.w700, color: destructive ? T.danger : s.accent.main)),
         ),
       );

@@ -10,6 +10,10 @@ import 'map_pack_download_store.dart';
 import 'map_pack_list_item.dart';
 
 class MapPackDownloadState {
+  /// [loading] defaults true: the only initial state is "created, and the
+  /// sheet is about to call load()". Defaulting false renders one frame of an
+  /// empty list before the spinner — reading as "no packs exist" rather than
+  /// "not fetched yet". Every other construction sets it explicitly.
   const MapPackDownloadState({this.items = const [], this.loading = true, this.offline = false});
 
   final List<MapPackListItem> items;
@@ -61,6 +65,7 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
   final _downloading = <String, double>{};
   final _failed = <String>{};
   final _cancelTokens = <String, CancelToken>{};
+  var _cachedNames = <String, String>{};
 
   Future<void> load(String lang) async {
     state = MapPackDownloadState(items: state.items, loading: true, offline: state.offline);
@@ -79,6 +84,7 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
           downloading: Map.of(_downloading),
           failed: Set.of(_failed),
         ),
+        loading: false,
       );
     } catch (_) {
       final downloaded = await _store.all();
@@ -88,14 +94,17 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
         if (cached != null) names[row.governorateId] = cached;
       }
       _lastDownloaded = downloaded;
+      _cachedNames = names;
       state = MapPackDownloadState(
         items: buildOfflineMapPackList(downloaded: downloaded, names: names),
+        loading: false,
         offline: true,
       );
     }
   }
 
   Future<void> download(String governorateId) async {
+    if (_downloading.isNotEmpty) return; // One download at a time app-wide.
     final pack = _catalogueById[governorateId];
     if (pack == null) return; // no catalogue entry to download against (offline fallback state)
 
@@ -167,7 +176,7 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
         onProgress: (fraction) => onBytes((fraction * artifact.sizeBytes).round()),
       );
       final actual = await _downloader.sha256Hex(tmpPath);
-      if (actual != artifact.sha256) {
+      if (actual.toLowerCase() != artifact.sha256.toLowerCase()) {
         throw MapPackVerificationException(governorateId, kind);
       }
       await File(tmpPath).rename(finalPath);
@@ -187,6 +196,14 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
   }
 
   void _refreshItems() {
+    if (state.offline) {
+      state = MapPackDownloadState(
+        items: buildOfflineMapPackList(downloaded: _lastDownloaded, names: _cachedNames),
+        loading: false,
+        offline: true,
+      );
+      return;
+    }
     state = MapPackDownloadState(
       items: buildMapPackList(
         catalogue: _catalogueById.values.toList(growable: false),
@@ -195,7 +212,8 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
         downloading: Map.of(_downloading),
         failed: Set.of(_failed),
       ),
-      offline: state.offline,
+      loading: false,
+      offline: false,
     );
   }
 }
