@@ -28,6 +28,7 @@ export 'src/db/app_database.dart';
 export 'src/cache/cache_row.dart';
 export 'src/cache/cache_store.dart';
 export 'src/cache/drift_cache_store.dart';
+export 'src/cache/cached_value.dart';
 export 'src/extensions/type_extensions.dart';
 export 'src/data_source/storage_exceptions.dart';
 export 'src/data_source/data_source.dart';
