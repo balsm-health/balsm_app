@@ -15,7 +15,9 @@ read live on every access:
 |---|---|---|
 | Account summary (`GET /account/self`) | fetched on every `getAccount`, nothing retained | settings, language and country screens show an error state |
 | Denied countries (`GET /geofence/denied-countries`) | 24h cache in `flutter_secure_storage`, stale fallback | works — but the mechanism is hand-rolled inside the adapter |
-| Care directory (`GET /care/entities`, `/care/pins`) | bounded in-memory LRU | empty map after every app restart |
+| Care list (`GET /care/entities`) | bounded in-memory LRU | empty list after every app restart |
+| Map pins (`GET /care/pins`) | **nothing** — `carePinsProvider` calls the API directly | blank map, always |
+| Place detail (`GET /care/entities/{id}`) | **nothing** — `careEntityProvider` calls the API directly | tapping a pin shows nothing |
 | Sessions (`GET /sessions`) | live only | error state |
 
 Writes fail with a generic error that does not tell the user the problem is
@@ -211,8 +213,23 @@ over `cache_entry`, namespace `care`. `LocalCareDirectoryDataSource`,
 `CachingCareDirectoryRepository` and `CareQueryId` keep their shapes — the
 whole reason that seam exists.
 
-One signature does change. `CareDirectoryRepository.nearby` returns
-`CareResults` instead of `List<CareEntity>`:
+Two structural changes, not one.
+
+**First, pins and detail move behind the repository.** `carePinsProvider` and
+`careEntityProvider` bypass it today and call `careDirectoryApiProvider`
+directly, so the seam that was built to keep the map ignorant of caching is
+only load-bearing for the list — the pins the user actually sees were never
+cached at all. `RemoteCareDirectoryDataSource` and
+`LocalCareDirectoryDataSource` gain `pins` and `byId`, and the two providers
+route through `careDirectoryRepositoryProvider` like the list already does.
+
+Pin results key on their own query (`CarePinQueryId` — centre, radius, type,
+text, limit) rather than sharing `CareQueryId`, because the pins endpoint
+takes a different limit and honours the no-zoom-floor dev flag; one key for
+two different responses would serve each in answer to the other.
+
+**Second, `CareDirectoryRepository.nearby` returns `CareResults` instead of
+`List<CareEntity>`:**
 
 ```dart
 class CareResults {
@@ -223,10 +240,15 @@ class CareResults {
 }
 ```
 
+`pins` returns `CarePinResults` with the same two fields over `List<CarePin>`.
+
 The alternative was inferring staleness in the UI from `onlineProvider`, which
 would be a guess: connectivity reports the interface, not whether these
-particular rows are old. Provenance has to travel with the data. `map_screen`
-is the only caller and updates accordingly.
+particular rows are old. Provenance has to travel with the data. The callers
+are `map_screen` and `home_screen`, and both update accordingly.
+
+`byId` needs no staleness flag — a detail sheet opened from a stale pin is
+already covered by the map's notice.
 
 The in-memory `CareDirectoryCache` stays as a first tier in front of the
 database, so a repeated pan within one session still costs no I/O. It keeps
@@ -296,6 +318,8 @@ Unit tests, no device needed:
 - Care repository: fresh row skips fetch; expired row triggers fetch; a
   failed refetch returns the expired row with `stale: true`; a successful one
   returns `stale: false`; bound enforced at 200 rows.
+- Care keys: a pin query and a list query with identical centre/radius/filter
+  produce different cache keys, and the no-zoom-floor flag changes the pin key.
 - `SnapshotService`: `cache_entry` is not in `_tables`.
 
 Existing suites must stay green, particularly
