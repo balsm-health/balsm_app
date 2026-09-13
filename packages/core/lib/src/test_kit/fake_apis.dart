@@ -309,6 +309,9 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
     }
     return null;
   }
+
+  @override
+  Future<List<MapPackResponse>> packs(MapPacksQuery query, {CancelToken? cancelToken}) async => const [];
 }
 
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force

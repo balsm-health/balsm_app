@@ -29,6 +29,10 @@ class AppDatabase extends _$AppDatabase {
           for (final stmt in _cacheSchema) {
             await customStatement(stmt);
           }
+          for (final stmt in _mapPacksSchema) {
+            await customStatement(stmt);
+          }
+
           // Idempotent column patches for PHI tables that gained columns after
           // their initial CREATE. `CREATE TABLE IF NOT EXISTS` above does not
           // alter a pre-existing table, so add any missing columns for dev DBs.
@@ -165,6 +169,32 @@ const _cacheSchema = <String>[
     PRIMARY KEY (namespace, key)
   )''',
   'CREATE INDEX IF NOT EXISTS idx_cache_entry_ns_time ON cache_entry(namespace, fetched_at)',
+];
+
+/// Map-pack download state — deliberately separate from [_phiSchema] and
+/// [_cacheSchema]: not PHI, not a TTL cache (rows are written once per
+/// verified download, not per fetch), and every row/file is safely
+/// re-downloadable from the CDN. Must never appear in
+/// `SnapshotService._tables`, same rule as `cache_entry`.
+const _mapPacksSchema = <String>[
+  '''
+  CREATE TABLE IF NOT EXISTS map_pack_download (
+    governorate_id TEXT    NOT NULL,
+    kind           TEXT    NOT NULL,
+    version        TEXT    NOT NULL,
+    sha256         TEXT    NOT NULL,
+    size_bytes     INTEGER NOT NULL,
+    local_path     TEXT    NOT NULL,
+    downloaded_at  INTEGER NOT NULL,
+    PRIMARY KEY (governorate_id, kind)
+  )''',
+  '''
+  CREATE TABLE IF NOT EXISTS map_pack_name (
+    governorate_id TEXT NOT NULL,
+    lang           TEXT NOT NULL,
+    name           TEXT NOT NULL,
+    PRIMARY KEY (governorate_id, lang)
+  )''',
 ];
 
 /// On-device PHI schema (matches the raw SQL in profile/medications DAOs).
