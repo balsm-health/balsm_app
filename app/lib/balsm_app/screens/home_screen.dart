@@ -269,7 +269,7 @@ class _NearbyShortcut extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final count = (ref.watch(careDirectoryProvider).valueOrNull ?? const <CareEntity>[]).length;
+    final count = (ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[]).length;
     return HomeShortcut(
       icon: LucideIcons.mapPin,
       iconBg: T.petalBlue50,

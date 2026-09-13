@@ -90,6 +90,13 @@ void main() {
         final owner = dir.contains('/modules/') ? dir.split('/modules/')[1].split('/').first : null;
         for (final f in _dartFiles(dir)) {
           if (f.path.contains('/infrastructure/')) continue;
+          // The composition root is the one place whose job IS naming
+          // concretes — it binds implementations into ports so that nothing
+          // else has to. Exempting it does not widen the blast radius: every
+          // consumer still types against the port, which is what the rule
+          // protects. Narrow by design — `brands/<brand>/main_<brand>.dart`
+          // only, not the whole shell.
+          if (RegExp(r'/brands/[^/]+/main_[^/]+\.dart$').hasMatch(f.path)) continue;
           if (owner != null && f.path.endsWith('/$owner.dart')) continue; // the barrel
           for (final hit in drift.allMatches(_stripCommentsAndImports(f.text))) {
             offenders.add('${f.rel(root)}: ${hit.group(0)}');

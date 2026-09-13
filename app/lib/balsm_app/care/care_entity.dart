@@ -9,7 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import 'infrastructure/api_care_directory_data_source.dart';
 import 'infrastructure/caching_care_directory_repository.dart';
-import 'infrastructure/memory_care_directory_data_source.dart';
+import 'infrastructure/drift_care_directory_data_source.dart';
 import 'ports/care_directory_data_source.dart';
 import 'ports/care_directory_repository.dart';
 
@@ -101,6 +101,36 @@ class CareEntity {
         rating: r.rating == null ? '' : r.rating!.toStringAsFixed(1),
         phone: r.phone ?? '',
       );
+
+  /// Round-trip for the retained-results cache. Every field the UI reads is
+  /// carried; a field omitted here would come back empty after a relaunch,
+  /// which is worse than not retaining at all.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'type': type.wire,
+        'lat': position.latitude,
+        'lng': position.longitude,
+        'name_en': name.en,
+        'name_ar': name.ar,
+        'addr_en': addr.en,
+        'addr_ar': addr.ar,
+        'hours': hours,
+        'distance': distance,
+        'rating': rating,
+        'phone': phone,
+      };
+
+  factory CareEntity.fromJson(Map<String, dynamic> j) => CareEntity(
+        id: j['id'] as String,
+        type: CareEntityType.fromWire(j['type'] as String),
+        position: LatLng((j['lat'] as num).toDouble(), (j['lng'] as num).toDouble()),
+        name: (en: j['name_en'] as String? ?? '', ar: j['name_ar'] as String? ?? ''),
+        addr: (en: j['addr_en'] as String? ?? '', ar: j['addr_ar'] as String? ?? ''),
+        hours: j['hours'] as String? ?? '',
+        distance: j['distance'] as String? ?? '',
+        rating: j['rating'] as String? ?? '',
+        phone: j['phone'] as String? ?? '',
+      );
 }
 
 /// A map pin: a place reduced to what a dot on the map needs.
@@ -124,6 +154,20 @@ class CarePin {
   /// A pin for an already-loaded place, so the list and the map agree without a
   /// second fetch.
   factory CarePin.of(CareEntity e) => CarePin(id: e.id, type: e.type, position: e.position);
+
+  /// Round-trip for the retained-pins cache.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'type': type.wire,
+        'lat': position.latitude,
+        'lng': position.longitude,
+      };
+
+  factory CarePin.fromJson(Map<String, dynamic> j) => CarePin(
+        id: j['id'] as String,
+        type: CareEntityType.fromWire(j['type'] as String),
+        position: LatLng((j['lat'] as num).toDouble(), (j['lng'] as num).toDouble()),
+      );
 }
 
 /// The area the directory covers.
@@ -283,12 +327,6 @@ LatLng _roundCenter(LatLng c) => LatLng(
       double.parse(c.longitude.toStringAsFixed(kCareCenterPrecision)),
     );
 
-/// Retained results survive provider rebuilds — deliberately NOT autoDispose,
-/// or the retention would be discarded on the very rebuild it exists to
-/// short-circuit.
-final localCareDirectoryDataSourceProvider =
-    Provider<LocalCareDirectoryDataSource>((ref) => MemoryCareDirectoryDataSource());
-
 final remoteCareDirectoryDataSourceProvider = Provider<RemoteCareDirectoryDataSource>(
   (ref) => ApiCareDirectoryDataSource(ref.watch(careDirectoryApiProvider)),
 );
@@ -306,10 +344,10 @@ final careDirectoryRepositoryProvider = Provider<CareDirectoryRepository>(
 /// repository, and cancels on rebuild. Where the answer comes from — retained
 /// locally or fetched — is the repository's decision, so the map screen stays
 /// ignorant of caching entirely.
-final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref) async {
+final careDirectoryProvider = FutureProvider.autoDispose<CareResults>((ref) async {
   final search = ref.watch(careSearchProvider);
   // Zoomed too far out to answer honestly — see kCareMinQueryZoom.
-  if (search.tooZoomedOut) return const [];
+  if (search.tooZoomedOut) return const CareResults.fresh([]);
 
   // "Near me" until the user pans the map, "near what I am looking at" after.
   final focus = search.focus;
@@ -328,14 +366,15 @@ final careDirectoryProvider = FutureProvider.autoDispose<List<CareEntity>>((ref)
 /// Separate from [careDirectoryProvider] because the map and the list want
 /// different things: the map wants everything in view and needs only
 /// coordinates, the list wants names and details for the nearest handful.
-final carePinsProvider = FutureProvider.autoDispose<List<CarePin>>((ref) async {
+final carePinsProvider = FutureProvider.autoDispose<CarePinResults>((ref) async {
   final search = ref.watch(careSearchProvider);
 
   // Lifting the floor also lifts the radius and pin caps to their ceilings:
   // the point of inspecting coverage at country zoom is to see everything the
-  // API will return, not a nearest-N slice of it.
+  // API will return, not a nearest-N slice of it. It is part of the cache key
+  // for the same reason.
   final noFloor = ref.watch(devFlagProvider(kFlagMapNoZoomFloor));
-  if (search.tooZoomedOut && !noFloor) return const [];
+  if (search.tooZoomedOut && !noFloor) return const CarePinResults.fresh([]);
 
   final focus = search.focus;
   final center = _roundCenter(_withinCoverage(focus ?? (await ref.watch(userLatLngProvider.future))));
@@ -343,20 +382,7 @@ final carePinsProvider = FutureProvider.autoDispose<List<CarePin>>((ref) async {
   final cancel = CancelToken();
   ref.onDispose(cancel.cancel);
 
-  final text = search.text.trim();
-  final res = await ref.watch(careDirectoryApiProvider).pins(
-        CarePinsQuery(
-          lat: center.latitude,
-          lng: center.longitude,
-          radiusKm: noFloor ? kCareMaxRadiusKm : search.radiusKm,
-          type: search.wireType,
-          query: text.isEmpty ? null : text,
-          limit: noFloor ? kCarePinLimitMax : kCarePinLimit,
-        ),
-        cancelToken: cancel,
-      );
-
-  return res.map(CarePin.fromResponse).toList(growable: false);
+  return ref.watch(careDirectoryRepositoryProvider).pins(center, search, noFloor: noFloor, cancelToken: cancel);
 });
 
 /// Full detail for one place, fetched when its pin is tapped.
@@ -371,11 +397,5 @@ final careEntityProvider = FutureProvider.autoDispose.family<CareEntity?, String
   final cancel = CancelToken();
   ref.onDispose(cancel.cancel);
 
-  final res = await ref.watch(careDirectoryApiProvider).byId(
-        id,
-        lat: center.latitude,
-        lng: center.longitude,
-        cancelToken: cancel,
-      );
-  return res == null ? null : CareEntity.fromResponse(res);
+  return ref.watch(careDirectoryRepositoryProvider).byId(id, center, cancelToken: cancel);
 });

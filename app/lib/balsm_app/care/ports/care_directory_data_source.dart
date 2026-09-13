@@ -29,6 +29,19 @@ abstract interface class RemoteCareDirectoryDataSource {
     CareSearch search, {
     CancelToken? cancelToken,
   });
+
+  /// Map pins near [center]. [noFloor] lifts the zoom floor, the radius and the
+  /// pin cap together — see `kFlagMapNoZoomFloor`.
+  Future<List<CarePin>> pins(
+    LatLng center,
+    CareSearch search, {
+    bool noFloor = false,
+    CancelToken? cancelToken,
+  });
+
+  /// Full detail for one place. Null when it has left the directory since the
+  /// pin was drawn.
+  Future<CareEntity?> byId(String id, LatLng center, {CancelToken? cancelToken});
 }
 
 /// Locally retained directory results, keyed by the query that produced them.
@@ -40,4 +53,17 @@ abstract interface class RemoteCareDirectoryDataSource {
 ///
 /// Retention policy — bounded size, TTL — is the implementation's own, exactly
 /// as the base contract intends: policies are not part of the generic shape.
-abstract class LocalCareDirectoryDataSource extends DataSource<CareQueryId, List<CareEntity>> {}
+abstract class LocalCareDirectoryDataSource extends DataSource<CareQueryId, List<CareEntity>> {
+  /// Like [find], but says whether the hit is past its TTL.
+  ///
+  /// The repository needs that before it decides to refetch — and needs the
+  /// value anyway, so it can serve the expired one when the refetch turns out
+  /// to fail for want of a connection. Plain [find] cannot express it.
+  Future<({List<CareEntity> value, bool expired})?> findRow(CareQueryId key);
+
+  Future<({List<CarePin> value, bool expired})?> findPins(CarePinQueryId key);
+  Future<void> putPins(CarePinQueryId key, List<CarePin> value);
+
+  Future<CareEntity?> findEntity(CareEntityId key);
+  Future<void> putEntity(CareEntityId key, CareEntity value);
+}

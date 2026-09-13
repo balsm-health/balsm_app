@@ -184,7 +184,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final entities = ref.watch(careDirectoryProvider).valueOrNull ?? const <CareEntity>[];
+    final entities = ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[];
     final filtered = _filter(entities);
 
     return Scaffold(
@@ -296,7 +296,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               // The map plots pins — cheap enough to cover the whole viewport —
               // while the list shows full rows for the nearest few. Client-side
               // type narrowing applies to both.
-              ? _mapBody(s, _filterPins(ref.watch(carePinsProvider).valueOrNull ?? const []),
+              ? _mapBody(s, _filterPins(ref.watch(carePinsProvider).valueOrNull?.pins ?? const []),
                   ref.watch(userLatLngProvider).valueOrNull)
               : ContentColumn(maxWidth: 720, child: _listBody(s, filtered)),
         ),

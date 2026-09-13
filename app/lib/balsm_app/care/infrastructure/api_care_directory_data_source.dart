@@ -35,4 +35,41 @@ class ApiCareDirectoryDataSource implements RemoteCareDirectoryDataSource {
 
     return res.map(CareEntity.fromResponse).toList(growable: false);
   }
+
+  @override
+  Future<List<CarePin>> pins(
+    LatLng center,
+    CareSearch search, {
+    bool noFloor = false,
+    CancelToken? cancelToken,
+  }) async {
+    final text = search.text.trim();
+    final res = await _api.pins(
+      CarePinsQuery(
+        lat: center.latitude,
+        lng: center.longitude,
+        // Lifting the floor also lifts the radius and pin caps to their
+        // ceilings: the point of inspecting coverage at country zoom is to see
+        // everything the API will return, not a nearest-N slice of it.
+        radiusKm: noFloor ? kCareMaxRadiusKm : search.radiusKm,
+        type: search.wireType,
+        query: text.isEmpty ? null : text,
+        limit: noFloor ? kCarePinLimitMax : kCarePinLimit,
+      ),
+      cancelToken: cancelToken,
+    );
+
+    return res.map(CarePin.fromResponse).toList(growable: false);
+  }
+
+  @override
+  Future<CareEntity?> byId(String id, LatLng center, {CancelToken? cancelToken}) async {
+    final res = await _api.byId(
+      id,
+      lat: center.latitude,
+      lng: center.longitude,
+      cancelToken: cancelToken,
+    );
+    return res == null ? null : CareEntity.fromResponse(res);
+  }
 }

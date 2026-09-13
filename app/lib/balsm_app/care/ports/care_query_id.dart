@@ -32,3 +32,34 @@ class CareQueryId extends UniqueId {
         kCareResultLimit,
       ].join('|'));
 }
+
+/// Typed id of one PIN query.
+///
+/// Separate from [CareQueryId] because the pins endpoint takes a different
+/// limit and honours the no-zoom-floor dev flag: one key for both would serve
+/// a list response to the map and a pin response to the list.
+class CarePinQueryId extends UniqueId {
+  const CarePinQueryId.value(super.value) : super.value();
+  const CarePinQueryId.empty() : super.empty();
+
+  /// Composes the id from everything that changes the response — including
+  /// [noFloor], which swaps both the radius and the limit that are actually
+  /// sent.
+  factory CarePinQueryId.of(LatLng center, CareSearch search, {required bool noFloor}) => CarePinQueryId.value([
+        'pins',
+        center.latitude.toStringAsFixed(kCareCenterPrecision),
+        center.longitude.toStringAsFixed(kCareCenterPrecision),
+        (noFloor ? kCareMaxRadiusKm : search.radiusKm).toStringAsFixed(1),
+        search.wireType ?? '',
+        search.text.trim().toLowerCase(),
+        noFloor ? kCarePinLimitMax : kCarePinLimit,
+      ].join('|'));
+}
+
+/// Typed id of one place-detail lookup.
+class CareEntityId extends UniqueId {
+  const CareEntityId.value(super.value) : super.value();
+  const CareEntityId.empty() : super.empty();
+
+  factory CareEntityId.of(String id) => CareEntityId.value('entity|$id');
+}
