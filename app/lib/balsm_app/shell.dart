@@ -1,16 +1,18 @@
-import 'offline_banner.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:ui' as ui;
 
+import 'package:core/core.dart' show onlineProvider;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'app_state.dart';
 import 'assets.dart';
 import 'kit.dart';
+import 'offline_banner.dart';
 import 'responsive.dart';
 import 'tokens.dart';
 import 'widgets/balsm_flower.dart';
@@ -318,22 +320,51 @@ class _MainAppState extends State<_MainApp> {
       ]);
     });
 
-    return Stack(children: [
-      content,
-      // One mount covers both layouts — the phone Column and the tablet
-      // _SideNav Row are both inside `content`. Per-screen mounting would
-      // stack duplicates as the user moves between tabs.
-      PositionedDirectional(
-        top: 0,
-        start: 0,
-        end: 0,
-        child: OfflineBanner(message: s.strings.common.offline_banner),
-      ),
-      PositionedDirectional(
-        top: 0,
-        start: 0,
-        end: 0,
-        child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
+    // One mount covers both layouts — the phone Column and the tablet
+    // _SideNav Row are both inside `content`. Per-screen mounting would stack
+    // duplicates as the user moves between tabs.
+    return _OfflineAwareBody(
+      child: Stack(children: [
+        content,
+        PositionedDirectional(
+          top: 0,
+          start: 0,
+          end: 0,
+          child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Puts the offline strip ABOVE the shell content rather than over it.
+///
+/// In flow, not overlaid. Overlaying it — which is what the first version did —
+/// paints the strip on top of each page's header, because a screen's top
+/// spacing comes from [PadTop] inside the page, not from any inset the shell
+/// reserves.
+///
+/// The strip consumes the status-bar inset itself, so the subtree below has
+/// that inset removed: [PadTop] reads `MediaQuery.paddingOf(context).top` and
+/// would otherwise add the notch height a second time, under a strip already
+/// clearing it. With it removed, PadTop falls back to its own 24px minimum,
+/// which is the gap the header wants under the strip anyway.
+class _OfflineAwareBody extends ConsumerWidget {
+  const _OfflineAwareBody({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // `valueOrNull == false` and not `!= true`: connectivity is unknown for the
+    // first frames, and an unknown state must not shift the whole layout down.
+    final offline = ref.watch(onlineProvider).valueOrNull == false;
+    if (!offline) return child;
+
+    return Column(children: [
+      OfflineBanner(message: AppScope.of(context).strings.common.offline_banner),
+      Expanded(
+        child: MediaQuery.removePadding(context: context, removeTop: true, child: child),
       ),
     ]);
   }
