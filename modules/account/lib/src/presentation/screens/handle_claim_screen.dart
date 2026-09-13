@@ -5,6 +5,7 @@ import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../failure_text.dart';
 import '../../application/use_cases/claim_handle_use_case.dart';
 
 /// Status of the live handle-availability check.
@@ -130,7 +131,7 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
             _status = _HandleStatus.taken;
             _message = 'Handle taken';
           } else {
-            _message = failure.message;
+            _message = accountFailureText(failure);
           }
         });
       },

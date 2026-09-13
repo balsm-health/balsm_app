@@ -28,6 +28,9 @@ class ClaimHandleUseCase {
       final res = await _api.claimHandle(ClaimHandleRequest(handle: value));
       return AppResult.success(res.handle ?? value);
     } on ApiException catch (e) {
+      // Ahead of the switch: an offline failure carries a null statusCode, and
+      // so does an unmapped one — the switch cannot tell them apart.
+      if (e.isOffline) return AppResult.failure(const OfflineFailure());
       return AppResult.failure(switch (e.statusCode) {
         409 => const ConflictFailure('Handle taken'),
         401 || 403 => const UnauthorizedFailure(),

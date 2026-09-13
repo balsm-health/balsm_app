@@ -88,6 +88,11 @@ class ServerHealthProbe {
         DioExceptionType.cancel => 'Cancelled',
         DioExceptionType.badResponse => 'Bad response',
         DioExceptionType.connectionError || DioExceptionType.unknown => _describeSocket(e.error),
+        // Default rather than an exhaustive list: the packages in this
+        // workspace do not all resolve the same dio minor, so a case added in
+        // one version fails to compile in another. dio 5.10's transformTimeout
+        // lands here.
+        _ => 'Request failed',
       };
 
   static String _describeSocket(Object? error) {

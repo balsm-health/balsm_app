@@ -100,6 +100,9 @@ class AccountProfileUseCase {
       ));
       return AppResult.success(null);
     } on ApiException catch (e) {
+      // Ahead of the switch: an offline failure carries a null statusCode, and
+      // so does an unmapped one — the switch cannot tell them apart.
+      if (e.isOffline) return AppResult.failure(const OfflineFailure());
       return AppResult.failure(switch (e.statusCode) {
         401 || 403 => const UnauthorizedFailure(),
         422 => const ValidationFailure('You must be 18 or older'),

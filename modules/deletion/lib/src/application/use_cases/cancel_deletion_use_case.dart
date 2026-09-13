@@ -41,6 +41,9 @@ class CancelDeletionUseCase {
   }
 
   AppFailure _failureFor(ApiException e) {
+    // First: an offline failure carries a null statusCode, which is also
+    // what an unmapped status looks like further down.
+    if (e.isOffline) return const OfflineFailure();
     if (e.fromEnvelope) {
       return ValidationFailure(e.serverMessage ?? 'Unable to cancel account deletion.');
     }

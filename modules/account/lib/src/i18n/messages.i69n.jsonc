@@ -4,7 +4,8 @@
   "account": {
     "settings": "Settings",
     "country": "Country",
-    "language": "Language"
+    "language": "Language",
+    "offline": "You're offline. This needs a connection."
   },
   "handle": {
     "title": "Choose your handle",

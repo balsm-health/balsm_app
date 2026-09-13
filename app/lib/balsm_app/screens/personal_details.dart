@@ -9,6 +9,8 @@ import 'package:core/core.dart'
     show
         currentUserIdProvider,
         refreshAccountSummary,
+        AppFailure,
+        OfflineFailure,
         accountApiProvider,
         Gender,
         CountryCode,
@@ -185,6 +187,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
   void _snack(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
+  /// User-facing text for a failure.
+  ///
+  /// Only [OfflineFailure] is localised. Every other [AppFailure] still carries
+  /// its own English message — a pre-existing gap across the whole hierarchy,
+  /// not something the offline work introduced.
+  String _failureText(AppFailure f) =>
+      f is OfflineFailure ? AppScope.of(context).strings.common.offline_write : f.message;
+
   /// Persists the profile via PATCH /account/profile, then — if the handle was
   /// changed and verified available — claims it. Refreshes both the screen-local
   /// profile and the app-wide account summary so every screen reflects the edit.
@@ -244,7 +254,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     if (!mounted) return;
     if (profileResult.isFailure) {
       setState(() => _saving = false);
-      _snack(profileResult.error.message);
+      _snack(_failureText(profileResult.error));
       return;
     }
 
@@ -259,7 +269,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           _saving = false;
           unStatus = 'taken';
         });
-        _snack(claim.error.message);
+        _snack(_failureText(claim.error));
         return;
       }
       _origHandle = newHandle;

@@ -33,6 +33,7 @@ class AccountMessages_ar extends AccountMessages {
   String get settings => "الإعدادات";
   String get country => "الدولة";
   String get language => "اللغة";
+  String get offline => "لا يوجد اتصال. هذا يحتاج إلى إنترنت.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -45,6 +46,8 @@ class AccountMessages_ar extends AccountMessages {
         return country;
       case 'language':
         return language;
+      case 'offline':
+        return offline;
       default:
         return super[key];
     }

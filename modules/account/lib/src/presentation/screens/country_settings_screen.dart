@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../failure_text.dart';
 import '../../application/use_cases/change_country_use_case.dart';
 
 // Account countries come from core's CountryRegistry (the first-class
@@ -46,7 +47,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
       await refreshAccountSummary(ref);
       await _showDisclosure(code);
     } else {
-      setState(() => _error = result.error.message);
+      setState(() => _error = accountFailureText(result.error));
     }
   }
 

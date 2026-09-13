@@ -5,7 +5,6 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 /// Synthetic identifiers only — never real account data.
 AccountSelfResponse _response({String handle = 'sara'}) => AccountSelfResponse(

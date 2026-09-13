@@ -32,6 +32,7 @@ class AccountMessages implements i69n.I69nMessageBundle {
   String get settings => "Settings";
   String get country => "Country";
   String get language => "Language";
+  String get offline => "You're offline. This needs a connection.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -44,6 +45,8 @@ class AccountMessages implements i69n.I69nMessageBundle {
         return country;
       case 'language':
         return language;
+      case 'offline':
+        return offline;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

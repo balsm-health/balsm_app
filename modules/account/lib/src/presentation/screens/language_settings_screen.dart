@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../failure_text.dart';
 import '../../application/use_cases/change_language_use_case.dart';
 
 /// Selectable account languages — the closed set of fully-supported UI
@@ -50,7 +51,7 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
       (failure) => setState(() {
         // Revert optimistic selection on failure.
         _pending = summary.preferredLanguage;
-        _error = failure.message;
+        _error = accountFailureText(failure);
       }),
     );
   }
