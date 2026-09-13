@@ -131,6 +131,34 @@
         "id": "archive",
         "color": "terminal.ansiYellow"
       }
+    },
+    {
+      "label": "Install: iPhone (build ad-hoc + install)",
+      "detail": "Builds the ad-hoc IPA, then installs it on the connected iPhone.",
+      "type": "shell",
+      "group": "build",
+      "dependsOn": [
+        "Build: iOS IPA (ad-hoc)"
+      ],
+      "dependsOrder": "sequence",
+      "command": "fvm dart run tool/build.dart install balsm ${input:env}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "rocket",
+        "color": "terminal.ansiBlue"
+      }
+    },
+    {
+      "label": "Install: iPhone (last build)",
+      "detail": "Pushes the already-collected output/<brand>/ios/*.ipa to the connected iPhone. No rebuild.",
+      "type": "shell",
+      "group": "build",
+      "command": "fvm dart run tool/build.dart install balsm ${input:env}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "arrow-down",
+        "color": "terminal.ansiBlue"
+      }
     }
   ],
   "inputs": [

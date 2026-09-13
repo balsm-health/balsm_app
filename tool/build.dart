@@ -5,10 +5,12 @@
 //
 // Usage: dart run tool/build.dart <action> [brand] [env] [options] [-- extra]
 //   action  : run | apk | aab | ipa | ios | web | test | integration | gen
+//             install  — push the collected .ipa to a connected iPhone (macOS)
 //   brand   : balsm (default)  — see tool/build_config.dart
 //   env     : dev (default) | staging | prod
 //   options : --export=adhoc|appstore|none   (ipa signing profile)
 //             --servers=shared|shared.tunnel (which server list to compile in)
+//             --device=<udid>                (install: pick among several)
 //
 // Every build action collects its artifact into
 //   output/<brand>/<platform>/<brand>-<version>-<env>.<ext>
@@ -19,12 +21,14 @@
 //   dart run tool/build.dart apk balsm prod
 //   dart run tool/build.dart ipa balsm dev --export=adhoc --servers=shared.tunnel
 //   dart run tool/build.dart web balsm prod
+//   dart run tool/build.dart install balsm dev   # to the connected iPhone
 //   dart run tool/build.dart gen           # build_runner across all packages
+import 'dart:convert';
 import 'dart:io';
 
 import 'build_config.dart';
 
-const _actions = {'run', 'apk', 'aab', 'ipa', 'ios', 'web', 'test', 'integration', 'gen'};
+const _actions = {'run', 'apk', 'aab', 'ipa', 'ios', 'web', 'test', 'integration', 'gen', 'install'};
 
 /// Where each build action leaves its artifact and what the collected copy is
 /// called. Searched by extension rather than an exact path: Flutter nests
@@ -79,6 +83,13 @@ Future<void> main(List<String> argv) async {
   if (action != 'test' && !brand.envs.contains(env)) {
     _fail("unknown env '$env' for brand '$brandKey' "
         '(valid: ${brand.envs.join(', ')})');
+  }
+
+  // Installing needs no flutter invocation — it pushes an artifact that a
+  // previous build already collected.
+  if (action == 'install') {
+    await _install(brandKey, env, args);
+    return;
   }
 
   // Named options are pulled out of the passthrough list before it reaches
@@ -285,4 +296,89 @@ Future<void> _codegen(List<String> extra) async {
     if (code != 0) exit(code);
   }
   stderr.writeln('build: codegen complete (${targets.length} packages)');
+}
+
+/// Installs the collected `.ipa` on a connected iPhone via `xcrun devicectl`.
+///
+/// Installs the artifact a previous build left in `output/`, rather than
+/// building one: the common loop is build once, install onto several devices,
+/// and rebuilding each time would cost minutes for nothing. The VS Code task
+/// that wants both chains this after the build task.
+///
+/// Requires macOS with Xcode 15+ (devicectl), a device already paired and
+/// trusted with this Mac, and — for an ad-hoc build — that device's UDID inside
+/// the provisioning profile the ipa was signed with. None of that is something
+/// this script can arrange, so each failure says which one it is.
+Future<void> _install(String brand, String env, List<String> args) async {
+  if (!Platform.isMacOS) {
+    _fail('install: macOS only — devicectl ships with Xcode');
+  }
+
+  final root = Directory.fromUri(Platform.script.resolve('..'));
+  final appDir = Platform.script.resolve('../app').toFilePath();
+  final version = _appVersion(appDir);
+  final ipa = File('${root.path}/output/$brand/ios/$brand-$version-$env.ipa');
+
+  if (!ipa.existsSync()) {
+    _fail('install: no ${_rel(ipa.path, root.path)}\n'
+        "  build it first:  dart run tool/build.dart ipa $brand $env --export=adhoc");
+  }
+
+  final device = _takeOption(args, 'device') ?? await _soleConnectediPhone();
+
+  stderr.writeln('\$ xcrun devicectl device install app --device $device ${_rel(ipa.path, root.path)}');
+  final proc = await Process.start(
+    'xcrun',
+    ['devicectl', 'device', 'install', 'app', '--device', device, ipa.path],
+    mode: ProcessStartMode.inheritStdio,
+  );
+  final code = await proc.exitCode;
+  if (code != 0) {
+    // Listed, not asserted: devicectl's own error above says which one it is,
+    // and claiming a single cause here would be wrong more often than right.
+    stderr.writeln('install: failed. Usual causes:\n'
+        '  - the device is locked, unpaired, or not trusted by this Mac\n'
+        "  - the device's UDID is not in the provisioning profile the ipa was\n"
+        '    signed with; an ad-hoc build only installs on devices in its profile\n'
+        '  - a build signed for the App Store, which never installs directly');
+  }
+  exit(code);
+}
+
+/// The one connected iPhone, or a failure explaining what to do instead.
+///
+/// JSON rather than parsing the table `devicectl list devices` prints: the
+/// table is for humans and its columns shift with device name length.
+Future<String> _soleConnectediPhone() async {
+  final tmp = File('${Directory.systemTemp.path}/balsm-devicectl-${pid}.json');
+  try {
+    final res = await Process.run('xcrun', ['devicectl', 'list', 'devices', '--json-output', tmp.path]);
+    if (res.exitCode != 0 || !tmp.existsSync()) {
+      _fail('install: could not list devices — is Xcode 15+ installed?\n${res.stderr}');
+    }
+
+    final parsed = jsonDecode(tmp.readAsStringSync()) as Map<String, dynamic>;
+    final devices = ((parsed['result'] as Map<String, dynamic>?)?['devices'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .where((d) => (d['hardwareProperties'] as Map?)?['platform'] == 'iOS')
+        .where((d) => (d['connectionProperties'] as Map?)?['tunnelState'] == 'connected')
+        .toList();
+
+    if (devices.isEmpty) {
+      _fail('install: no connected iPhone.\n'
+          '  Plug it in (or have it on the same network), unlock it, and make\n'
+          '  sure it is paired and trusted with this Mac.');
+    }
+    if (devices.length > 1) {
+      final list =
+          devices.map((d) => '    ${d['identifier']}  ${(d['deviceProperties'] as Map?)?['name'] ?? '?'}').join('\n');
+      _fail('install: more than one connected iPhone — pick one with --device=<udid>\n$list');
+    }
+
+    final only = devices.single;
+    stderr.writeln("install: ${(only['deviceProperties'] as Map?)?['name'] ?? 'iPhone'}");
+    return only['identifier'] as String;
+  } finally {
+    if (tmp.existsSync()) tmp.deleteSync();
+  }
 }
