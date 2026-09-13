@@ -45,18 +45,15 @@
       "problemMatcher": []
     },
     {
-      "label": "Flutter: build web (balsm · prod)",
+      "label": "Build: web",
       "type": "shell",
-      "command": "dart",
-      "args": [
-        "run",
-        "tool/build.dart",
-        "web",
-        "balsm",
-        "prod"
-      ],
+      "command": "fvm dart run tool/build.dart web balsm ${input:env}",
       "group": "build",
-      "problemMatcher": []
+      "problemMatcher": [],
+      "icon": {
+        "id": "globe",
+        "color": "terminal.ansiMagenta"
+      }
     },
     {
       "label": "Dart: format",
@@ -84,10 +81,7 @@
       "label": "Build: Android APK (ad-hoc / direct install)",
       "type": "shell",
       "group": "build",
-      "command": "fvm flutter build apk --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
-      "options": {
-        "cwd": "${workspaceFolder}/app"
-      },
+      "command": "fvm dart run tool/build.dart apk balsm ${input:env} --servers=${input:servers}",
       "problemMatcher": [],
       "icon": {
         "id": "device-mobile",
@@ -98,10 +92,7 @@
       "label": "Build: Android App Bundle (Play store)",
       "type": "shell",
       "group": "build",
-      "command": "fvm flutter build appbundle --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
-      "options": {
-        "cwd": "${workspaceFolder}/app"
-      },
+      "command": "fvm dart run tool/build.dart aab balsm ${input:env} --servers=${input:servers}",
       "problemMatcher": [],
       "icon": {
         "id": "package",
@@ -112,10 +103,7 @@
       "label": "Build: iOS IPA (ad-hoc)",
       "type": "shell",
       "group": "build",
-      "command": "fvm flutter build ipa --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --export-options-plist=ios/signing/adhoc.plist --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
-      "options": {
-        "cwd": "${workspaceFolder}/app"
-      },
+      "command": "fvm dart run tool/build.dart ipa balsm ${input:env} --export=adhoc --servers=${input:servers}",
       "problemMatcher": [],
       "icon": {
         "id": "device-mobile",
@@ -126,10 +114,7 @@
       "label": "Build: iOS IPA (App Store / TestFlight)",
       "type": "shell",
       "group": "build",
-      "command": "fvm flutter build ipa --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --export-options-plist=ios/signing/appstore.plist --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
-      "options": {
-        "cwd": "${workspaceFolder}/app"
-      },
+      "command": "fvm dart run tool/build.dart ipa balsm ${input:env} --export=appstore --servers=${input:servers}",
       "problemMatcher": [],
       "icon": {
         "id": "cloud-upload",
@@ -140,10 +125,7 @@
       "label": "Build: iOS archive only (export in Xcode Organizer)",
       "type": "shell",
       "group": "build",
-      "command": "fvm flutter build ipa --release --flavor balsm -t lib/brands/balsm/main_balsm.dart --no-codesign --dart-define-from-file=env/balsm/${input:env}.json --dart-define-from-file=env/${input:servers}.json",
-      "options": {
-        "cwd": "${workspaceFolder}/app"
-      },
+      "command": "fvm dart run tool/build.dart ipa balsm ${input:env} --export=none --servers=${input:servers}",
       "problemMatcher": [],
       "icon": {
         "id": "archive",

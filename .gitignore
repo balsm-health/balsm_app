@@ -38,3 +38,6 @@ app/ios/signing/*
 !app/ios/signing/adhoc.plist
 !app/ios/signing/appstore.plist
 !app/ios/signing/README.md
+
+# Collected build artifacts (tool/build.dart) — reproducible from source.
+/output/
