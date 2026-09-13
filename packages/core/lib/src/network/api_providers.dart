@@ -52,3 +52,5 @@ final geofenceApiProvider = Provider<GeofenceApi>((ref) {
 final careDirectoryApiProvider = Provider<CareDirectoryApi>((ref) {
   return DioCareDirectoryApi(net: ref.watch(networkManagerProvider));
 });
+
+final mapPackFileDownloaderProvider = Provider<FileDownloader>((ref) => DioFileDownloader());

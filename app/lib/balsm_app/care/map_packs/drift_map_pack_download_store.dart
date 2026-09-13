@@ -1,5 +1,4 @@
 import 'package:core/core.dart';
-import 'package:drift/drift.dart';
 
 import 'map_pack_download_row.dart';
 import 'map_pack_download_store.dart';

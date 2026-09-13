@@ -25,6 +25,7 @@ export 'src/domain/value_objects/money.dart';
 export 'src/domain/value_objects/tag.dart';
 export 'src/event_bus/event_bus.dart';
 export 'src/db/app_database.dart';
+export 'package:drift/drift.dart' show Variable, QueryRow;
 export 'src/cache/cache_row.dart';
 export 'src/cache/cache_store.dart';
 export 'src/cache/drift_cache_store.dart';
