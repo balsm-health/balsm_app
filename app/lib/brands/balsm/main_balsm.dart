@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:account/account.dart' show buildAccountAdapter, DeniedCountriesPort, deniedCountriesPortProvider;
 import 'package:auth/auth.dart' show UserSignedIn, UserSignedOut;
 import 'package:core/core.dart';
@@ -91,6 +92,9 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     globalKVDataSourceProvider.overrideWithValue(globalKV),
     // ── Real P001 module provider seams (recovered from bootstrap.dart) ─────
     appDatabaseProvider.overrideWithValue(db),
+    // Cached server read models (account summary, deny list, care directory).
+    // Shares the encrypted database but its own table — see `_cacheSchema`.
+    cacheStoreProvider.overrideWithValue(DriftCacheStore(db)),
     // Reactive: reads the in-session holder (seeded from storage below), so
     // sign-in/out updates every PHI reader without an app restart.
     currentUserIdProvider.overrideWith((ref) => ref.watch(_sessionUserIdProvider)),
@@ -174,6 +178,9 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   container.read(eventBusProvider).on<UserSignedOut>().listen((_) {
     containerUserId = null;
     container.read(_sessionUserIdProvider.notifier).state = null;
+    // Cached read models are per-account. Leaving them would show the previous
+    // user's handle to whoever signs in next on this device.
+    unawaited(container.read(cacheStoreProvider).clearAll());
   });
 
   // T173: country change → refresh locale-derived state. Re-fetches the
@@ -212,6 +219,7 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     containerUserId = null;
     container.read(_sessionUserIdProvider.notifier).state = null;
     paPrefs.setSignedIn(false);
+    unawaited(container.read(cacheStoreProvider).clearAll());
     if (state.route == 'app') state.go('welcome');
   });
   runApp(
