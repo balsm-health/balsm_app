@@ -26,6 +26,9 @@ class AppDatabase extends _$AppDatabase {
           for (final stmt in _phiSchema) {
             await customStatement(stmt);
           }
+          for (final stmt in _cacheSchema) {
+            await customStatement(stmt);
+          }
           // Idempotent column patches for PHI tables that gained columns after
           // their initial CREATE. `CREATE TABLE IF NOT EXISTS` above does not
           // alter a pre-existing table, so add any missing columns for dev DBs.
@@ -144,6 +147,25 @@ class AppDatabase extends _$AppDatabase {
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   throw UnimplementedError('AppDatabase must be initialized in bootstrap()');
 });
+
+/// Cache schema — deliberately separate from [_phiSchema].
+///
+/// Nothing here is PHI, nothing here participates in backup, and dropping the
+/// whole table is always safe: every row can be re-fetched. It shares the
+/// encrypted database only to reuse the one connection and the one key.
+///
+/// `cache_entry` must NEVER appear in `SnapshotService._tables`.
+const _cacheSchema = <String>[
+  '''
+  CREATE TABLE IF NOT EXISTS cache_entry (
+    namespace  TEXT    NOT NULL,
+    key        TEXT    NOT NULL,
+    payload    TEXT    NOT NULL,
+    fetched_at INTEGER NOT NULL,
+    PRIMARY KEY (namespace, key)
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_cache_entry_ns_time ON cache_entry(namespace, fetched_at)',
+];
 
 /// On-device PHI schema (matches the raw SQL in profile/medications DAOs).
 /// All `IF NOT EXISTS` so `beforeOpen` is idempotent.
