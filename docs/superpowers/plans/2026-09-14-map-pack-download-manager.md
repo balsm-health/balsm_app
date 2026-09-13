@@ -36,7 +36,7 @@
 **Interfaces:**
 - Produces: `MapPacksQuery({required String lang})` with `.toQueryParameters()`; `MapPackArtifactResponse` (`version`, `sizeBytes`, `sha256`, `url`, `count`); `MapPackResponse` (`id`, `name`, `bounds`, `basemap`, `places`); `CareDirectoryApi.packs(MapPacksQuery query, {CancelToken? cancelToken}) -> Future<List<MapPackResponse>>`. Later tasks call `ref.watch(careDirectoryApiProvider).packs(...)` — that provider already exists and needs no change, since it's the same interface gaining a method.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `packages/balsm_api/test/care_directory/dio_care_directory_api_test.dart` (same file, same `FakeHttpAdapter`/`fakeNet`/`jsonResponse` helpers already imported there):
 
@@ -68,12 +68,12 @@ Append to `packages/balsm_api/test/care_directory/dio_care_directory_api_test.da
   });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd packages/balsm_api && fvm dart test test/care_directory/dio_care_directory_api_test.dart`
 Expected: FAIL — `MapPacksQuery`/`.packs` not defined.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `requests.dart`, append:
 
@@ -185,12 +185,12 @@ In `api_routes.dart`, under the `// ── Care directory` group, add:
   static const care_packs = '$_care/packs';
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd packages/balsm_api && fvm dart test test/care_directory/dio_care_directory_api_test.dart`
 Expected: PASS (all tests in the file, old and new).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/balsm_api/lib/src/care_directory packages/balsm_api/lib/src/api_routes.dart packages/balsm_api/test/care_directory/dio_care_directory_api_test.dart
@@ -212,7 +212,7 @@ git commit -m "[balsm_api] Add CareDirectoryApi.packs() for GET /care/packs"
 - Consumes: nothing from Task 1.
 - Produces: `MapPackKind` enum (`.basemap`, `.places`, `.wire` getter, `.fromWire(String)`); `MapPackDownloadRow` (`governorateId`, `kind`, `version`, `sha256`, `sizeBytes`, `localPath`, `downloadedAt`); `MapPackDownloadStore` abstract interface (`all()`, `find(governorateId, kind)`, `upsert(row)`, `deleteGovernorate(governorateId)`, `nameFor(governorateId, lang)`, `upsertName(governorateId, lang, name)`); `DriftMapPackDownloadStore(AppDatabase)`; `mapPackDownloadStoreProvider` (throws `UnimplementedError` until overridden in bootstrap — Task 6 wires the override).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `app/test/map_pack_download_store_test.dart`:
 
@@ -325,12 +325,12 @@ void main() {
   });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd app && fvm flutter test test/map_pack_download_store_test.dart`
 Expected: FAIL — files don't exist yet.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `app/lib/balsm_app/care/map_packs/map_pack_download_row.dart`:
 
@@ -531,12 +531,12 @@ const _mapPacksSchema = <String>[
           }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd app && fvm flutter test test/map_pack_download_store_test.dart`
 Expected: PASS, all 6 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core/lib/src/db/app_database.dart app/lib/balsm_app/care/map_packs app/test/map_pack_download_store_test.dart
@@ -557,7 +557,7 @@ git commit -m "[core][app] Add map_pack_download + map_pack_name tables and stor
 - Consumes: nothing from Tasks 1-2.
 - Produces: `FileDownloader` abstract interface (`download(url, savePath, {onProgress, cancelToken})`, `sha256Hex(path)`); `DioFileDownloader` implementation. Task 5 wires a hand-written fake of this interface for controller tests; Task 6 provides `DioFileDownloader()` via a Riverpod provider.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add `cryptography: ^2.7.0` to `packages/balsm_api/pubspec.yaml`'s `dependencies:` section (same version already pinned in `packages/core/pubspec.yaml`).
 
@@ -646,12 +646,12 @@ void main() {
 
 The known-digest test vector has a typo-shaped length check built in on purpose: `sha256("abc")` is the standard NIST test vector `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad` (64 hex chars) — double-check the literal in the test matches that exactly (63 chars above is a deliberate reminder to count; fix to the real 64-char value when writing the file).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd packages/balsm_api && fvm dart test test/transport/file_downloader_test.dart`
 Expected: FAIL — `FileDownloader`/`DioFileDownloader` not defined.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `packages/balsm_api/lib/src/transport/file_downloader.dart`:
 
@@ -723,12 +723,12 @@ In `packages/balsm_api/lib/balsm_api.dart`, add alongside the other transport ex
 export 'src/transport/file_downloader.dart';
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd packages/balsm_api && fvm dart pub get && fvm dart test test/transport/file_downloader_test.dart`
 Expected: PASS, all 4 tests. (`dart pub get` picks up the new `cryptography` dependency.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/balsm_api/lib/src/transport/file_downloader.dart packages/balsm_api/lib/balsm_api.dart packages/balsm_api/pubspec.yaml packages/balsm_api/pubspec.lock packages/balsm_api/test/transport/file_downloader_test.dart
@@ -747,7 +747,7 @@ git commit -m "[balsm_api] Add FileDownloader (download + SHA-256) for map packs
 - Consumes: `MapPackResponse`/`MapPackArtifactResponse` (Task 1); `MapPackDownloadRow`/`MapPackKind` (Task 2).
 - Produces: `MapPackAvailability` enum (`notDownloaded`, `downloading`, `downloaded`, `updateAvailable`, `failed`); `MapPackListItem` (`governorateId`, `name`, `bounds`, `totalSizeBytes`, `availability`, `progress`); `buildMapPackList({catalogue, names, downloaded, downloading, failed})`; `buildOfflineMapPackList({downloaded, names})`. Task 5's controller calls both.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `app/test/map_pack_list_item_test.dart`:
 
@@ -917,12 +917,12 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd app && fvm flutter test test/map_pack_list_item_test.dart`
 Expected: FAIL — `map_pack_list_item.dart` does not exist.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `app/lib/balsm_app/care/map_packs/map_pack_list_item.dart`:
 
@@ -1053,12 +1053,12 @@ List<MapPackListItem> buildOfflineMapPackList({
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd app && fvm flutter test test/map_pack_list_item_test.dart`
 Expected: PASS, all 10 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/lib/balsm_app/care/map_packs/map_pack_list_item.dart app/test/map_pack_list_item_test.dart
@@ -1078,7 +1078,7 @@ git commit -m "[app] Add pure map-pack list builder (catalogue + local state mer
 - Consumes: `CareDirectoryApi.packs()` (Task 1) via `careDirectoryApiProvider` (already exists, unchanged); `MapPackDownloadStore` (Task 2) via `mapPackDownloadStoreProvider`; `FileDownloader` (Task 3) via new `mapPackFileDownloaderProvider`; `buildMapPackList`/`buildOfflineMapPackList` (Task 4).
 - Produces: `MapPackDownloadState` (`items`, `loading`, `offline`); `MapPackVerificationException`; `MapPackDownloadController` (`load(lang)`, `download(governorateId)`, `cancel(governorateId)`, `delete(governorateId)`) extends `StateNotifier<MapPackDownloadState>`; `mapPackDownloadControllerProvider`; `mapPackSupportDirProvider` (throws `UnimplementedError` until Task 6's bootstrap override). Task 6's sheet calls `ref.watch(mapPackDownloadControllerProvider)` and `ref.read(mapPackDownloadControllerProvider.notifier)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 In `packages/core/lib/src/network/api_providers.dart`, add (needed by the test's provider container, and by the controller's own default construction path):
 
@@ -1292,12 +1292,12 @@ The `_download` helper above is awkward (returns `null` and is only used for its
 
 Delete the `_download` helper function and its usage entirely, and add `import 'package:app/balsm_app/care/map_packs/map_pack_download_row.dart';` to the test's imports for the `MapPackDownloadRow`/`MapPackKind` used in the rewritten test.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd app && fvm flutter test test/map_pack_download_controller_test.dart`
 Expected: FAIL — `map_pack_download_controller.dart` does not exist.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `app/lib/balsm_app/care/map_packs/map_pack_download_controller.dart`:
 
@@ -1522,12 +1522,12 @@ final mapPackDownloadControllerProvider =
 });
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd app && fvm flutter test test/map_pack_download_controller_test.dart`
 Expected: PASS, all 5 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core/lib/src/network/api_providers.dart app/lib/balsm_app/care/map_packs/map_pack_download_controller.dart app/test/map_pack_download_controller_test.dart
@@ -1550,7 +1550,7 @@ git commit -m "[app][core] Add MapPackDownloadController orchestrating catalogue
 - Consumes: `mapPackDownloadControllerProvider`/`MapPackDownloadState` (Task 5); `MapPackListItem`/`MapPackAvailability` (Task 4); `mapPackDownloadStoreProvider` (Task 2), `mapPackSupportDirProvider` (Task 5) — both need bootstrap overrides here.
 - Produces: `showMapPacksSheet(BuildContext context)`.
 
-- [ ] **Step 1: Add i18n keys**
+- [x] **Step 1: Add i18n keys**
 
 In `app/lib/balsm_app/i18n/strings.i69n.jsonc`, add a new top-level section (anywhere among the other sections, e.g. right after `"storage"`'s closing `}`):
 
@@ -1593,7 +1593,7 @@ In `app/lib/balsm_app/i18n/strings_ar.i69n.jsonc`, add the matching section with
 Run: `fvm dart run tool/build.dart gen`
 Expected: regenerates `strings.i69n.dart`/`strings_ar.i69n.dart`; `s.strings.map_packs.title` etc. become valid Dart getters.
 
-- [ ] **Step 2: Create the sheet**
+- [x] **Step 2: Create the sheet**
 
 Create `app/lib/balsm_app/screens/map_packs_sheet.dart`:
 
@@ -1775,7 +1775,7 @@ class _MapPacksSheetState extends ConsumerState<_MapPacksSheet> {
 }
 ```
 
-- [ ] **Step 3: Wire the map screen icon**
+- [x] **Step 3: Wire the map screen icon**
 
 In `app/lib/balsm_app/screens/map_screen.dart`, add the import:
 
@@ -1810,7 +1810,7 @@ add:
 
 `T.fg2` (verified in `tokens.dart`: `static const fg2 = ink700; // secondary`) is the neutral icon color, deliberately not `s.accent.main` — accent is reserved for the primary recenter action on this screen, and a secondary utility icon sitting right next to it should not compete for the same visual weight.
 
-- [ ] **Step 4: Wire bootstrap DI**
+- [x] **Step 4: Wire bootstrap DI**
 
 In `app/lib/brands/balsm/main_balsm.dart`, add the import:
 
@@ -1841,7 +1841,7 @@ Add the two overrides next to the existing `cacheStoreProvider` one:
     mapPackSupportDirProvider.overrideWithValue(mapPacksDir),
 ```
 
-- [ ] **Step 5: Write a widget test**
+- [x] **Step 5: Write a widget test**
 
 Create `app/test/map_packs_sheet_test.dart`:
 
@@ -1945,7 +1945,7 @@ void main() {
 
 `MapPackDownloadController` needs its four dependency-typed fields (`api`/`downloader`/`store`/`supportDir`) to NOT be required for `_StubNotifier` to implement the interface without constructing them — since `_StubNotifier extends StateNotifier<...> implements MapPackDownloadController`, Dart only requires implementing the *members* of `MapPackDownloadController` (its public methods), not its constructor or private fields, so this compiles without touching `api`/`downloader`/`store`/`supportDir` at all. Verify this compiles in Step 4 below; if `MapPackDownloadController` has any other public method/getter beyond the four listed, add a matching override here.
 
-- [ ] **Step 6: Run everything**
+- [x] **Step 6: Run everything**
 
 ```bash
 cd app
@@ -1955,7 +1955,7 @@ fvm flutter analyze lib/balsm_app/screens/map_packs_sheet.dart lib/balsm_app/scr
 
 Expected: tests PASS, analyzer clean (fix any real token-name mismatches found in Steps 2-3 here).
 
-- [ ] **Step 7: Full regression pass**
+- [x] **Step 7: Full regression pass**
 
 ```bash
 melos run test   # or: cd app && fvm flutter test  (per this repo's actual test-all convention — check scripts/all_tests.sh)
@@ -1963,7 +1963,7 @@ melos run test   # or: cd app && fvm flutter test  (per this repo's actual test-
 
 Expected: every existing suite still passes — this task touched a shared bootstrap file (`main_balsm.dart`) and two schema/DI files from earlier tasks, so a full run is the real gate, not just this task's own new tests.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add app/lib/balsm_app/screens/map_packs_sheet.dart app/lib/balsm_app/screens/map_screen.dart app/lib/balsm_app/i18n app/lib/brands/balsm/main_balsm.dart app/test/map_packs_sheet_test.dart
