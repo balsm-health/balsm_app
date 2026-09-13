@@ -43,7 +43,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
     setState(() => _busy = false);
 
     if (result.isSuccess) {
-      ref.invalidate(accountSummaryProvider);
+      await refreshAccountSummary(ref);
       await _showDisclosure(code);
     } else {
       setState(() => _error = result.error.message);
@@ -119,7 +119,7 @@ class _CountrySettingsScreenState extends ConsumerState<CountrySettingsScreen> {
                   padding: const EdgeInsets.all(20),
                   child: BalsmErrorBanner(
                     message: 'Could not load account.',
-                    onRetry: () => ref.invalidate(accountSummaryProvider),
+                    onRetry: () => refreshAccountSummary(ref),
                   ),
                 ),
                 data: (summary) {

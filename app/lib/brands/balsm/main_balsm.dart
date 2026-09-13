@@ -174,6 +174,10 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   container.read(eventBusProvider).on<UserSignedIn>().listen((e) {
     containerUserId = e.userId;
     container.read(_sessionUserIdProvider.notifier).state = e.userId;
+    // Also on sign-IN, not just sign-out: a crash mid-session leaves rows
+    // behind, and the next account to sign in would inherit them. Re-fetching
+    // a summary on sign-in is correct anyway.
+    unawaited(container.read(cacheStoreProvider).clearAll());
   });
   container.read(eventBusProvider).on<UserSignedOut>().listen((_) {
     containerUserId = null;
@@ -186,7 +190,8 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   // T173: country change → refresh locale-derived state. Re-fetches the
   // account summary so greeting/locale-dependent reads reflect the change.
   // App-lifetime subscription, mirrors the forwarder above.
-  container.read(eventBusProvider).on<CountryChanged>().listen((_) {
+  container.read(eventBusProvider).on<CountryChanged>().listen((_) async {
+    await container.read(readAccountRepositoryProvider).refresh('self');
     container.invalidate(accountSummaryProvider);
   });
 

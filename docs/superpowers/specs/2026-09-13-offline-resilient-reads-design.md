@@ -326,6 +326,27 @@ Existing suites must stay green, particularly
 `packages/core/test/network/auth_interceptor_test.dart` and the auth use-case
 tests that assert the `NetworkFailure` catch-all.
 
+## Requirements alignment
+
+`Balsm-Core/NON_FUNCTIONAL_REQUIREMENTS.md` §5.4 (Offline Support) is the
+governing requirement. This project satisfies its read clauses and explicitly
+declines two of its write clauses:
+
+| §5.4 clause | This project |
+|---|---|
+| detect connectivity and indicate it to the user | met — `onlineProvider` + `OfflineBanner` |
+| core read operations work offline | met — PHI already local; server read models now retained |
+| cached offline in an encrypted local database | met — `cache_entry` inside the SQLCipher database |
+| cache cleared on logout or remote session revocation | met — cleared on sign-in, sign-out and `SessionExpired` |
+| offline changes queued and synced on reconnect | **declined** — writes fail fast |
+| conflict-resolution UI for divergent edits | **declined** — follows from the above |
+| configurable cache size, sync-status display | not applicable yet |
+
+The two declines are the same decision, recorded in Non-goals: queuing needs
+server-side idempotency keys and per-endpoint merge rules that do not exist,
+and a partial queue is worse than none because users cannot tell which writes
+survived. §5.4 is updated to say so rather than left looking satisfied.
+
 ## Risks
 
 - **Stale identity after a password change on another device.** The 1h TTL

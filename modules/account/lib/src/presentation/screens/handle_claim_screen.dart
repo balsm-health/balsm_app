@@ -120,7 +120,8 @@ class _HandleClaimScreenState extends ConsumerState<HandleClaimScreen> {
     result.fold(
       (claimed) {
         // Refresh the account summary so the new handle is reflected.
-        ref.invalidate(accountSummaryProvider);
+        // Must drop the retained row, not just rebuild the provider.
+        unawaited(refreshAccountSummary(ref));
         Navigator.of(context).maybePop(claimed);
       },
       (failure) {

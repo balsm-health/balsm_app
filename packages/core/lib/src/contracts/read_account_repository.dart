@@ -9,4 +9,11 @@ abstract interface class ReadAccountRepository {
 
   /// Emits the account summary for [userId] and any subsequent updates.
   Stream<AccountSummary> watchAccount(String userId);
+
+  /// Drops any retained copy so the next [getAccount] goes to the server.
+  ///
+  /// Invalidating `accountSummaryProvider` alone is not enough: the provider
+  /// re-runs, reads the still-fresh retained row, and the change the user just
+  /// made appears not to have happened.
+  Future<void> refresh(String userId);
 }

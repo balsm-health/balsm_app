@@ -46,7 +46,7 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
     setState(() => _busy = false);
 
     result.fold(
-      (_) => ref.invalidate(accountSummaryProvider),
+      (_) => refreshAccountSummary(ref),
       (failure) => setState(() {
         // Revert optimistic selection on failure.
         _pending = summary.preferredLanguage;
@@ -71,7 +71,7 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
             padding: const EdgeInsets.all(20),
             child: BalsmErrorBanner(
               message: 'Could not load account.',
-              onRetry: () => ref.invalidate(accountSummaryProvider),
+              onRetry: () => refreshAccountSummary(ref),
             ),
           ),
         ),

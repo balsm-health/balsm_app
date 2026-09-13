@@ -5,7 +5,7 @@ import 'package:auth/auth.dart'
     show ageGateUseCaseProvider, signUpUseCaseProvider, signInUseCaseProvider, SignInSuccess, SignInLockout;
 import 'package:core/core.dart'
     show
-        accountSummaryProvider,
+        refreshAccountSummary,
         countryRegistryProvider,
         StatusScreen,
         LanguageCode,
@@ -1093,7 +1093,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
       await ref.read(claimHandleUseCaseProvider).execute(wantedHandle);
     }
     // Refresh the app-wide summary so the profile head shows the new name.
-    ref.invalidate(accountSummaryProvider);
+    await refreshAccountSummary(ref);
     if (!mounted) return;
     setState(() => _creating = false);
     unawaited(enterAfterSignIn(context, ref, s));

@@ -6,7 +6,7 @@ import 'offline.dart';
 ///
 /// PHI constraint: [toString] must never include [serverMessage] or any
 /// payload content — server text may echo user input (emails, names).
-class ApiException implements Exception {
+class ApiException implements Exception, OfflineAware {
   const ApiException({
     required this.code,
     this.statusCode,
@@ -42,6 +42,7 @@ class ApiException implements Exception {
   /// produced for the null status of a malformed body and for any unmapped
   /// status, and treating those as "offline" would serve stale data to hide a
   /// server bug.
+  @override
   final bool isOffline;
 
   bool get isUnauthorized => statusCode == 401 || statusCode == 403;

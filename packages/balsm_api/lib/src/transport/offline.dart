@@ -18,6 +18,15 @@ const _offlineTypes = {
   DioExceptionType.receiveTimeout,
 };
 
+/// Implemented by transport errors that already carry the verdict.
+///
+/// Exists so [isOfflineError] can classify a wrapped error without importing
+/// the wrapper — `ApiException` imports this file, so the dependency cannot run
+/// the other way.
+abstract interface class OfflineAware {
+  bool get isOffline;
+}
+
 /// Whether [error] means the request never reached a server.
 ///
 /// One implementation so every layer agrees. The distinction it draws is what
@@ -28,7 +37,12 @@ const _offlineTypes = {
 /// A cancellation is NOT offline: the map cancels superseded requests on every
 /// settled pan, and treating that as offline would flag a working connection.
 /// Nor is a transform timeout — the bytes arrived and decoding them was slow.
+/// Note the [OfflineAware] branch is first and load-bearing: `NetworkManager`
+/// converts every `DioException` into an `ApiException` before any caller sees
+/// it, so without it this would answer `false` for every real API failure and
+/// no cache would ever fall back.
 bool isOfflineError(Object error) {
+  if (error is OfflineAware) return error.isOffline;
   if (error is SocketException) return true;
   if (error is! DioException) return false;
   if (_offlineTypes.contains(error.type)) return true;

@@ -19,3 +19,14 @@ final readAccountRepositoryProvider = Provider<ReadAccountRepository>(
 final accountSummaryProvider = FutureProvider<AccountSummary?>(
   (ref) => ref.watch(readAccountRepositoryProvider).getAccount('self'),
 );
+
+/// Drops the retained summary AND rebuilds the provider.
+///
+/// Call this after any mutation that changes the account. A bare
+/// `ref.invalidate(accountSummaryProvider)` re-runs the provider against the
+/// same retained row, so the user's change does not appear until the TTL
+/// lapses.
+Future<void> refreshAccountSummary(WidgetRef ref) async {
+  await ref.read(readAccountRepositoryProvider).refresh('self');
+  ref.invalidate(accountSummaryProvider);
+}

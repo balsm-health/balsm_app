@@ -8,7 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:core/core.dart'
     show
         currentUserIdProvider,
-        accountSummaryProvider,
+        refreshAccountSummary,
         accountApiProvider,
         Gender,
         CountryCode,
@@ -265,7 +265,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       _origHandle = newHandle;
     }
 
-    ref.invalidate(accountSummaryProvider);
+    await refreshAccountSummary(ref);
     ref.invalidate(_profileProvider);
     setState(() {
       _saving = false;

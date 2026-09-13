@@ -51,6 +51,16 @@ void main() {
     });
   });
 
+  // Regression: NetworkManager converts every DioException into an
+  // ApiException before a caller sees it. Classifying only raw dio errors
+  // would mean no cache ever falls back, because no caller is ever handed a
+  // DioException.
+  test('isOfflineError sees through the ApiException wrapper', () {
+    expect(isOfflineError(ApiException.fromDioException(_dio(DioExceptionType.connectionError))), isTrue);
+    expect(isOfflineError(ApiException.fromDioException(_dio(DioExceptionType.badResponse, status: 500))), isFalse);
+    expect(isOfflineError(const ApiException(code: 'unauthorized', statusCode: 401)), isFalse);
+  });
+
   test('ApiException carries the verdict forward', () {
     expect(ApiException.fromDioException(_dio(DioExceptionType.connectionError)).isOffline, isTrue);
     expect(ApiException.fromDioException(_dio(DioExceptionType.badResponse, status: 500)).isOffline, isFalse);

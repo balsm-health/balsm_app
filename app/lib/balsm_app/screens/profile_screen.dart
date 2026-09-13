@@ -7,6 +7,7 @@ import 'package:core/core.dart'
     show
         StatusScreen,
         accountSummaryProvider,
+        refreshAccountSummary,
         FlavorConfig,
         balsmApiControllerProvider,
         ServerSelectorScreen,
@@ -101,7 +102,7 @@ class ProfileScreen extends ConsumerWidget {
                     size: BtnSize.sm,
                     accent: s.accent,
                     ar: s.rtl,
-                    onTap: () => ref.invalidate(accountSummaryProvider)),
+                    onTap: () => refreshAccountSummary(ref)),
               ],
               if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
                 const SizedBox(height: 2),
