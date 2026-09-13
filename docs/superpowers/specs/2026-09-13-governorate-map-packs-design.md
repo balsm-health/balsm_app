@@ -36,10 +36,33 @@ Recorded here because the design does not re-argue them:
 
 - **Governorate packs**, not a user-drawn bbox and not one national file.
   Prebuilt, so they are CDN-cacheable; 27 of them, so no pack is Cairo-sized.
-- **Places ship inside the pack**, not fetched separately. One download gives
-  a working map, and the pack's version stamp is what lets the UI say how old
-  the data is.
+- **Places ship as their own artifact, not inside the basemap pack.** Measured
+  against the real directory, a governorate's places are ~1% of its pack —
+  Cairo is 1.0 MB of places against 25 MB of basemap, and all 27 governorates
+  together are 3 MB against 297 MB. The two also change at completely
+  different rates: street geometry barely moves, while the provider list
+  changes daily once onboarding is live. Bundling forces a bad trade — rebuild
+  297 MB nightly to refresh 3 MB, or let places go stale at the basemap's
+  cadence. Split, each is versioned and refreshed on its own schedule.
 - **Object storage + CDN** serves the packs. The API serves only a manifest.
+
+## Where places come from
+
+**The database is the single source of truth.** Every provider that joins
+writes a row; `/care/entities`, `/care/pins` and `/care/entities/{id}` read it
+live, so a provider who registered an hour ago is findable immediately.
+
+The Overture extract is a **one-time seed into that table**, not a parallel
+source and not a recurring import. That distinction matters: the importer keys
+on `ExternalId` alone and `UpdateFromImport` overwrites name, address,
+coordinates and phone unconditionally, so a recurring import would silently
+revert any correction a provider had made to their own claimed listing. Making
+the seed one-time removes that failure mode rather than guarding against it.
+
+Offline packs are a **dated snapshot** of that table, never an authority. The
+app prefers the API whenever it has a connection; a snapshot is what it falls
+back to, labelled with its date. Staleness therefore stops being a bug and
+becomes a property the user can see.
 
 ## Where the tiles come from
 
@@ -84,28 +107,56 @@ fetched at build time: boundaries change on the order of years, an Overpass
 outage should not break a build, and a boundary silently changing between
 builds would silently change what a pack covers.
 
-**Places.** Each governorate's rows come from the same `CarePlaces` table the
-`/care` endpoints read, filtered by point-in-polygon against that governorate.
-The projection matches `CareEntityResponse` so the app decodes packs and API
-responses with one mapper.
+**Places are built elsewhere, on a different clock.** They cannot come from
+this pipeline: CI has no database, and the directory it would need lives on the
+API's host. A scheduled job inside the .NET app exports each governorate's rows
+— point-in-polygon against the same committed boundaries — gzips them, and
+uploads to R2 beside the basemaps.
 
-**Versioning.** `<governorate>-<YYYYMMDD>`, from the **date of the OSM data** —
-the archive's `planetiler:osm:osmosisreplicationtime`, not its
-`planetiler:buildtime`. The latter is inherited from the Protomaps build image
+| artifact | rebuilt | size |
+|---|---|---|
+| basemap | monthly | 297 MB (all 27) |
+| places | **nightly** | 3 MB (all 27) |
+
+Nightly is affordable precisely because the split makes it 3 MB rather than
+297 MB. The projection matches `CareEntityResponse`, so the app decodes a
+snapshot and an API response with one mapper.
+
+**Versioning.** Both artifacts are `<governorate>-<YYYYMMDD>`, but the date
+means a different thing in each and they move independently.
+
+A **basemap** is dated by the **OSM data it contains** — the archive's
+`planetiler:osm:osmosisreplicationtime`, not its `planetiler:buildtime`. The latter is inherited from the Protomaps build image
 and reads `2026-03-28` on an archive whose data is from `2026-09-13`; versioning
 on it would tell users their map is six months old when it is hours old.
 
-The manifest carries a SHA-256 per pack; the app verifies after download,
-because a truncated pack that renders half a city is worse than a failed one.
+A **places snapshot** is dated by the night it was exported, which is also
+what the UI shows as "places as of …".
 
-**Measured** (2026-09-13, z0–15): Egypt is 254 MB in one 4m48s remote pull;
-the 27 packs total 297 MB and cut locally in 2.4s. Giza 26 MB and Cairo 25 MB
-are the largest, Port Said 2 MB the smallest. `--maxzoom 14` roughly halves
-each (Cairo 25 → 12 MB) and still renders past z14 by over-zooming.
+The manifest carries a SHA-256 for each artifact; the app verifies after
+download, because a truncated basemap that renders half a city — or a
+truncated snapshot missing half a governorate's pharmacies — is worse than a
+failed download.
+
+**Measured** (2026-09-13, z0–15). Basemaps: Egypt is 254 MB in one 4m48s
+remote pull; the 27 packs total 297 MB and cut locally in 2.4s. Giza 26 MB and
+Cairo 25 MB are the largest, Port Said 2 MB the smallest. `--maxzoom 14`
+roughly halves each (Cairo 25 → 12 MB) and still renders past z14 by
+over-zooming.
+
+Places, from the 38,395-row seed: 3 MB gzipped for all 27 governorates. Cairo
+is 10,920 places at 1.0 MB, Giza 0.5 MB, Alexandria 0.4 MB. Every place fell
+inside exactly one governorate.
+
+The 100:1 ratio between the two is what makes a nightly places build and a
+monthly basemap build the obvious split.
 
 ## Manifest
 
 `GET /care/packs` — anonymous, cacheable, small.
+
+Two artifacts per governorate, versioned independently so refreshing places
+never re-downloads the basemap:
 
 ```json
 {
@@ -114,24 +165,43 @@ each (Cairo 25 → 12 MB) and still renders past z14 by over-zooming.
       "id": "cairo",
       "name_en": "Cairo",
       "name_ar": "القاهرة",
-      "version": "20260913",
-      "size_bytes": 48210944,
-      "sha256": "…",
-      "url": "https://cdn.balsm.health/packs/cairo-20260913.pack",
-      "bounds": [31.15, 29.95, 31.95, 30.35],
-      "place_count": 4821
+      "bounds": [31.21, 29.75, 31.91, 30.32],
+      "basemap": {
+        "version": "20260913",
+        "size_bytes": 27145146,
+        "sha256": "…",
+        "url": "https://cdn.balsm.health/packs/cairo-20260913.pmtiles"
+      },
+      "places": {
+        "version": "20260914",
+        "size_bytes": 1051648,
+        "sha256": "…",
+        "count": 10920,
+        "url": "https://cdn.balsm.health/places/cairo-20260914.json.gz"
+      }
     }
   ]
 }
 ```
 
-`bounds` lets the app decide whether a pack covers the current viewport
-without opening it. `place_count` is shown before download so the size means
-something.
+`bounds` sits at the top because it describes the governorate, not either
+artifact, and lets the app decide whether a pack covers the viewport without
+opening anything.
 
-The API does not proxy pack bytes. Hundreds of megabytes through the app
+The nesting is what makes the two clocks work. A nightly places build bumps
+only `places.version`, so an app holding `basemap 20260913` sees one 1 MB
+download rather than 26 MB. The alternative — one flat `version` — would have
+every places refresh invalidate the basemap too, which is the whole problem the
+split exists to avoid.
+
+`places.count` is shown before download so the size means something, and
+`places.version` is what the UI displays as "places as of …".
+
+The API does not proxy artifact bytes. Hundreds of megabytes through the app
 servers would compete with the request budget of every other endpoint, and
-resumable range requests are something a CDN already does correctly.
+resumable range requests are something a CDN already does correctly. The
+manifest itself is served by the API rather than the CDN, because it is small
+and it is the one thing that must be invalidated the instant a build lands.
 
 ## App
 
@@ -153,9 +223,11 @@ Layer selection, in order: a downloaded pack covering the viewport centre;
 otherwise the online raster layer; otherwise an empty state with the offline
 banner already built.
 
-**Places.** Pack places are read into the same `CareEntity` shape and take
-precedence inside a pack's bounds when offline. Online, the API still wins —
-it is fresher than any pack.
+**Places.** A snapshot is read into the same `CareEntity` shape and used only
+when the API cannot be reached. Online the API always wins: it is the source of
+truth, and a provider who joined since last night exists there and not in the
+snapshot. Wherever snapshot places are shown, `places.version` is shown with
+them.
 
 **Pack management screen.** Lists governorates with size, place count and
 state (not downloaded / downloading / installed / update available). Download,
@@ -165,12 +237,19 @@ over cellular asks first.
 ## Testing
 
 - Pipeline: a governorate extract contains only tiles intersecting its
-  boundary; a pack's place count matches the point-in-polygon query; the
-  manifest's SHA-256 matches the bytes.
+  boundary; the manifest's SHA-256 matches the bytes on the CDN.
+- Nightly export: every place falls in exactly one governorate (verified
+  against the seed data — all 38,395 matched one, none orphaned, none
+  double-counted); a provider row created after the last export appears in the
+  next one; `count` matches the rows written.
+- Independent versions: bumping `places.version` leaves `basemap.version`
+  untouched, and an app holding the current basemap downloads only the places
+  artifact.
 - Manifest endpoint: shape, anonymity, cache headers.
-- App: pack covering the viewport is preferred to the network; a corrupt pack
-  is rejected on checksum rather than rendered; deleting a pack falls back to
-  online; sign-out does not delete packs.
+- App: a downloaded basemap covering the viewport is preferred to the network
+  for TILES; the API is preferred to a snapshot for PLACES whenever reachable;
+  a corrupt artifact is rejected on checksum rather than rendered; deleting a
+  pack falls back to online; sign-out does not delete packs.
 - Migration: the existing map suite passes on flutter_map 8 unchanged.
 
 ## Risks
@@ -187,6 +266,11 @@ over cellular asks first.
   the cost of the build complexity declined above.
 - **flutter_map 8 migration** may surface breaking changes beyond the 11 types
   counted. Contained to two files; the map suite is the gate.
-- **Stale packs.** A pack pins places at build time. The manifest's version is
-  compared on launch and the UI offers an update; the pack's date is shown
-  wherever its places are.
+- **Stale snapshots.** A snapshot pins places at build time. Nightly rebuilds
+  bound it to a day, the manifest's version is compared on launch, and the date
+  is shown wherever snapshot places are. Online, the API is always preferred,
+  so this only affects a user who is offline in a governorate they have
+  downloaded.
+- **The nightly job writes to R2 from the API host**, which means R2
+  credentials in the API's configuration — a second place that holds them
+  besides CI. Scope that token to object writes on the one bucket, as CI's is.
