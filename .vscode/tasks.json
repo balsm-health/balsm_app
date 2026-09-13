@@ -4,8 +4,9 @@
     {
       "label": "Flutter: code generation",
       "type": "shell",
-      "command": "dart",
+      "command": "fvm",
       "args": [
+        "dart",
         "run",
         "tool/build.dart",
         "gen"
@@ -15,8 +16,9 @@
     {
       "label": "Flutter: code generation (watch)",
       "type": "shell",
-      "command": "dart",
+      "command": "fvm",
       "args": [
+        "dart",
         "run",
         "tool/build.dart",
         "gen",
@@ -28,8 +30,9 @@
     {
       "label": "Flutter: widget tests (app only)",
       "type": "shell",
-      "command": "dart",
+      "command": "fvm",
       "args": [
+        "dart",
         "run",
         "tool/build.dart",
         "test"
@@ -47,8 +50,9 @@
     {
       "label": "Dart: format",
       "type": "shell",
-      "command": "dart",
+      "command": "fvm",
       "args": [
+        "dart",
         "format",
         "."
       ],
@@ -68,7 +72,7 @@
     },
     {
       "label": "Build",
-      "detail": "Pick brand, artifact, env and server list. Collects to output/<brand>/<platform>/.",
+      "detail": "Pick brand, artifact, flavor and server list. Collects to output/<brand>/<platform>/.",
       "type": "shell",
       "group": {
         "kind": "build",

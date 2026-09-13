@@ -263,6 +263,8 @@ Future<void> main(List<String> argv) async {
       // registry rather than a case per artifact.
       _ => [
           'build',
+          // Non-null here: every action that reaches this arm is an artifact
+          // key, and `build` without a valid --artifact already failed above.
           ...artifact!.build,
           '--release',
           ...flavor,
@@ -296,7 +298,8 @@ Future<void> main(List<String> argv) async {
     runInShell: true,
   );
   final code = await proc.exitCode;
-  if (code == 0) _collect(artifact!, brandKey, env, appDir);
+  // run/test/integration produce no artifact to collect.
+  if (code == 0 && artifact != null) _collect(artifact, brandKey, env, appDir);
   exit(code);
 }
 

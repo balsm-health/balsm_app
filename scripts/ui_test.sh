@@ -12,13 +12,13 @@ if [ -z "$DEVICE" ]; then
 fi
 
 echo "▶ Widget tests"
-dart run tool/build.dart test
+fvm dart run tool/build.dart test
 
 echo "▶ Integration tests${DEVICE:+ (device: $DEVICE)}"
 if [ -n "$DEVICE" ]; then
-  dart run tool/build.dart integration balsm dev -d "$DEVICE"
+  fvm dart run tool/build.dart integration balsm dev -d "$DEVICE"
 else
-  dart run tool/build.dart integration balsm dev
+  fvm dart run tool/build.dart integration balsm dev
 fi
 
 echo "✓ All UI tests passed"
