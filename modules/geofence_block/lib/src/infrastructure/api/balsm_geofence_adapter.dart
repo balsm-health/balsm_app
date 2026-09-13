@@ -1,23 +1,32 @@
-import 'dart:convert';
-
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/repositories/read_denied_countries_repository.dart';
 
-/// SecureStorage key holding the cached deny list + fetch timestamp.
-const _cacheKey = 'balsm.denied_countries_cache';
+/// SecureStorage key this adapter used before the shared cache tier existed.
+///
+/// Read never, deleted once. Orphaned keychain entries survive an app
+/// uninstall on iOS, so leaving it behind would outlive the app itself.
+const _legacyCacheKey = 'balsm.denied_countries_cache';
 
 /// How long a cached deny list is considered fresh.
 const _cacheTtl = Duration(hours: 24);
+
+const _geofenceNamespace = 'geofence';
+const _denyListKey = 'denied_countries';
 
 /// HTTP adapter implementing [ReadDeniedCountriesRepository] against the Balsm
 /// backend (`GET /geofence/denied-countries`).
 ///
 /// Behaviour:
-/// - [isDenied] consults the cache first; on a miss/stale cache it fetches.
-/// - Results are cached for 24h in [SecureStorageWrapper] under [_cacheKey].
+/// - [isDenied] consults the retained list first; on a miss or a stale list it
+///   fetches.
+/// - Results are retained for 24h in the shared cache tier.
+/// - A previously-known block stays enforced when the device is offline. It is
+///   NOT kept for a server error — the old implementation used a bare
+///   `catch (_)`, which made a 500 or a malformed body indistinguishable from
+///   being offline and would silently serve a stale deny list forever.
 /// - PHI-free: country codes are not personal health information, so they may
 ///   be logged and cached.
 ///
@@ -26,20 +35,23 @@ const _cacheTtl = Duration(hours: 24);
 class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
   BalsmGeofenceAdapter({
     required GeofenceApi api,
-    required SecureStorageWrapper storage,
+    required CachedValue<List<String>> cache,
+    required SecureStorageWrapper legacyStorage,
   })  : _api = api,
-        _storage = storage;
+        _cache = cache,
+        _legacyStorage = legacyStorage;
 
   final GeofenceApi _api;
-  final SecureStorageWrapper _storage;
+  final CachedValue<List<String>> _cache;
+  final SecureStorageWrapper _legacyStorage;
+
+  bool _purgedLegacy = false;
 
   @override
   Future<bool> isDenied(String countryCode) async {
     final normalized = countryCode.trim().toUpperCase();
     if (normalized.isEmpty) return false;
-
-    final codes = await _deniedCountryCodes();
-    return codes.contains(normalized);
+    return (await _deniedCountryCodes()).contains(normalized);
   }
 
   @override
@@ -47,23 +59,9 @@ class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
     yield await _deniedCountryCodes();
   }
 
-  /// Returns the deny list, preferring a fresh cache and falling back to a
-  /// network fetch. On network failure a stale cache (if any) is returned so
-  /// that previously-known blocks remain enforced offline.
   Future<List<String>> _deniedCountryCodes() async {
-    final cached = await _readCache();
-    if (cached != null && cached.isFresh) {
-      return cached.codes;
-    }
-
-    try {
-      final codes = await _fetch();
-      await _writeCache(codes);
-      return codes;
-    } catch (_) {
-      // Network unavailable: fall back to the last known list (even if stale).
-      return cached?.codes ?? const <String>[];
-    }
+    await _purgeLegacyCache();
+    return await _cache.read(_denyListKey, fetch: _fetch) ?? const <String>[];
   }
 
   Future<List<String>> _fetch() async {
@@ -71,42 +69,40 @@ class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
     return res.deniedCodes.map((e) => e.trim().toUpperCase()).where((e) => e.isNotEmpty).toList(growable: false);
   }
 
-  Future<_CachedDenyList?> _readCache() async {
-    final raw = await _storage.readToken(_cacheKey);
-    if (raw == null || raw.isEmpty) return null;
+  /// One-shot cleanup of the pre-migration SecureStorage entry.
+  Future<void> _purgeLegacyCache() async {
+    if (_purgedLegacy) return;
+    _purgedLegacy = true;
     try {
-      final json = jsonDecode(raw) as Map<String, dynamic>;
-      final fetchedAt = DateTime.tryParse(json['fetched_at'] as String? ?? '');
-      if (fetchedAt == null) return null;
-      final codes = (json['codes'] as List? ?? const []).map((e) => e.toString()).toList(growable: false);
-      return _CachedDenyList(codes: codes, fetchedAt: fetchedAt);
+      await _legacyStorage.deleteToken(_legacyCacheKey);
     } catch (_) {
-      return null;
+      // Keychain unavailable — retrying next launch is fine, and failing to
+      // delete a stale country list must never block the geofence check.
     }
   }
-
-  Future<void> _writeCache(List<String> codes) async {
-    final payload = jsonEncode({
-      'codes': codes,
-      'fetched_at': DateTime.now().toUtc().toIso8601String(),
-    });
-    await _storage.writeToken(_cacheKey, payload);
-  }
 }
 
-class _CachedDenyList {
-  const _CachedDenyList({required this.codes, required this.fetchedAt});
+/// Encodes the deny list for the shared cache tier, which stores JSON objects.
+List<String> _decodeCodes(Map<String, dynamic> j) =>
+    (j['codes'] as List? ?? const []).map((e) => e.toString()).toList(growable: false);
 
-  final List<String> codes;
-  final DateTime fetchedAt;
+Map<String, dynamic> _encodeCodes(List<String> codes) => {'codes': codes};
 
-  bool get isFresh => DateTime.now().toUtc().difference(fetchedAt.toUtc()) < _cacheTtl;
-}
+/// Builds a [CachedValue] for the deny list. Exposed so tests can construct the
+/// adapter with the same codec the app uses rather than a parallel one.
+CachedValue<List<String>> buildDenyListCache(CacheStore store) => CachedValue<List<String>>(
+      store: store,
+      namespace: _geofenceNamespace,
+      ttl: _cacheTtl,
+      decode: _decodeCodes,
+      encode: _encodeCodes,
+    );
 
 /// Riverpod provider exposing the geofence deny-list repository.
 final deniedCountriesRepositoryProvider = Provider<ReadDeniedCountriesRepository>((ref) {
   return BalsmGeofenceAdapter(
     api: ref.watch(geofenceApiProvider),
-    storage: ref.watch(secureStorageProvider),
+    cache: buildDenyListCache(ref.watch(cacheStoreProvider)),
+    legacyStorage: ref.watch(secureStorageProvider),
   );
 });
