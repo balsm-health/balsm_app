@@ -1,0 +1,8 @@
+{
+  "ENVS": [
+    { "name": "Local", "url": "http://localhost:5000" },
+    { "name": "Staging", "url": "https://staging.example.com" },
+    { "name": "Production", "url": "https://api.example.com" }
+  ],
+  "SENTRY_DSN": ""
+}

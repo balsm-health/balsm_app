@@ -9,10 +9,22 @@ read once at startup by `FlavorConfig.resolve` (`packages/core/lib/src/config/fl
 |---|---|---|
 | `<brand>/dev.json`, `staging.json`, `prod.json` | yes | per-environment, non-secret |
 | `shared*.json` | **no — git-ignored** | server list + Sentry DSN |
+| `shared.example.json` | yes | the template the above is copied from |
 
 `shared*.json` is ignored because it carries a Sentry DSN and whatever server
 URLs a given machine points at, including private tunnels. Every developer
-writes their own; nothing generates it for you.
+keeps their own.
+
+## First run
+
+```bash
+cp app/env/shared.example.json app/env/shared.json
+```
+
+That is enough to build — the template's values are real-shaped placeholders
+that work as-is against a local server. Edit it once you have somewhere else to
+point at. `shared.example.json` is the one `shared*` file that IS tracked (via a
+negation in `.gitignore`), so keep fake values in it.
 
 ## Shape
 
@@ -33,6 +45,10 @@ writes their own; nothing generates it for you.
 Both keys tolerate being empty. An empty `ENVS` falls back to a single `Local`
 preset at `http://localhost:5000`; an empty `SENTRY_DSN` disables Sentry. So a
 checked-out repo builds and runs before you have filled anything in.
+
+`SENTRY_DSN` is empty rather than a fake DSN in the template on purpose: empty
+disables Sentry cleanly, whereas a plausible-looking fake one would have the SDK
+initialise and then fail sending to a host that does not exist.
 
 `ENVS` entries appear in the Dev Config server picker, which is only reachable
 in the `dev` and `staging` flavors.

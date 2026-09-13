@@ -46,3 +46,5 @@ app/ios/signing/*
 # `shared*.json` also covers per-developer variants (e.g. shared.tunnel.json
 # for a devtunnel). See app/env/README.md for the shape.
 app/env/shared*.json
+# …except the template a fresh clone copies from.
+!app/env/shared.example.json

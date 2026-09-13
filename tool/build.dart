@@ -230,7 +230,8 @@ Future<void> main(List<String> argv) async {
   if (!serversFile.existsSync()) {
     _fail("no server list 'app/env/$servers.json' — these are git-ignored, so a "
         'fresh clone creates its own.\n'
-        '  the shape is in app/env/README.md');
+        '  cp app/env/shared.example.json app/env/$servers.json\n'
+        '  then edit it; see app/env/README.md');
   }
 
   final appDirEarly = Platform.script.resolve('../app').toFilePath();
