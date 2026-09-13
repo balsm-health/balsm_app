@@ -37,3 +37,12 @@ final class AgeGateFailure extends AppFailure {
 final class GeofenceFailure extends AppFailure {
   const GeofenceFailure([super.message = 'Service not available in your region']);
 }
+
+/// The request never reached a server.
+///
+/// Narrower than [NetworkFailure], which is the catch-all for anything
+/// unexpected. Only this one means "you are offline" — and only this one
+/// justifies serving cached data past its TTL.
+final class OfflineFailure extends AppFailure {
+  const OfflineFailure([super.message = 'No connection']);
+}

@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import 'offline.dart';
+
 /// Transport-level error thrown by every Dio-backed API implementation.
 ///
 /// PHI constraint: [toString] must never include [serverMessage] or any
@@ -11,6 +13,7 @@ class ApiException implements Exception {
     this.serverMessage,
     this.retryAfterSeconds,
     this.fromEnvelope = false,
+    this.isOffline = false,
   });
 
   /// Machine-readable code: server-provided `code` when present, else
@@ -30,6 +33,16 @@ class ApiException implements Exception {
   /// otherwise-successful HTTP response (legacy behavior surfaces these as
   /// validation failures with the server message).
   final bool fromEnvelope;
+
+  /// Whether the request never reached a server.
+  ///
+  /// Decided at construction, where the [DioException] is still in hand, and
+  /// carried because every caller catches [ApiException] rather than the dio
+  /// error. `code == 'network_error'` cannot stand in for it: that code is also
+  /// produced for the null status of a malformed body and for any unmapped
+  /// status, and treating those as "offline" would serve stale data to hide a
+  /// server bug.
+  final bool isOffline;
 
   bool get isUnauthorized => statusCode == 401 || statusCode == 403;
 
@@ -61,6 +74,7 @@ class ApiException implements Exception {
       statusCode: status,
       serverMessage: message,
       retryAfterSeconds: retryAfterRaw == null ? null : int.tryParse(retryAfterRaw),
+      isOffline: isOfflineError(e),
     );
   }
 

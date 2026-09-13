@@ -11,6 +11,7 @@ export 'package:dio/dio.dart' show CancelToken;
 
 export 'src/api_routes.dart';
 export 'src/transport/api_exception.dart';
+export 'src/transport/offline.dart';
 export 'src/transport/balsm_api_client.dart';
 export 'src/transport/envelope.dart';
 export 'src/transport/network_manager.dart';
