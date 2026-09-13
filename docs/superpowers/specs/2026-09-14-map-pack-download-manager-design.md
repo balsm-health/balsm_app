@@ -50,15 +50,18 @@ Non-Goals).
 
 ## API contract
 
-`GET /care/packs`, anonymous, no query params. Response (already live):
+`GET /care/packs?lang=en|ar`, anonymous. `lang` is optional — omitted or
+unrecognised defaults to `en`, resolved server-side (see
+Balsm-API-DotNet's `fe8cca6`). The app sends its current display language
+(`prefs.dart`'s `lang()`, already `'en'`/`'ar'`) on every fetch. Response
+(already live):
 
 ```json
 {
   "data": [
     {
       "id": "cairo",
-      "name_en": "Cairo",
-      "name_ar": "القاهرة",
+      "name": "Cairo",
       "bounds": [31.21, 29.75, 31.91, 30.32],
       "basemap": {
         "version": "20260913",
@@ -82,6 +85,15 @@ Non-Goals).
 A governorate only ever appears with both `basemap` and `places` present —
 the backend never advertises half a pack.
 
+**Names, across a locale switch.** Only one `name` comes back per request,
+in whatever `lang` was sent — the wire never carries a language the app
+isn't displaying. But the app's language setting can change between
+sessions, and showing a governorate's name offline (in the sheet, before
+anything is downloaded) shouldn't require a network round-trip just
+because the user switched from English to Arabic since the last fetch. So
+local storage keeps every name the app has ever fetched, per language —
+see `map_pack_name` below — not just the one from the most recent request.
+
 ## Architecture
 
 New directory `app/lib/balsm_app/care/map_packs/`, alongside the existing
@@ -89,7 +101,7 @@ New directory `app/lib/balsm_app/care/map_packs/`, alongside the existing
 
 | Component | Responsibility |
 |---|---|
-| `MapPackCatalogueApi.packs()` — new method on the existing `CareDirectoryApi` (`packages/balsm_api/lib/src/care_directory/`), implemented by `DioCareDirectoryApi` the same way `nearby()`/`pins()` are | Fetch and parse the manifest via the existing `NetworkManager` (JSON, envelope-wrapped, same as every other CareDirectory call) |
+| `CareDirectoryApi.packs({required String lang})` — new method on the existing interface (`packages/balsm_api/lib/src/care_directory/`), implemented by `DioCareDirectoryApi` the same way `nearby()`/`pins()` are | Fetch and parse the manifest via the existing `NetworkManager` (JSON, envelope-wrapped, same as every other CareDirectory call), sending the app's current language as `lang` |
 | `MapPackFileDownloader` (new, `packages/balsm_api/lib/src/transport/file_downloader.dart`, next to `network_manager.dart`) | Download one URL to a local path with progress, using a **separate plain `Dio`** — CDN downloads are anonymous, unenveloped bytes, a different host than the API; `NetworkManager` is typed for JSON API responses and is the wrong tool here. Transport-tier and generic (not care-directory-specific), so it lives beside `NetworkManager` rather than under `care_directory/` |
 | `MapPackDownloadStore` (new, `app/lib/balsm_app/care/map_packs/`) | Raw-SQL DAO over the new `map_pack_download` table in `AppDatabase` — same style as `DriftCacheStore`, not generated drift tables (this codebase's DAOs are all raw SQL over drift's connection; see `app_database.dart`) |
 | `MapPackDownloadController` (Riverpod `Notifier`, new) | Orchestrates: merge catalogue + local rows, drive downloads through `MapPackFileDownloader`, verify SHA-256, write terminal state to `MapPackDownloadStore`, hold in-memory per-governorate progress |
@@ -122,6 +134,26 @@ non-PHI, participates in no backup, and every row is safely
 re-downloadable — it must never appear in `SnapshotService._tables`,
 matching the existing comment convention for `cache_entry`.
 
+A second table, populated on every successful catalogue fetch regardless
+of download state (a name is worth caching for browsing the list, not only
+for what's already downloaded):
+
+```sql
+CREATE TABLE IF NOT EXISTS map_pack_name (
+  governorate_id TEXT NOT NULL,
+  lang           TEXT NOT NULL,
+  name           TEXT NOT NULL,
+  PRIMARY KEY (governorate_id, lang)
+);
+```
+
+Upserted per `(governorate_id, lang)` on every fetch — the language that
+was not requested this time keeps whatever it already had, rather than
+being overwritten with nothing. A governorate the app has only ever seen
+in English has no Arabic row until a fetch happens to run in Arabic; the
+sheet falls back to the id (or the language it does have) for a row it
+has no name for yet, rather than blocking on a fetch.
+
 **In-memory, not persisted:** live download progress (0.0–1.0) and
 "downloading"/"failed-this-session" transience live in the
 `MapPackDownloadController`'s Riverpod state, not the database. Writing a
@@ -141,9 +173,13 @@ directory's own import artifact lives.
 ## Download flow
 
 1. Sheet opens → `MapPackDownloadController` fetches the catalogue
-   (`MapPackCatalogueApi.packs()`) and reads local rows
-   (`MapPackDownloadStore.all()`), merges by `(governorateId, kind)` into a
-   per-governorate status:
+   (`CareDirectoryApi.packs(lang: currentLang)`), upserts `map_pack_name`
+   for the fetched language, and reads local rows
+   (`MapPackDownloadStore.all()`), merging by `(governorateId, kind)` into a
+   per-governorate status. The name shown is read from `map_pack_name` for
+   the app's current language, not from the catalogue response directly —
+   the two agree right after a successful fetch, but the table is what
+   still has an answer offline or after a locale switch:
    - **Not downloaded** — no local row for either kind
    - **Downloaded** — local rows exist and their `version` matches the
      catalogue's current `version` for both kinds
@@ -210,6 +246,9 @@ depending on status; a failed row shows a retry action.
 - **`MapPackDownloadStore`** — CRUD against an in-memory SQLite `AppDatabase`
   (existing test harness), including the `(governorate_id, kind)` primary
   key rejecting a duplicate insert.
+- **`map_pack_name` upsert** — fetching in `en` then `ar` leaves both rows
+  present (second fetch does not erase the first); re-fetching the same
+  language overwrites only that language's row.
 - **`MapPackDownloadController`** — against a fake `MapPackCatalogueApi` and
   a fake `MapPackFileDownloader`: successful download upserts the correct
   row; SHA-256 mismatch leaves no row and no file at the final path; an
