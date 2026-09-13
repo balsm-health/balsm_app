@@ -45,17 +45,6 @@
       "problemMatcher": []
     },
     {
-      "label": "Build: web",
-      "type": "shell",
-      "command": "fvm dart run tool/build.dart web balsm ${input:env}",
-      "group": "build",
-      "problemMatcher": [],
-      "icon": {
-        "id": "globe",
-        "color": "terminal.ansiMagenta"
-      }
-    },
-    {
       "label": "Dart: format",
       "type": "shell",
       "command": "dart",
@@ -78,70 +67,30 @@
       "problemMatcher": []
     },
     {
-      "label": "Build: Android APK (ad-hoc / direct install)",
+      "label": "Build",
+      "detail": "Pick brand, artifact, env and server list. Collects to output/<brand>/<platform>/.",
       "type": "shell",
-      "group": "build",
-      "command": "fvm dart run tool/build.dart apk balsm ${input:env} --servers=${input:servers}",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "command": "fvm dart run tool/build.dart build ${input:brand} ${input:env} --artifact=${input:artifact} --servers=${input:servers}",
       "problemMatcher": [],
       "icon": {
-        "id": "device-mobile",
+        "id": "tools",
         "color": "terminal.ansiGreen"
       }
     },
     {
-      "label": "Build: Android App Bundle (Play store)",
-      "type": "shell",
-      "group": "build",
-      "command": "fvm dart run tool/build.dart aab balsm ${input:env} --servers=${input:servers}",
-      "problemMatcher": [],
-      "icon": {
-        "id": "package",
-        "color": "terminal.ansiGreen"
-      }
-    },
-    {
-      "label": "Build: iOS IPA (ad-hoc)",
-      "type": "shell",
-      "group": "build",
-      "command": "fvm dart run tool/build.dart ipa balsm ${input:env} --export=adhoc --servers=${input:servers}",
-      "problemMatcher": [],
-      "icon": {
-        "id": "device-mobile",
-        "color": "terminal.ansiBlue"
-      }
-    },
-    {
-      "label": "Build: iOS IPA (App Store / TestFlight)",
-      "type": "shell",
-      "group": "build",
-      "command": "fvm dart run tool/build.dart ipa balsm ${input:env} --export=appstore --servers=${input:servers}",
-      "problemMatcher": [],
-      "icon": {
-        "id": "cloud-upload",
-        "color": "terminal.ansiBlue"
-      }
-    },
-    {
-      "label": "Build: iOS archive only (export in Xcode Organizer)",
-      "type": "shell",
-      "group": "build",
-      "command": "fvm dart run tool/build.dart ipa balsm ${input:env} --export=none --servers=${input:servers}",
-      "problemMatcher": [],
-      "icon": {
-        "id": "archive",
-        "color": "terminal.ansiYellow"
-      }
-    },
-    {
-      "label": "Install: iPhone (build ad-hoc + install)",
-      "detail": "Builds the ad-hoc IPA, then installs it on the connected iPhone.",
+      "label": "Build & install to device",
+      "detail": "Builds, then pushes to a connected device. Asks which device when more than one is attached.",
       "type": "shell",
       "group": "build",
       "dependsOn": [
-        "Build: iOS IPA (ad-hoc)"
+        "Build"
       ],
       "dependsOrder": "sequence",
-      "command": "fvm dart run tool/build.dart install balsm ${input:env}",
+      "command": "fvm dart run tool/build.dart install ${input:brand} ${input:env} --artifact=${input:artifact}",
       "problemMatcher": [],
       "icon": {
         "id": "rocket",
@@ -149,11 +98,11 @@
       }
     },
     {
-      "label": "Install: iPhone (last build)",
-      "detail": "Pushes the already-collected output/<brand>/ios/*.ipa to the connected iPhone. No rebuild.",
+      "label": "Install to device (last build)",
+      "detail": "Pushes the already-collected artifact. No rebuild. Asks which device when more than one is attached.",
       "type": "shell",
       "group": "build",
-      "command": "fvm dart run tool/build.dart install balsm ${input:env}",
+      "command": "fvm dart run tool/build.dart install ${input:brand} ${input:env} --artifact=${input:artifact}",
       "problemMatcher": [],
       "icon": {
         "id": "arrow-down",
@@ -163,8 +112,34 @@
   ],
   "inputs": [
     {
+      "id": "brand",
+      "description": "Which app (brand) — see tool/build_config.dart",
+      "type": "pickString",
+      "options": [
+        "balsm"
+      ],
+      "default": "balsm"
+    },
+    {
+      "id": "artifact",
+      "description": "What to build — ipa installs ad-hoc; ipa-archive is unsigned for the Xcode Organizer",
+      "type": "pickString",
+      "options": [
+        "apk",
+        "aab",
+        "ipa",
+        "ipa-appstore",
+        "ipa-archive",
+        "web",
+        "macos",
+        "windows",
+        "linux"
+      ],
+      "default": "ipa"
+    },
+    {
       "id": "env",
-      "description": "Which environment config (env/balsm/*.json)",
+      "description": "Which flavor / environment config (env/<brand>/*.json)",
       "type": "pickString",
       "options": [
         "dev",

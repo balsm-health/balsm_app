@@ -4,45 +4,154 @@
 // place. Cross-platform (no bash dependency).
 //
 // Usage: dart run tool/build.dart <action> [brand] [env] [options] [-- extra]
-//   action  : run | apk | aab | ipa | ios | web | test | integration | gen
-//             install  — push the collected .ipa to a connected iPhone (macOS)
+//   action  : run | test | integration | gen
+//             build --artifact=<key>   (or the artifact key as the action)
+//             install                  push a collected artifact to a device
+//   artifact: apk | aab | ipa | ipa-appstore | ipa-archive
+//             web | macos | windows | linux
 //   brand   : balsm (default)  — see tool/build_config.dart
 //   env     : dev (default) | staging | prod
-//   options : --export=adhoc|appstore|none   (ipa signing profile)
-//             --servers=shared|shared.tunnel (which server list to compile in)
-//             --device=<udid>                (install: pick among several)
+//   options : --artifact=<key>                what to build / install
+//             --export=adhoc|appstore|none    ipa signing profile
+//             --servers=shared|shared.tunnel  which server list to compile in
+//             --device=<id>                   skip the device picker
 //
-// Every build action collects its artifact into
-//   output/<brand>/<platform>/<brand>-<version>-<env>.<ext>
+// Every build collects its artifact into
+//   output/<brand>/<platform>/<brand>-<version>-<env>[.<ext>]
 // so the thing you just built is findable without digging through build/.
 //
 // Examples:
 //   dart run tool/build.dart run balsm dev -d <device-id>
 //   dart run tool/build.dart apk balsm prod
-//   dart run tool/build.dart ipa balsm dev --export=adhoc --servers=shared.tunnel
-//   dart run tool/build.dart web balsm prod
-//   dart run tool/build.dart install balsm dev   # to the connected iPhone
+//   dart run tool/build.dart build balsm dev --artifact=macos
+//   dart run tool/build.dart ipa balsm dev --servers=shared.tunnel
+//   dart run tool/build.dart install balsm dev --artifact=ipa
 //   dart run tool/build.dart gen           # build_runner across all packages
+
 import 'dart:convert';
 import 'dart:io';
 
 import 'build_config.dart';
 
-const _actions = {'run', 'apk', 'aab', 'ipa', 'ios', 'web', 'test', 'integration', 'gen', 'install'};
+final _actions = {'run', 'test', 'integration', 'gen', 'install', 'build', ..._artifacts.keys};
 
-/// Where each build action leaves its artifact and what the collected copy is
-/// called. Searched by extension rather than an exact path: Flutter nests
-/// flavored outputs differently per platform (and has moved them between
-/// versions), so a hardcoded filename is a silent break waiting to happen.
-const _artifacts = <String, ({String platform, String dir, String ext})>{
-  'apk': (platform: 'android', dir: 'build/app/outputs/flutter-apk', ext: 'apk'),
-  'aab': (platform: 'android', dir: 'build/app/outputs/bundle', ext: 'aab'),
-  'ipa': (platform: 'ios', dir: 'build/ios/ipa', ext: 'ipa'),
+/// One buildable artifact: what flutter is asked for, where it lands, and what
+/// the collected copy is called.
+///
+/// `ext` null means the artifact IS a directory (web output, a desktop bundle)
+/// and the whole thing is collected under a versioned folder name.
+///
+/// `flavor` is false where Flutter has no flavor concept — web and every
+/// desktop platform. Passing --flavor there fails the build, and the brand is
+/// carried by the entrypoint and dart-defines anyway, which is what actually
+/// decides how the app behaves.
+///
+/// `needs` is the platform directory that must exist. Desktop platforms are
+/// scaffolded per project, so a missing one is a setup step, not a bug.
+typedef Artifact = ({
+  String platform,
+  List<String> build,
+  String dir,
+  String? ext,
+  bool flavor,
+  String needs,
+  String? export,
+});
+
+const _artifacts = <String, Artifact>{
+  'apk': (
+    platform: 'android',
+    build: ['apk'],
+    dir: 'build/app/outputs/flutter-apk',
+    ext: 'apk',
+    flavor: true,
+    needs: 'android',
+    export: null,
+  ),
+  'aab': (
+    platform: 'android',
+    build: ['appbundle'],
+    // One level deeper than the apk (`bundle/<flavor>Release/`); the collector
+    // searches recursively rather than encoding that.
+    dir: 'build/app/outputs/bundle',
+    ext: 'aab',
+    flavor: true,
+    needs: 'android',
+    export: null,
+  ),
+  'ipa': (
+    platform: 'ios',
+    build: ['ipa'],
+    dir: 'build/ios/ipa',
+    ext: 'ipa',
+    flavor: true,
+    needs: 'ios',
+    export: 'adhoc',
+  ),
+  'ipa-appstore': (
+    platform: 'ios',
+    build: ['ipa'],
+    dir: 'build/ios/ipa',
+    ext: 'ipa',
+    flavor: true,
+    needs: 'ios',
+    export: 'appstore',
+  ),
+  'ipa-archive': (
+    platform: 'ios',
+    build: ['ipa'],
+    dir: 'build/ios/ipa',
+    ext: 'ipa',
+    flavor: true,
+    needs: 'ios',
+    export: 'none',
+  ),
+  'web': (
+    platform: 'web',
+    build: ['web'],
+    dir: 'build/web',
+    ext: null,
+    flavor: false,
+    needs: 'web',
+    export: null,
+  ),
+  'macos': (
+    platform: 'macos',
+    build: ['macos'],
+    dir: 'build/macos/Build/Products/Release',
+    // A .app is a directory, not a file — the collector copies it as one so it
+    // stays double-clickable.
+    ext: 'app',
+    flavor: false,
+    needs: 'macos',
+    export: null,
+  ),
+  'windows': (
+    platform: 'windows',
+    build: ['windows'],
+    dir: 'build/windows/x64/runner/Release',
+    ext: null,
+    flavor: false,
+    needs: 'windows',
+    export: null,
+  ),
+  'linux': (
+    platform: 'linux',
+    build: ['linux'],
+    dir: 'build/linux/x64/release/bundle',
+    ext: null,
+    flavor: false,
+    needs: 'linux',
+    export: null,
+  ),
 };
 
 /// iOS export profiles — `ios/signing/<name>.plist`. `none` archives without
 /// signing, for export from the Xcode Organizer.
 const _exports = {'adhoc', 'appstore', 'none'};
+
+/// Artifacts that can be pushed to a device, and how.
+const _installable = {'apk', 'ipa'};
 
 Never _fail(String msg) {
   stderr.writeln('build: $msg');
@@ -53,13 +162,17 @@ Future<void> main(List<String> argv) async {
   final args = [...argv];
   if (args.isEmpty || args.first == '-h' || args.first == '--help') {
     _fail('usage: dart run tool/build.dart <action> [brand] [env] [options] [-- extra]\n'
-        '  action  : ${_actions.join(' | ')}\n'
+        '  action  : run | test | integration | gen | install | build | <artifact>\n'
         '  brand   : ${brands.keys.join(' | ')} (default: ${brands.keys.first})\n'
         '  env     : dev | staging | prod (default: dev)\n'
-        '  options : --export=${_exports.join('|')}  --servers=<name>');
+        '  artifact: ${_artifacts.keys.join(' | ')}\n'
+        '  options : --artifact=<key> --export=${_exports.join('|')} '
+        '--servers=<name> --device=<id>');
   }
 
-  final action = args.removeAt(0);
+  var action = args.removeAt(0);
+  // Kept for callers that predate the artifact registry.
+  if (action == 'ios') action = 'ipa-archive';
   if (!_actions.contains(action)) {
     _fail("unknown action '$action' (${_actions.join(' | ')})");
   }
@@ -94,10 +207,22 @@ Future<void> main(List<String> argv) async {
 
   // Named options are pulled out of the passthrough list before it reaches
   // flutter, which would reject them.
-  final export = _takeOption(args, 'export') ?? 'adhoc';
-  if (action == 'ipa' && !_exports.contains(export)) {
+
+  // `build --artifact=x` and the bare `x` action are the same thing; the first
+  // exists so a VS Code task can drive everything from one picker.
+  final artifactKey = action == 'build' ? (_takeOption(args, 'artifact') ?? 'apk') : action;
+  final artifact = _artifacts[artifactKey];
+  if (action == 'build' && artifact == null) {
+    _fail("unknown artifact '$artifactKey' (${_artifacts.keys.join(' | ')})");
+  }
+
+  // An explicit --export overrides the artifact's own default, so `ipa
+  // --export=appstore` keeps working alongside the `ipa-appstore` key.
+  final export = _takeOption(args, 'export') ?? artifact?.export ?? 'adhoc';
+  if (artifact?.platform == 'ios' && !_exports.contains(export)) {
     _fail("unknown export '$export' (${_exports.join(' | ')})");
   }
+
   // Which server list gets compiled in. `shared.tunnel` adds the devtunnel and
   // LAN presets for testing against a machine on the desk.
   final servers = _takeOption(args, 'servers') ?? 'shared';
@@ -107,38 +232,51 @@ Future<void> main(List<String> argv) async {
         'clone has to create it before this option works');
   }
 
+  final appDirEarly = Platform.script.resolve('../app').toFilePath();
+  if (artifact != null && !Directory('$appDirEarly/${artifact.needs}').existsSync()) {
+    _fail('no app/${artifact.needs} — this project has not been scaffolded for '
+        '${artifact.platform}.\n'
+        '  enable it:  (cd app && fvm flutter create --platforms=${artifact.needs} .)\n'
+        '  then check `git status` — flutter create also drops a template\n'
+        '  lib/main.dart and test/widget_test.dart this project does not use,\n'
+        '  and rewrites the platform list in .metadata rather than adding to it.');
+  }
+
   final extra = args; // remaining args pass straight through to flutter
   final target = 'lib/brands/$brandKey/main_$brandKey.dart';
   final defines = [
     '--dart-define-from-file=env/$brandKey/$env.json',
     '--dart-define-from-file=env/$servers.json',
   ];
-  final flavor = ['--flavor', brand.flavor];
+  // Omitted where Flutter has no flavor concept — see [Artifact.flavor].
+  final flavor = (artifact?.flavor ?? true) ? ['--flavor', brand.flavor] : const <String>[];
   final exportOptions = export == 'none' ? ['--no-codesign'] : ['--export-options-plist=ios/signing/$export.plist'];
 
   final flutterArgs = <String>[
     ...switch (action) {
       'run' => ['run', ...flavor, '-t', target, ...defines],
-      'apk' => ['build', 'apk', '--release', ...flavor, '-t', target, ...defines],
-      'aab' => ['build', 'appbundle', '--release', ...flavor, '-t', target, ...defines],
-      'ipa' => ['build', 'ipa', '--release', ...flavor, '-t', target, ...defines, ...exportOptions],
-      'ios' => ['build', 'ios', '--release', '--no-codesign', ...flavor, '-t', target, ...defines],
-      'web' => [
+      'test' => ['test'],
+      'integration' => ['test', 'integration_test', ...flavor],
+      // Every artifact builds the same way; only the sub-command, the flavor
+      // rule and the iOS export options differ, and all three come from the
+      // registry rather than a case per artifact.
+      _ => [
           'build',
-          'web',
+          ...artifact!.build,
           '--release',
+          ...flavor,
           '-t',
           target,
           ...defines,
-          // Hosted at https://balsm.health/apps/balsm — asset URLs must be
-          // prefixed or flutter.js 404s under the site's locale router.
-          if (env == 'prod') '--base-href=/apps/balsm/',
-          // Local canvaskit — gstatic.com is blocked by the site CSP.
-          if (env == 'prod') '--no-web-resources-cdn',
-        ], // web: no flavor
-      'test' => ['test'],
-      'integration' => ['test', 'integration_test', ...flavor],
-      _ => const <String>[],
+          if (artifact.platform == 'ios') ...exportOptions,
+          if (artifact.platform == 'web' && env == 'prod') ...[
+            // Hosted at https://balsm.health/apps/balsm — asset URLs must be
+            // prefixed or flutter.js 404s under the site's locale router.
+            '--base-href=/apps/balsm/',
+            // Local canvaskit — gstatic.com is blocked by the site CSP.
+            '--no-web-resources-cdn',
+          ],
+        ],
     },
     ...extra,
   ];
@@ -157,7 +295,7 @@ Future<void> main(List<String> argv) async {
     runInShell: true,
   );
   final code = await proc.exitCode;
-  if (code == 0) _collect(action, brandKey, env, appDir);
+  if (code == 0) _collect(artifact!, brandKey, env, appDir);
   exit(code);
 }
 
@@ -169,45 +307,55 @@ String? _takeOption(List<String> args, String name) {
   return args.removeAt(i).substring(name.length + 3);
 }
 
-/// Copies the artifact this action produced to
-/// `output/<brand>/<platform>/<brand>-<version>-<env>.<ext>`.
+/// Copies what was just built to
+/// `output/<brand>/<platform>/<brand>-<version>-<env>[.<ext>]`.
 ///
 /// A copy, not a move: `flutter build` prints the path under `build/`, and
-/// tooling that expects it there (an Xcode Organizer upload, a CI step that
-/// was written against the default layout) keeps working.
+/// tooling that expects it there (an Xcode Organizer upload, a CI step written
+/// against the default layout) keeps working.
 ///
 /// Collection failing never fails the build — the artifact exists either way,
-/// and turning a good build into a red one over a file copy would be worse
-/// than a warning.
-void _collect(String action, String brand, String env, String appDir) {
+/// and turning a good build red over a file copy would be worse than a warning.
+void _collect(Artifact artifact, String brand, String env, String appDir) {
   final root = Directory.fromUri(Platform.script.resolve('..'));
   final version = _appVersion(appDir);
+  final stem = '$brand-$version-$env';
+  final outDir = Directory('${root.path}/output/$brand/${artifact.platform}');
+  final src = Directory('$appDir/${artifact.dir}');
 
-  if (action == 'web') {
-    final src = Directory('$appDir/build/web');
-    if (!src.existsSync()) return;
-    // A directory, not an archive: the web build is deployed by serving these
-    // files, so zipping it would only mean unzipping it again.
-    final dest = Directory('${root.path}/output/$brand/web/$brand-$version-$env');
+  // ext == null: the artifact IS this directory (web output, a desktop
+  // bundle). Collected whole, under a versioned folder name — the web build is
+  // deployed by serving these files and a desktop bundle is run in place, so
+  // archiving either would only mean unarchiving it again.
+  if (artifact.ext == null) {
+    if (!src.existsSync()) {
+      stderr.writeln('build: warning — built ok but ${artifact.dir} is missing');
+      return;
+    }
+    final dest = Directory('${outDir.path}/$stem');
     if (dest.existsSync()) dest.deleteSync(recursive: true);
     _copyDir(src, dest);
     stderr.writeln('build: collected → ${_rel(dest.path, root.path)}');
     return;
   }
 
-  final spec = _artifacts[action];
-  if (spec == null) return; // run/test/integration/ios produce nothing to collect
-
-  final found = _newestWithExtension(Directory('$appDir/${spec.dir}'), spec.ext);
+  final found = _newestWithExtension(src, artifact.ext!);
   if (found == null) {
-    stderr.writeln('build: warning — built ok but no .${spec.ext} found under ${spec.dir}');
+    stderr.writeln('build: warning — built ok but no .${artifact.ext} found under ${artifact.dir}');
     return;
   }
 
-  final dest = File('${root.path}/output/$brand/${spec.platform}/$brand-$version-$env.${spec.ext}');
-  dest.parent.createSync(recursive: true);
-  found.copySync(dest.path);
-  stderr.writeln('build: collected → ${_rel(dest.path, root.path)}');
+  final dest = '${outDir.path}/$stem.${artifact.ext}';
+  outDir.createSync(recursive: true);
+  // A macOS .app carries the right extension but is a directory.
+  if (found is Directory) {
+    final d = Directory(dest);
+    if (d.existsSync()) d.deleteSync(recursive: true);
+    _copyDir(found, d);
+  } else {
+    (found as File).copySync(dest);
+  }
+  stderr.writeln('build: collected → ${_rel(dest, root.path)}');
 }
 
 /// The `version:` line from app/pubspec.yaml, e.g. `0.1.0+1`.
@@ -222,26 +370,55 @@ String _appVersion(String appDir) {
   return line?.group(1) ?? 'unknown';
 }
 
-/// Newest file with [ext] anywhere under [dir]. Recursive because Flutter nests
-/// the app bundle one level deeper (`bundle/<flavor>Release/`) than the APK.
-File? _newestWithExtension(Directory dir, String ext) {
+/// Newest entity named `*.[ext]` anywhere under [dir].
+///
+/// Recursive because Flutter nests the app bundle one level deeper
+/// (`bundle/<flavor>Release/`) than the APK. Returns an entity rather than a
+/// File because a macOS `.app` is a directory.
+FileSystemEntity? _newestWithExtension(Directory dir, String ext) {
   if (!dir.existsSync()) return null;
-  final files = dir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.$ext')).toList();
-  if (files.isEmpty) return null;
-  files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
-  return files.first;
+  final hits = dir.listSync(recursive: true, followLinks: false).where((e) => e.path.endsWith('.$ext')).toList();
+  if (hits.isEmpty) return null;
+  hits.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+  return hits.first;
 }
 
+/// Recursively copies [src] to [dest], preserving symlinks.
+///
+/// On macOS this shells out to `ditto`, which is the only thing that gets a
+/// `.app` right: a bundle is full of symlinks (84 in this app's) plus the
+/// extended attributes codesign reads. Copying it entry-by-entry flattens the
+/// links — measured at 80MB becoming 239MB — and invalidates the signature, so
+/// the collected bundle refuses to launch.
+///
+/// Elsewhere (web output, a Linux/Windows bundle) a plain recursive copy is
+/// enough, but it still walks with `followLinks: false` and recreates links as
+/// links, for the same reason in miniature.
 void _copyDir(Directory src, Directory dest) {
+  if (Platform.isMacOS) {
+    dest.parent.createSync(recursive: true);
+    final res = Process.runSync('ditto', [src.path, dest.path]);
+    if (res.exitCode == 0) return;
+    stderr.writeln('build: ditto failed, falling back to a plain copy\n${res.stderr}');
+  }
+  _copyDirDart(src, dest);
+}
+
+void _copyDirDart(Directory src, Directory dest) {
   dest.createSync(recursive: true);
-  for (final entity in src.listSync(recursive: true)) {
-    final suffix = entity.path.substring(src.path.length);
-    if (entity is Directory) {
-      Directory('${dest.path}$suffix').createSync(recursive: true);
+  // followLinks: false — otherwise a symlinked directory is walked into and
+  // copied as real files, which is the bug this whole function exists to avoid.
+  for (final entity in src.listSync(followLinks: false)) {
+    final name = entity.path.substring(src.path.length + 1);
+    final target = '${dest.path}/$name';
+    // Link first: with followLinks off, a link to a directory is a Link, but
+    // ordering this last would still be a trap worth not setting.
+    if (entity is Link) {
+      Link(target).createSync(entity.targetSync(), recursive: true);
+    } else if (entity is Directory) {
+      _copyDirDart(entity, Directory(target));
     } else if (entity is File) {
-      final out = File('${dest.path}$suffix');
-      out.parent.createSync(recursive: true);
-      entity.copySync(out.path);
+      entity.copySync(target);
     }
   }
 }
@@ -298,87 +475,142 @@ Future<void> _codegen(List<String> extra) async {
   stderr.writeln('build: codegen complete (${targets.length} packages)');
 }
 
-/// Installs the collected `.ipa` on a connected iPhone via `xcrun devicectl`.
+/// A device this machine can install onto.
+typedef Device = ({String id, String name, String platform});
+
+/// Installs a collected artifact onto a connected device.
 ///
-/// Installs the artifact a previous build left in `output/`, rather than
-/// building one: the common loop is build once, install onto several devices,
-/// and rebuilding each time would cost minutes for nothing. The VS Code task
-/// that wants both chains this after the build task.
+/// Installs what a previous build left in `output/`, rather than building: the
+/// common loop is build once and install onto several devices, and rebuilding
+/// each time would cost minutes for nothing. The VS Code task that wants both
+/// chains this after a build task.
 ///
-/// Requires macOS with Xcode 15+ (devicectl), a device already paired and
-/// trusted with this Mac, and — for an ad-hoc build — that device's UDID inside
-/// the provisioning profile the ipa was signed with. None of that is something
-/// this script can arrange, so each failure says which one it is.
+/// Picks the device when there is exactly one, and asks when there are
+/// several — a static VS Code picker cannot enumerate what is plugged in right
+/// now, so the choice has to happen here.
 Future<void> _install(String brand, String env, List<String> args) async {
-  if (!Platform.isMacOS) {
-    _fail('install: macOS only — devicectl ships with Xcode');
+  final wanted = _takeOption(args, 'artifact') ?? 'ipa';
+  if (!_installable.contains(wanted)) {
+    _fail("install: cannot push '$wanted' to a device (${_installable.join(' | ')})");
   }
 
+  final artifact = _artifacts[wanted]!;
   final root = Directory.fromUri(Platform.script.resolve('..'));
   final appDir = Platform.script.resolve('../app').toFilePath();
   final version = _appVersion(appDir);
-  final ipa = File('${root.path}/output/$brand/ios/$brand-$version-$env.ipa');
+  final file = File('${root.path}/output/$brand/${artifact.platform}/$brand-$version-$env.${artifact.ext}');
 
-  if (!ipa.existsSync()) {
-    _fail('install: no ${_rel(ipa.path, root.path)}\n'
-        "  build it first:  dart run tool/build.dart ipa $brand $env --export=adhoc");
+  if (!file.existsSync()) {
+    _fail('install: no ${_rel(file.path, root.path)}\n'
+        '  build it first:  dart run tool/build.dart $wanted $brand $env');
   }
 
-  final device = _takeOption(args, 'device') ?? await _soleConnectediPhone();
+  final explicit = _takeOption(args, 'device');
+  final device = explicit != null
+      ? (id: explicit, name: explicit, platform: artifact.platform)
+      : await _pickDevice(artifact.platform);
 
-  stderr.writeln('\$ xcrun devicectl device install app --device $device ${_rel(ipa.path, root.path)}');
-  final proc = await Process.start(
-    'xcrun',
-    ['devicectl', 'device', 'install', 'app', '--device', device, ipa.path],
-    mode: ProcessStartMode.inheritStdio,
-  );
+  stderr.writeln('install: ${device.name} ← ${_rel(file.path, root.path)}');
+
+  final cmd = switch (artifact.platform) {
+    'ios' => ('xcrun', ['devicectl', 'device', 'install', 'app', '--device', device.id, file.path]),
+    // -r reinstalls over an existing copy instead of failing on a signature or
+    // version clash, which is what iterating on a debug build always hits.
+    'android' => ('adb', ['-s', device.id, 'install', '-r', file.path]),
+    _ => _fail('install: no installer for ${artifact.platform}'),
+  };
+
+  final proc = await Process.start(cmd.$1, cmd.$2, mode: ProcessStartMode.inheritStdio);
   final code = await proc.exitCode;
   if (code != 0) {
-    // Listed, not asserted: devicectl's own error above says which one it is,
+    // Listed, not asserted: the tool's own error above says which one it is,
     // and claiming a single cause here would be wrong more often than right.
     stderr.writeln('install: failed. Usual causes:\n'
-        '  - the device is locked, unpaired, or not trusted by this Mac\n'
-        "  - the device's UDID is not in the provisioning profile the ipa was\n"
-        '    signed with; an ad-hoc build only installs on devices in its profile\n'
-        '  - a build signed for the App Store, which never installs directly');
+        '  - the device is locked, unpaired, or not trusted by this machine\n'
+        "  - (iOS) the device's UDID is not in the provisioning profile the ipa\n"
+        '    was signed with; an ad-hoc build only installs on devices in it\n'
+        '  - (iOS) a build signed for the App Store, which never installs directly\n'
+        '  - (Android) a different signing key than the installed copy — uninstall first');
   }
   exit(code);
 }
 
-/// The one connected iPhone, or a failure explaining what to do instead.
+/// The connected device for [platform]: the only one, or whichever the user
+/// picks from a numbered list.
+Future<Device> _pickDevice(String platform) async {
+  final devices = platform == 'ios' ? await _iosDevices() : await _androidDevices();
+
+  if (devices.isEmpty) {
+    _fail('install: no connected ${platform == 'ios' ? 'iPhone' : 'Android device'}.\n'
+        '  Plug it in (or have it on the same network), unlock it, and make sure\n'
+        '  it is paired and trusted with this machine.');
+  }
+  if (devices.length == 1) return devices.single;
+
+  stderr.writeln('install: several devices connected —');
+  for (var i = 0; i < devices.length; i++) {
+    stderr.writeln('  [${i + 1}] ${devices[i].name}  (${devices[i].id})');
+  }
+  stderr.write('  choose [1-${devices.length}]: ');
+
+  final answer = stdin.readLineSync()?.trim();
+  final choice = int.tryParse(answer ?? '');
+  if (choice == null || choice < 1 || choice > devices.length) {
+    _fail("install: '$answer' is not one of 1-${devices.length}. "
+        'Non-interactively, pass --device=<id>.');
+  }
+  return devices[choice - 1];
+}
+
+/// Connected iPhones, via devicectl.
 ///
 /// JSON rather than parsing the table `devicectl list devices` prints: the
 /// table is for humans and its columns shift with device name length.
-Future<String> _soleConnectediPhone() async {
-  final tmp = File('${Directory.systemTemp.path}/balsm-devicectl-${pid}.json');
+Future<List<Device>> _iosDevices() async {
+  if (!Platform.isMacOS) _fail('install: iOS install is macOS only — devicectl ships with Xcode');
+
+  final tmp = File('${Directory.systemTemp.path}/balsm-devicectl-$pid.json');
   try {
     final res = await Process.run('xcrun', ['devicectl', 'list', 'devices', '--json-output', tmp.path]);
     if (res.exitCode != 0 || !tmp.existsSync()) {
       _fail('install: could not list devices — is Xcode 15+ installed?\n${res.stderr}');
     }
-
     final parsed = jsonDecode(tmp.readAsStringSync()) as Map<String, dynamic>;
-    final devices = ((parsed['result'] as Map<String, dynamic>?)?['devices'] as List? ?? const [])
+    return ((parsed['result'] as Map<String, dynamic>?)?['devices'] as List? ?? const [])
         .cast<Map<String, dynamic>>()
         .where((d) => (d['hardwareProperties'] as Map?)?['platform'] == 'iOS')
         .where((d) => (d['connectionProperties'] as Map?)?['tunnelState'] == 'connected')
+        .map((d) => (
+              id: d['identifier'] as String,
+              name: (d['deviceProperties'] as Map?)?['name'] as String? ?? 'iPhone',
+              platform: 'ios',
+            ))
         .toList();
-
-    if (devices.isEmpty) {
-      _fail('install: no connected iPhone.\n'
-          '  Plug it in (or have it on the same network), unlock it, and make\n'
-          '  sure it is paired and trusted with this Mac.');
-    }
-    if (devices.length > 1) {
-      final list =
-          devices.map((d) => '    ${d['identifier']}  ${(d['deviceProperties'] as Map?)?['name'] ?? '?'}').join('\n');
-      _fail('install: more than one connected iPhone — pick one with --device=<udid>\n$list');
-    }
-
-    final only = devices.single;
-    stderr.writeln("install: ${(only['deviceProperties'] as Map?)?['name'] ?? 'iPhone'}");
-    return only['identifier'] as String;
   } finally {
     if (tmp.existsSync()) tmp.deleteSync();
   }
+}
+
+/// Connected Android devices, via `adb devices -l`.
+///
+/// Only rows marked `device` count: `unauthorized` means the trust prompt has
+/// not been accepted and `offline` means adb can see it but cannot talk to it,
+/// and installing onto either fails with a worse message than this one.
+Future<List<Device>> _androidDevices() async {
+  final res = await Process.run('adb', ['devices', '-l']);
+  if (res.exitCode != 0) {
+    _fail('install: adb failed — is the Android SDK platform-tools on PATH?\n${res.stderr}');
+  }
+  final devices = <Device>[];
+  for (final line in const LineSplitter().convert(res.stdout as String).skip(1)) {
+    final parts = line.trim().split(RegExp(r'\s+'));
+    if (parts.length < 2 || parts[1] != 'device') continue;
+    final model = parts.firstWhere((p) => p.startsWith('model:'), orElse: () => '');
+    devices.add((
+      id: parts[0],
+      name: model.isEmpty ? parts[0] : model.substring('model:'.length).replaceAll('_', ' '),
+      platform: 'android',
+    ));
+  }
+  return devices;
 }
