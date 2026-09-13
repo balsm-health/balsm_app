@@ -38,4 +38,30 @@ void main() {
     expect(q.containsKey('radius_km'), isFalse);
     expect(q.containsKey('q'), isFalse); // blank query dropped
   });
+
+  test('packs sends lang and parses basemap/places pair', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": [{'
+        '"id":"cairo","name":"Cairo","bounds":[31.21,29.75,31.91,30.32],'
+        '"basemap":{"version":"20260913","size_bytes":27145146,'
+        '"sha256":"0372f6996c9435ff7e98d774aa11bb22cc33dd44ee55ff66007788990011aabb",'
+        '"url":"https://cdn.balsm.health/packs/cairo-20260913.pmtiles","count":null},'
+        '"places":{"version":"20260914","size_bytes":1051648,'
+        '"sha256":"0372f6996c9435ff7e98d774aa11bb22cc33dd44ee55ff66007788990011aabb",'
+        '"url":"https://cdn.balsm.health/places/cairo-20260914.ndjson.gz","count":10920}'
+        '}]}'));
+    final api = DioCareDirectoryApi(net: fakeNet(adapter));
+
+    final res = await api.packs(const MapPacksQuery(lang: 'ar'));
+
+    final req = adapter.requests.single;
+    expect(req.path, '/care/packs');
+    expect(req.queryParameters['lang'], 'ar');
+    final pack = res.single;
+    expect(pack.id, 'cairo');
+    expect(pack.name, 'Cairo');
+    expect(pack.bounds, [31.21, 29.75, 31.91, 30.32]);
+    expect(pack.basemap.version, '20260913');
+    expect(pack.basemap.count, isNull);
+    expect(pack.places.count, 10920);
+  });
 }

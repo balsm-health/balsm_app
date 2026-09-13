@@ -18,4 +18,8 @@ abstract class CareDirectoryApi {
   /// viewer's position and only affect the returned distance. Null when the id
   /// is unknown (the server answers 404).
   Future<CareEntityResponse?> byId(String id, {double? lat, double? lng, CancelToken? cancelToken});
+
+  /// GET /care/packs — offline map packs catalogue (basemap + places per
+  /// governorate), NON-PHI. `name` comes back in [query].lang.
+  Future<List<MapPackResponse>> packs(MapPacksQuery query, {CancelToken? cancelToken});
 }

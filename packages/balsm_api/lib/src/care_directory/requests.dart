@@ -68,3 +68,15 @@ class CarePinsQuery {
         if (limit != null) 'limit': limit,
       };
 }
+
+/// Query for `GET /care/packs` — which language `MapPackResponse.name`
+/// comes back in.
+class MapPacksQuery {
+  const MapPacksQuery({required this.lang});
+
+  /// "en" or "ar". The server defaults to "en" for anything else, but the
+  /// app always sends its current display language explicitly.
+  final String lang;
+
+  Map<String, dynamic> toQueryParameters() => {'lang': lang};
+}

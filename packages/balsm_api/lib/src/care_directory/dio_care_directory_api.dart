@@ -56,4 +56,16 @@ class DioCareDirectoryApi implements CareDirectoryApi {
       rethrow;
     }
   }
+
+  @override
+  Future<List<MapPackResponse>> packs(MapPacksQuery query, {CancelToken? cancelToken}) async {
+    final res = await _net.get(
+      ApiRoutes.care_packs,
+      queryParameters: query.toQueryParameters(),
+      cancelToken: cancelToken,
+    );
+    return unwrapEnvelopeList(res)
+        .map((e) => MapPackResponse.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
 }

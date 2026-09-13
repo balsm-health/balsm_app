@@ -72,6 +72,9 @@ class ApiRoutes {
   /// One place by id — what a tapped pin fetches, since pins carry no details.
   static String careEntity(String id) => '$care_entities/$id';
 
+  /// Offline map packs catalogue (basemap + places per governorate).
+  static const care_packs = '$_care/packs';
+
   // ── Platform ──────────────────────────────────────────────────────────────
   /// Host readiness probe. Anonymous, and the only endpoint safe to call
   /// against a server the app is not signed in to — which is what the Dev

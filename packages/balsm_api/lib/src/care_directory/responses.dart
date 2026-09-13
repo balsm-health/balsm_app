@@ -78,3 +78,62 @@ class CarePinResponse {
         lng: (json['lng'] as num).toDouble(),
       );
 }
+
+/// One downloadable artifact (basemap or places) from `GET /care/packs`.
+/// Versioned independently of its sibling — refreshing places never
+/// invalidates a basemap already on disk.
+class MapPackArtifactResponse {
+  const MapPackArtifactResponse({
+    required this.version,
+    required this.sizeBytes,
+    required this.sha256,
+    required this.url,
+    this.count,
+  });
+
+  /// YYYYMMDD.
+  final String version;
+  final int sizeBytes;
+  final String sha256;
+  final String url;
+
+  /// Places only — null for a basemap.
+  final int? count;
+
+  factory MapPackArtifactResponse.fromJson(Map<String, dynamic> json) => MapPackArtifactResponse(
+        version: json['version'] as String,
+        sizeBytes: (json['size_bytes'] as num).toInt(),
+        sha256: json['sha256'] as String,
+        url: json['url'] as String,
+        count: (json['count'] as num?)?.toInt(),
+      );
+}
+
+/// One governorate's offline pack from `GET /care/packs`. `name` comes back
+/// in whatever language the request's `lang` asked for.
+class MapPackResponse {
+  const MapPackResponse({
+    required this.id,
+    required this.name,
+    required this.bounds,
+    required this.basemap,
+    required this.places,
+  });
+
+  /// Stable governorate slug ("cairo").
+  final String id;
+  final String name;
+
+  /// [west, south, east, north].
+  final List<double> bounds;
+  final MapPackArtifactResponse basemap;
+  final MapPackArtifactResponse places;
+
+  factory MapPackResponse.fromJson(Map<String, dynamic> json) => MapPackResponse(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        bounds: (json['bounds'] as List).map((e) => (e as num).toDouble()).toList(growable: false),
+        basemap: MapPackArtifactResponse.fromJson(json['basemap'] as Map<String, dynamic>),
+        places: MapPackArtifactResponse.fromJson(json['places'] as Map<String, dynamic>),
+      );
+}
