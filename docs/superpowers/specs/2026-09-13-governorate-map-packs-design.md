@@ -197,6 +197,50 @@ split exists to avoid.
 `places.count` is shown before download so the size means something, and
 `places.version` is what the UI displays as "places as of …".
 
+### Where the manifest comes from
+
+A table, written by the nightly job; `GET /care/packs` is a plain query against
+it. Not a committed artifact, and not read from R2 on the request path.
+
+A committed artifact was the original design and worked while packs rebuilt
+monthly. Nightly places builds break it: the version and checksum change every
+night, so serving a committed file would mean a commit and an API redeploy
+every night, and the pull-request gate it bought would become 365
+rubber-stamps a year.
+
+Reading the manifest from R2 per request was the obvious alternative and is
+worse. It puts R2 on the user's request path, so a failed read breaks
+`/care/packs`, and a cached copy can advertise a version that does not match
+what is actually on the CDN.
+
+A table avoids both, and gains a property neither has: **a row is written only
+after its upload succeeds**, in the same job, so the manifest cannot describe
+a file that is not there.
+
+```
+nightly job (inside the API, background)
+  ├─ export places per governorate → gzip → upload to R2
+  ├─ on success, upsert that governorate's places row
+  └─ list basemaps in the bucket, upsert those rows
+
+GET /care/packs → query. No network, no cache-coherence problem, no fallback.
+```
+
+Basemaps are built by CI rather than the API, so the job discovers them by
+listing the bucket. That read still happens — but in a background job where
+failure is retryable and invisible, never on a request.
+
+This deletes `data/map-packs/manifest.json` and `MapPackCatalogue`. The
+`[OutputCache]` on the endpoint stays and matters more, now that it is backed
+by a query rather than a file read.
+
+**The lost review gate is deliberate.** Reviewing a nightly checksum diff is
+theatre. The real safety property is that versioned filenames mean a new set
+cannot disturb an installed one. What replaces it is a guard in the job: a
+governorate whose place count falls sharply between nights is what a truncated
+export looks like, so the job refuses to publish a snapshot that lost more
+than a set fraction of its places and leaves the previous row standing.
+
 The API does not proxy artifact bytes. Hundreds of megabytes through the app
 servers would compete with the request budget of every other endpoint, and
 resumable range requests are something a CDN already does correctly. The
@@ -238,7 +282,9 @@ over cellular asks first.
 
 - Pipeline: a governorate extract contains only tiles intersecting its
   boundary; the manifest's SHA-256 matches the bytes on the CDN.
-- Nightly export: every place falls in exactly one governorate (verified
+- Nightly export: a snapshot that lost a large fraction of its places is
+  refused and the previous row survives; a row is never written when its
+  upload failed; every place falls in exactly one governorate (verified
   against the seed data — all 38,395 matched one, none orphaned, none
   double-counted); a provider row created after the last export appears in the
   next one; `count` matches the rows written.
@@ -274,3 +320,8 @@ over cellular asks first.
 - **The nightly job writes to R2 from the API host**, which means R2
   credentials in the API's configuration — a second place that holds them
   besides CI. Scope that token to object writes on the one bucket, as CI's is.
+- **The nightly job is now the only thing standing between a bad export and
+  every user.** With the review gate gone, its guards are the safety net: it
+  publishes only after a successful upload, and refuses a snapshot that lost a
+  large fraction of its places. Those two checks deserve tests of their own
+  rather than being incidental.
