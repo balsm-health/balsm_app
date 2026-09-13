@@ -15,6 +15,10 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/shell.dart';
 import 'package:app/balsm_app/vault/bind_file_store.dart';
+import 'package:app/balsm_app/care/map_packs/drift_map_pack_download_store.dart';
+import 'package:app/balsm_app/care/map_packs/map_pack_download_controller.dart' show mapPackSupportDirProvider;
+import 'package:app/balsm_app/care/map_packs/map_pack_download_store.dart' show mapPackDownloadStoreProvider;
+import 'package:path_provider/path_provider.dart';
 
 /// In-session holder for the signed-in user id. `currentUserIdProvider` reads
 /// this, so an in-session sign-in / sign-out is reflected immediately (the
@@ -51,6 +55,8 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
 
   // On-device encrypted PHI database (opened once, injected as a value).
   final db = await AppDatabase.open();
+  // Map-pack downloads live here — see map_pack_download_controller.dart.
+  final mapPacksDir = await getApplicationSupportDirectory();
   // Current authenticated user id (opaque, non-PHI), if signed in. Read from
   // the platform secure store before the container is built.
   const secureStorage = FlutterSecureStorage();
@@ -95,6 +101,9 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     // Cached server read models (account summary, deny list, care directory).
     // Shares the encrypted database but its own table — see `_cacheSchema`.
     cacheStoreProvider.overrideWithValue(DriftCacheStore(db)),
+    // Map-pack download state — its own two tables, see `_mapPacksSchema`.
+    mapPackDownloadStoreProvider.overrideWithValue(DriftMapPackDownloadStore(db)),
+    mapPackSupportDirProvider.overrideWithValue(mapPacksDir),
     // Reactive: reads the in-session holder (seeded from storage below), so
     // sign-in/out updates every PHI reader without an app restart.
     currentUserIdProvider.overrideWith((ref) => ref.watch(_sessionUserIdProvider)),

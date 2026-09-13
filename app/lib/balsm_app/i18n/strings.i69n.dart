@@ -27,6 +27,7 @@ class Strings implements i69n.I69nMessageBundle {
   RecordsStrings get records => RecordsStrings(this);
   SettingsStrings get settings => SettingsStrings(this);
   StorageStrings get storage => StorageStrings(this);
+  MapPacksStrings get map_packs => MapPacksStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -69,6 +70,8 @@ class Strings implements i69n.I69nMessageBundle {
         return settings;
       case 'storage':
         return storage;
+      case 'map_packs':
+        return map_packs;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -2254,6 +2257,57 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_remove_help;
       case 'store_remove_cta':
         return store_remove_cta;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class MapPacksStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const MapPacksStrings(this._parent);
+  String get title => "Offline maps";
+  String get subtitle => "Download a governorate to use the map and nearby places without a connection.";
+  String get not_downloaded => "Not downloaded";
+  String get downloaded => "Downloaded";
+  String get update_available => "Update available";
+  String get failed => "Download failed";
+  String get download => "Download";
+  String get update => "Update";
+  String get retry => "Retry";
+  String get delete => "Delete";
+  String get cancel => "Cancel";
+  String get offline_notice => "Couldn't check for updates — showing what's already downloaded.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'not_downloaded':
+        return not_downloaded;
+      case 'downloaded':
+        return downloaded;
+      case 'update_available':
+        return update_available;
+      case 'failed':
+        return failed;
+      case 'download':
+        return download;
+      case 'update':
+        return update;
+      case 'retry':
+        return retry;
+      case 'delete':
+        return delete;
+      case 'cancel':
+        return cancel;
+      case 'offline_notice':
+        return offline_notice;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

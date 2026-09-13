@@ -670,5 +670,19 @@
     "store_remove_help(String target)": "Your data will be removed from $target and kept on this device only.",
     "store_remove_cta": "Remove cloud backup"
   },
+  "map_packs": {
+    "title": "Offline maps",
+    "subtitle": "Download a governorate to use the map and nearby places without a connection.",
+    "not_downloaded": "Not downloaded",
+    "downloaded": "Downloaded",
+    "update_available": "Update available",
+    "failed": "Download failed",
+    "download": "Download",
+    "update": "Update",
+    "retry": "Retry",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "offline_notice": "Couldn't check for updates — showing what's already downloaded."
+  },
   "_i69n_import": "package:core/core.dart"
 }

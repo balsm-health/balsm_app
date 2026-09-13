@@ -15,6 +15,7 @@ import '../care/care_entity.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import 'map_packs_sheet.dart';
 
 /// Nearby health entities (map.jsx `MapScreen`): a stylized Cairo map with
 /// entity pins, a searchable/filterable list, and a per-entity detail card.
@@ -356,6 +357,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         bottom: _selectedId != null ? 220 : 20,
         end: 14,
         child: RoundBtn(icon: LucideIcons.locateFixed, bg: Colors.white, fg: s.accent.main, onTap: _recenter),
+      ),
+      // Offline map packs — download a governorate's basemap + places for
+      // use without a connection. Stacked above recenter, same horizontal
+      // rail, so the two never collide as the selected-card offset shifts
+      // recenter up.
+      PositionedDirectional(
+        bottom: (_selectedId != null ? 220 : 20) + 56,
+        end: 14,
+        child:
+            RoundBtn(icon: LucideIcons.download, bg: Colors.white, fg: T.fg2, onTap: () => showMapPacksSheet(context)),
       ),
       if (_selectedId != null) _selectedCard(s),
     ]);

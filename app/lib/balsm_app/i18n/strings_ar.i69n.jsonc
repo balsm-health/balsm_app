@@ -670,5 +670,19 @@
     "store_remove_help(String target)": "ستُحذف بياناتك من $target وتبقى على جهازك فقط.",
     "store_remove_cta": "إيقاف النسخ الاحتياطي"
   },
+  "map_packs": {
+    "title": "الخرائط دون اتصال",
+    "subtitle": "نزّل محافظة لاستخدام الخريطة والأماكن القريبة بدون اتصال بالإنترنت.",
+    "not_downloaded": "غير مُنزّلة",
+    "downloaded": "تم التنزيل",
+    "update_available": "يتوفر تحديث",
+    "failed": "فشل التنزيل",
+    "download": "تنزيل",
+    "update": "تحديث",
+    "retry": "إعادة المحاولة",
+    "delete": "حذف",
+    "cancel": "إلغاء",
+    "offline_notice": "تعذّر التحقق من وجود تحديثات — يظهر ما تم تنزيله بالفعل."
+  },
   "_i69n_import": "package:core/core.dart"
 }

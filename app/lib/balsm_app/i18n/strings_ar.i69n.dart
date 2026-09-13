@@ -30,6 +30,7 @@ class Strings_ar extends Strings {
   RecordsStrings_ar get records => RecordsStrings_ar(this);
   SettingsStrings_ar get settings => SettingsStrings_ar(this);
   StorageStrings_ar get storage => StorageStrings_ar(this);
+  MapPacksStrings_ar get map_packs => MapPacksStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -72,6 +73,8 @@ class Strings_ar extends Strings {
         return settings;
       case 'storage':
         return storage;
+      case 'map_packs':
+        return map_packs;
       default:
         return super[key];
     }
@@ -2251,6 +2254,57 @@ class StorageStrings_ar extends StorageStrings {
         return store_remove_help;
       case 'store_remove_cta':
         return store_remove_cta;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class MapPacksStrings_ar extends MapPacksStrings {
+  final Strings_ar _parent;
+  const MapPacksStrings_ar(this._parent) : super(_parent);
+  String get title => "الخرائط دون اتصال";
+  String get subtitle => "نزّل محافظة لاستخدام الخريطة والأماكن القريبة بدون اتصال بالإنترنت.";
+  String get not_downloaded => "غير مُنزّلة";
+  String get downloaded => "تم التنزيل";
+  String get update_available => "يتوفر تحديث";
+  String get failed => "فشل التنزيل";
+  String get download => "تنزيل";
+  String get update => "تحديث";
+  String get retry => "إعادة المحاولة";
+  String get delete => "حذف";
+  String get cancel => "إلغاء";
+  String get offline_notice => "تعذّر التحقق من وجود تحديثات — يظهر ما تم تنزيله بالفعل.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'not_downloaded':
+        return not_downloaded;
+      case 'downloaded':
+        return downloaded;
+      case 'update_available':
+        return update_available;
+      case 'failed':
+        return failed;
+      case 'download':
+        return download;
+      case 'update':
+        return update;
+      case 'retry':
+        return retry;
+      case 'delete':
+        return delete;
+      case 'cancel':
+        return cancel;
+      case 'offline_notice':
+        return offline_notice;
       default:
         return super[key];
     }
