@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../_tokens.dart';
 
 // Note: lucide_icons package added in T035al to core/pubspec.yaml.
-// Import via: import 'package:lucide_icons/lucide_icons.dart';
+// Import via: import 'package:lucide_icons_flutter/lucide_icons.dart';
 // For now re-exporting Material icons as a standardization layer;
 // individual screens import LucideIcons directly where fine-grained
 // icon choice is needed.

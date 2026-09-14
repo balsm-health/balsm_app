@@ -45,7 +45,7 @@ dependencies:
   go_router: ^14.0.0
   app_links: ^6.3.0
   url_strategy: ^0.3.0
-  lucide_icons: ^0.257.0
+  lucide_icons_flutter: ^3.1.19
   # Typed i18n codegen (same fork as core) — app-shell strings live in
   # balsm_app/i18n/*.i69n.json, generated via build_runner.
   i69n:

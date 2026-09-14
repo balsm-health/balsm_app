@@ -2,7 +2,7 @@ import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 Future<void> _pump(WidgetTester tester, {required bool active, VoidCallback? onTap}) => tester.pumpWidget(MaterialApp(
       home: Directionality(

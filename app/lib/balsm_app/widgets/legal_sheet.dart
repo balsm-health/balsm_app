@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart' show countryRegistryProvider;
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:disclosure/disclosure.dart' show disclosureStrings, disclosureMessagesOf;
 import '../app_state.dart';
 import '../kit.dart';

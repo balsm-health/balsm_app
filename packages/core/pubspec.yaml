@@ -51,7 +51,7 @@ dependencies:
   googleapis: ^13.2.0
   googleapis_auth: ^1.6.0
   cryptography: ^2.7.0
-  lucide_icons: ^0.257.0
+  lucide_icons_flutter: ^3.1.19
   # Typed i18n + remote runtime translation. Fork adds the `remote-source`
   # runtime (`i69n.load`/`tr`) — remote value → compiled default → key.
   i69n:

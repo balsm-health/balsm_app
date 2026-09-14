@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:core/core.dart' show accountSummaryProvider, showBalsmDatePicker;
 import '../app_state.dart';
 import '../kit.dart';

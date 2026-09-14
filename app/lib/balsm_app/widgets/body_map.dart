@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:core/core.dart' show Gender;
 import 'package:self_report/self_report.dart' show BodyRegion, BodyTissue, BodyView, PainSite, selfReportMessagesOf;
 import '../app_state.dart';
