@@ -23,6 +23,17 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   }
 
   @override
+  Future<ActiveQrResponse?> active({CancelToken? cancelToken}) async {
+    final res = await _net.get(
+      ApiRoutes.emergency_qr_active,
+      cancelToken: cancelToken,
+    );
+    // `data` is null when the user has no active token — not an error.
+    final data = unwrapNullableEnvelope(res);
+    return data == null ? null : ActiveQrResponse.fromJson(data);
+  }
+
+  @override
   Future<ResolveQrResponse> resolve(String tokenId, {CancelToken? cancelToken}) async {
     final res = await _net.get(
       ApiRoutes.emergencyQrResolve(tokenId),
@@ -32,10 +43,19 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   }
 
   @override
-  Future<void> revoke(RevokeQrRequest request, {CancelToken? cancelToken}) async {
-    final res = await _net.post(
-      ApiRoutes.emergency_qr_revoke,
+  Future<void> updateCiphertext(String tokenId, UpdateQrCiphertextRequest request, {CancelToken? cancelToken}) async {
+    final res = await _net.put(
+      ApiRoutes.emergencyQrCiphertext(tokenId),
       data: request.toJson(),
+      cancelToken: cancelToken,
+    );
+    unwrapEnvelope(res);
+  }
+
+  @override
+  Future<void> revoke(String tokenId, {CancelToken? cancelToken}) async {
+    final res = await _net.post(
+      ApiRoutes.emergencyQrRevoke(tokenId),
       cancelToken: cancelToken,
     );
     unwrapEnvelope(res);

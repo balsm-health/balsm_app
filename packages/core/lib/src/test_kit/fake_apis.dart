@@ -170,7 +170,14 @@ class FakeEmergencyQrApi implements EmergencyQrApi {
       throw const ApiException(code: 'not_found', statusCode: 404);
 
   @override
-  Future<void> revoke(RevokeQrRequest request, {CancelToken? cancelToken}) async {}
+  Future<ActiveQrResponse?> active({CancelToken? cancelToken}) async => null;
+
+  @override
+  Future<void> updateCiphertext(String tokenId, UpdateQrCiphertextRequest request, {CancelToken? cancelToken}) async =>
+      throw const ApiException(code: 'not_implemented', statusCode: 501);
+
+  @override
+  Future<void> revoke(String tokenId, {CancelToken? cancelToken}) async {}
 }
 
 /// Account deletion is outside these flows — see [FakeEmergencyQrApi].

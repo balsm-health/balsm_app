@@ -12,6 +12,7 @@ import 'package:geofence_block/geofence_block.dart'
     show ReadDeniedCountriesRepository, deniedCountriesRepositoryProvider;
 import 'package:profile/profile.dart' show EmergencyContact, profileDataSourceProvider;
 import 'package:app/balsm_app/app_state.dart';
+import 'package:emergency_card/emergency_card.dart' show refreshPermanentQrUseCaseProvider;
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/shell.dart';
 import 'package:app/balsm_app/vault/bind_file_store.dart';
@@ -210,6 +211,14 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   // every relaunch and the app silently reverts to the default server. Must run
   // before runApp — no API request is issued before this point.
   await container.read(balsmApiControllerProvider).init();
+
+  // Permanent medical-profile QR: if one exists, silently re-sync its
+  // server-side ciphertext with the current on-device profile so a scan
+  // always shows current data. No-op when nothing changed or no permanent
+  // QR exists; failures retry on the next launch / sheet open.
+  if (containerUserId != null) {
+    unawaited(container.read(refreshPermanentQrUseCaseProvider)());
+  }
 
   // Migrate the app-shell preference group before its first read.
   final paPrefs = PatientAppPrefs(globalKV);

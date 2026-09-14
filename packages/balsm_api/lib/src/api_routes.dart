@@ -40,7 +40,9 @@ class ApiRoutes {
   // ── Emergency QR ──────────────────────────────────────────────────────────
   static const _emergency_qr = '/emergency-qr';
   static const emergency_qr_mint = '$_emergency_qr/mint';
-  static const emergency_qr_revoke = '$_emergency_qr/revoke';
+  static const emergency_qr_active = '$_emergency_qr/active';
+  static String emergencyQrRevoke(String tokenId) => '$_emergency_qr/$tokenId/revoke';
+  static String emergencyQrCiphertext(String tokenId) => '$_emergency_qr/$tokenId/ciphertext';
   static String emergencyQrResolve(String tokenId) => '$_emergency_qr/resolve/$tokenId';
 
   // ── Sessions ──────────────────────────────────────────────────────────────

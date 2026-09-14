@@ -23,9 +23,13 @@ import 'package:account/account.dart'
 import 'package:emergency_card/emergency_card.dart'
     show
         EmergencyCardSnapshot,
+        EmergencyQrToken,
+        QrTokenId,
         emergencySnapshotReaderProvider,
         mintEmergencyQrTokenUseCaseProvider,
         revokeEmergencyQrTokenUseCaseProvider,
+        permanentQrStoreProvider,
+        refreshPermanentQrUseCaseProvider,
         MintResult;
 import 'package:profile/profile.dart'
     show
@@ -85,6 +89,9 @@ const _emergencyTtlOptions = <({String key, int seconds})>[
   (key: 'emergency.eqr_ttl_6h', seconds: 21600),
   (key: 'emergency.eqr_ttl_24h', seconds: 86400),
   (key: 'emergency.eqr_ttl_7d', seconds: 604800),
+  // 0 = permanent: the QR never expires and its URL never changes; the app
+  // silently refreshes the encrypted snapshot server-side when data changes.
+  (key: 'emergency.eqr_ttl_permanent', seconds: 0),
 ];
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
@@ -1084,7 +1091,35 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   PatientAppState get s => widget.s;
   bool get ar => s.rtl;
 
-  bool get _isExpired => _mint == null || _remaining.isNegative || _remaining == Duration.zero;
+  @override
+  void initState() {
+    super.initState();
+    _restorePermanentQr();
+  }
+
+  /// A permanent QR survives sheet/app restarts: {jti, key} live in the
+  /// keystore, so the exact same QR is re-displayed here. Also kicks a silent
+  /// ciphertext refresh in case the profile changed since the last sync.
+  Future<void> _restorePermanentQr() async {
+    final record = await ref.read(permanentQrStoreProvider).read();
+    if (record == null || !mounted) return;
+    setState(() {
+      _mint = (
+        token: EmergencyQrToken(
+          jti: QrTokenId.value(record.jti),
+          expiresAt: null,
+          ttlSeconds: 0,
+        ),
+        qrUrl: record.qrUrl,
+      );
+      _ttlSeconds = 0;
+    });
+    unawaited(ref.read(refreshPermanentQrUseCaseProvider)(preferredLanguage: ar ? 'ar-EG' : 'en'));
+  }
+
+  bool get _isPermanent => _mint?.token.isPermanent ?? false;
+
+  bool get _isExpired => !_isPermanent && (_mint == null || _remaining.isNegative || _remaining == Duration.zero);
 
   @override
   void dispose() {
@@ -1109,16 +1144,18 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       _minting = true;
       _error = null;
     });
-    final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: _ttlSeconds);
+    final result = await ref
+        .read(mintEmergencyQrTokenUseCaseProvider)
+        .call(ttlSeconds: _ttlSeconds, preferredLanguage: ar ? 'ar-EG' : 'en');
     if (!mounted) return;
     result.fold(
       (m) {
         setState(() {
           _mint = m;
           _minting = false;
-          _remaining = m.token.expiresAt.difference(DateTime.now());
+          _remaining = m.token.expiresAt?.difference(DateTime.now()) ?? Duration.zero;
         });
-        _startTicker();
+        if (!m.token.isPermanent) _startTicker();
       },
       // Mint failures — incl. the age gate (FR-301b) — surface in the error
       // style below the mint affordance.
@@ -1133,12 +1170,12 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      final m = _mint;
-      if (m == null) {
+      final exp = _mint?.token.expiresAt;
+      if (exp == null) {
         _ticker?.cancel();
         return;
       }
-      setState(() => _remaining = m.token.expiresAt.difference(DateTime.now()));
+      setState(() => _remaining = exp.difference(DateTime.now()));
     });
   }
 
@@ -1177,6 +1214,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   }
 
   String get _countdownLabel {
+    if (_isPermanent) return s.strings.emergency.eqr_permanent;
     if (_isExpired) return s.strings.emergency.eqr_expired;
     final d = _remaining;
     final days = d.inDays;
@@ -1330,11 +1368,17 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             decoration: BoxDecoration(
                 color: _isExpired ? T.dangerBg : s.accent.bg, borderRadius: BorderRadius.circular(T.rPill)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(_isExpired ? LucideIcons.timerOff : LucideIcons.timer,
-                  size: 15, color: _isExpired ? T.danger : s.accent.d),
+              Icon(
+                  _isPermanent
+                      ? LucideIcons.infinity
+                      : _isExpired
+                          ? LucideIcons.timerOff
+                          : LucideIcons.timer,
+                  size: 15,
+                  color: _isExpired ? T.danger : s.accent.d),
               const SizedBox(width: 6),
               Text(
-                _isExpired ? _countdownLabel : s.strings.emergency.eqr_expires_in(_countdownLabel),
+                _isPermanent || _isExpired ? _countdownLabel : s.strings.emergency.eqr_expires_in(_countdownLabel),
                 style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: _isExpired ? T.danger : s.accent.d),
               ),
             ]),

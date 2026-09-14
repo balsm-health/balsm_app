@@ -9,7 +9,9 @@ class EmergencyQrTokenMinted extends AppEvent {
   });
 
   final QrTokenId jti;
-  final DateTime expiresAt;
+
+  /// Null for permanent tokens.
+  final DateTime? expiresAt;
 
   @override
   String get eventName => 'emergency_qr_token_minted';
@@ -17,6 +19,6 @@ class EmergencyQrTokenMinted extends AppEvent {
   @override
   Map<String, dynamic> toJson() => {
         'jti': jti.value,
-        'expiresAt': expiresAt.toUtc().toIso8601String(),
+        'expiresAt': expiresAt?.toUtc().toIso8601String(),
       };
 }

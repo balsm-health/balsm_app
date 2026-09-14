@@ -37,13 +37,16 @@ class _QrCodeDisplayScreenState extends ConsumerState<QrCodeDisplayScreen> {
   @override
   void initState() {
     super.initState();
-    _remaining = widget.token.expiresAt.difference(DateTime.now());
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        _remaining = widget.token.expiresAt.difference(DateTime.now());
+    final exp = widget.token.expiresAt;
+    _remaining = exp == null ? Duration.zero : exp.difference(DateTime.now());
+    if (exp != null) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        setState(() {
+          _remaining = exp.difference(DateTime.now());
+        });
       });
-    });
+    }
   }
 
   @override
@@ -52,9 +55,10 @@ class _QrCodeDisplayScreenState extends ConsumerState<QrCodeDisplayScreen> {
     super.dispose();
   }
 
-  bool get _isExpired => _remaining.isNegative || _remaining == Duration.zero;
+  bool get _isExpired => !widget.token.isPermanent && (_remaining.isNegative || _remaining == Duration.zero);
 
   String get _countdownLabel {
+    if (widget.token.isPermanent) return 'Permanent';
     if (_isExpired) return 'Expired';
     final d = _remaining;
     final days = d.inDays;

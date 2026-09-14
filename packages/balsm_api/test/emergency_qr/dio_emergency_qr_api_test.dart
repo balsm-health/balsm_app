@@ -6,32 +6,68 @@ import 'package:test/test.dart';
 import '../helpers/fake_http_adapter.dart';
 
 void main() {
-  test('mint posts snake_case body and parses token envelope', () async {
+  test('mint posts server-contract snake_case body and parses token envelope', () async {
     final adapter = FakeHttpAdapter((options) =>
         jsonResponse('{"data": {"token_id": "jti-1", "expires_at": "2026-07-02T10:00:00Z"}, "error": null}'));
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
 
-    final res = await api.mint(const MintQrRequest(ciphertextBase64: 'abc=', ttlSeconds: 900));
+    final res = await api.mint(
+        const MintQrRequest(ciphertextBase64: 'abc=', ttlSeconds: 900, profileEtag: 'e1', preferredLanguage: 'en'));
 
     expect(adapter.requests.single.path, '/emergency-qr/mint');
     expect(adapter.requests.single.method, 'POST');
-    expect(adapter.requests.single.data, {'ciphertext_base64': 'abc=', 'ttl_seconds': 900});
+    expect(adapter.requests.single.data,
+        {'ciphertext': 'abc=', 'profile_etag': 'e1', 'preferred_language': 'en', 'ttl_seconds': 900});
     expect(res.tokenId, 'jti-1');
     expect(res.expiresAt, DateTime.parse('2026-07-02T10:00:00Z'));
+  });
+
+  test('mint of a permanent token surfaces null expiry', () async {
+    final adapter =
+        FakeHttpAdapter((_) => jsonResponse('{"data": {"token_id": "jti-p", "expires_at": null}, "error": null}'));
+    final api = DioEmergencyQrApi(net: fakeNet(adapter));
+
+    final res = await api
+        .mint(const MintQrRequest(ciphertextBase64: 'abc=', ttlSeconds: 0, profileEtag: 'e1', preferredLanguage: 'en'));
+
+    expect(res.tokenId, 'jti-p');
+    expect(res.expiresAt, isNull);
   });
 
   test('mint throws ApiException on HTTP error', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{}', status: 401));
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
     expect(
-      () => api.mint(const MintQrRequest(ciphertextBase64: 'x', ttlSeconds: 1)),
+      () => api
+          .mint(const MintQrRequest(ciphertextBase64: 'x', ttlSeconds: 1, profileEtag: 'e', preferredLanguage: 'en')),
       throwsA(isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401)),
     );
   });
 
+  test('active GETs and parses the caller token', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse(jsonEncode({
+          'data': {'token_id': 'jti-2', 'expires_at': null, 'ttl_seconds': 0}
+        })));
+    final api = DioEmergencyQrApi(net: fakeNet(adapter));
+
+    final res = await api.active();
+
+    expect(adapter.requests.single.path, '/emergency-qr/active');
+    expect(res!.tokenId, 'jti-2');
+    expect(res.expiresAt, isNull);
+    expect(res.ttlSeconds, 0);
+  });
+
+  test('active returns null when no token', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": null}'));
+    final api = DioEmergencyQrApi(net: fakeNet(adapter));
+
+    expect(await api.active(), isNull);
+  });
+
   test('resolve GETs token path and surfaces nullable ciphertext', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse(jsonEncode({
-          'data': {'ciphertext_base64': null}
+          'data': {'ciphertext': null}
         })));
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
 
@@ -41,12 +77,25 @@ void main() {
     expect(res.ciphertextBase64, isNull);
   });
 
-  test('revoke posts token_id and returns void', () async {
+  test('updateCiphertext PUTs to token path with snake_case body', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"updated": true}}'));
+    final api = DioEmergencyQrApi(net: fakeNet(adapter));
+
+    await api.updateCiphertext('jti-3',
+        const UpdateQrCiphertextRequest(ciphertextBase64: 'zzz=', profileEtag: 'e2', preferredLanguage: 'ar-EG'));
+
+    expect(adapter.requests.single.path, '/emergency-qr/jti-3/ciphertext');
+    expect(adapter.requests.single.method, 'PUT');
+    expect(adapter.requests.single.data, {'ciphertext': 'zzz=', 'profile_etag': 'e2', 'preferred_language': 'ar-EG'});
+  });
+
+  test('revoke POSTs to token path', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": null}'));
     final api = DioEmergencyQrApi(net: fakeNet(adapter));
 
-    await api.revoke(const RevokeQrRequest(tokenId: 'jti-9'));
+    await api.revoke('jti-9');
 
-    expect(adapter.requests.single.data, {'token_id': 'jti-9'});
+    expect(adapter.requests.single.path, '/emergency-qr/jti-9/revoke');
+    expect(adapter.requests.single.method, 'POST');
   });
 }

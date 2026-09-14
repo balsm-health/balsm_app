@@ -3,17 +3,39 @@ import 'dart:convert';
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/aggregates/emergency_card_snapshot.dart';
 import '../../domain/aggregates/emergency_qr_token.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../domain/events/emergency_qr_token_minted.dart';
 import '../emergency_snapshot_reader.dart';
+import '../permanent_qr_store.dart';
 
 /// Result of a successful mint: the token record plus the full QR URL that
 /// embeds the AES key in the URL fragment (`#k=`). The fragment is NEVER sent
 /// to the server — decryption is client-only.
 typedef MintResult = ({EmergencyQrToken token, String qrUrl});
+
+/// ttl_seconds value that mints a permanent (never-expiring) QR.
+const int kPermanentQrTtlSeconds = 0;
+
+/// Short fingerprint of a snapshot, sent as `profile_etag` (server caps it at
+/// 8 chars) so a permanent token's ciphertext can be recognised as stale.
+String snapshotEtag(EmergencyCardSnapshot snapshot) {
+  final digest = sha256Sync(utf8.encode(snapshot.toJsonString()));
+  return digest.sublist(0, 4).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+}
+
+List<int> sha256Sync(List<int> bytes) {
+  // package:cryptography's Sha256 is async-first; DartSha256 hashSync avoids
+  // an await in a pure function.
+  final sink = const DartSha256().newHashSink();
+  sink.add(bytes);
+  sink.close();
+  return sink.hashSync().bytes;
+}
 
 /// FR: Mint an emergency QR token.
 ///
@@ -22,7 +44,10 @@ typedef MintResult = ({EmergencyQrToken token, String qrUrl});
 /// 2. Generate an ephemeral 32-byte AES-256-GCM key.
 /// 3. Encrypt the snapshot JSON; send only the ciphertext to the mint endpoint.
 /// 4. Build the QR URL with the key in the URL fragment.
-/// 5. Dispatch [EmergencyQrTokenMinted].
+/// 5. For a permanent mint (ttl 0): persist {jti, key, etag} in the keystore so
+///    the same QR can be re-displayed forever and its ciphertext refreshed in
+///    place when the profile changes.
+/// 6. Dispatch [EmergencyQrTokenMinted].
 ///
 /// PHI (the snapshot, plaintext, and the key) is never logged or sent to Sentry.
 class MintEmergencyQrTokenUseCase {
@@ -30,20 +55,26 @@ class MintEmergencyQrTokenUseCase {
     required EmergencyQrApi api,
     required EmergencySnapshotReader snapshotReader,
     required EventBus eventBus,
+    required PermanentQrStore permanentStore,
     AesGcm? aesGcm,
   })  : _api = api,
         _snapshotReader = snapshotReader,
         _eventBus = eventBus,
+        _permanentStore = permanentStore,
         _aesGcm = aesGcm ?? AesGcm.with256bits();
 
   final EmergencyQrApi _api;
   final EmergencySnapshotReader _snapshotReader;
   final EventBus _eventBus;
+  final PermanentQrStore _permanentStore;
   final AesGcm _aesGcm;
 
   static const _qrBaseUrl = 'https://app.balsm.health/emergency';
 
-  Future<AppResult<MintResult>> call({required int ttlSeconds}) async {
+  Future<AppResult<MintResult>> call({
+    required int ttlSeconds,
+    String preferredLanguage = 'en',
+  }) async {
     final snapshot = await _snapshotReader.readSnapshot();
     if (snapshot == null || !snapshot.hasAnyData) {
       return AppResult.failure(
@@ -65,6 +96,7 @@ class MintEmergencyQrTokenUseCase {
       ...secretBox.mac.bytes,
     ];
     final ciphertextBase64 = base64.encode(payload);
+    final etag = snapshotEtag(snapshot);
 
     // 3. POST ciphertext only — key never leaves the device via the network.
     final MintQrResponse minted;
@@ -72,11 +104,13 @@ class MintEmergencyQrTokenUseCase {
       minted = await _api.mint(MintQrRequest(
         ciphertextBase64: ciphertextBase64,
         ttlSeconds: ttlSeconds,
+        profileEtag: etag,
+        preferredLanguage: preferredLanguage,
       ));
     } on ApiException catch (e) {
       return AppResult.failure(_mapApiError(e));
     } on TypeError {
-      // Missing token_id/expires_at in an otherwise-successful response.
+      // Missing token_id in an otherwise-successful response.
       return AppResult.failure(const NetworkFailure('Malformed mint response'));
     }
 
@@ -93,7 +127,22 @@ class MintEmergencyQrTokenUseCase {
     final keyB64Url = base64Url.encode(keyBytes).replaceAll('=', '');
     final qrUrl = '$_qrBaseUrl/${jti.value}#k=$keyB64Url';
 
-    // 5. Dispatch event (no PHI, no key).
+    // 5. Permanent mint: persist the record; any prior permanent record is
+    //    superseded (its token was just revoked server-side by the mint).
+    if (ttlSeconds == kPermanentQrTtlSeconds) {
+      await _permanentStore.write(PermanentQrRecord(
+        jti: jti.value,
+        keyB64Url: keyB64Url,
+        etag: etag,
+        qrUrl: qrUrl,
+      ));
+    } else {
+      // Minting a temporary token revokes the permanent one server-side —
+      // its stored key is now useless.
+      await _permanentStore.clear();
+    }
+
+    // 6. Dispatch event (no PHI, no key).
     _eventBus.publish(EmergencyQrTokenMinted(jti: jti, expiresAt: expiresAt));
 
     return AppResult.success((token: token, qrUrl: qrUrl));
@@ -113,5 +162,6 @@ final mintEmergencyQrTokenUseCaseProvider = Provider<MintEmergencyQrTokenUseCase
     api: ref.watch(emergencyQrApiProvider),
     snapshotReader: ref.watch(emergencySnapshotReaderProvider),
     eventBus: ref.watch(eventBusProvider),
+    permanentStore: ref.watch(permanentQrStoreProvider),
   );
 });

@@ -14,13 +14,16 @@ class EmergencyQrToken {
   /// Token ID returned by the server's mint endpoint.
   final QrTokenId jti;
 
-  final DateTime expiresAt;
+  /// Null for permanent tokens — they never expire.
+  final DateTime? expiresAt;
 
   final DateTime? revokedAt;
 
   final int ttlSeconds;
 
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isPermanent => expiresAt == null;
+
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   bool get isRevoked => revokedAt != null;
 
@@ -41,14 +44,14 @@ class EmergencyQrToken {
 
   Map<String, dynamic> toJson() => {
         'jti': jti.value,
-        'expiresAt': expiresAt.toUtc().toIso8601String(),
+        'expiresAt': expiresAt?.toUtc().toIso8601String(),
         'revokedAt': revokedAt?.toUtc().toIso8601String(),
         'ttlSeconds': ttlSeconds,
       };
 
   factory EmergencyQrToken.fromJson(Map<String, dynamic> json) => EmergencyQrToken(
         jti: QrTokenId.value(json['jti'] as String),
-        expiresAt: DateTime.parse(json['expiresAt'] as String),
+        expiresAt: json['expiresAt'] == null ? null : DateTime.parse(json['expiresAt'] as String),
         revokedAt: json['revokedAt'] == null ? null : DateTime.parse(json['revokedAt'] as String),
         ttlSeconds: json['ttlSeconds'] as int,
       );

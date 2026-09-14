@@ -12,7 +12,9 @@ export 'src/domain/value_objects/ids.dart';
 
 // Application — snapshot reader port + use cases
 export 'src/application/emergency_snapshot_reader.dart';
+export 'src/application/permanent_qr_store.dart';
 export 'src/application/use_cases/mint_emergency_qr_token_use_case.dart';
+export 'src/application/use_cases/refresh_permanent_qr_use_case.dart';
 export 'src/application/use_cases/revoke_emergency_qr_token_use_case.dart';
 export 'src/application/use_cases/resolve_emergency_qr_token_use_case.dart';
 
