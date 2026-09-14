@@ -90,6 +90,22 @@ void main() {
       expect(sent.profileEtag, record.etag);
     });
 
+    test('mints even with an empty medical profile — the QR is an identity token', () async {
+      final api = _MockApi();
+      final reader = _MockSnapshotReader();
+      final store = PermanentQrStore(storage: _MemStorage());
+      when(() => reader.readSnapshot()).thenAnswer((_) async => null);
+      when(() => api.mint(any())).thenAnswer((_) async => const MintQrResponse(tokenId: 'jti-empty', expiresAt: null));
+
+      final res = await MintEmergencyQrTokenUseCase(
+              api: api, snapshotReader: reader, eventBus: _FakeBus(), permanentStore: store)
+          .call(ttlSeconds: 0);
+
+      final m = res.fold((v) => v, (f) => fail('mint failed: $f'));
+      expect(m.token.isPermanent, isTrue);
+      expect((await store.read())!.jti, 'jti-empty');
+    });
+
     test('temporary mint clears a stored permanent record (server revoked it)', () async {
       final api = _MockApi();
       final reader = _MockSnapshotReader();

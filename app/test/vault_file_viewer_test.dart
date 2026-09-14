@@ -15,8 +15,6 @@ class _MemoryKV implements KeyValueDataSource {
   @override
   Future<T?> get<T>(String key) async => store[key] as T?;
   @override
-  Future<void> set<T>(String key, T value) async => store[key] = value;
-  @override
   Future<void> put<T>(String key, T value) async => store[key] = value;
   @override
   Future<bool> exists(String key) async => store.containsKey(key);

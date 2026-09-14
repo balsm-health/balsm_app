@@ -1228,11 +1228,14 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Gate: can we mint? Need a signed-in user AND on-device health data.
+    // Gate: signed-in only. The QR is a stable profile identity token
+    // (booking, emergency, delegations bind to its jti) — an empty medical
+    // profile still mints; the help text just nudges toward completing it.
     final userId = ref.watch(currentUserIdProvider);
     final snapAsync = ref.watch(_emergencySnapshotProvider);
     final snapshot = snapAsync.valueOrNull;
-    final canShare = userId != null && snapshot != null && snapshot.hasAnyData;
+    final hasHealthData = snapshot != null && snapshot.hasAnyData;
+    final canShare = userId != null;
     final loadingSnapshot = userId != null && snapAsync.isLoading;
     final hasToken = _mint != null;
 
@@ -1241,8 +1244,8 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       desc = s.strings.emergency.eqr_help_active;
     } else if (userId == null) {
       desc = s.strings.emergency.eqr_help_signin;
-    } else if (!canShare) {
-      desc = s.strings.emergency.eqr_help_incomplete;
+    } else if (!hasHealthData) {
+      desc = s.strings.emergency.eqr_help_empty;
     } else {
       desc = s.strings.emergency.eqr_help_create;
     }

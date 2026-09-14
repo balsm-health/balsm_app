@@ -10,6 +10,11 @@ features:
 
 Emergency card snapshot + QR tokens. Decryption key travels in the URL fragment - never sent to the server.
 
+The permanent QR doubles as the patient's **stable profile identity token** —
+bookings, emergency staff, and delegations can bind to its `jti`. Minting does
+NOT require a completed medical profile; an empty card still mints and fills
+in via refresh as data is added.
+
 Tokens are temporary (1h/6h/24h/7d, countdown + auto-expiry) or **permanent** (ttl 0):
 a permanent QR's URL never changes; its `{jti, key, etag}` live in the platform
 keystore (`PermanentQrStore`) and `RefreshPermanentQrUseCase` re-encrypts the

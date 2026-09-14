@@ -5,6 +5,7 @@ import 'package:core/core.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/aggregates/emergency_card_snapshot.dart';
 import '../emergency_snapshot_reader.dart';
 import '../permanent_qr_store.dart';
 import 'mint_emergency_qr_token_use_case.dart' show snapshotEtag;
@@ -40,11 +41,9 @@ class RefreshPermanentQrUseCase {
     final record = await _permanentStore.read();
     if (record == null) return AppResult.success(null);
 
-    final snapshot = await _snapshotReader.readSnapshot();
-    if (snapshot == null || !snapshot.hasAnyData) {
-      // Profile was emptied; leave the token as-is (revoking is a user act).
-      return AppResult.success(record);
-    }
+    // An empty profile is valid content — the QR is an identity token first,
+    // so emptying the medical profile propagates to the next scan too.
+    final snapshot = await _snapshotReader.readSnapshot() ?? EmergencyCardSnapshot(createdAt: DateTime.now());
 
     final etag = snapshotEtag(snapshot);
     if (etag == record.etag) return AppResult.success(record);

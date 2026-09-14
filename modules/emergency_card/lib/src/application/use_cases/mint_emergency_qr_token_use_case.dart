@@ -75,12 +75,10 @@ class MintEmergencyQrTokenUseCase {
     required int ttlSeconds,
     String preferredLanguage = 'en',
   }) async {
-    final snapshot = await _snapshotReader.readSnapshot();
-    if (snapshot == null || !snapshot.hasAnyData) {
-      return AppResult.failure(
-        const ValidationFailure('No emergency health data to share'),
-      );
-    }
+    // The QR is a stable profile identity token (booking, emergency,
+    // delegations bind to its jti) — an empty medical profile still mints; the
+    // payload simply carries no entries yet and fills in via refresh later.
+    final snapshot = await _snapshotReader.readSnapshot() ?? EmergencyCardSnapshot(createdAt: DateTime.now());
 
     // 1. Generate ephemeral AES-256-GCM key (32 bytes).
     final secretKey = await _aesGcm.newSecretKey();
