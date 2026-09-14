@@ -781,6 +781,7 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_copy => "نسخ";
   String get eqr_share => "مشاركة";
   String get eqr_save => "حفظ";
+  String get eqr_save_failed => "تعذّر الحفظ في الاستوديو";
   String get eqr_saved_toast => "تم حفظ الصورة";
   String get eqr_link_copied => "تم نسخ الرابط";
   String get eqr_revoke => "إلغاء الرمز";
@@ -861,6 +862,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
         return eqr_share;
       case 'eqr_save':
         return eqr_save;
+      case 'eqr_save_failed':
+        return eqr_save_failed;
       case 'eqr_saved_toast':
         return eqr_saved_toast;
       case 'eqr_link_copied':

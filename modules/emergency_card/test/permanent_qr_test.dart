@@ -83,11 +83,31 @@ void main() {
       expect(m.token.expiresAt, isNull);
 
       final record = await store.read();
-      expect(record!.jti, 'jti-p');
-      expect(m.qrUrl, contains('#k=${record.keyB64Url}'));
+      // jti is generated ON-DEVICE (offline-first) and sent as token_id.
       final sent = verify(() => api.mint(captureAny())).captured.single as MintQrRequest;
+      expect(sent.tokenId, record!.jti);
       expect(sent.ttlSeconds, 0);
       expect(sent.profileEtag, record.etag);
+      expect(m.token.jti.value, record.jti);
+      expect(m.qrUrl, contains('#k=${record.keyB64Url}'));
+      expect(record.synced, isTrue);
+    });
+
+    test('offline mint still succeeds — record kept unsynced for later', () async {
+      final api = _MockApi();
+      final reader = _MockSnapshotReader();
+      final store = PermanentQrStore(storage: _MemStorage());
+      when(() => reader.readSnapshot()).thenAnswer((_) async => _snap());
+      when(() => api.mint(any())).thenThrow(const ApiException(code: 'offline', isOffline: true));
+
+      final res = await MintEmergencyQrTokenUseCase(
+              api: api, snapshotReader: reader, eventBus: _FakeBus(), permanentStore: store)
+          .call(ttlSeconds: 0);
+
+      final m = res.fold((v) => v, (f) => fail('offline mint failed: $f'));
+      final record = await store.read();
+      expect(record!.synced, isFalse);
+      expect(m.qrUrl, contains(record.jti));
     });
 
     test('mints even with an empty medical profile — the QR is an identity token', () async {
@@ -103,7 +123,7 @@ void main() {
 
       final m = res.fold((v) => v, (f) => fail('mint failed: $f'));
       expect(m.token.isPermanent, isTrue);
-      expect((await store.read())!.jti, 'jti-empty');
+      expect((await store.read())!.jti, m.token.jti.value);
     });
 
     test('temporary mint clears a stored permanent record (server revoked it)', () async {
@@ -185,6 +205,29 @@ void main() {
       expect((await store.read())!.etag, snapshotEtag(newSnap));
     });
 
+    test('unsynced record syncs via idempotent mint with its own jti', () async {
+      final api = _MockApi();
+      final reader = _MockSnapshotReader();
+      final store = PermanentQrStore(storage: _MemStorage());
+      final snap = _snap();
+      when(() => reader.readSnapshot()).thenAnswer((_) async => snap);
+      when(() => api.mint(any())).thenAnswer((_) async => const MintQrResponse(tokenId: 'ignored', expiresAt: null));
+      await store.write(PermanentQrRecord(
+          jti: 'jti-local',
+          keyB64Url: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          etag: snapshotEtag(snap),
+          qrUrl: 'u',
+          synced: false));
+
+      final res = await uc(api, reader, store).call();
+
+      expect(res.isSuccess, isTrue);
+      final sent = verify(() => api.mint(captureAny())).captured.single as MintQrRequest;
+      expect(sent.tokenId, 'jti-local');
+      expect((await store.read())!.synced, isTrue);
+      verifyNever(() => api.updateCiphertext(any(), any()));
+    });
+
     test('410 from server drops the stale record', () async {
       final api = _MockApi();
       final reader = _MockSnapshotReader();
@@ -225,6 +268,20 @@ void main() {
 
       final res = await RevokeEmergencyQrTokenUseCase(api: api, eventBus: _FakeBus(), permanentStore: store)
           .call(tokenId: QrTokenId.value('jti-p'));
+
+      expect(res.isSuccess, isTrue);
+      expect(await store.read(), isNull);
+    });
+
+    test('404 on an unsynced local token still clears it — server never saw it', () async {
+      final api = _MockApi();
+      final store = PermanentQrStore(storage: _MemStorage());
+      when(() => api.revoke(any())).thenThrow(const ApiException(code: 'not_found', statusCode: 404));
+      await store
+          .write(const PermanentQrRecord(jti: 'jti-local', keyB64Url: 'k', etag: 'e', qrUrl: 'u', synced: false));
+
+      final res = await RevokeEmergencyQrTokenUseCase(api: api, eventBus: _FakeBus(), permanentStore: store)
+          .call(tokenId: QrTokenId.value('jti-local'));
 
       expect(res.isSuccess, isTrue);
       expect(await store.read(), isNull);

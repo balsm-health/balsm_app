@@ -10,6 +10,11 @@ features:
 
 Emergency card snapshot + QR tokens. Decryption key travels in the URL fragment - never sent to the server.
 
+Permanent minting is **offline-first**: the jti (CSPRNG UUIDv4) and AES key are
+generated on-device, so the QR renders, shares, and saves to the gallery with
+no connectivity; the server learns about the token when the background sync
+lands (`mint` is idempotent for a client-supplied `token_id`).
+
 The permanent QR doubles as the patient's **stable profile identity token** —
 bookings, emergency staff, and delegations can bind to its `jti`. Minting does
 NOT require a completed medical profile; an empty card still mints and fills

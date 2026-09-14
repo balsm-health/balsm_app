@@ -234,6 +234,7 @@
     "eqr_copy": "نسخ",
     "eqr_share": "مشاركة",
     "eqr_save": "حفظ",
+    "eqr_save_failed": "تعذّر الحفظ في الاستوديو",
     "eqr_saved_toast": "تم حفظ الصورة",
     "eqr_link_copied": "تم نسخ الرابط",
     "eqr_revoke": "إلغاء الرمز",

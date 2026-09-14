@@ -234,6 +234,7 @@
     "eqr_copy": "Copy",
     "eqr_share": "Share",
     "eqr_save": "Save",
+    "eqr_save_failed": "Could not save to gallery",
     "eqr_saved_toast": "Saved to Photos",
     "eqr_link_copied": "Link copied",
     "eqr_revoke": "Revoke code",

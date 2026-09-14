@@ -46,7 +46,7 @@ class RefreshPermanentQrUseCase {
     final snapshot = await _snapshotReader.readSnapshot() ?? EmergencyCardSnapshot(createdAt: DateTime.now());
 
     final etag = snapshotEtag(snapshot);
-    if (etag == record.etag) return AppResult.success(record);
+    if (etag == record.etag && record.synced) return AppResult.success(record);
 
     // Re-encrypt the fresh snapshot with the SAME key so the QR stays valid.
     final keyBytes = base64Url.decode(base64Url.normalize(record.keyB64Url));
@@ -60,16 +60,29 @@ class RefreshPermanentQrUseCase {
     ]);
 
     try {
-      await _api.updateCiphertext(
-        record.jti,
-        UpdateQrCiphertextRequest(
+      if (!record.synced) {
+        // Offline-minted token the server has never seen: the idempotent mint
+        // (client-supplied token_id) creates it — or refreshes it if an
+        // earlier attempt landed without the ack reaching us.
+        await _api.mint(MintQrRequest(
           ciphertextBase64: ciphertextBase64,
+          ttlSeconds: 0,
           profileEtag: etag,
           preferredLanguage: preferredLanguage,
-        ),
-      );
+          tokenId: record.jti,
+        ));
+      } else {
+        await _api.updateCiphertext(
+          record.jti,
+          UpdateQrCiphertextRequest(
+            ciphertextBase64: ciphertextBase64,
+            profileEtag: etag,
+            preferredLanguage: preferredLanguage,
+          ),
+        );
+      }
     } on ApiException catch (e) {
-      if (e.statusCode == 404 || e.statusCode == 409 || e.statusCode == 410) {
+      if (record.synced && (e.statusCode == 404 || e.statusCode == 409 || e.statusCode == 410)) {
         // Token no longer exists/active server-side — drop the stale record.
         await _permanentStore.clear();
         return AppResult.success(null);
@@ -79,7 +92,7 @@ class RefreshPermanentQrUseCase {
       return AppResult.failure(const NetworkFailure('Could not refresh emergency QR'));
     }
 
-    final updated = record.copyWith(etag: etag);
+    final updated = record.copyWith(etag: etag, synced: true);
     await _permanentStore.write(updated);
     return AppResult.success(updated);
   }

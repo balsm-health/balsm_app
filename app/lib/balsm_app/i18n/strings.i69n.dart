@@ -773,6 +773,7 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get eqr_copy => "Copy";
   String get eqr_share => "Share";
   String get eqr_save => "Save";
+  String get eqr_save_failed => "Could not save to gallery";
   String get eqr_saved_toast => "Saved to Photos";
   String get eqr_link_copied => "Link copied";
   String get eqr_revoke => "Revoke code";
@@ -853,6 +854,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return eqr_share;
       case 'eqr_save':
         return eqr_save;
+      case 'eqr_save_failed':
+        return eqr_save_failed;
       case 'eqr_saved_toast':
         return eqr_saved_toast;
       case 'eqr_link_copied':

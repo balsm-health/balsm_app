@@ -3,6 +3,11 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- gal: saving the QR image to the gallery needs this on Android 9 and
+         below only; API 29+ uses scoped MediaStore inserts with no permission. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
   <application android:label="@string/app_name" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">
     <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">

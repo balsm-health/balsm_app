@@ -5,6 +5,9 @@ import 'package:core/core.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/data.dart';
+import 'package:uuid/rng.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/aggregates/emergency_card_snapshot.dart';
 import '../../domain/aggregates/emergency_qr_token.dart';
@@ -95,8 +98,47 @@ class MintEmergencyQrTokenUseCase {
     ];
     final ciphertextBase64 = base64.encode(payload);
     final etag = snapshotEtag(snapshot);
+    final keyB64Url = base64Url.encode(keyBytes).replaceAll('=', '');
 
-    // 3. POST ciphertext only — key never leaves the device via the network.
+    // 3. Permanent mint is OFFLINE-FIRST: the jti is generated on-device
+    //    (CSPRNG UUIDv4 — never v7, the resolve surface is public and the id
+    //    must carry no structure), the QR works immediately, and the server
+    //    learns about the token when the sync lands (mint is idempotent for a
+    //    client-supplied token_id). Temporary tokens still mint online — their
+    //    expiry is server-enforced and useless without a resolvable row.
+    if (ttlSeconds == kPermanentQrTtlSeconds) {
+      final jti = QrTokenId.value(const Uuid().v4(config: V4Options(null, CryptoRNG())));
+      final qrUrl = '$_qrBaseUrl/${jti.value}#k=$keyB64Url';
+
+      var synced = false;
+      try {
+        await _api.mint(MintQrRequest(
+          ciphertextBase64: ciphertextBase64,
+          ttlSeconds: ttlSeconds,
+          profileEtag: etag,
+          preferredLanguage: preferredLanguage,
+          tokenId: jti.value,
+        ));
+        synced = true;
+      } on ApiException {
+        // Offline or transient — the QR is already usable; the refresh use
+        // case retries the sync (app start + sheet open).
+      }
+
+      await _permanentStore.write(PermanentQrRecord(
+        jti: jti.value,
+        keyB64Url: keyB64Url,
+        etag: etag,
+        qrUrl: qrUrl,
+        synced: synced,
+      ));
+
+      final token = EmergencyQrToken(jti: jti, expiresAt: null, ttlSeconds: ttlSeconds);
+      _eventBus.publish(EmergencyQrTokenMinted(jti: jti, expiresAt: null));
+      return AppResult.success((token: token, qrUrl: qrUrl));
+    }
+
+    // Temporary: POST ciphertext only — key never leaves the device.
     final MintQrResponse minted;
     try {
       minted = await _api.mint(MintQrRequest(
@@ -120,27 +162,12 @@ class MintEmergencyQrTokenUseCase {
       expiresAt: expiresAt,
       ttlSeconds: ttlSeconds,
     );
-
-    // 4. Build QR URL with key in the fragment (base64url, no padding).
-    final keyB64Url = base64Url.encode(keyBytes).replaceAll('=', '');
     final qrUrl = '$_qrBaseUrl/${jti.value}#k=$keyB64Url';
 
-    // 5. Permanent mint: persist the record; any prior permanent record is
-    //    superseded (its token was just revoked server-side by the mint).
-    if (ttlSeconds == kPermanentQrTtlSeconds) {
-      await _permanentStore.write(PermanentQrRecord(
-        jti: jti.value,
-        keyB64Url: keyB64Url,
-        etag: etag,
-        qrUrl: qrUrl,
-      ));
-    } else {
-      // Minting a temporary token revokes the permanent one server-side —
-      // its stored key is now useless.
-      await _permanentStore.clear();
-    }
+    // Minting a temporary token revokes the permanent one server-side —
+    // its stored key is now useless.
+    await _permanentStore.clear();
 
-    // 6. Dispatch event (no PHI, no key).
     _eventBus.publish(EmergencyQrTokenMinted(jti: jti, expiresAt: expiresAt));
 
     return AppResult.success((token: token, qrUrl: qrUrl));

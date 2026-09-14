@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
+import 'package:gal/gal.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -1078,6 +1082,10 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   String? toast;
   Timer? _toastTimer;
 
+  /// Captures the rendered QR card for share / save-to-gallery.
+  final GlobalKey _qrCardKey = GlobalKey();
+  bool _exporting = false;
+
   // Minted-token state. `_mint` holds the real token + its `#k=` fragment URL;
   // null until a token is minted (or after it is revoked / re-generated).
   MintResult? _mint;
@@ -1213,6 +1221,48 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     _showToast(s.strings.emergency.eqr_link_copied);
   }
 
+  /// Rasterises the QR card exactly as shown (flower mark, name, chip).
+  /// User-initiated export: the QR encodes the key-bearing URL, so producing
+  /// an image of it is the point — but it still never gets logged.
+  Future<Uint8List?> _captureQrPng() async {
+    final boundary = _qrCardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return null;
+    final image = await boundary.toImage(pixelRatio: 3);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    return data?.buffer.asUint8List();
+  }
+
+  Future<void> _saveToGallery() async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final bytes = await _captureQrPng();
+      if (bytes == null) return;
+      await Gal.putImageBytes(bytes, name: 'balsm-qr');
+      _showToast(s.strings.emergency.eqr_saved_toast);
+    } on GalException {
+      // Permission denied or storage failure — nothing PHI-safe to add.
+      _showToast(s.strings.emergency.eqr_save_failed);
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _shareQr() async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final bytes = await _captureQrPng();
+      if (bytes == null) return;
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile.fromData(bytes, mimeType: 'image/png', name: 'balsm-qr.png')],
+      ));
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
   String get _countdownLabel {
     if (_isPermanent) return s.strings.emergency.eqr_permanent;
     if (_isExpired) return s.strings.emergency.eqr_expired;
@@ -1320,8 +1370,11 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   }
 
   /// The rounded-dot QR card with the flower center (prototype look). [dim]
-  /// greys it once the token has expired.
-  Widget _qrCard(String data, {bool dim = false}) => Container(
+  /// greys it once the token has expired. Wrapped in a [RepaintBoundary] so
+  /// share / save-to-gallery export exactly what is on screen.
+  Widget _qrCard(String data, {bool dim = false}) => RepaintBoundary(
+      key: _qrCardKey,
+      child: Container(
         padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
         decoration: BoxDecoration(
             color: Colors.white,
@@ -1387,7 +1440,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             ]),
           ),
         ]),
-      );
+      ));
 
   /// Active-token view: live QR, copyable link, Save/Share + Revoke.
   List<Widget> _activeToken() {
@@ -1440,7 +1493,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                   large: true,
                   block: true,
                   ar: ar,
-                  onTap: () => _showToast(s.strings.emergency.eqr_saved_toast))),
+                  onTap: _exporting ? null : _saveToGallery)),
           const SizedBox(width: 10),
           Expanded(
               child: PButton(s.strings.emergency.eqr_share,
@@ -1450,7 +1503,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                   block: true,
                   accent: s.accent,
                   ar: ar,
-                  onTap: _copy)),
+                  onTap: _exporting ? null : _shareQr)),
         ]),
         const SizedBox(height: 10),
         _revoking

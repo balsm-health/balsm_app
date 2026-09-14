@@ -8,6 +8,7 @@ class MintQrRequest {
     required this.ttlSeconds,
     required this.profileEtag,
     required this.preferredLanguage,
+    this.tokenId,
   });
 
   final String ciphertextBase64;
@@ -21,11 +22,16 @@ class MintQrRequest {
 
   final String preferredLanguage;
 
+  /// Client-generated jti (offline-first mint). Null lets the server assign.
+  /// Retrying the same id is idempotent — the server refreshes the ciphertext.
+  final String? tokenId;
+
   Map<String, dynamic> toJson() => {
         'ciphertext': ciphertextBase64,
         'profile_etag': profileEtag,
         'preferred_language': preferredLanguage,
         'ttl_seconds': ttlSeconds,
+        if (tokenId != null) 'token_id': tokenId,
       };
 }
 

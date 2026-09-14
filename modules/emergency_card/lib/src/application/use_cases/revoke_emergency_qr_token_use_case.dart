@@ -28,10 +28,15 @@ class RevokeEmergencyQrTokenUseCase {
       if (e.isUnauthorized) {
         return AppResult.failure(const UnauthorizedFailure());
       }
-      if (e.statusCode == 404) {
+      final stored = await _permanentStore.read();
+      if (e.statusCode == 404 && stored != null && stored.jti == tokenId.value && !stored.synced) {
+        // Offline-minted token the server never saw: nothing to revoke there —
+        // deleting the local record kills the QR (its key dies with it).
+      } else if (e.statusCode == 404) {
         return AppResult.failure(const NotFoundFailure('Token not found'));
+      } else {
+        return AppResult.failure(const NetworkFailure('Could not revoke QR'));
       }
-      return AppResult.failure(const NetworkFailure('Could not revoke QR'));
     }
 
     // A revoked permanent token's stored key is useless — drop the record.

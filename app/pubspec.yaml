@@ -73,6 +73,8 @@ dependencies:
   sensors_plus: ^7.1.0
   material_ui: ^1.2.0
   pdfrx: ^2.6.1
+  share_plus: ^12.0.2
+  gal: ^2.3.3
 dev_dependencies:
   # Test-only: care_repository_test opens an in-memory AppDatabase.
   drift: ^2.29.0

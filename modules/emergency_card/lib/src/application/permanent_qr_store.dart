@@ -16,6 +16,7 @@ class PermanentQrRecord {
     required this.keyB64Url,
     required this.etag,
     required this.qrUrl,
+    this.synced = true,
   });
 
   final String jti;
@@ -23,11 +24,17 @@ class PermanentQrRecord {
   final String etag;
   final String qrUrl;
 
-  PermanentQrRecord copyWith({String? etag}) => PermanentQrRecord(
+  /// False while the offline-minted token has not reached the server yet —
+  /// the QR already works locally (render/share/save); public resolve starts
+  /// working once the background sync lands.
+  final bool synced;
+
+  PermanentQrRecord copyWith({String? etag, bool? synced}) => PermanentQrRecord(
         jti: jti,
         keyB64Url: keyB64Url,
         etag: etag ?? this.etag,
         qrUrl: qrUrl,
+        synced: synced ?? this.synced,
       );
 
   Map<String, dynamic> toJson() => {
@@ -35,6 +42,7 @@ class PermanentQrRecord {
         'key': keyB64Url,
         'etag': etag,
         'qrUrl': qrUrl,
+        'synced': synced,
       };
 
   factory PermanentQrRecord.fromJson(Map<String, dynamic> json) => PermanentQrRecord(
@@ -42,6 +50,8 @@ class PermanentQrRecord {
         keyB64Url: json['key'] as String,
         etag: json['etag'] as String,
         qrUrl: json['qrUrl'] as String,
+        // Records written before the offline-first mint were server-minted.
+        synced: json['synced'] as bool? ?? true,
       );
 }
 
