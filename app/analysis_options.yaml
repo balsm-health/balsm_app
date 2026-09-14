@@ -14,6 +14,11 @@ analyzer:
     # i69n-generated bundles — getters mirror the snake_case JSON keys, which
     # trips non_constant_identifier_names. Generated, never hand-edited.
     - lib/**/*.i69n.dart
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - macos/**
 
 linter:
   # The lint rules applied to this project can be customized in the
