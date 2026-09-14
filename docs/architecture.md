@@ -13,7 +13,7 @@ PHI stays on the device. Everything else follows from that.
 flowchart TB
   subgraph device["📱 Device — PHI zone (drift + SQLCipher)"]
     shell["app/ shell<br/>bootstrap · DI · router · flavors · live UI (lib/balsm_app/)"]
-    modules["modules/* (13 bounded contexts)<br/>auth · profile · medications · emergency_card · records · …"]
+    modules["modules/* (12 bounded contexts)<br/>auth · profile · medications · emergency_card · records · …"]
     core["packages/core — shared kernel<br/>AppDatabase (SQLCipher) · data-source ports · events · design kit · i69n"]
     shell --> modules --> core
   end

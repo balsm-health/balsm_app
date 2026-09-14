@@ -20,7 +20,7 @@ cross-module reads go through core contracts/ports (enforced by `balsm_boundary_
 | `packages/core/` | Shared kernel: domain VOs, event bus, `AppDatabase` (SQLCipher), data-source ports, localization (i69n), design kit, telemetry, backup. |
 | `packages/balsm_api/` | Typed HTTP client for Balsm-API-DotNet (Dio), file downloader, server switching. |
 | `packages/balsm_boundary_lint/` | Custom lints enforcing the module-boundary rules. |
-| `modules/<context>/` | Bounded contexts (13): account, auth, deletion, disclosure, emergency_card, geofence_block, home, medications, prescriptions, profile, records, self_report, sessions. Each: `domain/ application/ infrastructure/ presentation/ i18n/`. |
+| `modules/<context>/` | Bounded contexts (12): account, auth, deletion, disclosure, emergency_card, geofence_block, medications, prescriptions, profile, records, self_report, sessions. Each: `domain/ application/ infrastructure/ presentation/ i18n/`. |
 
 Every package/module has its own `README.md` with a frontmatter header
 (`context / plane / features`) — start there when entering a directory.
