@@ -4,11 +4,8 @@
     {
       "label": "Flutter: code generation",
       "type": "shell",
-      "command": "fvm",
+      "command": "${workspaceFolder}/bin/balsm",
       "args": [
-        "dart",
-        "run",
-        "tool/build.dart",
         "gen"
       ],
       "problemMatcher": []
@@ -16,11 +13,8 @@
     {
       "label": "Flutter: code generation (watch)",
       "type": "shell",
-      "command": "fvm",
+      "command": "${workspaceFolder}/bin/balsm",
       "args": [
-        "dart",
-        "run",
-        "tool/build.dart",
         "gen",
         "--watch"
       ],
@@ -30,11 +24,8 @@
     {
       "label": "Flutter: widget tests (app only)",
       "type": "shell",
-      "command": "fvm",
+      "command": "${workspaceFolder}/bin/balsm",
       "args": [
-        "dart",
-        "run",
-        "tool/build.dart",
         "test"
       ],
       "group": "test",
@@ -56,7 +47,7 @@
         "format",
         "."
       ],
-      "group": "format",
+      "group": "none",
       "problemMatcher": []
     },
     {
@@ -71,6 +62,17 @@
       "problemMatcher": []
     },
     {
+      "label": "Run (device)",
+      "detail": "balsm run — picks brand and env, then flutter run with the right flavor/target/defines.",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/balsm run ${input:brand} ${input:env} --servers=${input:servers}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "play",
+        "color": "terminal.ansiGreen"
+      }
+    },
+    {
       "label": "Build",
       "detail": "Pick brand, artifact, flavor and server list. Collects to output/<brand>/<platform>/.",
       "type": "shell",
@@ -78,7 +80,7 @@
         "kind": "build",
         "isDefault": true
       },
-      "command": "fvm dart run tool/build.dart build ${input:brand} ${input:env} --artifact=${input:artifact} --servers=${input:servers}",
+      "command": "${workspaceFolder}/bin/balsm build ${input:brand} ${input:env} --artifact=${input:artifact} --servers=${input:servers}",
       "problemMatcher": [],
       "icon": {
         "id": "tools",
@@ -94,7 +96,7 @@
         "Build"
       ],
       "dependsOrder": "sequence",
-      "command": "fvm dart run tool/build.dart install ${input:brand} ${input:env} --artifact=${input:artifact}",
+      "command": "${workspaceFolder}/bin/balsm install ${input:brand} ${input:env} --artifact=${input:artifact}",
       "problemMatcher": [],
       "icon": {
         "id": "rocket",
@@ -106,7 +108,7 @@
       "detail": "Pushes the already-collected artifact. No rebuild. Asks which device when more than one is attached.",
       "type": "shell",
       "group": "build",
-      "command": "fvm dart run tool/build.dart install ${input:brand} ${input:env} --artifact=${input:artifact}",
+      "command": "${workspaceFolder}/bin/balsm install ${input:brand} ${input:env} --artifact=${input:artifact}",
       "problemMatcher": [],
       "icon": {
         "id": "arrow-down",

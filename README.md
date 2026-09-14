@@ -59,11 +59,11 @@ fvm dart run tool/build.dart apk balsm prod           # artifacts: apk aab ipa w
 fvm dart run tool/build.dart -h                       # full usage
 ```
 
-A `balsm` shell wrapper for the same tool (works from any cwd) can be added to
-`~/.zshrc`:
+The committed wrapper `bin/balsm` (`bin\balsm.cmd` on Windows) is the same
+tool — used by CI, VS Code tasks, and melos. For any-cwd shell use, alias it:
 
 ```sh
-balsm() { ( cd /path/to/balsm_app && fvm dart run tool/build.dart "$@" ) }
+alias balsm=/path/to/balsm_app/bin/balsm
 ```
 
 Melos equivalents: `melos run run:dev`, `melos run test`, `melos run analyze`,

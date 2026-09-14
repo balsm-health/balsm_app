@@ -10,14 +10,14 @@ packages:
   - app
 
 scripts:
-  # Code generation (i69n bundles, drift, json/freezed). Delegates to the typed
-  # SoT in tool/build.dart, which runs build_runner in every package that
-  # depends on it and skips the rest — same command works from CI / VS Code.
+  # Code generation (i69n bundles, drift, json/freezed). Delegates to the balsm
+  # CLI (bin/balsm → tool/build.dart), which runs build_runner in every package
+  # that depends on it and skips the rest — same command works from CI / VS Code.
   gen:
-    run: dart run tool/build.dart gen
+    run: bin/balsm gen
   # Same, but rebuilds on change — leave running while editing .i69n.json etc.
   gen:watch:
-    run: dart run tool/build.dart gen --watch
+    run: bin/balsm gen --watch
   analyze:
     run: melos exec --concurrency=6 -- "flutter analyze --no-fatal-infos"
   # DDD boundary rules (balsm_boundary_lint via custom_lint). Runs per package;
@@ -28,23 +28,24 @@ scripts:
     run: melos exec --concurrency=4 -- "flutter test"
   e2e:
     run: melos exec --scope=app -- "flutter test integration_test"
-  # run/build wiring lives in tool/build.dart (single typed source of truth,
-  # shared with VS Code tasks + CI). Args: <action> <brand> <env>.
+  # run/build wiring lives in the balsm CLI (bin/balsm → tool/build.dart,
+  # single typed source of truth, shared with VS Code tasks + CI).
+  # Args: <action> <brand> <env>.
   run:dev:
-    run: dart run tool/build.dart run balsm dev
+    run: bin/balsm run balsm dev
   run:patient:
-    run: dart run tool/build.dart run balsm dev
+    run: bin/balsm run balsm dev
   run:staging:
-    run: dart run tool/build.dart run balsm staging
+    run: bin/balsm run balsm staging
   run:prod:
-    run: dart run tool/build.dart run balsm prod
+    run: bin/balsm run balsm prod
   build:android:dev:
-    run: dart run tool/build.dart apk balsm dev
+    run: bin/balsm apk balsm dev
   build:android:staging:
-    run: dart run tool/build.dart apk balsm staging
+    run: bin/balsm apk balsm staging
   build:android:prod:
-    run: dart run tool/build.dart apk balsm prod
+    run: bin/balsm apk balsm prod
   build:web:dev:
-    run: dart run tool/build.dart web balsm dev
+    run: bin/balsm web balsm dev
   build:web:prod:
-    run: dart run tool/build.dart web balsm prod
+    run: bin/balsm web balsm prod

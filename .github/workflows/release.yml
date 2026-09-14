@@ -10,9 +10,11 @@ on:
   push:
     tags: ['v*']
 
+# Builds go through the balsm CLI (bin/balsm → tool/build.dart), the single
+# source of truth for flavor/entrypoint/dart-define wiring. Only channel
+# naming, signing, and artifact zipping live here.
 env:
   FLUTTER_VERSION: '3.47.4'
-  ENTRY: lib/brands/balsm/main_balsm.dart
 
 jobs:
   setup:
@@ -63,6 +65,18 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. SHARED_ENV_JSON (real DSN + servers) wins;
+      # the tracked template is the fallback. See docs/ci-secrets.md.
+      - name: Provision server list (env/shared.json)
+        env:
+          SHARED_ENV_JSON: ${{ secrets.SHARED_ENV_JSON }}
+        run: |
+          if [ -n "$SHARED_ENV_JSON" ]; then
+            printf '%s' "$SHARED_ENV_JSON" > app/env/shared.json
+          else
+            cp app/env/shared.example.json app/env/shared.json
+          fi
       - name: Provision release keystore
         if: env.HAS_ANDROID_SIGNING == 'true'
         run: |
@@ -74,15 +88,12 @@ jobs:
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           EOF
       - name: Build APK
-        working-directory: app
         run: |
-          flutter build apk --release --flavor balsm -t "$ENTRY" \
-            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/shared.json \
+          ./bin/balsm apk balsm ${{ needs.setup.outputs.env_file }} \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
-          mkdir -p ../dist
-          cp build/app/outputs/flutter-apk/*.apk "../dist/balsm-${{ needs.setup.outputs.channel }}.apk"
+          mkdir -p dist
+          cp app/build/app/outputs/flutter-apk/*.apk "dist/balsm-${{ needs.setup.outputs.channel }}.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
@@ -114,6 +125,18 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. SHARED_ENV_JSON (real DSN + servers) wins;
+      # the tracked template is the fallback. See docs/ci-secrets.md.
+      - name: Provision server list (env/shared.json)
+        env:
+          SHARED_ENV_JSON: ${{ secrets.SHARED_ENV_JSON }}
+        run: |
+          if [ -n "$SHARED_ENV_JSON" ]; then
+            printf '%s' "$SHARED_ENV_JSON" > app/env/shared.json
+          else
+            cp app/env/shared.example.json app/env/shared.json
+          fi
       - name: Import signing certificate
         if: env.HAS_IOS_SIGNING == 'true'
         uses: apple-actions/import-codesign-certs@v3
@@ -126,11 +149,13 @@ jobs:
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "${{ secrets.APPLE_PROVISIONING_PROFILE }}" | base64 --decode \
             > ~/Library/MobileDevice/Provisioning\ Profiles/balsm.mobileprovision
-      - name: Write ExportOptions.plist
+      # `balsm ipa` exports with ios/signing/adhoc.plist; overwrite the tracked
+      # template with the secret-configured one for this runner only.
+      - name: Write export options (ios/signing/adhoc.plist)
         if: env.HAS_IOS_SIGNING == 'true'
-        working-directory: app/ios
+        working-directory: app/ios/signing
         run: |
-          cat > ExportOptions.plist <<EOF
+          cat > adhoc.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
@@ -142,27 +167,20 @@ jobs:
           EOF
       - name: Build IPA (signed)
         if: env.HAS_IOS_SIGNING == 'true'
-        working-directory: app
         run: |
-          flutter build ipa --release -t "$ENTRY" \
-            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/shared.json \
-            --build-name=${{ needs.setup.outputs.build_name }} \
-            --build-number=${{ github.run_number }} \
-            --export-options-plist=ios/ExportOptions.plist
-          mkdir -p ../dist
-          cp build/ios/ipa/*.ipa "../dist/balsm-${{ needs.setup.outputs.channel }}.ipa"
-      - name: Build iOS (unsigned fallback)
-        if: env.HAS_IOS_SIGNING != 'true'
-        working-directory: app
-        run: |
-          flutter build ios --release --no-codesign -t "$ENTRY" \
-            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/shared.json \
+          ./bin/balsm ipa balsm ${{ needs.setup.outputs.env_file }} \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
-          mkdir -p ../dist
-          (cd build/ios/iphoneos && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-ios-unsigned.zip" Runner.app)
+          mkdir -p dist
+          cp app/build/ios/ipa/*.ipa "dist/balsm-${{ needs.setup.outputs.channel }}.ipa"
+      - name: Build iOS (unsigned fallback)
+        if: env.HAS_IOS_SIGNING != 'true'
+        run: |
+          ./bin/balsm ipa-archive balsm ${{ needs.setup.outputs.env_file }} \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }}
+          mkdir -p dist
+          (cd app/build/ios/iphoneos && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-ios-unsigned.zip" Runner.app)
       - uses: actions/upload-artifact@v4
         with:
           name: ios-build
@@ -191,19 +209,28 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. SHARED_ENV_JSON (real DSN + servers) wins;
+      # the tracked template is the fallback. See docs/ci-secrets.md.
+      - name: Provision server list (env/shared.json)
+        env:
+          SHARED_ENV_JSON: ${{ secrets.SHARED_ENV_JSON }}
+        run: |
+          if [ -n "$SHARED_ENV_JSON" ]; then
+            printf '%s' "$SHARED_ENV_JSON" > app/env/shared.json
+          else
+            cp app/env/shared.example.json app/env/shared.json
+          fi
       - name: Scaffold macOS platform (generated on runner, not committed)
         working-directory: app
         run: flutter config --enable-macos-desktop && flutter create --platforms=macos .
       - name: Build macOS
-        working-directory: app
         run: |
-          flutter build macos --release -t "$ENTRY" \
-            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/shared.json \
+          ./bin/balsm macos balsm ${{ needs.setup.outputs.env_file }} \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
-          mkdir -p ../dist
-          (cd build/macos/Build/Products/Release && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-macos.zip" *.app)
+          mkdir -p dist
+          (cd app/build/macos/Build/Products/Release && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-macos.zip" *.app)
       - uses: actions/upload-artifact@v4
         with:
           name: macos-build
@@ -224,21 +251,29 @@ jobs:
       - name: Generate drift code (core)
         shell: bash
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # shared.json is git-ignored; secret wins, tracked template is the fallback.
+      - name: Provision server list (env/shared.json)
+        shell: bash
+        env:
+          SHARED_ENV_JSON: ${{ secrets.SHARED_ENV_JSON }}
+        run: |
+          if [ -n "$SHARED_ENV_JSON" ]; then
+            printf '%s' "$SHARED_ENV_JSON" > app/env/shared.json
+          else
+            cp app/env/shared.example.json app/env/shared.json
+          fi
       - name: Scaffold Windows platform (generated on runner, not committed)
         working-directory: app
         shell: bash
         run: flutter config --enable-windows-desktop && flutter create --platforms=windows .
       - name: Build Windows
-        working-directory: app
         shell: bash
         run: |
-          flutter build windows --release -t "$ENTRY" \
-            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/shared.json \
+          ./bin/balsm windows balsm ${{ needs.setup.outputs.env_file }} \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
-          mkdir -p ../dist
-          (cd build/windows/x64/runner/Release && 7z a "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-windows.zip" ./*)
+          mkdir -p dist
+          (cd app/build/windows/x64/runner/Release && 7z a "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-windows.zip" ./*)
       - uses: actions/upload-artifact@v4
         with:
           name: windows-build
@@ -262,23 +297,32 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. SHARED_ENV_JSON (real DSN + servers) wins;
+      # the tracked template is the fallback. See docs/ci-secrets.md.
+      - name: Provision server list (env/shared.json)
+        env:
+          SHARED_ENV_JSON: ${{ secrets.SHARED_ENV_JSON }}
+        run: |
+          if [ -n "$SHARED_ENV_JSON" ]; then
+            printf '%s' "$SHARED_ENV_JSON" > app/env/shared.json
+          else
+            cp app/env/shared.example.json app/env/shared.json
+          fi
       - name: Scaffold Linux platform (generated on runner, not committed)
         working-directory: app
         run: flutter config --enable-linux-desktop && flutter create --platforms=linux .
       - name: Build Linux
-        working-directory: app
         run: |
-          flutter build linux --release -t "$ENTRY" \
-            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/shared.json \
+          ./bin/balsm linux balsm ${{ needs.setup.outputs.env_file }} \
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
-          mkdir -p ../dist
-          tar -C build/linux/x64/release/bundle -czf "dist/balsm-${{ needs.setup.outputs.channel }}-linux.tar.gz" .
+          mkdir -p dist
+          tar -C app/build/linux/x64/release/bundle -czf "dist/balsm-${{ needs.setup.outputs.channel }}-linux.tar.gz" .
       - uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: app/dist/*.tar.gz
+          path: dist/*.tar.gz
           if-no-files-found: error
 
   web:
@@ -294,18 +338,31 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
-      - name: Build Web
-        working-directory: app
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. SHARED_ENV_JSON (real DSN + servers) wins;
+      # the tracked template is the fallback. See docs/ci-secrets.md.
+      - name: Provision server list (env/shared.json)
+        env:
+          SHARED_ENV_JSON: ${{ secrets.SHARED_ENV_JSON }}
         run: |
-          flutter build web --release -t "$ENTRY" \
-            --dart-define-from-file=env/balsm/${{ needs.setup.outputs.env_file }}.json \
-            --dart-define-from-file=env/shared.json \
-            --base-href=/apps/balsm/ \
-            --no-web-resources-cdn \
+          if [ -n "$SHARED_ENV_JSON" ]; then
+            printf '%s' "$SHARED_ENV_JSON" > app/env/shared.json
+          else
+            cp app/env/shared.example.json app/env/shared.json
+          fi
+      - name: Build Web
+        run: |
+          # The CLI adds --base-href/--no-web-resources-cdn itself for prod;
+          # alpha/beta (staging) deploy to the same path, so pass them through.
+          EXTRA=""
+          if [ "${{ needs.setup.outputs.env_file }}" != "prod" ]; then
+            EXTRA="--base-href=/apps/balsm/ --no-web-resources-cdn"
+          fi
+          ./bin/balsm web balsm ${{ needs.setup.outputs.env_file }} \
             --build-name=${{ needs.setup.outputs.build_name }} \
-            --build-number=${{ github.run_number }}
-          mkdir -p ../dist
-          (cd build/web && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-web.zip" .)
+            --build-number=${{ github.run_number }} $EXTRA
+          mkdir -p dist
+          (cd app/build/web && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-web.zip" .)
       - uses: actions/upload-artifact@v4
         with:
           name: web-build

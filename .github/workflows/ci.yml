@@ -88,8 +88,12 @@ jobs:
           python3 -c "import json; json.load(open('app/web/.well-known/emergency-keys.json')); print('emergency-keys OK')"
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. The tracked template works as-is.
+      - name: Provision server list (env/shared.json)
+        run: cp app/env/shared.example.json app/env/shared.json
       - name: Build web (release, prod)
-        run: dart run tool/build.dart web balsm prod
+        run: ./bin/balsm web balsm prod
       - uses: actions/upload-artifact@v4
         with:
           name: web-prod
@@ -113,11 +117,13 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Provision server list (env/shared.json)
+        run: cp app/env/shared.example.json app/env/shared.json
       # NDK is pinned in app/android/app/build.gradle.kts; AGP installs it on the
       # runner if missing. Release uses the debug signing fallback until a prod
       # keystore is wired (see SIGNING below).
       - name: Build APK (release, balsm · prod)
-        run: dart run tool/build.dart apk balsm prod
+        run: ./bin/balsm apk balsm prod
       - uses: actions/upload-artifact@v4
         with:
           name: android-prod-apk
@@ -137,8 +143,10 @@ jobs:
           cache: true
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Provision server list (env/shared.json)
+        run: cp app/env/shared.example.json app/env/shared.json
       - name: Build iOS (release, no codesign, balsm · prod)
-        run: dart run tool/build.dart ios balsm prod
+        run: ./bin/balsm ios balsm prod
       - uses: actions/upload-artifact@v4
         with:
           name: ios-prod-app

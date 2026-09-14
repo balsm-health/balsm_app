@@ -1,3 +1,7 @@
 {
-  "dart.flutterSdkPath": ".fvm/versions/3.47.4"
+  "dart.flutterSdkPath": ".fvm/flutter_sdk",
+  "dart.sdkPath": ".fvm/versions/3.47.4",
+  "dart.flutterSdkPaths": [
+    ".fvm/versions"
+  ]
 }

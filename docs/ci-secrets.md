@@ -13,6 +13,17 @@ Add under **Repo → Settings → Secrets and variables → Actions**.
 |---|---|---|
 | `CODECOV_TOKEN` | Upload token | codecov.io → add the repo → copy the token |
 
+## Server list (release builds)
+
+| Secret | What |
+|---|---|
+| `SHARED_ENV_JSON` | Contents of a real `app/env/shared.json` (server list + Sentry DSN) |
+
+Optional. `release.yml` writes it to `app/env/shared.json` before building;
+absent, the tracked `shared.example.json` template is used instead (builds
+work, but with placeholder servers and no Sentry DSN). CI builds always use
+the template.
+
 ## Android signing (release APK)
 
 | Secret | What |

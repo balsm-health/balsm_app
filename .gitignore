@@ -48,3 +48,5 @@ app/ios/signing/*
 app/env/shared*.json
 # …except the template a fresh clone copies from.
 !app/env/shared.example.json
+# Widget Preview related
+.widget_preview/

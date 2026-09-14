@@ -40,11 +40,16 @@ jobs:
       - name: Generate drift code (core)
         run: (cd packages/core && flutter pub get && dart run build_runner build)
 
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. The tracked template works as-is.
+      - name: Provision server list (env/shared.json)
+        run: cp app/env/shared.example.json app/env/shared.json
+
       # NDK is pinned in app/android/app/build.gradle.kts; AGP installs it on the
       # runner if missing. Release uses the debug signing fallback until a prod
       # keystore is wired.
       - name: Build APK (release)
-        run: dart run tool/build.dart apk ${{ matrix.brand }} ${{ matrix.env }}
+        run: ./bin/balsm apk ${{ matrix.brand }} ${{ matrix.env }}
 
       - uses: actions/upload-artifact@v4
         with:
