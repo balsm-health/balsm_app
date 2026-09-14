@@ -7,7 +7,10 @@ import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
+
 import '../widgets/photo_attach.dart';
+import '../widgets/vault_file_viewer.dart';
 import 'add_prescription_sheet.dart';
 
 /// Prescriptions the patient holds — grouped active / expired.
@@ -245,8 +248,11 @@ class PrescriptionDetailScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   child: rx.attachmentKind == 'image'
-                      ? VaultImage(path: rx.attachmentPath!, height: 240)
-                      : _LinkAttach(path: rx.attachmentPath!, kind: rx.attachmentKind ?? 'url'),
+                      ? GestureDetector(
+                          onTap: () => VaultFileViewer.open(context, path: rx.attachmentPath!, title: rx.title),
+                          child: VaultImage(path: rx.attachmentPath!, height: 240),
+                        )
+                      : _LinkAttach(path: rx.attachmentPath!, kind: rx.attachmentKind ?? 'url', title: rx.title),
                 ),
               if (active && !rx.isSelf && (rx.reference ?? '').isNotEmpty) _QrBlock(reference: rx.reference!),
               if (rx.items.isNotEmpty) ...[
@@ -365,41 +371,52 @@ class _QrBlock extends StatelessWidget {
 }
 
 class _LinkAttach extends StatelessWidget {
-  const _LinkAttach({required this.path, required this.kind});
+  const _LinkAttach({required this.path, required this.kind, this.title});
   final String path;
   final String kind;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final isPdf = kind == 'pdf';
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(T.rLg),
-        border: Border.all(color: T.border),
+    // PDF: decrypt-in-memory viewer (bytes never touch disk). Link: browser.
+    return Pressable(
+      onTap: () {
+        if (isPdf) {
+          VaultFileViewer.open(context, path: path, title: title);
+        } else {
+          launchUrl(Uri.parse(path), mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(T.rLg),
+          border: Border.all(color: T.border),
+        ),
+        child: Row(children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: T.petalViolet50, borderRadius: BorderRadius.circular(T.rMd)),
+            child: Icon(isPdf ? LucideIcons.fileText : LucideIcons.link, size: 20, color: T.petalViolet),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(path,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+              Text(isPdf ? 'PDF' : 'Link', style: Typo.meta(ar: s.rtl)),
+            ]),
+          ),
+          Icon(isPdf ? LucideIcons.eye : LucideIcons.externalLink, size: 16, color: T.fg4),
+        ]),
       ),
-      child: Row(children: [
-        Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: T.petalViolet50, borderRadius: BorderRadius.circular(T.rMd)),
-          child: Icon(isPdf ? LucideIcons.fileText : LucideIcons.link, size: 20, color: T.petalViolet),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(path,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            Text(isPdf ? 'PDF' : 'Link', style: Typo.meta(ar: s.rtl)),
-          ]),
-        ),
-        const Icon(LucideIcons.externalLink, size: 16, color: T.fg4),
-      ]),
     );
   }
 }

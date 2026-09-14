@@ -8,6 +8,7 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
+import '../widgets/vault_file_viewer.dart';
 import 'records_screen.dart';
 import '../vault/vault_blob.dart';
 import '../widgets/date_time_row.dart';
@@ -65,7 +66,12 @@ class RecordDetailScreen extends ConsumerWidget {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: _DocPreview(type: record.type, filePath: record.filePath),
+                child: GestureDetector(
+                  onTap: _canViewRecord(record)
+                      ? () => VaultFileViewer.open(context, path: record.filePath!, title: record.title)
+                      : null,
+                  child: _DocPreview(type: record.type, filePath: record.filePath, isPdf: _isPdfRecord(record)),
+                ),
               ),
               if (record.resultNote != null && record.resultNote!.isNotEmpty)
                 Padding(
@@ -114,11 +120,7 @@ class RecordDetailScreen extends ConsumerWidget {
                       accent: s.accent,
                       ar: s.rtl,
                       onTap: _canViewRecord(record)
-                          ? () => Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => _VaultImageViewer(path: record.filePath!),
-                                ),
-                              )
+                          ? () => VaultFileViewer.open(context, path: record.filePath!, title: record.title)
                           : null),
                   const SizedBox(height: 10),
                   PButton(r.rec_share,
@@ -138,52 +140,32 @@ bool _canViewRecord(RecordDocument record) {
   final path = record.filePath;
   if (path == null || path.isEmpty) return false;
   final type = (record.fileType ?? '').toLowerCase();
-  if (type == 'image' || type.startsWith('image/')) return true;
+  if (type == 'image' || type.startsWith('image/') || type == 'pdf' || type == 'application/pdf') return true;
   final lower = path.toLowerCase();
-  return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp');
+  return lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.png') ||
+      lower.endsWith('.webp') ||
+      lower.endsWith('.pdf');
 }
 
-/// Full-screen decrypt-in-memory viewer. Bytes stay on-device; never logged.
-class _VaultImageViewer extends StatelessWidget {
-  const _VaultImageViewer({required this.path});
-  final String path;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(children: [
-        Positioned.fill(
-          child: InteractiveViewer(
-            minScale: 1,
-            maxScale: 4,
-            child: VaultImage(
-              path: path,
-              height: MediaQuery.sizeOf(context).height,
-              fit: BoxFit.contain,
-              borderRadius: BorderRadius.zero,
-            ),
-          ),
-        ),
-        Positioned(
-          top: MediaQuery.paddingOf(context).top + 8,
-          left: 12,
-          child: RoundBtn(icon: LucideIcons.x, onTap: () => Navigator.of(context).pop()),
-        ),
-      ]),
-    );
-  }
+bool _isPdfRecord(RecordDocument record) {
+  final type = (record.fileType ?? '').toLowerCase();
+  return type == 'pdf' || type == 'application/pdf' || (record.filePath ?? '').toLowerCase().endsWith('.pdf');
 }
 
 /// Document plate — vault images render in-place; other types show a type placeholder.
 class _DocPreview extends StatelessWidget {
-  const _DocPreview({required this.type, this.filePath});
+  const _DocPreview({required this.type, this.filePath, this.isPdf = false});
   final RecordType type;
   final String? filePath;
+  final bool isPdf;
 
   @override
   Widget build(BuildContext context) {
-    if (filePath != null && filePath!.isNotEmpty) {
+    // A PDF's bytes can't render through Image.memory — the old path fed them
+    // to VaultImage and showed a silent blank plate. Type plate + tap-to-view.
+    if (filePath != null && filePath!.isNotEmpty && !isPdf) {
       return VaultImage(path: filePath!, height: 200);
     }
     final s = AppScope.of(context);

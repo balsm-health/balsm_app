@@ -72,6 +72,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   sensors_plus: ^7.1.0
   material_ui: ^1.2.0
+  pdfrx: ^2.6.1
 dev_dependencies:
   # Test-only: care_repository_test opens an in-memory AppDatabase.
   drift: ^2.29.0

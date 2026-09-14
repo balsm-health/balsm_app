@@ -594,6 +594,7 @@
     "rec_source": "Source",
     "rec_view": "View document",
     "rec_preview": "Document preview",
+    "rec_preview_failed": "Could not open this file",
     "rec_share": "Share with doctor",
     "rec_empty_h": "Add a lab test, scan, or report to keep your whole history in one place.",
     "rec_pick_type": "What are you adding?",
