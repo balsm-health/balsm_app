@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../_tokens.dart';
 
 // Not wired in P001 (no daily check-in). Lifted for P002 forward-compat.

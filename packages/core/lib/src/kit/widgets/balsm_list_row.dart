@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../_tokens.dart';
 
 /// List row porting prototype `.list-row` (icon + grow text + chevron-right).

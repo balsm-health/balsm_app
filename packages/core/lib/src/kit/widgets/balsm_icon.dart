@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../_tokens.dart';
 
 // Note: lucide_icons package added in T035al to core/pubspec.yaml.

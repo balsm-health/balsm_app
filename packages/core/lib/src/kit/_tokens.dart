@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Design tokens from Balsm-Core/brand/colors_and_type.css
 // Superseded by BalsmTheme in T063 (Phase 2).

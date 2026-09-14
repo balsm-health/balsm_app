@@ -1,7 +1,7 @@
 import 'dart:math' show sqrt;
 import 'dart:ui' show Path, PathFillType;
 
-import 'package:flutter/material.dart' show Offset, Rect;
+import 'package:material_ui/material_ui.dart' show Offset, Rect;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_parsing/path_parsing.dart';
 import 'package:xml/xml.dart';

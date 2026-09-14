@@ -15,7 +15,7 @@
 /// `preview_harness.dart` for the PHI rule that shapes the rest.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 

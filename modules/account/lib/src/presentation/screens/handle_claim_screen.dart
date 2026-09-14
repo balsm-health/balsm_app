@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../failure_text.dart';

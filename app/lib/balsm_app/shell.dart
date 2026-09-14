@@ -5,8 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:core/core.dart' show onlineProvider;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'app_state.dart';
@@ -163,11 +162,12 @@ class _PatientAppState extends State<PatientApp> {
           // pickers, semantics and default tooltips localize. The app's own
           // string system (i69n `tr()`) is unchanged; these delegates only
           // cover framework-provided widgets.
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+          //
+          // `delegates` (plural) is material_ui's own bundle of exactly the
+          // three that used to be listed here — Cupertino, Material, Widgets.
+          // Flutter 3.47 moved these out of flutter_localizations into the
+          // design packages, so importing both made the name ambiguous.
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
           // Four first-class locales (FR-207): English + the three Arabic
           // regions. `state.lang` only tracks the base language (no region),
           // so an 'ar' locale resolves to the first supported Arabic entry

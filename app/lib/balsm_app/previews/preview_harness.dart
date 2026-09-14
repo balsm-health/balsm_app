@@ -40,8 +40,7 @@
 library;
 
 import 'package:core/core.dart' show LanguageCode;
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
@@ -77,11 +76,10 @@ Widget _harness(Widget child, {required LanguageCode lang}) {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         locale: Locale(lang.value),
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        // material_ui's bundle of the Cupertino/Material/Widgets delegates —
+        // Flutter 3.47 moved them out of flutter_localizations, so listing
+        // them individually now collides with that package's own names.
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: const [Locale('en'), Locale('ar', 'EG')],
         theme: ThemeData(scaffoldBackgroundColor: Colors.white, useMaterial3: true),
         home: Directionality(

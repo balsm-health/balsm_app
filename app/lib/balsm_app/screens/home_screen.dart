@@ -1,6 +1,6 @@
 import 'package:core/core.dart' show accountSummaryProvider, currentUserIdProvider;
 import 'package:emergency_card/emergency_card.dart' show EmergencyCardSnapshot, emergencySnapshotReaderProvider;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:medications/medications.dart' show medicationListProvider;

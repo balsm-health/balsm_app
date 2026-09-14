@@ -1,6 +1,6 @@
 import 'package:app/balsm_app/screens/metric_log.dart';
 import 'package:app/balsm_app/tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Pumps a 300pt-wide slider and returns the values it reports.

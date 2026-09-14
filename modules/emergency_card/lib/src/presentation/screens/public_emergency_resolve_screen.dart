@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/resolve_emergency_qr_token_use_case.dart';

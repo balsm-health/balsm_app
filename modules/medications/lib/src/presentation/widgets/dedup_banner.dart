@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Shown on meds.today when restore-time dedup detected. Per Q4 FR-009e.
 class DedupBanner extends StatefulWidget {

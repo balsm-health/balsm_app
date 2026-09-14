@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
 import 'package:balsm_api/balsm_api.dart' show isOfflineError;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

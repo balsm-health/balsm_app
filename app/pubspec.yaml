@@ -71,6 +71,7 @@ dependencies:
   dio: ^5.8.0
   flutter_secure_storage: ^9.2.4
   sensors_plus: ^7.1.0
+  material_ui: ^1.2.0
 dev_dependencies:
   # Test-only: care_repository_test opens an in-memory AppDatabase.
   drift: ^2.29.0

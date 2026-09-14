@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Simple line-drawn mood face (1=rough … 5=great). Mouth curvature and brow
 /// follow the level; stroke uses [color].

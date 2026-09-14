@@ -1,7 +1,7 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/widgets/body_map.dart';
 import 'package:core/core.dart' show Gender;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 

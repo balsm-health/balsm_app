@@ -19,6 +19,7 @@ dependencies:
   intl: ^0.20.0
   timezone: ^0.9.4
   drift: ^2.29.0
+  material_ui: ^1.2.0
 dev_dependencies:
   build_runner: ^2.4.13
   custom_lint: ^0.8.0

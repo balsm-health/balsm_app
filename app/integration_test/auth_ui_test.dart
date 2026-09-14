@@ -10,7 +10,7 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:core/core.dart' show FlavorConfig, AppBrand, Flavor;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
