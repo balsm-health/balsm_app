@@ -516,7 +516,7 @@ packages:
     source: hosted
     version: "14.8.1"
   golden_toolkit:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: golden_toolkit
       sha256: "8f74adab33154fe7b731395782797021f97d2edc52f7bfb85ff4f1b5c4a215f0"
@@ -765,7 +765,7 @@ packages:
     source: hosted
     version: "1.2.0"
   meta:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: meta
       sha256: "307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9"
@@ -845,7 +845,7 @@ packages:
     source: hosted
     version: "1.1.0"
   path_provider:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path_provider
       sha256: a7f4874f987173da295a61c181b8ee71dab59b332a486b391babf26a1b884825
@@ -1170,7 +1170,7 @@ packages:
     source: hosted
     version: "0.5.7"
   sqlite3:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: sqlite3
       sha256: "3145bd74dcdb4fd6f5c6dda4d4e4490a8087d7f286a14dee5d37087290f0f8a2"
