@@ -1,9 +1,11 @@
 /// Previews for the design-system primitives in `kit.dart`.
 ///
-/// Run with `fvm flutter widget-preview start` from `app/`. The previewer only
-/// discovers `@Preview` functions under the project it is started in, so
-/// everything previewable lives inside `app/lib` — widgets in `packages/core`
-/// and `modules/*` are not reachable from here.
+/// Run from `app/` with the pinned SDK's `flutter` directly, NOT through fvm —
+/// see `preview_harness.dart` for why fvm breaks this one command.
+///
+/// The previewer only discovers `@Preview` functions under the project it is
+/// started in, so everything previewable lives inside `app/lib` — widgets in
+/// `packages/core` and `modules/*` are not reachable from here.
 ///
 /// Grouped so the previewer's sidebar stays navigable: one group per family of
 /// primitive, rather than three dozen flat entries.

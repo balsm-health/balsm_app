@@ -1,12 +1,26 @@
 /// Context every Balsm widget needs before it can render.
 ///
-/// Widget previews (`fvm flutter widget-preview start`, run from `app/`) mount
-/// a widget with none of the app's ambient scopes, so a bare
-/// `@Preview` returning a kit widget throws on the first
+/// The widget previewer mounts a widget with none of the app's ambient
+/// scopes, so a bare `@Preview` returning a kit widget throws on the first
 /// `AccentScope.of` or `AppScope.of` lookup. These wrappers supply the same
 /// stack `shell.dart` builds around the real app — Riverpod, [AppScope],
 /// framework localizations, [Directionality], [AccentScope] — so a preview
 /// shows what the app shows rather than a red error box.
+///
+/// ## Running it — do NOT use fvm for this one command
+///
+/// ```sh
+/// cd app && ~/fvm/versions/3.41.9/bin/flutter widget-preview start
+/// ```
+///
+/// `fvm flutter widget-preview start` fails with
+/// `Unable to resolve package "app" with the given git parameters`. The
+/// previewer builds a scaffold project and wires this one in by running
+/// `dart pub add 'app:{"path":…}'`; the JSON descriptor loses its quotes on
+/// the way through fvm's proxy, so pub reads it as a git descriptor and gives
+/// up. Invoking the pinned SDK's `flutter` directly skips the proxy and
+/// works — verified, it finds every preview in this directory. Everything
+/// else in this repo still goes through fvm as normal.
 ///
 /// ## Why these are top-level public functions
 ///
