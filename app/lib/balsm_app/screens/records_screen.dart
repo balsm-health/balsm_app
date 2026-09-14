@@ -10,12 +10,26 @@ import '../tokens.dart';
 import '../widgets/badges.dart';
 import 'records_detail.dart';
 
+/// Rows written by `persistPhotoRecord` before the `check-in` source existed:
+/// self-sourced scans titled with the add-photo button label (en/ar). Matching
+/// on those two literals is safe — a user-titled document goes through the
+/// add-record sheet, which never produces this combination.
+bool _isLegacyCheckInPhoto(RecordDocument r) =>
+    r.source.isSelf && r.type == RecordType.scan && (r.title == 'Add a photo' || r.title == 'إضافة صورة');
+
 /// Live vault contents for the signed-in user, newest first. Empty when signed
 /// out rather than throwing — the screen is reachable before a profile exists.
+///
+/// Check-in photos live in the same vault but belong to their check-in, not
+/// the document library — they are filtered out here (and from the home-screen
+/// count, which watches this provider).
 final recordListProvider = StreamProvider.autoDispose<List<RecordDocument>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(const []);
-  return ref.watch(recordsDataSourceProvider).watchAll();
+  return ref
+      .watch(recordsDataSourceProvider)
+      .watchAll()
+      .map((rows) => rows.where((r) => !r.source.isCheckIn && !_isLegacyCheckInPhoto(r)).toList());
 });
 
 /// Per-type chrome — `RECORD_TYPES` in the design.

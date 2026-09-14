@@ -27,6 +27,7 @@ Future<String?> persistPhotoRecord(
           userId: userId,
           type: type,
           title: title,
+          source: RecordSource.checkIn,
           fileType: 'Image',
           filePath: path,
           takenAt: DateTime.now(),

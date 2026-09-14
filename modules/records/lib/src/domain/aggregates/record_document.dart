@@ -11,8 +11,14 @@ enum RecordType { lab, scan, report }
 class RecordSource {
   const RecordSource(this.value);
   static const self = RecordSource('self');
+
+  /// Photo attached to a symptom check-in. Stored in the same vault for one
+  /// encryption/backup path, but hidden from the main records list — it
+  /// belongs to the check-in that owns it, not the document library.
+  static const checkIn = RecordSource('check-in');
   final String value;
   bool get isSelf => value == 'self';
+  bool get isCheckIn => value == 'check-in';
 
   @override
   bool operator ==(Object other) => other is RecordSource && other.value == value;
