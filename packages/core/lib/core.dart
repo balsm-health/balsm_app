@@ -113,5 +113,19 @@ export 'src/dev/server_health.dart' show ServerHealthProbe, ServerHealthResult, 
 
 // Test kit: gated by DEV environment flag.
 export 'src/test_kit/fakes.dart' if (dart.library.html) 'src/test_kit/fakes.dart';
-export 'src/test_kit/golden_helpers.dart';
 export 'src/test_kit/fake_apis.dart';
+// NOT exported: src/test_kit/golden_helpers.dart.
+//
+// It imports `package:golden_toolkit`, a dev_dependency. Exporting it put a
+// dev-only package on this library's public surface, so anything depending on
+// `core` without golden_toolkit of its own failed to compile — which the app
+// never noticed, because it happens to declare golden_toolkit as a
+// dev_dependency too, and its own build resolves that.
+//
+// The widget previewer is the consumer that does not: its generated scaffold
+// depends on `app` by path and inherits no dev_dependencies, so every preview
+// died on "Couldn't resolve the package 'golden_toolkit'".
+//
+// Nothing imports it. Its only symbol, `goldenTest`, has no callers — the
+// golden test in this package calls golden_toolkit's `testGoldens` directly.
+// Left in place rather than deleted, but it is a candidate for removal.
