@@ -26,7 +26,9 @@ void _ensureSqlCipherLoaded() {
 /// Native (iOS/Android/desktop) executor — the real on-device SQLCipher store.
 QueryExecutor openExecutor() => LazyDatabase(() async {
       _ensureSqlCipherLoaded();
-      const storage = FlutterSecureStorage();
+      // macOS: legacy file keychain — the data-protection keychain needs a
+      // provisioned keychain-access-group entitlement (-34018 without it).
+      const storage = FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
       var key = await storage.read(key: 'balsm.db.key');
       if (key == null) {
         final bytes = List<int>.generate(32, (_) => DateTime.now().microsecond);

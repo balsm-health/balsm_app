@@ -60,7 +60,9 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   final mapPacksDir = await getApplicationSupportDirectory();
   // Current authenticated user id (opaque, non-PHI), if signed in. Read from
   // the platform secure store before the container is built.
-  const secureStorage = FlutterSecureStorage();
+  // macOS: legacy file keychain — the data-protection keychain needs a
+  // provisioned keychain-access-group entitlement (-34018 without it).
+  const secureStorage = FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
   final userId = await secureStorage.read(key: 'balsm.user_id');
 
   // A session needs a REFRESH token to be revivable, not just an id. With the id
@@ -112,7 +114,7 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     // balsmApiClientProvider reads `.client` off it.
     balsmApiControllerProvider.overrideWith(
       (ref) => BalsmApiController.create(
-        storage: const FlutterSecureStorage(),
+        storage: const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false)),
         bus: ref.watch(eventBusProvider),
       ),
     ),

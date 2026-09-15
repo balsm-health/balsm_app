@@ -44,7 +44,10 @@ const kDevFlags = <DevFlag>[
 /// [SharedPreferences]; the log-encryption key in the OS keychain (never prefs
 /// — it is a secret). Dev-tooling only.
 class DevConfigStore extends ChangeNotifier {
-  DevConfigStore({FlutterSecureStorage? secureStorage}) : _secure = secureStorage ?? const FlutterSecureStorage();
+  DevConfigStore({FlutterSecureStorage? secureStorage})
+      // macOS: legacy file keychain — the data-protection keychain needs a
+      // provisioned keychain-access-group entitlement (-34018 without it).
+      : _secure = secureStorage ?? const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
 
   /// Shared instance, so a flag toggled in Dev Config is visible to the code it
   /// affects. The screen and the features that read flags must see the same

@@ -19,7 +19,7 @@ Future<void> main() async {
   // Seed a revivable synthetic session BEFORE bootstrap reads the keychain:
   // the shell ejects sessionless users by design, and the boot path requires
   // id + refresh token together to consider a session alive.
-  const storage = FlutterSecureStorage();
+  const storage = FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
   await storage.write(key: 'balsm.user_id', value: E2eFixture.userId);
   await storage.write(key: 'balsm.refresh_token', value: 'docshots-refresh-token');
   await storage.write(key: 'balsm.access_token', value: 'docshots-access-token');
