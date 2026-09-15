@@ -518,34 +518,44 @@ class _ListRow extends StatelessWidget {
 /// Post-signup "complete your profile" card (design: home.jsx ProfileScreen,
 /// `!profileComplete` accent card). Opens Personal details; disappears after
 /// the first successful save.
+/// Post-signup "complete your profile" card (design: home.jsx ProfileScreen,
+/// `!profileComplete` accent card). Opens Personal details; disappears once
+/// every mandatory field is filled.
 class _CompleteProfileCard extends StatelessWidget {
   const _CompleteProfileCard();
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return PCard(
-      onTap: () => openPersonalDetails(context),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rLg)),
-        child: Row(children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(color: s.accent.main, borderRadius: BorderRadius.circular(T.rMd)),
-            child: const Icon(LucideIcons.userRoundPen, size: 20, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.strings.profile.pc_title,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              const SizedBox(height: 2),
-              Text(s.strings.profile.pc_help, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      child: Material(
+        color: s.accent.bg,
+        borderRadius: BorderRadius.circular(T.rLg),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(T.rLg),
+          onTap: () => openPersonalDetails(context),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: s.accent.main, borderRadius: BorderRadius.circular(T.rMd)),
+                child: const Icon(LucideIcons.userRoundPen, size: 20, color: Colors.white),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(s.strings.profile.pc_title,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                  const SizedBox(height: 2),
+                  Text(s.strings.profile.pc_help, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+                ]),
+              ),
+              Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg3),
             ]),
           ),
-          Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg3),
-        ]),
+        ),
       ),
     );
   }
