@@ -119,9 +119,10 @@ class ProfileScreen extends ConsumerWidget {
             ]),
           ),
 
-          // Post-signup completion card — profile setup left the
-          // registration flow; this is where it happens now.
-          if (!s.profileComplete) const _CompleteProfileCard(),
+          // Completion card — profile setup left the registration flow;
+          // shown only while a mandatory field (name / DOB / gender / blood
+          // type) is actually missing.
+          if (!(ref.watch(profileCompletenessProvider).valueOrNull ?? true)) const _CompleteProfileCard(),
 
           // Language + country
           _ListCard(children: [

@@ -96,7 +96,6 @@ class PatientAppState extends ChangeNotifier {
       // Cloud backup is disabled (see storage_sheet): only `local` is a real
       // target, so a target persisted before that change must not keep
       // claiming the record is backed up to a cloud that never received it.
-      s.profileComplete = await prefs.profileComplete();
       final storedTarget = await prefs.storage();
       s.storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local;
       if (await prefs.signedIn() && hasSession) {
@@ -173,17 +172,6 @@ class PatientAppState extends ChangeNotifier {
   /// Stash/clear the transient sign-up password (not UI-bound, no notify).
   void setAuthPassword(String? pw) => authPassword = pw;
 
-  /// False right after signup until Personal details is saved (design: the
-  /// profile-setup step left the registration flow; the Profile tab carries a
-  /// completion card instead).
-  bool profileComplete = true;
-  void setProfileComplete(bool v) {
-    if (v == profileComplete) return;
-    profileComplete = v;
-    _prefs?.setProfileComplete(v);
-    notifyListeners();
-  }
-
   void go(String r) {
     if (r == 'app') tab = 'home';
     // Leaving the first-run walkthrough (Skip or Get started) marks it seen so
@@ -211,10 +199,6 @@ class PatientAppState extends ChangeNotifier {
     gender = Gender.other;
     authEmail = '';
     authPassword = null;
-    // Per-account flag: default back to complete; a subsequent signup sets
-    // it false again through its own flow.
-    profileComplete = true;
-    _prefs?.setProfileComplete(true);
     notifyListeners();
   }
 

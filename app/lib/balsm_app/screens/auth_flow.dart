@@ -595,10 +595,9 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
     }
     if (!mounted) return;
     // Design 2026-09: the profile-setup step left the registration flow. A new
-    // account enters the app directly with profileComplete=false — the Profile
-    // tab carries the completion card, and everything DOB-gated (QR mint) stays
-    // fail-closed until Personal details is saved.
-    if (isNewUser) s.setProfileComplete(false);
+    // account enters the app directly; the Profile tab derives its completion
+    // card from the actually-missing mandatory fields, and everything
+    // DOB-gated (QR mint) stays fail-closed until Personal details is saved.
     unawaited(enterAfterSignIn(context, ref, s));
   }
 

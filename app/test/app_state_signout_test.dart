@@ -10,7 +10,6 @@ void main() {
     s.setGender(Gender.female);
     s.setAuthContact(method: 'email', email: 'old@example.com');
     s.setAuthPassword('transient');
-    s.profileComplete = false;
 
     s.resetForSignOut();
 
@@ -20,7 +19,6 @@ void main() {
     expect(s.gender, Gender.other);
     expect(s.authEmail, isEmpty);
     expect(s.authPassword, isNull);
-    expect(s.profileComplete, isTrue);
   });
 
   test('device preferences survive the sign-out sweep', () {

@@ -29,12 +29,6 @@ class PatientAppPrefs extends ModulePreferences {
   Future<bool> walkthroughSeen() async => await read<bool>('walkthroughSeen') ?? false;
   Future<void> setWalkthroughSeen(bool v) => write('walkthroughSeen', v);
 
-  /// False from signup until Personal details is first saved — drives the
-  /// "complete your profile" card on the Profile tab. Defaults true so
-  /// existing installs never see the prompt retroactively.
-  Future<bool> profileComplete() async => await read<bool>('profileComplete') ?? true;
-  Future<void> setProfileComplete(bool v) => write('profileComplete', v);
-
   /// Last device timezone marker seen on app foreground (FR-023 / gap G9).
   /// Null until first recorded. Non-PHI — a coarse zone name/abbreviation only.
 

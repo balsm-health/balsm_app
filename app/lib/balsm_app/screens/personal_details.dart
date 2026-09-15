@@ -83,6 +83,23 @@ final _emergencySnapshotProvider = FutureProvider.autoDispose<EmergencyCardSnaps
 /// The signed-in user's full editable profile (PHI-carrying: DOB, national ID).
 /// Screen-local — the PHI never enters the app-wide AccountSummary. Re-fetched
 /// after a save so the head + fields reflect the server.
+/// Whether the mandatory profile fields are filled: name, date of birth,
+/// gender (account profile) and blood type (on-device health profile).
+/// Drives the "complete your profile" card — shown only while something is
+/// actually missing. Loading/offline/signed-out resolve to complete so the
+/// card never nags on a guess.
+final profileCompletenessProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return true;
+  final details = await ref.watch(accountProfileUseCaseProvider).load();
+  final hasName = ((details?.displayName ?? '').trim().isNotEmpty) || ((details?.firstName ?? '').trim().isNotEmpty);
+  final hasDob = (details?.dateOfBirth ?? '').isNotEmpty;
+  final hasGender = details?.gender != null;
+  final health = await ref.watch(profileDataSourceProvider).getProfile(userId);
+  final hasBlood = (health?.bloodType ?? '').isNotEmpty;
+  return hasName && hasDob && hasGender && hasBlood;
+});
+
 final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
@@ -291,10 +308,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
     await refreshAccountSummary(ref);
     ref.invalidate(_profileProvider);
+    // Re-derive the completion card from the freshly saved fields.
+    ref.invalidate(profileCompletenessProvider);
     if (!mounted) return;
-    // First successful save completes the post-signup profile step and
-    // retires the completion card on the Profile tab.
-    AppScope.of(context).setProfileComplete(true);
     setState(() {
       _saving = false;
       unStatus = 'idle';
