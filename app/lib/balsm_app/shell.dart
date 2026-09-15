@@ -8,6 +8,7 @@ import 'package:emergency_card/emergency_card.dart' show PublicEmergencyResolveS
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'app_state.dart';
 import 'desktop_menu.dart';
@@ -343,12 +344,13 @@ class _MainAppState extends State<_MainApp> {
     };
 
     final content = LayoutBuilder(builder: (context, c) {
-      final wide = c.maxWidth >= Bp.md;
-      if (wide) {
-        // Persistent side rail + content. Sub-screens render in-place; the rail
-        // stays reachable (persistent-nav).
+      // Design window classes (app.jsx / RESPONSIVE.md §0): compact <600 →
+      // bottom bar · medium/expanded 600–1439 → icon rail · wide ≥1440 →
+      // 240px sidebar with the brand block. Rail/sidebar persist on
+      // sub-screens; only compact hides its bar there.
+      if (c.maxWidth >= 600) {
         return Row(children: [
-          const _SideNav(),
+          _SideNav(expanded: c.maxWidth >= 1440),
           Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
         ]);
       }
@@ -535,11 +537,37 @@ class _Tab extends StatelessWidget {
 /// circle in the bottom tab bar (and the side rail), it opens the quick-log
 /// sheet ([showQuickLog]): the full check-in plus the one-metric mini flows.
 class _QuickLog extends StatelessWidget {
-  const _QuickLog({this.rail = false});
+  const _QuickLog({this.rail = false, this.wide = false});
   final bool rail;
+  final bool wide;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    if (wide) {
+      // Sidebar: full-width labelled quick-log action (design `.fab-label`).
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Space.s3, vertical: Space.s2),
+        child: Pressable(
+          onTap: () => showQuickLog(context),
+          scale: 0.97,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: Space.s3),
+            decoration: BoxDecoration(
+              color: s.accent.main,
+              borderRadius: BorderRadius.circular(T.rLg),
+              boxShadow: s.accent.boxShadow,
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(LucideIcons.plus, size: 20, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(s.strings.checkin.ql_title,
+                  style:
+                      Typo.body(ar: s.rtl).copyWith(fontSize: FS.sm, fontWeight: FontWeight.w700, color: Colors.white)),
+            ]),
+          ),
+        ),
+      );
+    }
     final button = Pressable(
       onTap: () => showQuickLog(context),
       scale: 0.94,
@@ -574,24 +602,51 @@ class _QuickLog extends StatelessWidget {
 
 // ── Tablet / desktop side rail ───────────────────────────────
 class _SideNav extends StatelessWidget {
-  const _SideNav();
+  const _SideNav({this.expanded = false});
+
+  /// Wide window class (≥1440): 240px sidebar with the brand block and
+  /// labelled rows. Otherwise the medium/expanded 72px icon rail.
+  final bool expanded;
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
-      width: 96,
+      width: expanded ? 240 : 96,
       decoration: const BoxDecoration(
         color: Color(0xEBFFFFFF),
         border: BorderDirectional(end: BorderSide(color: T.border)),
       ),
       child: SafeArea(
-        child: Column(children: [
-          const SizedBox(height: Space.s5),
-          _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
-          _RailItem(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
-          const _QuickLog(rail: true),
-          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
-          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          if (expanded)
+            // `.nav-brand` — mark + wordmark, sidebar only.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+              child: Row(children: [
+                SvgPicture.asset(Assets.brand_icon, width: 30, height: 30),
+                const SizedBox(width: 10),
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                        text: 'Balsm',
+                        style: Typo.heading(ar: false).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w800)),
+                    TextSpan(
+                        text: '.health',
+                        style:
+                            Typo.body(ar: false).copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: T.fg3)),
+                  ]),
+                  textDirection: TextDirection.ltr,
+                ),
+              ]),
+            )
+          else
+            const SizedBox(height: Space.s5),
+          _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
+          _RailItem(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
+          _QuickLog(rail: true, wide: expanded),
+          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
+          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
           const Spacer(),
         ]),
       ),
@@ -600,31 +655,47 @@ class _SideNav extends StatelessWidget {
 }
 
 class _RailItem extends StatelessWidget {
-  const _RailItem({required this.id, required this.icon, required this.label});
+  const _RailItem({required this.id, required this.icon, required this.label, this.wide = false});
   final String id;
   final IconData icon;
   final String label;
+  final bool wide;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final active = s.tab == id;
     final color = active ? s.accent.main : T.fg4;
+    final child = wide
+        ? Row(children: [
+            Icon(icon, size: 22, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label,
+                  style: Typo.body(ar: s.rtl).copyWith(
+                      fontSize: FS.sm,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                      color: active ? s.accent.main : T.fg2)),
+            ),
+          ])
+        : Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 24, color: color),
+            const SizedBox(height: 4),
+            Text(label,
+                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
+          ]);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => s.setTab(id),
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: Space.s1, horizontal: Space.s2),
-        padding: const EdgeInsets.symmetric(vertical: Space.s2),
+        margin: EdgeInsets.symmetric(vertical: Space.s1, horizontal: wide ? Space.s3 : Space.s2),
+        padding: wide
+            ? const EdgeInsets.symmetric(vertical: Space.s3, horizontal: Space.s3)
+            : const EdgeInsets.symmetric(vertical: Space.s2),
         decoration: BoxDecoration(
           color: active ? s.accent.bg : Colors.transparent,
           borderRadius: BorderRadius.circular(T.rMd),
         ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 24, color: color),
-          const SizedBox(height: 4),
-          Text(label,
-              style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
-        ]),
+        child: child,
       ),
     );
   }
