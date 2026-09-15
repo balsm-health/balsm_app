@@ -92,6 +92,11 @@ class DesktopMenuScope extends StatelessWidget {
     if (!_isDesktop) return child;
     final s = state;
     final meta = Platform.isMacOS;
+    // Patient actions and section navigation only exist inside the signed-in
+    // shell — on the auth flow they would push screens whose providers need a
+    // session. Diagnostics (screenshot / logs / dev config) stay: they are
+    // exactly what you need when sign-in itself misbehaves.
+    final signedIn = state.route == 'app';
 
     SingleActivator nav(int n) => SingleActivator(
           const [
@@ -132,10 +137,13 @@ class DesktopMenuScope extends StatelessWidget {
           PlatformMenu(
             label: s.strings.nav.menu_actions,
             menus: [
-              PlatformMenuItem(label: s.strings.nav.menu_checkin, shortcut: checkInKey, onSelected: actions.checkIn),
-              PlatformMenuItem(label: s.strings.nav.menu_quicklog, shortcut: quickLogKey, onSelected: actions.quickLog),
-              PlatformMenuItem(
-                  label: s.strings.nav.menu_emergency, shortcut: emergencyKey, onSelected: actions.emergency),
+              if (signedIn) ...[
+                PlatformMenuItem(label: s.strings.nav.menu_checkin, shortcut: checkInKey, onSelected: actions.checkIn),
+                PlatformMenuItem(
+                    label: s.strings.nav.menu_quicklog, shortcut: quickLogKey, onSelected: actions.quickLog),
+                PlatformMenuItem(
+                    label: s.strings.nav.menu_emergency, shortcut: emergencyKey, onSelected: actions.emergency),
+              ],
               PlatformMenuItemGroup(members: [
                 PlatformMenuItem(
                     label: s.strings.nav.menu_screenshot,
@@ -144,17 +152,18 @@ class DesktopMenuScope extends StatelessWidget {
               ]),
             ],
           ),
-          PlatformMenu(
-            label: s.strings.nav.menu_go,
-            menus: [
-              for (final (i, (_, tab)) in _tabs.indexed)
-                PlatformMenuItem(
-                  label: _tabLabel(s, tab),
-                  shortcut: nav(i),
-                  onSelected: () => state.setTab(tab),
-                ),
-            ],
-          ),
+          if (signedIn)
+            PlatformMenu(
+              label: s.strings.nav.menu_go,
+              menus: [
+                for (final (i, (_, tab)) in _tabs.indexed)
+                  PlatformMenuItem(
+                    label: _tabLabel(s, tab),
+                    shortcut: nav(i),
+                    onSelected: () => state.setTab(tab),
+                  ),
+              ],
+            ),
         ],
         child: child,
       );
@@ -162,13 +171,14 @@ class DesktopMenuScope extends StatelessWidget {
 
     // Windows / Linux: in-window Material menu + always-on accelerators.
     final shortcuts = <ShortcutActivator, VoidCallback>{
-      checkInKey: actions.checkIn,
-      quickLogKey: actions.quickLog,
-      emergencyKey: actions.emergency,
+      if (signedIn) checkInKey: actions.checkIn,
+      if (signedIn) quickLogKey: actions.quickLog,
+      if (signedIn) emergencyKey: actions.emergency,
       shotKey: () => _saveScreenshot(context),
       logsKey: actions.logs,
       devKey: actions.devConfig,
-      for (final (i, (_, tab)) in _tabs.indexed) nav(i): () => state.setTab(tab),
+      if (signedIn)
+        for (final (i, (_, tab)) in _tabs.indexed) nav(i): () => state.setTab(tab),
     };
     return CallbackShortcuts(
       bindings: shortcuts,
@@ -191,13 +201,15 @@ class DesktopMenuScope extends StatelessWidget {
               ],
               child: Text(s.strings.nav.menu_actions),
             ),
-            SubmenuButton(
-              menuChildren: [
-                for (final (i, (_, tab)) in _tabs.indexed)
-                  MenuItemButton(shortcut: nav(i), onPressed: () => state.setTab(tab), child: Text(_tabLabel(s, tab))),
-              ],
-              child: Text(s.strings.nav.menu_go),
-            ),
+            if (signedIn)
+              SubmenuButton(
+                menuChildren: [
+                  for (final (i, (_, tab)) in _tabs.indexed)
+                    MenuItemButton(
+                        shortcut: nav(i), onPressed: () => state.setTab(tab), child: Text(_tabLabel(s, tab))),
+                ],
+                child: Text(s.strings.nav.menu_go),
+              ),
           ]),
           Expanded(child: child),
         ]),
