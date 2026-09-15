@@ -5,10 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('resetForSignOut clears every account-scoped field', () {
     final s = PatientAppState();
-    s.addFamilyMember(name: 'Test Member', relation: 'Sibling', linkJti: 'jti-1', status: 'pending');
+    s.addFamilyMember(name: 'Test Member', relation: 'Sibling', linkJti: 'jti-1', status: FamilyLinkStatus.pending);
     s.selectFamilyMember(s.extraFamily.first.id);
     s.setGender(Gender.female);
-    s.setAuthContact(method: 'email', email: 'old@example.com');
+    s.setAuthContact(method: AuthMethod.email, email: 'old@example.com');
     s.setAuthPassword('transient');
 
     s.resetForSignOut();

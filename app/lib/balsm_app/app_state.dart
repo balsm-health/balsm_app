@@ -19,6 +19,21 @@ const kHomeCountry = CountryCode.egypt;
 /// current tab/route, country, and the active backup target. The signed-in
 /// user's identity/PHI is NOT held here — screens read it from real providers
 /// (`accountSummaryProvider`, `profileDataSourceProvider`).
+/// Which credential flow the auth screens run ('signup' vs 'signin' in the
+/// design prototype).
+enum AuthIntent { signIn, signUp }
+
+/// How the account was reached at the credentials step.
+enum AuthMethod { phone, email }
+
+/// Family-link lifecycle: [pending] awaits the other person's approval and
+/// cannot be switched to.
+enum FamilyLinkStatus { linked, pending }
+
+/// Handle-availability check state shared by the profile-setup and personal-
+/// details username fields.
+enum UsernameStatus { idle, checking, available, taken, invalid }
+
 class PatientAppState extends ChangeNotifier {
   LanguageCode lang = LanguageCode.en;
 
@@ -31,12 +46,12 @@ class PatientAppState extends ChangeNotifier {
   /// Active tab/sub-screen: home | map | meds | profile | trends | records | appts
   AppTab tab = AppTab.home;
 
-  String authMethod = 'phone'; // phone | email
+  AuthMethod authMethod = AuthMethod.phone;
   String authEmail = '';
 
   /// 'signup' (Get started / social) | 'signin' (Sign in link). Decides whether
   /// the email+password form registers (OTP → setPassword) or signs in.
-  String authIntent = 'signin';
+  AuthIntent authIntent = AuthIntent.signIn;
 
   /// Transient — password captured on the password sign-up screen, applied via
   /// setPassword once OTP verify establishes the session. In-memory only (never
@@ -159,14 +174,14 @@ class PatientAppState extends ChangeNotifier {
 
   /// Records the verified sign-up contact (method + email) so the OTP step can
   /// display it and call the real verify use-case with the right address.
-  void setAuthContact({required String method, required String email}) {
+  void setAuthContact({required AuthMethod method, required String email}) {
     authMethod = method;
     authEmail = email;
     notifyListeners();
   }
 
   /// Set the auth intent (called from the welcome screen before go('phone')).
-  void setAuthIntent(String intent) {
+  void setAuthIntent(AuthIntent intent) {
     authIntent = intent;
     notifyListeners();
   }
@@ -220,7 +235,11 @@ class PatientAppState extends ChangeNotifier {
   }
 
   void addFamilyMember(
-      {required String name, required String relation, DateTime? dob, String? linkJti, String status = 'linked'}) {
+      {required String name,
+      required String relation,
+      DateTime? dob,
+      String? linkJti,
+      FamilyLinkStatus status = FamilyLinkStatus.linked}) {
     const palette = [T.petalAqua, T.petalBlue, T.petalViolet, T.petalMint, T.sun500];
     extraFamily.add(FamilyMemberPreview(
       id: 'fam_${DateTime.now().millisecondsSinceEpoch}',
@@ -236,7 +255,7 @@ class PatientAppState extends ChangeNotifier {
 
   /// Withdraws an outgoing link request (design: pending row → Cancel).
   void cancelPendingLink(String id) {
-    extraFamily.removeWhere((m) => m.id == id && m.status == 'pending');
+    extraFamily.removeWhere((m) => m.id == id && m.status == FamilyLinkStatus.pending);
     if (activeFamilyId == id) activeFamilyId = null;
     notifyListeners();
   }
@@ -304,7 +323,7 @@ class FamilyMemberPreview {
     required this.color,
     this.dob,
     this.linkJti,
-    this.status = 'linked',
+    this.status = FamilyLinkStatus.linked,
   });
   final String id;
   final String name;
@@ -315,10 +334,8 @@ class FamilyMemberPreview {
   /// every cross-account flow binds to the jti, never an account id).
   final String? linkJti;
 
-  /// 'linked' | 'pending' — pending rows await the other person's approval
-  /// and cannot be switched to.
-  final String status;
-  bool get isPending => status == 'pending';
+  final FamilyLinkStatus status;
+  bool get isPending => status == FamilyLinkStatus.pending;
 
   /// Date of birth, used only to show the member's age in the switcher.
   ///

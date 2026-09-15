@@ -57,7 +57,11 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
           // until the other person approves in their own app); a manually
           // entered member is a local row and links immediately.
           s.addFamilyMember(
-              name: name, relation: r, dob: dob, linkJti: linkJti, status: linkJti != null ? 'pending' : 'linked');
+              name: name,
+              relation: r,
+              dob: dob,
+              linkJti: linkJti,
+              status: linkJti != null ? FamilyLinkStatus.pending : FamilyLinkStatus.linked);
           Navigator.pop(context);
         },
       );
@@ -328,13 +332,15 @@ class _AddFamilyMemberSheet extends StatefulWidget {
   State<_AddFamilyMemberSheet> createState() => _AddFamilyMemberSheetState();
 }
 
+/// choose → scan → found | manual (design AddFamilyMemberSheet modes).
+enum _AddMode { choose, scan, found, manual }
+
 class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
   final _name = TextEditingController();
   String _relation = '';
   DateTime? _dob;
 
-  /// choose → scan → found | manual (design AddFamilyMemberSheet modes).
-  String _mode = 'choose';
+  _AddMode _mode = _AddMode.choose;
   ScannedProfile? _scanned;
 
   PatientAppState get s => widget.s;
@@ -366,8 +372,8 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
   Widget build(BuildContext context) {
     final c = s.strings.common;
     final title = switch (_mode) {
-      'scan' => c.fam_scan_title,
-      'found' => c.fam_confirm_title,
+      _AddMode.scan => c.fam_scan_title,
+      _AddMode.found => c.fam_confirm_title,
       _ => s.strings.settings.add_member,
     };
     return Container(
@@ -393,25 +399,25 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
   }
 
   List<Widget> _body(dynamic c) => switch (_mode) {
-        'choose' => [
+        _AddMode.choose => [
             _chooseCard(c.fam_scan_qr, c.fam_scan_qr_sub, LucideIcons.qrCode,
-                accent: true, onTap: () => setState(() => _mode = 'scan')),
+                accent: true, onTap: () => setState(() => _mode = _AddMode.scan)),
             const SizedBox(height: 10),
             _chooseCard(c.fam_manual, c.fam_manual_sub, LucideIcons.pencilLine,
-                onTap: () => setState(() => _mode = 'manual')),
+                onTap: () => setState(() => _mode = _AddMode.manual)),
           ],
-        'scan' => [
+        _AddMode.scan => [
             FamilyQrScanView(
               onFound: (found) => setState(() {
                 _scanned = found;
                 _name.text = found.payload.name ?? '';
                 _dob = DateTime.tryParse(found.payload.dateOfBirth ?? '');
-                _mode = 'found';
+                _mode = _AddMode.found;
               }),
-              onManual: () => setState(() => _mode = 'manual'),
+              onManual: () => setState(() => _mode = _AddMode.manual),
             ),
           ],
-        'found' => _foundBody(c),
+        _AddMode.found => _foundBody(c),
         _ => _manualBody(c),
       };
 
@@ -473,7 +479,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
       ),
       const SizedBox(height: 8),
       PButton(c.fam_scan_other,
-          variant: BtnVariant.ghost, block: true, ar: s.rtl, onTap: () => setState(() => _mode = 'scan')),
+          variant: BtnVariant.ghost, block: true, ar: s.rtl, onTap: () => setState(() => _mode = _AddMode.scan)),
     ];
   }
 
@@ -565,7 +571,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
           block: true,
           ar: s.rtl,
           icon: LucideIcons.qrCode,
-          onTap: () => setState(() => _mode = 'scan')),
+          onTap: () => setState(() => _mode = _AddMode.scan)),
     ];
   }
 

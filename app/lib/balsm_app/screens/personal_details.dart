@@ -155,14 +155,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   String _origHandle = '';
   // Backend handle format: 3–30 chars, a–z 0–9 _ or . (mirrors kHandleFormat).
   static final _handleFormat = RegExp(r'^[a-z0-9_.]{3,30}$');
-  String unStatus = 'idle'; // idle | checking | available | taken | invalid
+  UsernameStatus unStatus = UsernameStatus.idle;
   Timer? _debounce;
 
   PatientAppState get s => widget.s;
 
   /// Block save only while the handle is mid-check or resolved bad — other
   /// profile fields are always saveable. A changed+available handle also claims.
-  bool get _canSave => unStatus == 'idle' || unStatus == 'available';
+  bool get _canSave => unStatus == UsernameStatus.idle || unStatus == UsernameStatus.available;
 
   String? _fmtDob() => _dob == null
       ? null
@@ -177,14 +177,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     }
     _debounce?.cancel();
     if (v.isEmpty || v == _origHandle) {
-      setState(() => unStatus = 'idle');
+      setState(() => unStatus = UsernameStatus.idle);
       return;
     }
     if (!_handleFormat.hasMatch(v)) {
-      setState(() => unStatus = 'invalid');
+      setState(() => unStatus = UsernameStatus.invalid);
       return;
     }
-    setState(() => unStatus = 'checking');
+    setState(() => unStatus = UsernameStatus.checking);
     _debounce = Timer(const Duration(milliseconds: 500), () => _check(v));
   }
 
@@ -193,13 +193,13 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     try {
       final res = await ref.read(accountApiProvider).checkHandleAvailability(v);
       if (!mounted || handle.text != v) return; // stale response — ignore
-      setState(() => unStatus = res.available ? 'available' : 'taken');
+      setState(() => unStatus = res.available ? UsernameStatus.available : UsernameStatus.taken);
     } catch (_) {
       // Network / server error — treat as "couldn't verify" (idle), never
       // block on a false-available. A genuinely-taken handle still fails at
       // claim time (409 → ConflictFailure).
       if (!mounted || handle.text != v) return;
-      setState(() => unStatus = 'idle');
+      setState(() => unStatus = UsernameStatus.idle);
     }
   }
 
@@ -240,7 +240,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       // Cancelling restores the claimed handle so the field never lies about
       // what the account actually resolves to.
       handle.text = _origHandle;
-      if (mounted) setState(() => unStatus = 'idle');
+      if (mounted) setState(() => unStatus = UsernameStatus.idle);
       return;
     }
     await _save();
@@ -291,14 +291,14 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
     // 2) Handle claim, only when the handle actually changed and is available.
     final newHandle = handle.text.trim();
-    if (newHandle != _origHandle && unStatus == 'available') {
+    if (newHandle != _origHandle && unStatus == UsernameStatus.available) {
       final claim = await ref.read(claimHandleUseCaseProvider).execute(newHandle);
       if (!mounted) return;
       final claimFailed = claim.isFailure;
       if (claimFailed) {
         setState(() {
           _saving = false;
-          unStatus = 'taken';
+          unStatus = UsernameStatus.taken;
         });
         _snack(_failureText(claim.error));
         return;
@@ -313,7 +313,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     if (!mounted) return;
     setState(() {
       _saving = false;
-      unStatus = 'idle';
+      unStatus = UsernameStatus.idle;
       saved = true;
     });
     Future.delayed(const Duration(seconds: 2), () {
@@ -379,28 +379,28 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       );
 
   Color get _handleStatusColor => switch (unStatus) {
-        'available' => T.petalMint600,
-        'taken' => T.danger,
-        'invalid' => T.sun500,
+        UsernameStatus.available => T.petalMint600,
+        UsernameStatus.taken => T.danger,
+        UsernameStatus.invalid => T.sun500,
         _ => s.accent.main,
       };
 
   String? get _handleMsg => switch (unStatus) {
-        'checking' => s.strings.auth.un_checking,
-        'available' => s.strings.auth.un_avail,
-        'taken' => s.strings.auth.un_taken,
-        'invalid' => s.strings.auth.un_invalid,
+        UsernameStatus.checking => s.strings.auth.un_checking,
+        UsernameStatus.available => s.strings.auth.un_avail,
+        UsernameStatus.taken => s.strings.auth.un_taken,
+        UsernameStatus.invalid => s.strings.auth.un_invalid,
         _ => null,
       };
 
   Widget? _handleSuffix() {
-    if (unStatus == 'checking') {
+    if (unStatus == UsernameStatus.checking) {
       return const Center(widthFactor: 1, child: Spinner(size: 16, stroke: 2, color: T.fg3));
     }
     final ico = switch (unStatus) {
-      'available' => LucideIcons.checkCircle2,
-      'taken' => LucideIcons.xCircle,
-      'invalid' => LucideIcons.alertCircle,
+      UsernameStatus.available => LucideIcons.checkCircle2,
+      UsernameStatus.taken => LucideIcons.xCircle,
+      UsernameStatus.invalid => LucideIcons.alertCircle,
       _ => null,
     };
     if (ico == null) return null;
@@ -494,11 +494,13 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                               enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(T.rMd),
                                   borderSide: BorderSide(
-                                      color: unStatus == 'idle' ? T.border : _handleStatusColor, width: 1.5)),
+                                      color: unStatus == UsernameStatus.idle ? T.border : _handleStatusColor,
+                                      width: 1.5)),
                               focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(T.rMd),
                                   borderSide: BorderSide(
-                                      color: unStatus == 'idle' ? s.accent.main : _handleStatusColor, width: 1.5)),
+                                      color: unStatus == UsernameStatus.idle ? s.accent.main : _handleStatusColor,
+                                      width: 1.5)),
                             ),
                           )),
                       // Validation message — slides in/out smoothly as status changes.

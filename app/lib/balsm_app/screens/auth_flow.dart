@@ -70,7 +70,7 @@ class _WelcomeScreen extends StatelessWidget {
                 const SizedBox(height: 28),
                 PButton(s.strings.onboarding.w_start(s.gender),
                     variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
-                  s.setAuthIntent('signup');
+                  s.setAuthIntent(AuthIntent.signUp);
                   s.go(AppRoutes.phone);
                 }),
                 const SizedBox(height: 16),
@@ -78,7 +78,7 @@ class _WelcomeScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 GestureDetector(
                   onTap: () {
-                    s.setAuthIntent('signin');
+                    s.setAuthIntent(AuthIntent.signIn);
                     s.go(AppRoutes.phone);
                   },
                   child: RichText(
@@ -329,7 +329,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 
   Future<void> _continue() async {
     final s = AppScope.of(context);
-    final isSignup = s.authIntent == 'signup';
+    final isSignup = s.authIntent == AuthIntent.signUp;
     final address = ctrl.text.trim();
 
     if (!isSignup) {
@@ -348,7 +348,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
               // "Save password?" prompt. Nothing before this point should, or a
               // typo gets offered to the keychain.
               TextInput.finishAutofillContext();
-              s.setAuthContact(method: 'email', email: address);
+              s.setAuthContact(method: AuthMethod.email, email: address);
               unawaited(enterAfterSignIn(context, ref, s));
             case SignInLockout(:final session):
               TextInput.finishAutofillContext(shouldSave: false);
@@ -374,7 +374,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     setState(() => _submitting = false);
     result.fold(
       (_) {
-        s.setAuthContact(method: 'email', email: address);
+        s.setAuthContact(method: AuthMethod.email, email: address);
         s.setAuthPassword(pwCtrl.text);
         s.go(AppRoutes.otp);
       },
@@ -385,7 +385,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final isSignup = s.authIntent == 'signup';
+    final isSignup = s.authIntent == AuthIntent.signUp;
     return Container(
       color: T.cream50,
       // Groups the email and password fields into one credential set, so the
@@ -987,7 +987,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   final dob = TextEditingController();
   DateTime? _dobDate;
   Gender gender = Gender.female;
-  String unStatus = 'idle'; // idle | checking | available | taken | invalid
+  UsernameStatus unStatus = UsernameStatus.idle;
   Timer? debounce;
   static const _taken = {
     'layla',
@@ -1010,22 +1010,22 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
     }
     debounce?.cancel();
     if (v.isEmpty) {
-      setState(() => unStatus = 'idle');
+      setState(() => unStatus = UsernameStatus.idle);
       return;
     }
     if (!RegExp(r'^[a-z0-9_]{3,20}$').hasMatch(v)) {
-      setState(() => unStatus = 'invalid');
+      setState(() => unStatus = UsernameStatus.invalid);
       return;
     }
-    setState(() => unStatus = 'checking');
-    debounce = Timer(
-        const Duration(milliseconds: 700), () => setState(() => unStatus = _taken.contains(v) ? 'taken' : 'available'));
+    setState(() => unStatus = UsernameStatus.checking);
+    debounce = Timer(const Duration(milliseconds: 700),
+        () => setState(() => unStatus = _taken.contains(v) ? UsernameStatus.taken : UsernameStatus.available));
   }
 
   bool get ok =>
       '${first.text} ${last.text}'.trim().length > 1 &&
       _dobDate != null &&
-      (unStatus == 'available' || unStatus == 'idle');
+      (unStatus == UsernameStatus.available || unStatus == UsernameStatus.idle);
 
   String _fmtDob(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')} / ${d.month.toString().padLeft(2, '0')} / ${d.year}';
@@ -1202,16 +1202,16 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
 class _UsernameField extends StatelessWidget {
   const _UsernameField({required this.controller, required this.status, required this.onChanged, required this.s});
   final TextEditingController controller;
-  final String status;
+  final UsernameStatus status;
   final ValueChanged<String> onChanged;
   final PatientAppState s;
   @override
   Widget build(BuildContext context) {
     final (icon, col, msg) = switch (status) {
-      'checking' => (LucideIcons.loader, T.fg3, s.strings.auth.un_checking),
-      'available' => (LucideIcons.checkCircle2, T.petalMint600, s.strings.auth.un_avail),
-      'taken' => (LucideIcons.xCircle, T.danger, s.strings.auth.un_taken),
-      'invalid' => (LucideIcons.alertCircle, T.sun500, s.strings.auth.un_invalid),
+      UsernameStatus.checking => (LucideIcons.loader, T.fg3, s.strings.auth.un_checking),
+      UsernameStatus.available => (LucideIcons.checkCircle2, T.petalMint600, s.strings.auth.un_avail),
+      UsernameStatus.taken => (LucideIcons.xCircle, T.danger, s.strings.auth.un_taken),
+      UsernameStatus.invalid => (LucideIcons.alertCircle, T.sun500, s.strings.auth.un_invalid),
       _ => (null, T.fg4, ''),
     };
     return _Field(
@@ -1227,7 +1227,7 @@ class _UsernameField extends StatelessWidget {
                 accent: s.accent,
                 prefix: '@',
                 onChanged: onChanged),
-            if (status == 'checking')
+            if (status == UsernameStatus.checking)
               const Positioned(right: 12, child: Spinner(size: 16, stroke: 2, color: T.fg3))
             else if (icon != null)
               Positioned(right: 12, child: Icon(icon, size: 17, color: col)),
