@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'profile_subscreens.dart' show healthProfileProvider;
 import 'package:core/core.dart'
     show
         currentUserIdProvider,
@@ -85,7 +86,10 @@ final profileCompletenessProvider = FutureProvider.autoDispose<bool>((ref) async
   final hasName = ((details?.displayName ?? '').trim().isNotEmpty) || ((details?.firstName ?? '').trim().isNotEmpty);
   final hasDob = (details?.dateOfBirth ?? '').isNotEmpty;
   final hasGender = details?.gender != null;
-  final health = await ref.watch(profileDataSourceProvider).getProfile(userId);
+  // Watch the SAME provider the medical-profile screen edits + invalidates,
+  // so setting the blood type retires the card immediately instead of after
+  // the next cold rebuild.
+  final health = await ref.watch(healthProfileProvider.future);
   final hasBlood = (health?.bloodType ?? '').isNotEmpty;
   return hasName && hasDob && hasGender && hasBlood;
 });
