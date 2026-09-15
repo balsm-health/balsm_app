@@ -199,6 +199,25 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Clears every account-scoped piece of in-memory + preference state when
+  /// the user signs out, so the NEXT account on this device never inherits
+  /// the previous one (family members, gendered copy, completion state,
+  /// transient auth fields). Language / country / storage target are device
+  /// preferences and deliberately survive.
+  void resetForSignOut() {
+    extraFamily.clear();
+    activeFamilyId = null;
+    linkRequests.clear();
+    gender = Gender.other;
+    authEmail = '';
+    authPassword = null;
+    // Per-account flag: default back to complete; a subsequent signup sets
+    // it false again through its own flow.
+    profileComplete = true;
+    _prefs?.setProfileComplete(true);
+    notifyListeners();
+  }
+
   /// Debug-only: ReportFlow registers this while the check-in is open.
   VoidCallback? qaCheckinAdvance;
 

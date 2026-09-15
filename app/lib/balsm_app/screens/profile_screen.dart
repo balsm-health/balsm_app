@@ -229,6 +229,8 @@ class ProfileScreen extends ConsumerWidget {
               // Clears tokens + best-effort server sign-out + publishes
               // UserSignedOut (the main listener clears currentUserId).
               await ref.read(signOutUseCaseProvider).call();
+              // Account-scoped UI state must not leak to the next account.
+              s.resetForSignOut();
               if (context.mounted) s.go('welcome');
             }),
           ),

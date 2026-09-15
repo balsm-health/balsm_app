@@ -13,7 +13,12 @@ import 'package:geofence_block/geofence_block.dart'
 import 'package:profile/profile.dart' show EmergencyContact, profileDataSourceProvider;
 import 'package:app/balsm_app/app_state.dart';
 import 'package:emergency_card/emergency_card.dart'
-    show ProfileIdentityReader, ProfileQrPayload, profileIdentityReaderProvider, refreshPermanentQrUseCaseProvider;
+    show
+        ProfileIdentityReader,
+        ProfileQrPayload,
+        permanentQrStoreProvider,
+        profileIdentityReaderProvider,
+        refreshPermanentQrUseCaseProvider;
 import 'package:account/account.dart' show accountProfileUseCaseProvider;
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/shell.dart';
@@ -192,6 +197,13 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   // every PHI reader (profile/meds/emergency/backup) sees the current user
   // without an app restart.
   container.read(eventBusProvider).on<UserSignedIn>().listen((e) {
+    // A different account taking over mid-process (crash skipped the
+    // sign-out sweep): the stored permanent QR belongs to the PREVIOUS
+    // account — its jti resolves to their identity payload. Drop it before
+    // the new session can display or refresh it.
+    if (containerUserId != null && containerUserId != e.userId) {
+      unawaited(container.read(permanentQrStoreProvider).clear());
+    }
     containerUserId = e.userId;
     container.read(_sessionUserIdProvider.notifier).state = e.userId;
     // Also on sign-IN, not just sign-out: a crash mid-session leaves rows
@@ -205,6 +217,10 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     // Cached read models are per-account. Leaving them would show the previous
     // user's handle to whoever signs in next on this device.
     unawaited(container.read(cacheStoreProvider).clearAll());
+    // The permanent profile QR is account-owned (jti + AES key). Left in the
+    // keychain it would render the previous user's QR — and decrypt their
+    // identity payload — for whoever signs in next on this device.
+    unawaited(container.read(permanentQrStoreProvider).clear());
   });
 
   // T173: country change → refresh locale-derived state. Re-fetches the
