@@ -149,6 +149,8 @@ class DesktopMenuScope extends StatelessWidget {
                     label: s.strings.nav.menu_screenshot,
                     shortcut: shotKey,
                     onSelected: () => _saveScreenshot(context)),
+                PlatformMenuItem(label: s.strings.nav.menu_logs, shortcut: logsKey, onSelected: actions.logs),
+                PlatformMenuItem(label: s.strings.nav.menu_devconfig, shortcut: devKey, onSelected: actions.devConfig),
               ]),
             ],
           ),
@@ -188,16 +190,21 @@ class DesktopMenuScope extends StatelessWidget {
           MenuBar(children: [
             SubmenuButton(
               menuChildren: [
-                MenuItemButton(
-                    shortcut: checkInKey, onPressed: actions.checkIn, child: Text(s.strings.nav.menu_checkin)),
-                MenuItemButton(
-                    shortcut: quickLogKey, onPressed: actions.quickLog, child: Text(s.strings.nav.menu_quicklog)),
-                MenuItemButton(
-                    shortcut: emergencyKey, onPressed: actions.emergency, child: Text(s.strings.nav.menu_emergency)),
+                if (signedIn) ...[
+                  MenuItemButton(
+                      shortcut: checkInKey, onPressed: actions.checkIn, child: Text(s.strings.nav.menu_checkin)),
+                  MenuItemButton(
+                      shortcut: quickLogKey, onPressed: actions.quickLog, child: Text(s.strings.nav.menu_quicklog)),
+                  MenuItemButton(
+                      shortcut: emergencyKey, onPressed: actions.emergency, child: Text(s.strings.nav.menu_emergency)),
+                ],
                 MenuItemButton(
                     shortcut: shotKey,
                     onPressed: () => _saveScreenshot(context),
                     child: Text(s.strings.nav.menu_screenshot)),
+                MenuItemButton(shortcut: logsKey, onPressed: actions.logs, child: Text(s.strings.nav.menu_logs)),
+                MenuItemButton(
+                    shortcut: devKey, onPressed: actions.devConfig, child: Text(s.strings.nav.menu_devconfig)),
               ],
               child: Text(s.strings.nav.menu_actions),
             ),
