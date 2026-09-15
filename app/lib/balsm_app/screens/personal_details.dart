@@ -32,9 +32,12 @@ import 'package:emergency_card/emergency_card.dart'
         emergencySnapshotReaderProvider,
         mintEmergencyQrTokenUseCaseProvider,
         revokeEmergencyQrTokenUseCaseProvider,
+        rotatePermanentQrUseCaseProvider,
+        getQrScanHistoryUseCaseProvider,
         permanentQrStoreProvider,
         refreshPermanentQrUseCaseProvider,
         MintResult;
+import 'package:balsm_api/balsm_api.dart' show QrScanEntry;
 import 'package:profile/profile.dart'
     show
         EmergencyContact,
@@ -1092,6 +1095,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   int _ttlSeconds = 86400; // default 24h (FR-017)
   bool _minting = false;
   bool _revoking = false;
+  bool _rotating = false;
   String? _error;
   Timer? _ticker;
   Duration _remaining = Duration.zero;
@@ -1122,7 +1126,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       );
       _ttlSeconds = 0;
     });
-    unawaited(ref.read(refreshPermanentQrUseCaseProvider)(preferredLanguage: ar ? 'ar-EG' : 'en'));
+    unawaited(ref.read(refreshPermanentQrUseCaseProvider)());
   }
 
   bool get _isPermanent => _mint?.token.isPermanent ?? false;
@@ -1152,9 +1156,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       _minting = true;
       _error = null;
     });
-    final result = await ref
-        .read(mintEmergencyQrTokenUseCaseProvider)
-        .call(ttlSeconds: _ttlSeconds, preferredLanguage: ar ? 'ar-EG' : 'en');
+    final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: _ttlSeconds);
     if (!mounted) return;
     result.fold(
       (m) {
@@ -1231,6 +1233,97 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
     return data?.buffer.asUint8List();
+  }
+
+  /// Spec v2.0 rotate: revoke + fresh mint in one act, for a leaked or
+  /// photographed code. Old copies stop resolving immediately.
+  Future<void> _rotate() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(s.strings.emergency.eqr_rotate_confirm),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.strings.common.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(s.strings.emergency.eqr_rotate_yes, style: const TextStyle(color: T.danger))),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _rotating = true);
+    final result = await ref.read(rotatePermanentQrUseCaseProvider)();
+    if (!mounted) return;
+    result.fold(
+      (m) {
+        setState(() {
+          _mint = m;
+          _rotating = false;
+        });
+        _showToast(s.strings.emergency.eqr_rotated_toast);
+      },
+      (_) {
+        setState(() => _rotating = false);
+        _showToast(s.strings.emergency.eqr_rotate_failed);
+      },
+    );
+  }
+
+  String _scanClientLabel(QrScanEntry e) => switch (e.client) {
+        'web' => s.strings.emergency.eqr_scan_client_web,
+        'app' => s.strings.emergency.eqr_scan_client_app,
+        _ => s.strings.emergency.eqr_scan_client_unknown,
+      };
+
+  /// Owner's own scan history (spec v2.0): when the QR was resolved and by
+  /// what coarse client class — never who.
+  Future<void> _showScanHistory() async {
+    final result = await ref.read(getQrScanHistoryUseCaseProvider)();
+    if (!mounted) return;
+    final scans = result.fold((v) => v, (_) => null);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.strings.emergency.eqr_scan_history,
+                  style: Typo.title(ar: ar).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              if (scans == null || scans.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: Text(s.strings.emergency.eqr_scans_empty, style: Typo.body(ar: ar))),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: scans.length,
+                    itemBuilder: (_, i) {
+                      final e = scans[i];
+                      return ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(e.client == 'app' ? LucideIcons.smartphone : LucideIcons.globe,
+                            size: 18, color: T.fg3),
+                        title: Text(_scanClientLabel(e), style: Typo.body(ar: ar)),
+                        subtitle: Text(e.resolvedAt.toLocal().toString().substring(0, 16),
+                            textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg3)),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _saveToGallery() async {
@@ -1510,6 +1603,16 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             ? _busyButton()
             : PButton(s.strings.emergency.eqr_revoke,
                 icon: LucideIcons.ban, variant: BtnVariant.ghost, block: true, ar: ar, color: T.danger, onTap: _revoke),
+        if (_isPermanent) ...[
+          const SizedBox(height: 4),
+          _rotating
+              ? _busyButton()
+              : PButton(s.strings.emergency.eqr_rotate,
+                  icon: LucideIcons.refreshCcw, variant: BtnVariant.ghost, block: true, ar: ar, onTap: _rotate),
+          const SizedBox(height: 4),
+          PButton(s.strings.emergency.eqr_scan_history,
+              icon: LucideIcons.history, variant: BtnVariant.ghost, block: true, ar: ar, onTap: _showScanHistory),
+        ],
       ],
     ];
   }

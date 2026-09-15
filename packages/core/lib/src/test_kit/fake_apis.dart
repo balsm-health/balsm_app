@@ -178,6 +178,9 @@ class FakeEmergencyQrApi implements EmergencyQrApi {
 
   @override
   Future<void> revoke(String tokenId, {CancelToken? cancelToken}) async {}
+
+  @override
+  Future<List<QrScanEntry>> scans({CancelToken? cancelToken}) async => const [];
 }
 
 /// Account deletion is outside these flows — see [FakeEmergencyQrApi].

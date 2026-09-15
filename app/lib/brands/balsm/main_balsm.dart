@@ -12,7 +12,9 @@ import 'package:geofence_block/geofence_block.dart'
     show ReadDeniedCountriesRepository, deniedCountriesRepositoryProvider;
 import 'package:profile/profile.dart' show EmergencyContact, profileDataSourceProvider;
 import 'package:app/balsm_app/app_state.dart';
-import 'package:emergency_card/emergency_card.dart' show refreshPermanentQrUseCaseProvider;
+import 'package:emergency_card/emergency_card.dart'
+    show ProfileIdentityReader, ProfileQrPayload, profileIdentityReaderProvider, refreshPermanentQrUseCaseProvider;
+import 'package:account/account.dart' show accountProfileUseCaseProvider;
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/shell.dart';
 import 'package:app/balsm_app/vault/bind_file_store.dart';
@@ -123,6 +125,12 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     // Emergency card reads the on-device HealthProfile (PHI stays on-device).
     emergencySnapshotReaderProvider.overrideWith(
       (ref) => _ProfileEmergencySnapshotReader(ref),
+    ),
+    // Profile QR identity payload (spec v2.0): name/DOB/gender from the
+    // account profile, language from app prefs. Offline → null identity
+    // fields; the standing refresh path fills them in later.
+    profileIdentityReaderProvider.overrideWith(
+      (ref) => _AccountProfileIdentityReader(ref, PatientAppPrefs(globalKV)),
     ),
     // Account country-change consults the geofence denied-countries repo.
     deniedCountriesPortProvider.overrideWith(
@@ -260,6 +268,41 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
 
 /// Adapts the `profile` package's on-device DAO into the `emergency_card`
 /// [EmergencySnapshotReader] port. PHI never leaves the device here.
+class _AccountProfileIdentityReader implements ProfileIdentityReader {
+  _AccountProfileIdentityReader(this._ref, this._prefs);
+
+  final Ref _ref;
+  final PatientAppPrefs _prefs;
+
+  @override
+  Future<ProfileQrPayload> readIdentity() async {
+    String? name;
+    String? dob;
+    String? gender;
+    try {
+      final details = await _ref.read(accountProfileUseCaseProvider).load();
+      if (details != null) {
+        final joined =
+            [details.firstName, details.lastName].whereType<String>().where((part) => part.isNotEmpty).join(' ');
+        name = details.displayName ?? (joined.isEmpty ? null : joined);
+        dob = details.dateOfBirth;
+        gender = details.gender?.name;
+      }
+    } catch (_) {
+      // Offline or signed out mid-flow — mint an identity-less payload; the
+      // refresh use case rewrites it once the profile is reachable.
+    }
+    final lang = await _prefs.lang();
+    return ProfileQrPayload(
+      name: name,
+      dateOfBirth: dob,
+      gender: gender,
+      lang: lang,
+      createdAt: DateTime.now(),
+    );
+  }
+}
+
 class _ProfileEmergencySnapshotReader implements EmergencySnapshotReader {
   _ProfileEmergencySnapshotReader(this._ref);
 

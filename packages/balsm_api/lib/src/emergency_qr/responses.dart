@@ -12,16 +12,57 @@ class MintQrResponse {
       );
 }
 
+/// Spec v2.0 public envelope. Revoked/expired/unknown tokens never reach
+/// this type — the server answers a uniform 404 and the transport layer
+/// throws [ApiException] instead.
 class ResolveQrResponse {
-  const ResolveQrResponse({this.ciphertextBase64, this.preferredLanguage});
+  const ResolveQrResponse({
+    required this.envelopeVersion,
+    required this.type,
+    required this.expiresAt,
+    required this.ciphertextBase64,
+  });
 
-  /// Null when the token is expired/revoked (module maps to not-found).
-  final String? ciphertextBase64;
-  final String? preferredLanguage;
+  final int envelopeVersion;
+
+  /// "profile" in P001; delegation tokens (P002) introduce new values —
+  /// scanning apps route on it.
+  final String type;
+
+  /// Null means permanent.
+  final DateTime? expiresAt;
+
+  final String ciphertextBase64;
 
   factory ResolveQrResponse.fromJson(Map<String, dynamic> json) => ResolveQrResponse(
-        ciphertextBase64: json['ciphertext'] as String?,
-        preferredLanguage: json['preferred_language'] as String?,
+        envelopeVersion: json['v'] as int,
+        type: json['type'] as String,
+        expiresAt: json['expires_at'] == null ? null : DateTime.parse(json['expires_at'] as String),
+        ciphertextBase64: json['ciphertext_base64'] as String,
+      );
+}
+
+/// One row of the owner's scan history (GET /emergency-qr/scans).
+class QrScanEntry {
+  const QrScanEntry({
+    required this.tokenId,
+    required this.resolvedAt,
+    required this.client,
+    this.country,
+  });
+
+  final String tokenId;
+  final DateTime resolvedAt;
+
+  /// Coarse scanner class: "web", "app", or "unknown" — never an identity.
+  final String client;
+  final String? country;
+
+  factory QrScanEntry.fromJson(Map<String, dynamic> json) => QrScanEntry(
+        tokenId: json['token_id'] as String,
+        resolvedAt: DateTime.parse(json['resolved_at'] as String),
+        client: json['client'] as String,
+        country: json['country'] as String?,
       );
 }
 

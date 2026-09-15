@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'dart:ui' as ui;
 
 import 'package:core/core.dart' show onlineProvider;
+import 'package:emergency_card/emergency_card.dart' show PublicEmergencyResolveScreen;
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,9 +69,21 @@ class _PatientAppState extends State<PatientApp> {
   // held ~2.3s on cold start, then fades out.
   bool _booting = true;
 
+  /// Web only: a scanned profile-QR URL (`/t/{jti}`, legacy `/emergency/{jti}`)
+  /// renders the public resolve page instead of the app — no session needed,
+  /// and the sessionless shell must not eject to the auth flow. The AES key
+  /// stays in the URL fragment, read by the resolve screen itself.
+  String? _publicResolveJti;
+
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) {
+      final segs = Uri.base.pathSegments.where((p) => p.isNotEmpty).toList();
+      if (segs.length == 2 && (segs[0] == 't' || segs[0] == 'emergency')) {
+        _publicResolveJti = segs[1];
+      }
+    }
     LogBuffer.instance.install();
     _bindDebugServiceExtensions();
     Timer(const Duration(milliseconds: 2300), () {
@@ -228,8 +241,13 @@ class _PatientAppState extends State<PatientApp> {
                     child: Scaffold(
                       backgroundColor: Colors.white,
                       body: Stack(children: [
-                        state.route == 'app' ? const _MainApp() : const AuthRouter(),
-                        Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                        _publicResolveJti != null
+                            ? PublicEmergencyResolveScreen(tokenId: _publicResolveJti!)
+                            : state.route == 'app'
+                                ? const _MainApp()
+                                : const AuthRouter(),
+                        if (_publicResolveJti == null)
+                          Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
                       ]),
                     ),
                   ),

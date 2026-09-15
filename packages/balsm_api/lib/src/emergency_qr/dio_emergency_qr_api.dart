@@ -53,6 +53,16 @@ class DioEmergencyQrApi implements EmergencyQrApi {
   }
 
   @override
+  Future<List<QrScanEntry>> scans({CancelToken? cancelToken}) async {
+    final res = await _net.get(
+      ApiRoutes.emergency_qr_scans,
+      cancelToken: cancelToken,
+    );
+    final data = unwrapEnvelope(res);
+    return (data['scans'] as List<dynamic>).map((e) => QrScanEntry.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  @override
   Future<void> revoke(String tokenId, {CancelToken? cancelToken}) async {
     final res = await _net.post(
       ApiRoutes.emergencyQrRevoke(tokenId),

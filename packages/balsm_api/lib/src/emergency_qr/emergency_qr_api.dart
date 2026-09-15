@@ -23,4 +23,7 @@ abstract class EmergencyQrApi {
 
   /// POST /emergency-qr/{tokenId}/revoke
   Future<void> revoke(String tokenId, {CancelToken? cancelToken});
+
+  /// GET /emergency-qr/scans — the caller's own scan history, newest first.
+  Future<List<QrScanEntry>> scans({CancelToken? cancelToken});
 }

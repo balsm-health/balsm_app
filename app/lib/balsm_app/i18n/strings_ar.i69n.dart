@@ -768,6 +768,16 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_link_copied => "تم نسخ الرابط";
   String get eqr_revoke => "إلغاء الرمز";
   String get eqr_revoked_toast => "تم إلغاء الرمز";
+  String get eqr_rotate => "استبدال الرمز";
+  String get eqr_rotate_confirm => "هل تريد استبدال هذا الرمز؟ ستتوقف النسخ المطبوعة أو المشاركة عن العمل فورًا.";
+  String get eqr_rotate_yes => "استبدال";
+  String get eqr_rotated_toast => "الرمز الجديد جاهز";
+  String get eqr_rotate_failed => "تعذّر استبدال الرمز — تحقق من الاتصال";
+  String get eqr_scan_history => "سجلّ المسح";
+  String get eqr_scans_empty => "لا عمليات مسح بعد";
+  String get eqr_scan_client_web => "متصفح ويب";
+  String get eqr_scan_client_app => "تطبيق بلسم";
+  String get eqr_scan_client_unknown => "جهاز غير معروف";
   String get eqr_generate => "إنشاء رمز QR";
   String get eqr_generate_new => "إنشاء رمز جديد";
   String get eqr_valid_for => "مدة الصلاحية";
@@ -853,6 +863,26 @@ class EmergencyStrings_ar extends EmergencyStrings {
         return eqr_revoke;
       case 'eqr_revoked_toast':
         return eqr_revoked_toast;
+      case 'eqr_rotate':
+        return eqr_rotate;
+      case 'eqr_rotate_confirm':
+        return eqr_rotate_confirm;
+      case 'eqr_rotate_yes':
+        return eqr_rotate_yes;
+      case 'eqr_rotated_toast':
+        return eqr_rotated_toast;
+      case 'eqr_rotate_failed':
+        return eqr_rotate_failed;
+      case 'eqr_scan_history':
+        return eqr_scan_history;
+      case 'eqr_scans_empty':
+        return eqr_scans_empty;
+      case 'eqr_scan_client_web':
+        return eqr_scan_client_web;
+      case 'eqr_scan_client_app':
+        return eqr_scan_client_app;
+      case 'eqr_scan_client_unknown':
+        return eqr_scan_client_unknown;
       case 'eqr_generate':
         return eqr_generate;
       case 'eqr_generate_new':

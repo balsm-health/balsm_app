@@ -5,9 +5,14 @@ import 'package:core/core.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/aggregates/emergency_card_snapshot.dart';
+import '../../domain/aggregates/profile_qr_payload.dart';
 
-/// FR: Resolve (decrypt) an emergency QR token for a first responder.
+/// Decrypted result of a public QR resolve. [payload] is null for a legacy
+/// (pre-v2.0) ciphertext — the UI shows a "re-open your app to refresh this
+/// code" hint instead of data; the owner's device self-migrates via refresh.
+typedef ResolvedProfileQr = ({ProfileQrPayload? payload, String type});
+
+/// FR: Resolve (decrypt) a profile QR token for a scanner.
 ///
 /// The token id comes from the URL path; the AES-256-GCM key comes from the URL
 /// fragment (`#k=...`) and is supplied by the caller. The fragment is never
@@ -24,7 +29,7 @@ class ResolveEmergencyQrTokenUseCase {
   final AesGcm _aesGcm;
 
   /// [tokenId] is the path segment; [keyBase64Url] is the `k=` fragment value.
-  Future<AppResult<EmergencyCardSnapshot>> call({
+  Future<AppResult<ResolvedProfileQr>> call({
     required String tokenId,
     required String keyBase64Url,
   }) async {
@@ -39,20 +44,17 @@ class ResolveEmergencyQrTokenUseCase {
     try {
       resolved = await _api.resolve(tokenId);
     } on ApiException catch (e) {
+      // Spec v2.0: the server answers a uniform 404 for revoked, expired,
+      // and unknown alike (410 tolerated from older servers).
       if (e.statusCode == 404 || e.statusCode == 410) {
         return AppResult.failure(
-          const NotFoundFailure('QR expired or revoked'),
+          const NotFoundFailure('QR is not valid'),
         );
       }
       return AppResult.failure(const NetworkFailure('Could not resolve QR'));
     }
 
     final ciphertextBase64 = resolved.ciphertextBase64;
-    if (ciphertextBase64 == null) {
-      return AppResult.failure(
-        const NotFoundFailure('QR expired or revoked'),
-      );
-    }
 
     try {
       final payload = base64.decode(ciphertextBase64);
@@ -73,12 +75,14 @@ class ResolveEmergencyQrTokenUseCase {
         SecretBox(cipherText, nonce: nonce, mac: mac),
         secretKey: secretKey,
       );
-      final snapshot = EmergencyCardSnapshot.fromJsonString(utf8.decode(plaintext));
-      return AppResult.success(snapshot);
+      // Legacy (pre-v2.0) payloads decode but carry no `v` — surface as a
+      // payload-less result, never as data.
+      final profile = ProfileQrPayload.tryParseString(utf8.decode(plaintext));
+      return AppResult.success((payload: profile, type: resolved.type));
     } catch (_) {
       // Decryption / auth-tag failure — never surface PHI or raw error detail.
       return AppResult.failure(
-        const ValidationFailure('Could not decrypt emergency card'),
+        const ValidationFailure('Could not decrypt profile QR'),
       );
     }
   }

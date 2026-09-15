@@ -764,6 +764,16 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get eqr_link_copied => "Link copied";
   String get eqr_revoke => "Revoke code";
   String get eqr_revoked_toast => "QR revoked";
+  String get eqr_rotate => "Replace code";
+  String get eqr_rotate_confirm => "Replace this QR? Printed or shared copies will stop working immediately.";
+  String get eqr_rotate_yes => "Replace";
+  String get eqr_rotated_toast => "New QR ready";
+  String get eqr_rotate_failed => "Could not replace the QR — check your connection";
+  String get eqr_scan_history => "Scan history";
+  String get eqr_scans_empty => "No scans yet";
+  String get eqr_scan_client_web => "Web browser";
+  String get eqr_scan_client_app => "Balsm app";
+  String get eqr_scan_client_unknown => "Unknown device";
   String get eqr_generate => "Generate QR";
   String get eqr_generate_new => "Generate new code";
   String get eqr_valid_for => "Valid for";
@@ -849,6 +859,26 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return eqr_revoke;
       case 'eqr_revoked_toast':
         return eqr_revoked_toast;
+      case 'eqr_rotate':
+        return eqr_rotate;
+      case 'eqr_rotate_confirm':
+        return eqr_rotate_confirm;
+      case 'eqr_rotate_yes':
+        return eqr_rotate_yes;
+      case 'eqr_rotated_toast':
+        return eqr_rotated_toast;
+      case 'eqr_rotate_failed':
+        return eqr_rotate_failed;
+      case 'eqr_scan_history':
+        return eqr_scan_history;
+      case 'eqr_scans_empty':
+        return eqr_scans_empty;
+      case 'eqr_scan_client_web':
+        return eqr_scan_client_web;
+      case 'eqr_scan_client_app':
+        return eqr_scan_client_app;
+      case 'eqr_scan_client_unknown':
+        return eqr_scan_client_unknown;
       case 'eqr_generate':
         return eqr_generate;
       case 'eqr_generate_new':
