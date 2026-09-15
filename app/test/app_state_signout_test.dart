@@ -1,5 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
-import 'package:core/core.dart' show Gender;
+import 'package:core/core.dart' show FamilyLinkStatus, Gender;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

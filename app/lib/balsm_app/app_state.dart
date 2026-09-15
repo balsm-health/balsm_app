@@ -1,4 +1,4 @@
-import 'package:core/core.dart' show CountryCode, Gender, LanguageCode, TranslationCatalog;
+import 'package:core/core.dart' show CountryCode, FamilyLinkStatus, Gender, LanguageCode, TranslationCatalog;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ChangeNotifierProvider;
 import 'prefs.dart';
@@ -25,10 +25,6 @@ enum AuthIntent { signIn, signUp }
 
 /// How the account was reached at the credentials step.
 enum AuthMethod { phone, email }
-
-/// Family-link lifecycle: [pending] awaits the other person's approval and
-/// cannot be switched to.
-enum FamilyLinkStatus { linked, pending }
 
 /// Handle-availability check state shared by the profile-setup and personal-
 /// details username fields.
