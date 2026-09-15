@@ -1652,6 +1652,8 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get m_pain => "Pain";
   String get m_weight => "Weight";
   String get m_o2 => "Oxygen";
+  String get pc_title => "Complete your profile";
+  String get pc_help => "Add your name, date of birth and details";
   String get p_personal => "Account details";
   String get pd_account => "Account";
   String get pd_handle_hint => "Your unique handle on Balsm";
@@ -1727,6 +1729,10 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return m_weight;
       case 'm_o2':
         return m_o2;
+      case 'pc_title':
+        return pc_title;
+      case 'pc_help':
+        return pc_help;
       case 'p_personal':
         return p_personal;
       case 'pd_account':

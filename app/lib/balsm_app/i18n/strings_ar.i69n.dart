@@ -1652,6 +1652,8 @@ class ProfileStrings_ar extends ProfileStrings {
   String get m_pain => "الألم";
   String get m_weight => "الوزن";
   String get m_o2 => "الأكسجين";
+  String get pc_title => "أكمل ملفك الشخصي";
+  String get pc_help => "أضف اسمك وتاريخ ميلادك وبياناتك";
   String get p_personal => "تفاصيل الحساب";
   String get pd_account => "الحساب";
   String get pd_handle_hint => "معرّفك الفريد على بلسم";
@@ -1727,6 +1729,10 @@ class ProfileStrings_ar extends ProfileStrings {
         return m_weight;
       case 'm_o2':
         return m_o2;
+      case 'pc_title':
+        return pc_title;
+      case 'pc_help':
+        return pc_help;
       case 'p_personal':
         return p_personal;
       case 'pd_account':

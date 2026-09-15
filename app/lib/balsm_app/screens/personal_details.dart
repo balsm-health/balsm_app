@@ -291,6 +291,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
     await refreshAccountSummary(ref);
     ref.invalidate(_profileProvider);
+    if (!mounted) return;
+    // First successful save completes the post-signup profile step and
+    // retires the completion card on the Profile tab.
+    AppScope.of(context).setProfileComplete(true);
     setState(() {
       _saving = false;
       unStatus = 'idle';

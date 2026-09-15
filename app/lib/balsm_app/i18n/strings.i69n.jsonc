@@ -490,6 +490,8 @@
     "m_pain": "Pain",
     "m_weight": "Weight",
     "m_o2": "Oxygen",
+    "pc_title": "Complete your profile",
+    "pc_help": "Add your name, date of birth and details",
     "p_personal": "Account details",
     "pd_account": "Account",
     "pd_handle_hint": "Your unique handle on Balsm",

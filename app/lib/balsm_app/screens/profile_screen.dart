@@ -119,6 +119,10 @@ class ProfileScreen extends ConsumerWidget {
             ]),
           ),
 
+          // Post-signup completion card — profile setup left the
+          // registration flow; this is where it happens now.
+          if (!s.profileComplete) const _CompleteProfileCard(),
+
           // Language + country
           _ListCard(children: [
             _ListRow(
@@ -507,6 +511,42 @@ class _ListRow extends StatelessWidget {
 /// `.profile-head .chip-wrap` — the patient's chronic conditions as centred
 /// badges (`--balsm-ink-100` on `--balsm-ink-700`). Renders nothing until the
 /// on-device health profile actually holds conditions.
+/// Post-signup "complete your profile" card (design: home.jsx ProfileScreen,
+/// `!profileComplete` accent card). Opens Personal details; disappears after
+/// the first successful save.
+class _CompleteProfileCard extends StatelessWidget {
+  const _CompleteProfileCard();
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return PCard(
+      onTap: () => openPersonalDetails(context),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rLg)),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: s.accent.main, borderRadius: BorderRadius.circular(T.rMd)),
+            child: const Icon(LucideIcons.userRoundPen, size: 20, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(s.strings.profile.pc_title,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+              const SizedBox(height: 2),
+              Text(s.strings.profile.pc_help, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+            ]),
+          ),
+          Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg3),
+        ]),
+      ),
+    );
+  }
+}
+
 class _ConditionChips extends ConsumerWidget {
   const _ConditionChips();
 

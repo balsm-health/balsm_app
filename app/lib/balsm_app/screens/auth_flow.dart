@@ -594,13 +594,12 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
       s.setAuthPassword(null); // clear the transient password
     }
     if (!mounted) return;
-    // New account → profile setup (name/handle/DOB + the fail-closed age gate).
-    // Returning user → straight to the disclosure gate.
-    if (isNewUser) {
-      s.go('profile');
-    } else {
-      unawaited(enterAfterSignIn(context, ref, s));
-    }
+    // Design 2026-09: the profile-setup step left the registration flow. A new
+    // account enters the app directly with profileComplete=false — the Profile
+    // tab carries the completion card, and everything DOB-gated (QR mint) stays
+    // fail-closed until Personal details is saved.
+    if (isNewUser) s.setProfileComplete(false);
+    unawaited(enterAfterSignIn(context, ref, s));
   }
 
   void _tick() {
