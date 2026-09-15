@@ -1,5 +1,6 @@
 import 'package:core/core.dart' show CountryCode, Gender, LanguageCode, TranslationCatalog;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ChangeNotifierProvider;
 import 'prefs.dart';
 import 'storage_target.dart';
 import 'strings.dart';
@@ -348,6 +349,25 @@ String accountInitials(String displayName) {
 }
 
 /// InheritedNotifier exposing [PatientAppState] to the widget tree.
+/// Riverpod owns the app-shell state: the bootstrap overrides this with the
+/// loaded instance, the shell watches it, and providers (identity reader,
+/// backup service, …) read it without a BuildContext.
+///
+/// ChangeNotifierProvider is the sanctioned migration bridge — state
+/// transitions still live inside [PatientAppState]; converting it to an
+/// immutable [Notifier] is a follow-up that must not block screens from
+/// depending on Riverpod today.
+final patientAppStateProvider = ChangeNotifierProvider<PatientAppState>(
+  (ref) => throw UnimplementedError('patientAppStateProvider is overridden at bootstrap'),
+);
+
+/// Context bridge over [patientAppStateProvider] for widget code.
+///
+/// `AppScope.of(context)` subscribes the caller to state changes exactly like
+/// `ref.watch(patientAppStateProvider)` — the InheritedNotifier is the
+/// context-based view binding onto the SAME Riverpod-owned instance, kept so
+/// non-Consumer widgets don't each need a WidgetRef. New code with a `ref` in
+/// scope should prefer the provider directly.
 class AppScope extends InheritedNotifier<PatientAppState> {
   const AppScope({super.key, required PatientAppState state, required super.child}) : super(notifier: state);
 

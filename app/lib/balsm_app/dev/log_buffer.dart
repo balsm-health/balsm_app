@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
@@ -8,6 +9,11 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 /// errors — nothing new is logged, so the existing no-PHI-in-logs discipline
 /// is the only discipline. Debug/profile builds only: release keeps
 /// [debugPrint] as a no-op and [install] leaves it that way.
+/// Riverpod handle on the process-wide buffer. The singleton stays: install()
+/// must hook debugPrint before the first frame, earlier than any provider
+/// scope exists — the provider is how widgets subscribe to it.
+final logBufferProvider = ChangeNotifierProvider<LogBuffer>((ref) => LogBuffer.instance);
+
 class LogBuffer extends ChangeNotifier {
   LogBuffer._();
   static final instance = LogBuffer._();
@@ -47,7 +53,7 @@ class LogBuffer extends ChangeNotifier {
 
 /// Dev-facing log viewer (desktop menu → Logs). Deliberately unlocalized like
 /// the server selector: it is a diagnostic surface, not patient UI.
-class LogsScreen extends StatelessWidget {
+class LogsScreen extends ConsumerWidget {
   const LogsScreen({super.key});
 
   static void open(BuildContext context) {
@@ -55,8 +61,9 @@ class LogsScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final buf = LogBuffer.instance;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // watch: the list below re-renders on every appended line.
+    final buf = ref.watch(logBufferProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Logs'),
@@ -77,32 +84,25 @@ class LogsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: AnimatedBuilder(
-        animation: buf,
-        builder: (context, _) {
-          final lines = buf.lines;
-          if (lines.isEmpty) {
-            return const Center(child: Text('Nothing logged yet.', style: TextStyle(color: Colors.grey)));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: lines.length,
-            itemBuilder: (context, i) {
-              final (t, msg) = lines[i];
-              final isError = msg.startsWith('ERROR ');
-              return SelectableText(
-                '${t.toIso8601String().substring(11, 19)}  $msg',
-                style: TextStyle(
-                  fontFamily: 'IBM Plex Mono',
-                  fontSize: 12,
-                  height: 1.5,
-                  color: isError ? const Color(0xFFB3261E) : const Color(0xFF333333),
-                ),
-              );
-            },
-          );
-        },
-      ),
+      body: buf.lines.isEmpty
+          ? const Center(child: Text('Nothing logged yet.', style: TextStyle(color: Colors.grey)))
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: buf.lines.length,
+              itemBuilder: (context, i) {
+                final (t, msg) = buf.lines[i];
+                final isError = msg.startsWith('ERROR ');
+                return SelectableText(
+                  '${t.toIso8601String().substring(11, 19)}  $msg',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    fontSize: 12,
+                    height: 1.5,
+                    color: isError ? const Color(0xFFB3261E) : const Color(0xFF333333),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

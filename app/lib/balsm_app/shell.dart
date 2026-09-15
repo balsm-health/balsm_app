@@ -39,23 +39,21 @@ import 'widgets/account_switcher.dart';
 import 'deep_link_handler.dart';
 import 'dev/shake_to_dev_config.dart';
 
-/// Root of the patient app prototype. Owns [PatientAppState] and renders the
-/// auth flow or the main tabbed app depending on `route`.
-class PatientApp extends StatefulWidget {
-  const PatientApp({super.key, required this.state, required this.navObserver});
-
-  /// Pre-loaded state (persisted session + prefs). See [PatientAppState.load].
-  final PatientAppState state;
+/// Root of the patient app prototype. Watches the Riverpod-owned
+/// [PatientAppState] and renders the auth flow or the main tabbed app
+/// depending on `route`.
+class PatientApp extends ConsumerStatefulWidget {
+  const PatientApp({super.key, required this.navObserver});
 
   /// Logs a `screen_view` analytics action on each navigation.
   final NavigatorObserver navObserver;
 
   @override
-  State<PatientApp> createState() => _PatientAppState();
+  ConsumerState<PatientApp> createState() => _PatientAppState();
 }
 
-class _PatientAppState extends State<PatientApp> {
-  late final PatientAppState state = widget.state;
+class _PatientAppState extends ConsumerState<PatientApp> {
+  late final PatientAppState state = ref.read(patientAppStateProvider);
   final _navKey = GlobalKey<NavigatorState>();
 
   /// Rasterisation root for the desktop menu's Save-screenshot action.
@@ -175,11 +173,13 @@ class _PatientAppState extends State<PatientApp> {
 
   @override
   Widget build(BuildContext context) {
+    // ref.watch rebuilds this subtree on every state notification — the
+    // Riverpod equivalent of the old AnimatedBuilder(animation: state).
+    ref.watch(patientAppStateProvider);
     return AppScope(
       state: state,
-      child: AnimatedBuilder(
-        animation: state,
-        builder: (context, _) => MaterialApp(
+      child: Builder(
+        builder: (context) => MaterialApp(
           debugShowCheckedModeBanner: false,
           navigatorKey: _navKey,
           navigatorObservers: [widget.navObserver],

@@ -58,3 +58,26 @@
 - `compute()`/isolates for CPU-intensive work — never block the UI thread
 - profile with DevTools before/after; measure frame render times
 - lazy-load screens and heavy widgets
+
+## 7. State Management (Riverpod)
+
+- **Riverpod is the only state-management system.** Every piece of shared or
+  data-bearing state lives behind a provider: `Provider` for services,
+  `FutureProvider`/`StreamProvider` for reads, `Notifier`/`AsyncNotifier` for
+  mutable state. No new `InheritedWidget`s, no new `ChangeNotifier`
+  singletons, no other packages.
+- **`ChangeNotifierProvider` is a migration bridge only** — sanctioned for
+  `patientAppStateProvider` (the app shell) and the dev `logBufferProvider`
+  while they migrate to immutable `Notifier` state. Do not add new
+  ChangeNotifiers behind it.
+- `AppScope.of(context)` is the context-based view binding onto the
+  Riverpod-owned `PatientAppState` — it subscribes exactly like
+  `ref.watch(patientAppStateProvider)`. New code that already has a `ref`
+  uses the provider directly.
+- **`setState` is for ephemeral view-local state only**: text-field/focus
+  state, open/closed toggles, in-flight flags for a button the same build
+  displays, animation plumbing. The moment state is read by another widget,
+  survives the route, or mirrors data — it belongs in a provider.
+- Providers holding decrypted PHI are `autoDispose` so plaintext leaves
+  memory with the last listener (see `vaultBlobProvider`).
+

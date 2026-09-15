@@ -88,12 +88,21 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   }
   final keychain = SecureStorageWrapper();
   UserId? containerUserId = revivable ? UserId.fromString(userId) : null;
+
+  // App-shell state loads BEFORE the container so Riverpod can own it from
+  // the first frame (patientAppStateProvider override below).
+  final paPrefs = PatientAppPrefs(globalKV);
+  await paPrefs.migrate();
+  // Route on the credentials, not just the prefs flag — see load()'s doc.
+  final state = await PatientAppState.load(paPrefs, hasSession: containerUserId != null);
   final fileStore = await createUserFileStore(
     activeUser: () => containerUserId,
     keychain: keychain,
   );
 
   final container = ProviderContainer(overrides: [
+    // The app-shell state: one instance, owned by Riverpod (see app_state).
+    patientAppStateProvider.overrideWith((ref) => state),
     // Fan out telemetry to a list of providers: Sentry always, plus a console
     // sink (scrubbed) added only in debug builds.
     analyticsLoggerProvider.overrideWithValue(
@@ -247,12 +256,6 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   }
 
   // Migrate the app-shell preference group before its first read.
-  final paPrefs = PatientAppPrefs(globalKV);
-  await paPrefs.migrate();
-
-  // Route on the credentials, not just the prefs flag — see load()'s doc.
-  final state = await PatientAppState.load(paPrefs, hasSession: containerUserId != null);
-
   // A dead API session (the refresh was REJECTED — the transport has already
   // cleared the stored tokens). Mirror it in-app: drop the in-session user id
   // so every PHI reader goes null, persist signed-out, and leave the shell NOW.
@@ -274,10 +277,7 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: PatientApp(
-        state: state,
-        navObserver: AnalyticsRouteObserver(analytics),
-      ),
+      child: PatientApp(navObserver: AnalyticsRouteObserver(analytics)),
     ),
   );
 }
