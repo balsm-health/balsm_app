@@ -601,6 +601,28 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get member_name_ph => "Family member's name";
   String get relation => "Relation";
   String get select_relation => "Select a relation";
+  String get fam_scan_qr => "Scan their QR code";
+  String get fam_scan_qr_sub => "Link an existing Balsm account in seconds.";
+  String get fam_manual => "Enter details manually";
+  String get fam_manual_sub => "For someone who doesn't have an account yet.";
+  String get fam_scan_title => "Scan QR code";
+  String get fam_confirm_title => "Confirm member";
+  String get fam_point_camera => "Point the camera at their Balsm QR code";
+  String get fam_code_found => "Code recognised";
+  String get fam_code_hint => "They can find their code in Profile → My QR code.";
+  String get fam_manual_instead => "Enter details manually instead";
+  String get fam_scan_instead => "Scan a QR code instead";
+  String get fam_scan_other => "Scan a different code";
+  String get fam_approval_note =>
+      "They see the request in their own Balsm app and approve it once — no health data appears until they do.";
+  String get fam_send_request => "Send link request";
+  String get fam_pending => "Awaiting approval";
+  String get fam_cancel_request => "Cancel";
+  String get fam_link_requests => "Link requests";
+  String get fam_decline => "Decline";
+  String get fam_approve => "Approve";
+  String get fam_scan_invalid => "That isn't a Balsm profile code";
+  String get fam_scan_failed => "Couldn't read this code — try again";
   String get rel_default => "Family member";
   String get member_dob => "Date of birth";
   String get member_dob_ph => "DD / MM / YYYY";
@@ -680,6 +702,48 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return relation;
       case 'select_relation':
         return select_relation;
+      case 'fam_scan_qr':
+        return fam_scan_qr;
+      case 'fam_scan_qr_sub':
+        return fam_scan_qr_sub;
+      case 'fam_manual':
+        return fam_manual;
+      case 'fam_manual_sub':
+        return fam_manual_sub;
+      case 'fam_scan_title':
+        return fam_scan_title;
+      case 'fam_confirm_title':
+        return fam_confirm_title;
+      case 'fam_point_camera':
+        return fam_point_camera;
+      case 'fam_code_found':
+        return fam_code_found;
+      case 'fam_code_hint':
+        return fam_code_hint;
+      case 'fam_manual_instead':
+        return fam_manual_instead;
+      case 'fam_scan_instead':
+        return fam_scan_instead;
+      case 'fam_scan_other':
+        return fam_scan_other;
+      case 'fam_approval_note':
+        return fam_approval_note;
+      case 'fam_send_request':
+        return fam_send_request;
+      case 'fam_pending':
+        return fam_pending;
+      case 'fam_cancel_request':
+        return fam_cancel_request;
+      case 'fam_link_requests':
+        return fam_link_requests;
+      case 'fam_decline':
+        return fam_decline;
+      case 'fam_approve':
+        return fam_approve;
+      case 'fam_scan_invalid':
+        return fam_scan_invalid;
+      case 'fam_scan_failed':
+        return fam_scan_failed;
       case 'rel_default':
         return rel_default;
       case 'member_dob':

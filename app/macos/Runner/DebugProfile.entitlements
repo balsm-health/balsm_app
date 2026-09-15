@@ -17,6 +17,9 @@
 	<!-- Nearby-care map. -->
 	<key>com.apple.security.personal-information.location</key>
 	<true/>
+	<!-- QR scanner (add family member) reads the camera. -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
 	<!-- file_picker / image attach: user-chosen files only. -->
 	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>

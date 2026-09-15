@@ -214,7 +214,8 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addFamilyMember({required String name, required String relation, DateTime? dob}) {
+  void addFamilyMember(
+      {required String name, required String relation, DateTime? dob, String? linkJti, String status = 'linked'}) {
     const palette = [T.petalAqua, T.petalBlue, T.petalViolet, T.petalMint, T.sun500];
     extraFamily.add(FamilyMemberPreview(
       id: 'fam_${DateTime.now().millisecondsSinceEpoch}',
@@ -222,7 +223,33 @@ class PatientAppState extends ChangeNotifier {
       relation: relation,
       color: palette[extraFamily.length % palette.length],
       dob: dob,
+      linkJti: linkJti,
+      status: status,
     ));
+    notifyListeners();
+  }
+
+  /// Withdraws an outgoing link request (design: pending row → Cancel).
+  void cancelPendingLink(String id) {
+    extraFamily.removeWhere((m) => m.id == id && m.status == 'pending');
+    if (activeFamilyId == id) activeFamilyId = null;
+    notifyListeners();
+  }
+
+  /// Incoming link requests — someone asking to add THIS patient to their
+  /// family account. Populated from the server when the link-request API
+  /// lands (P002); never seeded with fabricated people.
+  final List<FamilyLinkRequest> linkRequests = [];
+
+  void approveLinkRequest(String requestId) {
+    final i = linkRequests.indexWhere((r) => r.id == requestId);
+    if (i < 0) return;
+    final r = linkRequests.removeAt(i);
+    addFamilyMember(name: r.name, relation: r.relation, dob: r.dob, linkJti: r.linkJti);
+  }
+
+  void declineLinkRequest(String requestId) {
+    linkRequests.removeWhere((r) => r.id == requestId);
     notifyListeners();
   }
 
@@ -243,6 +270,26 @@ class PatientAppState extends ChangeNotifier {
   }
 }
 
+/// An incoming request to link accounts, shown in the account switcher.
+/// Data comes from the server request row (P002 API); [linkJti] is the
+/// requester's profile-QR jti.
+class FamilyLinkRequest {
+  const FamilyLinkRequest({
+    required this.id,
+    required this.name,
+    required this.relation,
+    this.dob,
+    this.linkJti,
+    this.when,
+  });
+  final String id;
+  final String name;
+  final String relation;
+  final DateTime? dob;
+  final String? linkJti;
+  final String? when;
+}
+
 /// Local family-member row for the account switcher (user-entered, not sample PHI).
 class FamilyMemberPreview {
   const FamilyMemberPreview({
@@ -251,11 +298,22 @@ class FamilyMemberPreview {
     required this.relation,
     required this.color,
     this.dob,
+    this.linkJti,
+    this.status = 'linked',
   });
   final String id;
   final String name;
   final String relation;
   final Color color;
+
+  /// The scanned profile-QR jti this member was linked through (spec v2.0:
+  /// every cross-account flow binds to the jti, never an account id).
+  final String? linkJti;
+
+  /// 'linked' | 'pending' — pending rows await the other person's approval
+  /// and cannot be switched to.
+  final String status;
+  bool get isPending => status == 'pending';
 
   /// Date of birth, used only to show the member's age in the switcher.
   ///
