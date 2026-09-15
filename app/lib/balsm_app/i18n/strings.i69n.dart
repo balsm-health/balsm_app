@@ -1724,6 +1724,11 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get m_o2 => "Oxygen";
   String get pc_title => "Complete your profile";
   String get pc_help => "Add your name, date of birth and details";
+  String pc_missing(String fields) => "Missing: $fields";
+  String get pc_f_name => "name";
+  String get pc_f_dob => "date of birth";
+  String get pc_f_gender => "gender";
+  String get pc_f_blood => "blood type";
   String get p_personal => "Account details";
   String get pd_account => "Account";
   String get pd_handle_hint => "Your unique handle on Balsm";
@@ -1803,6 +1808,16 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return pc_title;
       case 'pc_help':
         return pc_help;
+      case 'pc_missing':
+        return pc_missing;
+      case 'pc_f_name':
+        return pc_f_name;
+      case 'pc_f_dob':
+        return pc_f_dob;
+      case 'pc_f_gender':
+        return pc_f_gender;
+      case 'pc_f_blood':
+        return pc_f_blood;
       case 'p_personal':
         return p_personal;
       case 'pd_account':

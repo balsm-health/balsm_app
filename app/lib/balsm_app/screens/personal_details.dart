@@ -54,24 +54,28 @@ final _emergencySnapshotProvider = FutureProvider.autoDispose<EmergencyCardSnaps
 /// The signed-in user's full editable profile (PHI-carrying: DOB, national ID).
 /// Screen-local — the PHI never enters the app-wide AccountSummary. Re-fetched
 /// after a save so the head + fields reflect the server.
-/// Whether the mandatory profile fields are filled: name, date of birth,
-/// gender (account profile) and blood type (on-device health profile).
-/// Drives the "complete your profile" card — shown only while something is
-/// actually missing. Loading/offline/signed-out resolve to complete so the
-/// card never nags on a guess.
-final profileCompletenessProvider = FutureProvider.autoDispose<bool>((ref) async {
+/// A mandatory profile field the completion card can report as missing.
+enum ProfileGap { name, dateOfBirth, gender, bloodType }
+
+/// The set of mandatory fields still missing: name, date of birth, gender
+/// (account profile) and blood type (on-device health profile). Empty set =
+/// complete; the card renders the set so the user knows exactly what's left.
+/// Loading/offline/signed-out resolve to empty so the card never nags on a
+/// guess.
+final profileGapsProvider = FutureProvider.autoDispose<Set<ProfileGap>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return true;
+  if (userId == null) return const {};
   final details = await ref.watch(accountProfileUseCaseProvider).load();
-  final hasName = ((details?.displayName ?? '').trim().isNotEmpty) || ((details?.firstName ?? '').trim().isNotEmpty);
-  final hasDob = (details?.dateOfBirth ?? '').isNotEmpty;
-  final hasGender = details?.gender != null;
   // Watch the SAME provider the medical-profile screen edits + invalidates,
   // so setting the blood type retires the card immediately instead of after
   // the next cold rebuild.
   final health = await ref.watch(healthProfileProvider.future);
-  final hasBlood = health?.bloodType != null;
-  return hasName && hasDob && hasGender && hasBlood;
+  return {
+    if (((details?.displayName ?? '').trim().isEmpty) && ((details?.firstName ?? '').trim().isEmpty)) ProfileGap.name,
+    if ((details?.dateOfBirth ?? '').isEmpty) ProfileGap.dateOfBirth,
+    if (details?.gender == null) ProfileGap.gender,
+    if (health?.bloodType == null) ProfileGap.bloodType,
+  };
 });
 
 final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async {
@@ -283,7 +287,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     await refreshAccountSummary(ref);
     ref.invalidate(_profileProvider);
     // Re-derive the completion card from the freshly saved fields.
-    ref.invalidate(profileCompletenessProvider);
+    ref.invalidate(profileGapsProvider);
     if (!mounted) return;
     setState(() {
       _saving = false;

@@ -110,9 +110,10 @@ class ProfileScreen extends ConsumerWidget {
           ),
 
           // Completion card — profile setup left the registration flow;
-          // shown only while a mandatory field (name / DOB / gender / blood
-          // type) is actually missing.
-          if (!(ref.watch(profileCompletenessProvider).valueOrNull ?? true)) const _CompleteProfileCard(),
+          // shown only while a mandatory field is actually missing, and it
+          // names what's left.
+          if (ref.watch(profileGapsProvider).valueOrNull case final gaps? when gaps.isNotEmpty)
+            _CompleteProfileCard(gaps: gaps),
 
           // Language + country
           _ListCard(children: [
@@ -511,10 +512,21 @@ class _ListRow extends StatelessWidget {
 /// `!profileComplete` accent card). Opens Personal details; disappears once
 /// every mandatory field is filled.
 class _CompleteProfileCard extends StatelessWidget {
-  const _CompleteProfileCard();
+  const _CompleteProfileCard({required this.gaps});
+  final Set<ProfileGap> gaps;
+
+  String _label(PatientAppState s, ProfileGap g) => switch (g) {
+        ProfileGap.name => s.strings.profile.pc_f_name,
+        ProfileGap.dateOfBirth => s.strings.profile.pc_f_dob,
+        ProfileGap.gender => s.strings.profile.pc_f_gender,
+        ProfileGap.bloodType => s.strings.profile.pc_f_blood,
+      };
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final sep = s.rtl ? '، ' : ', ';
+    final missing = s.strings.profile.pc_missing(gaps.map((g) => _label(s, g)).join(sep));
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
       child: Material(
@@ -538,7 +550,7 @@ class _CompleteProfileCard extends StatelessWidget {
                   Text(s.strings.profile.pc_title,
                       style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                   const SizedBox(height: 2),
-                  Text(s.strings.profile.pc_help, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+                  Text(missing, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
                 ]),
               ),
               Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg3),

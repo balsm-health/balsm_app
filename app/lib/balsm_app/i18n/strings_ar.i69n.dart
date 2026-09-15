@@ -1723,6 +1723,11 @@ class ProfileStrings_ar extends ProfileStrings {
   String get m_o2 => "الأكسجين";
   String get pc_title => "أكمل ملفك الشخصي";
   String get pc_help => "أضف اسمك وتاريخ ميلادك وبياناتك";
+  String pc_missing(String fields) => "الناقص: $fields";
+  String get pc_f_name => "الاسم";
+  String get pc_f_dob => "تاريخ الميلاد";
+  String get pc_f_gender => "النوع";
+  String get pc_f_blood => "فصيلة الدم";
   String get p_personal => "تفاصيل الحساب";
   String get pd_account => "الحساب";
   String get pd_handle_hint => "معرّفك الفريد على بلسم";
@@ -1802,6 +1807,16 @@ class ProfileStrings_ar extends ProfileStrings {
         return pc_title;
       case 'pc_help':
         return pc_help;
+      case 'pc_missing':
+        return pc_missing;
+      case 'pc_f_name':
+        return pc_f_name;
+      case 'pc_f_dob':
+        return pc_f_dob;
+      case 'pc_f_gender':
+        return pc_f_gender;
+      case 'pc_f_blood':
+        return pc_f_blood;
       case 'p_personal':
         return p_personal;
       case 'pd_account':
