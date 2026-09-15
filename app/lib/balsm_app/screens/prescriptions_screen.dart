@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:prescriptions/prescriptions.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -34,7 +35,7 @@ class PrescriptionsScreen extends ConsumerWidget {
       child: ListView(padding: EdgeInsets.zero, children: [
         const PadTop(),
         AppBarRow(children: [
-          RoundBtn(icon: backArrow(context), onTap: () => s.setTab('meds')),
+          RoundBtn(icon: backArrow(context), onTap: () => s.setTab(AppTab.meds)),
           const SizedBox(width: 12),
           Expanded(child: Text(s.strings.records.prescriptions, style: Typo.heading(ar: s.rtl))),
           RoundBtn(

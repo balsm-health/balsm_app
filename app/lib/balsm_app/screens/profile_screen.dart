@@ -18,6 +18,7 @@ import 'package:core/core.dart'
 import 'package:sessions/sessions.dart' show SessionsScreen;
 import 'package:deletion/deletion.dart' show DeleteAccountScreen, DeletionConfirmScreen, DeletionCancelledScreen;
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -232,7 +233,7 @@ class ProfileScreen extends ConsumerWidget {
               await ref.read(signOutUseCaseProvider).call();
               // Account-scoped UI state must not leak to the next account.
               s.resetForSignOut();
-              if (context.mounted) s.go('welcome');
+              if (context.mounted) s.go(AppRoutes.welcome);
             }),
           ),
         ]));

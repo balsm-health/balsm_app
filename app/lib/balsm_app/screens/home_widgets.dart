@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../tokens.dart';
 import '../widgets/balsm_flower.dart';
@@ -397,7 +398,8 @@ class AwayBanner extends StatelessWidget {
             ],
           ]),
         ),
-        RoundBtn(icon: forwardArrow(context), bg: const Color(0x1F3A2E05), fg: ink, onTap: () => s.setTab('profile')),
+        RoundBtn(
+            icon: forwardArrow(context), bg: const Color(0x1F3A2E05), fg: ink, onTap: () => s.setTab(AppTab.profile)),
       ]),
     );
   }

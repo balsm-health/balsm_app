@@ -2,6 +2,7 @@ import 'package:core/core.dart' show CountryCode, Gender, LanguageCode, Translat
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ChangeNotifierProvider;
 import 'prefs.dart';
+import 'routes.dart';
 import 'storage_target.dart';
 import 'strings.dart';
 import 'tokens.dart';
@@ -25,10 +26,10 @@ class PatientAppState extends ChangeNotifier {
   Accent accent = Accent.violet;
 
   /// Auth route: walkthrough | welcome | phone | otp | profile | app
-  String route = 'welcome';
+  String route = AppRoutes.welcome;
 
   /// Active tab/sub-screen: home | map | meds | profile | trends | records | appts
-  String tab = 'home';
+  AppTab tab = AppTab.home;
 
   String authMethod = 'phone'; // phone | email
   String authEmail = '';
@@ -100,15 +101,15 @@ class PatientAppState extends ChangeNotifier {
       final storedTarget = await prefs.storage();
       s.storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local;
       if (await prefs.signedIn() && hasSession) {
-        s.route = 'app';
+        s.route = AppRoutes.app;
       } else {
         // Stale flag without credentials — persist signed-out so the next
         // launch agrees with the keychain instead of re-entering the shell.
         if (!hasSession) await prefs.setSignedIn(false);
-        s.route = await prefs.walkthroughSeen() ? 'welcome' : 'walkthrough';
+        s.route = await prefs.walkthroughSeen() ? AppRoutes.welcome : AppRoutes.walkthrough;
       }
     } catch (_) {
-      s.route = 'welcome';
+      s.route = AppRoutes.welcome;
     }
     return s;
   }
@@ -118,7 +119,7 @@ class PatientAppState extends ChangeNotifier {
   void _save() {
     final p = _prefs;
     if (p == null) return;
-    p.setSignedIn(route == 'app');
+    p.setSignedIn(route == AppRoutes.app);
     p.setLang(lang.value);
     p.setCountry(country.value);
     p.setStorage(storageProvider);
@@ -174,16 +175,16 @@ class PatientAppState extends ChangeNotifier {
   void setAuthPassword(String? pw) => authPassword = pw;
 
   void go(String r) {
-    if (r == 'app') tab = 'home';
+    if (r == AppRoutes.app) tab = AppTab.home;
     // Leaving the first-run walkthrough (Skip or Get started) marks it seen so
     // it never shows again on this device, signed in or not.
-    if (route == 'walkthrough' && r != 'walkthrough') _prefs?.setWalkthroughSeen(true);
+    if (route == AppRoutes.walkthrough && r != AppRoutes.walkthrough) _prefs?.setWalkthroughSeen(true);
     route = r;
     _save(); // persist signed-in / signed-out
     notifyListeners();
   }
 
-  void setTab(String tb) {
+  void setTab(AppTab tb) {
     tab = tb;
     notifyListeners();
   }

@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app_state.dart';
+import '../routes.dart';
 import '../i18n/strings.i69n.dart' show WalkthroughStrings;
 import '../kit.dart';
 import '../responsive.dart';
@@ -57,7 +58,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     ];
   }
 
-  void _finish(PatientAppState s) => s.go('welcome');
+  void _finish(PatientAppState s) => s.go(AppRoutes.welcome);
 
   void _next(int total, PatientAppState s) {
     if (_index >= total - 1) {

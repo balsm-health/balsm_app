@@ -21,6 +21,7 @@ import 'package:profile/profile.dart'
         removeChronicConditionUseCaseProvider,
         ChronicConditionId;
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -747,7 +748,7 @@ class CareTeamScreen extends StatelessWidget {
           Pressable(
             onTap: () {
               Navigator.pop(context);
-              s.setTab('map');
+              s.setTab(AppTab.map);
             },
             // Design: `1px dashed` in --balsm-border, radius-md, 52 tall.
             child: DashedBorder(

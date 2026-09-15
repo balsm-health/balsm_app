@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../tokens.dart';
 
@@ -49,7 +50,9 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
     final uri = Uri.tryParse(raw);
     if (uri == null) return null;
     final segs = uri.pathSegments.where((p) => p.isNotEmpty).toList();
-    if (segs.length != 2 || (segs[0] != 't' && segs[0] != 'emergency')) return null;
+    if (segs.length != 2 || (segs[0] != PublicQrPaths.token && segs[0] != PublicQrPaths.legacyEmergency)) {
+      return null;
+    }
     String key = '';
     for (final part in uri.fragment.split('&')) {
       if (part.startsWith('k=')) key = part.substring(2);

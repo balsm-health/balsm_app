@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'dart:ui' as ui;
 
 import 'app_state.dart';
+import 'routes.dart';
 
 /// The desktop actions the menu can trigger. Callbacks rather than direct
 /// imports so the menu stays testable and the shell keeps owning navigation.
@@ -46,28 +47,27 @@ class DesktopMenuScope extends StatelessWidget {
 
   static bool get _isDesktop => !kIsWeb && (Platform.isMacOS || Platform.isWindows || Platform.isLinux);
 
-  // (label key, tab id) in menu order. Trends/records/rx have no bottom-nav
-  // string of their own — the menu is where they become first-class on
-  // desktop, so they get menu strings below.
-  static const _tabs = <(String, String)>[
-    ('home', 'home'),
-    ('map', 'map'),
-    ('meds', 'meds'),
-    ('rx', 'rx'),
-    ('records', 'records'),
-    ('trends', 'trends'),
-    ('profile', 'profile'),
+  // Menu order. Trends/records/rx have no bottom-nav string of their own —
+  // the menu is where they become first-class on desktop, so they get menu
+  // strings below.
+  static const _tabs = <AppTab>[
+    AppTab.home,
+    AppTab.map,
+    AppTab.meds,
+    AppTab.prescriptions,
+    AppTab.records,
+    AppTab.trends,
+    AppTab.profile,
   ];
 
-  String _tabLabel(PatientAppState s, String tab) => switch (tab) {
-        'home' => s.strings.nav.tab_home,
-        'map' => s.strings.nav.tab_map,
-        'meds' => s.strings.nav.tab_meds,
-        'profile' => s.strings.nav.tab_profile,
-        'rx' => s.strings.nav.menu_prescriptions,
-        'records' => s.strings.nav.menu_records,
-        'trends' => s.strings.nav.menu_trends,
-        _ => tab,
+  String _tabLabel(PatientAppState s, AppTab tab) => switch (tab) {
+        AppTab.home => s.strings.nav.tab_home,
+        AppTab.map => s.strings.nav.tab_map,
+        AppTab.meds => s.strings.nav.tab_meds,
+        AppTab.profile => s.strings.nav.tab_profile,
+        AppTab.prescriptions => s.strings.nav.menu_prescriptions,
+        AppTab.records => s.strings.nav.menu_records,
+        AppTab.trends => s.strings.nav.menu_trends,
       };
 
   Future<void> _saveScreenshot(BuildContext context) async {
@@ -96,7 +96,7 @@ class DesktopMenuScope extends StatelessWidget {
     // shell — on the auth flow they would push screens whose providers need a
     // session. Diagnostics (screenshot / logs / dev config) stay: they are
     // exactly what you need when sign-in itself misbehaves.
-    final signedIn = state.route == 'app';
+    final signedIn = state.route == AppRoutes.app;
 
     SingleActivator nav(int n) => SingleActivator(
           const [
@@ -158,7 +158,7 @@ class DesktopMenuScope extends StatelessWidget {
             PlatformMenu(
               label: s.strings.nav.menu_go,
               menus: [
-                for (final (i, (_, tab)) in _tabs.indexed)
+                for (final (i, tab) in _tabs.indexed)
                   PlatformMenuItem(
                     label: _tabLabel(s, tab),
                     shortcut: nav(i),
@@ -180,7 +180,7 @@ class DesktopMenuScope extends StatelessWidget {
       logsKey: actions.logs,
       devKey: actions.devConfig,
       if (signedIn)
-        for (final (i, (_, tab)) in _tabs.indexed) nav(i): () => state.setTab(tab),
+        for (final (i, tab) in _tabs.indexed) nav(i): () => state.setTab(tab),
     };
     return CallbackShortcuts(
       bindings: shortcuts,
@@ -211,7 +211,7 @@ class DesktopMenuScope extends StatelessWidget {
             if (signedIn)
               SubmenuButton(
                 menuChildren: [
-                  for (final (i, (_, tab)) in _tabs.indexed)
+                  for (final (i, tab) in _tabs.indexed)
                     MenuItemButton(
                         shortcut: nav(i), onPressed: () => state.setTab(tab), child: Text(_tabLabel(s, tab))),
                 ],

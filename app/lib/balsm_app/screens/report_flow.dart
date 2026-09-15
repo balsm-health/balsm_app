@@ -8,6 +8,7 @@ import 'package:medications/medications.dart'
     show Medication, DoseOutcome, medicationListProvider, recordDoseOutcomeUseCaseProvider;
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -219,7 +220,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     });
   }
 
-  void _close(String tab) {
+  void _close(AppTab tab) {
     Navigator.pop(context);
     s.setTab(tab);
   }
@@ -509,7 +510,7 @@ class _Summary extends StatelessWidget {
                       large: true,
                       block: true,
                       ar: s.rtl,
-                      onTap: () => state._close('trends'))),
+                      onTap: () => state._close(AppTab.trends))),
               const SizedBox(width: 12),
               Expanded(
                   child: PButton(s.strings.care.to_home,
@@ -518,7 +519,7 @@ class _Summary extends StatelessWidget {
                       block: true,
                       accent: s.accent,
                       ar: s.rtl,
-                      onTap: () => state._close('home'))),
+                      onTap: () => state._close(AppTab.home))),
             ]),
           ),
         ]),

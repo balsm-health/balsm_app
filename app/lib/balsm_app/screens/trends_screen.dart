@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -127,7 +128,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
       child: ListView(padding: EdgeInsets.zero, children: [
         const PadTop(),
         AppBarRow(children: [
-          RoundBtn(icon: backArrow(context), onTap: () => s.setTab('home')),
+          RoundBtn(icon: backArrow(context), onTap: () => s.setTab(AppTab.home)),
           const SizedBox(width: 12),
           Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
           _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),

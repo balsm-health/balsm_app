@@ -19,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
+import '../routes.dart';
 import '../assets.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -33,10 +34,10 @@ class AuthRouter extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return switch (s.route) {
-      'walkthrough' => const WalkthroughScreen(),
-      'phone' => const _PhoneScreen(),
-      'otp' => const _OtpScreen(),
-      'profile' => const _ProfileSetupScreen(),
+      AppRoutes.walkthrough => const WalkthroughScreen(),
+      AppRoutes.phone => const _PhoneScreen(),
+      AppRoutes.otp => const _OtpScreen(),
+      AppRoutes.profileSetup => const _ProfileSetupScreen(),
       _ => const _WelcomeScreen(),
     };
   }
@@ -70,7 +71,7 @@ class _WelcomeScreen extends StatelessWidget {
                 PButton(s.strings.onboarding.w_start(s.gender),
                     variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
                   s.setAuthIntent('signup');
-                  s.go('phone');
+                  s.go(AppRoutes.phone);
                 }),
                 const SizedBox(height: 16),
                 _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
@@ -78,7 +79,7 @@ class _WelcomeScreen extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     s.setAuthIntent('signin');
-                    s.go('phone');
+                    s.go(AppRoutes.phone);
                   },
                   child: RichText(
                       text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
@@ -375,7 +376,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       (_) {
         s.setAuthContact(method: 'email', email: address);
         s.setAuthPassword(pwCtrl.text);
-        s.go('otp');
+        s.go(AppRoutes.otp);
       },
       (failure) => setState(() => _error = failure.message),
     );
@@ -395,7 +396,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
-            _AuthHeader(onBack: () => s.go('welcome'), step: 1),
+            _AuthHeader(onBack: () => s.go(AppRoutes.welcome), step: 1),
             Expanded(
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -511,7 +512,7 @@ Future<void> enterAfterSignIn(BuildContext context, WidgetRef ref, PatientAppSta
       .first;
   if (!context.mounted) return;
   if (accepted != null) {
-    s.go('app');
+    s.go(AppRoutes.app);
     return;
   }
   // Not accepted → present the gate. Pushed over the current screen so backing
@@ -522,7 +523,7 @@ Future<void> enterAfterSignIn(BuildContext context, WidgetRef ref, PatientAppSta
     ),
   );
   if (!context.mounted) return;
-  if (didAccept == true) s.go('app');
+  if (didAccept == true) s.go(AppRoutes.app);
 }
 
 // ── OTP ──────────────────────────────────────────────────────
@@ -632,7 +633,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
-            _AuthHeader(onBack: () => s.go('phone'), step: 2),
+            _AuthHeader(onBack: () => s.go(AppRoutes.phone), step: 2),
             Expanded(
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1107,7 +1108,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
-            _AuthHeader(onBack: () => s.go('otp'), step: 3),
+            _AuthHeader(onBack: () => s.go(AppRoutes.otp), step: 3),
             Expanded(
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),

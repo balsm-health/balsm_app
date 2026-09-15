@@ -17,6 +17,7 @@ import 'package:medications/medications.dart'
         addMedicationUseCaseProvider,
         recordDoseOutcomeUseCaseProvider;
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -195,7 +196,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
         PCard(
           margin: const EdgeInsets.symmetric(horizontal: 20),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-          onTap: () => s.setTab('rx'),
+          onTap: () => s.setTab(AppTab.prescriptions),
           child: Row(children: [
             const IconSquare(LucideIcons.fileText,
                 bg: T.petalViolet50, fg: T.petalViolet, size: 34, iconSize: 19, radius: T.rSm),

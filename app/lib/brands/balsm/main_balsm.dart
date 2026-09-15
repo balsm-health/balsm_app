@@ -12,6 +12,7 @@ import 'package:geofence_block/geofence_block.dart'
     show ReadDeniedCountriesRepository, deniedCountriesRepositoryProvider;
 import 'package:profile/profile.dart' show EmergencyContact, profileDataSourceProvider;
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/routes.dart';
 import 'package:emergency_card/emergency_card.dart'
     show
         ProfileIdentityReader,
@@ -272,7 +273,7 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     container.read(_sessionUserIdProvider.notifier).state = null;
     paPrefs.setSignedIn(false);
     unawaited(container.read(cacheStoreProvider).clearAll());
-    if (state.route == 'app') state.go('welcome');
+    if (state.route == AppRoutes.app) state.go(AppRoutes.welcome);
   });
   runApp(
     UncontrolledProviderScope(

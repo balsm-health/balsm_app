@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'app_state.dart';
+import 'routes.dart';
 import 'desktop_menu.dart';
 import 'dev/log_buffer.dart';
 import 'assets.dart';
@@ -79,7 +80,7 @@ class _PatientAppState extends ConsumerState<PatientApp> {
     super.initState();
     if (kIsWeb) {
       final segs = Uri.base.pathSegments.where((p) => p.isNotEmpty).toList();
-      if (segs.length == 2 && (segs[0] == 't' || segs[0] == 'emergency')) {
+      if (segs.length == 2 && (segs[0] == PublicQrPaths.token || segs[0] == PublicQrPaths.legacyEmergency)) {
         _publicResolveJti = segs[1];
       }
     }
@@ -95,7 +96,7 @@ class _PatientAppState extends ConsumerState<PatientApp> {
   void _bindDebugServiceExtensions() {
     if (!kDebugMode) return;
     developer.registerExtension('ext.balsm.setTab', (method, params) async {
-      state.setTab(params['tab'] ?? 'home');
+      state.setTab(AppTab.fromId(params['tab']));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true}));
     });
     developer.registerExtension('ext.balsm.go', (method, params) async {
@@ -244,7 +245,7 @@ class _PatientAppState extends ConsumerState<PatientApp> {
                       body: Stack(children: [
                         _publicResolveJti != null
                             ? PublicEmergencyResolveScreen(tokenId: _publicResolveJti!)
-                            : state.route == 'app'
+                            : state.route == AppRoutes.app
                                 ? const _MainApp()
                                 : const AuthRouter(),
                         if (_publicResolveJti == null)
@@ -298,7 +299,7 @@ class _MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<_MainApp> {
-  String? _lastTab;
+  AppTab? _lastTab;
   bool _navLoading = false;
   Timer? _navTimer;
 
@@ -333,14 +334,13 @@ class _MainAppState extends State<_MainApp> {
     // the quick-log FAB (self-report). Any tab id without a case still
     // resolves to the "coming next" placeholder rather than crashing.
     final screen = switch (s.tab) {
-      'home' => const HomeScreen(),
-      'map' => const MapScreen(),
-      'meds' => const MedsScreen(),
-      'records' => RecordsScreen(onBack: () => s.setTab('home')),
-      'trends' => const TrendsScreen(),
-      'rx' => const PrescriptionsScreen(),
-      'profile' => const ProfileScreen(),
-      _ => _Placeholder(title: s.tab),
+      AppTab.home => const HomeScreen(),
+      AppTab.map => const MapScreen(),
+      AppTab.meds => const MedsScreen(),
+      AppTab.records => RecordsScreen(onBack: () => s.setTab(AppTab.home)),
+      AppTab.trends => const TrendsScreen(),
+      AppTab.prescriptions => const PrescriptionsScreen(),
+      AppTab.profile => const ProfileScreen(),
     };
 
     final content = LayoutBuilder(builder: (context, c) {
@@ -358,7 +358,7 @@ class _MainAppState extends State<_MainApp> {
       // sub-screens (trends / records / appointments / prescriptions).
       // Design `app.jsx`: hide on trends/records (and Flutter's appointments
       // sub-screen). Prescriptions stay on the meds path with the tab bar.
-      final hideTabBar = s.tab == 'trends' || s.tab == 'records';
+      final hideTabBar = s.tab == AppTab.trends || s.tab == AppTab.records;
       return Column(children: [
         Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
         if (!hideTabBar) const _TabBar(),
@@ -493,12 +493,12 @@ class _TabBar extends StatelessWidget {
       Padding(
         padding: EdgeInsets.only(bottom: 22 + MediaQuery.paddingOf(context).bottom.clamp(0, 12)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _Tab(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home),
-          _Tab(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
+          _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
+          _Tab(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
           // Quick-log "+" — opens the daily check-in flow as a route (center slot).
           const _QuickLog(),
-          _Tab(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
-          _Tab(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile),
+          _Tab(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
+          _Tab(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile),
         ]),
       ),
     ]);
@@ -507,7 +507,7 @@ class _TabBar extends StatelessWidget {
 
 class _Tab extends StatelessWidget {
   const _Tab({required this.id, required this.icon, required this.label});
-  final String id;
+  final AppTab id;
   final IconData icon;
   final String label;
   @override
@@ -642,11 +642,11 @@ class _SideNav extends StatelessWidget {
             )
           else
             const SizedBox(height: Space.s5),
-          _RailItem(id: 'home', icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
-          _RailItem(id: 'map', icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
+          _RailItem(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
+          _RailItem(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
           _QuickLog(rail: true, wide: expanded),
-          _RailItem(id: 'meds', icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
-          _RailItem(id: 'profile', icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
+          _RailItem(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
+          _RailItem(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
           const Spacer(),
         ]),
       ),
@@ -656,7 +656,7 @@ class _SideNav extends StatelessWidget {
 
 class _RailItem extends StatelessWidget {
   const _RailItem({required this.id, required this.icon, required this.label, this.wide = false});
-  final String id;
+  final AppTab id;
   final IconData icon;
   final String label;
   final bool wide;
@@ -697,19 +697,6 @@ class _RailItem extends StatelessWidget {
         ),
         child: child,
       ),
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.title});
-  final String title;
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return Center(
-      child: Text('${title[0].toUpperCase()}${title.substring(1)}\n(coming next)',
-          textAlign: TextAlign.center, style: Typo.subhead(ar: s.rtl).copyWith(color: T.fg3)),
     );
   }
 }

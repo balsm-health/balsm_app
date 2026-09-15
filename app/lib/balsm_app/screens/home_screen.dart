@@ -12,6 +12,7 @@ import 'home_widgets.dart';
 import 'records_screen.dart';
 import '../care/care_entity.dart';
 import '../app_state.dart';
+import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -150,7 +151,7 @@ class _NudgeSection extends ConsumerWidget {
           iconFg: T.petalViolet,
           title: s.strings.home.nudge_med,
           subtitle: s.strings.home.nudge_med_sub,
-          onTap: () => s.setTab('meds'),
+          onTap: () => s.setTab(AppTab.meds),
         ),
     ]);
   }
@@ -254,7 +255,7 @@ class _CheckInSection extends ConsumerWidget {
       HomeHero(
         done: done,
         onStart: () => openCheckin(context),
-        onReview: () => s.setTab('trends'),
+        onReview: () => s.setTab(AppTab.trends),
       ),
       // A streak of zero is not an achievement worth a card.
       if (streak > 0) HomeStreak(days: streak, checkedLast7: checkInsLastDays(history, 7)),
@@ -276,7 +277,7 @@ class _NearbyShortcut extends ConsumerWidget {
       iconFg: T.petalBlue,
       title: s.strings.care.map_nearby,
       subtitle: '$count ${s.strings.care.map_sub}',
-      onTap: () => s.setTab('map'),
+      onTap: () => s.setTab(AppTab.map),
     );
   }
 }
@@ -295,7 +296,7 @@ class _RecordsShortcut extends ConsumerWidget {
       iconFg: T.petalViolet,
       title: s.strings.records.records,
       subtitle: '$count ${s.strings.records.rec_documents}',
-      onTap: () => s.setTab('records'),
+      onTap: () => s.setTab(AppTab.records),
     );
   }
 }
@@ -377,7 +378,8 @@ class _RecentReports extends ConsumerWidget {
     if (history.isEmpty) return const SizedBox.shrink();
     final recent = history.take(3).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      RowHead(s.strings.common.recent, action: s.strings.common.see_all, onAction: () => s.setTab('trends'), ar: s.rtl),
+      RowHead(s.strings.common.recent,
+          action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends), ar: s.rtl),
       PCard(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: EdgeInsets.zero,
