@@ -5,6 +5,7 @@ import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../widgets/attachment_thumb.dart';
 import '../widgets/mood_face.dart';
 import 'checkin_shared.dart';
 
@@ -153,6 +154,13 @@ class DayRecordsScreen extends StatelessWidget {
                       ]),
                     ),
                   ]),
+                ),
+              // The check-in's photo (records-vault back-reference) — design
+              // DayRecordsScreen renders attachments inline with the readings.
+              if (checkIn.photoRecordId != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  child: RecordAttachmentThumb(recordId: checkIn.photoRecordId!, height: 160),
                 ),
               const SizedBox(height: 24),
             ]),

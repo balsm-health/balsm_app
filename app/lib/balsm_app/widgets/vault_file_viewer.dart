@@ -67,16 +67,26 @@ class VaultFileViewer extends ConsumerWidget {
         ),
         if (title != null && title!.isNotEmpty)
           Positioned(
-            top: MediaQuery.paddingOf(context).top + 14,
+            top: MediaQuery.paddingOf(context).top + 10,
             left: 64,
             right: 64,
-            child: Text(
-              title!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white70, fontWeight: FontWeight.w600),
-            ),
+            child: Column(children: [
+              Text(
+                title!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              // Kind · size meta (design att-bar) — derived from the decrypted
+              // bytes; nothing else about the file is disclosed.
+              if (blob.valueOrNull case final b?)
+                Text(
+                  '${vaultFileKind(path, b) == VaultFileKind.pdf ? 'PDF' : s.strings.settings.add_photo} · ${_fmtSize(b.length)}',
+                  textAlign: TextAlign.center,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white54, fontSize: FS.xs),
+                ),
+            ]),
           ),
       ]),
     );
@@ -102,6 +112,9 @@ class VaultFileViewer extends ConsumerWidget {
     }
   }
 }
+
+String _fmtSize(int b) =>
+    b > 1048576 ? '${(b / 1048576).toStringAsFixed(1)} MB' : '${(b / 1024).clamp(1, double.infinity).round()} KB';
 
 class _CantOpen extends StatelessWidget {
   const _CantOpen({required this.s});

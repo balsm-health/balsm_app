@@ -9,7 +9,7 @@ import '../responsive.dart';
 import '../tokens.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 
-import '../widgets/photo_attach.dart';
+import '../widgets/attachment_thumb.dart';
 import '../widgets/vault_file_viewer.dart';
 import 'add_prescription_sheet.dart';
 
@@ -248,10 +248,7 @@ class PrescriptionDetailScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                   child: rx.attachmentKind == 'image'
-                      ? GestureDetector(
-                          onTap: () => VaultFileViewer.open(context, path: rx.attachmentPath!, title: rx.title),
-                          child: VaultImage(path: rx.attachmentPath!, height: 240),
-                        )
+                      ? VaultAttachmentThumb(path: rx.attachmentPath!, title: rx.title, height: 240)
                       : _LinkAttach(path: rx.attachmentPath!, kind: rx.attachmentKind ?? 'url', title: rx.title),
                 ),
               if (active && !rx.isSelf && (rx.reference ?? '').isNotEmpty) _QrBlock(reference: rx.reference!),
