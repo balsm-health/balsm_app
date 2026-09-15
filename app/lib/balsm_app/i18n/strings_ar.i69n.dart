@@ -626,6 +626,8 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_link_requests => "طلبات الربط";
   String get fam_decline => "رفض";
   String get fam_approve => "موافقة";
+  String get fam_self_add => "لا يمكنك إضافة نفسك — هذا رمزك أنت";
+  String get fam_self_add_manual => "هذا اسمك أنت — أفراد الأسرة أشخاص آخرون";
   String get fam_scan_invalid => "هذا ليس رمز ملف بلسم";
   String get fam_scan_failed => "تعذّرت قراءة الرمز — حاول مجددًا";
   String get rel_default => "فرد من الأسرة";
@@ -745,6 +747,10 @@ class CommonStrings_ar extends CommonStrings {
         return fam_decline;
       case 'fam_approve':
         return fam_approve;
+      case 'fam_self_add':
+        return fam_self_add;
+      case 'fam_self_add_manual':
+        return fam_self_add_manual;
       case 'fam_scan_invalid':
         return fam_scan_invalid;
       case 'fam_scan_failed':

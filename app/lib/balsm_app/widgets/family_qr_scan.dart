@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:emergency_card/emergency_card.dart'
-    show ProfileQrPayload, ResolvedProfileQr, resolveEmergencyQrTokenUseCaseProvider;
+    show ProfileQrPayload, ResolvedProfileQr, permanentQrStoreProvider, resolveEmergencyQrTokenUseCaseProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
@@ -76,6 +76,14 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
       return;
     }
     setState(() => _busy = true);
+    // You cannot add yourself: your own permanent QR carries your own jti.
+    final own = await ref.read(permanentQrStoreProvider).read();
+    if (!mounted) return;
+    if (own != null && own.jti == parsed.jti) {
+      setState(() => _busy = false);
+      _note(s.strings.common.fam_self_add);
+      return;
+    }
     final result =
         await ref.read(resolveEmergencyQrTokenUseCaseProvider).call(tokenId: parsed.jti, keyBase64Url: parsed.key);
     if (!mounted) return;

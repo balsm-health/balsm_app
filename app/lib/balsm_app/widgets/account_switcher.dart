@@ -47,6 +47,7 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
     if (_adding) {
       return _AddFamilyMemberSheet(
         s: s,
+        selfName: (ref.read(accountSummaryProvider).valueOrNull?.displayName ?? '').trim(),
         onClose: () => setState(() => _adding = false),
         onAdd: (name, relation, dob, {linkJti}) {
           // Design: an unset relation falls back to "Family member" so the
@@ -315,8 +316,12 @@ class _LinkRequests extends StatelessWidget {
 }
 
 class _AddFamilyMemberSheet extends StatefulWidget {
-  const _AddFamilyMemberSheet({required this.s, required this.onClose, required this.onAdd});
+  const _AddFamilyMemberSheet({required this.s, required this.selfName, required this.onClose, required this.onAdd});
   final PatientAppState s;
+
+  /// The signed-in account's display name — a manual entry matching it is
+  /// rejected (you cannot add yourself as your own family member).
+  final String selfName;
   final VoidCallback onClose;
   final void Function(String name, String relation, DateTime? dob, {String? linkJti}) onAdd;
   @override
@@ -334,6 +339,11 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
 
   PatientAppState get s => widget.s;
   bool get canSave => _name.text.trim().length > 1;
+
+  bool get _isSelfName {
+    final self = widget.selfName;
+    return self.isNotEmpty && _name.text.trim().toLowerCase() == self.toLowerCase();
+  }
 
   @override
   void dispose() {
@@ -536,6 +546,10 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
           ),
         ),
       ),
+      if (_isSelfName) ...[
+        const SizedBox(height: 10),
+        Text(c.fam_self_add_manual, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.danger)),
+      ],
       const SizedBox(height: 20),
       PButton(
         c.add_member_cta,
@@ -543,7 +557,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         block: true,
         accent: s.accent,
         ar: s.rtl,
-        onTap: canSave ? () => widget.onAdd(_name.text.trim(), _relation, _dob) : null,
+        onTap: canSave && !_isSelfName ? () => widget.onAdd(_name.text.trim(), _relation, _dob) : null,
       ),
       const SizedBox(height: 8),
       PButton(c.fam_scan_instead,

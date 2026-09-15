@@ -202,6 +202,8 @@
     "fam_link_requests": "Link requests",
     "fam_decline": "Decline",
     "fam_approve": "Approve",
+    "fam_self_add": "You can't add yourself \u2014 this is your own code",
+    "fam_self_add_manual": "That's your own name \u2014 family members are other people",
     "fam_scan_invalid": "That isn't a Balsm profile code",
     "fam_scan_failed": "Couldn't read this code \u2014 try again",
     "rel_default": "Family member",

@@ -202,6 +202,8 @@
     "fam_link_requests": "طلبات الربط",
     "fam_decline": "رفض",
     "fam_approve": "موافقة",
+    "fam_self_add": "لا يمكنك إضافة نفسك \u2014 هذا رمزك أنت",
+    "fam_self_add_manual": "هذا اسمك أنت \u2014 أفراد الأسرة أشخاص آخرون",
     "fam_scan_invalid": "هذا ليس رمز ملف بلسم",
     "fam_scan_failed": "تعذّرت قراءة الرمز \u2014 حاول مجددًا",
     "rel_default": "فرد من الأسرة",

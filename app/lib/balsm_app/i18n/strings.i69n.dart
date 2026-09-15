@@ -621,6 +621,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get fam_link_requests => "Link requests";
   String get fam_decline => "Decline";
   String get fam_approve => "Approve";
+  String get fam_self_add => "You can't add yourself — this is your own code";
+  String get fam_self_add_manual => "That's your own name — family members are other people";
   String get fam_scan_invalid => "That isn't a Balsm profile code";
   String get fam_scan_failed => "Couldn't read this code — try again";
   String get rel_default => "Family member";
@@ -740,6 +742,10 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return fam_decline;
       case 'fam_approve':
         return fam_approve;
+      case 'fam_self_add':
+        return fam_self_add;
+      case 'fam_self_add_manual':
+        return fam_self_add_manual;
       case 'fam_scan_invalid':
         return fam_scan_invalid;
       case 'fam_scan_failed':
