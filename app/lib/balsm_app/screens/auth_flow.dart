@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:account/account.dart'
     show accountProfileUseCaseProvider, claimHandleUseCaseProvider, UpdateProfileInput;
-import 'package:auth/auth.dart'
-    show ageGateUseCaseProvider, signUpUseCaseProvider, signInUseCaseProvider, SignInSuccess, SignInLockout;
+import 'package:auth/auth.dart' show ageGateUseCaseProvider, signInUseCaseProvider;
 import 'package:core/core.dart'
     show
         refreshAccountSummary,
@@ -19,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
+import '../auth/auth_flow_controllers.dart';
 import '../routes.dart';
 import '../assets.dart';
 import '../kit.dart';
@@ -292,11 +292,24 @@ class _PhoneScreen extends ConsumerStatefulWidget {
 }
 
 class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
+  // View state only: text controllers + visibility toggle. Submit flow lives
+  // in [CredentialsController].
   final ctrl = TextEditingController();
   final pwCtrl = TextEditingController();
   bool _showPw = false;
-  String? _error;
-  bool _submitting = false;
+
+  bool get _submitting => ref.read(credentialsControllerProvider).submitting;
+
+  String? get _error {
+    final e = ref.read(credentialsControllerProvider).error;
+    if (e == null) return null;
+    final s = AppScope.of(context);
+    return switch (e.kind) {
+      AuthErrorKind.lockout => s.strings.auth.auth_locked_retry(e.lockoutSecs.toString()),
+      AuthErrorKind.invalidCredentials => s.strings.auth.pw_invalid_creds,
+      AuthErrorKind.server => e.message,
+    };
+  }
 
   @override
   void dispose() {
@@ -331,60 +344,37 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     final s = AppScope.of(context);
     final isSignup = s.authIntent == AuthIntent.signUp;
     final address = ctrl.text.trim();
+    final controller = ref.read(credentialsControllerProvider.notifier);
 
     if (!isSignup) {
-      setState(() {
-        _submitting = true;
-        _error = null;
-      });
-      final result = await ref.read(signInUseCaseProvider).passwordSignIn(email: address, password: pwCtrl.text);
+      final ok = await controller.signIn(email: address, password: pwCtrl.text);
       if (!mounted) return;
-      setState(() => _submitting = false);
-      result.fold(
-        (signIn) {
-          switch (signIn) {
-            case SignInSuccess():
-              // Credentials are proven good — this is what raises the platform
-              // "Save password?" prompt. Nothing before this point should, or a
-              // typo gets offered to the keychain.
-              TextInput.finishAutofillContext();
-              s.setAuthContact(method: AuthMethod.email, email: address);
-              unawaited(enterAfterSignIn(context, ref, s));
-            case SignInLockout(:final session):
-              TextInput.finishAutofillContext(shouldSave: false);
-              final secsLeft = session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
-              setState(() => _error = s.strings.auth.auth_locked_retry(secsLeft.toString()));
-          }
-        },
-        (_) {
-          // Wrong password: discard, so the OS does not offer to save it.
-          TextInput.finishAutofillContext(shouldSave: false);
-          setState(() => _error = s.strings.auth.pw_invalid_creds);
-        },
-      );
+      if (ok) {
+        // Credentials are proven good — this is what raises the platform
+        // "Save password?" prompt. Nothing before this point should, or a
+        // typo gets offered to the keychain.
+        TextInput.finishAutofillContext();
+        s.setAuthContact(method: AuthMethod.email, email: address);
+        unawaited(enterAfterSignIn(context, ref, s));
+      } else {
+        // Wrong password / lockout: discard, so the OS does not offer to save.
+        TextInput.finishAutofillContext(shouldSave: false);
+      }
       return;
     }
 
-    setState(() {
-      _submitting = true;
-      _error = null;
-    });
-    final result = await ref.read(signUpUseCaseProvider).requestEmailOtp(address, s.country.value);
-    if (!mounted) return;
-    setState(() => _submitting = false);
-    result.fold(
-      (_) {
-        s.setAuthContact(method: AuthMethod.email, email: address);
-        s.setAuthPassword(pwCtrl.text);
-        s.go(AppRoutes.otp);
-      },
-      (failure) => setState(() => _error = failure.message),
-    );
+    final ok = await controller.requestSignupOtp(email: address, countryCode: s.country.value);
+    if (!mounted || !ok) return;
+    s.setAuthContact(method: AuthMethod.email, email: address);
+    s.setAuthPassword(pwCtrl.text);
+    s.go(AppRoutes.otp);
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // Subscribe: the bridge getters above read this provider's current state.
+    ref.watch(credentialsControllerProvider);
     final isSignup = s.authIntent == AuthIntent.signUp;
     return Container(
       color: T.cream50,
@@ -534,18 +524,27 @@ class _OtpScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpScreenState extends ConsumerState<_OtpScreen> {
+  // View state only: input + focus. Countdown/verify live in [OtpController].
   final ctrl = TextEditingController();
   final focus = FocusNode();
-  int secs = 28;
-  Timer? timer;
-  String? _error;
-  bool _verifying = false;
+
+  int get secs => ref.read(otpControllerProvider).secs;
+  bool get _verifying => ref.read(otpControllerProvider).verifying;
+
+  String? get _error {
+    final e = ref.read(otpControllerProvider).error;
+    if (e == null) return null;
+    final s = AppScope.of(context);
+    return switch (e.kind) {
+      AuthErrorKind.lockout => s.strings.auth.auth_locked_retry(e.lockoutSecs.toString()),
+      _ => e.message,
+    };
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => focus.requestFocus());
-    _tick();
   }
 
   /// Verifies the 6-digit code against the real auth module. On success the
@@ -553,36 +552,17 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
   /// we then transition to the app. Lockout (423) / invalid / geofence (403)
   /// surface inline and reset the boxes.
   Future<void> _verify(String code) async {
-    if (_verifying) return;
     final s = AppScope.of(context);
-    setState(() {
-      _verifying = true;
-      _error = null;
-    });
-    final result = await ref.read(signInUseCaseProvider).verifyEmailOtp(email: s.authEmail, code: code);
+    final isNewUser = await ref.read(otpControllerProvider.notifier).verify(email: s.authEmail, code: code);
     if (!mounted) return;
-    setState(() => _verifying = false);
-    result.fold(
-      (signInResult) {
-        switch (signInResult) {
-          case SignInSuccess(:final isNewUser):
-            // The sign-up password is applied in _afterVerify; the account now
-            // exists, so the credentials are worth saving.
-            TextInput.finishAutofillContext();
-            unawaited(_afterVerify(s, isNewUser: isNewUser));
-          case SignInLockout(:final session):
-            final secsLeft = session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
-            setState(() {
-              _error = s.strings.auth.auth_locked_retry(secsLeft.toString());
-              ctrl.clear();
-            });
-        }
-      },
-      (failure) => setState(() {
-        _error = failure.message;
-        ctrl.clear();
-      }),
-    );
+    if (isNewUser != null) {
+      // The sign-up password is applied in _afterVerify; the account now
+      // exists, so the credentials are worth saving.
+      TextInput.finishAutofillContext();
+      unawaited(_afterVerify(s, isNewUser: isNewUser));
+    } else {
+      setState(ctrl.clear); // error is in controller state; reset the boxes
+    }
   }
 
   /// Post-verify navigation. On the password sign-up path a password was stashed
@@ -602,20 +582,8 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
     unawaited(enterAfterSignIn(context, ref, s));
   }
 
-  void _tick() {
-    timer?.cancel();
-    timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (secs <= 0) {
-        t.cancel();
-        return;
-      }
-      setState(() => secs--);
-    });
-  }
-
   @override
   void dispose() {
-    timer?.cancel();
     focus.dispose();
     ctrl.dispose();
     super.dispose();
@@ -623,6 +591,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(otpControllerProvider); // bridge getters read current state
     final s = AppScope.of(context);
     final code = ctrl.text;
     final contact = s.authEmail.isEmpty ? 'you@example.com' : s.authEmail;
@@ -693,11 +662,11 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                             TextSpan(
                                 text: '${secs}s', style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg3)),
                           ]))
-                        : PButton(s.strings.auth.otp_resend, variant: BtnVariant.ghost, accent: s.accent, ar: s.rtl,
-                            onTap: () {
-                            setState(() => secs = 28);
-                            _tick();
-                          })),
+                        : PButton(s.strings.auth.otp_resend,
+                            variant: BtnVariant.ghost,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: () => ref.read(otpControllerProvider.notifier).resend())),
               ]),
             )),
             Padding(
@@ -1340,13 +1309,16 @@ class _ForgotPasswordSheet extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
+  // View state only: text controllers + visibility toggle. The step machine
+  // lives in [PasswordResetController].
   late final TextEditingController _email = TextEditingController(text: widget.initialEmail);
   final _code = TextEditingController();
   final _newPw = TextEditingController();
-  String _step = 'email'; // email | code | done
-  bool _busy = false;
   bool _showPw = false;
-  String? _error;
+
+  ResetStep get _step => ref.read(passwordResetControllerProvider).step;
+  bool get _busy => ref.read(passwordResetControllerProvider).busy;
+  String? get _error => ref.read(passwordResetControllerProvider).error?.message;
 
   @override
   void dispose() {
@@ -1359,37 +1331,26 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
   bool get _emailOk => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_email.text.trim());
   bool get _resetOk => _code.text.trim().length >= 4 && _newPw.text.length >= 8;
 
+  // Forgot-password reuses the OTP-request endpoint to send the reset code.
   Future<void> _sendCode() async {
-    if (!_emailOk || _busy) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    // Forgot-password reuses the OTP-request endpoint to send the reset code.
-    final r = await ref.read(signInUseCaseProvider).requestEmailOtp(_email.text.trim(), widget.s.country.value);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    r.fold((_) => setState(() => _step = 'code'), (f) => setState(() => _error = f.message));
+    if (!_emailOk) return;
+    await ref
+        .read(passwordResetControllerProvider.notifier)
+        .sendCode(email: _email.text.trim(), countryCode: widget.s.country.value);
   }
 
   Future<void> _reset() async {
-    if (!_resetOk || _busy) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final r = await ref.read(signInUseCaseProvider).resetPassword(
+    if (!_resetOk) return;
+    await ref.read(passwordResetControllerProvider.notifier).reset(
           email: _email.text.trim(),
           code: _code.text.trim(),
           newPassword: _newPw.text,
         );
-    if (!mounted) return;
-    setState(() => _busy = false);
-    r.fold((_) => setState(() => _step = 'done'), (f) => setState(() => _error = f.message));
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(passwordResetControllerProvider); // bridge getters read current state
     final s = widget.s;
     return Directionality(
       textDirection: s.dir,
@@ -1406,10 +1367,10 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                     height: 4,
                     decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999)))),
             const SizedBox(height: 16),
-            Text(_step == 'done' ? s.strings.auth.fp_success : s.strings.auth.fp_title,
+            Text(_step == ResetStep.done ? s.strings.auth.fp_success : s.strings.auth.fp_title,
                 style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            if (_step == 'email') ...[
+            if (_step == ResetStep.email) ...[
               Text(s.strings.auth.fp_help, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
               const SizedBox(height: 16),
               _Input(
@@ -1419,7 +1380,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                   forceLtr: true,
                   accent: s.accent,
                   onChanged: (_) => setState(() {})),
-            ] else if (_step == 'code') ...[
+            ] else if (_step == ResetStep.code) ...[
               RichText(
                   text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
                 TextSpan(text: '${s.strings.auth.fp_sent_help} '),
@@ -1456,7 +1417,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                   child: Text(_error!,
                       style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
             const SizedBox(height: 20),
-            if (_step == 'email')
+            if (_step == ResetStep.email)
               Opacity(
                   opacity: _emailOk && !_busy ? 1 : 0.4,
                   child: PButton(s.strings.auth.fp_send,
@@ -1470,7 +1431,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                               _sendCode();
                             }
                           : null))
-            else if (_step == 'code')
+            else if (_step == ResetStep.code)
               Opacity(
                   opacity: _resetOk && !_busy ? 1 : 0.4,
                   child: PButton(s.strings.auth.fp_reset,
