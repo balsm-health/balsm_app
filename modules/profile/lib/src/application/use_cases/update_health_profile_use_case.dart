@@ -25,18 +25,14 @@ class UpdateHealthProfileUseCase {
   /// keep the current stored value.
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
-    String? bloodType,
+    BloodType? bloodType,
     bool clearBloodType = false,
     double? weightKg,
     bool clearWeight = false,
     double? heightCm,
     bool clearHeight = false,
   }) async {
-    if (bloodType != null && !kBloodTypes.contains(bloodType)) {
-      return AppResult.failure(
-        ValidationFailure('Invalid blood type: $bloodType'),
-      );
-    }
+    // Blood type is the core [BloodType] enum — membership is compile-checked.
     if (weightKg != null && (weightKg < 1 || weightKg > 500)) {
       return AppResult.failure(
         const ValidationFailure('Weight must be between 1 and 500 kg'),

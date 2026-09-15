@@ -111,7 +111,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       variables: [
         Variable.withString(key.value),
         Variable.withString(user.value),
-        value.bloodType != null ? Variable.withString(value.bloodType!) : const Variable(null),
+        value.bloodType != null ? Variable.withString(value.bloodType!.code) : const Variable(null),
         value.weightKg != null ? Variable.withReal(value.weightKg!) : const Variable(null),
         value.heightCm != null ? Variable.withReal(value.heightCm!) : const Variable(null),
         Variable.withInt(now),
@@ -222,7 +222,8 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     return HealthProfile(
       id: profileId,
       userId: UserId.value(row.read<String>('user_id')),
-      bloodType: row.readNullable<String>('blood_type'),
+      // Legacy free-text rows degrade to unknown rather than crashing.
+      bloodType: BloodType.tryParse(row.readNullable<String>('blood_type')),
       weightKg: (row.data['weight_kg'] as num?)?.toDouble(),
       heightCm: (row.data['height_cm'] as num?)?.toDouble(),
       allergies: allergies,

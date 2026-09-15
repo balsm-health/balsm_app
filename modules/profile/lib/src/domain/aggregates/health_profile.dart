@@ -26,7 +26,7 @@ class HealthProfile {
 
   /// Nullable ABO/Rh blood type. One of:
   /// 'A+'|'A-'|'B+'|'B-'|'AB+'|'AB-'|'O+'|'O-' or null (unknown).
-  final String? bloodType;
+  final BloodType? bloodType;
 
   /// Optional body weight in kilograms. On-device PHI only.
   final double? weightKg;
@@ -50,7 +50,7 @@ class HealthProfile {
   HealthProfile copyWith({
     HealthProfileId? id,
     UserId? userId,
-    String? bloodType,
+    BloodType? bloodType,
     bool clearBloodType = false,
     double? weightKg,
     bool clearWeight = false,
@@ -147,17 +147,7 @@ class EmergencyContact {
   final DateTime createdAt;
 }
 
-/// Valid blood type codes (null means unknown/not set).
-const List<String> kBloodTypes = [
-  'A+',
-  'A-',
-  'B+',
-  'B-',
-  'AB+',
-  'AB-',
-  'O+',
-  'O-',
-];
+// Blood types are the core [BloodType] enum (null means unknown/not set).
 
 /// Valid allergy severity levels, in escalating order.
 ///

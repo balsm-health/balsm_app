@@ -1,19 +1,33 @@
 import 'dart:convert';
 
+import 'package:core/core.dart' show BloodType;
+
 /// Immutable snapshot of a patient's emergency health profile.
 /// Serialised as JSON, then AES-256-GCM encrypted into the QR payload.
 /// PHI never leaves device unencrypted.
 class EmergencyCardSnapshot {
-  const EmergencyCardSnapshot({
+  EmergencyCardSnapshot({
     this.bloodType,
     this.allergyNames = const [],
     this.conditionNames = const [],
     this.primaryContact,
     required this.createdAt,
-  })  : assert(allergyNames.length <= 50, 'Max 50 allergies'),
-        assert(conditionNames.length <= 10, 'Max 10 conditions');
+  }) {
+    // Domain invariants — enforced in every build mode, not debug asserts:
+    // the sealed payload has a 16 KB ciphertext cap, so unbounded lists are
+    // a correctness bug, not a style concern.
+    if (allergyNames.length > maxAllergies) {
+      throw ArgumentError.value(allergyNames.length, 'allergyNames', 'Max $maxAllergies allergies');
+    }
+    if (conditionNames.length > maxConditions) {
+      throw ArgumentError.value(conditionNames.length, 'conditionNames', 'Max $maxConditions conditions');
+    }
+  }
 
-  final String? bloodType;
+  static const maxAllergies = 50;
+  static const maxConditions = 10;
+
+  final BloodType? bloodType;
 
   /// Up to 50 allergy display names.
   final List<String> allergyNames;
@@ -30,7 +44,7 @@ class EmergencyCardSnapshot {
       bloodType != null || allergyNames.isNotEmpty || conditionNames.isNotEmpty || primaryContact != null;
 
   Map<String, dynamic> toJson() => {
-        'bloodType': bloodType,
+        'bloodType': bloodType?.code,
         'allergyNames': allergyNames,
         'conditionNames': conditionNames,
         if (primaryContact != null)
@@ -44,7 +58,8 @@ class EmergencyCardSnapshot {
   factory EmergencyCardSnapshot.fromJson(Map<String, dynamic> json) {
     final contact = json['primaryContact'] as Map<String, dynamic>?;
     return EmergencyCardSnapshot(
-      bloodType: json['bloodType'] as String?,
+      // Legacy payloads carry raw strings; unrecognized → unknown.
+      bloodType: BloodType.tryParse(json['bloodType'] as String?),
       allergyNames: (json['allergyNames'] as List<dynamic>? ?? []).map((e) => e as String).toList(),
       conditionNames: (json['conditionNames'] as List<dynamic>? ?? []).map((e) => e as String).toList(),
       primaryContact: contact == null

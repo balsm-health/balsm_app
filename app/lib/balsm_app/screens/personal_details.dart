@@ -90,7 +90,7 @@ final profileCompletenessProvider = FutureProvider.autoDispose<bool>((ref) async
   // so setting the blood type retires the card immediately instead of after
   // the next cold rebuild.
   final health = await ref.watch(healthProfileProvider.future);
-  final hasBlood = (health?.bloodType ?? '').isNotEmpty;
+  final hasBlood = health?.bloodType != null;
   return hasName && hasDob && hasGender && hasBlood;
 });
 

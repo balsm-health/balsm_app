@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:collection/collection.dart';
-import 'package:core/core.dart' show currentUserIdProvider;
+import 'package:core/core.dart' show BloodType, currentUserIdProvider;
 import 'package:profile/profile.dart'
     show
         Bmi,
@@ -12,7 +12,6 @@ import 'package:profile/profile.dart'
         Allergy,
         ChronicCondition,
         AllergyId,
-        kBloodTypes,
         profileDataSourceProvider,
         updateHealthProfileUseCaseProvider,
         addAllergyUseCaseProvider,
@@ -138,7 +137,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
 
   /// Toggle blood type via UpdateHealthProfileUseCase. Tapping the currently
   /// selected type clears it (back to unknown).
-  Future<void> _setBloodType(String bt) async {
+  Future<void> _setBloodType(BloodType bt) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
     final current = ref.read(healthProfileProvider).valueOrNull?.bloodType;
@@ -434,17 +433,17 @@ class _BloodTypeGrid extends StatelessWidget {
     required this.onSelect,
   });
 
-  final String? selected;
+  final BloodType? selected;
   final Color accentBg;
   final Color accent;
   final Color accentFg;
-  final ValueChanged<String> onSelect;
+  final ValueChanged<BloodType> onSelect;
 
   static const _cols = 4;
 
   @override
   Widget build(BuildContext context) {
-    final rows = kBloodTypes.slices(_cols).toList();
+    final rows = BloodType.values.slices(_cols).toList();
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Table(
@@ -470,7 +469,7 @@ class _BloodTypeGrid extends StatelessWidget {
     );
   }
 
-  Widget _cell(String bt) {
+  Widget _cell(BloodType bt) {
     final on = selected == bt;
     return Pressable(
       onTap: () => onSelect(bt),
@@ -486,7 +485,7 @@ class _BloodTypeGrid extends StatelessWidget {
           border: Border.all(color: on ? accent : T.border, width: 1.5),
         ),
         child: Text(
-          bt,
+          bt.label,
           style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: on ? accentFg : T.fg2),
         ),
       ),

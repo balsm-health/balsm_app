@@ -55,7 +55,7 @@ class _HealthProfileEditorScreenState extends ConsumerState<HealthProfileEditorS
     if (_errorMessage != null) setState(() => _errorMessage = null);
   }
 
-  Future<void> _setBloodType(String? bloodType) async {
+  Future<void> _setBloodType(BloodType? bloodType) async {
     final userId = _userId;
     if (userId == null) return;
     _clearError();
@@ -371,8 +371,8 @@ class _EmptyHint extends StatelessWidget {
 
 class _BloodTypeDropdown extends StatelessWidget {
   const _BloodTypeDropdown({required this.value, required this.onChanged});
-  final String? value;
-  final ValueChanged<String?> onChanged;
+  final BloodType? value;
+  final ValueChanged<BloodType?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +384,7 @@ class _BloodTypeDropdown extends StatelessWidget {
         border: Border.all(color: BalsmColors.border, width: 1.5),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
+        child: DropdownButton<BloodType?>(
           isExpanded: true,
           value: value,
           hint: const Text(
@@ -394,12 +394,12 @@ class _BloodTypeDropdown extends StatelessWidget {
           icon: const Icon(Icons.keyboard_arrow_down, color: BalsmColors.fg3),
           style: const TextStyle(fontSize: 18, color: BalsmColors.fg1),
           items: [
-            const DropdownMenuItem<String?>(
+            const DropdownMenuItem<BloodType?>(
               value: null,
               child: Text('Unknown', style: TextStyle(color: BalsmColors.fg3)),
             ),
-            ...kBloodTypes.map(
-              (bt) => DropdownMenuItem<String?>(value: bt, child: Text(bt)),
+            ...BloodType.values.map(
+              (bt) => DropdownMenuItem<BloodType?>(value: bt, child: Text(bt.label)),
             ),
           ],
           onChanged: onChanged,

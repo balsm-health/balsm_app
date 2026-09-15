@@ -22,4 +22,3 @@ export 'src/application/use_cases/sign_up_use_case.dart';
 
 // ── Presentation ────────────────────────────────────────────────────────────
 export 'src/presentation/providers/auth_providers.dart';
-export 'src/presentation/routes.dart';
