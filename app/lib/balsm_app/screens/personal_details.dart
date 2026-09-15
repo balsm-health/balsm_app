@@ -12,6 +12,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'profile_subscreens.dart' show healthProfileProvider;
 import 'package:core/core.dart'
     show
+        accountSummaryProvider,
         currentUserIdProvider,
         refreshAccountSummary,
         AppFailure,
@@ -1438,8 +1439,18 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           if (widget.name.isNotEmpty)
             Text(widget.name,
                 textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+          // Profile handle under the QR (design qrshare.jsx): the public
+          // profile URL, always LTR. Hidden until a handle is claimed.
+          if (ref.watch(accountSummaryProvider).valueOrNull?.handle case final String handle when handle.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text('balsm.health/@$handle',
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.center,
+                  style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: s.accent.main)),
+            ),
           const SizedBox(height: 8),
-          // Expiry chip (replaces the prototype's static @handle line).
+          // Expiry chip.
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
