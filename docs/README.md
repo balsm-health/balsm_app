@@ -2,6 +2,8 @@
 
 - [architecture.md](architecture.md) — the monorepo in one page: PHI boundary,
   layers, module rules, persistence tiers
+- [balsm-cli.md](balsm-cli.md) — the `bin/balsm` CLI: every action, artifact,
+  option, and where builds get collected
 - [`superpowers/specs/`](superpowers/specs/) — approved feature designs
   (dated; the design history of the app)
 - [`superpowers/plans/`](superpowers/plans/) — implementation plans built from
