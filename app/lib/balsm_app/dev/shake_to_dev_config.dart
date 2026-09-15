@@ -25,6 +25,17 @@ class ShakeToDevConfig extends ConsumerStatefulWidget {
   ConsumerState<ShakeToDevConfig> createState() => _ShakeToDevConfigState();
 }
 
+/// Opens the same Dev Config screen the shake gesture opens — the desktop
+/// menu's trigger, since desktops don't shake. Same screen, same read-only
+/// posture in prod.
+void openDevConfig(BuildContext context) {
+  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(
+    builder: (_) => ServerSelectorScreen(
+      controller: ProviderScope.containerOf(context).read(balsmApiControllerProvider),
+    ),
+  ));
+}
+
 class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
   StreamSubscription<UserAccelerometerEvent>? _sub;
   DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);

@@ -16,6 +16,7 @@ typedef DesktopMenuActions = ({
   void Function() quickLog,
   void Function() emergency,
   void Function() logs,
+  void Function() devConfig,
 });
 
 /// Desktop menu bar.
@@ -110,6 +111,7 @@ class DesktopMenuScope extends StatelessWidget {
     final emergencyKey = SingleActivator(LogicalKeyboardKey.keyE, meta: meta, control: !meta);
     final shotKey = SingleActivator(LogicalKeyboardKey.keyS, meta: meta, control: !meta, shift: true);
     final logsKey = SingleActivator(LogicalKeyboardKey.keyL, meta: meta, control: !meta, shift: true);
+    final devKey = SingleActivator(LogicalKeyboardKey.keyD, meta: meta, control: !meta, shift: true);
 
     if (Platform.isMacOS) {
       return PlatformMenuBar(
@@ -165,6 +167,7 @@ class DesktopMenuScope extends StatelessWidget {
       emergencyKey: actions.emergency,
       shotKey: () => _saveScreenshot(context),
       logsKey: actions.logs,
+      devKey: actions.devConfig,
       for (final (i, (_, tab)) in _tabs.indexed) nav(i): () => state.setTab(tab),
     };
     return CallbackShortcuts(

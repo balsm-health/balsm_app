@@ -214,6 +214,7 @@ class _PatientAppState extends State<PatientApp> {
               quickLog: () => _menuOpen(showQuickLog),
               emergency: () => _menuOpen(openEmergency),
               logs: () => _menuOpen(LogsScreen.open),
+              devConfig: () => _menuOpen(openDevConfig),
             ),
             child: DeepLinkHandler(
               child: Directionality(

@@ -1234,6 +1234,7 @@ class NavStrings_ar extends NavStrings {
   String get menu_emergency => "الطوارئ";
   String get menu_screenshot => "حفظ لقطة الشاشة…";
   String get menu_logs => "السجلّات";
+  String get menu_devconfig => "إعدادات المطوّر";
   String get menu_prescriptions => "الوصفات";
   String get menu_records => "السجلات الصحية";
   String get menu_trends => "المؤشرات";
@@ -1268,6 +1269,8 @@ class NavStrings_ar extends NavStrings {
         return menu_screenshot;
       case 'menu_logs':
         return menu_logs;
+      case 'menu_devconfig':
+        return menu_devconfig;
       case 'menu_prescriptions':
         return menu_prescriptions;
       case 'menu_records':

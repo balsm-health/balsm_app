@@ -1227,6 +1227,7 @@ class NavStrings implements i69n.I69nMessageBundle {
   String get menu_emergency => "Emergency";
   String get menu_screenshot => "Save screenshot…";
   String get menu_logs => "Logs";
+  String get menu_devconfig => "Dev config";
   String get menu_prescriptions => "Prescriptions";
   String get menu_records => "Health records";
   String get menu_trends => "Trends";
@@ -1261,6 +1262,8 @@ class NavStrings implements i69n.I69nMessageBundle {
         return menu_screenshot;
       case 'menu_logs':
         return menu_logs;
+      case 'menu_devconfig':
+        return menu_devconfig;
       case 'menu_prescriptions':
         return menu_prescriptions;
       case 'menu_records':
