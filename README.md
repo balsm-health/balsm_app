@@ -9,6 +9,16 @@ encrypted or non-PHI payloads.
 > PHI in code or fixtures. Details in [CLAUDE.md](CLAUDE.md) and
 > [CODING_STANDARDS.md](CODING_STANDARDS.md).
 
+<p align="center">
+  <img src="app/screenshots/04_home.png"        width="19%" alt="Home" />
+  <img src="app/screenshots/05_care_map.png"    width="19%" alt="Care map" />
+  <img src="app/screenshots/06_medications.png" width="19%" alt="Medications" />
+  <img src="app/screenshots/08_records.png"     width="19%" alt="Health records" />
+  <img src="app/screenshots/10_profile.png"     width="19%" alt="Profile" />
+</p>
+<p align="center"><sub>Synthetic "E2E Tester" data — full set + regeneration guide in
+<a href="docs/screenshots.md">docs/screenshots.md</a>.</sub></p>
+
 ## Repository map
 
 Melos monorepo, three layers. Modules depend on `core`, never on each other —
