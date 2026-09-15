@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'app_state.dart';
 import 'desktop_menu.dart';
+import 'dev/log_buffer.dart';
 import 'assets.dart';
 import 'kit.dart';
 import 'offline_banner.dart';
@@ -70,6 +71,7 @@ class _PatientAppState extends State<PatientApp> {
   @override
   void initState() {
     super.initState();
+    LogBuffer.instance.install();
     _bindDebugServiceExtensions();
     Timer(const Duration(milliseconds: 2300), () {
       if (mounted) setState(() => _booting = false);
@@ -211,6 +213,7 @@ class _PatientAppState extends State<PatientApp> {
               checkIn: () => _menuOpen(openCheckin),
               quickLog: () => _menuOpen(showQuickLog),
               emergency: () => _menuOpen(openEmergency),
+              logs: () => _menuOpen(LogsScreen.open),
             ),
             child: DeepLinkHandler(
               child: Directionality(
