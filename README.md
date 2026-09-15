@@ -69,6 +69,10 @@ alias balsm=/path/to/balsm_app/bin/balsm
 Melos equivalents: `melos run run:dev`, `melos run test`, `melos run analyze`,
 `melos run gen`, `melos run boundaries` (see `melos.yaml`).
 
+**iOS plugins** are managed by Swift Package Manager (Flutter 3.47 default) —
+`Package.resolved` and the SwiftPM project state are committed; CocoaPods
+remains only for the pods SwiftPM doesn't cover yet.
+
 **Brands & environments:** brand `balsm` (entry `app/lib/brands/balsm/main_balsm.dart`,
 Android flavor + iOS scheme `balsm`); environments `dev | staging | prod` from
 `app/env/<brand>/<env>.json` + git-ignored `app/env/shared.json`.
@@ -101,6 +105,8 @@ descriptors; see `previews/preview_harness.dart`.) Every preview is also pumped 
 ## Deeper docs
 
 - Feature specs: `docs/superpowers/specs/` · implementation plans: `docs/superpowers/plans/`
-- CI: `.github/workflows/` (`ci.yml` checks, `build-apks.yml`, `release.yml`)
+- CI: `.github/workflows/` (`ci.yml` checks, `build-apks.yml`, `release.yml`).
+  Pipelines run only for `main` / `develop` / `release/**` and PRs targeting
+  them — work branches get CI through their PR, not on every push.
 - CI secrets runbook: `docs/ci-secrets.md` · backup setup: `docs/google-drive-backup-setup.md`
 - Org-wide rules: `../Balsm-Core/agents/rules/` (AGENTS.md, CODING_STANDARDS.md)
