@@ -25,18 +25,7 @@ import 'package:core/core.dart'
 import 'package:account/account.dart'
     show claimHandleUseCaseProvider, accountProfileUseCaseProvider, ProfileDetails, UpdateProfileInput;
 import 'package:emergency_card/emergency_card.dart'
-    show
-        EmergencyCardSnapshot,
-        EmergencyQrToken,
-        QrTokenId,
-        emergencySnapshotReaderProvider,
-        mintEmergencyQrTokenUseCaseProvider,
-        revokeEmergencyQrTokenUseCaseProvider,
-        rotatePermanentQrUseCaseProvider,
-        getQrScanHistoryUseCaseProvider,
-        permanentQrStoreProvider,
-        refreshPermanentQrUseCaseProvider,
-        MintResult;
+    show EmergencyCardSnapshot, emergencySnapshotReaderProvider, getQrScanHistoryUseCaseProvider, MintResult;
 import 'package:balsm_api/balsm_api.dart' show QrScanEntry;
 import 'package:profile/profile.dart'
     show
@@ -46,6 +35,7 @@ import 'package:profile/profile.dart'
         AddEmergencyContactUseCase,
         normalizeArabicNumerals;
 import '../app_state.dart';
+import '../qr/qr_share_controller.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -1104,6 +1094,9 @@ class _QrShareSheet extends ConsumerStatefulWidget {
 }
 
 class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
+  // Ephemeral view state only (CODING_STANDARDS §7): the in-sheet toast and
+  // the export-in-flight flag. Everything token-shaped lives in
+  // [QrShareController]; restore/mint/revoke/rotate/countdown happen there.
   String? toast;
   Timer? _toastTimer;
 
@@ -1111,54 +1104,25 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   final GlobalKey _qrCardKey = GlobalKey();
   bool _exporting = false;
 
-  // Minted-token state. `_mint` holds the real token + its `#k=` fragment URL;
-  // null until a token is minted (or after it is revoked / re-generated).
-  MintResult? _mint;
-  int _ttlSeconds = 86400; // default 24h (FR-017)
-  bool _minting = false;
-  bool _revoking = false;
-  bool _rotating = false;
-  String? _error;
-  Timer? _ticker;
-  Duration _remaining = Duration.zero;
-
   PatientAppState get s => widget.s;
   bool get ar => s.rtl;
 
-  @override
-  void initState() {
-    super.initState();
-    _restorePermanentQr();
-  }
-
-  /// A permanent QR survives sheet/app restarts: {jti, key} live in the
-  /// keystore, so the exact same QR is re-displayed here. Also kicks a silent
-  /// ciphertext refresh in case the profile changed since the last sync.
-  Future<void> _restorePermanentQr() async {
-    final record = await ref.read(permanentQrStoreProvider).read();
-    if (record == null || !mounted) return;
-    setState(() {
-      _mint = (
-        token: EmergencyQrToken(
-          jti: QrTokenId.value(record.jti),
-          expiresAt: null,
-          ttlSeconds: 0,
-        ),
-        qrUrl: record.qrUrl,
-      );
-      _ttlSeconds = 0;
-    });
-    unawaited(ref.read(refreshPermanentQrUseCaseProvider)());
-  }
-
-  bool get _isPermanent => _mint?.token.isPermanent ?? false;
-
-  bool get _isExpired => !_isPermanent && (_mint == null || _remaining.isNegative || _remaining == Duration.zero);
+  // Bridge getters over the controller state so the build helpers below read
+  // naturally; build() watches the provider, so they are always current.
+  QrShareState get _qs => ref.read(qrShareControllerProvider);
+  MintResult? get _mint => _qs.mint;
+  int get _ttlSeconds => _qs.ttlSeconds;
+  bool get _minting => _qs.minting;
+  bool get _revoking => _qs.revoking;
+  bool get _rotating => _qs.rotating;
+  String? get _error => _qs.error;
+  Duration get _remaining => _qs.remaining;
+  bool get _isPermanent => _qs.isPermanent;
+  bool get _isExpired => _qs.isExpired;
 
   @override
   void dispose() {
     _toastTimer?.cancel();
-    _ticker?.cancel();
     super.dispose();
   }
 
@@ -1174,66 +1138,15 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   /// via the Tier-0 seam, client-side AES-256-GCM encrypts it, POSTs ONLY the
   /// ciphertext, and returns the full QR URL with the key in the `#k=` fragment.
   Future<void> _mintToken() async {
-    setState(() {
-      _minting = true;
-      _error = null;
-    });
-    final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: _ttlSeconds);
-    if (!mounted) return;
-    result.fold(
-      (m) {
-        setState(() {
-          _mint = m;
-          _minting = false;
-          _remaining = m.token.expiresAt?.difference(DateTime.now()) ?? Duration.zero;
-        });
-        if (!m.token.isPermanent) _startTicker();
-      },
-      // Mint failures — incl. the age gate (FR-301b) — surface in the error
-      // style below the mint affordance.
-      (f) => setState(() {
-        _minting = false;
-        _error = f.message;
-      }),
-    );
+    // Failures — incl. the age gate (FR-301b) — surface via state.error.
+    await ref.read(qrShareControllerProvider.notifier).mint();
   }
 
-  void _startTicker() {
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      final exp = _mint?.token.expiresAt;
-      if (exp == null) {
-        _ticker?.cancel();
-        return;
-      }
-      setState(() => _remaining = exp.difference(DateTime.now()));
-    });
-  }
-
-  /// Revokes the active token → the public resolve endpoint returns 410. On
-  /// success the QR clears and the sheet returns to the mint affordance.
+  /// Revokes the active token; on success the QR clears and the sheet
+  /// returns to the mint affordance.
   Future<void> _revoke() async {
-    final m = _mint;
-    if (m == null) return;
-    setState(() => _revoking = true);
-    final result = await ref.read(revokeEmergencyQrTokenUseCaseProvider).call(tokenId: m.token.jti);
-    if (!mounted) return;
-    result.fold(
-      (_) {
-        _ticker?.cancel();
-        setState(() {
-          _mint = null;
-          _revoking = false;
-          _error = null;
-        });
-        _showToast(s.strings.emergency.eqr_revoked_toast);
-      },
-      (f) => setState(() {
-        _revoking = false;
-        _error = f.message;
-      }),
-    );
+    final ok = await ref.read(qrShareControllerProvider.notifier).revoke();
+    if (ok && mounted) _showToast(s.strings.emergency.eqr_revoked_toast);
   }
 
   /// Copies the full QR URL (incl. the `#k=` fragment) to the clipboard. This is
@@ -1273,22 +1186,9 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    setState(() => _rotating = true);
-    final result = await ref.read(rotatePermanentQrUseCaseProvider)();
+    final ok = await ref.read(qrShareControllerProvider.notifier).rotate();
     if (!mounted) return;
-    result.fold(
-      (m) {
-        setState(() {
-          _mint = m;
-          _rotating = false;
-        });
-        _showToast(s.strings.emergency.eqr_rotated_toast);
-      },
-      (_) {
-        setState(() => _rotating = false);
-        _showToast(s.strings.emergency.eqr_rotate_failed);
-      },
-    );
+    _showToast(ok ? s.strings.emergency.eqr_rotated_toast : s.strings.emergency.eqr_rotate_failed);
   }
 
   String _scanClientLabel(QrScanEntry e) => switch (e.client) {
@@ -1397,6 +1297,8 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     // (booking, emergency, delegations bind to its jti) — an empty medical
     // profile still mints; the help text just nudges toward completing it.
     final userId = ref.watch(currentUserIdProvider);
+    // Subscribe: the bridge getters below read this provider's current state.
+    ref.watch(qrShareControllerProvider);
     final snapAsync = ref.watch(_emergencySnapshotProvider);
     final snapshot = snapAsync.valueOrNull;
     final hasHealthData = snapshot != null && snapshot.hasAnyData;
@@ -1596,8 +1498,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             block: true,
             accent: s.accent,
             ar: ar, onTap: () {
-          _ticker?.cancel();
-          setState(() => _mint = null);
+          ref.read(qrShareControllerProvider.notifier).clearExpired();
         })
       else ...[
         Row(children: [
@@ -1677,7 +1578,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   Widget _ttlSeg(({String key, int seconds}) opt) {
     final active = _ttlSeconds == opt.seconds;
     return GestureDetector(
-      onTap: () => setState(() => _ttlSeconds = opt.seconds),
+      onTap: () => ref.read(qrShareControllerProvider.notifier).setTtl(opt.seconds),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: Motion.base,
