@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:auth/auth.dart' show signInUseCaseProvider;
+import 'package:auth/auth.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_state.dart';
-import 'screens/auth_flow.dart' show enterAfterSignIn;
+import 'screens/auth_flow.dart';
 
 /// Listens for the magic sign-in deep link (`balsm://auth/link?t=<token>`) and
 /// redeems it. The emailed https link 302-redirects into this scheme; the token

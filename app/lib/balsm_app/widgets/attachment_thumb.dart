@@ -1,13 +1,13 @@
-import 'package:core/core.dart' show currentUserIdProvider;
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:records/records.dart' show RecordDocument, recordsDataSourceProvider;
+import 'package:records/records.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
-import 'photo_attach.dart' show VaultImage;
+import 'photo_attach.dart';
 import 'vault_file_viewer.dart';
 
 /// Design `attachments.jsx AttachmentThumb`: one tap target for every stored

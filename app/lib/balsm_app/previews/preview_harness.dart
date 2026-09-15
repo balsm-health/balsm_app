@@ -39,7 +39,7 @@
 /// exactly why they are the first thing worth previewing.
 library;
 
-import 'package:core/core.dart' show LanguageCode;
+import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

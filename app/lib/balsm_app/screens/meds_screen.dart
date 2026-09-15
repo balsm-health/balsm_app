@@ -1,21 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:core/core.dart' show UserId, currentUserIdProvider;
-import 'package:prescriptions/prescriptions.dart' show Prescription, prescriptionListProvider;
-import 'package:medications/medications.dart'
-    show
-        Medication,
-        MedicationId,
-        ScheduleType,
-        ScheduleConfig,
-        DoseOutcome,
-        TodayDose,
-        todayDosesProvider,
-        weekAdherenceProvider,
-        medicationListProvider,
-        addMedicationUseCaseProvider,
-        recordDoseOutcomeUseCaseProvider;
+import 'package:core/core.dart';
+import 'package:prescriptions/prescriptions.dart';
+import 'package:medications/medications.dart';
 import '../app_state.dart';
 import '../routes.dart';
 import '../kit.dart';

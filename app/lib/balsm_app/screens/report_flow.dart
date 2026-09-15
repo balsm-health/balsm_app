@@ -3,16 +3,15 @@ import 'dart:typed_data';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:core/core.dart' show activeProfileProvider, currentProfileIdProvider, currentUserIdProvider;
-import 'package:medications/medications.dart'
-    show Medication, DoseOutcome, medicationListProvider, recordDoseOutcomeUseCaseProvider;
+import 'package:core/core.dart';
+import 'package:medications/medications.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
-import '../shell.dart' show AdaptiveFrame;
+import '../shell.dart';
 import '../vault/vault_blob.dart';
 import 'metric_log.dart';
 

@@ -7,8 +7,8 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
-import 'balsm_flower.dart' show PetalSpinner;
-import 'photo_attach.dart' show vaultBlobProvider;
+import 'balsm_flower.dart';
+import 'photo_attach.dart';
 
 /// What a vault attachment turns out to be once decrypted.
 enum VaultFileKind { image, pdf }

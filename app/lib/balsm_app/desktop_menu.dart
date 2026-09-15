@@ -1,9 +1,9 @@
-import 'dart:io' show File, Platform;
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
-import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'dart:ui' as ui;
 

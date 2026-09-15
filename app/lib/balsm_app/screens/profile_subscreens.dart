@@ -3,28 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:collection/collection.dart';
-import 'package:core/core.dart' show BloodType, currentUserIdProvider;
-import 'package:profile/profile.dart'
-    show
-        Bmi,
-        BmiCategory,
-        HealthProfile,
-        Allergy,
-        ChronicCondition,
-        AllergyId,
-        profileDataSourceProvider,
-        updateHealthProfileUseCaseProvider,
-        addAllergyUseCaseProvider,
-        removeAllergyUseCaseProvider,
-        addChronicConditionUseCaseProvider,
-        removeChronicConditionUseCaseProvider,
-        ChronicConditionId;
+import 'package:core/core.dart';
+import 'package:profile/profile.dart';
 import '../app_state.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
-import '../shell.dart' show AdaptiveFrame;
+import '../shell.dart';
 
 /// Profile sub-screens ported from `home.jsx`: Medical profile, Care team,
 /// Privacy & data, Emergency numbers. Each opens as a pushed full-screen route

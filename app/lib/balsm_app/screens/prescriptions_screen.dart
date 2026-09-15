@@ -8,7 +8,7 @@ import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
-import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/attachment_thumb.dart';
 import '../widgets/vault_file_viewer.dart';

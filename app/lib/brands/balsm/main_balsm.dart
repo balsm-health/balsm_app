@@ -1,32 +1,22 @@
 import 'dart:async';
-import 'package:account/account.dart' show buildAccountAdapter, DeniedCountriesPort, deniedCountriesPortProvider;
-import 'package:auth/auth.dart' show UserSignedIn, UserSignedOut;
+import 'package:account/account.dart';
+import 'package:auth/auth.dart';
 import 'package:core/core.dart';
-import 'package:emergency_card/emergency_card.dart'
-    show EmergencyCardSnapshot, EmergencySnapshotReader, emergencySnapshotReaderProvider;
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:emergency_card/emergency_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:geofence_block/geofence_block.dart'
-    show ReadDeniedCountriesRepository, deniedCountriesRepositoryProvider;
-import 'package:profile/profile.dart' show EmergencyContact, profileDataSourceProvider;
+import 'package:geofence_block/geofence_block.dart';
+import 'package:profile/profile.dart';
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/routes.dart';
-import 'package:emergency_card/emergency_card.dart'
-    show
-        ProfileIdentityReader,
-        ProfileQrPayload,
-        permanentQrStoreProvider,
-        profileIdentityReaderProvider,
-        refreshPermanentQrUseCaseProvider;
-import 'package:account/account.dart' show accountProfileUseCaseProvider;
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/shell.dart';
 import 'package:app/balsm_app/vault/bind_file_store.dart';
 import 'package:app/balsm_app/care/map_packs/drift_map_pack_download_store.dart';
-import 'package:app/balsm_app/care/map_packs/map_pack_download_controller.dart' show mapPackSupportDirProvider;
-import 'package:app/balsm_app/care/map_packs/map_pack_download_store.dart' show mapPackDownloadStoreProvider;
+import 'package:app/balsm_app/care/map_packs/map_pack_download_controller.dart';
+import 'package:app/balsm_app/care/map_packs/map_pack_download_store.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// In-session holder for the signed-in user id. `currentUserIdProvider` reads

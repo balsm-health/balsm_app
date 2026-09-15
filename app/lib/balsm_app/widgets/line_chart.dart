@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import '../tokens.dart';
 

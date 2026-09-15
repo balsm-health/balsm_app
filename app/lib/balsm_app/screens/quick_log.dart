@@ -6,18 +6,17 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:collection/collection.dart';
-import 'package:core/core.dart' show activeProfileProvider, currentProfileIdProvider, currentUserIdProvider;
-import 'package:records/records.dart' show RecordType;
+import 'package:core/core.dart';
+import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
-import 'checkin_shared.dart';
 import 'metric_log.dart';
-import 'records_detail.dart' show showAddRecord;
-import 'records_screen.dart' show recordTypeLabelOne, recordTypeStyle;
+import 'records_detail.dart';
+import 'records_screen.dart';
 import '../vault/vault_blob.dart';
-import 'report_flow.dart' show openCheckin;
+import 'report_flow.dart';
 
 /// Opens the quick-log sheet (quicklog.jsx `QuickLogSheet`) — what the "+"
 /// action in the tab bar / nav rail resolves to. Search + grouped vitals /

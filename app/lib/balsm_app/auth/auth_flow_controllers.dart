@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:auth/auth.dart';
-import 'package:flutter/foundation.dart' show immutable;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Typed auth-flow errors. The screens map kinds onto localized strings —

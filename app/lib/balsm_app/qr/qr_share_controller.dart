@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:emergency_card/emergency_card.dart';
-import 'package:flutter/foundation.dart' show immutable;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// View state of the profile-QR share sheet. Immutable — every transition

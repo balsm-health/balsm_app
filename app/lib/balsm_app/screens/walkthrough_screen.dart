@@ -6,7 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app_state.dart';
 import '../routes.dart';
-import '../i18n/strings.i69n.dart' show WalkthroughStrings;
+import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';

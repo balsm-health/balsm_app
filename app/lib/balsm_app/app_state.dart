@@ -1,6 +1,6 @@
-import 'package:core/core.dart' show CountryCode, FamilyLinkStatus, Gender, LanguageCode, TranslationCatalog;
+import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' show ChangeNotifierProvider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'prefs.dart';
 import 'routes.dart';
 import 'storage_target.dart';

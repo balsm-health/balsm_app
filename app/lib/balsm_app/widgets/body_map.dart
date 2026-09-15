@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart' show setEquals;
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:core/core.dart' show Gender;
-import 'package:self_report/self_report.dart' show BodyRegion, BodyTissue, BodyView, PainSite, selfReportMessagesOf;
+import 'package:core/core.dart';
+import 'package:self_report/self_report.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';

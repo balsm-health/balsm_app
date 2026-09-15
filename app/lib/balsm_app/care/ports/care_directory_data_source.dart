@@ -1,4 +1,4 @@
-import 'package:balsm_api/balsm_api.dart' show CancelToken;
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 

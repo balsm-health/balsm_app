@@ -1,5 +1,5 @@
-import 'package:account/account.dart' show accountProfileUseCaseProvider;
-import 'package:core/core.dart' show currentUserIdProvider, Gender;
+import 'package:account/account.dart';
+import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';

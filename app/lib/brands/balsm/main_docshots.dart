@@ -8,7 +8,7 @@
 //     --dart-define-from-file=env/balsm/dev.json \
 //     --dart-define-from-file=env/shared.json -d <simulator>
 
-import 'package:core/core.dart' show E2eFixture, e2eApiOverrides;
+import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 

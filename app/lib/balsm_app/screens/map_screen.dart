@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:core/core.dart' show devFlagProvider, kFlagMapNoZoomFloor;
+import 'package:core/core.dart';
 import 'package:fluster/fluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;

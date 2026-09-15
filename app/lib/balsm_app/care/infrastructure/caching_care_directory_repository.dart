@@ -1,4 +1,4 @@
-import 'package:balsm_api/balsm_api.dart' show CancelToken, isOfflineError;
+import 'package:balsm_api/balsm_api.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
 import '../care_entity.dart';

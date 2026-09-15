@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import 'package:share_plus/share_plus.dart';
@@ -9,39 +9,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'profile_subscreens.dart' show healthProfileProvider;
-import 'package:core/core.dart'
-    show
-        accountSummaryProvider,
-        currentUserIdProvider,
-        refreshAccountSummary,
-        AppFailure,
-        OfflineFailure,
-        accountApiProvider,
-        Gender,
-        CountryCode,
-        CountryCodeL10n,
-        Relationship,
-        RelationshipL10n,
-        showBalsmDatePicker;
-import 'package:account/account.dart'
-    show claimHandleUseCaseProvider, accountProfileUseCaseProvider, ProfileDetails, UpdateProfileInput;
-import 'package:emergency_card/emergency_card.dart'
-    show EmergencyCardSnapshot, emergencySnapshotReaderProvider, getQrScanHistoryUseCaseProvider, MintResult;
-import 'package:balsm_api/balsm_api.dart' show QrScanEntry;
-import 'package:profile/profile.dart'
-    show
-        EmergencyContact,
-        profileDataSourceProvider,
-        addEmergencyContactUseCaseProvider,
-        AddEmergencyContactUseCase,
-        normalizeArabicNumerals;
+import 'profile_subscreens.dart';
+import 'package:core/core.dart';
+import 'package:account/account.dart';
+import 'package:emergency_card/emergency_card.dart';
+import 'package:balsm_api/balsm_api.dart';
+import 'package:profile/profile.dart';
 import '../app_state.dart';
 import '../qr/qr_share_controller.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
-import '../shell.dart' show AdaptiveFrame;
+import '../shell.dart';
 import '../widgets/balsm_flower.dart';
 
 /// Opens the account/identity editor (home.jsx AccountDetailsScreen).
