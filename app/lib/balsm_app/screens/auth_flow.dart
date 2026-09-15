@@ -4,6 +4,7 @@ import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -35,8 +36,83 @@ class AuthRouter extends StatelessWidget {
 }
 
 // ── Welcome ──────────────────────────────────────────────────
-class _WelcomeScreen extends StatelessWidget {
+class _WelcomeScreen extends ConsumerStatefulWidget {
   const _WelcomeScreen();
+  @override
+  ConsumerState<_WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
+  bool _busyGoogle = false;
+  String? _error;
+
+  /// Google sign-in ships on Android, web and macOS only. iOS deliberately
+  /// has NO third-party sign-in: offering one there triggers App Review
+  /// guideline 4.8 (Sign in with Apple becomes mandatory), and the Apple
+  /// provider stays off until team ownership is settled (account ids are
+  /// team-scoped — a transfer would strand every Apple user). Windows/Linux
+  /// have no google_sign_in SDK implementation yet.
+  bool get _googleAvailable {
+    if (!FlavorConfig.current.socialSignInEnabled) return false;
+    if (FlavorConfig.current.googleServerClientId.isEmpty) return false;
+    if (kIsWeb) return true;
+    return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.macOS;
+  }
+
+  /// Native Google flow, then the Balsm token exchange. A new account enters
+  /// the app directly — the Profile tab's gaps card owns completion, and
+  /// everything DOB-gated stays fail-closed until details are saved.
+  Future<void> _signInGoogle(PatientAppState s) async {
+    if (_busyGoogle) return;
+    setState(() {
+      _busyGoogle = true;
+      _error = null;
+    });
+
+    final credentials = await ref.read(googleCredentialsPortProvider).obtain();
+    if (!mounted) return;
+
+    switch (credentials) {
+      case SocialCredentialsCancelled():
+        // The user backed out of the provider sheet — say nothing.
+        setState(() => _busyGoogle = false);
+        return;
+      case SocialCredentialsFailure(:final missingToken):
+        setState(() {
+          _busyGoogle = false;
+          _error = missingToken ? s.strings.auth.social_unavailable : s.strings.auth.social_failed;
+        });
+        return;
+      case SocialCredentials():
+        break;
+    }
+
+    final result = await ref.read(signInUseCaseProvider).signInWithGoogle(
+          idToken: credentials.idToken,
+          email: credentials.email,
+          countryCode: s.country.value,
+        );
+    if (!mounted) return;
+    setState(() => _busyGoogle = false);
+
+    result.fold(
+      (signInResult) {
+        switch (signInResult) {
+          case SignInSuccess(:final isNewUser):
+            if (isNewUser) {
+              // Google hands the name over now — prefill Personal details.
+              s.setSocialName(givenName: credentials.givenName, familyName: credentials.familyName);
+            }
+            unawaited(enterAfterSignIn(context, ref, s));
+          case SignInLockout(:final session):
+            final secsLeft = session.until.difference(DateTime.now()).inSeconds.clamp(0, 3600);
+            setState(() => _error = s.strings.auth.auth_locked_retry(secsLeft.toString()));
+        }
+      },
+      (failure) => setState(() => _error = failure.message),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -65,8 +141,26 @@ class _WelcomeScreen extends StatelessWidget {
                   s.go(AppRoutes.phone);
                 }),
                 const SizedBox(height: 16),
-                _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
-                const SizedBox(height: 18),
+                if (_googleAvailable) ...[
+                  _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
+                  const SizedBox(height: 14),
+                  _SocialButton(
+                      label: s.strings.onboarding.w_google,
+                      dark: false,
+                      googleG: true,
+                      busy: _busyGoogle,
+                      onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s))),
+                  const SizedBox(height: 14),
+                ] else ...[
+                  _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
+                  const SizedBox(height: 18),
+                ],
+                if (_error != null) ...[
+                  Text(_error!,
+                      textAlign: TextAlign.center,
+                      style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 12),
+                ],
                 GestureDetector(
                   onTap: () {
                     s.setAuthIntent(AuthIntent.signIn);
@@ -1522,3 +1616,70 @@ class _Input extends StatelessWidget {
     return id == null ? field : Semantics(identifier: id, child: field);
   }
 }
+
+class _SocialButton extends StatelessWidget {
+  const _SocialButton(
+      {required this.label, required this.dark, this.googleG = false, this.busy = false, required this.onTap});
+  final String label;
+  final bool dark;
+  final bool googleG;
+
+  /// Spinner in place of the mark + label while this provider's flow runs.
+  final bool busy;
+
+  /// Null while any provider flow is in flight, so neither button re-enters.
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        height: 52,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: dark ? const Color(0xFF1A1A17) : Colors.white,
+          borderRadius: BorderRadius.circular(T.rMd),
+          border: dark ? null : Border.all(color: const Color(0x2E3C3C3A), width: 1.5),
+        ),
+        child: busy
+            ? Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child:
+                      CircularProgressIndicator(strokeWidth: 2, color: dark ? Colors.white : const Color(0xFF3C3C3A)),
+                ),
+              )
+            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                if (googleG) const _GoogleMark(),
+                const SizedBox(width: 10),
+                // Flexible, not bare: the label is translated and text-scaled,
+                // so a fixed-width row overflows on a narrow phone in Arabic.
+                Flexible(
+                  child: Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Typo.body(ar: s.rtl)
+                          .copyWith(fontWeight: FontWeight.w600, color: dark ? Colors.white : const Color(0xFF3C3C3A))),
+                ),
+              ]),
+      ),
+    );
+  }
+}
+
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+  @override
+  Widget build(BuildContext context) => SvgPicture.string(_kGoogleGSvg, width: 18, height: 18);
+}
+
+const _kGoogleGSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+</svg>
+''';

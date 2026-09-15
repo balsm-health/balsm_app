@@ -527,6 +527,9 @@ class _CompleteProfileCard extends StatelessWidget {
     final s = AppScope.of(context);
     final sep = s.rtl ? '، ' : ', ';
     final missing = s.strings.profile.pc_missing(gaps.map((g) => _label(s, g)).join(sep));
+    // Route to where the gap actually gets filled: blood type lives on the
+    // Medical profile screen; everything else is Personal details.
+    final onlyBlood = gaps.length == 1 && gaps.contains(ProfileGap.bloodType);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
       child: Material(
@@ -534,7 +537,7 @@ class _CompleteProfileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(T.rLg),
         child: InkWell(
           borderRadius: BorderRadius.circular(T.rLg),
-          onTap: () => openPersonalDetails(context),
+          onTap: () => onlyBlood ? openMedicalProfile(context) : openPersonalDetails(context),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(children: [

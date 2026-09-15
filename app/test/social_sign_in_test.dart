@@ -10,11 +10,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-/// The welcome screen's Apple/Google buttons used to be decoys that dropped the
-/// user into email sign-up. Now they run the real provider flow — and, on a new
-/// account, must still land on profile setup, because that is where the
-/// fail-closed DOB/age gate runs. A social sign-in that jumped straight to the
-/// app shell would bypass it.
+/// Google sign-in ships on Android/web/macOS only — iOS shows no third-party
+/// sign-in at all (App Review 4.8), and the Apple provider stays off until
+/// team ownership settles. A new social account enters the app directly; the
+/// Profile tab's gaps card owns completion and everything DOB-gated stays
+/// fail-closed until Personal details is saved.
 class _MockSignInUseCase extends Mock implements SignInUseCase {}
 
 class _MockDisclosureDao extends Mock implements DisclosureDao {}
@@ -32,10 +32,10 @@ class _StubCredentials implements SocialCredentialsPort {
   }
 }
 
-const _appleTokens = SocialCredentials(
-  idToken: 'apple-id-token',
-  authorizationCode: 'apple-auth-code',
-  email: 'relay@privaterelay.appleid.com',
+const _googleTokens = SocialCredentials(
+  idToken: 'google-id-token',
+  authorizationCode: '',
+  email: 'layla@example.com',
   givenName: 'Layla',
   familyName: 'Hassan',
 );
@@ -112,32 +112,31 @@ void main() {
   Finder appleButton() => find.text('Continue with Apple');
   Finder googleButton() => find.text('Continue with Google');
 
-  void stubApple(AppResult<SignInResult> result) {
-    when(() => signIn.signInWithApple(
+  void stubGoogle(AppResult<SignInResult> result) {
+    when(() => signIn.signInWithGoogle(
           idToken: any(named: 'idToken'),
-          authCode: any(named: 'authCode'),
           email: any(named: 'email'),
           countryCode: any(named: 'countryCode'),
         )).thenAnswer((_) async => result);
   }
 
-  /// Taps Apple and lets the two awaits in the handler settle.
-  Future<void> tapApple(WidgetTester tester) async {
-    await tester.tap(appleButton());
+  /// Taps Google and lets the awaits in the handler settle.
+  Future<void> tapGoogle(WidgetTester tester) async {
+    await tester.tap(googleButton());
     await tester.pumpAndSettle();
   }
 
   group('button availability', () {
-    testWidgets('both providers are offered on iOS', (tester) async {
+    testWidgets('iOS offers NO third-party sign-in (App Review 4.8)', (tester) async {
       await onPlatform(TargetPlatform.iOS, () async {
         await pump(tester);
 
-        expect(appleButton(), findsOneWidget);
-        expect(googleButton(), findsOneWidget);
+        expect(appleButton(), findsNothing);
+        expect(googleButton(), findsNothing);
       });
     });
 
-    testWidgets('Apple is hidden on Android — the native flow is iOS-only', (tester) async {
+    testWidgets('Android offers Google only — Apple stays off', (tester) async {
       await onPlatform(TargetPlatform.android, () async {
         await pump(tester);
 
@@ -184,55 +183,42 @@ void main() {
   });
 
   group('routing after a successful exchange', () {
-    testWidgets('a new account goes to profile setup, where the age gate runs', (tester) async {
-      stubApple(AppResult.success(const SignInSuccess(isNewUser: true)));
+    testWidgets('a new account enters the app — completion is the gaps card', (tester) async {
+      stubGoogle(AppResult.success(const SignInSuccess(isNewUser: true)));
 
-      await onPlatform(TargetPlatform.iOS, () async {
-        await pump(tester, apple: _StubCredentials(_appleTokens));
-        await tapApple(tester);
+      await onPlatform(TargetPlatform.android, () async {
+        await pump(tester, google: _StubCredentials(_googleTokens));
+        await tapGoogle(tester);
       });
 
-      expect(state.route, 'profile', reason: 'social sign-up must not skip the DOB/age gate');
+      expect(state.route, isNot('profile'), reason: 'profile setup left the registration flow');
+      expect(state.socialGivenName, 'Layla', reason: 'the provider name prefills Personal details');
     });
 
-    testWidgets('the name Apple hands over once prefills profile setup', (tester) async {
-      stubApple(AppResult.success(const SignInSuccess(isNewUser: true)));
+    testWidgets('a returning account goes straight through', (tester) async {
+      stubGoogle(AppResult.success(const SignInSuccess()));
 
-      await onPlatform(TargetPlatform.iOS, () async {
-        await pump(tester, apple: _StubCredentials(_appleTokens));
-        await tapApple(tester);
-
-        expect(find.widgetWithText(TextField, 'Layla'), findsOneWidget);
-        expect(find.widgetWithText(TextField, 'Hassan'), findsOneWidget);
-      });
-
-      expect(state.socialGivenName, isNull, reason: 'the one-shot prefill is consumed');
-    });
-
-    testWidgets('a returning account skips profile setup', (tester) async {
-      stubApple(AppResult.success(const SignInSuccess()));
-
-      await onPlatform(TargetPlatform.iOS, () async {
-        await pump(tester, apple: _StubCredentials(_appleTokens));
-        await tapApple(tester);
+      await onPlatform(TargetPlatform.android, () async {
+        await pump(tester, google: _StubCredentials(_googleTokens));
+        await tapGoogle(tester);
       });
 
       expect(state.route, isNot('profile'));
+      expect(state.socialGivenName, isNull, reason: 'no prefill for an existing account');
     });
 
-    testWidgets('the exchange carries the account country and the Apple auth code', (tester) async {
-      stubApple(AppResult.success(const SignInSuccess(isNewUser: true)));
+    testWidgets('the exchange carries the account country', (tester) async {
+      stubGoogle(AppResult.success(const SignInSuccess(isNewUser: true)));
       state.country = CountryCode.fromCode('SA');
 
-      await onPlatform(TargetPlatform.iOS, () async {
-        await pump(tester, apple: _StubCredentials(_appleTokens));
-        await tapApple(tester);
+      await onPlatform(TargetPlatform.android, () async {
+        await pump(tester, google: _StubCredentials(_googleTokens));
+        await tapGoogle(tester);
       });
 
-      verify(() => signIn.signInWithApple(
-            idToken: 'apple-id-token',
-            authCode: 'apple-auth-code',
-            email: 'relay@privaterelay.appleid.com',
+      verify(() => signIn.signInWithGoogle(
+            idToken: 'google-id-token',
+            email: 'layla@example.com',
             countryCode: 'SA',
           )).called(1);
     });
@@ -242,18 +228,17 @@ void main() {
     testWidgets('cancelling stays on welcome and shows nothing', (tester) async {
       final port = _StubCredentials(const SocialCredentialsCancelled());
 
-      await onPlatform(TargetPlatform.iOS, () async {
-        await pump(tester, apple: port);
-        await tapApple(tester);
+      await onPlatform(TargetPlatform.android, () async {
+        await pump(tester, google: port);
+        await tapGoogle(tester);
 
         expect(find.text('Sign-in failed. Please try again.'), findsNothing);
       });
 
       expect(port.calls, 1);
       expect(state.route, 'welcome');
-      verifyNever(() => signIn.signInWithApple(
+      verifyNever(() => signIn.signInWithGoogle(
             idToken: any(named: 'idToken'),
-            authCode: any(named: 'authCode'),
             email: any(named: 'email'),
             countryCode: any(named: 'countryCode'),
           ));
@@ -261,9 +246,9 @@ void main() {
 
     testWidgets('a missing ID token reads as unavailable, not as the user failing', (tester) async {
       // On Android this is the signature of an unconfigured serverClientId.
-      await onPlatform(TargetPlatform.iOS, () async {
-        await pump(tester, apple: _StubCredentials(const SocialCredentialsFailure(missingToken: true)));
-        await tapApple(tester);
+      await onPlatform(TargetPlatform.android, () async {
+        await pump(tester, google: _StubCredentials(const SocialCredentialsFailure(missingToken: true)));
+        await tapGoogle(tester);
 
         expect(find.text('Sign-in is unavailable right now. Use your email instead.'), findsOneWidget);
       });
@@ -272,9 +257,9 @@ void main() {
     });
 
     testWidgets('a failed flow shows the retry message', (tester) async {
-      await onPlatform(TargetPlatform.iOS, () async {
-        await pump(tester, apple: _StubCredentials(const SocialCredentialsFailure()));
-        await tapApple(tester);
+      await onPlatform(TargetPlatform.android, () async {
+        await pump(tester, google: _StubCredentials(const SocialCredentialsFailure()));
+        await tapGoogle(tester);
 
         expect(find.text('Sign-in failed. Please try again.'), findsOneWidget);
       });
@@ -282,15 +267,15 @@ void main() {
   });
 
   testWidgets('a lockout surfaces the countdown instead of navigating', (tester) async {
-    stubApple(AppResult.success(
+    stubGoogle(AppResult.success(
       SignInLockout(
         session: LockedOut(until: DateTime.now().add(const Duration(seconds: 90)), identifier: 'x'),
       ),
     ));
 
-    await onPlatform(TargetPlatform.iOS, () async {
-      await pump(tester, apple: _StubCredentials(_appleTokens));
-      await tapApple(tester);
+    await onPlatform(TargetPlatform.android, () async {
+      await pump(tester, google: _StubCredentials(_googleTokens));
+      await tapGoogle(tester);
 
       expect(find.textContaining('Account temporarily locked'), findsOneWidget);
     });
