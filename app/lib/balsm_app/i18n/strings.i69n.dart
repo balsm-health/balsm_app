@@ -1240,6 +1240,15 @@ class NavStrings implements i69n.I69nMessageBundle {
   String get tab_map => "Nearby";
   String get tab_meds => "Meds";
   String get tab_profile => "Profile";
+  String get menu_actions => "Actions";
+  String get menu_go => "Go";
+  String get menu_checkin => "New check-in";
+  String get menu_quicklog => "Quick log";
+  String get menu_emergency => "Emergency";
+  String get menu_screenshot => "Save screenshot…";
+  String get menu_prescriptions => "Prescriptions";
+  String get menu_records => "Health records";
+  String get menu_trends => "Trends";
   String get gov_sessions => "Devices & sessions";
   String get gov_status => "Service status";
   String get gov_delete => "Delete account";
@@ -1258,6 +1267,24 @@ class NavStrings implements i69n.I69nMessageBundle {
         return tab_meds;
       case 'tab_profile':
         return tab_profile;
+      case 'menu_actions':
+        return menu_actions;
+      case 'menu_go':
+        return menu_go;
+      case 'menu_checkin':
+        return menu_checkin;
+      case 'menu_quicklog':
+        return menu_quicklog;
+      case 'menu_emergency':
+        return menu_emergency;
+      case 'menu_screenshot':
+        return menu_screenshot;
+      case 'menu_prescriptions':
+        return menu_prescriptions;
+      case 'menu_records':
+        return menu_records;
+      case 'menu_trends':
+        return menu_trends;
       case 'gov_sessions':
         return gov_sessions;
       case 'gov_status':

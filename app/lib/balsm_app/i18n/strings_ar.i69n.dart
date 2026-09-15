@@ -1257,6 +1257,15 @@ class NavStrings_ar extends NavStrings {
   String get tab_map => "قريب منك";
   String get tab_meds => "الأدوية";
   String get tab_profile => "الملف";
+  String get menu_actions => "إجراءات";
+  String get menu_go => "انتقال";
+  String get menu_checkin => "تسجيل حالة جديد";
+  String get menu_quicklog => "تسجيل سريع";
+  String get menu_emergency => "الطوارئ";
+  String get menu_screenshot => "حفظ لقطة الشاشة…";
+  String get menu_prescriptions => "الوصفات";
+  String get menu_records => "السجلات الصحية";
+  String get menu_trends => "المؤشرات";
   String get gov_sessions => "الأجهزة والجلسات";
   String get gov_status => "حالة الخدمة";
   String get gov_delete => "حذف الحساب";
@@ -1275,6 +1284,24 @@ class NavStrings_ar extends NavStrings {
         return tab_meds;
       case 'tab_profile':
         return tab_profile;
+      case 'menu_actions':
+        return menu_actions;
+      case 'menu_go':
+        return menu_go;
+      case 'menu_checkin':
+        return menu_checkin;
+      case 'menu_quicklog':
+        return menu_quicklog;
+      case 'menu_emergency':
+        return menu_emergency;
+      case 'menu_screenshot':
+        return menu_screenshot;
+      case 'menu_prescriptions':
+        return menu_prescriptions;
+      case 'menu_records':
+        return menu_records;
+      case 'menu_trends':
+        return menu_trends;
       case 'gov_sessions':
         return gov_sessions;
       case 'gov_status':

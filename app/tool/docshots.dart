@@ -12,7 +12,6 @@
 
 import 'dart:io';
 
-import 'package:vm_service/vm_service.dart';
 import 'package:vm_service/vm_service_io.dart';
 
 Future<void> main(List<String> args) async {

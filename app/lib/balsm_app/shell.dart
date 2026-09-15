@@ -9,6 +9,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'app_state.dart';
+import 'desktop_menu.dart';
 import 'assets.dart';
 import 'kit.dart';
 import 'offline_banner.dart';
@@ -53,6 +54,14 @@ class PatientApp extends StatefulWidget {
 class _PatientAppState extends State<PatientApp> {
   late final PatientAppState state = widget.state;
   final _navKey = GlobalKey<NavigatorState>();
+
+  /// Rasterisation root for the desktop menu's Save-screenshot action.
+  final _captureKey = GlobalKey();
+
+  void _menuOpen(void Function(BuildContext) opener) {
+    final ctx = _navKey.currentContext;
+    if (ctx != null && ctx.mounted) opener(ctx);
+  }
 
   // Boot splash (auth.jsx `SplashScreen`) — watercolor + petal spinner,
   // held ~2.3s on cold start, then fades out.
@@ -189,24 +198,36 @@ class _PatientAppState extends State<PatientApp> {
                 textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3),
               ),
               // Shake anywhere → Dev Config (read-only in prod).
-              child: ShakeToDevConfig(navigatorKey: _navKey, child: child!),
+              child: RepaintBoundary(
+                key: _captureKey,
+                child: ShakeToDevConfig(navigatorKey: _navKey, child: child!),
+              ),
             );
           },
-          home: DeepLinkHandler(
-            child: Directionality(
-              textDirection: state.dir,
-              // Publishes `--app-accent` to the kit so accent-driven widgets
-              // (row-head actions, spinners, progress fills, default buttons)
-              // follow the app accent instead of a hardcoded petal.
-              child: AccentScope(
-                accent: state.accent,
-                child: AdaptiveFrame(
-                  child: Scaffold(
-                    backgroundColor: Colors.white,
-                    body: Stack(children: [
-                      state.route == 'app' ? const _MainApp() : const AuthRouter(),
-                      Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
-                    ]),
+          home: DesktopMenuScope(
+            state: state,
+            captureKey: _captureKey,
+            actions: (
+              checkIn: () => _menuOpen(openCheckin),
+              quickLog: () => _menuOpen(showQuickLog),
+              emergency: () => _menuOpen(openEmergency),
+            ),
+            child: DeepLinkHandler(
+              child: Directionality(
+                textDirection: state.dir,
+                // Publishes `--app-accent` to the kit so accent-driven widgets
+                // (row-head actions, spinners, progress fills, default buttons)
+                // follow the app accent instead of a hardcoded petal.
+                child: AccentScope(
+                  accent: state.accent,
+                  child: AdaptiveFrame(
+                    child: Scaffold(
+                      backgroundColor: Colors.white,
+                      body: Stack(children: [
+                        state.route == 'app' ? const _MainApp() : const AuthRouter(),
+                        Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                      ]),
+                    ),
                   ),
                 ),
               ),
