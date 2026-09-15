@@ -244,6 +244,12 @@ Future<void> main(List<String> argv) async {
         '  and rewrites the platform list in .metadata rather than adding to it.');
   }
 
+  // --device=<id> is documented for every action; flutter itself only takes
+  // -d, so translate here (previously it worked for `install` but leaked
+  // through to `flutter run` verbatim, which rejects it).
+  final device = _takeOption(args, 'device');
+  if (device != null) args.addAll(['-d', device]);
+
   final extra = args; // remaining args pass straight through to flutter
   final target = 'lib/brands/$brandKey/main_$brandKey.dart';
   final defines = [

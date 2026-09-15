@@ -89,6 +89,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   yaml: ^3.1.2
   build_runner: ^2.4.13
+  vm_service: ^15.3.0
 dependency_overrides:
   # path_provider_foundation 2.6.0 migrated to package:objective_c + the
   # experimental native-assets build, which mislinks on iOS (Foundation not
