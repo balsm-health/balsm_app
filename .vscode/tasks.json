@@ -159,8 +159,7 @@
       "description": "Which server list (app/env/shared*.json — git-ignored, create your own; see app/env/README.md)",
       "type": "pickString",
       "options": [
-        "shared",
-        "shared.tunnel"
+        "shared"
       ],
       "default": "shared"
     }
