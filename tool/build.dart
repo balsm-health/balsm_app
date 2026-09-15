@@ -257,7 +257,12 @@ Future<void> main(List<String> argv) async {
     '--dart-define-from-file=env/$servers.json',
   ];
   // Omitted where Flutter has no flavor concept — see [Artifact.flavor].
-  final flavor = (artifact?.flavor ?? true) ? ['--flavor', brand.flavor] : const <String>[];
+  // Desktop `run` is the same story: the macOS/Windows/Linux projects are
+  // unflavored, and passing --flavor there makes Flutter's SwiftPM migrator
+  // abort with "You must specify a --flavor option" (it looks for a scheme
+  // named after the flavor that the desktop project never defines).
+  final desktopRun = action == 'run' && const {'macos', 'windows', 'linux'}.contains(device);
+  final flavor = ((artifact?.flavor ?? true) && !desktopRun) ? ['--flavor', brand.flavor] : const <String>[];
   final exportOptions = export == 'none' ? ['--no-codesign'] : ['--export-options-plist=ios/signing/$export.plist'];
 
   final flutterArgs = <String>[
