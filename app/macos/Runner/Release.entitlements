@@ -4,5 +4,16 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<!-- The app is an API client (auth, care directory, emergency QR sync).
+	     Without this the sandbox silently blocks every outgoing request in
+	     release builds. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Nearby-care map. -->
+	<key>com.apple.security.personal-information.location</key>
+	<true/>
+	<!-- file_picker / image attach: user-chosen files only. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
 </dict>
 </plist>
