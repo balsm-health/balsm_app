@@ -63,9 +63,9 @@
     },
     {
       "label": "Run (device)",
-      "detail": "balsm run — picks brand and env, then flutter run with the right flavor/target/defines.",
+      "detail": "balsm run \u2014 picks brand and env, then flutter run with the right flavor/target/defines.",
       "type": "shell",
-      "command": "${workspaceFolder}/bin/balsm run ${input:brand} ${input:env} --servers=${input:servers}",
+      "command": "${workspaceFolder}/bin/balsm run ${input:brand} ${input:env}",
       "problemMatcher": [],
       "icon": {
         "id": "play",
@@ -74,13 +74,13 @@
     },
     {
       "label": "Build",
-      "detail": "Pick brand, artifact, flavor and server list. Collects to output/<brand>/<platform>/.",
+      "detail": "Pick brand, artifact and flavor. Collects to output/<brand>/<platform>/.",
       "type": "shell",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "command": "${workspaceFolder}/bin/balsm build ${input:brand} ${input:env} --artifact=${input:artifact} --servers=${input:servers}",
+      "command": "${workspaceFolder}/bin/balsm build ${input:brand} ${input:env} --artifact=${input:artifact}",
       "problemMatcher": [],
       "icon": {
         "id": "tools",
@@ -119,7 +119,7 @@
   "inputs": [
     {
       "id": "brand",
-      "description": "Which app (brand) — see tool/build_config.dart",
+      "description": "Which app (brand) \u2014 see tool/build_config.dart",
       "type": "pickString",
       "options": [
         "balsm"
@@ -128,7 +128,7 @@
     },
     {
       "id": "artifact",
-      "description": "What to build — ipa installs ad-hoc; ipa-archive is unsigned for the Xcode Organizer",
+      "description": "What to build \u2014 ipa installs ad-hoc; ipa-archive is unsigned for the Xcode Organizer",
       "type": "pickString",
       "options": [
         "apk",
@@ -153,15 +153,6 @@
         "prod"
       ],
       "default": "dev"
-    },
-    {
-      "id": "servers",
-      "description": "Which server list (app/env/shared*.json — git-ignored, create your own; see app/env/README.md)",
-      "type": "pickString",
-      "options": [
-        "shared"
-      ],
-      "default": "shared"
     }
   ]
 }
