@@ -16,9 +16,6 @@
       ]
     },
     {
-      // No --flavor: the macOS project is unflavored, and the flag makes
-      // Flutter's SwiftPM migrator abort ("You must specify a --flavor
-      // option"). Same reason bin/balsm drops it for desktop devices.
       "name": "Debug Balsm (macOS)",
       "request": "launch",
       "type": "dart",
@@ -27,6 +24,8 @@
       "flutterMode": "debug",
       "deviceId": "macos",
       "args": [
+        "--flavor",
+        "balsm",
         "--dart-define-from-file=env/balsm/dev.json",
         "--dart-define-from-file=env/shared.json"
       ]
