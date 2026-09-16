@@ -406,7 +406,11 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       // simply show the placeholder until re-selected.
       _nationality = (profile.nationality?.isNotEmpty ?? false) ? CountryCode.tryFromCode(profile.nationality!) : null;
       _gender = profile.gender;
-      s.setGender(profile.gender ?? Gender.other);
+      // Deferred: s is a ChangeNotifier, and notifying it synchronously here
+      // trips Riverpod's "modify a provider while the widget tree is
+      // building" guard, since this whole block runs from build().
+      final seededGender = profile.gender ?? Gender.other;
+      Future.microtask(() => s.setGender(seededGender));
       _dob = (profile.dateOfBirth?.isNotEmpty ?? false) ? DateTime.tryParse(profile.dateOfBirth!) : null;
     }
 
