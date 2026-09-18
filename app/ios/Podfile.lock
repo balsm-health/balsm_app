@@ -4,8 +4,6 @@ PODS:
     - Flutter
   - flutter_secure_storage (6.0.0):
     - Flutter
-  - sign_in_with_apple (0.0.1):
-    - Flutter
   - SQLCipher (4.5.7):
     - SQLCipher/standard (= 4.5.7)
   - SQLCipher/common (4.5.7)
@@ -19,7 +17,6 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
-  - sign_in_with_apple (from `.symlinks/plugins/sign_in_with_apple/ios`)
   - sqlcipher_flutter_libs (from `.symlinks/plugins/sqlcipher_flutter_libs/ios`)
 
 SPEC REPOS:
@@ -33,8 +30,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_secure_storage:
     :path: ".symlinks/plugins/flutter_secure_storage/ios"
-  sign_in_with_apple:
-    :path: ".symlinks/plugins/sign_in_with_apple/ios"
   sqlcipher_flutter_libs:
     :path: ".symlinks/plugins/sqlcipher_flutter_libs/ios"
 
@@ -42,7 +37,6 @@ SPEC CHECKSUMS:
   Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   flutter_local_notifications: df98d66e515e1ca797af436137b4459b160ad8c9
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
-  sign_in_with_apple: f3bf75217ea4c2c8b91823f225d70230119b8440
   SQLCipher: 5e6bfb47323635c8b657b1b27d25c5f1baf63bf5
   sqlcipher_flutter_libs: fe548e08fa9a8b62ed3ec4dc99a33f69826ca3af
 

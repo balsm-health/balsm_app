@@ -28,7 +28,7 @@ dependencies:
     path: ../balsm_api
   google_sign_in: ^6.2.0
   http: ^1.2.0
-  sign_in_with_apple: ^6.1.0
+  sign_in_with_apple: ^8.2.0
   sentry_flutter: ^9.0.0
   flutter_local_notifications: ^18.0.0
   timezone: ^0.9.4

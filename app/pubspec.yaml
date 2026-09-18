@@ -72,6 +72,9 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   sensors_plus: ^7.1.0
   material_ui: ^1.2.0
+  # Font for CupertinoIcons, which cupertino_ui (Flutter 3.47 split) references.
+  # Without it the icon tree-shaker warns and those glyphs render as boxes.
+  cupertino_icons: ^1.0.8
   pdfrx: ^2.6.1
   share_plus: ^12.0.2
   gal: ^2.3.3

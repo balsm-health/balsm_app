@@ -2,5 +2,31 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/AppAuth-iOS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/CocoaAsyncSocket" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/DKCamera" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/DKImagePickerController" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/DKPhotoGallery" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/GTMAppAuth" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/GoogleSignIn-iOS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/GoogleUtilities" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/SDWebImage" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/SwiftyGif" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/TOCropViewController" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/app-check" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/gtm-session-fetcher" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/interop-ios-for-google-sdks" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/promises" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/sentry-cocoa" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/AppAuth-iOS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/CocoaAsyncSocket" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/GTMAppAuth" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/GoogleSignIn-iOS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/GoogleUtilities" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/app-check" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/gtm-session-fetcher" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/interop-ios-for-google-sdks" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/promises" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/sentry-cocoa" vcs="Git" />
   </component>
 </project>

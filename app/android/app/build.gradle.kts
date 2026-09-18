@@ -3,7 +3,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -21,17 +20,13 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "health.balsm.app"
     compileSdk = flutter.compileSdkVersion
-    // Pinned to the locally-installed intact NDK (the SDK's 28.2.x was corrupt).
-    ndkVersion = "27.0.12077973"
+    // Flutter's NDK (28.2.13676358 for 3.47) — every plugin requires it.
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -89,6 +84,12 @@ android {
         create("balsm") {
             dimension = "app"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
