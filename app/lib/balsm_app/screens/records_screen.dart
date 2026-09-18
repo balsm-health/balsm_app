@@ -34,9 +34,9 @@ final recordListProvider = StreamProvider.autoDispose<List<RecordDocument>>((ref
 
 /// Per-type chrome — `RECORD_TYPES` in the design.
 ({IconData icon, Color fg, Color bg}) recordTypeStyle(RecordType type) => switch (type) {
-      RecordType.lab => (icon: LucideIcons.flaskConical, fg: T.petalMint600, bg: T.petalMint50),
-      RecordType.scan => (icon: LucideIcons.scanLine, fg: T.petalBlue, bg: T.petalBlue50),
-      RecordType.report => (icon: LucideIcons.fileText, fg: T.petalViolet, bg: T.petalViolet50),
+      RecordType.lab => (icon: LucideIcons.flaskConical, fg: T.hueMint600, bg: T.hueMint50),
+      RecordType.scan => (icon: LucideIcons.scanLine, fg: T.hueBlue, bg: T.hueBlue50),
+      RecordType.report => (icon: LucideIcons.fileText, fg: T.hueViolet, bg: T.hueViolet50),
     };
 
 String recordTypeLabel(PatientAppState s, RecordType type) => switch (type) {

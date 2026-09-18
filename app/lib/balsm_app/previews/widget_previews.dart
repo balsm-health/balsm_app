@@ -20,7 +20,7 @@ import 'package:flutter/widget_previews.dart';
 import '../storage_target.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
-import '../widgets/balsm_flower.dart';
+import '../widgets/balsm_mark.dart';
 import '../widgets/line_chart.dart';
 import '../widgets/mood_face.dart';
 import '../widgets/num_pad.dart';
@@ -39,11 +39,11 @@ Widget balsmFlower() => const Row(
       ],
     );
 
-@Preview(name: 'PetalSpinner', group: 'Brand', wrapper: balsmPreviewPadded)
-Widget petalSpinner() => const Row(
+@Preview(name: 'MarkSpinner', group: 'Brand', wrapper: balsmPreviewPadded)
+Widget markSpinner() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 16,
-      children: [PetalSpinner(size: 32), PetalSpinner(), PetalSpinner(size: 72)],
+      children: [MarkSpinner(size: 32), MarkSpinner(), MarkSpinner(size: 72)],
     );
 
 // ── Badges ──────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ Widget moodFaces() => const Row(
         MoodFace(level: 1, color: T.danger),
         MoodFace(level: 2, color: T.expiring),
         MoodFace(level: 3, color: T.warning),
-        MoodFace(level: 4, color: T.petalMint600),
+        MoodFace(level: 4, color: T.hueMint600),
         MoodFace(level: 5, color: T.success),
       ],
     );
@@ -98,20 +98,20 @@ Widget lineChart() => const Column(
         SizedBox(
           width: 320,
           child: LineChartView(series: [
-            ChartSeries([5, 5, 5, 5, 5, 5], T.petalBlue),
+            ChartSeries([5, 5, 5, 5, 5, 5], T.hueBlue),
           ]),
         ),
         SizedBox(
           width: 320,
           child: LineChartView(series: [
-            ChartSeries([1, 3, 2, 6, 5, 9], T.petalViolet),
+            ChartSeries([1, 3, 2, 6, 5, 9], T.hueViolet),
           ]),
         ),
         SizedBox(
           width: 320,
           child: LineChartView(series: [
-            ChartSeries([1, 3, 2, 6, 5, 9], T.petalViolet),
-            ChartSeries([8, 6, 7, 3, 4, 2], T.petalMint600),
+            ChartSeries([1, 3, 2, 6, 5, 9], T.hueViolet),
+            ChartSeries([8, 6, 7, 3, 4, 2], T.hueMint600),
           ]),
         ),
       ],
@@ -126,7 +126,7 @@ Widget lineChartRtl() => const Padding(
         child: LineChartView(
           rtl: true,
           series: [
-            ChartSeries([1, 3, 2, 6, 5, 9], T.petalViolet),
+            ChartSeries([1, 3, 2, 6, 5, 9], T.hueViolet),
           ],
         ),
       ),

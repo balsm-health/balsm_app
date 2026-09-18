@@ -260,7 +260,7 @@ class _SectionCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: BalsmColors.petalBlue, size: 22),
+          Icon(icon, color: BalsmColors.hueBlue, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

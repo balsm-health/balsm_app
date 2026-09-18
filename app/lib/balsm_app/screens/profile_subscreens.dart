@@ -262,8 +262,8 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     );
     if (bmi == null) return null;
     final (key, color, bg) = switch (bmi.category) {
-      BmiCategory.underweight => ('profile.bmi_under', T.petalBlue, T.petalBlue50),
-      BmiCategory.normal => ('profile.bmi_normal', T.petalMint600, T.petalMint50),
+      BmiCategory.underweight => ('profile.bmi_under', T.hueBlue, T.hueBlue50),
+      BmiCategory.normal => ('profile.bmi_normal', T.hueMint600, T.hueMint50),
       BmiCategory.overweight => ('profile.bmi_over', const Color(0xFFD97A20), const Color(0xFFFBF0E2)),
       BmiCategory.obese => ('profile.bmi_obese', T.danger, const Color(0xFFFBEBE7)),
     };
@@ -350,7 +350,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(99),
                                     gradient: const LinearGradient(
-                                        colors: [T.petalBlue, T.petalMint, Color(0xFFD97A20), T.danger],
+                                        colors: [T.hueBlue, T.hueMint, Color(0xFFD97A20), T.danger],
                                         stops: [0, 0.33, 0.66, 1]),
                                   )),
                               Positioned(
@@ -893,9 +893,9 @@ class EmergencyScreen extends StatelessWidget {
 
   static const _contacts = [
     ('emergency.em_ambulance', LucideIcons.heartPulse, '123', T.danger, T.dangerBg),
-    ('emergency.em_police', LucideIcons.shield, '122', T.petalBlue, T.petalBlue50),
+    ('emergency.em_police', LucideIcons.shield, '122', T.hueBlue, T.hueBlue50),
     ('emergency.em_fire', LucideIcons.flame, '180', Color(0xFFD97A20), Color(0xFFFBF0E2)),
-    ('emergency.em_tourist', LucideIcons.compass, '126', T.petalViolet, T.petalViolet50),
+    ('emergency.em_tourist', LucideIcons.compass, '126', T.hueViolet, T.hueViolet50),
   ];
 
   @override

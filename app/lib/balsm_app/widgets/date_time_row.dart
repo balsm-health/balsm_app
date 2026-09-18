@@ -74,8 +74,8 @@ class DateTimeWhen extends StatelessWidget {
         const Divider(height: 1, color: T.border),
         _DateTimeRow(
           icon: LucideIcons.clock,
-          chipBg: T.petalBlue50,
-          chipFg: T.petalBlue,
+          chipBg: T.hueBlue50,
+          chipFg: T.hueBlue,
           label: s.strings.common.time,
           value: timeText,
           onTap: () async {
@@ -91,8 +91,8 @@ class DateTimeWhen extends StatelessWidget {
           const Divider(height: 1, color: T.border),
           _DateTimeRow(
             icon: LucideIcons.calendar,
-            chipBg: T.petalViolet50,
-            chipFg: T.petalViolet,
+            chipBg: T.hueViolet50,
+            chipFg: T.hueViolet,
             label: expiryLabel ?? s.strings.meds.rx_expiry,
             value: expiryText,
             muted: expiry == null,
@@ -150,7 +150,7 @@ class _DateTimeRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(child: Text(label, style: Typo.body(ar: s.rtl).copyWith(color: T.fg1))),
           Text(value,
-              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: muted ? T.fg3 : T.petalBlue)),
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: muted ? T.fg3 : T.hueBlue)),
         ]),
       ),
     );

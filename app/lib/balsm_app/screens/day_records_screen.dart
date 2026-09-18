@@ -38,8 +38,8 @@ class DayRecordsScreen extends StatelessWidget {
           label: s.strings.profile.m_bp,
           value: '${v.systolic}/${v.diastolic}',
           unit: s.strings.checkin.unit_bp,
-          color: T.petalViolet,
-          bg: T.petalViolet50,
+          color: T.hueViolet,
+          bg: T.hueViolet50,
         ),
       if (glucose != null)
         _MetricRow(
@@ -47,8 +47,8 @@ class DayRecordsScreen extends StatelessWidget {
           label: s.strings.profile.m_glucose,
           value: '$glucose',
           unit: s.strings.checkin.unit_glu,
-          color: T.petalMint600,
-          bg: T.petalMint50,
+          color: T.hueMint600,
+          bg: T.hueMint50,
         ),
       if (v.spo2 != null)
         _MetricRow(
@@ -56,8 +56,8 @@ class DayRecordsScreen extends StatelessWidget {
           label: s.strings.profile.m_o2,
           value: '${v.spo2}',
           unit: s.strings.checkin.unit_spo2,
-          color: T.petalBlue,
-          bg: T.petalBlue50,
+          color: T.hueBlue,
+          bg: T.hueBlue50,
         ),
       if (v.weightKg != null)
         _MetricRow(
@@ -65,8 +65,8 @@ class DayRecordsScreen extends StatelessWidget {
           label: s.strings.profile.m_weight,
           value: _weight(v.weightKg!),
           unit: s.strings.checkin.unit_kg,
-          color: T.petalBlue,
-          bg: T.petalBlue50,
+          color: T.hueBlue,
+          bg: T.hueBlue50,
         ),
       _MetricRow(
         icon: LucideIcons.zap,

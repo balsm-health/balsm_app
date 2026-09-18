@@ -69,7 +69,7 @@ void main() {
                 children: [
                   BalsmAvatar(initials: 'AH', size: 44),
                   const SizedBox(width: 12),
-                  BalsmAvatar(initials: 'MK', size: 84, backgroundColor: BalsmColors.petalEmerald),
+                  BalsmAvatar(initials: 'MK', size: 84, backgroundColor: BalsmColors.hueEmerald),
                 ],
               ),
               locale: locale,

@@ -178,9 +178,9 @@ class _DoseTile extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: highlighted ? BalsmColors.petalBlue50 : Colors.transparent,
+        color: highlighted ? BalsmColors.hueBlue50 : Colors.transparent,
         borderRadius: BorderRadius.circular(BalsmRadius.lg),
-        border: highlighted ? Border.all(color: BalsmColors.petalBlue) : null,
+        border: highlighted ? Border.all(color: BalsmColors.hueBlue) : null,
       ),
       child: BalsmMedRow(
         name: med.name,
@@ -241,7 +241,7 @@ class _Actions extends StatelessWidget {
           ),
           IconButton(
             onPressed: onTake,
-            icon: const Icon(Icons.check_circle, color: BalsmColors.petalMint),
+            icon: const Icon(Icons.check_circle, color: BalsmColors.hueMint),
             tooltip: 'Take',
           ),
         ],

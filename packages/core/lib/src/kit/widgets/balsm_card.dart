@@ -73,7 +73,7 @@ class BalsmCard extends StatelessWidget {
       return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [BalsmColors.petalBlue50, Color(0xFFEAF3FF)],
+        colors: [BalsmColors.hueBlue50, Color(0xFFEAF3FF)],
       );
     }
     return null;

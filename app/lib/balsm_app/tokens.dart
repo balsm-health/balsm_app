@@ -6,24 +6,24 @@ import 'package:flutter/widgets.dart';
 class T {
   T._();
 
-  // ── Brand petals (5-color flower mark) ─────────────────────
-  static const petalAqua = Color(0xFF02BBB5);
-  static const petalEmerald = Color(0xFF01C4A2);
-  static const petalBlue = Color(0xFF1283FF);
-  static const petalMint = Color(0xFF55D77F);
-  static const petalViolet = Color(0xFF8350DE);
+  // ── Brand hues (five-ribbon ring mark) ─────────────────────
+  static const hueAqua = Color(0xFF02BBB5);
+  static const hueEmerald = Color(0xFF01C4A2);
+  static const hueBlue = Color(0xFF1283FF);
+  static const hueMint = Color(0xFF55D77F);
+  static const hueViolet = Color(0xFF8350DE);
 
-  static const petalAqua600 = Color(0xFF029E99);
-  static const petalEmerald600 = Color(0xFF019A7F);
-  static const petalBlue600 = Color(0xFF0F6BCC);
-  static const petalMint600 = Color(0xFF3FC366);
-  static const petalViolet600 = Color(0xFF6A3DBB);
+  static const hueAqua600 = Color(0xFF029E99);
+  static const hueEmerald600 = Color(0xFF019A7F);
+  static const hueBlue600 = Color(0xFF0F6BCC);
+  static const hueMint600 = Color(0xFF3FC366);
+  static const hueViolet600 = Color(0xFF6A3DBB);
 
-  static const petalAqua50 = Color(0xFFE2F8F6);
-  static const petalEmerald50 = Color(0xFFE1F8F1);
-  static const petalBlue50 = Color(0xFFE4F0FF);
-  static const petalMint50 = Color(0xFFE8F9EE);
-  static const petalViolet50 = Color(0xFFEEE7FB);
+  static const hueAqua50 = Color(0xFFE2F8F6);
+  static const hueEmerald50 = Color(0xFFE1F8F1);
+  static const hueBlue50 = Color(0xFFE4F0FF);
+  static const hueMint50 = Color(0xFFE8F9EE);
+  static const hueViolet50 = Color(0xFFEEE7FB);
 
   // ── Warm olive-gray neutrals ───────────────────────────────
   static const ink900 = Color(0xFF14202B);
@@ -47,14 +47,14 @@ class T {
   static const sun600 = Color(0xFFD9A020);
 
   // ── Semantic ───────────────────────────────────────────────
-  static const success = petalMint;
-  static const successBg = petalMint50;
+  static const success = hueMint;
+  static const successBg = hueMint50;
   static const warning = Color(0xFFE5B428);
   static const warningBg = Color(0xFFFDF5DC);
   static const danger = Color(0xFFD44A3C);
   static const dangerBg = Color(0xFFFBEBE7);
-  static const controlled = petalViolet;
-  static const controlledBg = petalViolet50;
+  static const controlled = hueViolet;
+  static const controlledBg = hueViolet50;
   static const expiring = Color(0xFFD97A20);
   static const expiringBg = Color(0xFFFBEEDC);
 
@@ -128,7 +128,7 @@ class Motion {
   static const easeInOut = Cubic(0.65, 0, 0.35, 1);
 }
 
-/// The accent petal that tints CTAs, rings, active states. Default = blue.
+/// The accent hue that tints CTAs, rings, active states. Default = blue.
 class Accent {
   const Accent(this.main, this.d, this.bg, this.shadow);
   final Color main;
@@ -136,11 +136,11 @@ class Accent {
   final Color bg; // wash
   final Color shadow;
 
-  static const blue = Accent(T.petalBlue, T.petalBlue600, T.petalBlue50, Color(0x421283FF));
-  static const aqua = Accent(T.petalAqua, T.petalAqua600, T.petalAqua50, Color(0x4202BBB5));
-  static const emerald = Accent(T.petalEmerald, T.petalEmerald600, T.petalEmerald50, Color(0x4201C4A2));
-  static const violet = Accent(T.petalViolet, T.petalViolet600, T.petalViolet50, Color(0x428350DE));
-  static const mint = Accent(T.petalMint600, Color(0xFF2FA552), T.petalMint50, Color(0x4D55D77F));
+  static const blue = Accent(T.hueBlue, T.hueBlue600, T.hueBlue50, Color(0x421283FF));
+  static const aqua = Accent(T.hueAqua, T.hueAqua600, T.hueAqua50, Color(0x4202BBB5));
+  static const emerald = Accent(T.hueEmerald, T.hueEmerald600, T.hueEmerald50, Color(0x4201C4A2));
+  static const violet = Accent(T.hueViolet, T.hueViolet600, T.hueViolet50, Color(0x428350DE));
+  static const mint = Accent(T.hueMint600, Color(0xFF2FA552), T.hueMint50, Color(0x4D55D77F));
 
   List<BoxShadow> get boxShadow => [BoxShadow(color: shadow, blurRadius: 22, offset: const Offset(0, 8))];
 }

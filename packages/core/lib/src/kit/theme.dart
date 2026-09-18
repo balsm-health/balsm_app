@@ -5,8 +5,8 @@ class BalsmTheme {
   static const _fontFamily = 'Inter';
 
   // Dark-mode variants (not in the light token palette).
-  static const _petalBlueLight = Color(0xFF5AA8FF);
-  static const _petalAquaLight = Color(0xFF3FD3CD);
+  static const _hueBlueLight = Color(0xFF5AA8FF);
+  static const _hueAquaLight = Color(0xFF3FD3CD);
   static const _dangerLight = Color(0xFFE57A6E);
   static const _darkSurface = Color(0xFF1A1A14);
 
@@ -14,9 +14,9 @@ class BalsmTheme {
         useMaterial3: true,
         fontFamily: _fontFamily,
         colorScheme: const ColorScheme.light(
-          primary: BalsmColors.petalBlue,
+          primary: BalsmColors.hueBlue,
           onPrimary: Colors.white,
-          secondary: BalsmColors.petalAqua,
+          secondary: BalsmColors.hueAqua,
           onSecondary: Colors.white,
           error: BalsmColors.danger,
           onError: Colors.white,
@@ -49,9 +49,9 @@ class BalsmTheme {
         fontFamily: _fontFamily,
         brightness: Brightness.dark,
         colorScheme: const ColorScheme.dark(
-          primary: _petalBlueLight,
+          primary: _hueBlueLight,
           onPrimary: Colors.black,
-          secondary: _petalAquaLight,
+          secondary: _hueAquaLight,
           onSecondary: Colors.black,
           error: _dangerLight,
           onError: Colors.black,
@@ -103,7 +103,7 @@ class BalsmTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BalsmColors.petalBlue, width: 2),
+          borderSide: const BorderSide(color: BalsmColors.hueBlue, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -114,7 +114,7 @@ class BalsmTheme {
 
   static ElevatedButtonThemeData _elevatedButton() => ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: BalsmColors.petalBlue,
+          backgroundColor: BalsmColors.hueBlue,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

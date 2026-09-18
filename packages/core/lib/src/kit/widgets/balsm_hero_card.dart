@@ -46,7 +46,7 @@ class BalsmHeroCard extends StatelessWidget {
             : const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [BalsmColors.petalBlue, Color(0xFF0F6BCC)],
+                colors: [BalsmColors.hueBlue, Color(0xFF0F6BCC)],
               ),
         borderRadius: BorderRadius.circular(BalsmRadius.xl),
         border: isDone ? Border.all(color: BalsmColors.border) : null,

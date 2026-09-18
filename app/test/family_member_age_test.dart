@@ -12,7 +12,7 @@ void main() {
         id: 'fam_test',
         name: 'Test',
         relation: 'Sibling',
-        color: T.petalAqua,
+        color: T.hueAqua,
         dob: dob,
       );
 

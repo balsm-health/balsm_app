@@ -107,7 +107,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final accentLine = _found ? T.petalMint600 : Colors.white;
+    final accentLine = _found ? T.hueMint600 : Colors.white;
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       AspectRatio(
         aspectRatio: 1,
@@ -159,7 +159,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
                 child: Container(
                   width: 62,
                   height: 62,
-                  decoration: const BoxDecoration(color: T.petalMint600, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(color: T.hueMint600, shape: BoxShape.circle),
                   child: const Icon(LucideIcons.check, size: 32, color: Colors.white),
                 ),
               ),
@@ -226,9 +226,9 @@ class _ScanLineState extends State<_ScanLine> with SingleTickerProviderStateMixi
             height: 2,
             decoration: BoxDecoration(
               gradient: LinearGradient(colors: [
-                T.petalAqua.withValues(alpha: 0),
-                T.petalAqua,
-                T.petalAqua.withValues(alpha: 0),
+                T.hueAqua.withValues(alpha: 0),
+                T.hueAqua,
+                T.hueAqua.withValues(alpha: 0),
               ]),
             ),
           ),

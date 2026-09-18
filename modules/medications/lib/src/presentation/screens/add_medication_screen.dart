@@ -260,10 +260,10 @@ class _DayPicker extends StatelessWidget {
               height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: active ? BalsmColors.petalBlue : BalsmColors.ink50,
+                color: active ? BalsmColors.hueBlue : BalsmColors.ink50,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: active ? BalsmColors.petalBlue : BalsmColors.border,
+                  color: active ? BalsmColors.hueBlue : BalsmColors.border,
                 ),
               ),
               child: Text(

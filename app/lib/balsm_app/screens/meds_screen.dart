@@ -151,12 +151,12 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(color: T.petalMint50),
+            border: Border.all(color: T.hueMint50),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               stops: [0.0, 0.65],
-              colors: [T.petalMint50, Colors.white],
+              colors: [T.hueMint50, Colors.white],
             ),
             boxShadow: T.shadowSm,
           ),
@@ -164,7 +164,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
             RingProgress(
                 progress: adherence,
                 size: 68,
-                color: T.petalMint,
+                color: T.hueMint,
                 label: '$adherencePct%',
                 labelStyle: Typo.num(size: FS.base, weight: FontWeight.w700)),
             const SizedBox(width: 18),
@@ -187,7 +187,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
           onTap: () => s.setTab(AppTab.prescriptions),
           child: Row(children: [
             const IconSquare(LucideIcons.fileText,
-                bg: T.petalViolet50, fg: T.petalViolet, size: 34, iconSize: 19, radius: T.rSm),
+                bg: T.hueViolet50, fg: T.hueViolet, size: 34, iconSize: 19, radius: T.rSm),
             const SizedBox(width: 14),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -278,9 +278,9 @@ class _GroupHead extends StatelessWidget {
 /// med always gets the same tone. Mirrors the prototype `medTone` palette.
 ({Color bg, Color fg}) _toneFor(MedicationId id) {
   const tones = <({Color bg, Color fg})>[
-    (bg: T.petalBlue50, fg: T.petalBlue),
-    (bg: T.petalViolet50, fg: T.petalViolet),
-    (bg: T.petalMint50, fg: T.petalMint600),
+    (bg: T.hueBlue50, fg: T.hueBlue),
+    (bg: T.hueViolet50, fg: T.hueViolet),
+    (bg: T.hueMint50, fg: T.hueMint600),
   ];
   return tones[id.value.hashCode.abs() % tones.length];
 }
@@ -353,7 +353,7 @@ class _EmptyState extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(20, 12, 20, 8),
         padding: const EdgeInsets.all(22),
         child: Row(children: [
-          const IconSquare(LucideIcons.pill, bg: T.petalBlue50, fg: T.petalBlue, size: 38, iconSize: 20, radius: T.rSm),
+          const IconSquare(LucideIcons.pill, bg: T.hueBlue50, fg: T.hueBlue, size: 38, iconSize: 20, radius: T.rSm),
           const SizedBox(width: 14),
           Expanded(child: Text(text, style: Typo.body(ar: s.rtl).copyWith(color: T.fg3))),
         ]),
@@ -470,7 +470,7 @@ class _DoseActionSheet extends StatelessWidget {
             label: s.strings.meds.taken,
             icon: LucideIcons.check,
             primary: true,
-            tone: T.petalMint600,
+            tone: T.hueMint600,
             onTap: () => Navigator.pop(context, DoseOutcome.taken)),
         const SizedBox(height: 10),
         _SheetButton(

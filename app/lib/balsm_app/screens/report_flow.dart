@@ -387,9 +387,9 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: taken ? T.petalMint50 : Colors.white,
+            color: taken ? T.hueMint50 : Colors.white,
             borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(color: taken ? T.petalMint : T.border, width: 1.5),
+            border: Border.all(color: taken ? T.hueMint : T.border, width: 1.5),
           ),
           child: Row(children: [
             AnimatedContainer(
@@ -399,9 +399,9 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                 height: 30,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                    color: taken ? T.petalMint : Colors.transparent,
+                    color: taken ? T.hueMint : Colors.transparent,
                     borderRadius: BorderRadius.circular(9),
-                    border: Border.all(color: taken ? T.petalMint : T.borderStrong, width: 2)),
+                    border: Border.all(color: taken ? T.hueMint : T.borderStrong, width: 2)),
                 child: taken ? const Icon(LucideIcons.check, size: 18, color: Colors.white) : null),
             const SizedBox(width: 14),
             Expanded(
@@ -469,8 +469,8 @@ class _Summary extends StatelessWidget {
                     width: 88,
                     height: 88,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
-                    child: const Icon(LucideIcons.check, size: 44, color: T.petalMint600)),
+                    decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
+                    child: const Icon(LucideIcons.check, size: 44, color: T.hueMint600)),
                 const SizedBox(height: 18),
                 Text(s.strings.common.saved_t, style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
@@ -528,9 +528,9 @@ class _Summary extends StatelessWidget {
 
   Widget _summaryItem(PatientAppState s, (IconData, PillKind, String, String) it, {required bool last}) {
     final c = switch (it.$2) {
-      PillKind.info => (bg: T.petalBlue50, fg: T.petalBlue),
-      PillKind.violet => (bg: T.petalViolet50, fg: T.petalViolet),
-      PillKind.success => (bg: T.petalMint50, fg: T.petalMint600),
+      PillKind.info => (bg: T.hueBlue50, fg: T.hueBlue),
+      PillKind.violet => (bg: T.hueViolet50, fg: T.hueViolet),
+      PillKind.success => (bg: T.hueMint50, fg: T.hueMint600),
       PillKind.warn => (bg: const Color(0xFFFDF5DC), fg: T.sun600),
       _ => (bg: T.ink100, fg: T.ink600),
     };

@@ -11,8 +11,8 @@ const moodColors = <Color>[
   T.danger,
   Color(0xFFD97A20),
   T.sun600,
-  T.petalMint,
-  T.petalMint600,
+  T.hueMint,
+  T.hueMint600,
 ];
 
 /// The self-report symptom catalog paired with its display icon. Ids come from
@@ -54,8 +54,8 @@ String symptomLabel(PatientAppState s, SymptomId id) {
 ({String lbl, Color color}) painInfo(PatientAppState s, int n) {
   final c = s.strings.checkin;
   return switch (PainLevel(n).band) {
-    PainBand.none => (lbl: c.pain_0, color: T.petalMint),
-    PainBand.mild => (lbl: c.pain_mild, color: T.petalMint600),
+    PainBand.none => (lbl: c.pain_0, color: T.hueMint),
+    PainBand.mild => (lbl: c.pain_mild, color: T.hueMint600),
     PainBand.moderate => (lbl: c.pain_mod, color: T.sun600),
     PainBand.severe => (lbl: c.pain_sev, color: T.expiring),
     PainBand.worst => (lbl: c.pain_worst, color: T.danger),
@@ -142,12 +142,12 @@ class CheckInHistoryRow extends StatelessWidget {
         Expanded(
           child: Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
             if (v.systolic != null && v.diastolic != null) ...[
-              const Icon(LucideIcons.activity, size: 14, color: T.petalViolet),
+              const Icon(LucideIcons.activity, size: 14, color: T.hueViolet),
               Text('${v.systolic}/${v.diastolic}',
                   textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg1)),
             ],
             if (glucose != null) ...[
-              const Icon(LucideIcons.droplet, size: 14, color: T.petalMint600),
+              const Icon(LucideIcons.droplet, size: 14, color: T.hueMint600),
               Text('$glucose', style: Typo.num(size: FS.sm, color: T.fg1)),
             ],
           ]),

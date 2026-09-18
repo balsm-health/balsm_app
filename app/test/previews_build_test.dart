@@ -51,7 +51,7 @@ void main() {
     ('Accents', kit.accents, balsmPreviewPadded),
     // widget_previews.dart
     ('BalsmFlower', w.balsmFlower, balsmPreviewPadded),
-    ('PetalSpinner', w.petalSpinner, balsmPreviewPadded),
+    ('MarkSpinner', w.markSpinner, balsmPreviewPadded),
     ('StorageBadge', w.storageBadges, balsmPreviewPadded),
     ('MoodFace', w.moodFaces, balsmPreviewPadded),
     ('MoodFaceButton', w.moodFaceButtons, balsmPreviewPadded),

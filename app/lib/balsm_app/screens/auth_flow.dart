@@ -1263,7 +1263,7 @@ class _UsernameField extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, col, msg) = switch (status) {
       UsernameStatus.checking => (LucideIcons.loader, T.fg3, s.strings.auth.un_checking),
-      UsernameStatus.available => (LucideIcons.checkCircle2, T.petalMint600, s.strings.auth.un_avail),
+      UsernameStatus.available => (LucideIcons.checkCircle2, T.hueMint600, s.strings.auth.un_avail),
       UsernameStatus.taken => (LucideIcons.xCircle, T.danger, s.strings.auth.un_taken),
       UsernameStatus.invalid => (LucideIcons.alertCircle, T.sun500, s.strings.auth.un_invalid),
       _ => (null, T.fg4, ''),

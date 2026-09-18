@@ -98,7 +98,7 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
             s,
             name: displayName,
             handle: summary.handle,
-            color: T.petalAqua,
+            color: T.hueAqua,
             active: s.activeFamilyId == null,
             onTap: () {
               s.selectFamilyMember(null);
@@ -285,7 +285,7 @@ class _LinkRequests extends StatelessWidget {
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Avatar(initials: accountInitials(r.name), color: T.petalAqua, size: 42, ar: s.rtl),
+                Avatar(initials: accountInitials(r.name), color: T.hueAqua, size: 42, ar: s.rtl),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -451,17 +451,17 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: T.petalMint50,
+          color: T.hueMint50,
           borderRadius: BorderRadius.circular(T.rLg),
           border: Border.all(color: T.border),
         ),
         child: Row(children: [
-          Avatar(initials: accountInitials(name), color: T.petalMint600, size: 48, ar: s.rtl),
+          Avatar(initials: accountInitials(name), color: T.hueMint600, size: 48, ar: s.rtl),
           const SizedBox(width: 14),
           Expanded(
             child: Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
           ),
-          const Icon(LucideIcons.badgeCheck, size: 22, color: T.petalMint600),
+          const Icon(LucideIcons.badgeCheck, size: 22, color: T.hueMint600),
         ]),
       ),
       const SizedBox(height: 16),

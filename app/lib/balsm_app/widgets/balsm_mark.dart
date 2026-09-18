@@ -16,20 +16,20 @@ class BalsmFlower extends StatelessWidget {
       );
 }
 
-/// Brand loading spinner (`.b-petal-spinner`) — the canonical design-system
-/// loader: five colored petals arranged in a ring that rotates over 3.6s while
+/// Brand loading spinner (`.b-mark-spinner`) — the canonical design-system
+/// loader: five colored dots arranged in a ring that rotates over 3.6s while
 /// each pulses .35 → 1, staggered by a fifth of the cycle. Geometry ported from
-/// the design CSS (28% petal, `transform-origin 50% 178%` → 0.358·S orbit).
+/// the design CSS (28% dot, `transform-origin 50% 178%` → 0.358·S orbit).
 /// Under reduced motion it holds still at .9 opacity (design's "healthcare
 /// stillness").
-class PetalSpinner extends StatefulWidget {
-  const PetalSpinner({super.key, this.size = 48});
+class MarkSpinner extends StatefulWidget {
+  const MarkSpinner({super.key, this.size = 48});
   final double size;
   @override
-  State<PetalSpinner> createState() => _PetalSpinnerState();
+  State<MarkSpinner> createState() => _MarkSpinnerState();
 }
 
-class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderStateMixin {
+class _MarkSpinnerState extends State<MarkSpinner> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3600))
     ..repeat();
 
@@ -39,7 +39,7 @@ class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderSt
     super.dispose();
   }
 
-  // `b-petal-pulse`: triangle wave peaking at 40% of the cycle (.35 → 1 → .35).
+  // `b-mark-pulse`: triangle wave peaking at 40% of the cycle (.35 → 1 → .35).
   double _pulse(double x) {
     x %= 1.0;
     return x < 0.4 ? 0.35 + 0.65 * (x / 0.4) : 1.0 - 0.65 * ((x - 0.4) / 0.6);
@@ -52,7 +52,7 @@ class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderSt
       return RepaintBoundary(
         child: CustomPaint(
           size: Size.square(widget.size),
-          painter: _PetalRingPainter(0, const [0.9, 0.9, 0.9, 0.9, 0.9]),
+          painter: _MarkRingPainter(0, const [0.9, 0.9, 0.9, 0.9, 0.9]),
         ),
       );
     }
@@ -63,7 +63,7 @@ class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderSt
           final t = _c.value;
           return CustomPaint(
             size: Size.square(widget.size),
-            painter: _PetalRingPainter(
+            painter: _MarkRingPainter(
               t * 2 * math.pi,
               [for (var i = 0; i < 5; i++) _pulse(t + i * 0.2)],
             ),
@@ -74,20 +74,23 @@ class _PetalSpinnerState extends State<PetalSpinner> with SingleTickerProviderSt
   }
 }
 
-/// Draws the five-petal ring (`.b-petal-spinner`): five circles at 72° steps,
-/// orbit radius 0.358·S, petal radius 0.14·S, each in its brand hue.
-class _PetalRingPainter extends CustomPainter {
-  _PetalRingPainter(this.rotation, this.opacities);
+/// Draws the five-dot ring (`.b-mark-spinner`): five circles at 72° steps,
+/// orbit radius 0.358·S, dot radius 0.14·S, each in its brand hue.
+class _MarkRingPainter extends CustomPainter {
+  _MarkRingPainter(this.rotation, this.opacities);
   final double rotation;
   final List<double> opacities;
 
-  // Petal order (clockwise from top): emerald → blue → mint → violet → aqua.
+  // Dot order (clockwise from top): emerald → blue → mint → violet → aqua.
+  // NOTE: this is the retired five-petal flower's order. brand/icon.svg
+  // paints the current mark aqua → blue → emerald → violet → mint. Changing
+  // it here is a visual change with goldens attached — left as-is on purpose.
   static const _colors = [
-    T.petalEmerald,
-    T.petalBlue,
-    T.petalMint,
-    T.petalViolet,
-    T.petalAqua,
+    T.hueEmerald,
+    T.hueBlue,
+    T.hueMint,
+    T.hueViolet,
+    T.hueAqua,
   ];
 
   @override
@@ -111,5 +114,5 @@ class _PetalRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PetalRingPainter old) => old.rotation != rotation || old.opacities != opacities;
+  bool shouldRepaint(_MarkRingPainter old) => old.rotation != rotation || old.opacities != opacities;
 }

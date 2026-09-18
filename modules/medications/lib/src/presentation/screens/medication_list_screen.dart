@@ -25,7 +25,7 @@ class MedicationListScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.goNamed('medications.add'),
-        backgroundColor: BalsmColors.petalBlue,
+        backgroundColor: BalsmColors.hueBlue,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Add'),

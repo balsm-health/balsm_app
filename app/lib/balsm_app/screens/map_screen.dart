@@ -846,7 +846,7 @@ class _ClusterPin extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: T.petalBlue,
+        color: T.hueBlue,
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2.5),
         boxShadow: T.shadowSm,
@@ -886,7 +886,7 @@ class _UserDot extends StatelessWidget {
               alignment: Alignment.center,
               decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
               child: const DecoratedBox(
-                decoration: BoxDecoration(color: T.petalBlue, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: T.hueBlue, shape: BoxShape.circle),
                 child: SizedBox(width: 12, height: 12),
               ),
             ),

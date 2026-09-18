@@ -9,7 +9,7 @@ class BalsmAvatar extends StatelessWidget {
     super.key,
     required this.initials,
     this.size = 44,
-    this.backgroundColor = BalsmColors.petalAqua,
+    this.backgroundColor = BalsmColors.hueAqua,
   });
 
   final String initials;

@@ -10,7 +10,7 @@ import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
-import '../widgets/balsm_flower.dart';
+import '../widgets/balsm_mark.dart';
 
 /// First-run onboarding walkthrough — Treatment **A · Petal** from the live
 /// Claude Design (`wt-treatments.jsx`, skin `petal`), picked over the
@@ -159,7 +159,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                     padding: const EdgeInsets.fromLTRB(30, 8, 30, 8),
                     child: Transform.translate(
                       offset: Offset(_dx * 0.05, 0),
-                      child: _PetalSlide(slide: slide, ar: rtl, strings: wt),
+                      child: _MarkSlide(slide: slide, ar: rtl, strings: wt),
                     ),
                   ),
                 ),
@@ -186,17 +186,17 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
 }
 
 // ── Slide body — icon/aura stage or the interactive demo, then copy ───
-class _PetalSlide extends StatelessWidget {
-  const _PetalSlide({required this.slide, required this.ar, required this.strings});
+class _MarkSlide extends StatelessWidget {
+  const _MarkSlide({required this.slide, required this.ar, required this.strings});
   final _Slide slide;
   final bool ar;
   final WalkthroughStrings strings;
   @override
   Widget build(BuildContext context) {
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      if (slide.demo) _WtDayDemo(accent: slide.accent, ar: ar, strings: strings) else _PetalStage(slide: slide),
+      if (slide.demo) _WtDayDemo(accent: slide.accent, ar: ar, strings: strings) else _MarkStage(slide: slide),
       const SizedBox(height: 34),
-      // `.wt-petal-copy { max-width: 332px }` constrains the whole copy
+      // `.wt-mark-copy { max-width: 332px }` constrains the whole copy
       // block, not just the body line — eyebrow and title share the cap too.
       ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 332),
@@ -216,9 +216,9 @@ class _PetalSlide extends StatelessWidget {
   }
 }
 
-/// Soft petal-tinted aura behind a white icon tile (`.wt-aura` + `.wt-petal-tile`).
-class _PetalStage extends StatelessWidget {
-  const _PetalStage({required this.slide});
+/// Soft hue-tinted aura behind a white icon tile (`.wt-aura` + `.wt-mark-tile`).
+class _MarkStage extends StatelessWidget {
+  const _MarkStage({required this.slide});
   final _Slide slide;
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -230,7 +230,7 @@ class _PetalStage extends StatelessWidget {
           OverflowBox(
             maxWidth: 240,
             maxHeight: 240,
-            child: _PetalAura(color: slide.accent.main),
+            child: _MarkAura(color: slide.accent.main),
           ),
           Container(
             width: 132,
@@ -244,7 +244,7 @@ class _PetalStage extends StatelessWidget {
 }
 
 Widget _slideGlyph(_Slide slide) {
-  // Vision slide (emerald) shows the five-petal brand mark at markSize=104;
+  // Vision slide (emerald) shows the ring brand mark at markSize=104;
   // the data-ownership slide (aqua) shows a single accent icon at size=50 —
   // both per `<WtGlyph slide={slide} size={50} markSize={104} .../>` in
   // wt-treatments.jsx's Petal skin.
@@ -257,14 +257,14 @@ Widget _slideGlyph(_Slide slide) {
 /// 0.96→1.04 scale over 5.4s ease-in-out (`@keyframes wtBreathe`). Positions/
 /// sizes/alphas below are converted from the CSS multi-background-layer
 /// declaration (background-position % against a 240×240 box).
-class _PetalAura extends StatefulWidget {
-  const _PetalAura({required this.color});
+class _MarkAura extends StatefulWidget {
+  const _MarkAura({required this.color});
   final Color color;
   @override
-  State<_PetalAura> createState() => _PetalAuraState();
+  State<_MarkAura> createState() => _MarkAuraState();
 }
 
-class _PetalAuraState extends State<_PetalAura> with SingleTickerProviderStateMixin {
+class _MarkAuraState extends State<_MarkAura> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 2700))
     ..repeat(reverse: true);
   late final Animation<double> _scale = Tween(begin: 0.96, end: 1.04).animate(
@@ -728,16 +728,16 @@ class _Dots extends StatelessWidget {
 /// variant, kept as a small local widget only because this CTA needs a
 /// *trailing* arrow (`PButton`'s optional icon renders leading).
 ///
-/// Fill is the **app** accent, not the slide's petal: `.b-btn-primary` paints
+/// Fill is the **app** accent, not the slide's hue: `.b-btn-primary` paints
 /// `--balsm-primary`, which app.jsx binds once at the root to the accent tweak.
 /// The walkthrough's per-slide `accentVars` rebind only `--app-accent*`, so the
-/// slide petal reaches the box-shadow (`.b-btn-primary { box-shadow:
+/// slide hue reaches the box-shadow (`.b-btn-primary { box-shadow:
 /// var(--app-accent-shadow) }`) and nothing else.
 class _WtNextButton extends StatelessWidget {
   const _WtNextButton({required this.label, required this.accent, required this.ar, required this.onTap});
   final String label;
 
-  /// The slide's petal — drives the glow only.
+  /// The slide's hue — drives the glow only.
   final Accent accent;
   final bool ar;
   final VoidCallback onTap;

@@ -98,11 +98,11 @@ class _RxCard extends StatelessWidget {
                   width: 46,
                   height: 46,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(color: T.petalBlue50, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(color: T.hueBlue50, shape: BoxShape.circle),
                   child: Icon(rx.attachmentPath != null ? LucideIcons.fileText : LucideIcons.pill,
-                      size: 21, color: T.petalBlue),
+                      size: 21, color: T.hueBlue),
                 )
-              : Avatar(initials: _initials(rx.clinician), color: T.petalAqua, size: 44, fontSize: FS.md, ar: s.rtl),
+              : Avatar(initials: _initials(rx.clinician), color: T.hueAqua, size: 44, fontSize: FS.md, ar: s.rtl),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -184,12 +184,12 @@ class PrescriptionDetailScreen extends ConsumerWidget {
                             width: 50,
                             height: 50,
                             alignment: Alignment.center,
-                            decoration: const BoxDecoration(color: T.petalBlue50, shape: BoxShape.circle),
-                            child: const Icon(LucideIcons.user, size: 22, color: T.petalBlue),
+                            decoration: const BoxDecoration(color: T.hueBlue50, shape: BoxShape.circle),
+                            child: const Icon(LucideIcons.user, size: 22, color: T.hueBlue),
                           )
                         : Avatar(
                             initials: _RxCard._initials(rx.clinician),
-                            color: T.petalAqua,
+                            color: T.hueAqua,
                             size: 50,
                             fontSize: FS.lg,
                             ar: s.rtl),
@@ -399,8 +399,8 @@ class _LinkAttach extends StatelessWidget {
             width: 42,
             height: 42,
             alignment: Alignment.center,
-            decoration: BoxDecoration(color: T.petalViolet50, borderRadius: BorderRadius.circular(T.rMd)),
-            child: Icon(isPdf ? LucideIcons.fileText : LucideIcons.link, size: 20, color: T.petalViolet),
+            decoration: BoxDecoration(color: T.hueViolet50, borderRadius: BorderRadius.circular(T.rMd)),
+            child: Icon(isPdf ? LucideIcons.fileText : LucideIcons.link, size: 20, color: T.hueViolet),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -452,8 +452,8 @@ class _ItemRow extends StatelessWidget {
           width: 42,
           height: 42,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: T.petalBlue50, borderRadius: BorderRadius.circular(T.rMd)),
-          child: const Icon(LucideIcons.pill, size: 20, color: T.petalBlue),
+          decoration: BoxDecoration(color: T.hueBlue50, borderRadius: BorderRadius.circular(T.rMd)),
+          child: const Icon(LucideIcons.pill, size: 20, color: T.hueBlue),
         ),
         const SizedBox(width: 14),
         Expanded(

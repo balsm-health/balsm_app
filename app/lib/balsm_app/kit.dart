@@ -10,7 +10,7 @@ import 'tokens.dart';
 /// explicitly rather than reading a scope), but accent behaves like an
 /// inherited cascade value in the design: `.row-head a`, spinners, progress
 /// fills and the default button tint all resolve `var(--app-accent)` rather
-/// than naming a petal. An [InheritedWidget] is the direct equivalent, so those
+/// than naming a hue. An [InheritedWidget] is the direct equivalent, so those
 /// widgets follow the app accent without every call site threading it through.
 ///
 /// Falls back to [Accent.blue] when no scope is present (bare kit usage/tests).
@@ -327,15 +327,15 @@ class Pill extends StatelessWidget {
   final bool small;
 
   ({Color bg, Color fg, Color dot, Color? border}) get _c => switch (kind) {
-        PillKind.success => (bg: T.petalMint50, fg: const Color(0xFF1F6A36), dot: T.petalMint, border: null),
-        PillKind.info => (bg: T.petalBlue50, fg: const Color(0xFF08407A), dot: T.petalBlue, border: null),
+        PillKind.success => (bg: T.hueMint50, fg: const Color(0xFF1F6A36), dot: T.hueMint, border: null),
+        PillKind.info => (bg: T.hueBlue50, fg: const Color(0xFF08407A), dot: T.hueBlue, border: null),
         PillKind.warn => (bg: T.warningBg, fg: const Color(0xFF7A5A0F), dot: T.warning, border: null),
         PillKind.danger => (bg: T.dangerBg, fg: const Color(0xFF7A2A20), dot: T.danger, border: null),
-        PillKind.violet => (bg: T.petalViolet50, fg: const Color(0xFF3D2872), dot: T.petalViolet, border: null),
+        PillKind.violet => (bg: T.hueViolet50, fg: const Color(0xFF3D2872), dot: T.hueViolet, border: null),
         PillKind.expiring => (bg: T.expiringBg, fg: const Color(0xFF7A4310), dot: T.expiring, border: null),
-        PillKind.emerald => (bg: T.petalEmerald50, fg: const Color(0xFF015A47), dot: T.petalEmerald, border: null),
+        PillKind.emerald => (bg: T.hueEmerald50, fg: const Color(0xFF015A47), dot: T.hueEmerald, border: null),
         PillKind.neutral => (bg: T.ink100, fg: T.ink700, dot: T.ink500, border: null),
-        PillKind.brand => (bg: T.petalBlue, fg: Colors.white, dot: Colors.white, border: null),
+        PillKind.brand => (bg: T.hueBlue, fg: Colors.white, dot: Colors.white, border: null),
         PillKind.outline => (bg: T.surface, fg: T.ink700, dot: T.ink500, border: T.border),
       };
 
@@ -1019,7 +1019,7 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 /// Ring spinner (`.b-ring-spinner`): a single-hue conic comet — a transparent
 /// tail sweeping to a solid head — rotating at `b-spin 0.85s linear infinite`.
 /// The inline workhorse loader. Pass [color] for the hue variants (accent /
-/// success / violet / ink map to a petal/ink color). Keeps spinning under
+/// success / violet / ink map to a brand hue/ink color). Keeps spinning under
 /// reduced motion — a loading indicator that freezes reads as hung.
 class Spinner extends StatefulWidget {
   const Spinner({super.key, this.size = 28, this.color, this.stroke = 3});
@@ -1192,7 +1192,7 @@ class _TopLoadingBarState extends State<TopLoadingBar> with SingleTickerProvider
 ///
 /// Box is 18×18 (radius 5, or a circle for [radio]) with a 1.5px `ink300`
 /// outline; checked fills with `--balsm-primary`, which app.jsx rebinds to the
-/// accent petal ("so DS components follow it"), so pass the session [accent].
+/// accent hue ("so DS components follow it"), so pass the session [accent].
 class BCheck extends StatelessWidget {
   const BCheck({
     super.key,

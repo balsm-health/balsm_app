@@ -3,7 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
-import '../widgets/balsm_flower.dart';
+import '../widgets/balsm_mark.dart';
 
 /// In-app rating + feedback.
 ///
@@ -153,7 +153,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       Column(children: [
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           for (var n = 1; n <= 5; n++) ...[
-            _RatePetal(lit: n <= _rating, onTap: () => setState(() => _rating = n)),
+            _RateMark(lit: n <= _rating, onTap: () => setState(() => _rating = n)),
             if (n < 5) const SizedBox(width: 8),
           ],
         ]),
@@ -236,9 +236,9 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: c, width: 1.5));
 }
 
-/// One tappable petal mark — full colour when lit, ink when not.
-class _RatePetal extends StatelessWidget {
-  const _RatePetal({required this.lit, required this.onTap});
+/// One tappable mark — full colour when lit, ink when not.
+class _RateMark extends StatelessWidget {
+  const _RateMark({required this.lit, required this.onTap});
   final bool lit;
   final VoidCallback onTap;
 
@@ -254,8 +254,8 @@ class _RatePetal extends StatelessWidget {
             child: lit
                 ? const BalsmFlower(size: 42)
                 : const ColorFiltered(
-                    // `.fb-petal-off .petal { fill: ink-200 }` — one flat ink
-                    // wash, not a desaturation of the five petal hues.
+                    // `.fb-mark-off .ribbon { fill: ink-200 }` — one flat ink
+                    // wash, not a desaturation of the five brand hues.
                     colorFilter: ColorFilter.mode(T.ink200, BlendMode.srcIn),
                     child: BalsmFlower(size: 42),
                   ),

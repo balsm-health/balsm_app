@@ -60,11 +60,11 @@ enum _QlKind { vital, wellbeing, symptom }
 typedef _MetricStyle = ({IconData icon, Color color, Color bg, _QlKind kind});
 
 const _metricStyles = <_Metric, _MetricStyle>{
-  _Metric.bp: (icon: LucideIcons.activity, color: T.petalViolet, bg: T.petalViolet50, kind: _QlKind.vital),
-  _Metric.glucose: (icon: LucideIcons.droplet, color: T.petalMint600, bg: T.petalMint50, kind: _QlKind.vital),
-  _Metric.o2: (icon: LucideIcons.wind, color: T.petalAqua, bg: T.petalAqua50, kind: _QlKind.vital),
-  _Metric.weight: (icon: LucideIcons.scale, color: T.petalBlue, bg: T.petalBlue50, kind: _QlKind.vital),
-  _Metric.mood: (icon: LucideIcons.smile, color: T.petalAqua, bg: T.petalAqua50, kind: _QlKind.wellbeing),
+  _Metric.bp: (icon: LucideIcons.activity, color: T.hueViolet, bg: T.hueViolet50, kind: _QlKind.vital),
+  _Metric.glucose: (icon: LucideIcons.droplet, color: T.hueMint600, bg: T.hueMint50, kind: _QlKind.vital),
+  _Metric.o2: (icon: LucideIcons.wind, color: T.hueAqua, bg: T.hueAqua50, kind: _QlKind.vital),
+  _Metric.weight: (icon: LucideIcons.scale, color: T.hueBlue, bg: T.hueBlue50, kind: _QlKind.vital),
+  _Metric.mood: (icon: LucideIcons.smile, color: T.hueAqua, bg: T.hueAqua50, kind: _QlKind.wellbeing),
   _Metric.pain: (icon: LucideIcons.zap, color: T.danger, bg: T.dangerBg, kind: _QlKind.wellbeing),
 };
 
@@ -562,8 +562,8 @@ class _SavedFlash extends StatelessWidget {
           width: 72,
           height: 72,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
-          child: const Icon(LucideIcons.check, size: 36, color: T.petalMint600)),
+          decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
+          child: const Icon(LucideIcons.check, size: 36, color: T.hueMint600)),
       const SizedBox(height: 14),
       Text(s.strings.checkin.ql_saved, style: Typo.heading(ar: ar)),
       const SizedBox(height: 6),

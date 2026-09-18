@@ -7,7 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
-import 'balsm_flower.dart';
+import 'balsm_mark.dart';
 import 'photo_attach.dart';
 
 /// What a vault attachment turns out to be once decrypted.
@@ -54,7 +54,7 @@ class VaultFileViewer extends ConsumerWidget {
       body: Stack(children: [
         Positioned.fill(
           child: blob.when(
-            loading: () => const Center(child: PetalSpinner(size: 44)),
+            loading: () => const Center(child: MarkSpinner(size: 44)),
             // The reason is not something to render over PHI — keep it generic.
             error: (_, __) => _CantOpen(s: s),
             data: (bytes) => bytes == null ? _CantOpen(s: s) : _content(bytes),

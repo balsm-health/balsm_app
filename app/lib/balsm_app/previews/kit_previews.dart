@@ -116,9 +116,9 @@ Widget iconSquare() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 12,
       children: [
-        IconSquare(LucideIcons.pill, bg: T.petalBlue50, fg: T.petalBlue),
-        IconSquare(LucideIcons.stethoscope, bg: T.petalViolet50, fg: T.petalViolet),
-        IconSquare(LucideIcons.flaskConical, bg: T.petalMint50, fg: T.petalMint600),
+        IconSquare(LucideIcons.pill, bg: T.hueBlue50, fg: T.hueBlue),
+        IconSquare(LucideIcons.stethoscope, bg: T.hueViolet50, fg: T.hueViolet),
+        IconSquare(LucideIcons.flaskConical, bg: T.hueMint50, fg: T.hueMint600),
         IconSquare(LucideIcons.building2, bg: T.dangerBg, fg: T.danger, size: 52, iconSize: 26),
       ],
     );
@@ -128,9 +128,9 @@ Widget avatar() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 12,
       children: [
-        Avatar(initials: 'SA', color: T.petalBlue, size: 32),
-        Avatar(initials: 'SA', color: T.petalViolet),
-        Avatar(initials: 'SA', color: T.petalMint600, size: 64),
+        Avatar(initials: 'SA', color: T.hueBlue, size: 32),
+        Avatar(initials: 'SA', color: T.hueViolet),
+        Avatar(initials: 'SA', color: T.hueMint600, size: 64),
       ],
     );
 
@@ -181,9 +181,9 @@ Widget bChip() => Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        BChip('Inactive', active: false, accent: T.petalViolet, onTap: () {}),
-        BChip('Active', active: true, accent: T.petalViolet, onTap: () {}),
-        BChip('Blue accent', active: true, accent: T.petalBlue, onTap: () {}),
+        BChip('Inactive', active: false, accent: T.hueViolet, onTap: () {}),
+        BChip('Active', active: true, accent: T.hueViolet, onTap: () {}),
+        BChip('Blue accent', active: true, accent: T.hueBlue, onTap: () {}),
       ],
     );
 
@@ -208,7 +208,7 @@ Widget spinner() => const Row(
       children: [
         Spinner(size: 18, stroke: 2),
         Spinner(),
-        Spinner(size: 44, stroke: 4, color: T.petalViolet),
+        Spinner(size: 44, stroke: 4, color: T.hueViolet),
       ],
     );
 
@@ -219,9 +219,9 @@ Widget ringProgress() => const Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 16,
       children: [
-        RingProgress(progress: 0, color: T.petalViolet, label: '0%'),
-        RingProgress(progress: 0.35, color: T.petalViolet, label: '35%'),
-        RingProgress(progress: 1, color: T.petalMint600, label: 'Done'),
+        RingProgress(progress: 0, color: T.hueViolet, label: '0%'),
+        RingProgress(progress: 0.35, color: T.hueViolet, label: '35%'),
+        RingProgress(progress: 1, color: T.hueMint600, label: 'Done'),
       ],
     );
 
@@ -335,7 +335,7 @@ Widget lIcon() => const Row(
       children: [
         LIcon(LucideIcons.heart, size: 18),
         LIcon(LucideIcons.pill, size: 24),
-        LIcon(LucideIcons.stethoscope, size: 32, color: T.petalViolet),
+        LIcon(LucideIcons.stethoscope, size: 32, color: T.hueViolet),
         LIcon(LucideIcons.flaskConical, size: 32, stroke: 2.6),
       ],
     );
@@ -351,13 +351,13 @@ Widget palette() => const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 10,
       children: [
-        _Swatches('Petals', [T.petalAqua, T.petalEmerald, T.petalBlue, T.petalMint, T.petalViolet]),
-        _Swatches('Petals 600', [
-          T.petalAqua600,
-          T.petalEmerald600,
-          T.petalBlue600,
-          T.petalMint600,
-          T.petalViolet600,
+        _Swatches('Hues', [T.hueAqua, T.hueEmerald, T.hueBlue, T.hueMint, T.hueViolet]),
+        _Swatches('Hues 600', [
+          T.hueAqua600,
+          T.hueEmerald600,
+          T.hueBlue600,
+          T.hueMint600,
+          T.hueViolet600,
         ]),
         _Swatches('Ink', [T.ink900, T.ink700, T.ink500, T.ink300, T.ink100]),
         _Swatches('Status', [T.success, T.warning, T.danger, T.controlled, T.expiring]),

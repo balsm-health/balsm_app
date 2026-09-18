@@ -42,7 +42,7 @@ class HomeScreen extends ConsumerWidget {
     final member = s.activeFamilyMember;
     final displayName = (member?.name ?? summary?.displayName ?? '').trim();
     final firstName = displayName.split(' ').first;
-    final avatarColor = member?.color ?? T.petalAqua;
+    final avatarColor = member?.color ?? T.hueAqua;
 
     return ContentColumn(
       maxWidth: 720,
@@ -129,8 +129,8 @@ class _NudgeSection extends ConsumerWidget {
       if (needsHandle)
         _Shortcut(
           icon: LucideIcons.atSign,
-          iconBg: T.petalMint50,
-          iconFg: T.petalMint,
+          iconBg: T.hueMint50,
+          iconFg: T.hueMint,
           title: s.strings.home.nudge_handle,
           subtitle: s.strings.home.nudge_handle_sub,
           onTap: () => openPersonalDetails(context),
@@ -138,8 +138,8 @@ class _NudgeSection extends ConsumerWidget {
       if (needsEmergencyCard)
         _Shortcut(
           icon: LucideIcons.shieldAlert,
-          iconBg: T.petalAqua50,
-          iconFg: T.petalAqua,
+          iconBg: T.hueAqua50,
+          iconFg: T.hueAqua,
           title: s.strings.home.nudge_ec,
           subtitle: s.strings.home.nudge_ec_sub,
           onTap: () => openEmergency(context),
@@ -147,8 +147,8 @@ class _NudgeSection extends ConsumerWidget {
       if (needsFirstMedication)
         _Shortcut(
           icon: LucideIcons.pill,
-          iconBg: T.petalViolet50,
-          iconFg: T.petalViolet,
+          iconBg: T.hueViolet50,
+          iconFg: T.hueViolet,
           title: s.strings.home.nudge_med,
           subtitle: s.strings.home.nudge_med_sub,
           onTap: () => s.setTab(AppTab.meds),
@@ -273,8 +273,8 @@ class _NearbyShortcut extends ConsumerWidget {
     final count = (ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[]).length;
     return HomeShortcut(
       icon: LucideIcons.mapPin,
-      iconBg: T.petalBlue50,
-      iconFg: T.petalBlue,
+      iconBg: T.hueBlue50,
+      iconFg: T.hueBlue,
       title: s.strings.care.map_nearby,
       subtitle: '$count ${s.strings.care.map_sub}',
       onTap: () => s.setTab(AppTab.map),
@@ -292,8 +292,8 @@ class _RecordsShortcut extends ConsumerWidget {
     final count = (ref.watch(recordListProvider).valueOrNull ?? const <RecordDocument>[]).length;
     return HomeShortcut(
       icon: LucideIcons.folderHeart,
-      iconBg: T.petalViolet50,
-      iconFg: T.petalViolet,
+      iconBg: T.hueViolet50,
+      iconFg: T.hueViolet,
       title: s.strings.records.records,
       subtitle: '$count ${s.strings.records.rec_documents}',
       onTap: () => s.setTab(AppTab.records),

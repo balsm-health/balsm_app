@@ -3,26 +3,26 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../storage_target.dart';
 import '../tokens.dart';
 
-/// Visual chrome for a [StorageTarget] (icon + petal). Copy is on the enum.
+/// Visual chrome for a [StorageTarget] (icon + hue). Copy is on the enum.
 typedef StorageChrome = ({IconData icon, Color color, Color bg, Color border});
 
 StorageChrome storageCfg(StorageTarget which) => switch (which) {
       StorageTarget.icloud => (
           icon: LucideIcons.cloud,
-          color: T.petalBlue,
-          bg: T.petalBlue50,
+          color: T.hueBlue,
+          bg: T.hueBlue50,
           border: const Color(0xFFB8D4FF),
         ),
       StorageTarget.gdrive => (
           icon: LucideIcons.cloud,
-          color: T.petalMint600,
-          bg: T.petalMint50,
+          color: T.hueMint600,
+          bg: T.hueMint50,
           border: const Color(0xFFA8ECD8),
         ),
       StorageTarget.balsmCloud => (
           icon: LucideIcons.cloud,
-          color: T.petalAqua,
-          bg: T.petalAqua50,
+          color: T.hueAqua,
+          bg: T.hueAqua50,
           border: const Color(0xFFB8EDE8),
         ),
       StorageTarget.local => (

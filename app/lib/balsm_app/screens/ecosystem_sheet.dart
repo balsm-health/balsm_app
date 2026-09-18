@@ -3,13 +3,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
-import '../widgets/balsm_flower.dart';
+import '../widgets/balsm_mark.dart';
 import 'feedback_sheet.dart';
 
 /// "Balsm is bigger than this app" — the ecosystem story plus concrete ways a
 /// patient can help it spread.
 ///
-/// One of the few brand moments where all five petals appear together.
+/// One of the few brand moments where all five hues appear together.
 Future<void> showEcosystemSheet(BuildContext context) => showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -32,22 +32,8 @@ class _EcosystemSheet extends StatelessWidget {
     final e = s.strings.ecosystem;
 
     final parts = <({IconData icon, Color fg, Color bg, String head, String body, bool roadmap})>[
-      (
-        icon: LucideIcons.smartphone,
-        fg: T.petalBlue,
-        bg: T.petalBlue50,
-        head: e.eco_p1h,
-        body: e.eco_p1b,
-        roadmap: false
-      ),
-      (
-        icon: LucideIcons.building2,
-        fg: T.petalAqua,
-        bg: T.petalAqua50,
-        head: e.eco_p2h,
-        body: e.eco_p2b,
-        roadmap: true
-      ),
+      (icon: LucideIcons.smartphone, fg: T.hueBlue, bg: T.hueBlue50, head: e.eco_p1h, body: e.eco_p1b, roadmap: false),
+      (icon: LucideIcons.building2, fg: T.hueAqua, bg: T.hueAqua50, head: e.eco_p2h, body: e.eco_p2b, roadmap: true),
     ];
 
     final actions = <({IconData icon, String head, String body, VoidCallback? onTap})>[
@@ -88,7 +74,7 @@ class _EcosystemSheet extends StatelessWidget {
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(20, 10, 20, sheetBottomInset(context, base: 32)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              // Brand moment — all five petals.
+              // Brand moment — all five hues.
               Column(children: [
                 const BalsmFlower(size: 54),
                 const SizedBox(height: 12),

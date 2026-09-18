@@ -60,7 +60,7 @@ class BalsmPill extends StatelessWidget {
         return _PillStyle(
           bg: BalsmColors.successBg,
           fg: const Color(0xFF1F6A36),
-          dot: BalsmColors.petalMint,
+          dot: BalsmColors.hueMint,
         );
       case BalsmPillVariant.warn:
         return _PillStyle(
@@ -82,9 +82,9 @@ class BalsmPill extends StatelessWidget {
         );
       case BalsmPillVariant.info:
         return _PillStyle(
-          bg: BalsmColors.petalBlue50,
+          bg: BalsmColors.hueBlue50,
           fg: const Color(0xFF08407A),
-          dot: BalsmColors.petalBlue,
+          dot: BalsmColors.hueBlue,
         );
       case BalsmPillVariant.controlled:
         return _PillStyle(

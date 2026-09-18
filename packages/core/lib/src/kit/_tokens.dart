@@ -5,25 +5,25 @@ import 'package:material_ui/material_ui.dart';
 class BalsmColors {
   BalsmColors._();
 
-  static const petalAqua = Color(0xFF02BBB5);
-  static const petalEmerald = Color(0xFF01C4A2);
-  static const petalBlue = Color(0xFF1283FF);
-  static const petalMint = Color(0xFF55D77F);
-  static const petalViolet = Color(0xFF8350DE);
+  static const hueAqua = Color(0xFF02BBB5);
+  static const hueEmerald = Color(0xFF01C4A2);
+  static const hueBlue = Color(0xFF1283FF);
+  static const hueMint = Color(0xFF55D77F);
+  static const hueViolet = Color(0xFF8350DE);
 
-  static const petalBlue600 = Color(0xFF0F6BCC);
-  static const petalMint600 = Color(0xFF3FC366);
-  static const petalViolet600 = Color(0xFF6A3DBB);
+  static const hueBlue600 = Color(0xFF0F6BCC);
+  static const hueMint600 = Color(0xFF3FC366);
+  static const hueViolet600 = Color(0xFF6A3DBB);
 
-  static const petalAqua50 = Color(0xFFE2F8F6);
-  static const petalBlue50 = Color(0xFFE4F0FF);
-  static const petalMint50 = Color(0xFFE8F9EE);
-  static const petalViolet50 = Color(0xFFEEE7FB);
+  static const hueAqua50 = Color(0xFFE2F8F6);
+  static const hueBlue50 = Color(0xFFE4F0FF);
+  static const hueMint50 = Color(0xFFE8F9EE);
+  static const hueViolet50 = Color(0xFFEEE7FB);
 
-  // App accent = petal-blue (primary CTA, focus, links)
-  static const appAccent = petalBlue;
-  static const appAccent600 = petalBlue600;
-  static const appAccent50 = petalBlue50;
+  // App accent = hue-blue (primary CTA, focus, links)
+  static const appAccent = hueBlue;
+  static const appAccent600 = hueBlue600;
+  static const appAccent50 = hueBlue50;
 
   // Neutrals (cool, navy-slate-biased — keyed to the #1F2D3D wordmark)
   static const ink900 = Color(0xFF14202B);
@@ -41,19 +41,19 @@ class BalsmColors {
   static const cream100 = Color(0xFFF4F3EC);
 
   // Semantic
-  static const success = petalMint;
-  static const successBg = petalMint50;
+  static const success = hueMint;
+  static const successBg = hueMint50;
   static const warning = Color(0xFFE5B428);
   static const warningBg = Color(0xFFFDF5DC);
   static const danger = Color(0xFFD44A3C);
   static const dangerBg = Color(0xFFFBEBE7);
-  static const controlled = petalViolet;
-  static const controlledBg = petalViolet50;
+  static const controlled = hueViolet;
+  static const controlledBg = hueViolet50;
 
   static const surface = Color(0xFFFFFFFF);
   static const border = ink200;
   static const borderStrong = ink300;
-  static const borderFocus = petalBlue;
+  static const borderFocus = hueBlue;
 
   // Foreground roles
   static const fg1 = ink900;

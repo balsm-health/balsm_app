@@ -7,7 +7,7 @@ import '../app_state.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../tokens.dart';
-import '../widgets/balsm_flower.dart';
+import '../widgets/balsm_mark.dart';
 
 /// Today's check-in, if one has been recorded. Drives the hero's two states.
 CheckIn? todayCheckIn(List<CheckIn> history) {
@@ -76,8 +76,8 @@ class HomeHero extends StatelessWidget {
             width: 52,
             height: 52,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
-            child: const Icon(LucideIcons.check, size: 28, color: T.petalMint600),
+            decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
+            child: const Icon(LucideIcons.check, size: 28, color: T.hueMint600),
           ),
           const SizedBox(width: 14),
           Expanded(

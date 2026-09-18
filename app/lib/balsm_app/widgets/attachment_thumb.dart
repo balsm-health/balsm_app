@@ -90,8 +90,8 @@ class VaultAttachmentThumb extends ConsumerWidget {
             Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(color: T.petalViolet50, borderRadius: BorderRadius.circular(T.rMd)),
-              child: const Icon(LucideIcons.fileText, size: 20, color: T.petalViolet),
+              decoration: BoxDecoration(color: T.hueViolet50, borderRadius: BorderRadius.circular(T.rMd)),
+              child: const Icon(LucideIcons.fileText, size: 20, color: T.hueViolet),
             ),
             const SizedBox(width: 14),
             Expanded(

@@ -4,7 +4,7 @@ import '../_tokens.dart';
 enum BalsmMedTone { info, controlled, success }
 
 /// Med row porting prototype `.med-row` (icon + name + dose + status/action).
-/// Tone: `info` (petal-blue), `controlled` (petal-violet), `success` (mint).
+/// Tone: `info` (hue-blue), `controlled` (hue-violet), `success` (mint).
 class BalsmMedRow extends StatelessWidget {
   const BalsmMedRow({
     super.key,
@@ -99,7 +99,7 @@ class BalsmMedRow extends StatelessWidget {
   (Color, Color) get _toneColors {
     switch (tone) {
       case BalsmMedTone.info:
-        return (BalsmColors.petalBlue50, BalsmColors.petalBlue);
+        return (BalsmColors.hueBlue50, BalsmColors.hueBlue);
       case BalsmMedTone.controlled:
         return (BalsmColors.controlledBg, BalsmColors.controlled);
       case BalsmMedTone.success:

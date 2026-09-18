@@ -21,7 +21,7 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart';
-import '../widgets/balsm_flower.dart';
+import '../widgets/balsm_mark.dart';
 
 /// Opens the account/identity editor (home.jsx AccountDetailsScreen).
 void openPersonalDetails(BuildContext context) {
@@ -357,7 +357,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       );
 
   Color get _handleStatusColor => switch (unStatus) {
-        UsernameStatus.available => T.petalMint600,
+        UsernameStatus.available => T.hueMint600,
         UsernameStatus.taken => T.danger,
         UsernameStatus.invalid => T.sun500,
         _ => s.accent.main,
@@ -437,7 +437,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         child: Column(children: [
                       Avatar(
                           initials: _initials('${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
-                          color: T.petalAqua,
+                          color: T.hueAqua,
                           size: 72,
                           fontSize: 26),
                     ])),
@@ -1362,7 +1362,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(color: T.ink900, borderRadius: BorderRadius.circular(T.rLg)),
               child: Row(children: [
-                const Icon(LucideIcons.checkCircle, size: 18, color: T.petalMint),
+                const Icon(LucideIcons.checkCircle, size: 18, color: T.hueMint),
                 const SizedBox(width: 10),
                 Expanded(
                     child: Text(toast!,

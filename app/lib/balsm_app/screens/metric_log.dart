@@ -1158,7 +1158,7 @@ class PainSlider extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(T.rPill),
                       gradient: const LinearGradient(
-                        colors: [T.petalMint, T.sun400, T.danger],
+                        colors: [T.hueMint, T.sun400, T.danger],
                       ),
                     ),
                   ),

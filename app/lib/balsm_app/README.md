@@ -18,7 +18,7 @@ or `melos run run:patient`, or the **"Balsm Patient App (design)"** VS Code laun
 
 | File | Role |
 |------|------|
-| `tokens.dart` | brand colors, radii, shadows, accent petals |
+| `tokens.dart` | brand colors, radii, shadows, accent hues |
 | `strings.dart` | en/ar i18n dictionary + `tr()` |
 | `data.dart` | models + sample data (patient, meds, doctors, records, entities…) |
 | `kit.dart` | typography + shared widgets (buttons, cards, pills, avatar, rings…) |

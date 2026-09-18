@@ -92,8 +92,8 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           title: s.strings.profile.m_bp,
           value: '${_avg(sys).round()}/${_avg(dia).round()}',
           unit: s.strings.checkin.unit_bp,
-          series: [ChartSeries(sys, T.petalViolet), ChartSeries(dia, T.petalBlue)],
-          legend: [(s.strings.checkin.sys, T.petalViolet), (s.strings.checkin.dia, T.petalBlue)],
+          series: [ChartSeries(sys, T.hueViolet), ChartSeries(dia, T.hueBlue)],
+          legend: [(s.strings.checkin.sys, T.hueViolet), (s.strings.checkin.dia, T.hueBlue)],
           margin: chartMargin,
         ),
       if (_visible.contains(_TrendMetric.glucose) && glucose.isNotEmpty)
@@ -101,7 +101,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           title: s.strings.profile.m_glucose,
           value: _avg(glucose).round().toString(),
           unit: s.strings.checkin.unit_glu,
-          series: [ChartSeries(glucose, T.petalMint600)],
+          series: [ChartSeries(glucose, T.hueMint600)],
           margin: chartMargin,
         ),
       if (_visible.contains(_TrendMetric.pain) && pain.isNotEmpty)
@@ -117,7 +117,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           title: s.strings.profile.m_weight,
           value: _fmtWeight(weight.last),
           unit: s.strings.checkin.unit_kg,
-          series: [ChartSeries(weight, T.petalBlue)],
+          series: [ChartSeries(weight, T.hueBlue)],
           margin: chartMargin,
           showAvg: false,
         ),

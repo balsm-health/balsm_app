@@ -349,7 +349,7 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           width: 17,
           height: 17,
           child: done
-              ? const Icon(LucideIcons.checkCircle2, size: 17, color: T.petalMint600)
+              ? const Icon(LucideIcons.checkCircle2, size: 17, color: T.hueMint600)
               : act
                   ? Spinner(size: 17, stroke: 2, color: cfg.color)
                   : const Icon(LucideIcons.circle, size: 17, color: T.ink200),
@@ -374,8 +374,8 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
           width: 68,
           height: 68,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(color: T.petalMint50, shape: BoxShape.circle),
-          child: const Icon(LucideIcons.check, size: 32, color: T.petalMint600),
+          decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
+          child: const Icon(LucideIcons.check, size: 32, color: T.hueMint600),
         ),
         const SizedBox(height: 16),
         Text(

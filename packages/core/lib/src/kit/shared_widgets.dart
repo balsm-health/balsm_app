@@ -24,11 +24,11 @@ class BalsmButton extends StatelessWidget {
     final isDanger = variant == BalsmButtonVariant.danger;
 
     final bg = isPrimary
-        ? BalsmColors.petalBlue
+        ? BalsmColors.hueBlue
         : isDanger
             ? BalsmColors.danger
             : Colors.transparent;
-    final fg = (isPrimary || isDanger) ? Colors.white : BalsmColors.petalBlue;
+    final fg = (isPrimary || isDanger) ? Colors.white : BalsmColors.hueBlue;
 
     return SizedBox(
       width: double.infinity,
@@ -40,7 +40,7 @@ class BalsmButton extends StatelessWidget {
           foregroundColor: fg,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          side: isPrimary || isDanger ? BorderSide.none : const BorderSide(color: BalsmColors.petalBlue),
+          side: isPrimary || isDanger ? BorderSide.none : const BorderSide(color: BalsmColors.hueBlue),
         ),
         child: loading
             ? const SizedBox(
@@ -253,7 +253,7 @@ class BalsmLoadingIndicator extends StatelessWidget {
           height: size,
           child: const CircularProgressIndicator(
             strokeWidth: 2,
-            color: BalsmColors.petalBlue,
+            color: BalsmColors.hueBlue,
           ),
         ),
       );

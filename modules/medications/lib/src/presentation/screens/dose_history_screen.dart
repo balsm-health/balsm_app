@@ -151,11 +151,11 @@ class _TimelineTile extends StatelessWidget {
 }
 
 Color _outcomeColor(DoseOutcome o) => switch (o) {
-      DoseOutcome.taken => BalsmColors.petalMint,
+      DoseOutcome.taken => BalsmColors.hueMint,
       DoseOutcome.skipped => BalsmColors.ink400,
       DoseOutcome.missed => BalsmColors.danger,
       DoseOutcome.snoozed => BalsmColors.warning,
-      DoseOutcome.correction => BalsmColors.petalBlue,
+      DoseOutcome.correction => BalsmColors.hueBlue,
     };
 
 BalsmPillVariant _outcomeVariant(DoseOutcome o) => switch (o) {

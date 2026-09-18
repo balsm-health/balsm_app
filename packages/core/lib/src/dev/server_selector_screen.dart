@@ -965,7 +965,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Widget _sentryButton(FlavorConfig cfg) {
     final s = _sendStatus;
     final (bg, ic, icColor, title) = switch (s) {
-      'sent' => (BalsmColors.petalMint50, Icons.check, BalsmColors.petalMint, 'Sent to Sentry!'),
+      'sent' => (BalsmColors.hueMint50, Icons.check, BalsmColors.hueMint, 'Sent to Sentry!'),
       'error' => (BalsmColors.dangerBg, Icons.warning_amber_rounded, BalsmColors.danger, 'Failed to send'),
       'sending' => (BalsmColors.ink50, Icons.sync, BalsmColors.fg2, 'Sending…'),
       _ => (BalsmColors.ink50, Icons.send, BalsmColors.fg2, 'Send to Sentry'),

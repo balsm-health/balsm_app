@@ -250,7 +250,7 @@ class PatientAppState extends ChangeNotifier {
       DateTime? dob,
       String? linkJti,
       FamilyLinkStatus status = FamilyLinkStatus.linked}) {
-    const palette = [T.petalAqua, T.petalBlue, T.petalViolet, T.petalMint, T.sun500];
+    const palette = [T.hueAqua, T.hueBlue, T.hueViolet, T.hueMint, T.sun500];
     extraFamily.add(FamilyMemberPreview(
       id: 'fam_${DateTime.now().millisecondsSinceEpoch}',
       name: name,

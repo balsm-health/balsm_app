@@ -19,7 +19,7 @@ import 'kit.dart';
 import 'offline_banner.dart';
 import 'responsive.dart';
 import 'tokens.dart';
-import 'widgets/balsm_flower.dart';
+import 'widgets/balsm_mark.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
@@ -65,7 +65,7 @@ class _PatientAppState extends ConsumerState<PatientApp> {
     if (ctx != null && ctx.mounted) opener(ctx);
   }
 
-  // Boot splash (auth.jsx `SplashScreen`) — watercolor + petal spinner,
+  // Boot splash (auth.jsx `SplashScreen`) — mark wash + mark spinner,
   // held ~2.3s on cold start, then fades out.
   bool _booting = true;
 
@@ -236,7 +236,7 @@ class _PatientAppState extends ConsumerState<PatientApp> {
                 textDirection: state.dir,
                 // Publishes `--app-accent` to the kit so accent-driven widgets
                 // (row-head actions, spinners, progress fills, default buttons)
-                // follow the app accent instead of a hardcoded petal.
+                // follow the app accent instead of a hardcoded hue.
                 child: AccentScope(
                   accent: state.accent,
                   child: AdaptiveFrame(
@@ -701,8 +701,8 @@ class _RailItem extends StatelessWidget {
   }
 }
 
-/// Branded boot splash (`SplashScreen` in auth.jsx): watercolor petal
-/// backdrop, petal spinner, then fade over `--dur-slow`.
+/// Branded boot splash (`SplashScreen` in auth.jsx): mark wash
+/// backdrop, mark spinner, then fade over `--dur-slow`.
 class _BootSplash extends StatelessWidget {
   const _BootSplash({required this.state, required this.visible});
   final PatientAppState state;
@@ -745,7 +745,7 @@ class _BootSplash extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const PetalSpinner(size: 96),
+              const MarkSpinner(size: 96),
               const SizedBox(height: 28),
               Text(state.strings.boot.boot_preparing,
                   textAlign: TextAlign.center,
