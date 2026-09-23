@@ -216,10 +216,39 @@ All eight are now read. What each actually is:
 | `_test-rx5.html` | Harness rendering `PrescriptionsScreen` alone. Already clean. |
 | `Canvas.dc.html` | Empty `<x-dc>` stub. Nothing in it. |
 | `UX Enhancements.html` | Prioritization board of 17 ideas; says "Proposal only — no changes have been made to the app". |
-| `New Design Direction - Warm.html` | An **alternative visual direction** — cream surfaces, Montserrat display type, rounder radii, real photography via `image-slot` placeholders. Its own note calls it "bending Balsm's rules". Adopting it restyles the whole app and needs photography that does not exist: a brand decision, not a port. |
+| `New Design Direction - Warm.html` | An **alternative visual direction**. Measured against the app, it is three changes — see below. |
 | `App Store Screenshots.html`, `Store Screenshots.html` | ASO marketing compositions and a store-submission size checklist. Ops, not product. |
 
 So there is no unported product UI left in the canvases.
+
+### `New Design Direction - Warm.html`, measured
+
+Its own note lists exactly what it changes: "cream surfaces instead of
+cool-white cards, larger rounder radii, editorial Montserrat display type, and
+real photography ... Petal colors, button shapes and voice stay as-is."
+
+Taken one at a time:
+
+| Change | Status |
+|---|---|
+| Editorial Montserrat display type | **Already applied.** `Typo._familyDisplay` is `'Montserrat'` and the variable font is bundled in `pubspec.yaml`. |
+| Cream surfaces instead of white cards | `--balsm-surface: #FFFFFF` is defined in `_ds/…/brand/colors_and_type.css`. |
+| Larger, rounder radii | `--radius-lg: 14px` / `--radius-xl: 20px`, same file. `app.css` only consumes them — it never redefines them. |
+| Real photography | Every image is an `image-slot` placeholder ("A calm, human moment", "Cover photo"). The assets do not exist. |
+
+The two outstanding changes are **Balsm Design System tokens, not app tokens**.
+`_ds/` is the shared design system mirrored into this repo — the porting rules
+name "treating `_ds/` as this project's own files" as a mistake precisely
+because changes there reach the website and every other Balsm surface. Editing
+`T.surface` and `T.rLg/rXl` in Flutter alone would desync this app from the
+design system it is supposed to implement: the app would be Warm and every
+other Balsm product would not.
+
+So this is not a Flutter port at all. It lands in Balsm-Core's design system
+first (a new token set or a themed variant), and mirrors out from there. Doing
+it app-side would also be a ~36-file change — `Colors.white` appears 195 times
+against 4 uses of `T.surface` — so the surface colour is not even centralised
+here yet; that refactor is a prerequisite, and its own piece of work.
 
 Prototype-only (`NOT_PORTED`): `image-slot.js`, `support.js`, `dsloaders.jsx`,
 `tweaks-panel.jsx`, `devconfig.jsx` (the app has its own dev overlay under
