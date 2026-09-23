@@ -82,3 +82,25 @@ session that their data was backed up.
   fast clock silently dropped remote edits and deletes and never revisited them —
   the cursor had already moved past.
 
+## Importing from the phone's contacts
+
+`ImportedContact` is the draft a picked contact becomes before the patient
+confirms it. It is deliberately not a half-built `CareProvider`: nothing is
+persisted until the review sheet is confirmed, so an abandoned import leaves no
+trace.
+
+`guessCareProviderType` reads the name and proposes a type (EN + AR patterns for
+doctor, pharmacy, lab, nurse, physio, clinic, carer). Two rules matter:
+
+- The doctor match is **prefix-anchored**, so "Andrew" and "Sandra" are not doctors.
+- The fallback is `other`, never a clinical role. A personal contact silently
+  filed as a doctor is a wrong record about who treats this patient.
+
+`contactPhoneKey` is the last nine digits — the identity `+201002345678`,
+`01002345678` and `+20 100 234 5678` share — used to show a contact as already on
+the team rather than offering a duplicate.
+
+Only what the address book holds is carried over. Specialty, clinic, address and
+notes stay null rather than being inferred: an invented clinic is worse than a
+blank one.
+
