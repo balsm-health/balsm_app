@@ -118,13 +118,23 @@ Future<void> _seedCareTeam(ProviderContainer container, UserId userId) async {
   if ((await dao.listProviders(profile.id)).isNotEmpty) return;
 
   final add = container.read(addCareProviderUseCaseProvider);
-  final team = <({CareProviderType type, String name, String specialty, String phone, String clinic})>[
+  final team = <({
+    CareProviderType type,
+    String name,
+    String specialty,
+    String phone,
+    String clinic,
+    String? mapUrl,
+  })>[
     (
       type: CareProviderType.doctor,
       name: DocshotsPersona.doctorCardiologyEn,
       specialty: 'Cardiology',
       phone: '+20 100 555 0180',
       clinic: 'Balsm Medical Centre, Maadi',
+      // One provider carries a map link so the card's Directions action is
+      // visible in captures. A public maps search URL, not a real address.
+      mapUrl: 'https://maps.google.com/?q=Maadi+Cairo',
     ),
     (
       type: CareProviderType.doctor,
@@ -132,6 +142,7 @@ Future<void> _seedCareTeam(ProviderContainer container, UserId userId) async {
       specialty: 'Endocrinology',
       phone: '+20 100 555 0194',
       clinic: 'Nile Clinic, Zamalek',
+      mapUrl: null,
     ),
     (
       type: CareProviderType.pharmacy,
@@ -139,6 +150,7 @@ Future<void> _seedCareTeam(ProviderContainer container, UserId userId) async {
       specialty: 'Delivery, blood pressure checks',
       phone: '19600',
       clinic: 'Maadi branch',
+      mapUrl: null,
     ),
     (
       type: CareProviderType.lab,
@@ -146,6 +158,7 @@ Future<void> _seedCareTeam(ProviderContainer container, UserId userId) async {
       specialty: 'Blood work, HbA1c',
       phone: '19014',
       clinic: 'Degla branch',
+      mapUrl: null,
     ),
   ];
 
@@ -157,6 +170,7 @@ Future<void> _seedCareTeam(ProviderContainer container, UserId userId) async {
       specialty: p.specialty,
       phone: p.phone,
       clinic: p.clinic,
+      mapUrl: p.mapUrl,
     );
   }
   debugPrint('[docshots] seeded ${team.length} care providers');
