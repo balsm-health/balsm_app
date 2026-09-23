@@ -20,6 +20,7 @@ class OutboxEntry {
     required this.payload,
     required this.createdAt,
     required this.attempts,
+    this.userId,
   });
 
   /// Monotonic rowid — also the FIFO ordering key.
@@ -40,4 +41,8 @@ class OutboxEntry {
 
   /// Failed push count, for backoff and for surfacing a stuck queue.
   final int attempts;
+
+  /// Account that queued this change. Null only for entries queued before the
+  /// queue was user-scoped; those are never drained.
+  final String? userId;
 }

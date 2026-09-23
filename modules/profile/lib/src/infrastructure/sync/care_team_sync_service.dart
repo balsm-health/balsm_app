@@ -16,15 +16,29 @@ class CareTeamSyncService {
     required SyncOutboxDao outbox,
     required AppDatabase db,
     required SyncStatusNotifier status,
+    required UserId? Function() activeUser,
+    void Function()? onChanged,
   })  : _api = api,
         _outbox = outbox,
         _db = db,
-        _status = status;
+        _status = status,
+        _activeUser = activeUser,
+        _onChanged = onChanged;
 
   final CareTeamApi _api;
   final SyncOutboxDao _outbox;
   final AppDatabase _db;
   final SyncStatusNotifier _status;
+
+  /// Whose queue to drain. The outbox is shared by every account that has used
+  /// this device, so draining unscoped would push one patient's PHI under the
+  /// next patient's token.
+  final UserId? Function() _activeUser;
+
+  /// Called after a pull actually changed local rows. `customStatement` does not
+  /// notify drift stream queries, so without this the merged rows stay invisible
+  /// until the app restarts — pull-to-refresh appears to do nothing.
+  final void Function()? _onChanged;
 
   static const _entity = 'care_provider';
 
@@ -66,7 +80,9 @@ class CareTeamSyncService {
   }
 
   Future<void> _drainInner() async {
-    for (final entry in await _outbox.pending()) {
+    final user = _activeUser();
+    if (user == null) return;
+    for (final entry in await _outbox.pending(userId: user.value)) {
       if (entry.entity != _entity) continue;
       try {
         switch (entry.op) {
@@ -91,11 +107,23 @@ class CareTeamSyncService {
             await _api.delete(entry.entityId);
         }
         await _outbox.complete(entry.id);
+      } on ApiException catch (e) {
+        if (_isPermanent(e)) {
+          // The server will never accept this entry: a tombstoned id (409), an
+          // invalid type (422), a row that is not ours (404). Retrying forever
+          // would jam every later change behind it, so drop it and carry on —
+          // a 409 in particular is resolved by the pull that follows, which
+          // brings the tombstone down and deletes the row locally.
+          await _outbox.complete(entry.id);
+          continue;
+        }
+        await _outbox.fail(entry.id, e.toString());
+        // Retryable (5xx, offline): STOP here. Skipping ahead would let a delete
+        // overtake the upsert that created its row, so the server would tombstone
+        // a row it never saw and the next pull would carry that tombstone back.
+        rethrow;
       } catch (e) {
         await _outbox.fail(entry.id, e.toString());
-        // STOP at the first failure. Skipping ahead would let a delete overtake
-        // the upsert that created its row, so the server would tombstone a row
-        // it never saw and the next pull would carry that tombstone back.
         rethrow;
       }
     }
@@ -106,13 +134,19 @@ class CareTeamSyncService {
     final rows = await _api.pull(healthProfileId: profileId.value, since: cursor);
     if (rows.isEmpty) return;
 
+    var changed = false;
     for (final row in rows) {
-      await _merge(row);
+      // Rows are keyed to the account, not to a profile: the id this device
+      // minted is not the one the row was written under. Map them onto the
+      // local profile as they land.
+      if (await _merge(row, profileId)) changed = true;
     }
 
     // Advance to the newest updated_at actually applied.
     final newest = rows.map((r) => r.updatedAt).reduce((a, b) => a.isAfter(b) ? a : b);
     await _writeCursor(profileId, newest);
+
+    if (changed) _onChanged?.call();
   }
 
   /// Row-level last-writer-wins on `updated_at`.
@@ -121,7 +155,7 @@ class CareTeamSyncService {
   /// routing a pulled row back through the data source would enqueue an
   /// outbound push for a row that just came FROM the server, and the two sides
   /// would push each other forever.
-  Future<void> _merge(CareProviderResponse row) async {
+  Future<bool> _merge(CareProviderResponse row, HealthProfileId profileId) async {
     final local = await _db.customSelect(
       'SELECT updated_at, created_at FROM care_provider WHERE id = ?',
       variables: [Variable.withString(row.id)],
@@ -131,12 +165,14 @@ class CareTeamSyncService {
       final localStampMs = local.readNullable<int>('updated_at') ?? local.read<int>('created_at');
       final localStamp = DateTime.fromMillisecondsSinceEpoch(localStampMs, isUtc: true);
       // Strictly newer wins, so re-pulling rows already applied is a no-op.
-      if (!row.updatedAt.isAfter(localStamp)) return;
+      if (!row.updatedAt.isAfter(localStamp)) return false;
     }
 
     if (row.isDeleted) {
+      // Nothing local to delete means nothing changed on screen.
+      if (local == null) return false;
       await _db.customStatement('DELETE FROM care_provider WHERE id = ?', [row.id]);
-      return;
+      return true;
     }
 
     Object? opt(String? v) => v == null || v.isEmpty ? null : v;
@@ -156,7 +192,7 @@ class CareTeamSyncService {
       ''',
       [
         row.id,
-        row.healthProfileId,
+        profileId.value,
         row.type,
         row.name,
         opt(row.specialty),
@@ -171,6 +207,17 @@ class CareTeamSyncService {
         row.updatedAt.millisecondsSinceEpoch,
       ],
     );
+    return true;
+  }
+
+  /// A failure the server will never accept on retry. Keeping these queued jams
+  /// every later change behind them forever; 408 and 429 are explicitly NOT
+  /// permanent — those mean "try again".
+  static bool _isPermanent(ApiException e) {
+    final code = e.statusCode;
+    if (code == null) return false;
+    if (code == 408 || code == 429) return false;
+    return code >= 400 && code < 500;
   }
 
   Future<DateTime?> _readCursor(HealthProfileId profileId) async {
@@ -192,6 +239,14 @@ class CareTeamSyncService {
     );
   }
 }
+
+/// Care-team sync status, deliberately SEPARATE from `syncStatusProvider`.
+///
+/// That one is the Drive backup's state and is rendered as "Backed up / Synced"
+/// on the storage sheet. Stamping it here told a patient with no Drive session —
+/// the exact person this feature exists for — that their data was backed up when
+/// it was not, and masked real backup failures for everyone else.
+final careTeamSyncStatusProvider = StateNotifierProvider<SyncStatusNotifier, SyncStatus>((ref) => SyncStatusNotifier());
 
 /// Set in bootstrap — needs the network stack and the signed-in user.
 final careTeamSyncServiceProvider = Provider<CareTeamSyncService>(

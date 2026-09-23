@@ -15,6 +15,9 @@ class FakeCareTeamApi implements CareTeamApi {
   Object? throwOnUpsert;
   Object? throwOnPull;
 
+  /// Throw a permanent 409 for exactly this id, to prove the drain continues.
+  String? throwOnUpsertFor;
+
   @override
   Future<List<CareProviderResponse>> pull({
     required String healthProfileId,
@@ -29,6 +32,9 @@ class FakeCareTeamApi implements CareTeamApi {
   @override
   Future<void> upsert(UpsertCareProviderRequest request, {CancelToken? cancelToken}) async {
     if (throwOnUpsert != null) throw throwOnUpsert!;
+    if (throwOnUpsertFor == request.id) {
+      throw const ApiException(statusCode: 409, code: 'CareTeam.Tombstoned');
+    }
     upserted.add(request);
   }
 
@@ -41,6 +47,7 @@ void main() {
   late SyncOutboxDao outbox;
   late CareProvidersDataSource providers;
   late SyncStatusNotifier status;
+  var merged = 0;
   const user = UserId.value('u-sync-1');
   late HealthProfileId profileId;
 
@@ -60,7 +67,9 @@ void main() {
   }) =>
       CareProviderResponse(
         id: id,
-        healthProfileId: profileId.value,
+        // Deliberately NOT this device's profile id: rows are keyed to the
+        // account, and a replacement phone mints its own profile id.
+        healthProfileId: '00000000-0000-4000-8000-00000000dead',
         type: 'doctor',
         name: name,
         createdAt: DateTime.utc(2026, 9, 1),
@@ -74,14 +83,26 @@ void main() {
     final profiles = DriftProfileDataSource(db: db, activeUser: () => user);
     profileId = (await profiles.getProfile(user))!.id;
     outbox = SyncOutboxDao(db);
-    providers = DriftCareProvidersDataSource(db: db, activeProfile: () => profileId, outbox: outbox);
+    providers = DriftCareProvidersDataSource(
+      db: db,
+      activeProfile: () => profileId,
+      outbox: outbox,
+      activeUser: () => user,
+    );
+    merged = 0;
     status = SyncStatusNotifier();
   });
 
   tearDown(() => db.close());
 
-  CareTeamSyncService service(FakeCareTeamApi api) =>
-      CareTeamSyncService(api: api, outbox: outbox, db: db, status: status);
+  CareTeamSyncService service(FakeCareTeamApi api) => CareTeamSyncService(
+        api: api,
+        outbox: outbox,
+        db: db,
+        status: status,
+        activeUser: () => user,
+        onChanged: () => merged++,
+      );
 
   group('drain', () {
     test('pushes queued upserts and clears the queue', () async {
@@ -228,6 +249,84 @@ void main() {
       await service(api).pull(profileId);
 
       expect(status.state.state, SyncState.offline);
+    });
+  });
+
+  group('regressions from the whole-branch review', () {
+    /// C3: rows come back under the profile id the OTHER device minted. They must
+    /// still land in this device's profile or the roster stays invisible.
+    test('pulled rows are mapped onto this device local profile', () async {
+      final api = FakeCareTeamApi(pullRows: [row(id: 'cp-remote')]);
+
+      await service(api).pull(profileId);
+
+      final local = await providers.findAll(scope: profileId);
+      expect(local.single.id.value, 'cp-remote');
+      expect(local.single.healthProfileId.value, profileId.value);
+    });
+
+    /// I7: customStatement does not notify drift streams, so the screen needs a
+    /// nudge or pull-to-refresh silently does nothing.
+    test('a pull that changes rows notifies the caller', () async {
+      final api = FakeCareTeamApi(pullRows: [row(id: 'cp-remote')]);
+
+      await service(api).pull(profileId);
+
+      expect(merged, 1);
+    });
+
+    test('a pull that changes nothing does not notify', () async {
+      final api = FakeCareTeamApi(pullRows: [row(id: 'cp-remote')]);
+      await service(api).pull(profileId);
+      merged = 0;
+
+      // Same rows again — LWW skips them all.
+      await service(api).pull(profileId);
+
+      expect(merged, 0);
+    });
+
+    /// C4: a permanent rejection must not jam every later change behind it.
+    test('a 409 is dropped and the drain continues', () async {
+      final blocked = CareProviderId.uuid();
+      final later = CareProviderId.uuid();
+      await providers.put(blocked, provider(blocked));
+      await providers.put(later, provider(later, name: 'Provider Beta'));
+      final api = FakeCareTeamApi()..throwOnUpsertFor = blocked.value;
+
+      await service(api).drain();
+
+      expect(api.upserted.map((r) => r.id), [later.value]);
+      expect(await outbox.pendingCount(), 0);
+    });
+
+    test('a 500 still stops the drain and keeps the entry', () async {
+      final id = CareProviderId.uuid();
+      await providers.put(id, provider(id));
+      final api = FakeCareTeamApi()..throwOnUpsert = const ApiException(statusCode: 500, code: 'server');
+
+      await service(api).drain();
+
+      expect(await outbox.pendingCount(), 1);
+    });
+
+    /// C6: the database survives sign-out, so the queue must not.
+    test('another account queued changes are never drained', () async {
+      final mine = CareProviderId.uuid();
+      await providers.put(mine, provider(mine));
+      await outbox.enqueue(
+        entity: 'care_provider',
+        entityId: 'cp-someone-else',
+        op: OutboxOp.upsert,
+        payload: '{}',
+        userId: 'u-other-account',
+      );
+      final api = FakeCareTeamApi();
+
+      await service(api).drain();
+
+      expect(api.upserted.map((r) => r.id), [mine.value]);
+      expect(await outbox.pendingCount(), 1, reason: 'the other account entry stays queued');
     });
   });
 

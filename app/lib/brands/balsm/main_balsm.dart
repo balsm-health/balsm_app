@@ -12,6 +12,7 @@ import 'package:profile/profile.dart';
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/prefs.dart';
+import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/shell.dart';
 import 'package:app/balsm_app/vault/bind_file_store.dart';
 import 'package:app/balsm_app/care/map_packs/drift_map_pack_download_store.dart';
@@ -175,7 +176,12 @@ Future<void> bootstrap({
           api: ref.watch(careTeamApiProvider),
           outbox: SyncOutboxDao(ref.watch(appDatabaseProvider)),
           db: ref.watch(appDatabaseProvider),
-          status: ref.watch(syncStatusProvider.notifier),
+          // Its OWN status, not the Drive backup's — see careTeamSyncStatusProvider.
+          status: ref.watch(careTeamSyncStatusProvider.notifier),
+          activeUser: () => ref.read(currentUserIdProvider),
+          // customStatement does not notify drift streams, so merged rows stay
+          // invisible without this.
+          onChanged: () => ref.invalidate(careTeamProvider),
         )),
     restoreServiceProvider.overrideWith((ref) => RestoreService(
           adapter: DriveBackupAdapter(),

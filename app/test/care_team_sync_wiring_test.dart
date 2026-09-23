@@ -49,6 +49,7 @@ void main() {
       outbox: SyncOutboxDao(db),
       db: db,
       status: SyncStatusNotifier(),
+      activeUser: () => const UserId.value('u-wiring-1'),
     );
 
     await tester.pumpWidget(ProviderScope(

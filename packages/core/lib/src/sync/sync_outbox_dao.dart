@@ -19,11 +19,12 @@ class SyncOutboxDao {
     required String entityId,
     required OutboxOp op,
     required String payload,
+    required String userId,
   }) async {
     await _db.customInsert(
       '''
-      INSERT INTO sync_outbox (entity, entity_id, op, payload, created_at, attempts)
-      VALUES (?, ?, ?, ?, ?, 0)
+      INSERT INTO sync_outbox (entity, entity_id, op, payload, created_at, attempts, user_id)
+      VALUES (?, ?, ?, ?, ?, 0, ?)
       ''',
       variables: [
         Variable.withString(entity),
@@ -31,15 +32,25 @@ class SyncOutboxDao {
         Variable.withString(op.name),
         Variable.withString(payload),
         Variable.withInt(DateTime.now().millisecondsSinceEpoch),
+        Variable.withString(userId),
       ],
     );
   }
 
-  /// The oldest [limit] queued changes, oldest first.
-  Future<List<OutboxEntry>> pending({int limit = 100}) async {
+  /// The oldest [limit] queued changes for [userId], oldest first.
+  ///
+  /// Scoping by user is not optional: the database survives sign-out, so an
+  /// unscoped drain would push the previous account's PHI under the next
+  /// account's token on a shared phone.
+  Future<List<OutboxEntry>> pending({int limit = 100, String? userId}) async {
     final rows = await _db.customSelect(
-      'SELECT * FROM sync_outbox ORDER BY id ASC LIMIT ?',
-      variables: [Variable.withInt(limit)],
+      userId == null
+          ? 'SELECT * FROM sync_outbox ORDER BY id ASC LIMIT ?'
+          : 'SELECT * FROM sync_outbox WHERE user_id = ? ORDER BY id ASC LIMIT ?',
+      variables: [
+        if (userId != null) Variable.withString(userId),
+        Variable.withInt(limit),
+      ],
     ).get();
     return rows
         .map((r) => OutboxEntry(
@@ -50,6 +61,7 @@ class SyncOutboxDao {
               payload: r.read<String>('payload'),
               createdAt: DateTime.fromMillisecondsSinceEpoch(r.read<int>('created_at'), isUtc: true),
               attempts: r.read<int>('attempts'),
+              userId: r.readNullable<String>('user_id'),
             ))
         .toList();
   }

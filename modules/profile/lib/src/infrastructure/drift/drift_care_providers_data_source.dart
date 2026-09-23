@@ -22,11 +22,17 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
     required AppDatabase db,
     required this.activeProfile,
     SyncOutboxDao? outbox,
+    UserId? Function()? activeUser,
   })  : _db = db,
-        _outbox = outbox;
+        _outbox = outbox,
+        _activeUser = activeUser;
 
   final AppDatabase _db;
   final SyncOutboxDao? _outbox;
+
+  /// Whose queue an enqueued change belongs to. Without it a change could be
+  /// drained under the next account to sign in on this device.
+  final UserId? Function()? _activeUser;
   final HealthProfileId? Function() activeProfile;
 
   /// Table name the outbox queues under, matching the cloud table.
@@ -144,12 +150,16 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
       ],
     );
     // Local write already happened — the queue is a mirror, never a gate (ADR-11).
-    await _outbox?.enqueue(
-      entity: _entity,
-      entityId: key.value,
-      op: OutboxOp.upsert,
-      payload: jsonEncode(_payload(key, profileId, value)),
-    );
+    final user = _activeUser?.call();
+    if (user != null) {
+      await _outbox?.enqueue(
+        entity: _entity,
+        entityId: key.value,
+        op: OutboxOp.upsert,
+        payload: jsonEncode(_payload(key, profileId, value)),
+        userId: user.value,
+      );
+    }
   }
 
   @override
@@ -166,12 +176,16 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
       variables: [Variable.withString(key.value)],
       updateKind: UpdateKind.delete,
     );
-    await _outbox?.enqueue(
-      entity: _entity,
-      entityId: key.value,
-      op: OutboxOp.delete,
-      payload: '{}',
-    );
+    final user = _activeUser?.call();
+    if (user != null) {
+      await _outbox?.enqueue(
+        entity: _entity,
+        entityId: key.value,
+        op: OutboxOp.delete,
+        payload: '{}',
+        userId: user.value,
+      );
+    }
   }
 
   @override
@@ -266,5 +280,6 @@ final careProvidersDataSourceProvider = Provider<CareProvidersDataSource>((ref) 
     db: ref.watch(appDatabaseProvider),
     activeProfile: () => ref.read(currentProfileIdProvider),
     outbox: SyncOutboxDao(ref.watch(appDatabaseProvider)),
+    activeUser: () => ref.read(currentUserIdProvider),
   );
 });

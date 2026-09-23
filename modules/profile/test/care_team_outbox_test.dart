@@ -36,6 +36,7 @@ void main() {
       db: db,
       activeProfile: () => profileId,
       outbox: outbox,
+      activeUser: () => user,
     );
   });
 
@@ -111,7 +112,7 @@ void main() {
   });
 
   test('without an outbox the data source still writes locally and queues nothing', () async {
-    final plain = DriftCareProvidersDataSource(db: db, activeProfile: () => profileId);
+    final plain = DriftCareProvidersDataSource(db: db, activeProfile: () => profileId, activeUser: () => user);
     final id = CareProviderId.uuid();
 
     await plain.put(id, provider(id));

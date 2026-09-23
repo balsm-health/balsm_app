@@ -60,6 +60,9 @@ class AppDatabase extends _$AppDatabase {
           // as created_at.
           await _ensureColumn('care_provider', 'updated_at', 'INTEGER');
           await _ensureColumn('care_provider', 'deleted_at', 'INTEGER');
+          // Queue predates user scoping: entries with a null user_id belong to
+          // whoever was signed in before the upgrade and are never drained.
+          await _ensureColumn('sync_outbox', 'user_id', 'TEXT');
           await _ensurePainSitePk();
           // These indexes must be created AFTER the column patches above — on a
           // pre-existing DB the `medications`/`health_record` tables predate
@@ -291,9 +294,11 @@ const _phiSchema = <String>[
     payload TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
-    last_error TEXT
+    last_error TEXT,
+    user_id TEXT
   )''',
   'CREATE INDEX IF NOT EXISTS idx_sync_outbox_entity ON sync_outbox(entity, id)',
+  'CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)',
   // Incremental-pull cursor per (entity, scope). Deliberately in the PHI database
   // rather than SharedPreferences: the cursor is derived from PHI timestamps and
   // must be wiped with the rows it describes. A cursor that outlived a local wipe

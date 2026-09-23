@@ -16,7 +16,8 @@ void main() {
   tearDown(() => db.close());
 
   test('enqueue then pending returns the entry', () async {
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{"a":1}');
+    await dao.enqueue(
+        entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{"a":1}', userId: 'u-1');
 
     final pending = await dao.pending();
     expect(pending, hasLength(1));
@@ -28,15 +29,15 @@ void main() {
   });
 
   test('pending returns entries in insertion order (FIFO)', () async {
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}');
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.delete, payload: '{}');
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.delete, payload: '{}', userId: 'u-1');
 
     final pending = await dao.pending();
     expect(pending.map((e) => e.op).toList(), [OutboxOp.upsert, OutboxOp.delete]);
   });
 
   test('complete removes the entry', () async {
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}');
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
     final entry = (await dao.pending()).single;
 
     await dao.complete(entry.id);
@@ -45,7 +46,7 @@ void main() {
   });
 
   test('fail keeps the entry and increments attempts', () async {
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}');
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
     final entry = (await dao.pending()).single;
 
     await dao.fail(entry.id, 'connection refused');
@@ -56,7 +57,7 @@ void main() {
   });
 
   test('fail twice increments to two', () async {
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}');
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
     final entry = (await dao.pending()).single;
 
     await dao.fail(entry.id, 'boom');
@@ -67,7 +68,7 @@ void main() {
 
   test('pending respects the limit but keeps the oldest first', () async {
     for (var i = 0; i < 5; i++) {
-      await dao.enqueue(entity: 'care_provider', entityId: 'cp-$i', op: OutboxOp.upsert, payload: '{}');
+      await dao.enqueue(entity: 'care_provider', entityId: 'cp-$i', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
     }
 
     final page = await dao.pending(limit: 2);
@@ -75,10 +76,22 @@ void main() {
   });
 
   test('pendingCount counts every queued entry', () async {
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}');
-    await dao.enqueue(entity: 'care_provider', entityId: 'cp-2', op: OutboxOp.delete, payload: '{}');
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-1', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-2', op: OutboxOp.delete, payload: '{}', userId: 'u-1');
 
     expect(await dao.pendingCount(), 2);
+  });
+
+  test('pending is scoped to the account that queued the change', () async {
+    // The database survives sign-out, so an unscoped drain would push one
+    // patient's PHI under the next patient's token on a shared phone.
+    await dao.enqueue(entity: 'care_provider', entityId: 'cp-mine', op: OutboxOp.upsert, payload: '{}', userId: 'u-1');
+    await dao.enqueue(
+        entity: 'care_provider', entityId: 'cp-theirs', op: OutboxOp.upsert, payload: '{}', userId: 'u-2');
+
+    final mine = await dao.pending(userId: 'u-1');
+
+    expect(mine.map((e) => e.entityId).toList(), ['cp-mine']);
   });
 
   test('care_provider gained updated_at and deleted_at', () async {

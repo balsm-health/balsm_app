@@ -48,3 +48,27 @@ The cursor lives in `sync_cursor` in the PHI database, keyed by (entity, profile
 with the rows it describes; a cursor that outlived a local wipe would make the
 next pull skip every row the device no longer has.
 
+### Review fixes (2026-09-24)
+
+Four findings from the whole-branch review, all of which the original tests
+structurally could not catch:
+
+- **Partition key is the user, not the profile.** The profile id is minted
+  on-device, so a replacement phone asked for rows under an id the server had
+  never seen and got nothing while reporting success. Pulled rows are now mapped
+  onto whatever profile id this device minted.
+- **The drain no longer jams.** A permanent rejection (4xx other than 408/429)
+  drops the entry and continues; only retryable failures stop the drain to
+  preserve order. A `409 Tombstoned` — the exact case the plan named — used to
+  block every later change forever, because the pull that would have resolved it
+  ran after the drain that never finished.
+- **The queue is user-scoped.** The database survives sign-out, so an unscoped
+  drain pushed one patient's PHI under the next patient's token on a shared phone.
+- **A pull notifies the caller.** `customStatement` does not fire drift stream
+  queries, so merged rows stayed invisible until an app restart and
+  pull-to-refresh appeared to do nothing.
+
+Care-team sync also has its own `careTeamSyncStatusProvider` rather than stamping
+the Drive backup's `syncStatusProvider`, which was telling patients with no Drive
+session that their data was backed up.
+
