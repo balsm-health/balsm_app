@@ -50,3 +50,6 @@ app/env/shared*.json
 !app/env/shared.example.json
 # Widget Preview related
 .widget_preview/
+
+# claude.ai/design fetch cache (baseline in synced/ is committed)
+.design-sync/current/

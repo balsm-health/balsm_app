@@ -8,7 +8,7 @@
 // state, so no PHI can appear in a capture.
 //
 // Usage (app running on a simulator via `bin/balsm run balsm dev`):
-//   fvm dart run tool/docshots.dart <vm-service-uri> <simulator-udid>
+//   fvm dart run tool/docshots.dart <vm-service-uri> <simulator-udid> [out-dir]
 
 import 'dart:io';
 
@@ -16,7 +16,7 @@ import 'package:vm_service/vm_service_io.dart';
 
 Future<void> main(List<String> args) async {
   if (args.length < 2) {
-    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <sim-udid>');
+    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <sim-udid> [out-dir]');
     exit(64);
   }
   final wsUri = args[0].replaceFirst('http://', 'ws://') + (args[0].endsWith('/') ? 'ws' : '/ws');
@@ -29,29 +29,48 @@ Future<void> main(List<String> args) async {
   Future<void> ext(String method, Map<String, String> params) =>
       vm.callServiceExtension(method, isolateId: isolateId, args: params);
 
-  Future<void> shot(String name) async {
+  // Output root: screenshots/<lang>/<name>.png. A third argument redirects the
+  // whole run somewhere else (the marketing capture writes into the store
+  // screenshot tree), so docs and store captures share one driver.
+  final outRoot = args.length > 2 ? args[2] : 'screenshots';
+
+  Future<void> shot(String lang, String name) async {
     await Future<void>.delayed(const Duration(seconds: 2));
-    final r = await Process.run('xcrun', ['simctl', 'io', udid, 'screenshot', 'screenshots/$name.png']);
-    stdout.writeln(r.exitCode == 0 ? 'captured $name' : 'FAILED $name: ${r.stderr}');
+    final dir = Directory('$outRoot/$lang');
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    final path = '${dir.path}/$name.png';
+    final r = await Process.run('xcrun', ['simctl', 'io', udid, 'screenshot', path]);
+    stdout.writeln(r.exitCode == 0 ? 'captured $lang/$name' : 'FAILED $lang/$name: ${r.stderr}');
   }
 
-  // Signed-out welcome, then jump straight into the shell (QA route hop).
-  await ext('ext.balsm.go', {'route': 'welcome'});
-  await shot('01_welcome');
-
+  // Mount the shell first: the debug extensions are registered by the shell's
+  // initState, and on a fresh install the app opens on the walkthrough.
   await ext('ext.balsm.go', {'route': 'app'});
-  await Future<void>.delayed(const Duration(seconds: 3)); // boot splash
-  for (final (tab, name) in [
-    ('home', '04_home'),
-    ('map', '05_care_map'),
-    ('meds', '06_medications'),
-    ('rx', '07_prescriptions'),
-    ('records', '08_records'),
-    ('trends', '09_trends'),
-    ('profile', '10_profile'),
-  ]) {
-    await ext('ext.balsm.setTab', {'tab': tab});
-    await shot(name);
+  await Future<void>.delayed(const Duration(seconds: 3));
+
+  // Every supported language, one app run. Arabic is not a translation pass of
+  // the English capture — RTL mirrors the whole layout, so each locale needs
+  // its own photograph of every screen.
+  for (final lang in const ['en', 'ar']) {
+    await ext('ext.balsm.setLang', {'lang': lang});
+
+    await ext('ext.balsm.go', {'route': 'welcome'});
+    await shot(lang, '01_welcome');
+
+    await ext('ext.balsm.go', {'route': 'app'});
+    await Future<void>.delayed(const Duration(seconds: 3)); // boot splash
+    for (final (tab, name) in const [
+      ('home', '04_home'),
+      ('map', '05_care_map'),
+      ('meds', '06_medications'),
+      ('rx', '07_prescriptions'),
+      ('records', '08_records'),
+      ('trends', '09_trends'),
+      ('profile', '10_profile'),
+    ]) {
+      await ext('ext.balsm.setTab', {'tab': tab});
+      await shot(lang, name);
+    }
   }
 
   await vm.dispose();
