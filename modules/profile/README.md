@@ -114,16 +114,28 @@ patient near the ceiling who picks five more gets the ones that fit; refusing th
 whole batch would throw away the work of choosing. One `HealthProfileUpdated`
 per batch, not per row.
 
-`ContactPicker` / `NativeContactPicker` use `FlutterContacts.openExternalPick`,
-not `getContacts`: the OS renders its own list, hands back only the chosen
-contact, and **asks for no permission**. The app never sees the rest of the
-address book, so there is nothing to disclose in a data-safety filing.
+`ContactPicker` / `NativeContactPicker` use `FlutterContacts.native.showPicker`:
+the OS renders its own list and hands back only the chosen contact. The app never
+sees the rest of the address book.
 
-Reading the address book directly would need `READ_CONTACTS` /
-`NSContactsUsageDescription` and a Contacts collection disclosure in both
-stores. That is a compliance decision, not a code one — if the product wants
-bulk "Select all", it goes to the compliance owner first.
+**flutter_contacts must stay on 2.x.** 1.1.9 force-unwraps in its iOS
+`register()` and crashes the app at launch under the UIScene lifecycle, before
+any Dart runs.
 
-The platform pickers are single-select (Android's `ACTION_PICK` has no multi
-mode), so the sheet lets the patient pick again to add more.
+Permission model, from the plugin's own contract: the picker is permissionless on
+both platforms, but asking for extra properties (phone, email) always works on
+iOS while **Android requires `READ_CONTACTS`**. We ask for the numbers and, when
+Android refuses, retry permissionless and import the name alone rather than
+prompting — requesting `READ_CONTACTS` would add a Contacts disclosure to the
+Play listing, which is a compliance decision. So on Android without that
+permission an imported contact arrives with a name and no number, and the patient
+completes it by hand.
+
+Reading the address book directly would need the same permission plus
+`NSContactsUsageDescription`, and a Contacts collection disclosure in both
+stores. If the product wants bulk "Select all", or wants phone numbers on
+Android, that goes to the compliance owner first.
+
+The picker is single-select, so the sheet lets the patient pick again to add
+more.
 
