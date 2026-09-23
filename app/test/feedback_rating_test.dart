@@ -1,6 +1,7 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/feedback_sheet.dart';
 import 'package:app/balsm_app/tokens.dart';
+import 'package:app/balsm_app/widgets/balsm_mark.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,9 +9,10 @@ import 'package:material_ui/material_ui.dart';
 
 /// `feedback.jsx` — the five-mark rating.
 ///
-/// The design is explicit that a lit mark is ONE uniform gold across ribbons
-/// and heads ("no two-tone, no sweep"), which means the brand's five hues must
-/// not show through. It also spells the score out under the row.
+/// A lit mark keeps the brand mark's five hues; only the unlit wash is a flat
+/// ink fill. This deliberately departs from the design, which flattens a lit
+/// mark to one gold — see [_RateMark]'s note. The score line under the row
+/// does follow the design.
 void main() {
   Future<PatientAppState> pump(WidgetTester tester, {bool ar = false}) async {
     final state = PatientAppState();
@@ -45,22 +47,24 @@ void main() {
     expect(find.text(s.strings.feedback.fb_rate_count('0')), findsNothing);
     expect(find.textContaining('of 5'), findsNothing);
     // All five marks wear the flat ink wash.
-    expect(markFilters(tester).length, greaterThanOrEqualTo(5));
+    const ink = ColorFilter.mode(T.ink200, BlendMode.srcIn);
+    expect(markFilters(tester).where((f) => f == ink).length, 5);
   });
 
-  testWidgets('picking a score lights that many marks in one uniform gold', (tester) async {
+  testWidgets('picking a score leaves that many marks in full colour', (tester) async {
     await pump(tester);
+    // All five start unlit, so every mark is wrapped in the ink filter.
+    expect(markFilters(tester).length, 5);
     await tester.tap(find.byType(ColorFiltered).at(2)); // the third mark
     await tester.pumpAndSettle();
 
-    const gold = ColorFilter.mode(Color(0xFFF0AE1A), BlendMode.srcIn);
+    // A lit mark drops the filter entirely and paints the brand's five hues;
+    // only the two still-unlit ones keep the flat ink wash.
     const ink = ColorFilter.mode(T.ink200, BlendMode.srcIn);
-    final filters = markFilters(tester).take(5).toList();
-    expect(filters.where((f) => f == gold).length, 3, reason: 'three lit');
-    expect(filters.where((f) => f == ink).length, 2, reason: 'two unlit');
-    // The brand hues must not survive on a lit mark — a plain BalsmFlower with
-    // no filter would mean the gradient is showing through.
-    expect(filters.every((f) => f == gold || f == ink), isTrue);
+    final filters = markFilters(tester).toList();
+    expect(filters.length, 2, reason: 'three lit marks are unfiltered');
+    expect(filters.every((f) => f == ink), isTrue, reason: 'the unlit two stay flat ink');
+    expect(find.byType(BalsmFlower), findsNWidgets(5), reason: 'still five marks');
   });
 
   testWidgets('the score is spelled out under the row', (tester) async {

@@ -362,7 +362,7 @@ twenty-six.
 | File | What moved |
 |---|---|
 | `app.css` | `.hero-card .petal-wm` drops `brightness(0) invert(1)` for the real `icon-mono-white.svg` |
-| `feedback.jsx` | lit rating marks become one uniform gold; a mono "N of 5" line; `aria-pressed` |
+| `feedback.jsx` | a mono "N of 5" line and `aria-pressed` ported; the uniform-gold lit mark **deliberately not followed** — see below |
 | `appointments.jsx` | same watermark swap — **no Dart target**, see below |
 | `report.jsx` | already matched; only the baseline was stale |
 
@@ -413,3 +413,16 @@ cannot answer "is what I fetched still what the project holds" — so a stale
 Both times this went wrong it reported clean. Until the script can compare
 against the project itself, a sweep MUST start with a fresh bulk export or a
 `get_file` pass, and a clean `status` on an old cache means nothing.
+
+### `feedback.jsx`'s gold rating mark is deliberately not followed
+
+The design flattens a lit rating mark to one uniform gold (#F0AE1A, "no
+two-tone, no sweep"). It was ported that way, then reverted on request: the
+rating row is the one place the five-hue mark earns its keep, and flattening it
+to gold trades the brand for a star metaphor the mark is not.
+
+What IS followed: the unlit flat ink wash, the mono "N of 5" line under the
+row, and the per-mark accessible label the design added `aria-pressed` for.
+
+A standing divergence, not an oversight. `_RateMark` carries the note and the
+design's gold value, so reconciling it later is a one-line change.

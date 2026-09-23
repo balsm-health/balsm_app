@@ -247,12 +247,14 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: c, width: 1.5));
 }
 
-/// The lit rating gold. One uniform fill across ribbons AND heads — the design
-/// is explicit that this is "no two-tone, no sweep", so the brand mark's five
-/// hues do not show through a lit petal.
-const _kRateGold = Color(0xFFF0AE1A);
-
-/// One tappable mark — uniform gold when lit, flat ink when not.
+/// One tappable mark — the brand mark in full colour when lit, flat ink when
+/// not.
+///
+/// `feedback.jsx` paints a lit mark one uniform gold (#F0AE1A, "no two-tone,
+/// no sweep"). Deliberately NOT followed: the rating is the one place the
+/// five-hue mark earns its keep, and flattening it to gold threw the brand
+/// away for a star metaphor the mark is not. Only the unlit wash follows the
+/// design. If this is ever reconciled, the gold is the design's value.
 class _RateMark extends StatelessWidget {
   const _RateMark({required this.lit, required this.onTap, required this.label});
   final bool lit;
@@ -272,10 +274,14 @@ class _RateMark extends StatelessWidget {
             height: 46,
             child: Padding(
               padding: const EdgeInsets.all(2),
-              child: ColorFiltered(
-                colorFilter: ColorFilter.mode(lit ? _kRateGold : T.ink200, BlendMode.srcIn),
-                child: const BalsmFlower(size: 42),
-              ),
+              child: lit
+                  ? const BalsmFlower(size: 42)
+                  : const ColorFiltered(
+                      // `.fb-petal-off` — one flat ink wash, not a
+                      // desaturation of the five brand hues.
+                      colorFilter: ColorFilter.mode(T.ink200, BlendMode.srcIn),
+                      child: BalsmFlower(size: 42),
+                    ),
             ),
           ),
         ),
