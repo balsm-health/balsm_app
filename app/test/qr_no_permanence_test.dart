@@ -20,6 +20,18 @@ void main() {
     }
   });
 
+  test('the code is signed: name and handle sit together under it', () {
+    final s = File('lib/balsm_app/screens/personal_details.dart').readAsStringSync();
+    // One block, used by the card AND the pre-mint view — the card only
+    // exists once a token is minted, so a lone call site means the sheet
+    // identifies nobody until you generate.
+    expect(RegExp(r'\.\.\._identity\(\)').allMatches(s).length, 2,
+        reason: 'identity must render under the QR and before minting');
+    // The handle reads as a handle, not as the copyable URL.
+    expect(s, contains("Text('@\$handle'"));
+    expect(s, isNot(contains("balsm.health/@\$handle")), reason: 'the URL belongs to the link row');
+  });
+
   test('every offered TTL is bounded', () {
     final s = File('lib/balsm_app/screens/personal_details.dart').readAsStringSync();
     final block = RegExp(r'_emergencyTtlOptions = <[^>]*>\[(.*?)\];', dotAll: true).firstMatch(s);

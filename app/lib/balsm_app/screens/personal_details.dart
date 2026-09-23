@@ -1350,10 +1350,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             ),
           ),
           const SizedBox(height: 18),
-          if (widget.name.isNotEmpty)
-            Text(widget.name,
-                textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
-          _handleLine(top: 3),
+          ..._identity(),
           const SizedBox(height: 8),
           // Expiry chip. A token minted before the permanent option was
           // withdrawn still reports `isPermanent`; it gets no chip rather than
@@ -1459,29 +1456,36 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     ];
   }
 
-  /// The public profile URL (design `qrshare.jsx`), always LTR. Hidden until a
-  /// handle is claimed.
+  /// Whose code this is: the name, then the handle as `@handle` — the pair
+  /// `qrshare.jsx` puts under the code, not the full URL (the copyable link
+  /// already has its own row).
   ///
-  /// Rendered in the card AND above the pre-mint picker: the card only exists
-  /// once a token has been minted, so before that the sheet showed no handle
-  /// at all — which is the one thing a person opening "my QR code" is looking
-  /// for.
-  Widget _handleLine({double top = 0}) {
+  /// Rendered under the QR AND above the pre-mint picker, because the card
+  /// only exists once a token has been minted — before that the sheet
+  /// identified nobody, which is the one thing a person opening "my QR code"
+  /// is looking for.
+  List<Widget> _identity() {
     final handle = ref.watch(accountSummaryProvider).valueOrNull?.handle;
-    if (handle == null || handle.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: EdgeInsets.only(top: top, bottom: 2),
-      child: Text('balsm.health/@$handle',
-          textDirection: TextDirection.ltr,
-          textAlign: TextAlign.center,
-          style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: s.accent.main)),
-    );
+    return [
+      if (widget.name.isNotEmpty)
+        Text(widget.name,
+            textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+      // The handle is Latin either way, so it stays LTR in Arabic.
+      if (handle != null && handle.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Text('@$handle',
+              textDirection: TextDirection.ltr,
+              textAlign: TextAlign.center,
+              style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: s.accent.main)),
+        ),
+    ];
   }
 
   /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
-        _handleLine(),
-        const SizedBox(height: 14),
+        ..._identity(),
+        const SizedBox(height: 18),
         Text(s.strings.emergency.eqr_valid_for.toUpperCase(),
             style: Typo.meta(ar: ar)
                 .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
