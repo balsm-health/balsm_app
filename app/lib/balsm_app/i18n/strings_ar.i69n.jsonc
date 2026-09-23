@@ -213,7 +213,17 @@
     "sd_u_red": "أحمر/وردي",
     "sd_u_brown": "بني",
     "sym_urine": "البول",
-    "sym_stool": "البراز"
+    "sym_stool": "البراز",
+    "st_mood": "المزاج",
+    "st_bp": "الضغط",
+    "st_glucose": "السكر",
+    "st_heart_rate": "النبض",
+    "st_temperature": "الحرارة",
+    "st_weight": "الوزن",
+    "st_spo2": "الأكسجين",
+    "st_pain": "الألم",
+    "st_symptoms": "الأعراض",
+    "st_meds": "الأدوية"
   },
   "common": {
     "continue_": "متابعة",
@@ -283,7 +293,9 @@
     "offline_banner": "لا يوجد اتصال — نعرض بيانات محفوظة",
     "offline_stale_places": "قد تكون هذه الأماكن غير محدّثة",
     "offline_sessions": "يحتاج سجل الدخول إلى اتصال",
-    "offline_write": "لا يوجد اتصال. هذا يحتاج إلى إنترنت."
+    "offline_write": "لا يوجد اتصال. هذا يحتاج إلى إنترنت.",
+    "undo": "تراجع",
+    "offline_badge": "دون اتصال"
   },
   "emergency": {
     "em_label": "البريد الإلكتروني",
@@ -791,7 +803,12 @@
     "store_done": "تم",
     "store_remove_q": "إيقاف النسخ الاحتياطي؟",
     "store_remove_help(String target)": "ستُحذف بياناتك من $target وتبقى على جهازك فقط.",
-    "store_remove_cta": "إيقاف النسخ الاحتياطي"
+    "store_remove_cta": "إيقاف النسخ الاحتياطي",
+    "store_synced(String when)": "محفوظ · تمت المزامنة $when",
+    "store_sync_now": "الآن",
+    "store_sync_m(String n)": "قبل $n د",
+    "store_sync_h(String n)": "قبل $n س",
+    "store_sync_d(String n)": "قبل $n ي"
   },
   "map_packs": {
     "title": "الخرائط دون اتصال",

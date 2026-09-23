@@ -203,6 +203,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               child: Row(children: [
                 Expanded(
                     child: Text(s.strings.care.map_nearby, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+                // "Offline" badge — the design puts the state in the app bar,
+                // not only in the notice below it.
+                if (ref.watch(carePinsProvider).valueOrNull?.stale ?? false) ...[
+                  Pill(
+                    s.strings.common.offline_badge,
+                    kind: PillKind.neutral,
+                    dot: false,
+                    icon: LucideIcons.cloudOff,
+                    ar: s.rtl,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 _softButton(
                   icon: _mapView ? LucideIcons.list : LucideIcons.map,
                   label: _mapView ? s.strings.care.map_list : s.strings.care.map_map,
@@ -295,17 +307,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         // not whether these particular rows are old.
         if (ref.watch(carePinsProvider).valueOrNull?.stale ?? false)
           Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
-            child: Row(children: [
-              const Icon(LucideIcons.clock, size: 13, color: T.ink500),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  s.strings.common.offline_stale_places,
-                  style: const TextStyle(fontSize: 12, color: T.ink500),
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+            // The design gives this its own ink-50 card rather than a bare
+            // line, so the cached state reads as deliberate, not as an error.
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rLg)),
+              child: Row(children: [
+                const Icon(LucideIcons.database, size: 16, color: T.fg3),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    s.strings.common.offline_stale_places,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2),
+                  ),
                 ),
-              ),
-            ]),
+              ]),
+            ),
           ),
         // The map itself stays full-bleed (real map UX never letterboxes); only
         // the list view — a column of cards — gets the same width cap as the

@@ -213,7 +213,17 @@
     "sd_u_red": "Red/pink",
     "sd_u_brown": "Brown",
     "sym_urine": "Urine",
-    "sym_stool": "Stool"
+    "sym_stool": "Stool",
+    "st_mood": "Mood",
+    "st_bp": "BP",
+    "st_glucose": "Glucose",
+    "st_heart_rate": "Pulse",
+    "st_temperature": "Temp",
+    "st_weight": "Weight",
+    "st_spo2": "Oxygen",
+    "st_pain": "Pain",
+    "st_symptoms": "Symptoms",
+    "st_meds": "Meds"
   },
   "common": {
     "continue_": "Continue",
@@ -283,7 +293,9 @@
     "offline_banner": "You're offline — showing saved data",
     "offline_stale_places": "These places may be out of date",
     "offline_sessions": "Sign-in activity needs a connection",
-    "offline_write": "You're offline. This needs a connection."
+    "offline_write": "You're offline. This needs a connection.",
+    "undo": "Undo",
+    "offline_badge": "Offline"
   },
   "emergency": {
     "em_label": "Email address",
@@ -791,7 +803,12 @@
     "store_done": "Done",
     "store_remove_q": "Remove cloud backup?",
     "store_remove_help(String target)": "Your data will be removed from $target and kept on this device only.",
-    "store_remove_cta": "Remove cloud backup"
+    "store_remove_cta": "Remove cloud backup",
+    "store_synced(String when)": "Backed up · synced $when",
+    "store_sync_now": "just now",
+    "store_sync_m(String n)": "${n}m ago",
+    "store_sync_h(String n)": "${n}h ago",
+    "store_sync_d(String n)": "${n}d ago"
   },
   "map_packs": {
     "title": "Offline maps",

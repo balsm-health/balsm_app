@@ -179,3 +179,105 @@ class CheckInHistoryRow extends StatelessWidget {
     return Pressable(onTap: onTap, scale: 0.99, child: row);
   }
 }
+
+/// Short caption per check-in step, for [CheckInSteps].
+String checkInStepLabel(PatientAppState s, String id) {
+  final c = s.strings.checkin;
+  return switch (id) {
+    'mood' => c.st_mood,
+    'bp' => c.st_bp,
+    'glucose' => c.st_glucose,
+    'heartRate' => c.st_heart_rate,
+    'temperature' => c.st_temperature,
+    'weight' => c.st_weight,
+    'spo2' => c.st_spo2,
+    'pain' => c.st_pain,
+    'symptoms' => c.st_symptoms,
+    kMedsCheckInStepId => c.st_meds,
+    _ => id,
+  };
+}
+
+/// The design-system Steps row (`UX Enhancement Screens.html`, "Full check-in
+/// — DS Steps"): a numbered disc per step joined by a rule, the done ones
+/// ticked, the current one filled and captioned in full ink.
+///
+/// Replaces the single progress bar the flow used to carry — the same progress
+/// language the dispense and onboarding flows use, so a patient reads one
+/// pattern everywhere.
+class CheckInSteps extends StatelessWidget {
+  const CheckInSteps({super.key, required this.s, required this.steps, required this.current});
+
+  final PatientAppState s;
+  final List<String> steps;
+  final int current;
+
+  /// A long check-in would squeeze the captions to nothing, so past a point
+  /// the row keeps the discs and drops the words.
+  static const _captionsUpTo = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = s.accent.main;
+    final showCaptions = steps.length <= _captionsUpTo;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (i, id) in steps.indexed) ...[
+          if (i > 0)
+            Expanded(
+              child: Padding(
+                // Sits against the discs, not the captions under them.
+                padding: EdgeInsets.only(top: 12, bottom: showCaptions ? 20 : 0),
+                child: Container(height: 2, color: i <= current ? accent : T.ink100),
+              ),
+            ),
+          // Both the step and the rule are `flex: 1` in the design, so discs
+          // land at even intervals whatever their captions measure.
+          Expanded(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: i <= current ? accent : T.ink100,
+                  shape: BoxShape.circle,
+                ),
+                child: i < current
+                    ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
+                    : Text(
+                        '${i + 1}',
+                        textDirection: TextDirection.ltr,
+                        style: Typo.num(
+                          size: 12,
+                          weight: FontWeight.w700,
+                          color: i <= current ? Colors.white : T.fg4,
+                        ),
+                      ),
+              ),
+              if (showCaptions) ...[
+                const SizedBox(height: 6),
+                Text(
+                  checkInStepLabel(s, id),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(
+                    fontSize: 10,
+                    fontWeight: i == current ? FontWeight.w700 : FontWeight.w600,
+                    color: i == current
+                        ? T.fg1
+                        : i < current
+                            ? T.fg3
+                            : T.fg4,
+                  ),
+                ),
+              ],
+            ]),
+          ),
+        ],
+      ],
+    );
+  }
+}

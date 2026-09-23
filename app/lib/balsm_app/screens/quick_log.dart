@@ -175,8 +175,9 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       );
     }
 
+    final checkInId = CheckInId.uuid();
     await ref.read(saveCheckInUseCaseProvider).call(CheckIn(
-          id: CheckInId.uuid(),
+          id: checkInId,
           healthProfileId: profileId,
           recordedAt: capture.when ?? DateTime.now(),
           mood: capture.mood,
@@ -194,10 +195,45 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       saving = false;
       savedValue = capture.summary;
       savedNote = capture.note;
+      _undoCheckInId = checkInId;
+      _undoPhotoRecordId = photoRecordId;
     });
-    _closeTimer = Timer(const Duration(milliseconds: 1600), () {
+    // The design holds the sheet open for the undo window rather than closing
+    // on the old 1.6s confirmation beat.
+    _closeTimer = Timer(_undoWindow, () {
       if (mounted) Navigator.pop(context);
     });
+  }
+
+  /// `UX Enhancement Screens.html` — "Quick-log · undo after save": a short
+  /// window to catch a mis-tap, instead of a confirm step on every entry.
+  static const _undoWindow = Duration(seconds: 4);
+
+  /// The entry the undo affordance would remove; null once the window closes.
+  CheckInId? _undoCheckInId;
+  String? _undoPhotoRecordId;
+
+  /// Deletes the just-saved entry and closes. The photo record goes first —
+  /// same ordering rule as [DeleteRecordDocumentUseCase]: never leave a
+  /// readable blob with no row pointing at it.
+  Future<void> _undo() async {
+    final id = _undoCheckInId;
+    if (id == null) return;
+    _closeTimer?.cancel();
+    setState(() => _undoCheckInId = null);
+
+    final userId = ref.read(currentUserIdProvider);
+    final photoId = _undoPhotoRecordId;
+    if (photoId != null && userId != null) {
+      final records = ref.read(recordsDataSourceProvider);
+      final doc = (await records.findAll()).where((r) => r.id.value == photoId).firstOrNull;
+      if (doc != null) {
+        await ref.read(deleteRecordDocumentUseCaseProvider).call(doc, scope: userId);
+      }
+    }
+    await ref.read(checkInsDataSourceProvider).delete(id);
+
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -209,43 +245,53 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
         decoration:
             const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: Column(children: [
-              if (!showBack) const Padding(padding: EdgeInsets.only(bottom: 10), child: SheetGrab()),
-              Container(
-                padding: const EdgeInsets.only(bottom: 10),
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
-                child: Row(children: [
-                  if (showBack) ...[
-                    RoundBtn(
-                        icon: backArrow(context),
-                        ghost: true,
-                        iconSize: 18,
-                        onTap: () => setState(() {
-                              active = null;
-                              activeSymptom = null;
-                            })),
-                    const SizedBox(width: 8),
-                  ],
-                  Expanded(
-                    child: Text(
-                      _headerTitle(),
-                      style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
+        child: Stack(children: [
+          Column(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: Column(children: [
+                if (!showBack) const Padding(padding: EdgeInsets.only(bottom: 10), child: SheetGrab()),
+                Container(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
+                  child: Row(children: [
+                    if (showBack) ...[
+                      RoundBtn(
+                          icon: backArrow(context),
+                          ghost: true,
+                          iconSize: 18,
+                          onTap: () => setState(() {
+                                active = null;
+                                activeSymptom = null;
+                              })),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        _headerTitle(),
+                        style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
+                      ),
                     ),
-                  ),
-                  RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
-                ]),
-              ),
-            ]),
-          ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context)),
-              child: RiseIn(key: ValueKey('${active}_${activeSymptom}_${savedValue != null}'), child: _body()),
+                    RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+                  ]),
+                ),
+              ]),
             ),
-          ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context)),
+                child: RiseIn(key: ValueKey('${active}_${activeSymptom}_${savedValue != null}'), child: _body()),
+              ),
+            ),
+          ]),
+          // "Saved · Undo" — only while the window is open.
+          if (_undoCheckInId != null)
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: sheetBottomInset(context, base: 20),
+              child: _UndoToast(s: s, onUndo: _undo),
+            ),
         ]),
       ),
     );
@@ -577,5 +623,43 @@ class _SavedFlash extends StatelessWidget {
           ]),
         ),
     ]);
+  }
+}
+
+/// `UX Enhancement Screens.html` — the dark "Saved · Undo" toast that sits
+/// over the confirmation for the length of the undo window.
+class _UndoToast extends StatelessWidget {
+  const _UndoToast({required this.s, required this.onUndo});
+  final PatientAppState s;
+  final VoidCallback onUndo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: T.wordmark,
+      borderRadius: BorderRadius.circular(T.rLg),
+      elevation: 8,
+      shadowColor: const Color(0x4714202B),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 16, end: 8, top: 4, bottom: 4),
+        child: Row(children: [
+          const Icon(LucideIcons.circleCheck, size: 18, color: T.hueMint),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              s.strings.checkin.ql_saved,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: Colors.white),
+            ),
+          ),
+          TextButton(
+            onPressed: onUndo,
+            child: Text(
+              s.strings.common.undo,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.hueBlue),
+            ),
+          ),
+        ]),
+      ),
+    );
   }
 }

@@ -576,6 +576,16 @@ class CheckinStrings_ar extends CheckinStrings {
   String get sd_u_brown => "بني";
   String get sym_urine => "البول";
   String get sym_stool => "البراز";
+  String get st_mood => "المزاج";
+  String get st_bp => "الضغط";
+  String get st_glucose => "السكر";
+  String get st_heart_rate => "النبض";
+  String get st_temperature => "الحرارة";
+  String get st_weight => "الوزن";
+  String get st_spo2 => "الأكسجين";
+  String get st_pain => "الألم";
+  String get st_symptoms => "الأعراض";
+  String get st_meds => "الأدوية";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -769,6 +779,26 @@ class CheckinStrings_ar extends CheckinStrings {
         return sym_urine;
       case 'sym_stool':
         return sym_stool;
+      case 'st_mood':
+        return st_mood;
+      case 'st_bp':
+        return st_bp;
+      case 'st_glucose':
+        return st_glucose;
+      case 'st_heart_rate':
+        return st_heart_rate;
+      case 'st_temperature':
+        return st_temperature;
+      case 'st_weight':
+        return st_weight;
+      case 'st_spo2':
+        return st_spo2;
+      case 'st_pain':
+        return st_pain;
+      case 'st_symptoms':
+        return st_symptoms;
+      case 'st_meds':
+        return st_meds;
       default:
         return super[key];
     }
@@ -847,6 +877,8 @@ class CommonStrings_ar extends CommonStrings {
   String get offline_stale_places => "قد تكون هذه الأماكن غير محدّثة";
   String get offline_sessions => "يحتاج سجل الدخول إلى اتصال";
   String get offline_write => "لا يوجد اتصال. هذا يحتاج إلى إنترنت.";
+  String get undo => "تراجع";
+  String get offline_badge => "دون اتصال";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -990,6 +1022,10 @@ class CommonStrings_ar extends CommonStrings {
         return offline_sessions;
       case 'offline_write':
         return offline_write;
+      case 'undo':
+        return undo;
+      case 'offline_badge':
+        return offline_badge;
       default:
         return super[key];
     }
@@ -2625,6 +2661,11 @@ class StorageStrings_ar extends StorageStrings {
   String store_remove_help(String target) =>
       "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
   String get store_remove_cta => "إيقاف النسخ الاحتياطي";
+  String store_synced(String when) => "محفوظ · تمت المزامنة $when";
+  String get store_sync_now => "الآن";
+  String store_sync_m(String n) => "قبل $n د";
+  String store_sync_h(String n) => "قبل $n س";
+  String store_sync_d(String n) => "قبل $n ي";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2696,6 +2737,16 @@ class StorageStrings_ar extends StorageStrings {
         return store_remove_help;
       case 'store_remove_cta':
         return store_remove_cta;
+      case 'store_synced':
+        return store_synced;
+      case 'store_sync_now':
+        return store_sync_now;
+      case 'store_sync_m':
+        return store_sync_m;
+      case 'store_sync_h':
+        return store_sync_h;
+      case 'store_sync_d':
+        return store_sync_d;
       default:
         return super[key];
     }

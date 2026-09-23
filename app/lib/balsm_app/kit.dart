@@ -342,7 +342,13 @@ enum PillKind { success, info, warn, danger, violet, expiring, emerald, neutral,
 /// Status pill (.b-badge) with leading dot.
 class Pill extends StatelessWidget {
   const Pill(this.label,
-      {super.key, this.kind = PillKind.neutral, this.dot = true, this.ar = false, this.padding, this.small = false});
+      {super.key,
+      this.kind = PillKind.neutral,
+      this.dot = true,
+      this.ar = false,
+      this.padding,
+      this.small = false,
+      this.icon});
   final String label;
   final PillKind kind;
   final bool dot;
@@ -351,6 +357,10 @@ class Pill extends StatelessWidget {
 
   /// `.b-badge--sm` — tighter padding and 11px text for dense rows.
   final bool small;
+
+  /// Optional glyph before the label, in place of the state dot — the DS
+  /// badge takes either, never both.
+  final IconData? icon;
 
   ({Color bg, Color fg, Color dot, Color? border}) get _c => switch (kind) {
         PillKind.success => (bg: T.hueMint50, fg: const Color(0xFF1F6A36), dot: T.hueMint, border: null),
@@ -368,8 +378,9 @@ class Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = _c;
-    // The DS defines no dot for `--brand`; it reads as a solid tag, not a state.
-    final showDot = dot && kind != PillKind.brand;
+    // The DS defines no dot for `--brand`; it reads as a solid tag, not a
+    // state. An icon replaces the dot rather than joining it.
+    final showDot = dot && icon == null && kind != PillKind.brand;
     return Container(
       padding: padding ??
           (small
@@ -384,6 +395,10 @@ class Pill extends StatelessWidget {
         if (showDot) ...[
           Container(width: 7, height: 7, decoration: BoxDecoration(color: c.dot, shape: BoxShape.circle)),
           SizedBox(width: small ? 4 : 6),
+        ],
+        if (icon != null) ...[
+          Icon(icon, size: small ? 11 : 12, color: c.fg),
+          SizedBox(width: small ? 4 : 5),
         ],
         // See PButton: a status label that cannot shrink overflows its parent
         // rather than the pill simply getting narrower.

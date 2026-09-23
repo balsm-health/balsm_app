@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
@@ -30,14 +32,14 @@ const _migrateSteps = [
   'storage.store_step_verify',
 ];
 
-class _StorageSyncSheet extends StatefulWidget {
+class _StorageSyncSheet extends ConsumerStatefulWidget {
   const _StorageSyncSheet({required this.s});
   final PatientAppState s;
   @override
-  State<_StorageSyncSheet> createState() => _StorageSyncSheetState();
+  ConsumerState<_StorageSyncSheet> createState() => _StorageSyncSheetState();
 }
 
-class _StorageSyncSheetState extends State<_StorageSyncSheet> {
+class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
   String phase = 'idle'; // idle | connecting | migrating | done | confirm_disconnect
   StorageTarget? target;
   int progress = 0;
@@ -151,6 +153,17 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
     ]);
   }
 
+  /// Localized "just now / 2m / 3h / 4d", matching core's `SyncStatusBadge`
+  /// bands but through the i69n bundle rather than hardcoded English.
+  String _syncedAgo(DateTime t) {
+    final st = s.strings.storage;
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return st.store_sync_now;
+    if (d.inMinutes < 60) return st.store_sync_m('${d.inMinutes}');
+    if (d.inHours < 24) return st.store_sync_h('${d.inHours}');
+    return st.store_sync_d('${d.inDays}');
+  }
+
   Widget _providerCard(StorageTarget p) {
     final cfg = storageCfg(p);
     final isActive = active == p;
@@ -212,6 +225,25 @@ class _StorageSyncSheetState extends State<_StorageSyncSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
                   ],
                 ]),
+                // "Backed up · synced 2m ago" (UX Enhancement Screens.html,
+                // "Storage — sync status"). Shown only once a sync has really
+                // happened: the timestamp is the whole point, so an invented
+                // one would be worse than none.
+                if (isActive)
+                  if (ref.watch(syncStatusProvider).lastSyncedAt case final syncedAt?) ...[
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Icon(LucideIcons.circleCheck, size: 12, color: cfg.color),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          s.strings.storage.store_synced(_syncedAgo(syncedAt)),
+                          style: Typo.bodySm(ar: ar)
+                              .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: cfg.color),
+                        ),
+                      ),
+                    ]),
+                  ],
                 const SizedBox(height: 3),
                 Row(children: [
                   if (isActive) ...[

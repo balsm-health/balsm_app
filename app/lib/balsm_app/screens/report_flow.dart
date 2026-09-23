@@ -13,9 +13,10 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../vault/vault_blob.dart';
+import 'checkin_shared.dart';
 import 'metric_log.dart';
 
-export 'checkin_shared.dart' show MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
+export 'checkin_shared.dart' show CheckInSteps, MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
 
 /// Opens the full daily check-in flow (report.jsx ReportFlow).
 ///
@@ -277,7 +278,6 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     final profileId = ref.watch(currentProfileIdProvider);
     final canFinish = profileId != null && !saving;
     final enabled = isLast ? (canFinish && canNext) : canNext;
-    final pct = _steps.isEmpty ? 1.0 : (step + 1) / _steps.length;
 
     return Scaffold(
       backgroundColor: T.cream50,
@@ -290,7 +290,12 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
             child: Row(children: [
               RoundBtn(icon: step == 0 ? LucideIcons.x : backArrow(context), ghost: true, onTap: back),
               const SizedBox(width: 12),
-              Expanded(child: LinearProgress(value: pct, color: s.accent.main)),
+              Expanded(
+                child: Text(s.strings.checkin.full_checkin,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.lg)),
+              ),
               const SizedBox(width: 12),
               // `.meta.num { min-width: 38px }` — a floor, not a cap. A fixed
               // width wrapped "1 of 3" onto two lines.
@@ -303,6 +308,12 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                       style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
             ]),
           ),
+          // The DS Steps row replaces the old single progress bar.
+          if (_steps.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+              child: CheckInSteps(s: s, steps: _steps, current: step),
+            ),
           Expanded(
             child: IndexedStack(
               index: _steps.isEmpty ? 0 : step,

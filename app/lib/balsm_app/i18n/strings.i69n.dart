@@ -569,6 +569,16 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get sd_u_brown => "Brown";
   String get sym_urine => "Urine";
   String get sym_stool => "Stool";
+  String get st_mood => "Mood";
+  String get st_bp => "BP";
+  String get st_glucose => "Glucose";
+  String get st_heart_rate => "Pulse";
+  String get st_temperature => "Temp";
+  String get st_weight => "Weight";
+  String get st_spo2 => "Oxygen";
+  String get st_pain => "Pain";
+  String get st_symptoms => "Symptoms";
+  String get st_meds => "Meds";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -762,6 +772,26 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return sym_urine;
       case 'sym_stool':
         return sym_stool;
+      case 'st_mood':
+        return st_mood;
+      case 'st_bp':
+        return st_bp;
+      case 'st_glucose':
+        return st_glucose;
+      case 'st_heart_rate':
+        return st_heart_rate;
+      case 'st_temperature':
+        return st_temperature;
+      case 'st_weight':
+        return st_weight;
+      case 'st_spo2':
+        return st_spo2;
+      case 'st_pain':
+        return st_pain;
+      case 'st_symptoms':
+        return st_symptoms;
+      case 'st_meds':
+        return st_meds;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -842,6 +872,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get offline_stale_places => "These places may be out of date";
   String get offline_sessions => "Sign-in activity needs a connection";
   String get offline_write => "You're offline. This needs a connection.";
+  String get undo => "Undo";
+  String get offline_badge => "Offline";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -985,6 +1017,10 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return offline_sessions;
       case 'offline_write':
         return offline_write;
+      case 'undo':
+        return undo;
+      case 'offline_badge':
+        return offline_badge;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -2610,6 +2646,11 @@ class StorageStrings implements i69n.I69nMessageBundle {
   String store_remove_help(String target) =>
       "Your data will be removed from $target and kept on this device only.";
   String get store_remove_cta => "Remove cloud backup";
+  String store_synced(String when) => "Backed up · synced $when";
+  String get store_sync_now => "just now";
+  String store_sync_m(String n) => "${n}m ago";
+  String store_sync_h(String n) => "${n}h ago";
+  String store_sync_d(String n) => "${n}d ago";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2681,6 +2722,16 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_remove_help;
       case 'store_remove_cta':
         return store_remove_cta;
+      case 'store_synced':
+        return store_synced;
+      case 'store_sync_now':
+        return store_sync_now;
+      case 'store_sync_m':
+        return store_sync_m;
+      case 'store_sync_h':
+        return store_sync_h;
+      case 'store_sync_d':
+        return store_sync_d;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
