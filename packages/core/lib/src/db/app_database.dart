@@ -294,6 +294,17 @@ const _phiSchema = <String>[
     last_error TEXT
   )''',
   'CREATE INDEX IF NOT EXISTS idx_sync_outbox_entity ON sync_outbox(entity, id)',
+  // Incremental-pull cursor per (entity, scope). Deliberately in the PHI database
+  // rather than SharedPreferences: the cursor is derived from PHI timestamps and
+  // must be wiped with the rows it describes. A cursor that outlived a local wipe
+  // would make the next pull skip every row the device no longer has.
+  '''
+  CREATE TABLE IF NOT EXISTS sync_cursor (
+    entity TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    value TEXT NOT NULL,
+    PRIMARY KEY (entity, scope)
+  )''',
   '''
   CREATE TABLE IF NOT EXISTS medications (
     id TEXT PRIMARY KEY,

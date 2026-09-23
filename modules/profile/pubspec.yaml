@@ -11,6 +11,8 @@ dependencies:
       ref: master
   flutter:
     sdk: flutter
+  balsm_api:
+    path: ../../packages/balsm_api
   core:
     path: ../../packages/core
   flutter_riverpod: ^2.6.1
