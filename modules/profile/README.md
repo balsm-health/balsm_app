@@ -114,3 +114,16 @@ patient near the ceiling who picks five more gets the ones that fit; refusing th
 whole batch would throw away the work of choosing. One `HealthProfileUpdated`
 per batch, not per row.
 
+`ContactPicker` / `NativeContactPicker` use `FlutterContacts.openExternalPick`,
+not `getContacts`: the OS renders its own list, hands back only the chosen
+contact, and **asks for no permission**. The app never sees the rest of the
+address book, so there is nothing to disclose in a data-safety filing.
+
+Reading the address book directly would need `READ_CONTACTS` /
+`NSContactsUsageDescription` and a Contacts collection disclosure in both
+stores. That is a compliance decision, not a code one — if the product wants
+bulk "Select all", it goes to the compliance owner first.
+
+The platform pickers are single-select (Android's `ACTION_PICK` has no multi
+mode), so the sheet lets the patient pick again to add more.
+

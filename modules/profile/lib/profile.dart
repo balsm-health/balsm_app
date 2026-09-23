@@ -23,6 +23,8 @@ export 'src/application/use_cases/remove_chronic_condition_use_case.dart';
 export 'src/application/use_cases/add_emergency_contact_use_case.dart';
 export 'src/application/use_cases/add_care_provider_use_case.dart';
 export 'src/application/use_cases/import_care_contacts_use_case.dart';
+export 'src/application/ports/contact_picker.dart';
+export 'src/infrastructure/contacts/native_contact_picker.dart';
 export 'src/application/use_cases/update_care_provider_use_case.dart';
 export 'src/application/use_cases/remove_care_provider_use_case.dart';
 
