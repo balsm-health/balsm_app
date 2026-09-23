@@ -78,6 +78,16 @@ class ApiRoutes {
   /// Offline map packs catalogue (basemap + places per governorate).
   static const care_packs = '$_care/packs';
 
+  // ── Care team (the patient's own providers, cloud-mirrored) ───────────────
+  // Distinct from the care directory above: that is Balsm-owned NON-PHI
+  // reference data, this is the patient's own PHI.
+  static const _care_team = '/care-team';
+  static const care_team_providers = '$_care_team/providers';
+
+  /// One provider by id — DELETE tombstones it server-side so the removal
+  /// propagates to the patient's other devices.
+  static String careTeamProvider(String id) => '$care_team_providers/$id';
+
   // ── Platform ──────────────────────────────────────────────────────────────
   /// Host readiness probe. Anonymous, and the only endpoint safe to call
   /// against a server the app is not signed in to — which is what the Dev
