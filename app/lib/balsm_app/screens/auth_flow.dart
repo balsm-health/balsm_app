@@ -124,60 +124,78 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
           child: Column(children: [
             // `.wbody { margin-top: auto }` — lockup + CTAs sit on the cream
             // fade; watercolor fills the space above.
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 0, 28, 40),
-              child: Column(children: [
-                SvgPicture.asset(Assets.brand_logo_vertical, width: 92, height: 92, fit: BoxFit.contain),
-                const SizedBox(height: 22),
-                Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
-                const SizedBox(height: 12),
-                Text(s.strings.onboarding.w_sub,
-                    textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
-                const SizedBox(height: 28),
-                PButton(s.strings.onboarding.w_start(s.gender),
-                    variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
-                  s.setAuthIntent(AuthIntent.signUp);
-                  s.go(AppRoutes.phone);
-                }),
-                const SizedBox(height: 16),
-                if (_googleAvailable) ...[
-                  _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
-                  const SizedBox(height: 14),
-                  _SocialButton(
-                      label: s.strings.onboarding.w_google,
-                      dark: false,
-                      googleG: true,
-                      busy: _busyGoogle,
-                      onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s))),
-                  const SizedBox(height: 14),
-                ] else ...[
-                  _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
-                  const SizedBox(height: 18),
-                ],
-                if (_error != null) ...[
-                  Text(_error!,
-                      textAlign: TextAlign.center,
-                      style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 12),
-                ],
-                GestureDetector(
-                  onTap: () {
-                    s.setAuthIntent(AuthIntent.signIn);
-                    s.go(AppRoutes.phone);
-                  },
-                  child: RichText(
-                      text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
-                    TextSpan(text: '${s.strings.onboarding.w_have} '),
-                    TextSpan(
-                        text: s.strings.onboarding.w_signin,
-                        style: TextStyle(color: s.accent.main, fontWeight: FontWeight.w700)),
-                  ])),
+            // `.wbody { margin-top: auto }` with a safety valve. The design's
+            // 168px lockup assumes the prototype's welcome, which has no social
+            // buttons; Flutter still shows Google on Android/web/macOS, and that
+            // extra block plus an error line overflows a 402x900 viewport.
+            // reverse: true keeps the content bottom-anchored exactly as the
+            // Spacer did, and scrolls instead of clipping when it cannot fit.
+            Expanded(
+              child: SingleChildScrollView(
+                reverse: true,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 36),
+                  child: Column(children: [
+                    SvgPicture.asset(Assets.brand_logo_vertical, width: 168, height: 168, fit: BoxFit.contain),
+                    const SizedBox(height: 26),
+                    Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
+                    const SizedBox(height: 14),
+                    // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
+                    // measure instead of the full 28px-gutter width. 34ch against
+                    // the 16px body face is ~326 logical px.
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 326),
+                      child: Text(s.strings.onboarding.w_sub,
+                          textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+                    ),
+                    const SizedBox(height: 30),
+                    PButton(s.strings.onboarding.w_start(s.gender),
+                        variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
+                      s.setAuthIntent(AuthIntent.signUp);
+                      s.go(AppRoutes.phone);
+                    }),
+                    const SizedBox(height: 16),
+                    if (_googleAvailable) ...[
+                      _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
+                      const SizedBox(height: 14),
+                      _SocialButton(
+                          label: s.strings.onboarding.w_google,
+                          dark: false,
+                          googleG: true,
+                          busy: _busyGoogle,
+                          onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s))),
+                      const SizedBox(height: 14),
+                    ] else
+                      // No social button on this platform, so no separator either —
+                      // an "or" with nothing after it reads as a missing control.
+                      // The design dropped the divider with the buttons (auth.jsx
+                      // WelcomeScreen): email is the only route where social is off.
+                      const SizedBox(height: 18),
+                    if (_error != null) ...[
+                      Text(_error!,
+                          textAlign: TextAlign.center,
+                          style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 12),
+                    ],
+                    GestureDetector(
+                      onTap: () {
+                        s.setAuthIntent(AuthIntent.signIn);
+                        s.go(AppRoutes.phone);
+                      },
+                      child: RichText(
+                          text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
+                        TextSpan(text: '${s.strings.onboarding.w_have} '),
+                        TextSpan(
+                            text: s.strings.onboarding.w_signin,
+                            style: TextStyle(color: s.accent.main, fontWeight: FontWeight.w700)),
+                      ])),
+                    ),
+                  ]),
                 ),
-              ]),
+              ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 26),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   // Labels are translated and wrap to different line counts;
@@ -410,18 +428,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 
   void _showForgotPassword(String email) {
     final s = AppScope.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C14202B),
-      isScrollControlled: true,
-      builder: (_) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _ForgotPasswordSheet(initialEmail: email, s: s),
-        ),
-      ),
+    showAppSheet<void>(
+      context,
+      builder: (_) => _ForgotPasswordSheet(initialEmail: email, s: s),
     );
   }
 
@@ -1446,11 +1455,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
               color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(
-                child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999)))),
+            const Center(child: SheetGrab()),
             const SizedBox(height: 16),
             Text(_step == ResetStep.done ? s.strings.auth.fp_success : s.strings.auth.fp_title,
                 style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),

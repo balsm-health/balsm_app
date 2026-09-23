@@ -15,6 +15,7 @@ import '../shell.dart';
 import 'personal_details.dart';
 import 'ecosystem_sheet.dart';
 import 'feedback_sheet.dart';
+import 'care_team_screen.dart';
 import 'profile_subscreens.dart';
 import 'storage_sheet.dart';
 import '../widgets/badges.dart';
@@ -34,18 +35,12 @@ class ProfileScreen extends ConsumerWidget {
     // Reflects the active backup target (StorageTarget).
     final stCfg = storageCfg(s.storageProvider);
     // Design order (home.jsx ProfileScreen): personal → conditions → care →
-    // emergency → notif → privacy → feedback → ecosystem → help.
-    // Appointments stays as a Flutter-only extra (design never opens that
-    // screen from profile). Governance stays in its own card below.
+    // emergency → notif → privacy → feedback → ecosystem → help. Governance
+    // (sessions / status / deletion) stays in its own card below.
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
       (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
-      // Flutter-only row. The design defines an AppointmentsScreen but never
-      // navigates to it (app.jsx calls it a sub-screen "reached from
-      // Home/Profile", yet nothing links there), so the app surfaces it — next
-      // to Care team, which schedules the visits. Every design row keeps its
-      // relative order.
       (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'profile.p_notif', null, false),
       (
@@ -595,74 +590,52 @@ class _ConditionChips extends ConsumerWidget {
 // ── Language sheet ───────────────────────────────────────────
 void _showLanguageSheet(BuildContext context) {
   final s = AppScope.of(context);
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C14202B),
-    builder: (ctx) => Directionality(
-      textDirection: s.dir,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _SheetShell(title: s.strings.settings.choose_lang, children: [
-            ...LanguageCode.supported.indexed.map((e) => _SelectRow(
-                  label: e.$2.nativeName,
-                  sub: e.$2.name(kCatalog),
-                  code: e.$2.value.toUpperCase(),
-                  selected: e.$2 == s.lang,
-                  last: e.$1 == LanguageCode.supported.length - 1,
-                  badge: e.$2.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
-                  badgeOk: e.$2.isFullySupported,
-                  enabled: e.$2.isFullySupported,
-                  onTap: e.$2.isFullySupported
-                      ? () {
-                          s.setLang(e.$2);
-                          Navigator.pop(ctx);
-                        }
-                      : null,
-                )),
-          ]),
-        ),
-      ),
-    ),
+  showAppSheet<void>(
+    context,
+    textDirection: s.dir,
+    builder: (ctx) => _SheetShell(title: s.strings.settings.choose_lang, children: [
+      ...LanguageCode.supported.indexed.map((e) => _SelectRow(
+            label: e.$2.nativeName,
+            sub: e.$2.name(kCatalog),
+            code: e.$2.value.toUpperCase(),
+            selected: e.$2 == s.lang,
+            last: e.$1 == LanguageCode.supported.length - 1,
+            badge: e.$2.isFullySupported ? s.strings.settings.lang_full : s.strings.settings.lang_beta,
+            badgeOk: e.$2.isFullySupported,
+            enabled: e.$2.isFullySupported,
+            onTap: e.$2.isFullySupported
+                ? () {
+                    s.setLang(e.$2);
+                    Navigator.pop(ctx);
+                  }
+                : null,
+          )),
+    ]),
   );
 }
 
 void _showCountrySheet(BuildContext context) {
   final s = AppScope.of(context);
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C14202B),
-    builder: (ctx) => Directionality(
-      textDirection: s.dir,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _SheetShell(
-              title: s.strings.settings.choose_country,
-              subtitle: s.strings.settings.travel_help,
-              children: [
-                ...CountryCode.known.indexed.map((e) => _SelectRow(
-                      label: e.$2.name(kCatalog, locale: s.lang.value),
-                      sub: '${e.$2.dialCode}   ${s.strings.emergency.emergency} ${e.$2.emergencyNumber}',
-                      code: e.$2.value.toUpperCase(),
-                      codeMono: true,
-                      selected: e.$2 == s.country,
-                      last: e.$1 == CountryCode.known.length - 1,
-                      badge: e.$2 == kHomeCountry ? s.strings.settings.home_country : null,
-                      badgeOk: true,
-                      onTap: () {
-                        s.setCountry(e.$2);
-                        Navigator.pop(ctx);
-                      },
-                    )),
-              ]),
-        ),
-      ),
-    ),
+  showAppSheet<void>(
+    context,
+    textDirection: s.dir,
+    builder: (ctx) =>
+        _SheetShell(title: s.strings.settings.choose_country, subtitle: s.strings.settings.travel_help, children: [
+      ...CountryCode.known.indexed.map((e) => _SelectRow(
+            label: e.$2.name(kCatalog, locale: s.lang.value),
+            sub: '${e.$2.dialCode}   ${s.strings.emergency.emergency} ${e.$2.emergencyNumber}',
+            code: e.$2.value.toUpperCase(),
+            codeMono: true,
+            selected: e.$2 == s.country,
+            last: e.$1 == CountryCode.known.length - 1,
+            badge: e.$2 == kHomeCountry ? s.strings.settings.home_country : null,
+            badgeOk: true,
+            onTap: () {
+              s.setCountry(e.$2);
+              Navigator.pop(ctx);
+            },
+          )),
+    ]),
   );
 }
 
@@ -681,8 +654,7 @@ class _SheetShell extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 38),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(
-            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SheetGrab(),
         const SizedBox(height: 12),
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),

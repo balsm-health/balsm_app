@@ -65,42 +65,22 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
 
   Future<void> _openDoseActions(TodayDose dose) async {
     final s = AppScope.of(context);
-    final outcome = await showModalBottomSheet<DoseOutcome>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final outcome = await showAppSheet<DoseOutcome>(
+      context,
       barrierColor: const Color(0x6114202B),
-      builder: (ctx) => Directionality(
-        textDirection: s.dir,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: _DoseActionSheet(s: s, dose: dose),
-          ),
-        ),
-      ),
+      textDirection: s.dir,
+      builder: (_) => _DoseActionSheet(s: s, dose: dose),
     );
     if (outcome != null) await _recordDose(dose, outcome);
   }
 
   Future<void> _openAddMedication(UserId userId) async {
     final s = AppScope.of(context);
-    final draft = await showModalBottomSheet<_NewMed>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final draft = await showAppSheet<_NewMed>(
+      context,
       barrierColor: const Color(0x6114202B),
-      builder: (ctx) => Directionality(
-        textDirection: s.dir,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: _AddMedSheet(s: s),
-          ),
-        ),
-      ),
+      textDirection: s.dir,
+      builder: (_) => _AddMedSheet(s: s),
     );
     if (draft != null) await _addMedication(userId, draft);
   }
@@ -378,11 +358,7 @@ class _SheetChrome extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Column(children: [
-            Container(
-                width: 38,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+            const Padding(padding: EdgeInsets.only(bottom: 10), child: SheetGrab()),
             Container(
               padding: const EdgeInsets.only(bottom: 10),
               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),

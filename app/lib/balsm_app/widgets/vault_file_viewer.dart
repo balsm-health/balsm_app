@@ -7,6 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
+import '../tokens.dart';
 import 'balsm_mark.dart';
 import 'photo_attach.dart';
 
@@ -32,23 +33,51 @@ VaultFileKind vaultFileKind(String path, Uint8List bytes) {
 /// [InteractiveViewer], PDFs via pdfrx from the in-memory bytes. The decrypted
 /// bytes NEVER touch disk — no temp files, no share/export — so the vault's
 /// at-rest encryption holds for the whole preview path. Bytes are never logged.
-class VaultFileViewer extends ConsumerWidget {
-  const VaultFileViewer({super.key, required this.path, this.title});
+class VaultFileViewer extends ConsumerStatefulWidget {
+  const VaultFileViewer({super.key, required this.paths, this.index = 0, this.title});
 
-  final String path;
+  /// Every file in the set being viewed; the design pages a record's files in
+  /// place rather than closing and reopening (`AttachmentViewer`).
+  final List<String> paths;
+
+  /// Where to start in [paths].
+  final int index;
+
   final String? title;
 
-  /// Pushes the viewer as a full-screen route.
+  /// Pushes the viewer as a full-screen route on one file.
   static Future<void> open(BuildContext context, {required String path, String? title}) {
+    return openAll(context, paths: [path], title: title);
+  }
+
+  /// Pushes the viewer on a whole set, starting at [index].
+  static Future<void> openAll(BuildContext context, {required List<String> paths, int index = 0, String? title}) {
+    if (paths.isEmpty) return Future<void>.value();
     return Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<void>(builder: (_) => VaultFileViewer(path: path, title: title)),
+      MaterialPageRoute<void>(builder: (_) => VaultFileViewer(paths: paths, index: index, title: title)),
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VaultFileViewer> createState() => _VaultFileViewerState();
+}
+
+class _VaultFileViewerState extends ConsumerState<VaultFileViewer> {
+  late int _i = widget.index.clamp(0, widget.paths.length - 1);
+
+  String get path => widget.paths[_i];
+  String? get title => widget.title;
+
+  /// Wraps, like the design's `step`.
+  void _step(int delta) {
+    setState(() => _i = (_i + delta + widget.paths.length) % widget.paths.length);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final blob = ref.watch(vaultBlobProvider(path));
+    final many = widget.paths.length > 1;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(children: [
@@ -82,12 +111,52 @@ class VaultFileViewer extends ConsumerWidget {
               // bytes; nothing else about the file is disclosed.
               if (blob.valueOrNull case final b?)
                 Text(
-                  '${vaultFileKind(path, b) == VaultFileKind.pdf ? 'PDF' : s.strings.settings.add_photo} · ${_fmtSize(b.length)}',
+                  '${vaultFileKind(path, b) == VaultFileKind.pdf ? 'PDF' : s.strings.settings.add_photo} · ${_fmtSize(b.length)}'
+                  '${many ? ' · ${_i + 1}/${widget.paths.length}' : ''}',
                   textAlign: TextAlign.center,
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white54, fontSize: FS.xs),
                 ),
             ]),
           ),
+        // `.att-nav` — 44px discs pinned to the stage's edges. Directional
+        // insets so RTL puts "previous" on the right, as the design does.
+        if (many) ...[
+          PositionedDirectional(
+            start: 10,
+            top: 0,
+            bottom: 0,
+            // Chevrons, as `.att-nav` draws them — and they point toward the
+            // edge they sit on, which RTL flips along with the position.
+            child: Center(
+              child: _NavDisc(
+                icon: s.rtl ? LucideIcons.chevronRight : LucideIcons.chevronLeft,
+                onTap: () => _step(-1),
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            end: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _NavDisc(
+                icon: s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight,
+                onTap: () => _step(1),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _ThumbStrip(
+              paths: widget.paths,
+              current: _i,
+              bottomInset: MediaQuery.paddingOf(context).bottom,
+              onPick: (n) => _step(n - _i),
+            ),
+          ),
+        ],
       ]),
     );
   }
@@ -130,4 +199,70 @@ class _CantOpen extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// `.att-nav` — a 44px translucent disc over the stage.
+class _NavDisc extends StatelessWidget {
+  const _NavDisc({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: const Color(0x991F2D3D),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, size: 24, color: Colors.white),
+          ),
+        ),
+      );
+}
+
+/// `.att-strip` — 54px chips, the current one ringed in white. Images preview
+/// themselves; anything else shows its kind icon.
+class _ThumbStrip extends StatelessWidget {
+  const _ThumbStrip({
+    required this.paths,
+    required this.current,
+    required this.onPick,
+    required this.bottomInset,
+  });
+
+  final List<String> paths;
+  final int current;
+  final ValueChanged<int> onPick;
+  final double bottomInset;
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.fromLTRB(14, 12, 14, bottomInset + 18),
+        child: Row(children: [
+          for (final (n, p) in paths.indexed)
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: n == paths.length - 1 ? 0 : 8),
+              child: GestureDetector(
+                onTap: () => onPick(n),
+                child: Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: const Color(0x1FFFFFFF),
+                    borderRadius: BorderRadius.circular(T.rMd),
+                    border: Border.all(color: n == current ? Colors.white : Colors.transparent, width: 2),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: p.toLowerCase().endsWith('.pdf')
+                      ? const Icon(LucideIcons.fileText, size: 18, color: Colors.white70)
+                      : VaultImage(path: p, height: 54),
+                ),
+              ),
+            ),
+        ]),
+      );
 }

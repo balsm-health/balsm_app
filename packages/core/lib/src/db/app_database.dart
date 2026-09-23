@@ -51,6 +51,9 @@ class AppDatabase extends _$AppDatabase {
           await _ensureColumn('prescription', 'source', 'TEXT');
           await _ensureColumn('prescription', 'attachment_path', 'TEXT');
           await _ensureColumn('prescription', 'attachment_kind', 'TEXT');
+          await _ensureColumn('check_in_symptom', 'urine_color', 'TEXT');
+          await _ensureColumn('check_in_symptom', 'urine_ml', 'INTEGER');
+          await _ensureColumn('check_in_symptom', 'blood', 'INTEGER NOT NULL DEFAULT 0');
           await _ensurePainSitePk();
           // These indexes must be created AFTER the column patches above — on a
           // pre-existing DB the `medications`/`health_record` tables predate
@@ -237,6 +240,37 @@ const _phiSchema = <String>[
     is_primary INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
   )''',
+  // Care team (profile module). PHI, on-device only, partitioned by
+  // health_profile_id. Patient-entered: there is no provider directory to link
+  // against, so every field is free text and nothing is ever seeded — the
+  // design prototype's sample doctors deliberately do not cross over.
+  '''
+  CREATE TABLE IF NOT EXISTS care_provider (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    specialty TEXT,
+    phone TEXT,
+    phone2 TEXT,
+    email TEXT,
+    clinic TEXT,
+    address TEXT,
+    notes TEXT,
+    created_at INTEGER NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_care_provider_profile ON care_provider(health_profile_id)',
+  // A provider's business card and files (attachments.jsx AttachmentGallery).
+  // `path` is vault-relative — the bytes live encrypted in the user file store,
+  // never in the database and never in plaintext on disk.
+  '''
+  CREATE TABLE IF NOT EXISTS care_provider_file (
+    id TEXT PRIMARY KEY,
+    care_provider_id TEXT NOT NULL REFERENCES care_provider(id) ON DELETE CASCADE,
+    path TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_care_provider_file_provider ON care_provider_file(care_provider_id)',
   '''
   CREATE TABLE IF NOT EXISTS medications (
     id TEXT PRIMARY KEY,
@@ -343,10 +377,15 @@ const _phiSchema = <String>[
     glucose_post_meal INTEGER,
     glucose_random INTEGER
   )''',
+  // `urine_color` / `urine_ml` / `blood` are the patient's own observations
+  // (quicklog.jsx QuickSymptomDetail) — recorded verbatim, never interpreted.
   '''
   CREATE TABLE IF NOT EXISTS check_in_symptom (
     check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE,
     symptom_id TEXT NOT NULL,
+    urine_color TEXT,
+    urine_ml INTEGER,
+    blood INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (check_in_id, symptom_id)
   )''',
   '''

@@ -225,21 +225,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   }
 
   Future<bool> _confirmHandleChange(String next) async =>
-      await showModalBottomSheet<bool>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        barrierColor: const Color(0x5C14202B),
-        builder: (_) => Directionality(
-          textDirection: s.dir,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: _HandleChangeSheet(s: s, from: _origHandle, to: next),
-            ),
-          ),
-        ),
+      await showAppSheet<bool>(
+        context,
+        textDirection: s.dir,
+        builder: (_) => _HandleChangeSheet(s: s, from: _origHandle, to: next),
       ) ??
       false;
 
@@ -621,21 +610,11 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   }
 
   void _showQr(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    showAppSheet<void>(
+      context,
       barrierColor: const Color(0x6B14202B),
-      builder: (ctx) => Directionality(
-        textDirection: s.dir,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: _QrShareSheet(s: s, name: '${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
-          ),
-        ),
-      ),
+      textDirection: s.dir,
+      builder: (_) => _QrShareSheet(s: s, name: '${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
     );
   }
 
@@ -789,11 +768,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       );
 
   Future<void> _pickNationality() async {
-    final picked = await showModalBottomSheet<CountryCode>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C14202B),
+    final picked = await showAppSheet<CountryCode>(
+      context,
+      textDirection: s.dir,
       builder: (_) => _NationalitySheet(current: _nationality, s: s),
     );
     if (picked != null && mounted) setState(() => _nationality = picked);
@@ -835,11 +812,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       );
 
   Future<void> _pickRelationship() async {
-    final picked = await showModalBottomSheet<Relationship>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C14202B),
+    final picked = await showAppSheet<Relationship>(
+      context,
+      textDirection: s.dir,
       builder: (_) => _RelationshipSheet(current: _emRelation, s: s),
     );
     if (picked != null && mounted) setState(() => _emRelation = picked);
@@ -935,10 +910,7 @@ class _NationalitySheetState extends State<_NationalitySheet> {
           padding: const EdgeInsets.only(bottom: 24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const SizedBox(height: 10),
-            Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+            const SheetGrab(),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1021,10 +993,7 @@ class _RelationshipSheet extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const SizedBox(height: 10),
-          Container(
-              width: 38,
-              height: 4,
-              decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+          const SheetGrab(),
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1315,11 +1284,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
             child: Column(children: [
-              Container(
-                  width: 38,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+              const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
@@ -1677,8 +1642,7 @@ class _HandleChangeSheet extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 38),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(
-            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SheetGrab(),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),

@@ -11,21 +11,21 @@ class T {
   static const hueEmerald = Color(0xFF01C4A2);
   static const hueBlue = Color(0xFF1283FF);
   static const hueMint = Color(0xFF55D77F);
-  static const hueViolet = Color(0xFF8350DE);
+  static const hueViolet = Color(0xFF724DD0);
 
   static const hueAqua600 = Color(0xFF029E99);
   static const hueEmerald600 = Color(0xFF019A7F);
   static const hueBlue600 = Color(0xFF0F6BCC);
   static const hueMint600 = Color(0xFF3FC366);
-  static const hueViolet600 = Color(0xFF6A3DBB);
+  static const hueViolet600 = Color(0xFF5C3AB0);
 
   static const hueAqua50 = Color(0xFFE2F8F6);
   static const hueEmerald50 = Color(0xFFE1F8F1);
   static const hueBlue50 = Color(0xFFE4F0FF);
   static const hueMint50 = Color(0xFFE8F9EE);
-  static const hueViolet50 = Color(0xFFEEE7FB);
+  static const hueViolet50 = Color(0xFFECE6FA);
 
-  // ── Warm olive-gray neutrals ───────────────────────────────
+  // ── Cool navy-slate neutrals (siblings of the wordmark) ────
   static const ink900 = Color(0xFF14202B);
   static const ink800 = Color(0xFF1F2D3D); // = wordmark
   static const ink700 = Color(0xFF384756);
@@ -57,11 +57,23 @@ class T {
   static const controlledBg = hueViolet50;
   static const expiring = Color(0xFFD97A20);
   static const expiringBg = Color(0xFFFBEEDC);
+  static const info = hueBlue;
+  static const infoBg = hueBlue50;
+  static const neutral = ink500;
+  static const neutralBg = ink100;
+
+  // ── Wordmark ───────────────────────────────────────────────
+  static const wordmark = ink800; // بلسم · Balsm — navy slate
+  static const wordmarkTld = ink600; // .health — same hue, lighter
 
   // ── Surfaces / foreground roles ────────────────────────────
   static const surface = white;
+  static const surfaceAlt = cream100;
+  static const surfaceMuted = ink50;
+  static const surfaceInverse = ink900;
   static const border = ink200;
   static const borderStrong = ink300;
+  static const borderFocus = hueBlue;
 
   static const fg1 = ink900; // primary text
   static const fg2 = ink700; // secondary
@@ -76,6 +88,12 @@ class T {
   static const rXl = 20.0;
   static const r2xl = 28.0;
   static const rPill = 999.0;
+
+  // ── Layout ─────────────────────────────────────────────────
+  /// `--content-max` as the app body sets it at expanded and up (app.css
+  /// `@container app (min-width: 1024px) .app-body`): the DS's 768 reading
+  /// measure widened to 1024 for the app's card columns.
+  static const contentMax = 1024.0;
 
   // ── Shadows (warm, soft) ───────────────────────────────────
   static const List<BoxShadow> shadowXs = [
@@ -139,8 +157,14 @@ class Accent {
   static const blue = Accent(T.hueBlue, T.hueBlue600, T.hueBlue50, Color(0x421283FF));
   static const aqua = Accent(T.hueAqua, T.hueAqua600, T.hueAqua50, Color(0x4202BBB5));
   static const emerald = Accent(T.hueEmerald, T.hueEmerald600, T.hueEmerald50, Color(0x4201C4A2));
-  static const violet = Accent(T.hueViolet, T.hueViolet600, T.hueViolet50, Color(0x428350DE));
+  static const violet = Accent(T.hueViolet, T.hueViolet600, T.hueViolet50, Color(0x42724DD0));
   static const mint = Accent(T.hueMint600, Color(0xFF2FA552), T.hueMint50, Color(0x4D55D77F));
 
   List<BoxShadow> get boxShadow => [BoxShadow(color: shadow, blurRadius: 22, offset: const Offset(0, 8))];
 }
+
+// The Tier 5 window-class layer (thresholds, shell/pane sizes, density
+// resolution) lives in the shared kernel as `BalsmWindow` / `BalsmWindowClass`
+// / `BalsmDensity` — `package:core/core.dart`, already imported by this app.
+// It is deliberately not duplicated here: unlike these colour tokens, nothing
+// about it is prototype-specific.

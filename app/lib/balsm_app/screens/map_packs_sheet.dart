@@ -12,21 +12,10 @@ import '../tokens.dart';
 /// places pair. See docs/superpowers/specs/2026-09-14-map-pack-download-manager-design.md.
 void showMapPacksSheet(BuildContext context) {
   final s = AppScope.of(context);
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C14202B),
-    builder: (ctx) => Directionality(
-      textDirection: s.dir,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: const _MapPacksSheet(),
-        ),
-      ),
-    ),
+  showAppSheet<void>(
+    context,
+    textDirection: s.dir,
+    builder: (_) => const _MapPacksSheet(),
   );
 }
 
@@ -63,11 +52,7 @@ class _MapPacksSheetState extends ConsumerState<_MapPacksSheet> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
           child: Column(children: [
-            Container(
-                width: 38,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+            const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
             Container(
               padding: const EdgeInsets.only(bottom: 12),
               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),

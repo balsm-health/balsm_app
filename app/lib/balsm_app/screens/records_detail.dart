@@ -311,18 +311,9 @@ Future<void> showManageRecordStorage(
   BuildContext context, {
   required RecordDocument record,
 }) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: const Color(0x5C14202B),
-      builder: (_) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _ManageStorageSheet(record: record),
-        ),
-      ),
+    showAppSheet<void>(
+      context,
+      builder: (_) => _ManageStorageSheet(record: record),
     );
 
 class _ManageStorageSheet extends ConsumerStatefulWidget {
@@ -373,11 +364,7 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
           child: Column(children: [
-            Container(
-                width: 38,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+            const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
             Container(
               padding: const EdgeInsets.only(bottom: 12),
               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
@@ -474,17 +461,10 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
 }
 
 /// Add-record bottom sheet: pick a type, then fill in the metadata.
-Future<void> showAddRecord(BuildContext context, {RecordType? initialType}) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _AddRecordSheet(initialType: initialType),
-        ),
-      ),
+Future<void> showAddRecord(BuildContext context, {RecordType? initialType}) => showAppSheet<void>(
+      context,
+      size: SheetSize.lg,
+      builder: (_) => _AddRecordSheet(initialType: initialType),
     );
 
 class _AddRecordSheet extends ConsumerStatefulWidget {

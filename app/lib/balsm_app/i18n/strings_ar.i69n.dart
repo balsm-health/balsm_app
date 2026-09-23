@@ -8,7 +8,8 @@ import 'package:core/core.dart';
 String get _languageCode => 'ar';
 String get _localeName => 'ar';
 
-String _select(Object? value, Map<String, String> cases) => i69n.select(value, cases);
+String _select(Object? value, Map<String, String> cases) =>
+    i69n.select(value, cases);
 
 class Strings_ar extends Strings {
   const Strings_ar();
@@ -34,7 +35,8 @@ class Strings_ar extends Strings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'auth':
@@ -110,21 +112,26 @@ class AuthStrings_ar extends AuthStrings {
   String get otp_verifying => "جارٍ التحقق…";
   String get pw_invalid_creds => "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
   String get fp_title => "إعادة تعيين كلمة المرور";
-  String get fp_help => "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
+  String get fp_help =>
+      "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
   String get fp_send => "إرسال رمز إعادة التعيين";
   String get fp_code_label => "رمز إعادة التعيين";
   String get fp_new_pw => "كلمة المرور الجديدة";
   String get fp_reset => "إعادة تعيين كلمة المرور";
   String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
   String get fp_done => "تم";
-  String get fp_success => "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
+  String get fp_success =>
+      "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
   String get social_failed => "تعذّر تسجيل الدخول. حاول مرة أخرى.";
-  String get social_unavailable => "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.";
-  String auth_locked_retry(String secs) => "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
+  String get social_unavailable =>
+      "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.";
+  String auth_locked_retry(String secs) =>
+      "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'un_label':
@@ -212,16 +219,20 @@ class BootStrings_ar extends BootStrings {
   const BootStrings_ar(this._parent) : super(_parent);
   String get boot_preparing => "نُجهّز سجلّك الصحي";
   String get boot_tagline => "على جهازك، بالتصميم.";
+  String get boot_promise => "رعايتك. بياناتك. نظامك.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'boot_preparing':
         return boot_preparing;
       case 'boot_tagline':
         return boot_tagline;
+      case 'boot_promise':
+        return boot_promise;
       default:
         return super[key];
     }
@@ -234,8 +245,9 @@ class CareStrings_ar extends CareStrings {
   String get map_sub => "مكان بالقرب منك";
   String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
   String get to_home => "العودة للرئيسية";
-  String get care_intro => "الأطباء الذين يتابعون حالتك ويرون تقاريرك.";
-  String get care_find => "ابحث عن طبيب جديد";
+  String get care_intro =>
+      "الأشخاص والأماكن التي ترعاك — أطباء وتمريض وصيدليات ومقدّمو رعاية وغيرهم.";
+  String get care_find => "ابحث عن رعاية قريبة";
   String get follow_up => "متابعة";
   String get check_up => "فحص دوري";
   String get map_nearby => "رعاية قريبة";
@@ -255,11 +267,60 @@ class CareStrings_ar extends CareStrings {
   String map_n_types(String n) => "$n أنواع";
   String get map_clear => "مسح البحث";
   String get care_empty => "لا يوجد فريق رعاية بعد";
-  String get care_add_help => "أضف طبيبك من الخريطة لبناء فريق الرعاية.";
+  String get care_add_help =>
+      "أضف الأطباء والصيدليات ومقدّمي الرعاية الذين تتعامل معهم. كل ما تضيفه يبقى على هذا الجهاز.";
+  String get care_search_ph => "ابحث بالاسم أو التخصص أو العيادة";
+  String get care_all => "الكل";
+  String get care_no_match => "لا توجد نتائج";
+  String get care_no_match_h => "جرّب اسمًا آخر، أو أضف مقدّم الرعاية بنفسك.";
+  String get care_add => "أضف مقدّم رعاية";
+  String get care_call => "اتصال";
+  String get care_remove => "حذف";
+  String get care_t_doctor => "طبيب";
+  String get care_t_nurse => "تمريض";
+  String get care_t_carer => "مقدّم رعاية";
+  String get care_t_pharmacy => "صيدلية";
+  String get care_t_lab => "مختبر";
+  String get care_t_physio => "علاج طبيعي";
+  String get care_t_clinic => "عيادة";
+  String get care_t_other => "أخرى";
+  String get care_add_title => "إضافة مقدّم رعاية";
+  String get care_add_note => "الاسم فقط مطلوب. ما تضيفه يبقى على جهازك.";
+  String get care_f_type => "نوع مقدّم الرعاية";
+  String get care_f_name => "الاسم";
+  String get care_ph_name_person => "د. سارة كمال";
+  String get care_ph_name_place => "صيدلية الشفاء";
+  String get care_f_specialty => "التخصص";
+  String get care_f_services => "الخدمات";
+  String get care_ph_specialty => "باطنة";
+  String get care_ph_services => "توصيل، قياس ضغط";
+  String get care_s_contact => "التواصل";
+  String get care_f_phone => "رقم الهاتف";
+  String get care_f_phone2 => "رقم آخر (اختياري)";
+  String get care_ph_phone2 => "هاتف العيادة";
+  String get care_f_email => "البريد الإلكتروني";
+  String get care_s_clinic => "العيادة";
+  String get care_s_location => "الموقع";
+  String get care_f_clinic => "العيادة أو المستشفى";
+  String get care_f_branch => "الفرع أو المجموعة";
+  String get care_ph_clinic => "مركز بلسم الطبي";
+  String get care_f_address => "العنوان";
+  String get care_ph_address => "١٢ شارع ٩، المعادي، القاهرة";
+  String get care_f_notes => "ملاحظات";
+  String get care_ph_notes => "مواعيد العمل، كيف وصلت إليه…";
+  String get care_save => "حفظ";
+  String get care_saved => "أُضيف إلى فريق الرعاية";
+  String get care_removed => "أُزيل من فريق الرعاية";
+  String get care_save_failed => "تعذّر الحفظ. حاول مرة أخرى.";
+  String get care_files => "ملفات";
+  String get care_files_head => "بطاقة العمل والملفات";
+  String get care_attach => "إرفاق";
+  String get care_attach_add => "إضافة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'map_sub':
@@ -312,6 +373,100 @@ class CareStrings_ar extends CareStrings {
         return care_empty;
       case 'care_add_help':
         return care_add_help;
+      case 'care_search_ph':
+        return care_search_ph;
+      case 'care_all':
+        return care_all;
+      case 'care_no_match':
+        return care_no_match;
+      case 'care_no_match_h':
+        return care_no_match_h;
+      case 'care_add':
+        return care_add;
+      case 'care_call':
+        return care_call;
+      case 'care_remove':
+        return care_remove;
+      case 'care_t_doctor':
+        return care_t_doctor;
+      case 'care_t_nurse':
+        return care_t_nurse;
+      case 'care_t_carer':
+        return care_t_carer;
+      case 'care_t_pharmacy':
+        return care_t_pharmacy;
+      case 'care_t_lab':
+        return care_t_lab;
+      case 'care_t_physio':
+        return care_t_physio;
+      case 'care_t_clinic':
+        return care_t_clinic;
+      case 'care_t_other':
+        return care_t_other;
+      case 'care_add_title':
+        return care_add_title;
+      case 'care_add_note':
+        return care_add_note;
+      case 'care_f_type':
+        return care_f_type;
+      case 'care_f_name':
+        return care_f_name;
+      case 'care_ph_name_person':
+        return care_ph_name_person;
+      case 'care_ph_name_place':
+        return care_ph_name_place;
+      case 'care_f_specialty':
+        return care_f_specialty;
+      case 'care_f_services':
+        return care_f_services;
+      case 'care_ph_specialty':
+        return care_ph_specialty;
+      case 'care_ph_services':
+        return care_ph_services;
+      case 'care_s_contact':
+        return care_s_contact;
+      case 'care_f_phone':
+        return care_f_phone;
+      case 'care_f_phone2':
+        return care_f_phone2;
+      case 'care_ph_phone2':
+        return care_ph_phone2;
+      case 'care_f_email':
+        return care_f_email;
+      case 'care_s_clinic':
+        return care_s_clinic;
+      case 'care_s_location':
+        return care_s_location;
+      case 'care_f_clinic':
+        return care_f_clinic;
+      case 'care_f_branch':
+        return care_f_branch;
+      case 'care_ph_clinic':
+        return care_ph_clinic;
+      case 'care_f_address':
+        return care_f_address;
+      case 'care_ph_address':
+        return care_ph_address;
+      case 'care_f_notes':
+        return care_f_notes;
+      case 'care_ph_notes':
+        return care_ph_notes;
+      case 'care_save':
+        return care_save;
+      case 'care_saved':
+        return care_saved;
+      case 'care_removed':
+        return care_removed;
+      case 'care_save_failed':
+        return care_save_failed;
+      case 'care_files':
+        return care_files;
+      case 'care_files_head':
+        return care_files_head;
+      case 'care_attach':
+        return care_attach;
+      case 'care_attach_add':
+        return care_attach_add;
       default:
         return super[key];
     }
@@ -386,7 +541,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String pain_n_where(String n, String where) => "$n/10 · $where";
   String labeled_where(String label, String where) => "$label · $where";
   String reading_unit(String n, String unit) => "$n $unit";
-  String reading_unit_ctx(String n, String unit, String ctx) => "$n $unit · $ctx";
+  String reading_unit_ctx(String n, String unit, String ctx) =>
+      "$n $unit · $ctx";
   String bp_pair(String sys, String dia) => "$sys/$dia";
   String get cond_icd10_hint => "رمز ICD-10 (اختياري)";
   String get cond_onset_hint => "سنة البدء";
@@ -401,15 +557,30 @@ class CheckinStrings_ar extends CheckinStrings {
   String get sym_chest_tightness => "ضيق بالصدر";
   String get sym_nausea => "غثيان";
   String get sym_thirst => "عطش زائد";
-  String q_mood_t(Gender gender) => "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
-  String q_sym_h(Gender gender) => "حرّك${_select(gender, {'female': 'ي'})} المؤشر لمستوى الألم، ثم ${_select(gender, {
+  String q_mood_t(Gender gender) =>
+      "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
+  String q_sym_h(Gender gender) => "حرّك${_select(gender, {
+            'female': 'ي'
+          })} المؤشر لمستوى الألم، ثم ${_select(gender, {
             'female': 'اختاري',
             'other': 'اختر'
           })} ما تشعر${_select(gender, {'female': 'ين'})} به.";
+  String get sd_color => "اللون";
+  String get sd_quantity => "الكمية";
+  String get sd_ml => "مل";
+  String get sd_blood => "دم";
+  String get sd_u_pale => "شاحب";
+  String get sd_u_yellow => "أصفر";
+  String get sd_u_dark => "داكن";
+  String get sd_u_red => "أحمر/وردي";
+  String get sd_u_brown => "بني";
+  String get sym_urine => "البول";
+  String get sym_stool => "البراز";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'latest':
@@ -576,6 +747,28 @@ class CheckinStrings_ar extends CheckinStrings {
         return q_mood_t;
       case 'q_sym_h':
         return q_sym_h;
+      case 'sd_color':
+        return sd_color;
+      case 'sd_quantity':
+        return sd_quantity;
+      case 'sd_ml':
+        return sd_ml;
+      case 'sd_blood':
+        return sd_blood;
+      case 'sd_u_pale':
+        return sd_u_pale;
+      case 'sd_u_yellow':
+        return sd_u_yellow;
+      case 'sd_u_dark':
+        return sd_u_dark;
+      case 'sd_u_red':
+        return sd_u_red;
+      case 'sd_u_brown':
+        return sd_u_brown;
+      case 'sym_urine':
+        return sym_urine;
+      case 'sym_stool':
+        return sym_stool;
       default:
         return super[key];
     }
@@ -625,7 +818,8 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_manual_instead => "الإدخال يدويًا بدلاً من ذلك";
   String get fam_scan_instead => "مسح رمز QR بدلاً من ذلك";
   String get fam_scan_other => "مسح رمز آخر";
-  String get fam_approval_note => "سيرى الطلب في تطبيقه ويوافق عليه مرة واحدة — لن تظهر أي بيانات صحية قبل موافقته.";
+  String get fam_approval_note =>
+      "سيرى الطلب في تطبيقه ويوافق عليه مرة واحدة — لن تظهر أي بيانات صحية قبل موافقته.";
   String get fam_send_request => "إرسال طلب الربط";
   String get fam_pending => "بانتظار الموافقة";
   String get fam_cancel_request => "إلغاء";
@@ -656,7 +850,8 @@ class CommonStrings_ar extends CommonStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -808,7 +1003,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get em_ph => "you@example.com";
   String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
   String get em_eg => "مصر";
-  String get em_intro => "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
+  String get em_intro =>
+      "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
   String get em_tap_call => "اضغط للاتصال";
   String get em_ambulance => "إسعاف";
   String get em_police => "شرطة";
@@ -827,12 +1023,15 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_ttl_permanent => "∞";
   String get eqr_permanent => "دائم — لا ينتهي";
   String get eqr_help_empty =>
-      "هذا الرمز هو هويّتك في بلسم — يُستخدم للحجوزات والطوارئ والتفويضات. أضف فصيلة الدم أو الحساسيات أو جهة اتصال طوارئ لتضمينها في البطاقة.";
+      "هذا الرمز هو هويّتك في بلسم — للطوارئ والحجوزات، ولكي يضيفك أحد أفراد أسرتك إلى حسابه. أضف فصيلة الدم أو الحساسيات أو جهة اتصال طوارئ لتضمينها في البطاقة.";
   String get eqr_help_active =>
       "اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.";
-  String get eqr_help_signin => "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
-  String get eqr_help_incomplete => "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
-  String get eqr_help_create => "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
+  String get eqr_help_signin =>
+      "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
+  String get eqr_help_incomplete =>
+      "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
+  String get eqr_help_create =>
+      "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
   String get eqr_expired => "منتهي";
   String eqr_expires_in(String t) => "ينتهي خلال $t";
   String get eqr_copy => "نسخ";
@@ -844,7 +1043,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_revoke => "إلغاء الرمز";
   String get eqr_revoked_toast => "تم إلغاء الرمز";
   String get eqr_rotate => "استبدال الرمز";
-  String get eqr_rotate_confirm => "هل تريد استبدال هذا الرمز؟ ستتوقف النسخ المطبوعة أو المشاركة عن العمل فورًا.";
+  String get eqr_rotate_confirm =>
+      "هل تريد استبدال هذا الرمز؟ ستتوقف النسخ المطبوعة أو المشاركة عن العمل فورًا.";
   String get eqr_rotate_yes => "استبدال";
   String get eqr_rotated_toast => "الرمز الجديد جاهز";
   String get eqr_rotate_failed => "تعذّر استبدال الرمز — تحقق من الاتصال";
@@ -861,7 +1061,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'em_label':
@@ -986,19 +1187,31 @@ class HomeStrings_ar extends HomeStrings {
   String get greet => "صباح الخير";
   String get hero_time => "حوالي دقيقتين";
   String get streak => "يوم متتالٍ";
-  String streak_help(Gender gender, int checked) =>
-      "${_select(gender, {'male': 'تابعت', 'female': 'تابعتِ', 'other': 'تابعت'})} ${checked} من آخر 7 أيام";
+  String streak_help(Gender gender, int checked) => "${_select(gender, {
+            'male': 'تابعت',
+            'female': 'تابعتِ',
+            'other': 'تابعت'
+          })} ${checked} من آخر 7 أيام";
   String get on_track => "ملتزمة";
   String get away_banner => "أنت خارج بلدك";
-  String hero_q(Gender gender) =>
-      "${_select(gender, {'male': 'كيف تشعر اليوم؟', 'female': 'كيف تشعرين اليوم؟', 'other': 'كيف تشعر اليوم؟'})}";
-  String hero_cta(Gender gender) =>
-      "${_select(gender, {'male': 'ابدأ المتابعة', 'female': 'ابدئي المتابعة', 'other': 'ابدأ المتابعة'})}";
+  String hero_q(Gender gender) => "${_select(gender, {
+            'male': 'كيف تشعر اليوم؟',
+            'female': 'كيف تشعرين اليوم؟',
+            'other': 'كيف تشعر اليوم؟'
+          })}";
+  String hero_cta(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ المتابعة',
+            'female': 'ابدئي المتابعة',
+            'other': 'ابدأ المتابعة'
+          })}";
   String get hero_disclaimer => "تقييمك الخاص — لا يعتمد على قياس طبي";
+  String get care_team_sub => "أطباء وصيدليات ومقدّمو رعاية";
+  String get care_team_n => "مقدّم رعاية يتابع حالتك";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'nudge_handle':
@@ -1031,6 +1244,10 @@ class HomeStrings_ar extends HomeStrings {
         return hero_cta;
       case 'hero_disclaimer':
         return hero_disclaimer;
+      case 'care_team_sub':
+        return care_team_sub;
+      case 'care_team_n':
+        return care_team_n;
       default:
         return super[key];
     }
@@ -1134,7 +1351,8 @@ class MedsStrings_ar extends MedsStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'meds_today':
@@ -1349,7 +1567,8 @@ class NavStrings_ar extends NavStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'tab_home':
@@ -1398,7 +1617,8 @@ class OnboardingStrings_ar extends OnboardingStrings {
   final Strings_ar _parent;
   const OnboardingStrings_ar(this._parent) : super(_parent);
   String get w_title => "صحتك، دائماً قريبة.";
-  String get w_sub => "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
+  String get w_sub =>
+      "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
   String get w_have => "لديّ حساب بالفعل";
   String get w_signin => "تسجيل الدخول";
   String get w_or => "أو";
@@ -1423,12 +1643,16 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get dob_confirm => "تأكيد";
   String get age_gate_body =>
       "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
-  String w_start(Gender gender) =>
-      "${_select(gender, {'male': 'ابدأ الآن', 'female': 'ابدئي الآن', 'other': 'ابدأ الآن'})}";
+  String w_start(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ الآن',
+            'female': 'ابدئي الآن',
+            'other': 'ابدأ الآن'
+          })}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'w_title':
@@ -1498,10 +1722,12 @@ class WalkthroughStrings_ar extends WalkthroughStrings {
       "بلسم أول وأكبر منصة صحية مفتوحة المصدر بُنيت في مصر والعالم العربي — بالعربية أولاً، ويملكها من يستخدمها.";
   String get wt_eyebrow_2 => "يوم مع بلسم";
   String get wt_title_2 => "من قياس هذا الصباح إلى الصيدلية الليلة.";
-  String get wt_body_2 => "سجلّ واحد، وتسجيل يومي، وخريطة رعاية واحدة — جرّبها في الأسفل، تماماً كما تظهر في التطبيق.";
+  String get wt_body_2 =>
+      "سجلّ واحد، وتسجيل يومي، وخريطة رعاية واحدة — جرّبها في الأسفل، تماماً كما تظهر في التطبيق.";
   String get wt_eyebrow_3 => "ملكك دائماً";
   String get wt_title_3 => "بياناتك تبقى ملكك.";
-  String get wt_body_3 => "محفوظة على هاتفك بالتصميم، وتعمل دون إنترنت. أنت تختار ما تشاركه — ومع من.";
+  String get wt_body_3 =>
+      "محفوظة على هاتفك بالتصميم، وتعمل دون إنترنت. أنت تختار ما تشاركه — ومع من.";
   String get wt_skip => "تخطّي";
   String get wt_next => "التالي";
   String get wt_start => "ابدأ الآن";
@@ -1522,7 +1748,8 @@ class WalkthroughStrings_ar extends WalkthroughStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'wt_eyebrow_1':
@@ -1618,18 +1845,26 @@ class PrivacyStrings_ar extends PrivacyStrings {
   String get pv_deletion => "الحذف";
   String get pv_saving => "جارٍ الحفظ…";
   String get pv_agree => "أوافق وأتابع";
-  String get pv_intro_body => "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
-  String get pv_collect_body => "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
-  String get pv_protect_body => "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
-  String get pv_rights_body => "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
-  String pv_authority_body(String authority) => "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
-  String get pv_sharing_body => "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
-  String get pv_deletion_body => "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
+  String get pv_intro_body =>
+      "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
+  String get pv_collect_body =>
+      "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
+  String get pv_protect_body =>
+      "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
+  String get pv_rights_body =>
+      "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
+  String pv_authority_body(String authority) =>
+      "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
+  String get pv_sharing_body =>
+      "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
+  String get pv_deletion_body =>
+      "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
   String get pv_scroll_hint => "مرّر للأسفل للمتابعة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'pv_sharing':
@@ -1794,7 +2029,8 @@ class ProfileStrings_ar extends ProfileStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'm_bp':
@@ -1952,22 +2188,29 @@ class EcosystemStrings_ar extends EcosystemStrings {
   String get eco_p1h => "هذا التطبيق — لك";
   String get eco_p1b => "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك.";
   String get eco_p2h => "بَلسَم برو — للصيدليات والعيادات";
-  String get eco_p2b => "الصرف والمخزون والزيارات على النظام المفتوح نفسه — يعمل بلا إنترنت، وهو على خارطة الطريق.";
+  String get eco_p2b =>
+      "الصرف والمخزون والزيارات على النظام المفتوح نفسه — يعمل بلا إنترنت، وهو على خارطة الطريق.";
   String get eco_help_t => "ساعد بلسم على الانتشار";
-  String get eco_help_sub => "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
+  String get eco_help_sub =>
+      "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
   String get eco_tagline => "مفتوح · عربي · موثوق";
   String get eco_a1h => "أخبر شخصاً تثق به";
-  String get eco_a1b => "العائلة والجيران هم طريق انتشار بلسم — توصية واحدة في كل مرة.";
+  String get eco_a1b =>
+      "العائلة والجيران هم طريق انتشار بلسم — توصية واحدة في كل مرة.";
   String get eco_a2h => "شارك ملاحظاتك";
-  String get eco_a2b => "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
+  String get eco_a2b =>
+      "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
   String get eco_a3h => "اسأل صيدليتك أو عيادتك";
-  String get eco_a3b => "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بلسم في زيارتك القادمة — فهو مجاني وملك لهم.";
+  String get eco_a3b =>
+      "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بلسم في زيارتك القادمة — فهو مجاني وملك لهم.";
   String get eco_a4h => "ساهم في المشروع";
-  String get eco_a4b => "مطوّرون ومترجمون وأطباء — الشيفرة وخارطة الطريق مفتوحتان للجميع.";
+  String get eco_a4b =>
+      "مطوّرون ومترجمون وأطباء — الشيفرة وخارطة الطريق مفتوحتان للجميع.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'eco_row':
@@ -2030,10 +2273,12 @@ class FeedbackStrings_ar extends FeedbackStrings {
   String get fb_note_lbl => "أخبرنا المزيد";
   String get fb_optional => "اختياري";
   String get fb_ph => "ما الذي أعجبك؟ وما الذي لم يعجبك؟";
-  String get fb_privacy => "يراجعها فريق بلسم داخل بلسم — وليس في متجر التطبيقات. بياناتك الصحية تبقى على جهازك.";
+  String get fb_privacy =>
+      "يراجعها فريق بلسم داخل بلسم — وليس في متجر التطبيقات. بياناتك الصحية تبقى على جهازك.";
   String get fb_send => "إرسال الملاحظات";
   String get fb_thanks => "وصلتنا. شكراً لك.";
-  String get fb_thanks_sub => "فريق بلسم يقرأ كل ملاحظة، وملاحظتك تساعد بلسم على خدمة الجميع بشكل أفضل.";
+  String get fb_thanks_sub =>
+      "فريق بلسم يقرأ كل ملاحظة، وملاحظتك تساعد بلسم على خدمة الجميع بشكل أفضل.";
   String get fb_done => "تم";
   String get fb_t_general => "عام";
   String get fb_t_ease => "سهولة الاستخدام";
@@ -2043,7 +2288,8 @@ class FeedbackStrings_ar extends FeedbackStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'fb_row':
@@ -2126,7 +2372,8 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_preview => "معاينة المستند";
   String get rec_preview_failed => "تعذّر فتح هذا الملف";
   String get rec_share => "مشاركة مع الطبيب";
-  String get rec_empty_h => "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
+  String get rec_empty_h =>
+      "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
   String get rec_pick_type => "ما الذي تضيفه؟";
   String get rec_title => "العنوان";
   String get rec_title_ph => "مثال: تحليل السكر التراكمي";
@@ -2147,10 +2394,15 @@ class RecordsStrings_ar extends RecordsStrings {
   String get tag_cardiology => "القلب";
   String get tag_surgery => "جراحة";
   String get tag_referral => "تحويل";
+  String get att_section => "المرفقات";
+  String get att_add => "إضافة ملف";
+  String get att_one_file => "ملف واحد";
+  String att_n_files(String n) => "$n ملفات";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'rec_documents':
@@ -2245,6 +2497,14 @@ class RecordsStrings_ar extends RecordsStrings {
         return tag_surgery;
       case 'tag_referral':
         return tag_referral;
+      case 'att_section':
+        return att_section;
+      case 'att_add':
+        return att_add;
+      case 'att_one_file':
+        return att_one_file;
+      case 'att_n_files':
+        return att_n_files;
       default:
         return super[key];
     }
@@ -2261,7 +2521,8 @@ class SettingsStrings_ar extends SettingsStrings {
   String get add_member => "إضافة فرد من الأسرة";
   String get choose_lang => "اختر اللغة";
   String get choose_country => "أين أنت الآن؟";
-  String get travel_help => "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
+  String get travel_help =>
+      "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
   String get lang_full => "دعم كامل";
   String get lang_beta => "تجريبي";
   String get home_country => "بلدك";
@@ -2270,13 +2531,16 @@ class SettingsStrings_ar extends SettingsStrings {
   String get na_not_available => "غير متاح بعد";
   String get na_notify_me => "أبلغني عند التوفر";
   String get na_status_support => "حالة الخدمة والدعم";
-  String get cal_months => "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
-  String get cal_months_short => "ينا|فبر|مار|أبر|ماي|يون|يول|أغس|سبت|أكت|نوف|ديس";
+  String get cal_months =>
+      "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
+  String get cal_months_short =>
+      "ينا|فبر|مار|أبر|ماي|يون|يول|أغس|سبت|أكت|نوف|ديس";
   String get cal_weekdays => "أحد|إثن|ثلا|أرب|خمي|جمع|سبت";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'trust_private':
@@ -2327,7 +2591,8 @@ class StorageStrings_ar extends StorageStrings {
   final Strings_ar _parent;
   const StorageStrings_ar(this._parent) : super(_parent);
   String get store_delete_rec => "حذف السجل";
-  String get store_delete_rec_h => "سيُحذف السجل ومرفقه نهائياً من هذا الجهاز. لا يمكن التراجع عن ذلك.";
+  String get store_delete_rec_h =>
+      "سيُحذف السجل ومرفقه نهائياً من هذا الجهاز. لا يمكن التراجع عن ذلك.";
   String get store_deleted_rec => "تم حذف السجل";
   String get store_manage => "إدارة التخزين";
   String get storage => "التخزين والمزامنة";
@@ -2357,12 +2622,14 @@ class StorageStrings_ar extends StorageStrings {
   String store_synced_with(String target) => "مزامن مع $target";
   String get store_done => "تم";
   String get store_remove_q => "إيقاف النسخ الاحتياطي؟";
-  String store_remove_help(String target) => "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
+  String store_remove_help(String target) =>
+      "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
   String get store_remove_cta => "إيقاف النسخ الاحتياطي";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'store_delete_rec':
@@ -2439,7 +2706,8 @@ class MapPacksStrings_ar extends MapPacksStrings {
   final Strings_ar _parent;
   const MapPacksStrings_ar(this._parent) : super(_parent);
   String get title => "الخرائط دون اتصال";
-  String get subtitle => "نزّل محافظة لاستخدام الخريطة والأماكن القريبة بدون اتصال بالإنترنت.";
+  String get subtitle =>
+      "نزّل محافظة لاستخدام الخريطة والأماكن القريبة بدون اتصال بالإنترنت.";
   String get not_downloaded => "غير مُنزّلة";
   String get downloaded => "تم التنزيل";
   String get update_available => "يتوفر تحديث";
@@ -2449,11 +2717,13 @@ class MapPacksStrings_ar extends MapPacksStrings {
   String get retry => "إعادة المحاولة";
   String get delete => "حذف";
   String get cancel => "إلغاء";
-  String get offline_notice => "تعذّر التحقق من وجود تحديثات — يظهر ما تم تنزيله بالفعل.";
+  String get offline_notice =>
+      "تعذّر التحقق من وجود تحديثات — يظهر ما تم تنزيله بالفعل.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':

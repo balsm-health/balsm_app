@@ -13,22 +13,27 @@ import '../tokens.dart';
 /// here are session-only name/relation rows — never fabricated sample PHI.
 Future<void> showAccountSwitcher(BuildContext context) {
   final s = AppScope.of(context);
-  return showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C14202B),
-    builder: (ctx) => Directionality(
-      textDirection: s.dir,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _AccountSwitcherSheet(s),
-        ),
-      ),
-    ),
+  return showAppSheet<void>(
+    context,
+    textDirection: s.dir,
+    builder: (_) => _AccountSwitcherSheet(s),
   );
+}
+
+/// Nested picker opened from inside the add-member form — a plain white list,
+/// rounded like every other sheet. The dialog presentation rounds all four
+/// corners itself.
+class _PickerSheet extends StatelessWidget {
+  const _PickerSheet({required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        ),
+        child: SafeArea(child: child),
+      );
 }
 
 class _AccountSwitcherSheet extends ConsumerStatefulWidget {
@@ -78,8 +83,7 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
       padding: const EdgeInsets.only(bottom: 38),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(
-            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SheetGrab(),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -383,8 +387,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
       ),
       padding: EdgeInsets.fromLTRB(20, 10, 20, 32 + MediaQuery.viewInsetsOf(context).bottom),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SheetGrab(),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
@@ -499,23 +502,17 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         c.relation,
         GestureDetector(
           onTap: () async {
-            final picked = await showModalBottomSheet<String>(
-              context: context,
-              backgroundColor: Colors.white,
-              builder: (ctx) => Align(
-                alignment: Alignment.bottomCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: SafeArea(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      for (final r in _relations)
-                        ListTile(
-                          title: Text(r.$2, style: Typo.body(ar: s.rtl)),
-                          onTap: () => Navigator.pop(ctx, r.$2),
-                        ),
-                    ]),
-                  ),
-                ),
+            final picked = await showAppSheet<String>(
+              context,
+              textDirection: s.dir,
+              builder: (ctx) => _PickerSheet(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  for (final r in _relations)
+                    ListTile(
+                      title: Text(r.$2, style: Typo.body(ar: s.rtl)),
+                      onTap: () => Navigator.pop(ctx, r.$2),
+                    ),
+                ]),
               ),
             );
             if (picked != null) setState(() => _relation = picked);
@@ -605,23 +602,17 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
     final c = s.strings.common;
     return GestureDetector(
       onTap: () async {
-        final picked = await showModalBottomSheet<String>(
-          context: context,
-          backgroundColor: Colors.white,
-          builder: (ctx) => Align(
-            alignment: Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: SafeArea(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  for (final r in _relations)
-                    ListTile(
-                      title: Text(r.$2, style: Typo.body(ar: s.rtl)),
-                      onTap: () => Navigator.pop(ctx, r.$2),
-                    ),
-                ]),
-              ),
-            ),
+        final picked = await showAppSheet<String>(
+          context,
+          textDirection: s.dir,
+          builder: (ctx) => _PickerSheet(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final r in _relations)
+                ListTile(
+                  title: Text(r.$2, style: Typo.body(ar: s.rtl)),
+                  onTap: () => Navigator.pop(ctx, r.$2),
+                ),
+            ]),
           ),
         );
         if (picked != null && mounted) setState(() => _relation = picked);

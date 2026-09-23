@@ -6,7 +6,6 @@ import 'package:collection/collection.dart';
 import 'package:core/core.dart';
 import 'package:profile/profile.dart';
 import '../app_state.dart';
-import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -16,22 +15,25 @@ import '../shell.dart';
 /// Privacy & data, Emergency numbers. Each opens as a pushed full-screen route
 /// (mirrors `openPersonalDetails`) and width-caps its content for tablet/desktop.
 
-void _push(BuildContext context, Widget Function(PatientAppState s) build) {
+/// Pushes a profile sub-screen as a full-screen route, inside the app's
+/// directionality and the tablet/desktop [AdaptiveFrame].
+void pushSubScreen(BuildContext context, Widget Function(PatientAppState s) build) {
   final s = AppScope.of(context);
   Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
     builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: build(s))),
   ));
 }
 
-void openMedicalProfile(BuildContext context) => _push(context, (s) => MedicalProfileScreen(s: s));
-void openCareTeam(BuildContext context) => _push(context, (s) => CareTeamScreen(s: s));
+void openMedicalProfile(BuildContext context) => pushSubScreen(context, (s) => MedicalProfileScreen(s: s));
 void openPrivacyData(BuildContext context, {VoidCallback? onDeleteAccount}) =>
-    _push(context, (s) => PrivacyDataScreen(s: s, onDeleteAccount: onDeleteAccount));
-void openEmergency(BuildContext context) => _push(context, (s) => EmergencyScreen(s: s));
+    pushSubScreen(context, (s) => PrivacyDataScreen(s: s, onDeleteAccount: onDeleteAccount));
+void openEmergency(BuildContext context) => pushSubScreen(context, (s) => EmergencyScreen(s: s));
 
-/// Shared scaffold: status-bar spacer + back app bar + width-capped scroll body.
-class _SubScreen extends StatelessWidget {
-  const _SubScreen({required this.s, required this.title, required this.children, this.trailing, this.maxWidth = 640});
+/// Shared scaffold: status-bar spacer + back app bar + width-capped scroll
+/// body. Public so `care_team_screen.dart` can wear the same chrome.
+class SubScreen extends StatelessWidget {
+  const SubScreen(
+      {super.key, required this.s, required this.title, required this.children, this.trailing, this.maxWidth = 640});
   final PatientAppState s;
   final String title;
   final List<Widget> children;
@@ -280,7 +282,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     final allergyList = profile?.allergies ?? const <Allergy>[];
     final conditionList = profile?.conditions ?? const <ChronicCondition>[];
     final selectedBlood = profile?.bloodType;
-    return _SubScreen(
+    return SubScreen(
       s: s,
       title: s.strings.profile.p_cond,
       maxWidth: 560,
@@ -700,59 +702,6 @@ class _ConditionEditorState extends State<_ConditionEditor> {
       );
 }
 
-// ── Care team ────────────────────────────────────────────────
-class CareTeamScreen extends StatelessWidget {
-  const CareTeamScreen({super.key, required this.s});
-  final PatientAppState s;
-  @override
-  Widget build(BuildContext context) => _SubScreen(
-        s: s,
-        title: s.strings.profile.p_care,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
-            child: Text(s.strings.care.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ),
-          // P001 has no care-team backend yet, so this shows a neutral empty
-          // state (no fabricated doctors). The "find care" CTA below routes to
-          // the map where a real care team is built in a later phase.
-          PCard(
-            padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-            child: Column(children: [
-              const Icon(LucideIcons.stethoscope, size: 36, color: T.ink300),
-              const SizedBox(height: 12),
-              Text(s.strings.care.care_empty,
-                  textAlign: TextAlign.center,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-              const SizedBox(height: 4),
-              Text(s.strings.care.care_add_help,
-                  textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
-          ),
-          const SizedBox(height: 16),
-          Pressable(
-            onTap: () {
-              Navigator.pop(context);
-              s.setTab(AppTab.map);
-            },
-            // Design: `1px dashed` in --balsm-border, radius-md, 52 tall.
-            child: DashedBorder(
-              child: Container(
-                height: 52,
-                alignment: Alignment.center,
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(LucideIcons.userPlus, size: 17, color: T.fg1),
-                  const SizedBox(width: 8),
-                  Text(s.strings.care.care_find,
-                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                ]),
-              ),
-            ),
-          ),
-        ],
-      );
-}
-
 // ── Privacy & data ───────────────────────────────────────────
 class PrivacyDataScreen extends StatefulWidget {
   const PrivacyDataScreen({super.key, required this.s, this.onDeleteAccount});
@@ -767,7 +716,7 @@ class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
   bool shareTeam = true, analytics = false, research = false, bioLock = true, pin = false;
 
   @override
-  Widget build(BuildContext context) => _SubScreen(
+  Widget build(BuildContext context) => SubScreen(
         s: s,
         title: s.strings.profile.p_privacy,
         children: [
@@ -899,7 +848,7 @@ class EmergencyScreen extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) => _SubScreen(
+  Widget build(BuildContext context) => SubScreen(
         s: s,
         title: s.strings.profile.p_emergency,
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -912,11 +861,13 @@ class EmergencyScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(0, 2, 0, 16),
             child: Text(s.strings.emergency.em_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
           ),
-          // `.emergency-grid` is two columns at every width — these are
-          // thumb-sized call targets, not a responsive card grid.
+          // `.emergency-grid` — two thumb-sized call targets per row on a
+          // phone, `repeat(4, minmax(0, 1fr))` once the window reaches the
+          // medium class and the four contacts fit on one line.
           LayoutBuilder(builder: (context, c) {
             const gap = 12.0;
-            final tileW = (c.maxWidth - gap) / 2;
+            final columns = windowClassOf(context) == BalsmWindowClass.compact ? 2 : 4;
+            final tileW = (c.maxWidth - gap * (columns - 1)) / columns;
             return Wrap(
               spacing: gap,
               runSpacing: gap,

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:account/account.dart';
 import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
+import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../tokens.dart';
 import '../widgets/body_map.dart';
@@ -32,6 +35,7 @@ class MetricLogCapture {
     this.painLevel = PainLevel.none,
     this.painSites = const {},
     this.symptoms = const {},
+    this.symptomDetails = const {},
     this.vitals = Vitals.empty,
     this.when,
     this.photoBytes,
@@ -43,6 +47,10 @@ class MetricLogCapture {
   final PainLevel painLevel;
   final Set<PainSite> painSites;
   final Set<SymptomId> symptoms;
+
+  /// Per-symptom observations (`quicklog.jsx` QuickSymptomDetail). Sparse.
+  final Map<SymptomId, SymptomDetail> symptomDetails;
+
   final Vitals vitals;
   final DateTime? when;
 
@@ -1062,19 +1070,36 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
 
   final Set<PainSite> locations = {};
 
+  /// Only urine and stool carry one (`SymptomId.hasDetail`).
+  SymptomDetail detail = const SymptomDetail();
+
   bool get _showMap => _locatedSymptomIds.contains(widget.symptom.id);
 
   @override
   bool get valid => true;
 
+  /// The design appends what was observed to the saved summary line.
+  String _detailSuffix() {
+    final c = s.strings.checkin;
+    final parts = [
+      if (detail.urineColor case final colour?) urineColorLabel(s, colour),
+      if (detail.urineMl case final ml? when ml > 0) '$ml ${c.sd_ml}',
+      if (detail.blood) c.sd_blood,
+    ];
+    return parts.isEmpty ? '' : ' · ${parts.join(' · ')}';
+  }
+
   @override
   MetricLogCapture get capture {
     final label = symptomLabel(s, widget.symptom);
     final where = locations.map((r) => siteLabel(s, r)).join(s.strings.checkin.list_sep);
+    final base = where.isEmpty ? label : s.strings.checkin.labeled_where(label, where);
     return MetricLogCapture(
-      summary: where.isEmpty ? label : s.strings.checkin.labeled_where(label, where),
+      summary: '$base${_detailSuffix()}',
       note: _trimmedNote(noteCtrl),
       symptoms: {widget.symptom},
+      // An untouched detail is not an observation, so it is not stored.
+      symptomDetails: detail.isEmpty ? const {} : {widget.symptom: detail},
       painSites: locations,
       when: when,
       photoBytes: photo?.bytes,
@@ -1089,23 +1114,36 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
 
   @override
   Widget build(BuildContext context) {
-    if (!_showMap) return chrome(child: const SizedBox.shrink());
+    final hasDetail = widget.symptom.hasDetail;
+    if (!_showMap && !hasDetail) return chrome(child: const SizedBox.shrink());
     final ar = s.rtl;
     return chrome(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(s.strings.checkin.body_location,
-              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-        ),
-        _CurrentProfileBodyMap(
-          s: s,
-          selected: locations,
-          onToggle: (site) => setState(() {
-            locations.contains(site) ? locations.remove(site) : locations.add(site);
-            emit();
-          }),
-        ),
+        if (_showMap) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(s.strings.checkin.body_location,
+                style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+          ),
+          _CurrentProfileBodyMap(
+            s: s,
+            selected: locations,
+            onToggle: (site) => setState(() {
+              locations.contains(site) ? locations.remove(site) : locations.add(site);
+              emit();
+            }),
+          ),
+        ],
+        if (hasDetail)
+          _SymptomDetailCard(
+            s: s,
+            symptom: widget.symptom,
+            detail: detail,
+            onChanged: (d) => setState(() {
+              detail = d;
+              emit();
+            }),
+          ),
       ]),
     );
   }
@@ -1188,4 +1226,246 @@ class PainSlider extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// `quicklog.jsx` `QuickSymptomDetail`'s urine card (colour · quantity · blood)
+/// and stool card (blood).
+///
+/// Every control records what the patient observed and nothing more — no
+/// hydration scale, no interpretation, no flag. Self-report is a journal.
+class _SymptomDetailCard extends StatelessWidget {
+  const _SymptomDetailCard({
+    required this.s,
+    required this.symptom,
+    required this.detail,
+    required this.onChanged,
+  });
+
+  final PatientAppState s;
+  final SymptomId symptom;
+  final SymptomDetail detail;
+  final ValueChanged<SymptomDetail> onChanged;
+
+  /// The design's stepper moves in 50ml steps.
+  static const _step = 50;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = s.strings.checkin;
+    final ar = s.rtl;
+    return PCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (symptom.asksUrineDetail) ...[
+          _Head(icon: LucideIcons.palette, label: c.sd_color, accent: s.accent.main, ar: ar),
+          const SizedBox(height: 14),
+          Row(children: [
+            for (final colour in UrineColor.values)
+              Expanded(
+                child: _Swatch(
+                  s: s,
+                  colour: colour,
+                  selected: detail.urineColor == colour,
+                  // Tapping the selected swatch clears it — nothing reported.
+                  onTap: () => onChanged(detail.urineColor == colour
+                      ? detail.copyWith(clearUrineColor: true)
+                      : detail.copyWith(urineColor: colour)),
+                ),
+              ),
+          ]),
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: T.ink100),
+          const SizedBox(height: 18),
+          _Head(icon: LucideIcons.beaker, label: c.sd_quantity, accent: s.accent.main, ar: ar),
+          const SizedBox(height: 14),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _StepBtn(
+              icon: LucideIcons.minus,
+              // Never below zero, and stepping down from nothing stays nothing.
+              onTap: detail.urineMl == null || detail.urineMl == 0
+                  ? null
+                  : () => onChanged(detail.copyWith(urineMl: math.max(0, detail.urineMl! - _step))),
+            ),
+            const SizedBox(width: 18),
+            // `min-width: 90` — a fixed width clips at three digits.
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 90),
+              child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${detail.urineMl ?? 0}',
+                      textDirection: TextDirection.ltr,
+                      style: Typo.num(
+                          size: FS.xl2, weight: FontWeight.w700, color: detail.urineMl == null ? T.fg4 : T.fg1),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(c.sd_ml, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+                  ]),
+            ),
+            const SizedBox(width: 18),
+            _StepBtn(
+              icon: LucideIcons.plus,
+              onTap: () => onChanged(detail.copyWith(urineMl: (detail.urineMl ?? 0) + _step)),
+            ),
+          ]),
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: T.ink100),
+          const SizedBox(height: 16),
+        ],
+        // Both urine and stool ask about blood.
+        Pressable(
+          onTap: () => onChanged(detail.copyWith(blood: !detail.blood)),
+          child: AnimatedContainer(
+            duration: Motion.fast,
+            curve: Motion.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: detail.blood ? T.dangerBg : T.ink50,
+              borderRadius: BorderRadius.circular(T.rMd),
+            ),
+            child: Row(children: [
+              Icon(LucideIcons.droplet, size: 17, color: detail.blood ? T.danger : T.fg3),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  c.sd_blood,
+                  style:
+                      Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: detail.blood ? T.danger : T.fg2),
+                ),
+              ),
+              // The row is already the tap target, so this is the indicator
+              // only — `BCheck` would draw its own label and hit area.
+              AnimatedContainer(
+                duration: Motion.fast,
+                curve: Motion.easeOut,
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: detail.blood ? T.danger : Colors.white,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: detail.blood ? T.danger : T.borderStrong, width: 1.5),
+                ),
+                child: detail.blood ? const Icon(LucideIcons.check, size: 14, color: Colors.white) : null,
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _Head extends StatelessWidget {
+  const _Head({required this.icon, required this.label, required this.accent, required this.ar});
+  final IconData icon;
+  final String label;
+  final Color accent;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Icon(icon, size: 15, color: accent),
+        const SizedBox(width: 8),
+        Text(label, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+      ]);
+}
+
+/// One urine colour, as a 42px disc with its label under it.
+class _Swatch extends StatelessWidget {
+  const _Swatch({required this.s, required this.colour, required this.selected, required this.onTap});
+  final PatientAppState s;
+  final UrineColor colour;
+  final bool selected;
+  final VoidCallback onTap;
+
+  String _label(CheckinStrings c) => switch (colour) {
+        UrineColor.pale => c.sd_u_pale,
+        UrineColor.yellow => c.sd_u_yellow,
+        UrineColor.dark => c.sd_u_dark,
+        UrineColor.red => c.sd_u_red,
+        UrineColor.brown => c.sd_u_brown,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = s.accent.main;
+    return Pressable(
+      onTap: onTap,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        AnimatedScale(
+          scale: selected ? 1.06 : 1,
+          duration: Motion.fast,
+          curve: Motion.easeOut,
+          child: Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Color(colour.swatch),
+              shape: BoxShape.circle,
+              // Design: a white gap ring, then the accent ring, when selected.
+              border: Border.all(color: Colors.white, width: selected ? 2.5 : 0),
+              boxShadow: [
+                BoxShadow(
+                  color: selected ? accent : const Color(0x1A14202B),
+                  spreadRadius: selected ? 2 : 1,
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: selected
+                ? Icon(
+                    LucideIcons.check,
+                    size: 17,
+                    // The two pale swatches need dark ink to stay legible.
+                    color: colour.isLightSwatch ? const Color(0xFF3A2E05) : Colors.white,
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _label(s.strings.checkin),
+          textAlign: TextAlign.center,
+          style: Typo.bodySm(ar: s.rtl).copyWith(
+            fontSize: 10.5,
+            height: 1.2,
+            fontWeight: FontWeight.w600,
+            color: selected ? accent : T.fg3,
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// The 40px +/- disc beside the quantity.
+class _StepBtn extends StatelessWidget {
+  const _StepBtn({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+        opacity: onTap == null ? 0.4 : 1,
+        child: Pressable(
+          onTap: onTap ?? () {},
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: T.border, width: 1.5),
+            ),
+            child: Icon(icon, size: 17, color: T.fg2),
+          ),
+        ),
+      );
 }

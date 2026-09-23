@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'dart:ui' as ui;
 
 import 'package:core/core.dart';
 import 'package:emergency_card/emergency_card.dart';
@@ -19,7 +18,7 @@ import 'kit.dart';
 import 'offline_banner.dart';
 import 'responsive.dart';
 import 'tokens.dart';
-import 'widgets/balsm_mark.dart';
+import 'widgets/splash_bloom.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
@@ -39,10 +38,29 @@ import 'screens/report_flow.dart';
 import 'widgets/account_switcher.dart';
 import 'deep_link_handler.dart';
 import 'dev/shake_to_dev_config.dart';
+import 'screens/care_team_screen.dart';
 
 /// Root of the patient app prototype. Watches the Riverpod-owned
 /// [PatientAppState] and renders the auth flow or the main tabbed app
 /// depending on `route`.
+/// Service-extension names already bound in this isolate.
+///
+/// `developer.registerExtension` throws `ArgumentError` on a duplicate, and the
+/// shell's `initState` runs again whenever it remounts (sign out and back in,
+/// `go('welcome')` and back) without the isolate restarting. Unguarded, that
+/// throw aborts the rest of `initState` — the boot-splash timer included — and
+/// surfaces as an unhandled exception, which inside a debugger session reads as
+/// "the app errors on restart".
+@visibleForTesting
+final boundDebugExtensions = <String>{};
+
+/// Registers [name] once per isolate; a repeat bind is a no-op.
+@visibleForTesting
+void registerExtensionOnce(String name, developer.ServiceExtensionHandler handler) {
+  if (!boundDebugExtensions.add(name)) return;
+  developer.registerExtension(name, handler);
+}
+
 class PatientApp extends ConsumerStatefulWidget {
   const PatientApp({super.key, required this.navObserver});
 
@@ -86,7 +104,11 @@ class _PatientAppState extends ConsumerState<PatientApp> {
     }
     LogBuffer.instance.install();
     _bindDebugServiceExtensions();
-    Timer(const Duration(milliseconds: 2300), () {
+    // `SplashScreen`: hold 2300ms, or 1200 under reduced motion — there is no
+    // entrance animation left to watch. Read off the dispatcher rather than a
+    // MediaQuery, which initState has no safe access to.
+    final reduce = WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.disableAnimations;
+    Timer(Duration(milliseconds: reduce ? 1200 : 2300), () {
       if (mounted) setState(() => _booting = false);
     });
   }
@@ -95,11 +117,11 @@ class _PatientAppState extends ConsumerState<PatientApp> {
   /// screens without accessibility taps.
   void _bindDebugServiceExtensions() {
     if (!kDebugMode) return;
-    developer.registerExtension('ext.balsm.setTab', (method, params) async {
+    registerExtensionOnce('ext.balsm.setTab', (method, params) async {
       state.setTab(AppTab.fromId(params['tab']));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true}));
     });
-    developer.registerExtension('ext.balsm.go', (method, params) async {
+    registerExtensionOnce('ext.balsm.go', (method, params) async {
       final ctx = _navKey.currentContext;
       if (ctx != null) {
         Navigator.of(ctx, rootNavigator: true).popUntil((route) => route.isFirst);
@@ -108,7 +130,7 @@ class _PatientAppState extends ConsumerState<PatientApp> {
       state.go(params['route'] ?? 'app');
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true}));
     });
-    developer.registerExtension('ext.balsm.scroll', (method, params) async {
+    registerExtensionOnce('ext.balsm.scroll', (method, params) async {
       final ctx = _navKey.currentContext;
       final c = ctx == null ? null : PrimaryScrollController.maybeOf(ctx);
       if (c != null && c.hasClients) {
@@ -120,12 +142,30 @@ class _PatientAppState extends ConsumerState<PatientApp> {
       }
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'scrolled': c?.hasClients == true}));
     });
-    developer.registerExtension('ext.balsm.checkinNext', (method, params) async {
+    registerExtensionOnce('ext.balsm.setLang', (method, params) async {
+      // Locale switch for the docshots driver: one run captures every supported
+      // language instead of a rebuild per locale. Rebuilding the shell is enough
+      // — direction and the message bundle both hang off state.lang.
+      final code = params['lang'] ?? 'en';
+      state.setLang(LanguageCode.fromCode(code));
+      // The account's display name is locale-dependent in the docshots build.
+      // Invalidating the provider alone is not enough — the adapter serves from
+      // its own CachedValue — so drop that cache too. Harmless elsewhere.
+      final account = ref.read(accountApiProvider);
+      if (account is FakeAccountApi) account.language = code;
+      final uid = ref.read(currentUserIdProvider);
+      if (uid != null) await ref.read(readAccountRepositoryProvider).refresh(uid.value);
+      ref.invalidate(accountSummaryProvider);
+      // Let the rebuild settle (RTL flips the whole tree) before the capture.
+      await Future<void>.delayed(const Duration(milliseconds: 420));
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'lang': code}));
+    });
+    registerExtensionOnce('ext.balsm.checkinNext', (method, params) async {
       state.qaCheckinAdvance?.call();
       await Future<void>.delayed(const Duration(milliseconds: 80));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': state.qaCheckinAdvance != null}));
     });
-    developer.registerExtension('ext.balsm.open', (method, params) async {
+    registerExtensionOnce('ext.balsm.open', (method, params) async {
       final screen = params['screen'] ?? '';
       final ctx = _navKey.currentContext;
       if (ctx != null) {
@@ -239,19 +279,20 @@ class _PatientAppState extends ConsumerState<PatientApp> {
                 // follow the app accent instead of a hardcoded hue.
                 child: AccentScope(
                   accent: state.accent,
-                  child: AdaptiveFrame(
-                    child: Scaffold(
-                      backgroundColor: Colors.white,
-                      body: Stack(children: [
-                        _publicResolveJti != null
-                            ? PublicEmergencyResolveScreen(tokenId: _publicResolveJti!)
-                            : state.route == AppRoutes.app
-                                ? const _MainApp()
-                                : const AuthRouter(),
-                        if (_publicResolveJti == null)
-                          Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
-                      ]),
-                    ),
+                  child: Scaffold(
+                    backgroundColor: Colors.white,
+                    body: Stack(children: [
+                      // The shell contains its own main pane so the rail stays
+                      // at the window edge; every other screen is contained
+                      // whole — app.css `.app-body > .screen:not(.app-shell)`.
+                      _publicResolveJti != null
+                          ? AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
+                          : state.route == AppRoutes.app
+                              ? const _MainApp()
+                              : const AdaptiveFrame(child: AuthRouter()),
+                      if (_publicResolveJti == null)
+                        Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                    ]),
                   ),
                 ),
               ),
@@ -263,25 +304,38 @@ class _PatientAppState extends ConsumerState<PatientApp> {
   }
 }
 
-/// Caps the app on very wide screens so a touch-first layout never stretches
-/// edge-to-edge on desktop/web. Below [_maxW] the app fills the window and the
-/// internal layout (bottom nav ↔ side rail, adaptive panes) handles every size.
+/// Content containment at expanded and up — app.css `@container app
+/// (min-width: 1024px)`: the screen sits centred at [T.contentMax] on the
+/// cream canvas with a hairline down either side, so a touch-first layout
+/// never stretches edge-to-edge on desktop/web. Below [minWidth] the screen
+/// fills its pane and the internal layout (bottom nav ↔ side rail, adaptive
+/// panes) handles every size.
 class AdaptiveFrame extends StatelessWidget {
-  const AdaptiveFrame({super.key, required this.child});
+  const AdaptiveFrame({super.key, required this.child, this.minWidth = BalsmWindow.expandedMin});
   final Widget child;
 
-  static const _maxW = Bp.xl; // 1280
+  /// Pane width from which containment applies. The shell's main pane passes
+  /// the window threshold less the rail, since the design measures the whole
+  /// app body while this widget can only see its own pane.
+  final double minWidth;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, c) {
-      if (c.maxWidth <= _maxW) return child;
+      if (c.maxWidth < minWidth) return child;
       return ColoredBox(
-        color: const Color(0xFFF1EFE7),
+        color: T.cream50,
         child: Center(
-          child: SizedBox(
-            width: _maxW,
-            child: ColoredBox(color: Colors.white, child: child),
+          child: Container(
+            width: T.contentMax,
+            decoration: const BoxDecoration(
+              color: T.surface,
+              border: BorderDirectional(
+                start: BorderSide(color: T.border),
+                end: BorderSide(color: T.border),
+              ),
+            ),
+            child: child,
           ),
         ),
       );
@@ -348,10 +402,18 @@ class _MainAppState extends State<_MainApp> {
       // bottom bar · medium/expanded 600–1439 → icon rail · wide ≥1440 →
       // 240px sidebar with the brand block. Rail/sidebar persist on
       // sub-screens; only compact hides its bar there.
-      if (c.maxWidth >= 600) {
+      if (c.maxWidth >= BalsmWindow.mediumMin) {
         return Row(children: [
-          _SideNav(expanded: c.maxWidth >= 1440),
-          Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
+          _SideNav(expanded: c.maxWidth >= BalsmWindow.wideMin),
+          // `.app-main`: from 1024 the screen is contained on the cream canvas
+          // while the rail keeps the window edge. The pane is the window less
+          // the rail, so the threshold moves by the same amount.
+          Expanded(
+            child: AdaptiveFrame(
+              minWidth: BalsmWindow.expandedMin - BalsmWindow.railW,
+              child: _navLoading ? const _ScreenSkeleton() : screen,
+            ),
+          ),
         ]);
       }
       // Phone: full-bleed screen + bottom tab bar. Hide the bar on full-screen
@@ -474,23 +536,15 @@ class _TabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    // The frosted plate is painted as its own clipped layer so the centre FAB,
-    // which rides 22px above the bar, is not clipped along with the blur.
-    return Stack(clipBehavior: Clip.none, children: [
-      Positioned.fill(
-        child: ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: const DecoratedBox(
-              decoration: BoxDecoration(
-                color: Color(0xEBFFFFFF),
-                border: Border(top: BorderSide(color: T.border)),
-              ),
-            ),
-          ),
-        ),
+    // `.tabbar { background: var(--balsm-surface) }` — the design dropped the
+    // frosted plate for the solid surface. Nothing here clips, so the centre
+    // FAB still rides 22px above the bar.
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: T.surface,
+        border: Border(top: BorderSide(color: T.border)),
       ),
-      Padding(
+      child: Padding(
         padding: EdgeInsets.only(bottom: 22 + MediaQuery.paddingOf(context).bottom.clamp(0, 12)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
@@ -501,7 +555,7 @@ class _TabBar extends StatelessWidget {
           _Tab(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile),
         ]),
       ),
-    ]);
+    );
   }
 }
 
@@ -544,52 +598,64 @@ class _QuickLog extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     if (wide) {
-      // Sidebar: full-width labelled quick-log action (design `.fab-label`).
+      // Sidebar (≥1440): `.tab-fab .fab { width: 100%; height: 48px;
+      // border-radius: var(--radius-md); padding: 0 14px; justify-content:
+      // flex-start; gap: 8px; font-size: var(--pt-md); font-weight: 700 }`
+      // with `.fab-label` shown, inside `.tab-fab { margin: 4px 0 12px }`.
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Space.s3, vertical: Space.s2),
+        padding: const EdgeInsets.only(top: Space.s1, bottom: Space.s3),
         child: Pressable(
           onTap: () => showQuickLog(context),
           scale: 0.97,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: Space.s3),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: s.accent.main,
-              borderRadius: BorderRadius.circular(T.rLg),
+              borderRadius: BorderRadius.circular(T.rMd),
               boxShadow: s.accent.boxShadow,
             ),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            child: Row(children: [
               const Icon(LucideIcons.plus, size: 20, color: Colors.white),
               const SizedBox(width: 8),
-              Text(s.strings.checkin.ql_title,
-                  style:
-                      Typo.body(ar: s.rtl).copyWith(fontSize: FS.sm, fontWeight: FontWeight.w700, color: Colors.white)),
+              Expanded(
+                child: Text(s.strings.checkin.ql_title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.body(ar: s.rtl)
+                        .copyWith(fontSize: FS.md, fontWeight: FontWeight.w700, color: Colors.white)),
+              ),
             ]),
           ),
         ),
       );
     }
+    // Bar: a 58px disc whose 4px white ring lets it punch through the bar as
+    // it rides above it. Rail (600–1439): `.tab-fab .fab { width: 48px;
+    // height: 48px; border: 0 }` with a 24px glyph, drawn flush.
+    final size = rail ? 48.0 : 58.0;
     final button = Pressable(
       onTap: () => showQuickLog(context),
       scale: 0.94,
       child: Container(
-        width: 58,
-        height: 58,
+        width: size,
+        height: size,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: s.accent.main,
           shape: BoxShape.circle,
-          // A 4px white ring lets the raised disc punch through the bar. The
-          // rail draws it flush, so no ring there.
           border: rail ? null : Border.all(color: Colors.white, width: 4),
           boxShadow: s.accent.boxShadow,
         ),
-        child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
+        child: Icon(LucideIcons.plus, size: rail ? 24 : 26, color: Colors.white),
       ),
     );
     if (rail) {
+      // `.tab-fab { order: -1; padding: 4px 0 0; margin-bottom: 8px }` on a
+      // 60px-tall tab slot — the disc leads the rail, above the tabs.
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: Space.s2),
-        child: button,
+        padding: const EdgeInsets.only(top: Space.s1, bottom: Space.s4),
+        child: Center(child: button),
       );
     }
     return Expanded(
@@ -601,50 +667,34 @@ class _QuickLog extends StatelessWidget {
 }
 
 // ── Tablet / desktop side rail ───────────────────────────────
+/// app.css `@container app (min-width: 600px) .app-shell > .tabbar`: the
+/// 72px rail (`--shell-rail-w`) — 12/6/16 padding, 4px gaps, solid surface,
+/// hairline at the inline end — growing at 1440 into the 240px sidebar
+/// (`--shell-sidebar-w`, 16/12/20 padding). Order is the design's: brand,
+/// quick-log, then the tabs.
 class _SideNav extends StatelessWidget {
   const _SideNav({this.expanded = false});
 
-  /// Wide window class (≥1440): 240px sidebar with the brand block and
-  /// labelled rows. Otherwise the medium/expanded 72px icon rail.
+  /// Wide window class (≥1440): the sidebar with the brand block and labelled
+  /// rows. Otherwise the medium/expanded icon rail.
   final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
-      width: expanded ? 240 : 96,
+      width: expanded ? BalsmWindow.sidebarW : BalsmWindow.railW,
+      padding: expanded ? const EdgeInsets.fromLTRB(12, 16, 12, 20) : const EdgeInsets.fromLTRB(6, 12, 6, 16),
       decoration: const BoxDecoration(
-        color: Color(0xEBFFFFFF),
+        color: T.surface,
         border: BorderDirectional(end: BorderSide(color: T.border)),
       ),
       child: SafeArea(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          if (expanded)
-            // `.nav-brand` — mark + wordmark, sidebar only.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
-              child: Row(children: [
-                SvgPicture.asset(Assets.brand_icon, width: 30, height: 30),
-                const SizedBox(width: 10),
-                Text.rich(
-                  TextSpan(children: [
-                    TextSpan(
-                        text: 'Balsm',
-                        style: Typo.heading(ar: false).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w800)),
-                    TextSpan(
-                        text: '.health',
-                        style:
-                            Typo.body(ar: false).copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: T.fg3)),
-                  ]),
-                  textDirection: TextDirection.ltr,
-                ),
-              ]),
-            )
-          else
-            const SizedBox(height: Space.s5),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: Space.s1, children: [
+          _NavBrand(expanded: expanded),
+          _QuickLog(rail: true, wide: expanded),
           _RailItem(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
           _RailItem(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
-          _QuickLog(rail: true, wide: expanded),
           _RailItem(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
           _RailItem(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
           const Spacer(),
@@ -654,6 +704,49 @@ class _SideNav extends StatelessWidget {
   }
 }
 
+/// `.nav-brand` — the mark alone on the rail (`.nav-mark` 40px, `.nav-word`
+/// hidden); on the sidebar a 44px mark beside the wordmark, `Balsm` in the
+/// 22px display face and `.health` at 17px in the TLD colour.
+class _NavBrand extends StatelessWidget {
+  const _NavBrand({required this.expanded});
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!expanded) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 14),
+        child: Center(child: SvgPicture.asset(Assets.brand_icon, width: 40, height: 40)),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
+      child: Row(children: [
+        SvgPicture.asset(Assets.brand_icon, width: 44, height: 44),
+        const SizedBox(width: 12),
+        Text.rich(
+          TextSpan(children: [
+            TextSpan(
+                text: 'Balsm',
+                style: Typo.heading(ar: false)
+                    .copyWith(fontSize: 22, fontWeight: FontWeight.w700, color: T.wordmark, letterSpacing: -0.22)),
+            TextSpan(
+                text: '.health',
+                style:
+                    Typo.heading(ar: false).copyWith(fontSize: 17, fontWeight: FontWeight.w500, color: T.wordmarkTld)),
+          ]),
+          textDirection: TextDirection.ltr,
+        ),
+      ]),
+    );
+  }
+}
+
+/// One nav tab off the phone bar. Rail: `.tabbar .tab { padding: 10px 4px 8px;
+/// border-radius: var(--radius-md); gap: 4px; min-height: 60px }` with the
+/// label clamped to two lines and `.tab.active { background: accent-50 }`.
+/// Sidebar: a 44px row, `padding: 0 12px; gap: 12px`, 20px glyph, `pt-sm`
+/// label at 500 in fg2 — active in accent-600 at 600.
 class _RailItem extends StatelessWidget {
   const _RailItem({required this.id, required this.icon, required this.label, this.wide = false});
   final AppTab id;
@@ -664,33 +757,37 @@ class _RailItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final active = s.tab == id;
-    final color = active ? s.accent.main : T.fg4;
     final child = wide
         ? Row(children: [
-            Icon(icon, size: 22, color: color),
+            Icon(icon, size: 20, color: active ? s.accent.d : T.fg2),
             const SizedBox(width: 12),
             Expanded(
               child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Typo.body(ar: s.rtl).copyWith(
                       fontSize: FS.sm,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-                      color: active ? s.accent.main : T.fg2)),
+                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                      color: active ? s.accent.d : T.fg2)),
             ),
           ])
         : Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 24, color: color),
+            Icon(icon, size: 24, color: active ? s.accent.main : T.fg4),
             const SizedBox(height: 4),
             Text(label,
-                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Typo.body(ar: s.rtl).copyWith(
+                    fontSize: FS.xs2, fontWeight: FontWeight.w600, height: 1.2, color: active ? s.accent.main : T.fg4)),
           ]);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => s.setTab(id),
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: Space.s1, horizontal: wide ? Space.s3 : Space.s2),
-        padding: wide
-            ? const EdgeInsets.symmetric(vertical: Space.s3, horizontal: Space.s3)
-            : const EdgeInsets.symmetric(vertical: Space.s2),
+        constraints: BoxConstraints(minHeight: wide ? 44 : 60),
+        padding: wide ? const EdgeInsets.symmetric(horizontal: 12) : const EdgeInsets.fromLTRB(4, 10, 4, 8),
+        alignment: wide ? AlignmentDirectional.centerStart : Alignment.center,
         decoration: BoxDecoration(
           color: active ? s.accent.bg : Colors.transparent,
           borderRadius: BorderRadius.circular(T.rMd),
@@ -724,7 +821,9 @@ class _BootSplash extends StatelessWidget {
           Image.asset(
             Assets.brand_background,
             fit: BoxFit.cover,
-            alignment: Alignment.center,
+            // `.splash-bg { background-position: 78% top }` — the same crop
+            // the welcome screen uses, so the cross-fade lands on itself.
+            alignment: const Alignment(0.56, -1),
             opacity: const AlwaysStoppedAnimation(0.95),
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
@@ -742,18 +841,41 @@ class _BootSplash extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const MarkSpinner(size: 96),
-              const SizedBox(height: 28),
-              Text(state.strings.boot.boot_preparing,
-                  textAlign: TextAlign.center,
-                  style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              Text(state.strings.boot.boot_tagline, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
-            ]),
-          ),
+          // `.splash-core` — the mark and its promise, optically centred, with
+          // `.splash-foot` pinned to the bottom.
+          Column(children: [
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const SplashMark(),
+                    // `.splash-promise { margin-top: 22px }`
+                    const SizedBox(height: 22),
+                    SplashRise(
+                      delay: const Duration(milliseconds: 550),
+                      child: Text(
+                        state.strings.boot.boot_promise,
+                        textAlign: TextAlign.center,
+                        style: Typo.heading(ar: ar).copyWith(fontSize: FS.lg, height: 1.35, letterSpacing: -0.01),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+            SplashRise(
+              delay: const Duration(milliseconds: 800),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(24, 0, 24, MediaQuery.paddingOf(context).bottom + 42),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(state.strings.ecosystem.eco_tagline, style: Typo.eyebrow(T.wordmark, ar: ar)),
+                  const SizedBox(height: 16),
+                  const SplashDots(),
+                ]),
+              ),
+            ),
+          ]),
         ]),
       ),
     );

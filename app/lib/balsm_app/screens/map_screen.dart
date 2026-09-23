@@ -460,12 +460,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     boxShadow: [BoxShadow(color: Color(0x2414202B), blurRadius: 32, offset: Offset(0, -4))]),
                 padding: EdgeInsets.fromLTRB(18, 10, 18, 24 + MediaQuery.paddingOf(context).bottom),
                 child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Center(
-                      child: Container(
-                          width: 38,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 14),
-                          decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999)))),
+                  const Center(child: Padding(padding: EdgeInsets.only(bottom: 14), child: SheetGrab())),
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     _typeIcon(e.type, 50),
                     const SizedBox(width: 13),

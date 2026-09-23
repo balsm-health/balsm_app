@@ -23,31 +23,22 @@ import 'report_flow.dart';
 /// wellbeing / per-symptom rows, plus the full check-in CTA.
 void showQuickLog(BuildContext context) {
   final s = AppScope.of(context);
-  showModalBottomSheet<void>(
-    context: context,
+  showAppSheet<void>(
+    context,
     useRootNavigator: true,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    size: SheetSize.lg,
     barrierColor: const Color(0x61141F2B),
-    builder: (sheetContext) => Directionality(
-      textDirection: s.dir,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _QuickLogSheet(
-            s: s,
-            onFullCheckin: () {
-              Navigator.pop(sheetContext);
-              openCheckin(context);
-            },
-            onAddRecord: (type) {
-              Navigator.pop(sheetContext);
-              showAddRecord(context, initialType: type);
-            },
-          ),
-        ),
-      ),
+    textDirection: s.dir,
+    builder: (sheetContext) => _QuickLogSheet(
+      s: s,
+      onFullCheckin: () {
+        Navigator.pop(sheetContext);
+        openCheckin(context);
+      },
+      onAddRecord: (type) {
+        Navigator.pop(sheetContext);
+        showAddRecord(context, initialType: type);
+      },
     ),
   );
 }
@@ -192,6 +183,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
           painLevel: capture.painLevel,
           painSites: capture.painSites,
           symptoms: capture.symptoms,
+          symptomDetails: capture.symptomDetails,
           vitals: capture.vitals,
           note: capture.note,
           photoRecordId: photoRecordId,
@@ -221,12 +213,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: Column(children: [
-              if (!showBack)
-                Container(
-                    width: 38,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(T.rPill))),
+              if (!showBack) const Padding(padding: EdgeInsets.only(bottom: 10), child: SheetGrab()),
               Container(
                 padding: const EdgeInsets.only(bottom: 10),
                 decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),

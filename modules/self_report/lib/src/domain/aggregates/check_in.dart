@@ -5,6 +5,7 @@ import '../value_objects/ids.dart';
 import '../value_objects/mood.dart';
 import '../value_objects/pain_level.dart';
 import '../value_objects/symptom.dart';
+import '../value_objects/symptom_detail.dart';
 import '../value_objects/vitals.dart';
 
 /// A single self-report / check-in — the patient's journal entry for a moment
@@ -24,6 +25,7 @@ class CheckIn {
     required this.painLevel,
     required this.painSites,
     required this.symptoms,
+    this.symptomDetails = const {},
     required this.vitals,
     this.note,
     this.photoRecordId,
@@ -40,6 +42,12 @@ class CheckIn {
   final PainLevel painLevel;
   final Set<PainSite> painSites;
   final Set<SymptomId> symptoms;
+
+  /// Extra observations per symptom (`quicklog.jsx` `QuickSymptomDetail`).
+  /// Sparse: only symptoms the patient actually detailed appear, and only
+  /// [SymptomId.hasDetail] ones ever can.
+  final Map<SymptomId, SymptomDetail> symptomDetails;
+
   final Vitals vitals;
   final String? note;
 

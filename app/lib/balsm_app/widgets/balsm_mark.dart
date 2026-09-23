@@ -4,7 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../assets.dart';
 import '../tokens.dart';
 
-/// The official Balsm five-figure ring mark (`assets/brand/icon.svg`).
+/// The official Balsm five-ribbon ring mark (`assets/brand/icon.svg`), ported
+/// from the design project's `petalmark.jsx` / `assets/icon.svg`.
 class BalsmFlower extends StatelessWidget {
   const BalsmFlower({super.key, this.size = 92, this.opacity = 1});
   final double size;

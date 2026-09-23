@@ -9,6 +9,7 @@ import 'package:core/core.dart' show KeyValueDataSource;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class _MemoryKV implements KeyValueDataSource {
   final store = <String, Object?>{};
@@ -63,7 +64,7 @@ void main() {
         ProviderScope(
           overrides: [userFileStoreProvider.overrideWithValue(store)],
           child: MaterialApp(
-            home: AppScope(state: s, child: VaultFileViewer(path: path, title: 'Scan')),
+            home: AppScope(state: s, child: VaultFileViewer(paths: [path], title: 'Scan')),
           ),
         ),
       );
@@ -86,6 +87,70 @@ void main() {
       expect(find.byType(Image), findsNothing);
       expect(find.text('Could not open this file'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('VaultFileViewer paging', () {
+    Future<PatientAppState> state() async {
+      final prefs = PatientAppPrefs(_MemoryKV());
+      return PatientAppState.load(prefs, hasSession: false);
+    }
+
+    Future<void> pumpSet(WidgetTester tester, MemoryUserFileStore store, List<String> paths, {int index = 0}) async {
+      final s = await state();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [userFileStoreProvider.overrideWithValue(store)],
+          child: MaterialApp(
+            home: AppScope(state: s, child: VaultFileViewer(paths: paths, index: index, title: 'Scan')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<List<String>> threeFiles(MemoryUserFileStore store) async => [
+          await store.save('a.png', _pngBytes),
+          await store.save('b.png', _pngBytes),
+          await store.save('c.png', _pngBytes),
+        ];
+
+    testWidgets('a single file gets no paging chrome', (tester) async {
+      final store = MemoryUserFileStore();
+      await pumpSet(tester, store, [await store.save('only.png', _pngBytes)]);
+      expect(find.text('1/1'), findsNothing);
+      expect(find.byIcon(LucideIcons.chevronRight), findsNothing);
+    });
+
+    testWidgets('a set shows its position and steps forward', (tester) async {
+      final store = MemoryUserFileStore();
+      await pumpSet(tester, store, await threeFiles(store));
+      expect(find.textContaining('1/3'), findsOne);
+
+      await tester.tap(find.byIcon(LucideIcons.chevronRight));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('2/3'), findsOne);
+    });
+
+    testWidgets('stepping back from the first wraps to the last', (tester) async {
+      final store = MemoryUserFileStore();
+      await pumpSet(tester, store, await threeFiles(store));
+      await tester.tap(find.byIcon(LucideIcons.chevronLeft));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('3/3'), findsOne);
+    });
+
+    testWidgets('it opens on the index it was given', (tester) async {
+      final store = MemoryUserFileStore();
+      await pumpSet(tester, store, await threeFiles(store), index: 2);
+      expect(find.textContaining('3/3'), findsOne);
+    });
+
+    testWidgets('an out-of-range index clamps instead of throwing', (tester) async {
+      final store = MemoryUserFileStore();
+      await pumpSet(tester, store, await threeFiles(store), index: 99);
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('3/3'), findsOne);
     });
   });
 }

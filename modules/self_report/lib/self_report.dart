@@ -12,6 +12,7 @@ export 'src/domain/value_objects/ids.dart';
 export 'src/domain/value_objects/mood.dart';
 export 'src/domain/value_objects/pain_level.dart';
 export 'src/domain/value_objects/symptom.dart';
+export 'src/domain/value_objects/symptom_detail.dart';
 export 'src/domain/value_objects/body_region.dart';
 export 'src/domain/value_objects/body_tissue.dart';
 export 'src/domain/value_objects/pain_site.dart';

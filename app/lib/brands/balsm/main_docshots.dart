@@ -1,6 +1,6 @@
 // Documentation-screenshot entrypoint — the real app wired to the SAME fake
 // APIs as e2e (`e2eApiOverrides`) with a pre-seeded synthetic session, so the
-// shell renders signed-in as the "E2E Tester" fixture. Nothing real is
+// shell renders signed-in as a synthetic persona. Nothing real is
 // reachable: every API call hits an in-memory fake, and the on-device DB
 // starts empty. Used by tool/docshots.dart (see docs/screenshots.md).
 //
@@ -12,6 +12,8 @@ import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'docshots_persona.dart';
+import 'docshots_seed.dart';
 import 'main_balsm.dart' as app;
 
 Future<void> main() async {
@@ -23,5 +25,20 @@ Future<void> main() async {
   await storage.write(key: 'balsm.user_id', value: E2eFixture.userId);
   await storage.write(key: 'balsm.refresh_token', value: 'docshots-refresh-token');
   await storage.write(key: 'balsm.access_token', value: 'docshots-access-token');
-  await app.bootstrap(extraOverrides: e2eApiOverrides());
+  await app.bootstrap(
+    extraOverrides: e2eApiOverrides(
+      // Real names, so Arabic captures exercise Arabic typography rather than
+      // photographing "E2E Tester" in a Latin font.
+      account: FakeAccountApi()
+        ..handle = DocshotsPersona.handle
+        ..displayNameByLanguage = const {
+          'en': DocshotsPersona.nameEn,
+          'ar': DocshotsPersona.nameAr,
+        },
+    ),
+    // Populates the on-device DB with a synthetic record so the clinical
+    // screens capture with content instead of empty states. Docshots only —
+    // see the header of docshots_seed.dart.
+    onContainerReady: seedDocshotsData,
+  );
 }

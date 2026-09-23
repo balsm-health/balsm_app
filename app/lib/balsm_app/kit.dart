@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:core/core.dart';
 import 'tokens.dart';
 
 /// Ambient accent — the Flutter analogue of the CSS custom property
@@ -167,15 +168,39 @@ class LIcon extends StatelessWidget {
   Widget build(BuildContext context) => Icon(icon, size: size, color: color ?? T.fg2);
 }
 
+// ── Window class (app.css `@container app (…)`) ──────────────
+/// The design hangs every container query off `.app-body`, which spans the
+/// whole app, so the class comes from the window — not from whatever pane a
+/// widget happens to sit in. (A screen inside the rail is narrower than the
+/// window, and the design still treats it by the window's class.)
+BalsmWindowClass windowClassOf(BuildContext context) => BalsmWindowClass.of(MediaQuery.sizeOf(context).width);
+
+/// `@container app (max-height: 700px)` — the "short" modifier, orthogonal to
+/// the width class: a landscape phone and a 1280×600 desktop window are both
+/// short, and both want their vertical chrome back.
+bool isShortWindow(BuildContext context) => BalsmWindow.isShort(MediaQuery.sizeOf(context).height);
+
 // ── Status-bar / home-indicator spacers ──────────────────────
-/// Clears the status bar / dynamic island. Adapts to the real top inset
-/// (framed device mode injects a synthetic inset) with a sensible minimum.
+/// Clears the status bar / dynamic island.
+///
+/// `.pad-top` is 64px on a phone, drops to 20 once the nav is a rail
+/// (`@container app (min-width: 600px)` — "phone chrome allowances go away")
+/// and to 12 in a short window. Those are the design's *allowances*, measured
+/// in a browser frame that has no status bar; a real device still reports a
+/// top inset that must be cleared, so away from compact the spacer is the
+/// larger of the two rather than a flat number.
 class PadTop extends StatelessWidget {
   const PadTop({super.key});
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
-    return SizedBox(height: (top > 0 ? top + 6 : 24).clamp(24, 80).toDouble());
+    final compact = windowClassOf(context) == BalsmWindowClass.compact;
+    // Short wins over the width class: it is the later rule in app.css.
+    final allowance = isShortWindow(context) ? 12.0 : (compact ? 24.0 : 20.0);
+    // Compact keeps a 6px breath under the island; a rail-width window sits
+    // tight to the inset, which is what the 20px allowance is asking for.
+    final height = compact ? (top > 0 ? top + 6 : allowance) : math.max(top, allowance);
+    return SizedBox(height: height.clamp(allowance, 80).toDouble());
   }
 }
 
@@ -186,7 +211,8 @@ class AppBarRow extends StatelessWidget {
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+        // `@container app (max-height: 700px) { .appbar { padding-bottom: 6px } }`
+        padding: EdgeInsets.fromLTRB(20, 6, 20, isShortWindow(context) ? 6 : 12),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
           if (leading != null) ...[leading!, const SizedBox(width: 12)],
           ...children,
@@ -1277,5 +1303,123 @@ class BCheck extends StatelessWidget {
 double sheetBottomInset(BuildContext context, {double base = 38}) {
   // Aspect-scoped reads: a sheet that took the whole MediaQueryData rebuilt on
   // every rotation, brightness and text-scale change too.
-  return MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom + base;
+  final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+  if (SheetPresentation.isDialog(context)) {
+    // A centred dialog has nothing over the home indicator, so the safe-area
+    // term would only add dead space. The design drops the phone allowance
+    // with it: `.flow-foot { padding-bottom: 20px }` at medium and up.
+    return keyboard + math.min(base, 20);
+  }
+  return keyboard + MediaQuery.paddingOf(context).bottom + base;
+}
+
+// ── App sheet (app.css `.app-sheet`) ─────────────────────────
+
+/// Sheet width at medium and up: `.app-sheet` (Modal md, 460) or
+/// `.app-sheet--lg` (Modal lg, 640) for the forms that need the room —
+/// quick log, add record, add prescription.
+enum SheetSize { md, lg }
+
+/// How the enclosing app sheet is presented. A compact window gets the bottom
+/// sheet; medium and up get a centred dialog, where the design hides the drag
+/// pill (`.app-sheet .sheet-grab { display: none }`). Bodies never branch on
+/// this themselves — [SheetGrab] reads it.
+class SheetPresentation extends InheritedWidget {
+  const SheetPresentation({super.key, required this.dialog, required super.child});
+
+  final bool dialog;
+
+  static bool isDialog(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SheetPresentation>()?.dialog ?? false;
+
+  @override
+  bool updateShouldNotify(SheetPresentation oldWidget) => oldWidget.dialog != dialog;
+}
+
+/// `.sheet-grab` — the 38×4 drag pill at the top of a bottom sheet. Draws
+/// nothing when the sheet is a dialog, so no body has to know which one it is.
+class SheetGrab extends StatelessWidget {
+  const SheetGrab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (SheetPresentation.isDialog(context)) return const SizedBox.shrink();
+    return Container(
+      width: 38,
+      height: 4,
+      decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(T.rPill)),
+    );
+  }
+}
+
+/// `.app-sheet` — the design's one overlay primitive, in both placements.
+///
+/// Compact (< 600): a bottom sheet capped at 520 wide, as every sheet was
+/// already shown. Medium and up (`@container app (min-width: 600px)`): a
+/// centred dialog `min(460px, 100% − 48px)` wide — 640 for [SheetSize.lg] —
+/// at most `100% − 48px` tall, radius-xl on every corner, the same scrim. The
+/// window class comes from the window rather than a container because a sheet
+/// always overlays the whole app body.
+///
+/// [builder] gets the route's own context, so `Navigator.pop` inside the body
+/// closes either presentation.
+Future<R?> showAppSheet<R>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  SheetSize size = SheetSize.md,
+  Color barrierColor = const Color(0x5C14202B),
+  bool isDismissible = true,
+  bool enableDrag = true,
+  bool useRootNavigator = false,
+  TextDirection? textDirection,
+}) {
+  final dir = textDirection ?? Directionality.maybeOf(context) ?? TextDirection.ltr;
+  final dialog = MediaQuery.sizeOf(context).width >= BalsmWindow.mediumMin;
+  Widget present(Widget child) => Directionality(
+        textDirection: dir,
+        child: SheetPresentation(dialog: dialog, child: child),
+      );
+  if (!dialog) {
+    return showModalBottomSheet<R>(
+      context: context,
+      useRootNavigator: useRootNavigator,
+      isScrollControlled: true,
+      isDismissible: isDismissible,
+      enableDrag: enableDrag,
+      backgroundColor: Colors.transparent,
+      barrierColor: barrierColor,
+      builder: (ctx) => present(
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: builder(ctx)),
+        ),
+      ),
+    );
+  }
+  final maxWidth = size == SheetSize.lg ? BalsmWindow.modalMaxWLg : BalsmWindow.modalMaxWMd;
+  return showDialog<R>(
+    context: context,
+    useRootNavigator: useRootNavigator,
+    barrierDismissible: isDismissible,
+    barrierColor: barrierColor,
+    builder: (ctx) {
+      final window = MediaQuery.sizeOf(ctx);
+      return present(
+        Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: math.min(maxWidth, window.width - 48),
+              maxHeight: window.height - 48,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(T.rXl),
+              // The bottom-sheet route supplies a Material; the dialog route
+              // does not, and Text without one loses its default style.
+              child: Material(color: Colors.transparent, child: builder(ctx)),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }

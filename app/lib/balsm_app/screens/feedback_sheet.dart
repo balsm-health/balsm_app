@@ -11,17 +11,9 @@ import '../widgets/balsm_mark.dart';
 /// stay on-device: the team reads them inside Balsm, never an app store. Only
 /// the rating and the send date are retained — the note is not health data and
 /// is not stored after sending.
-Future<void> showFeedbackSheet(BuildContext context) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: const _FeedbackSheet(),
-        ),
-      ),
+Future<void> showFeedbackSheet(BuildContext context) => showAppSheet<void>(
+      context,
+      builder: (_) => const _FeedbackSheet(),
     );
 
 /// Topic chips — ids are stable, labels come from the i69n bundle.
@@ -106,8 +98,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(
-            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SheetGrab(),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),

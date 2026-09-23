@@ -10,17 +10,10 @@ import '../tokens.dart';
 import '../widgets/date_time_row.dart';
 import '../widgets/photo_attach.dart';
 
-Future<void> showAddPrescription(BuildContext context) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: const AddPrescriptionSheet(),
-        ),
-      ),
+Future<void> showAddPrescription(BuildContext context) => showAppSheet<void>(
+      context,
+      size: SheetSize.lg,
+      builder: (_) => const AddPrescriptionSheet(),
     );
 
 class AddPrescriptionSheet extends ConsumerStatefulWidget {
@@ -176,12 +169,8 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
           child: Column(children: [
             if (!_done)
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999)),
-                ),
+              const Center(
+                child: SheetGrab(),
               ),
             if (!_done) const SizedBox(height: 10),
             Row(children: [

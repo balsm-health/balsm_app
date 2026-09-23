@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:collection/collection.dart';
 import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
@@ -189,7 +190,10 @@ class HomeStreak extends StatelessWidget {
 }
 
 /// `.metric` tile — label, big value with unit, optional footnote.
-/// `.metric-grid` — `grid-template-columns: 1fr 1fr; gap: 12px`.
+///
+/// `.metric-grid` is `1fr 1fr` on a phone and
+/// `repeat(auto-fit, minmax(150px, 1fr))` from the medium window class, where
+/// the column is wide enough to hold more than two tiles.
 ///
 /// CSS grid rows are **auto height**: a row is as tall as its tallest item and
 /// no taller. A `GridView` with a fixed `childAspectRatio` cannot express that —
@@ -204,22 +208,31 @@ class MetricGrid extends StatelessWidget {
   final List<Widget> tiles;
   final double gap;
 
+  /// `minmax(150px, 1fr)` — the track floor auto-fit counts columns against.
+  static const _colMin = 150.0;
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: gap,
-      children: tiles
-          .slices(2)
-          .map<Widget>((pair) => IntrinsicHeight(
-                child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: gap, children: [
-                  Expanded(child: pair.first),
-                  // An odd final tile keeps its single column rather than stretching.
-                  Expanded(child: pair.length > 1 ? pair[1] : const SizedBox.shrink()),
-                ]),
-              ))
-          .toList(),
-    );
+    return LayoutBuilder(builder: (context, c) {
+      final columns = windowClassOf(context) == BalsmWindowClass.compact
+          ? 2
+          : math.max(1, ((c.maxWidth + gap) / (_colMin + gap)).floor());
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: gap,
+        children: tiles
+            .slices(columns)
+            .map<Widget>((row) => IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: gap, children: [
+                    for (final tile in row) Expanded(child: tile),
+                    // A short final row keeps its columns rather than stretching
+                    // the tiles it does have across the full width.
+                    for (var i = row.length; i < columns; i++) const Expanded(child: SizedBox.shrink()),
+                  ]),
+                ))
+            .toList(),
+      );
+    });
   }
 }
 

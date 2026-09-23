@@ -13,6 +13,7 @@ import '../../domain/value_objects/pain_site.dart';
 import '../../domain/value_objects/mood.dart';
 import '../../domain/value_objects/pain_level.dart';
 import '../../domain/value_objects/symptom.dart';
+import '../../domain/value_objects/symptom_detail.dart';
 import '../../domain/value_objects/vitals.dart';
 
 /// `check_in.mood` is `INTEGER NOT NULL` and [Mood] is a 1–5 scale, so 0 is the
@@ -145,9 +146,18 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       await _db.customUpdate('DELETE FROM check_in_pain_region WHERE check_in_id = ?',
           variables: [Variable<String>(key.value)], updateKind: UpdateKind.delete);
       for (final s in value.symptoms) {
+        final detail = value.symptomDetails[s];
         await _db.customInsert(
-          'INSERT INTO check_in_symptom (check_in_id, symptom_id) VALUES (?, ?)',
-          variables: [Variable<String>(key.value), Variable<String>(s.id)],
+          'INSERT INTO check_in_symptom (check_in_id, symptom_id, urine_color, urine_ml, blood) VALUES (?, ?, ?, ?, ?)',
+          variables: [
+            Variable<String>(key.value),
+            Variable<String>(s.id),
+            // Nullable columns go in as an untyped null Variable — the typed
+            // constructor's bound is non-nullable.
+            detail?.urineColor == null ? const Variable(null) : Variable.withString(detail!.urineColor!.id),
+            detail?.urineMl == null ? const Variable(null) : Variable.withInt(detail!.urineMl!),
+            Variable<int>(detail?.blood ?? false ? 1 : 0),
+          ],
         );
       }
       for (final site in value.painSites) {
@@ -213,7 +223,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
   Future<CheckIn> _hydrate(Map<String, dynamic> row) async {
     final id = row['id'] as String;
     final symptomRows = await _db.customSelect(
-      'SELECT symptom_id FROM check_in_symptom WHERE check_in_id = ?',
+      'SELECT * FROM check_in_symptom WHERE check_in_id = ?',
       variables: [Variable<String>(id)],
     ).get();
     final regionRows = await _db.customSelect(
@@ -245,9 +255,26 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
         for (final s in symptomRows)
           if (SymptomId.fromId(s.read<String>('symptom_id')) case final sym?) sym,
       },
+      symptomDetails: {
+        for (final s in symptomRows)
+          if (SymptomId.fromId(s.read<String>('symptom_id')) case final sym?)
+            if (_detailOf(s) case final d? when !d.isEmpty) sym: d,
+      },
       vitals: Vitals.fromRow(row),
       note: row['note'] as String?,
       photoRecordId: row['photo_record_id'] as String?,
+    );
+  }
+
+  /// Reads the per-symptom observation columns. Older rows predate them, so a
+  /// missing column reads as "nothing reported" rather than throwing.
+  static SymptomDetail? _detailOf(QueryRow row) {
+    final data = row.data;
+    if (!data.containsKey('blood')) return null;
+    return SymptomDetail(
+      urineColor: UrineColor.fromId(data['urine_color'] as String?),
+      urineMl: (data['urine_ml'] as num?)?.toInt(),
+      blood: (data['blood'] as num?)?.toInt() == 1,
     );
   }
 }

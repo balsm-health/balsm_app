@@ -28,21 +28,10 @@ Future<void> showLegalSheet(BuildContext context, LegalKind kind) async {
   // so the sheet never flashes English.
   await disclosureStrings.load();
   if (!context.mounted) return;
-  await showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: const Color(0x5C14202B),
-    builder: (ctx) => Directionality(
-      textDirection: s.dir,
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: _LegalSheet(s: s, kind: kind),
-        ),
-      ),
-    ),
+  await showAppSheet<void>(
+    context,
+    textDirection: s.dir,
+    builder: (_) => _LegalSheet(s: s, kind: kind),
   );
 }
 
@@ -75,8 +64,7 @@ class _LegalSheet extends ConsumerWidget {
           const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(
-            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SheetGrab(),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),

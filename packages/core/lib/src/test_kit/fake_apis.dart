@@ -100,6 +100,22 @@ class FakeAccountApi implements AccountApi {
   /// Handles this fake reports as taken; everything else is available.
   final taken = <String>{'balsm', 'admin'};
 
+  /// Per-language display names. Null (the default) keeps
+  /// [E2eFixture.displayName], so every existing e2e assertion is unaffected.
+  /// The docshots build sets these so captures show a real name — and the
+  /// right script for the locale being photographed.
+  Map<String, String>? displayNameByLanguage;
+
+  /// The language [getSelf] answers with. Public so a screenshot driver can
+  /// flip locale without going through the change-language endpoint.
+  String get language => _language;
+  set language(String value) => _language = value;
+
+  /// The handle [getSelf] answers with. Public so a screenshot driver can use
+  /// a persona handle instead of the fixture default.
+  String? get handle => _handle;
+  set handle(String? value) => _handle = value;
+
   String? _handle = E2eFixture.handle;
   String? _firstName;
   String? _lastName;
@@ -112,7 +128,7 @@ class FakeAccountApi implements AccountApi {
         handle: _handle,
         firstName: _firstName,
         lastName: _lastName,
-        displayName: E2eFixture.displayName,
+        displayName: displayNameByLanguage?[_language] ?? E2eFixture.displayName,
         countryCode: _countryCode,
         preferredLanguage: _language,
       );

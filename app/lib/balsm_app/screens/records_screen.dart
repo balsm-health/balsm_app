@@ -138,7 +138,10 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
       if (!async.isLoading && all.isNotEmpty)
         PositionedDirectional(
           end: 20,
-          bottom: MediaQuery.paddingOf(context).bottom + 24,
+          // `bottom: calc(env(safe-area-inset-bottom) + 24px)`, and a flat 24
+          // from the medium class up, where the design drops the phone chrome
+          // allowance (`.rec-fab { bottom: 24px }`).
+          bottom: (windowClassOf(context) == BalsmWindowClass.compact ? MediaQuery.paddingOf(context).bottom : 0) + 24,
           child: _RecordFab(onTap: () => _openAdd(context)),
         ),
     ]);

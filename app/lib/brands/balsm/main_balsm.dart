@@ -33,7 +33,15 @@ final _sessionUserIdProvider = StateProvider<UserId?>((ref) => null);
 /// Boots the app. [extraOverrides] is appended AFTER the production overrides,
 /// so an entry for the same provider wins — that is the seam the e2e build and
 /// the Patrol tests use to swap the API layer for fakes.
-Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
+///
+/// [onContainerReady] runs once the container is built and the API layer is
+/// initialised, immediately before `runApp`. Same idea as [extraOverrides]: a
+/// seam for alternate entrypoints, used by the docshots build to seed the
+/// on-device database. Production callers pass neither.
+Future<void> bootstrap({
+  List<Override> extraOverrides = const [],
+  Future<void> Function(ProviderContainer container)? onContainerReady,
+}) async {
   WidgetsFlutterBinding.ensureInitialized();
   FlavorConfig.initFromEnvironment();
 
@@ -265,6 +273,7 @@ Future<void> bootstrap({List<Override> extraOverrides = const []}) async {
     unawaited(container.read(cacheStoreProvider).clearAll());
     if (state.route == AppRoutes.app) state.go(AppRoutes.welcome);
   });
+  if (onContainerReady != null) await onContainerReady(container);
   runApp(
     UncontrolledProviderScope(
       container: container,

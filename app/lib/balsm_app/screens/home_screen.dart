@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:medications/medications.dart';
 import 'package:records/records.dart';
+import 'package:profile/profile.dart';
 import 'package:self_report/self_report.dart';
 import 'report_flow.dart';
 import 'day_records_screen.dart';
@@ -20,6 +21,7 @@ import '../widgets/account_switcher.dart';
 import 'checkin_shared.dart';
 import 'personal_details.dart';
 import 'profile_subscreens.dart';
+import 'care_team_screen.dart';
 
 /// Home tab — P001 patient-MVP scope.
 ///
@@ -79,7 +81,8 @@ class HomeScreen extends ConsumerWidget {
           // provider resolves, so signed-out never flashes a wrong nudge.
           const _NudgeSection(),
 
-          // Nearby care + records shortcuts.
+          // Care team, nearby care and records shortcuts, in the design's order.
+          const _CareTeamShortcut(),
           const _NearbyShortcut(),
           const _RecordsShortcut(),
 
@@ -260,6 +263,30 @@ class _CheckInSection extends ConsumerWidget {
       // A streak of zero is not an achievement worth a card.
       if (streak > 0) HomeStreak(days: streak, checkedLast7: checkInsLastDays(history, 7)),
     ]);
+  }
+}
+
+/// Care-team shortcut (home.jsx "Care team shortcut"). The prototype counts
+/// its seeded sample doctors under the title; this counts the patient's own
+/// on-device care team, and falls back to naming what the screen is for while
+/// that team is still empty.
+class _CareTeamShortcut extends ConsumerWidget {
+  const _CareTeamShortcut();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final count = (ref.watch(careTeamProvider).valueOrNull ?? const <CareProvider>[]).length;
+    return HomeShortcut(
+      icon: LucideIcons.stethoscope,
+      iconBg: T.hueMint50,
+      iconFg: T.hueMint,
+      title: s.strings.profile.p_care,
+      // The design counts its seeded roster; count the patient's real team,
+      // and say what the screen is for rather than showing them a zero.
+      subtitle: count == 0 ? s.strings.home.care_team_sub : '$count ${s.strings.home.care_team_n}',
+      onTap: () => openCareTeam(context),
+    );
   }
 }
 

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
@@ -11,22 +12,50 @@ import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
-import '../shell.dart';
 import '../vault/vault_blob.dart';
 import 'metric_log.dart';
 
 export 'checkin_shared.dart' show MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
 
-/// Opens the full daily check-in flow (report.jsx ReportFlow) as a route.
+/// Opens the full daily check-in flow (report.jsx ReportFlow).
+///
+/// `.flow` fills the app body on a phone. From the medium window class it
+/// becomes a centred card — `min(640px, 100% − 48px)` by
+/// `min(820px, 100% − 48px)`, radius-xl, over the same scrim the sheets use
+/// (app.css `@container app (min-width: 600px)`). It is the one screen the
+/// expanded-class containment leaves alone: `.app-main > .flow { border: 0 }`.
 void openCheckin(BuildContext context) {
   final s = AppScope.of(context);
-  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-    fullscreenDialog: true,
-    builder: (_) => Directionality(
-      textDirection: s.dir,
-      child: AdaptiveFrame(child: ReportFlow(s: s)),
-    ),
-  ));
+  if (MediaQuery.sizeOf(context).width < BalsmWindow.mediumMin) {
+    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => Directionality(textDirection: s.dir, child: ReportFlow(s: s)),
+    ));
+    return;
+  }
+  showDialog<void>(
+    context: context,
+    useRootNavigator: true,
+    barrierColor: const Color(0x6114202B), // rgba(20,32,43,0.38)
+    builder: (ctx) {
+      final window = MediaQuery.sizeOf(ctx);
+      return Directionality(
+        textDirection: s.dir,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: math.min(BalsmWindow.modalMaxWLg, window.width - 48),
+              maxHeight: math.min(820, window.height - 48),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(T.rXl),
+              child: ReportFlow(s: s),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// Full daily check-in wizard, on the real self-report module. Pages come
@@ -156,6 +185,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     var painLevel = PainLevel.none;
     final painSites = <PainSite>{};
     final symptoms = <SymptomId>{};
+    final symptomDetails = <SymptomId, SymptomDetail>{};
     final notes = <String>[];
 
     for (final id in _steps) {
@@ -166,6 +196,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       if (c.painLevel.value > painLevel.value) painLevel = c.painLevel;
       painSites.addAll(c.painSites);
       symptoms.addAll(c.symptoms);
+      symptomDetails.addAll(c.symptomDetails);
       final n = c.note?.trim();
       if (n != null && n.isNotEmpty) notes.add(n);
     }
@@ -188,6 +219,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       painLevel: painLevel,
       painSites: painSites,
       symptoms: symptoms,
+      symptomDetails: symptomDetails,
       vitals: _mergedVitals(),
       note: notes.isEmpty ? null : notes.join('\n'),
       photoRecordId: photoRecordId,

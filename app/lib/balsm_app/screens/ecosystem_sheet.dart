@@ -10,17 +10,9 @@ import 'feedback_sheet.dart';
 /// patient can help it spread.
 ///
 /// One of the few brand moments where all five hues appear together.
-Future<void> showEcosystemSheet(BuildContext context) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: const _EcosystemSheet(),
-        ),
-      ),
+Future<void> showEcosystemSheet(BuildContext context) => showAppSheet<void>(
+      context,
+      builder: (_) => const _EcosystemSheet(),
     );
 
 class _EcosystemSheet extends StatelessWidget {
@@ -59,8 +51,7 @@ class _EcosystemSheet extends StatelessWidget {
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        Container(
-            width: 38, height: 4, decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(999))),
+        const SheetGrab(),
         const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 16, 10),

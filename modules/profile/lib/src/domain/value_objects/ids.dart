@@ -31,3 +31,12 @@ class EmergencyContactId extends UniqueId {
 
   static EmergencyContactId? fromString(String? value) => value?.mapNotNull((v) => EmergencyContactId.value(v));
 }
+
+/// Typed id of a [CareProvider] — a member of the patient's care team.
+class CareProviderId extends UniqueId {
+  const CareProviderId.value(super.value) : super.value();
+  const CareProviderId.empty() : super.empty();
+  CareProviderId.uuid() : super.uuidv7('cp');
+
+  static CareProviderId? fromString(String? value) => value?.mapNotNull((v) => CareProviderId.value(v));
+}

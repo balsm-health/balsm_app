@@ -26,6 +26,8 @@ const symptomIcons = <(SymptomId, IconData)>[
   (SymptomId.chestTightness, LucideIcons.heartPulse),
   (SymptomId.nausea, LucideIcons.frown),
   (SymptomId.thirst, LucideIcons.cupSoda),
+  (SymptomId.urine, LucideIcons.droplets),
+  (SymptomId.stool, LucideIcons.toilet),
 ];
 
 String moodLabel(PatientAppState s, int lv) => switch (lv) {
@@ -46,7 +48,21 @@ String symptomLabel(PatientAppState s, SymptomId id) {
   if (id == SymptomId.chestTightness) return c.sym_chest_tightness;
   if (id == SymptomId.nausea) return c.sym_nausea;
   if (id == SymptomId.thirst) return c.sym_thirst;
+  if (id == SymptomId.urine) return c.sym_urine;
+  if (id == SymptomId.stool) return c.sym_stool;
   return id.id;
+}
+
+/// Localized name of a reported urine colour (`URINE_COLORS[].label`).
+String urineColorLabel(PatientAppState s, UrineColor colour) {
+  final c = s.strings.checkin;
+  return switch (colour) {
+    UrineColor.pale => c.sd_u_pale,
+    UrineColor.yellow => c.sd_u_yellow,
+    UrineColor.dark => c.sd_u_dark,
+    UrineColor.red => c.sd_u_red,
+    UrineColor.brown => c.sd_u_brown,
+  };
 }
 
 /// Copy + colour for a pain score. The banding itself is [PainLevel.band] —

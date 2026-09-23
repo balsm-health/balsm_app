@@ -16,6 +16,11 @@ class SymptomId {
   static const nausea = SymptomId('nausea');
   static const thirst = SymptomId('thirst');
 
+  /// Excretory observations. These two carry the extra detail the design asks
+  /// for (`SymptomDetail`): colour and volume for urine, blood for both.
+  static const urine = SymptomId('urine');
+  static const stool = SymptomId('stool');
+
   /// The curated catalog, in display order.
   static const catalog = <SymptomId>[
     headache,
@@ -26,6 +31,8 @@ class SymptomId {
     chestTightness,
     nausea,
     thirst,
+    urine,
+    stool,
   ];
 
   static final Map<String, SymptomId> _byId = {
@@ -34,6 +41,12 @@ class SymptomId {
 
   /// Resolve a stored symptom id, or null if unknown (retired catalog entry).
   static SymptomId? fromId(String id) => _byId[id];
+
+  /// Symptoms that ask for [SymptomDetail] beyond "I had this".
+  bool get hasDetail => this == urine || this == stool;
+
+  /// Only urine asks for colour and volume; stool asks for blood alone.
+  bool get asksUrineDetail => this == urine;
 
   @override
   bool operator ==(Object other) => other is SymptomId && other.id == id;

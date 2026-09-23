@@ -9,16 +9,19 @@ class BalsmColors {
   static const hueEmerald = Color(0xFF01C4A2);
   static const hueBlue = Color(0xFF1283FF);
   static const hueMint = Color(0xFF55D77F);
-  static const hueViolet = Color(0xFF8350DE);
+  static const hueViolet = Color(0xFF724DD0);
 
+  static const hueAqua600 = Color(0xFF029E99);
+  static const hueEmerald600 = Color(0xFF019A7F);
   static const hueBlue600 = Color(0xFF0F6BCC);
   static const hueMint600 = Color(0xFF3FC366);
-  static const hueViolet600 = Color(0xFF6A3DBB);
+  static const hueViolet600 = Color(0xFF5C3AB0);
 
   static const hueAqua50 = Color(0xFFE2F8F6);
+  static const hueEmerald50 = Color(0xFFE1F8F1);
   static const hueBlue50 = Color(0xFFE4F0FF);
   static const hueMint50 = Color(0xFFE8F9EE);
-  static const hueViolet50 = Color(0xFFEEE7FB);
+  static const hueViolet50 = Color(0xFFECE6FA);
 
   // App accent = hue-blue (primary CTA, focus, links)
   static const appAccent = hueBlue;
@@ -49,8 +52,15 @@ class BalsmColors {
   static const dangerBg = Color(0xFFFBEBE7);
   static const controlled = hueViolet;
   static const controlledBg = hueViolet50;
+  static const expiring = Color(0xFFD97A20);
+  static const expiringBg = Color(0xFFFBEEDC);
+  static const info = hueBlue;
+  static const infoBg = hueBlue50;
 
   static const surface = Color(0xFFFFFFFF);
+  static const surfaceAlt = cream100;
+  static const surfaceMuted = ink50;
+  static const surfaceInverse = ink900;
   static const border = ink200;
   static const borderStrong = ink300;
   static const borderFocus = hueBlue;
@@ -106,3 +116,132 @@ class BalsmDuration {
 
 // Curve equivalent of CSS ease-out cubic-bezier(0.16, 1, 0.3, 1)
 const kBalsmEaseOut = Curves.easeOutExpo;
+
+/// Window class — the Tier 5 responsive layer (`responsive.css` +
+/// `RESPONSIVE.md` in `Balsm-Core/brand/design-system`). The CSS side keeps
+/// these thresholds as unitless px precisely so Flutter can resolve the same
+/// classes out of a `LayoutBuilder`; keep the two in step.
+enum BalsmWindowClass {
+  compact,
+  medium,
+  expanded,
+  wide;
+
+  /// Resolve from the window's logical width.
+  static BalsmWindowClass of(double width) => width < BalsmWindow.mediumMin
+      ? BalsmWindowClass.compact
+      : width < BalsmWindow.expandedMin
+          ? BalsmWindowClass.medium
+          : width < BalsmWindow.wideMin
+              ? BalsmWindowClass.expanded
+              : BalsmWindowClass.wide;
+}
+
+/// Row density. `compact` is floored to `standard` on touch — a 32px row
+/// cannot hold a 44/48 target.
+enum BalsmDensity { compact, standard, comfortable }
+
+/// Window-class measurements. Ranges are continuous: every rule is a minimum,
+/// never a fixed size. Members marked SPEC-ONLY have no component yet
+/// (RESPONSIVE.md → Gaps).
+class BalsmWindow {
+  BalsmWindow._();
+
+  // ── Thresholds ─────────────────────────────────────────────
+  static const compactMax = 599.0;
+  static const mediumMin = 600.0;
+  static const mediumMax = 1023.0;
+  static const expandedMin = 1024.0;
+  static const expandedMax = 1439.0;
+  static const wideMin = 1440.0;
+  static const shortMax = 700.0; // height — "short" is an orthogonal modifier
+  static const minWidth = 800.0; // below the minimum the window scrolls,
+  static const minHeight = 600.0; // never clips
+
+  static bool isShort(double height) => height <= shortMax;
+
+  // ── Shell ──────────────────────────────────────────────────
+  static const sidebarW = 240.0;
+  static const railW = 72.0; // SPEC-ONLY
+  static const bottomBarH = 64.0; // SPEC-ONLY
+  static const topBarH = 56.0;
+  static const topBarHShort = 48.0;
+
+  static double topBarHeightFor(double windowHeight) => isShort(windowHeight) ? topBarHShort : topBarH;
+
+  // ── Containment ────────────────────────────────────────────
+  static const contentMax = 768.0; // single-column measure
+  static const contentMaxGrid = 1200.0; // 12-col grid cap at wide
+  static const gutter = 16.0;
+  static const gutterMd = 24.0;
+  static const gutterLg = 48.0;
+  static const colsMobile = 4;
+  static const colsTablet = 8;
+  static const colsDesktop = 12;
+
+  static double gutterFor(BalsmWindowClass cls) => switch (cls) {
+        BalsmWindowClass.compact => gutter,
+        BalsmWindowClass.medium => gutterMd,
+        BalsmWindowClass.expanded || BalsmWindowClass.wide => gutterLg,
+      };
+
+  static int columnsFor(BalsmWindowClass cls) => switch (cls) {
+        BalsmWindowClass.compact => colsMobile,
+        BalsmWindowClass.medium => colsTablet,
+        BalsmWindowClass.expanded || BalsmWindowClass.wide => colsDesktop,
+      };
+
+  // ── Panes ──────────────────────────────────────────────────
+  static const paneListMin = 288.0;
+  static const paneListMd = 288.0;
+  static const paneListLg = 320.0;
+  static const paneListXl = 352.0;
+  static const paneInspector = 352.0; // wide only
+
+  /// List-pane width; null at compact, where detail is a pushed route.
+  static double? paneListWidthFor(BalsmWindowClass cls) => switch (cls) {
+        BalsmWindowClass.compact => null,
+        BalsmWindowClass.medium => paneListMd,
+        BalsmWindowClass.expanded => paneListLg,
+        BalsmWindowClass.wide => paneListXl,
+      };
+
+  // ── Overlays ───────────────────────────────────────────────
+  static const sheetSideW = 400.0; // SPEC-ONLY
+  static const modalMaxWSm = 380.0;
+  static const modalMaxWMd = 460.0;
+  static const modalMaxWLg = 640.0;
+  static const modalMaxWXl = 860.0;
+
+  // ── Density ────────────────────────────────────────────────
+  static const rowHCompact = 32.0;
+  static const rowHDefault = 40.0;
+  static const rowHComfortable = 52.0;
+
+  /// Class default, overridable per user or workspace. `compact` is floored to
+  /// `standard` on a coarse pointer.
+  static BalsmDensity densityFor(
+    BalsmWindowClass cls, {
+    required bool touch,
+    BalsmDensity? override,
+  }) {
+    final resolved = override ??
+        switch (cls) {
+          BalsmWindowClass.compact => BalsmDensity.comfortable,
+          BalsmWindowClass.medium => touch ? BalsmDensity.comfortable : BalsmDensity.standard,
+          BalsmWindowClass.expanded || BalsmWindowClass.wide => BalsmDensity.standard,
+        };
+    return resolved == BalsmDensity.compact && touch ? BalsmDensity.standard : resolved;
+  }
+
+  static double rowHeight(BalsmDensity density) => switch (density) {
+        BalsmDensity.compact => rowHCompact,
+        BalsmDensity.standard => rowHDefault,
+        BalsmDensity.comfortable => rowHComfortable,
+      };
+
+  // ── Input modality ─────────────────────────────────────────
+  /// Minimum target on a coarse pointer. Fine pointers use component
+  /// intrinsics (button 38, row 40, icon-only 44).
+  static const touchTarget = 48.0;
+}

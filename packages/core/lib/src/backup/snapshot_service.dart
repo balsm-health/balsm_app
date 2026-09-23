@@ -29,6 +29,8 @@ class SnapshotService implements SnapshotPort {
     'allergy',
     'chronic_condition',
     'emergency_contact',
+    'care_provider',
+    'care_provider_file',
     'medications',
     'dose_events',
     'check_in',
