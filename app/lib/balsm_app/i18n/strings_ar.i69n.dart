@@ -1095,8 +1095,6 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_ttl_6h => "٦ س";
   String get eqr_ttl_24h => "٢٤ س";
   String get eqr_ttl_7d => "٧ أيام";
-  String get eqr_ttl_permanent => "∞";
-  String get eqr_permanent => "دائم — لا ينتهي";
   String get eqr_help_empty =>
       "هذا الرمز هو هويّتك في بلسم — للطوارئ والحجوزات، ولكي يضيفك أحد أفراد أسرتك إلى حسابه. أضف فصيلة الدم أو الحساسيات أو جهة اتصال طوارئ لتضمينها في البطاقة.";
   String get eqr_help_active =>
@@ -1175,10 +1173,6 @@ class EmergencyStrings_ar extends EmergencyStrings {
         return eqr_ttl_24h;
       case 'eqr_ttl_7d':
         return eqr_ttl_7d;
-      case 'eqr_ttl_permanent':
-        return eqr_ttl_permanent;
-      case 'eqr_permanent':
-        return eqr_permanent;
       case 'eqr_help_empty':
         return eqr_help_empty;
       case 'eqr_help_active':

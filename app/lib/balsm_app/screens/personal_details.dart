@@ -91,9 +91,6 @@ const _emergencyTtlOptions = <({String key, int seconds})>[
   (key: 'emergency.eqr_ttl_6h', seconds: 21600),
   (key: 'emergency.eqr_ttl_24h', seconds: 86400),
   (key: 'emergency.eqr_ttl_7d', seconds: 604800),
-  // 0 = permanent: the QR never expires and its URL never changes; the app
-  // silently refreshes the encrypted snapshot server-side when data changes.
-  (key: 'emergency.eqr_ttl_permanent', seconds: 0),
 ];
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
@@ -1206,7 +1203,6 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   }
 
   String get _countdownLabel {
-    if (_isPermanent) return s.strings.emergency.eqr_permanent;
     if (_isExpired) return s.strings.emergency.eqr_expired;
     final d = _remaining;
     final days = d.inDays;
@@ -1357,38 +1353,28 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
           if (widget.name.isNotEmpty)
             Text(widget.name,
                 textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
-          // Profile handle under the QR (design qrshare.jsx): the public
-          // profile URL, always LTR. Hidden until a handle is claimed.
-          if (ref.watch(accountSummaryProvider).valueOrNull?.handle case final String handle when handle.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Text('balsm.health/@$handle',
-                  textDirection: TextDirection.ltr,
-                  textAlign: TextAlign.center,
-                  style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: s.accent.main)),
-            ),
+          _handleLine(top: 3),
           const SizedBox(height: 8),
-          // Expiry chip.
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-                color: _isExpired ? T.dangerBg : s.accent.bg, borderRadius: BorderRadius.circular(T.rPill)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(
-                  _isPermanent
-                      ? LucideIcons.infinity
-                      : _isExpired
-                          ? LucideIcons.timerOff
-                          : LucideIcons.timer,
-                  size: 15,
-                  color: _isExpired ? T.danger : s.accent.d),
-              const SizedBox(width: 6),
-              Text(
-                _isPermanent || _isExpired ? _countdownLabel : s.strings.emergency.eqr_expires_in(_countdownLabel),
-                style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: _isExpired ? T.danger : s.accent.d),
-              ),
-            ]),
-          ),
+          // Expiry chip. A token minted before the permanent option was
+          // withdrawn still reports `isPermanent`; it gets no chip rather than
+          // a badge telling the patient their health QR never expires.
+          if (_isPermanent)
+            const SizedBox.shrink()
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                  color: _isExpired ? T.dangerBg : s.accent.bg, borderRadius: BorderRadius.circular(T.rPill)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(_isExpired ? LucideIcons.timerOff : LucideIcons.timer,
+                    size: 15, color: _isExpired ? T.danger : s.accent.d),
+                const SizedBox(width: 6),
+                Text(
+                  _isExpired ? _countdownLabel : s.strings.emergency.eqr_expires_in(_countdownLabel),
+                  style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: _isExpired ? T.danger : s.accent.d),
+                ),
+              ]),
+            ),
         ]),
       ));
 
@@ -1473,8 +1459,29 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     ];
   }
 
+  /// The public profile URL (design `qrshare.jsx`), always LTR. Hidden until a
+  /// handle is claimed.
+  ///
+  /// Rendered in the card AND above the pre-mint picker: the card only exists
+  /// once a token has been minted, so before that the sheet showed no handle
+  /// at all — which is the one thing a person opening "my QR code" is looking
+  /// for.
+  Widget _handleLine({double top = 0}) {
+    final handle = ref.watch(accountSummaryProvider).valueOrNull?.handle;
+    if (handle == null || handle.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: EdgeInsets.only(top: top, bottom: 2),
+      child: Text('balsm.health/@$handle',
+          textDirection: TextDirection.ltr,
+          textAlign: TextAlign.center,
+          style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: s.accent.main)),
+    );
+  }
+
   /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
+        _handleLine(),
+        const SizedBox(height: 14),
         Text(s.strings.emergency.eqr_valid_for.toUpperCase(),
             style: Typo.meta(ar: ar)
                 .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),

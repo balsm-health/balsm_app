@@ -337,8 +337,6 @@
     "eqr_ttl_6h": "6h",
     "eqr_ttl_24h": "24h",
     "eqr_ttl_7d": "7d",
-    "eqr_ttl_permanent": "∞",
-    "eqr_permanent": "Permanent — does not expire",
     "eqr_help_empty": "This QR is your Balsm ID — for emergencies, bookings, and for a family member to add you to their account. Add blood type, allergies or an emergency contact to include them in the card.",
     "eqr_help_active": "Show this encrypted code to emergency staff. It expires automatically; the decryption key travels only inside the link.",
     "eqr_help_signin": "Sign in to share your emergency health card.",

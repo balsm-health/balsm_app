@@ -1090,8 +1090,6 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get eqr_ttl_6h => "6h";
   String get eqr_ttl_24h => "24h";
   String get eqr_ttl_7d => "7d";
-  String get eqr_ttl_permanent => "∞";
-  String get eqr_permanent => "Permanent — does not expire";
   String get eqr_help_empty =>
       "This QR is your Balsm ID — for emergencies, bookings, and for a family member to add you to their account. Add blood type, allergies or an emergency contact to include them in the card.";
   String get eqr_help_active =>
@@ -1172,10 +1170,6 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return eqr_ttl_24h;
       case 'eqr_ttl_7d':
         return eqr_ttl_7d;
-      case 'eqr_ttl_permanent':
-        return eqr_ttl_permanent;
-      case 'eqr_permanent':
-        return eqr_permanent;
       case 'eqr_help_empty':
         return eqr_help_empty;
       case 'eqr_help_active':
