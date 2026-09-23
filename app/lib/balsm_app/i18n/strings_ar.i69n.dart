@@ -1243,6 +1243,10 @@ class HomeStrings_ar extends HomeStrings {
   String get hero_disclaimer => "تقييمك الخاص — لا يعتمد على قياس طبي";
   String get care_team_sub => "أطباء وصيدليات ومقدّمو رعاية";
   String get care_team_n => "مقدّم رعاية يتابع حالتك";
+  String viewing_member(String name) => "$name محدد";
+  String get viewing_own_data =>
+      "سجلّه غير متاح على هذا الجهاز بعد — ما تراه هو سجلّك أنت.";
+  String get viewing_switch_back => "العودة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1284,6 +1288,12 @@ class HomeStrings_ar extends HomeStrings {
         return care_team_sub;
       case 'care_team_n':
         return care_team_n;
+      case 'viewing_member':
+        return viewing_member;
+      case 'viewing_own_data':
+        return viewing_own_data;
+      case 'viewing_switch_back':
+        return viewing_switch_back;
       default:
         return super[key];
     }

@@ -42,9 +42,14 @@ class HomeScreen extends ConsumerWidget {
     // the greeting label still renders, just without a name.
     final summary = ref.watch(accountSummaryProvider).valueOrNull;
     final member = s.activeFamilyMember;
-    final displayName = (member?.name ?? summary?.displayName ?? '').trim();
+    // The greeting and avatar name whoever's record is actually on screen —
+    // always the signed-in user, because `selectFamilyMember` is a
+    // session-only visual switch that does not re-point the health profile.
+    // Naming the selected member here claimed their readings were below when
+    // they were the patient's own.
+    final displayName = (summary?.displayName ?? '').trim();
     final firstName = displayName.split(' ').first;
-    final avatarColor = member?.color ?? T.hueAqua;
+    const avatarColor = T.hueAqua;
 
     return ContentColumn(
       maxWidth: 720,
@@ -70,6 +75,12 @@ class HomeScreen extends ConsumerWidget {
             ),
             RoundBtn(icon: LucideIcons.bell, onTap: () {}),
           ]),
+
+          // `UX Enhancement Screens.html` — "Household · active-account
+          // accent": the design keeps whose-data-is-this permanently visible.
+          // Here it says the true thing: the member is selected, but their
+          // record is not on this device yet, so this is still your own.
+          if (member != null) _ViewingBanner(member: member),
 
           const AwayBanner(),
 
@@ -421,5 +432,54 @@ class _RecentReports extends ConsumerWidget {
         ),
       ),
     ]);
+  }
+}
+
+/// The design's active-account chrome, told truthfully.
+///
+/// `selectFamilyMember` is a session-only visual switch — the readings below
+/// belong to the signed-in patient whatever the switcher says. Rather than
+/// dress the screen in the member's identity (which asserted their data was
+/// on screen), this names the member, carries their accent, and states the
+/// limit outright. It retires when profile switching actually re-points the
+/// data (P00X, which `currentProfileIdProvider` is already shaped for).
+class _ViewingBanner extends StatelessWidget {
+  const _ViewingBanner({required this.member});
+  final FamilyMemberPreview member;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: T.ink50,
+        borderRadius: BorderRadius.circular(T.rLg),
+        // The member's own tone, as the design's 3px accent rule does.
+        border: BorderDirectional(start: BorderSide(color: member.color, width: 3)),
+      ),
+      child: Row(children: [
+        Icon(LucideIcons.users, size: 17, color: member.color),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(s.strings.home.viewing_member(member.name),
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+            const SizedBox(height: 2),
+            Text(s.strings.home.viewing_own_data, style: Typo.meta(ar: s.rtl).copyWith(height: 1.4)),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        PButton(
+          s.strings.home.viewing_switch_back,
+          variant: BtnVariant.ghost,
+          size: BtnSize.sm,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: () => s.selectFamilyMember(null),
+        ),
+      ]),
+    );
   }
 }

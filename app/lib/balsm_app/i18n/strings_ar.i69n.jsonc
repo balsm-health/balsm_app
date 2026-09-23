@@ -368,7 +368,10 @@
     "hero_cta(Gender gender)": "${_select(gender, male: 'ابدأ المتابعة', female: 'ابدئي المتابعة', other: 'ابدأ المتابعة')}",
     "hero_disclaimer": "تقييمك الخاص — لا يعتمد على قياس طبي",
     "care_team_sub": "أطباء وصيدليات ومقدّمو رعاية",
-    "care_team_n": "مقدّم رعاية يتابع حالتك"
+    "care_team_n": "مقدّم رعاية يتابع حالتك",
+    "viewing_member(String name)": "$name محدد",
+    "viewing_own_data": "سجلّه غير متاح على هذا الجهاز بعد — ما تراه هو سجلّك أنت.",
+    "viewing_switch_back": "العودة"
   },
   "meds": {
     "meds_today": "أدوية اليوم",

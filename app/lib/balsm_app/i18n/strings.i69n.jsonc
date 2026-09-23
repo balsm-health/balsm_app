@@ -368,7 +368,10 @@
     "hero_cta(Gender gender)": "Start check-in",
     "hero_disclaimer": "Your own self-report — not a clinical measurement",
     "care_team_sub": "Doctors, pharmacies and caregivers",
-    "care_team_n": "providers following your care"
+    "care_team_n": "providers following your care",
+    "viewing_member(String name)": "$name is selected",
+    "viewing_own_data": "Their record isn't on this device yet — you're still seeing your own.",
+    "viewing_switch_back": "Switch back"
   },
   "meds": {
     "meds_today": "Today's medications",

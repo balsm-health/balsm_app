@@ -15,9 +15,30 @@ Regenerate with `.claude/skills/apply-design/scripts/ds_sync.py status`.
 | Nearby map — offline mode | `map_screen.dart` (ink-50 cached card, "Offline" badge) |
 | Storage — sync status | `storage_sheet.dart` ("Backed up · synced 2m ago") |
 | Records — bulk select | `records_screen.dart` (long-press, count bar, confirmed bulk delete) |
+| Household — active-account accent | `home_screen.dart` `_ViewingBanner` — see below |
 
 `Pill` gained an optional icon; `PCard`/`Pressable` gained long-press and a
 border override.
+
+### Household — active-account accent, applied by fixing the bug under it
+
+Held back at first on the grounds that the design's chrome ("Karim's health",
+"His readings, his streak") would label the signed-in patient's own PHI as
+someone else's. Reading the screen settled it the other way: **home already
+renamed its greeting and avatar to the selected member**, while every reading
+below stayed the patient's own. The false claim was already shipped; refusing
+the design left the bug in place.
+
+So the design's intent — keep whose-data-is-this permanently visible — is
+applied, told truthfully:
+
+- the greeting and avatar name whoever's record is actually on screen, which
+  is always the signed-in user (`selectFamilyMember` does not re-point the
+  health profile);
+- selecting a member raises a banner in that member's accent that names them
+  and states the limit outright, with a way back.
+
+It retires when profile switching really re-points the data (P00X).
 
 ### Not ported, with reasons
 
@@ -30,17 +51,12 @@ border override.
   would move nothing.
 - **Per-pin map freshness** ("cached 2 days ago" on each place). Staleness is
   tracked per result set, not per pin.
-- **Household — active-account accent.** `selectFamilyMember` is, in its own
-  words, a "session-only visual switch [that] does not change the signed-in
-  health profile". The design's chrome — "Karim's health", "Viewing: Karim",
-  "His readings, his streak" — would label the *signed-in patient's own PHI*
-  as someone else's. That is worse than the confusion it sets out to fix.
-  Blocked until profile switching actually re-points the data (P00X, which
-  `currentProfileIdProvider` is already shaped for).
-- **First-run tour.** Its two cards assert things that are not true of this
-  app: "your appointments are still one tap away" (the appointments screen was
-  removed) and one-cloud-instead-of-many (there is currently no cloud). The
-  mechanism is easy; the copy is a product decision, not a port.
+- **First-run tour.** Its two "surprises" are already covered by the shipped
+  walkthrough, which came from `wt-treatments.jsx`: slide 3 is the data-
+  sovereignty card ("Your data stays yours. Saved on your phone by design, and
+  it works offline") and slide 2 already demos Nearby care. The tour's one
+  novel claim — "your appointments are still one tap away" — is false here;
+  that screen was removed. Nothing honest left to add.
 
 ## Ported this run (2026-09-23b) — the backlog, cleared
 

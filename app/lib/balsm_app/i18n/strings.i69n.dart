@@ -1228,6 +1228,10 @@ class HomeStrings implements i69n.I69nMessageBundle {
       "Your own self-report — not a clinical measurement";
   String get care_team_sub => "Doctors, pharmacies and caregivers";
   String get care_team_n => "providers following your care";
+  String viewing_member(String name) => "$name is selected";
+  String get viewing_own_data =>
+      "Their record isn't on this device yet — you're still seeing your own.";
+  String get viewing_switch_back => "Switch back";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1269,6 +1273,12 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return care_team_sub;
       case 'care_team_n':
         return care_team_n;
+      case 'viewing_member':
+        return viewing_member;
+      case 'viewing_own_data':
+        return viewing_own_data;
+      case 'viewing_switch_back':
+        return viewing_switch_back;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
