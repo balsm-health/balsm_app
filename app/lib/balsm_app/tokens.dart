@@ -67,6 +67,12 @@ class T {
   static const wordmarkTld = ink600; // .health — same hue, lighter
 
   // ── Surfaces / foreground roles ────────────────────────────
+  /// Card and control background. The kit's shared widgets paint this rather
+  /// than a literal white, so the surface is one token — the prerequisite for
+  /// any alternate direction (see DRIFT.md, "New Design Direction — Warm").
+  ///
+  /// White ink painted ON a coloured fill is NOT a surface and stays
+  /// `Colors.white`: it must not follow this token when it changes.
   static const surface = white;
   static const surfaceAlt = cream100;
   static const surfaceMuted = ink50;

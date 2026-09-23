@@ -337,7 +337,7 @@ class PCard extends StatelessWidget {
       margin: margin,
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: T.surface,
         borderRadius: BorderRadius.circular(T.rLg),
         border: Border.all(color: border ?? T.border, width: border == null ? 1 : 1.5),
         boxShadow: flat ? null : T.shadowSm,
@@ -455,7 +455,7 @@ class BChip extends StatelessWidget {
         curve: Motion.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: active ? accent : Colors.white,
+          color: active ? accent : T.surface,
           borderRadius: BorderRadius.circular(T.rPill),
           border: Border.all(color: active ? accent : T.border, width: 1.5),
         ),
@@ -537,7 +537,7 @@ class PButton extends StatelessWidget {
         shadow = a.boxShadow;
         break;
       case BtnVariant.secondary:
-        bg = Colors.white;
+        bg = T.surface;
         fg = color ?? T.fg1;
         border = Border.all(color: T.border);
         break;
@@ -1287,7 +1287,7 @@ class BCheck extends StatelessWidget {
               height: 18,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: checked ? accent.main : Colors.white,
+                color: checked ? accent.main : T.surface,
                 shape: radio ? BoxShape.circle : BoxShape.rectangle,
                 borderRadius: radio ? null : BorderRadius.circular(5),
                 border: Border.all(color: checked ? accent.main : T.ink300, width: 1.5),
