@@ -1,4 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/kit.dart';
+import 'package:app/balsm_app/widgets/attachment_thumb.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,6 +65,58 @@ void main() {
     });
   });
 
+  group('the add affordance', () {
+    testWidgets('is a FAB, not the old dashed row', (tester) async {
+      final s = await pump(tester, [provider('Dr. Sara Kamal')]);
+      // `home.jsx` swapped the full-width dashed "Add a care provider" button
+      // for a FAB. The label survives only as the FAB's semantics.
+      expect(find.byIcon(LucideIcons.userPlus), findsOne);
+      expect(find.bySemanticsLabel(s.strings.care.care_add), findsOne);
+      expect(find.widgetWithText(DashedBorder, s.strings.care.care_add), findsNothing);
+      expect(find.text(s.strings.care.care_add), findsNothing, reason: 'the dashed row is gone');
+    });
+
+    testWidgets('is offered on an empty care team too', (tester) async {
+      // The empty state has no add button of its own — the FAB is the only
+      // way in, so it must not be gated on having a roster.
+      final s = await pump(tester, const []);
+      expect(find.text(s.strings.care.care_empty), findsOne);
+      expect(find.byIcon(LucideIcons.userPlus), findsOne);
+    });
+
+    testWidgets('opens the add sheet, not the edit sheet', (tester) async {
+      final s = await pump(tester, [provider('Dr. Sara Kamal')]);
+      await tester.tap(find.byIcon(LucideIcons.userPlus));
+      await tester.pumpAndSettle();
+      expect(find.text(s.strings.care.care_add_title), findsOne);
+      expect(find.text(s.strings.care.care_edit_title), findsNothing);
+    });
+
+    testWidgets('the list keeps a tail so the FAB never covers the last card', (tester) async {
+      await pump(tester, [provider('Dr. Sara Kamal')]);
+      final tail = tester.widgetList<SizedBox>(find.byType(SizedBox)).where((b) => b.height == 72 && b.width == null);
+      expect(tail, isNotEmpty, reason: 'the design ends the scroll with a 72px spacer');
+    });
+  });
+
+  group('the files button', () {
+    testWidgets('says Attach file when nothing is attached, and picks straight away', (tester) async {
+      final s = await pump(tester, [provider('Dr. Sara Kamal')]);
+      final c = s.strings.care;
+      // The design renamed the old "Files"/count button: with nothing
+      // attached it names the action, and skips the empty drawer entirely.
+      expect(find.text(c.care_attach_file), findsOne);
+      expect(find.text(c.care_files), findsNothing);
+      expect(find.text(c.care_manage_files), findsNothing);
+      expect(find.byIcon(LucideIcons.paperclip), findsWidgets);
+    });
+
+    testWidgets('no attachments means no preview strip', (tester) async {
+      await pump(tester, [provider('Dr. Sara Kamal')]);
+      expect(find.byType(VaultAttachmentThumb), findsNothing);
+    });
+  });
+
   group('the sheet', () {
     Future<void> openEdit(WidgetTester tester) async {
       await tester.tap(find.byIcon(LucideIcons.pencil).first);
@@ -98,7 +152,7 @@ void main() {
 
     testWidgets('adding is still a blank form', (tester) async {
       final s = await pump(tester, const []);
-      await tester.tap(find.text(s.strings.care.care_add));
+      await tester.tap(find.byIcon(LucideIcons.userPlus));
       await tester.pumpAndSettle();
       final c = s.strings.care;
       expect(find.text(c.care_add_title), findsOne);

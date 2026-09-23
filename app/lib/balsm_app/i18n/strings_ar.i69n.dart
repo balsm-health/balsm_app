@@ -316,6 +316,9 @@ class CareStrings_ar extends CareStrings {
   String care_delete_q(String name) => "حذف $name من فريق رعايتك؟";
   String get care_delete_h => "سيتم حذف بياناته وملفاته المرفقة من جهازك.";
   String get care_keep => "تراجع";
+  String get care_attach_file => "إرفاق ملف";
+  String get care_manage_files => "إدارة الملفات";
+  String get care_files_done => "تم";
   String get care_files => "ملفات";
   String get care_files_head => "بطاقة العمل والملفات";
   String get care_attach => "إرفاق";
@@ -488,6 +491,12 @@ class CareStrings_ar extends CareStrings {
         return care_delete_h;
       case 'care_keep':
         return care_keep;
+      case 'care_attach_file':
+        return care_attach_file;
+      case 'care_manage_files':
+        return care_manage_files;
+      case 'care_files_done':
+        return care_files_done;
       case 'care_files':
         return care_files;
       case 'care_files_head':

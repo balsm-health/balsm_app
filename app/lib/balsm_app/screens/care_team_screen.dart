@@ -13,6 +13,7 @@ import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../widgets/attachment_thumb.dart';
+import '../widgets/vault_file_viewer.dart';
 import '../widgets/photo_attach.dart';
 import '../routes.dart';
 import '../tokens.dart';
@@ -170,6 +171,9 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     return SubScreen(
       s: s,
       title: s.strings.profile.p_care,
+      // `home.jsx` replaced the dashed "Add a care provider" row with a FAB,
+      // so adding is reachable without scrolling past the whole roster.
+      floating: _CareFab(onTap: _add),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),
@@ -236,23 +240,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
               ),
             ]),
           ),
-        const SizedBox(height: 16),
-        Pressable(
-          onTap: _add,
-          // Design: dashed secondary, 52 tall.
-          child: DashedBorder(
-            child: Container(
-              height: 52,
-              alignment: Alignment.center,
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-                const Icon(LucideIcons.userPlus, size: 17, color: T.fg1),
-                const SizedBox(width: 8),
-                Text(c.care_add, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              ]),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         PButton(
           c.care_find,
           icon: LucideIcons.search,
@@ -265,7 +253,37 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
             s.setTab(AppTab.map);
           },
         ),
+        // `<div style={{ height: 72 }} />` — room for the FAB so it never
+        // sits on top of the last card.
+        const SizedBox(height: 72),
       ],
+    );
+  }
+}
+
+/// `.rec-fab` with the add-provider glyph. Same 56pt disc as the records
+/// vault's, so the two "add" actions read as one affordance.
+class _CareFab extends StatelessWidget {
+  const _CareFab({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Semantics(
+      label: s.strings.care.care_add,
+      button: true,
+      child: Pressable(
+        onTap: onTap,
+        scale: 0.93,
+        child: Container(
+          width: 56,
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle, boxShadow: s.accent.boxShadow),
+          child: const Icon(LucideIcons.userPlus, size: 22, color: Colors.white),
+        ),
+      ),
     );
   }
 }
@@ -421,6 +439,30 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
             child: RoundBtn(icon: LucideIcons.pencil, ghost: true, iconSize: 16, onTap: widget.onEdit),
           ),
         ]),
+        // Collapsed, the card previews what is attached: a 64pt strip that
+        // opens the viewer at whichever file was tapped. It gives way to the
+        // full gallery once the drawer is open.
+        if (files.isNotEmpty && !_filesOpen) ...[
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 64,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.zero,
+              itemCount: files.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) => SizedBox(
+                width: 64,
+                child: VaultAttachmentThumb(
+                  path: files[i],
+                  compact: true,
+                  height: 64,
+                  onOpen: () => VaultFileViewer.openAll(context, paths: files, index: i, title: provider.name),
+                ),
+              ),
+            ),
+          ),
+        ],
         // The design always shows a Call/Message pair; Message has nowhere to
         // go here, so Call appears only when there is a number to dial, and
         // Files sits beside it exactly as the design places it.
@@ -443,15 +485,25 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
           // `block` stretches to infinity, which a bare Row child cannot be
           // given — so the sole button flexes instead.
           Builder(builder: (context) {
+            // Three states, as the design has them: nothing attached goes
+            // straight to the picker; attached collapses/expands the drawer.
             final files0 = PButton(
-              files.isEmpty ? c.care_files : '${files.length}',
-              icon: LucideIcons.paperclip,
+              files.isEmpty
+                  ? c.care_attach_file
+                  : _filesOpen
+                      ? c.care_files_done
+                      : c.care_manage_files,
+              icon: files.isEmpty
+                  ? LucideIcons.paperclip
+                  : _filesOpen
+                      ? LucideIcons.check
+                      : LucideIcons.pencil,
               variant: BtnVariant.secondary,
               size: BtnSize.sm,
               accent: s.accent,
               ar: s.rtl,
               block: phone == null || phone.isEmpty,
-              onTap: () => setState(() => _filesOpen = !_filesOpen),
+              onTap: files.isEmpty ? _attach : () => setState(() => _filesOpen = !_filesOpen),
             );
             return phone == null || phone.isEmpty ? Expanded(child: files0) : files0;
           }),

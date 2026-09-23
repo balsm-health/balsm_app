@@ -313,6 +313,9 @@ class CareStrings implements i69n.I69nMessageBundle {
   String care_delete_q(String name) => "Remove $name from your care team?";
   String get care_delete_h => "Their details and attached files will be deleted from your device.";
   String get care_keep => "Keep";
+  String get care_attach_file => "Attach file";
+  String get care_manage_files => "Manage files";
+  String get care_files_done => "Done";
   String get care_files => "Files";
   String get care_files_head => "Business card & files";
   String get care_attach => "Attach";
@@ -485,6 +488,12 @@ class CareStrings implements i69n.I69nMessageBundle {
         return care_delete_h;
       case 'care_keep':
         return care_keep;
+      case 'care_attach_file':
+        return care_attach_file;
+      case 'care_manage_files':
+        return care_manage_files;
+      case 'care_files_done':
+        return care_files_done;
       case 'care_files':
         return care_files;
       case 'care_files_head':

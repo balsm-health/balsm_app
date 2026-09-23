@@ -32,31 +32,53 @@ void openEmergency(BuildContext context) => pushSubScreen(context, (s) => Emerge
 /// Shared scaffold: status-bar spacer + back app bar + width-capped scroll
 /// body. Public so `care_team_screen.dart` can wear the same chrome.
 class SubScreen extends StatelessWidget {
-  const SubScreen(
-      {super.key, required this.s, required this.title, required this.children, this.trailing, this.maxWidth = 640});
+  const SubScreen({
+    super.key,
+    required this.s,
+    required this.title,
+    required this.children,
+    this.trailing,
+    this.maxWidth = 640,
+    this.floating,
+  });
   final PatientAppState s;
   final String title;
   final List<Widget> children;
   final Widget? trailing;
   final double maxWidth;
+
+  /// A floating action pinned over the list, laid out like `.rec-fab`: 20 from
+  /// the trailing edge, 24 above the home indicator. Leave null for the
+  /// sub-screens that have no primary add.
+  final Widget? floating;
+
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
-        body: Column(children: [
-          const PadTop(),
-          AppBarRow(
-            leading: RoundBtn(icon: backArrow(context), onTap: () => Navigator.pop(context)),
-            children: [
-              Expanded(child: Text(title, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-              if (trailing != null) trailing!,
-            ],
-          ),
-          Expanded(
-            child: ContentColumn(
-              maxWidth: maxWidth,
-              child: ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 28), children: children),
+        body: Stack(children: [
+          Column(children: [
+            const PadTop(),
+            AppBarRow(
+              leading: RoundBtn(icon: backArrow(context), onTap: () => Navigator.pop(context)),
+              children: [
+                Expanded(child: Text(title, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+                if (trailing != null) trailing!,
+              ],
             ),
-          ),
+            Expanded(
+              child: ContentColumn(
+                maxWidth: maxWidth,
+                child: ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 28), children: children),
+              ),
+            ),
+          ]),
+          if (floating != null)
+            PositionedDirectional(
+              end: 20,
+              bottom:
+                  (windowClassOf(context) == BalsmWindowClass.compact ? MediaQuery.paddingOf(context).bottom : 0) + 24,
+              child: floating!,
+            ),
         ]),
       );
 }

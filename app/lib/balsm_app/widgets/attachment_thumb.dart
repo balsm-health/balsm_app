@@ -23,6 +23,7 @@ class VaultAttachmentThumb extends ConsumerWidget {
     this.title,
     this.height = 140,
     this.compact = false,
+    this.onOpen,
   });
 
   final String path;
@@ -34,13 +35,17 @@ class VaultAttachmentThumb extends ConsumerWidget {
   /// centred icon over its kind, because the row card cannot fit in 96px.
   final bool compact;
 
+  /// Design `AttachmentThumb`'s `onOpen` prop. Null opens this file alone; a
+  /// strip passes one so the viewer opens on the whole set at that index.
+  final VoidCallback? onOpen;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final isPdf = path.toLowerCase().endsWith('.pdf');
     if (compact) {
       return GestureDetector(
-        onTap: () => VaultFileViewer.open(context, path: path, title: title),
+        onTap: onOpen ?? () => VaultFileViewer.open(context, path: path, title: title),
         child: Container(
           height: height,
           decoration: BoxDecoration(
@@ -67,7 +72,7 @@ class VaultAttachmentThumb extends ConsumerWidget {
     }
     if (!isPdf) {
       return GestureDetector(
-        onTap: () => VaultFileViewer.open(context, path: path, title: title),
+        onTap: onOpen ?? () => VaultFileViewer.open(context, path: path, title: title),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(T.rLg),
           child: Stack(children: [
@@ -119,7 +124,7 @@ class VaultAttachmentThumb extends ConsumerWidget {
       borderRadius: BorderRadius.circular(T.rLg),
       child: InkWell(
         borderRadius: BorderRadius.circular(T.rLg),
-        onTap: () => VaultFileViewer.open(context, path: path, title: title),
+        onTap: onOpen ?? () => VaultFileViewer.open(context, path: path, title: title),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(

@@ -54,8 +54,8 @@ void main() {
     // Nothing to search or filter yet.
     expect(find.byType(TextField), findsNothing);
     expect(find.text(s.strings.care.care_all), findsNothing);
-    // The way in is always offered.
-    expect(find.text(s.strings.care.care_add), findsOne);
+    // The way in is always offered — as the FAB now, not a dashed row.
+    expect(find.bySemanticsLabel(s.strings.care.care_add), findsOne);
   });
 
   testWidgets('one provider type needs no filter row', (tester) async {
@@ -207,39 +207,45 @@ void main() {
       return state;
     }
 
-    testWidgets('every provider offers a Files button, phone or not', (tester) async {
+    testWidgets('every provider offers the files action, phone or not', (tester) async {
       final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')]);
-      expect(find.text(s.strings.care.care_files), findsOne);
+      expect(find.text(s.strings.care.care_attach_file), findsOne);
       expect(find.text(s.strings.care.care_call), findsNothing);
     });
 
-    testWidgets('the drawer stays shut until Files is tapped', (tester) async {
+    testWidgets('with nothing attached there is no drawer to open', (tester) async {
       final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')]);
+      // Not tapped on purpose: with no files the button goes straight to the
+      // system picker, which has no binding in a widget test. The label split
+      // below is what distinguishes the two routes; the drawer-opening path is
+      // covered by 'managing opens the gallery' with files present.
+      expect(find.text(s.strings.care.care_attach_file), findsOne);
+      expect(find.text(s.strings.care.care_manage_files), findsNothing);
       expect(find.text(s.strings.care.care_files_head), findsNothing);
-
-      await tester.tap(find.text(s.strings.care.care_files));
-      await tester.pumpAndSettle();
-      expect(find.text(s.strings.care.care_files_head), findsOne);
-      expect(find.text(s.strings.care.care_attach), findsOne);
+      expect(find.byType(VaultAttachmentGallery), findsNothing);
     });
 
-    testWidgets('the button counts attached files instead of naming itself', (tester) async {
+    testWidgets('with files attached the button offers to manage them', (tester) async {
       final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')], files: ['v/a.pdf', 'v/b.pdf']);
-      expect(find.text('2'), findsOne);
-      expect(find.text(s.strings.care.care_files), findsNothing);
+      expect(find.text(s.strings.care.care_manage_files), findsOne);
+      expect(find.text(s.strings.care.care_attach_file), findsNothing);
+      // Collapsed, the card previews them.
+      expect(find.byType(VaultAttachmentThumb), findsNWidgets(2));
     });
 
-    testWidgets('opening the drawer on a stocked provider shows the gallery', (tester) async {
+    testWidgets('managing opens the gallery and the button becomes Done', (tester) async {
       final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')], files: ['v/a.pdf']);
-      await tester.tap(find.text('1'));
+      await tester.tap(find.text(s.strings.care.care_manage_files));
       await tester.pumpAndSettle();
       expect(find.byType(VaultAttachmentGallery), findsOne);
       expect(find.text(s.strings.records.att_one_file), findsOne);
+      expect(find.text(s.strings.care.care_files_done), findsOne);
+      expect(find.text(s.strings.care.care_manage_files), findsNothing);
     });
 
     testWidgets('each provider drawer opens on its own', (tester) async {
-      final s = await pumpWithFiles(tester, [provider('Dr. A'), provider('Dr. B')]);
-      await tester.tap(find.text(s.strings.care.care_files).first);
+      final s = await pumpWithFiles(tester, [provider('Dr. A'), provider('Dr. B')], files: ['v/a.pdf']);
+      await tester.tap(find.text(s.strings.care.care_manage_files).first);
       await tester.pumpAndSettle();
       // One open drawer, not both.
       expect(find.text(s.strings.care.care_files_head), findsOne);
