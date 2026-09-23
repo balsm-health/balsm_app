@@ -10,9 +10,9 @@ import 'package:material_ui/material_ui.dart';
 /// `feedback.jsx` — the five-mark rating.
 ///
 /// A lit mark keeps the brand mark's five hues; only the unlit wash is a flat
-/// ink fill. This deliberately departs from the design, which flattens a lit
-/// mark to one gold — see [_RateMark]'s note. The score line under the row
-/// does follow the design.
+/// ink fill. Two deliberate departures from the design: it flattens a lit mark
+/// to one gold, and it prints the score as "N of 5" under the row. Neither is
+/// followed — the word label (Rough … Great) is the only readout.
 void main() {
   Future<PatientAppState> pump(WidgetTester tester, {bool ar = false}) async {
     final state = PatientAppState();
@@ -41,11 +41,9 @@ void main() {
   Iterable<ColorFilter> markFilters(WidgetTester tester) =>
       tester.widgetList<ColorFiltered>(find.byType(ColorFiltered)).map((w) => w.colorFilter);
 
-  testWidgets('every mark starts unlit, and no score is claimed', (tester) async {
+  testWidgets('every mark starts unlit, and the prompt stands in for a score', (tester) async {
     final s = await pump(tester);
-    // Nothing picked yet, so the count line is absent rather than "0 of 5".
-    expect(find.text(s.strings.feedback.fb_rate_count('0')), findsNothing);
-    expect(find.textContaining('of 5'), findsNothing);
+    expect(find.text(s.strings.feedback.fb_rate_q), findsOne);
     // All five marks wear the flat ink wash.
     const ink = ColorFilter.mode(T.ink200, BlendMode.srcIn);
     expect(markFilters(tester).where((f) => f == ink).length, 5);
@@ -67,20 +65,22 @@ void main() {
     expect(find.byType(BalsmFlower), findsNWidgets(5), reason: 'still five marks');
   });
 
-  testWidgets('the score is spelled out under the row', (tester) async {
+  testWidgets('the word label is the readout, not a printed number', (tester) async {
     final s = await pump(tester);
     await tester.tap(find.byType(ColorFiltered).at(3));
     await tester.pumpAndSettle();
-    expect(find.text(s.strings.feedback.fb_rate_count('4')), findsOne);
+    expect(find.text(s.strings.feedback.fb_r4), findsOne);
+    // The design's "N of 5" line is deliberately absent.
+    expect(find.textContaining('of 5'), findsNothing);
+    expect(find.text('4'), findsNothing);
   });
 
-  testWidgets('the count stays LTR in Arabic', (tester) async {
+  testWidgets('no bare digits leak into the Arabic sheet either', (tester) async {
     final s = await pump(tester, ar: true);
     await tester.tap(find.byType(ColorFiltered).first);
     await tester.pumpAndSettle();
-    final count = find.text(s.strings.feedback.fb_rate_count('1'));
-    expect(count, findsOne);
-    expect(Directionality.of(tester.element(count)), TextDirection.ltr);
+    expect(find.text(s.strings.feedback.fb_r1), findsOne);
+    expect(find.textContaining('5'), findsNothing);
   });
 
   testWidgets('each mark announces its own score to a screen reader', (tester) async {

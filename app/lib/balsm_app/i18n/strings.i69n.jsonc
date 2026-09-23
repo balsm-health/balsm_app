@@ -708,7 +708,6 @@
     "fb_r3": "Okay",
     "fb_r4": "Good",
     "fb_r5": "Excellent",
-    "fb_rate_count(String n)": "$n of 5",
     "fb_last": "Last shared",
     "fb_about": "What is it about?",
     "fb_note_lbl": "Tell us more",

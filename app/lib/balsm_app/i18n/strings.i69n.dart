@@ -2326,7 +2326,6 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
   String get fb_r3 => "Okay";
   String get fb_r4 => "Good";
   String get fb_r5 => "Excellent";
-  String fb_rate_count(String n) => "$n of 5";
   String get fb_last => "Last shared";
   String get fb_about => "What is it about?";
   String get fb_note_lbl => "Tell us more";
@@ -2365,8 +2364,6 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
         return fb_r4;
       case 'fb_r5':
         return fb_r5;
-      case 'fb_rate_count':
-        return fb_rate_count;
       case 'fb_last':
         return fb_last;
       case 'fb_about':

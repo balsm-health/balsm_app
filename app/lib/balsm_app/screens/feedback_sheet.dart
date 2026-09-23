@@ -163,17 +163,6 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
           child: Text(_ratingLabel(s),
               style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: _rating > 0 ? T.fg2 : T.fg3)),
         ),
-        // `.fb-rate-count` — the picked score spelled out, mono and LTR so
-        // the digits read the same in Arabic.
-        if (_rating > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              f.fb_rate_count('$_rating'),
-              textDirection: TextDirection.ltr,
-              style: Typo.num(size: FS.xs, color: T.fg3).copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
         if (_lastSentAt != null)
           Padding(
             padding: const EdgeInsets.only(top: 3),

@@ -2323,7 +2323,6 @@ class FeedbackStrings_ar extends FeedbackStrings {
   String get fb_r3 => "مقبول";
   String get fb_r4 => "جيد";
   String get fb_r5 => "ممتاز";
-  String fb_rate_count(String n) => "$n من 5";
   String get fb_last => "آخر مشاركة";
   String get fb_about => "ما موضوع ملاحظتك؟";
   String get fb_note_lbl => "أخبرنا المزيد";
@@ -2361,8 +2360,6 @@ class FeedbackStrings_ar extends FeedbackStrings {
         return fb_r4;
       case 'fb_r5':
         return fb_r5;
-      case 'fb_rate_count':
-        return fb_rate_count;
       case 'fb_last':
         return fb_last;
       case 'fb_about':
