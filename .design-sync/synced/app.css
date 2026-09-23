@@ -353,11 +353,11 @@ body {
   background: var(--app-accent); color: #fff; position: relative; overflow: hidden;
   box-shadow: var(--app-accent-shadow);
 }
+/* Watermark uses the real mono-white brand asset — no invert filter. */
 .hero-card .petal-wm {
   position: absolute; right: -28px; top: -28px; width: 150px; height: 150px;
   object-fit: contain;
   opacity: 0.16; pointer-events: none;
-  filter: brightness(0) invert(1);
 }
 [dir="rtl"] .hero-card .petal-wm { right: auto; left: -28px; }
 .hero-card .label { font-size: var(--pt-sm); font-weight: 600; opacity: 0.9; }
@@ -693,8 +693,8 @@ input.vital-num.active, input.vital-num.active:read-only:focus { border-color: v
 .splash-sheen {
   position: absolute; z-index: 2; pointer-events: none;
   width: 132px; height: 132px; mix-blend-mode: screen;
-  -webkit-mask: url(assets/icon.svg?v=5) center / contain no-repeat;
-          mask: url(assets/icon.svg?v=5) center / contain no-repeat;
+  -webkit-mask: url(assets/icon.svg?v=7) center / contain no-repeat;
+          mask: url(assets/icon.svg?v=7) center / contain no-repeat;
   background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.9) 50%, transparent 60%);
   background-size: 300% 100%; background-repeat: no-repeat;
   background-position: 210% 0;

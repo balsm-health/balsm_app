@@ -1,14 +1,15 @@
 import 'dart:math' as math;
 import 'package:collection/collection.dart';
 import 'package:core/core.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
+import '../assets.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../tokens.dart';
-import '../widgets/balsm_mark.dart';
 
 /// Today's check-in, if one has been recorded. Drives the hero's two states.
 CheckIn? todayCheckIn(List<CheckIn> history) {
@@ -104,15 +105,15 @@ class HomeHero extends StatelessWidget {
         boxShadow: s.accent.boxShadow,
       ),
       child: Stack(children: [
-        const PositionedDirectional(
+        // `app.css` .hero-card .petal-wm — the real mono-white brand asset,
+        // not the colour mark forced white. (The design dropped its
+        // `brightness(0) invert(1)` for the same reason.)
+        PositionedDirectional(
           top: -28,
           end: -28,
           child: Opacity(
             opacity: 0.16,
-            child: ColorFiltered(
-              colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-              child: BalsmFlower(size: 150),
-            ),
+            child: SvgPicture.asset(Assets.brand_icon_mono_white, width: 150, height: 150),
           ),
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

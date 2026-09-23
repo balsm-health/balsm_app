@@ -12,6 +12,12 @@ class Assets {
   /// Icon-only watercolor ring mark (`Balsm-Core/brand/icon.svg`).
   static const brand_icon = '$_brand/icon.svg';
 
+  /// The same mark as one solid white silhouette (`icon-mono-white.svg`),
+  /// for watermarks on an accent fill. The design used to invert the colour
+  /// mark with a filter and now ships this asset instead — inverting flattened
+  /// the ring's overlaps, this keeps them.
+  static const brand_icon_mono_white = '$_brand/icon-mono-white.svg';
+
   /// Vertical lockup — mark over بلسم / Balsm.health (`logo-vertical.svg`).
   static const brand_logo_vertical = '$_brand/logo-vertical.svg';
 

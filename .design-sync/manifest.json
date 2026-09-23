@@ -28,15 +28,12 @@
       "current_sha": "e3596fc0047f0d1cb9a78cdb03f21b087ecb1b1d5b8dbd380c79a170c1ae0de2",
       "fetched_at": "2026-09-23T11:45:22+00:00",
       "ported_to": [
-        "app/lib/balsm_app/shell.dart",
-        "app/lib/balsm_app/kit.dart",
         "app/lib/balsm_app/tokens.dart",
-        "app/lib/balsm_app/screens/auth_flow.dart",
-        "packages/core/lib/src/kit/widgets/balsm_welcome_background.dart"
+        "app/lib/balsm_app/screens/home_widgets.dart"
       ],
       "source": "export:balsm-claude-design-files.json",
-      "synced_at": "2026-09-22T18:45:34+00:00",
-      "synced_sha": "e3596fc0047f0d1cb9a78cdb03f21b087ecb1b1d5b8dbd380c79a170c1ae0de2"
+      "synced_at": "2026-09-23T11:54:13+00:00",
+      "synced_sha": "a1d10f8540b903d858bd665b058f02d2247a427bb54fb4b8db35f726c9fda1d1"
     },
     "app.jsx": {
       "current_sha": "070c709b645529fb1a895398dd084fdd18ced8d81b84d1935c5a352872063cdd",
@@ -134,9 +131,12 @@
     "feedback.jsx": {
       "current_sha": "90fb03a31f802464f9d0969d3f641e595b62bfdba60324f88ef767566f3b265d",
       "fetched_at": "2026-09-23T11:45:22+00:00",
+      "ported_to": [
+        "app/lib/balsm_app/screens/feedback_sheet.dart"
+      ],
       "source": "export:balsm-claude-design-files.json",
-      "synced_at": "2026-09-18T12:13:46+00:00",
-      "synced_sha": "90fb03a31f802464f9d0969d3f641e595b62bfdba60324f88ef767566f3b265d"
+      "synced_at": "2026-09-23T11:56:58+00:00",
+      "synced_sha": "9c5a6e9a093abc69d8927d329d9a06b3fa07c868ef58430c9bc8981c79309d99"
     },
     "home.jsx": {
       "current_sha": "99cb36346d73994b080bc33759028a59d99bb2acc25cef646751c49a6435875f",
@@ -246,9 +246,13 @@
     "report.jsx": {
       "current_sha": "b5bd5886e2d60aa26a49411bebdd9db644b30d4c1a508f486195e1b0c9cbd66a",
       "fetched_at": "2026-09-23T11:45:22+00:00",
+      "ported_to": [
+        "app/lib/balsm_app/screens/report_flow.dart",
+        "modules/self_report/lib/src/domain/value_objects/check_in_metric.dart"
+      ],
       "source": "export:balsm-claude-design-files.json",
-      "synced_at": "2026-09-18T12:13:46+00:00",
-      "synced_sha": "f63a4444979eab8aeeea9066df26abeb4a5c0542332c257131e5bad10869f290"
+      "synced_at": "2026-09-23T11:49:33+00:00",
+      "synced_sha": "b5bd5886e2d60aa26a49411bebdd9db644b30d4c1a508f486195e1b0c9cbd66a"
     },
     "settings.jsx": {
       "current_sha": "f88f97a252390ad71c118761ac5ced75a364ba76f4bc04d7b1cca45e516b3870",

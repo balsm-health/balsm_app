@@ -45,9 +45,18 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   bool _sent = false;
   DateTime? _lastSentAt;
 
+  /// Guards the one-shot load below — `didChangeDependencies` runs again on
+  /// every inherited-widget change (a language switch, for one).
+  bool _loaded = false;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // NOT initState: this reads `AppScope`, and an inherited lookup there
+    // throws before initState completes — which left the "last sent" line
+    // permanently blank instead of failing visibly.
+    if (_loaded) return;
+    _loaded = true;
     _loadLast();
   }
 
@@ -144,7 +153,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       Column(children: [
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           for (var n = 1; n <= 5; n++) ...[
-            _RateMark(lit: n <= _rating, onTap: () => setState(() => _rating = n)),
+            _RateMark(lit: n <= _rating, label: '$n/5', onTap: () => setState(() => _rating = n)),
             if (n < 5) const SizedBox(width: 8),
           ],
         ]),
@@ -154,6 +163,17 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
           child: Text(_ratingLabel(s),
               style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: _rating > 0 ? T.fg2 : T.fg3)),
         ),
+        // `.fb-rate-count` — the picked score spelled out, mono and LTR so
+        // the digits read the same in Arabic.
+        if (_rating > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              f.fb_rate_count('$_rating'),
+              textDirection: TextDirection.ltr,
+              style: Typo.num(size: FS.xs, color: T.fg3).copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
         if (_lastSentAt != null)
           Padding(
             padding: const EdgeInsets.only(top: 3),
@@ -227,29 +247,36 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: c, width: 1.5));
 }
 
-/// One tappable mark — full colour when lit, ink when not.
+/// The lit rating gold. One uniform fill across ribbons AND heads — the design
+/// is explicit that this is "no two-tone, no sweep", so the brand mark's five
+/// hues do not show through a lit petal.
+const _kRateGold = Color(0xFFF0AE1A);
+
+/// One tappable mark — uniform gold when lit, flat ink when not.
 class _RateMark extends StatelessWidget {
-  const _RateMark({required this.lit, required this.onTap});
+  const _RateMark({required this.lit, required this.onTap, required this.label});
   final bool lit;
   final VoidCallback onTap;
+  final String label;
 
   @override
-  Widget build(BuildContext context) => Pressable(
-        onTap: onTap,
-        scale: 0.94,
-        child: SizedBox(
-          width: 46,
-          height: 46,
-          child: Padding(
-            padding: const EdgeInsets.all(2),
-            child: lit
-                ? const BalsmFlower(size: 42)
-                : const ColorFiltered(
-                    // `.fb-mark-off .ribbon { fill: ink-200 }` — one flat ink
-                    // wash, not a desaturation of the five brand hues.
-                    colorFilter: ColorFilter.mode(T.ink200, BlendMode.srcIn),
-                    child: BalsmFlower(size: 42),
-                  ),
+  Widget build(BuildContext context) => Semantics(
+        label: label,
+        button: true,
+        selected: lit,
+        child: Pressable(
+          onTap: onTap,
+          scale: 0.94,
+          child: SizedBox(
+            width: 46,
+            height: 46,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: ColorFiltered(
+                colorFilter: ColorFilter.mode(lit ? _kRateGold : T.ink200, BlendMode.srcIn),
+                child: const BalsmFlower(size: 42),
+              ),
+            ),
           ),
         ),
       );

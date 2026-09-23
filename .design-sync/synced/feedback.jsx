@@ -17,8 +17,8 @@ const fbDate = (ts) => { const d = new Date(ts); const p = (n) => String(n).padS
 /* One tappable petal mark — full colour when lit, ink when not */
 function RatePetal({ lit, onPick, label }) {
   return (
-    <button type="button" aria-label={label} onClick={onPick}
-      className={cx('fb-petal', !lit && 'fb-petal-off')}>
+    <button type="button" aria-label={label} aria-pressed={lit} onClick={onPick}
+      className={cx('fb-petal', lit ? 'fb-petal-on' : 'fb-petal-off')}>
       <PetalMark style={{ width: '100%', height: '100%', display: 'block' }} />
     </button>
   );
@@ -44,8 +44,17 @@ function FeedbackSheet({ onClose }) {
         .fb-petal { width: 46px; height: 46px; padding: 2px; border: none; background: none; cursor: pointer;
                     transition: transform var(--dur-base) var(--ease-out); }
         .fb-petal:active { transform: scale(0.94); }
-        .fb-petal-off .petal { fill: var(--balsm-ink-200); transition: fill var(--dur-base) var(--ease-out); }
-        .fb-petal .petal { transition: fill var(--dur-base) var(--ease-out); }
+        /* The mark's own shapes carry gradient fill attributes, so the rating
+           state has to be set on the shapes themselves, not their groups.
+           One uniform gold across ribbons and heads — no two-tone, no sweep. */
+        .fb-petal .petal > *, .fb-petal .petal-dot > * {
+          transition: fill var(--dur-base) var(--ease-out);
+        }
+        .fb-petal-on .petal > *, .fb-petal-on .petal-dot > * { fill: #F0AE1A; }
+        .fb-petal-off .petal > *, .fb-petal-off .petal-dot > * { fill: var(--balsm-ink-200); }
+        .fb-petal-off:hover .petal > *, .fb-petal-off:hover .petal-dot > * { fill: var(--balsm-ink-300); }
+        .fb-rate-count { font-family: var(--font-mono); font-size: var(--pt-xs); font-weight: 600;
+                         color: var(--fg3); margin-top: 10px; font-variant-numeric: tabular-nums; }
       `}</style>
 
       {sent ? (
@@ -67,6 +76,11 @@ function FeedbackSheet({ onClose }) {
             <div style={{ marginTop: 8, minHeight: 20, fontSize: 'var(--pt-sm)', fontWeight: 700, color: rating ? 'var(--fg2)' : 'var(--fg3)' }}>
               {rating ? t(`fb_r${rating}`) : t('fb_rate_q')}
             </div>
+            {rating > 0 && (
+              <div className="fb-rate-count" dir="ltr">
+                {lang === 'ar' ? `${rating} من 5` : `${rating} of 5`}
+              </div>
+            )}
             {last && (
               <div style={{ marginTop: 3, fontSize: 'var(--pt-2xs)', color: 'var(--fg3)' }}>
                 {t('fb_last')} <span className="num">{fbDate(last.at)}</span>

@@ -78,4 +78,37 @@ void main() {
       });
     });
   }
+
+  group('icon-mono-white.svg', () {
+    late final svg = read('$brand/icon-mono-white.svg');
+
+    test('keeps its padded square canvas, unlike the tight colour mark', () {
+      // icon.svg is cropped to its ink box; the mono-white variant Core
+      // generates is a padded 1024 square. `home.jsx` points .petal-wm at
+      // this same variant inside a fixed 150px box, so the extra margin is
+      // the design's framing, not a mistake — pinned so a future re-crop of
+      // either file is a visible failure rather than a silently resized
+      // watermark.
+      expect(svg, contains('viewBox="0 0 1024 1024"'));
+      expect(svg, isNot(contains(inkBox)));
+    });
+
+    test('paints white and nothing else', () {
+      // A watermark on an accent fill. Any other ink here would mean Core
+      // shipped the wrong variant, which is invisible until it renders.
+      final fills = RegExp(r'fill="(?!none")([^"]+)"').allMatches(svg).map((m) => m.group(1)!).toSet();
+      expect(fills.difference({'#fff', '#FFF', '#ffffff', '#FFFFFF', 'white'}), isEmpty,
+          reason: 'unexpected ink in the mono-white mark: $fills');
+    });
+
+    testWidgets('resolves its <use href> through flutter_svg', (tester) async {
+      // Core authors this with <defs> + <use href="#…">. The compiler drops
+      // what it cannot resolve rather than failing, so a silent break here
+      // ships a blank watermark — this renders it for real.
+      final picture = await vg.loadPicture(SvgStringLoader(svg), null);
+      addTearDown(picture.picture.dispose);
+      expect(picture.size.width, greaterThan(0));
+      expect(picture.size.height, greaterThan(0));
+    });
+  });
 }
