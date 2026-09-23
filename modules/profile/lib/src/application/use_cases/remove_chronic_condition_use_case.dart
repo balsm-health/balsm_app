@@ -5,6 +5,8 @@ import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
+import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 
 /// Removes a [ChronicCondition] from the user's [HealthProfile] and publishes
@@ -15,11 +17,14 @@ import '../../infrastructure/drift/drift_profile_data_source.dart';
 class RemoveChronicConditionUseCase {
   const RemoveChronicConditionUseCase({
     required HealthProfilesDataSource dao,
+    required ChronicConditionsDataSource conditions,
     required EventBus eventBus,
   })  : _dao = dao,
+        _conditions = conditions,
         _bus = eventBus;
 
   final HealthProfilesDataSource _dao;
+  final ChronicConditionsDataSource _conditions;
   final EventBus _bus;
 
   Future<AppResult<HealthProfile>> execute({
@@ -34,10 +39,7 @@ class RemoveChronicConditionUseCase {
         );
       }
 
-      await _dao.put(
-        profile.id,
-        profile.copyWith(conditions: profile.conditions.where((c) => c.id != conditionId).toList()),
-      );
+      await _conditions.delete(conditionId, scope: profile.id);
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'condition_removed'),
@@ -54,6 +56,7 @@ class RemoveChronicConditionUseCase {
 final removeChronicConditionUseCaseProvider = Provider<RemoveChronicConditionUseCase>((ref) {
   return RemoveChronicConditionUseCase(
     dao: ref.watch(profileDataSourceProvider),
+    conditions: ref.watch(chronicConditionsDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

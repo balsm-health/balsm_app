@@ -5,6 +5,8 @@ import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
+import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 
 /// Adds a [ChronicCondition] to the user's [HealthProfile] and publishes
@@ -15,11 +17,14 @@ import '../../infrastructure/drift/drift_profile_data_source.dart';
 class AddChronicConditionUseCase {
   const AddChronicConditionUseCase({
     required HealthProfilesDataSource dao,
+    required ChronicConditionsDataSource conditions,
     required EventBus eventBus,
   })  : _dao = dao,
+        _conditions = conditions,
         _bus = eventBus;
 
   final HealthProfilesDataSource _dao;
+  final ChronicConditionsDataSource _conditions;
   final EventBus _bus;
 
   /// Validates input, persists the condition, and emits an event.
@@ -79,19 +84,19 @@ class AddChronicConditionUseCase {
         await _dao.upsertProfile(profile);
       }
 
-      // Read-modify-put: `put` writes the aggregate, children included.
-      profile = profile.copyWith(conditions: [
-        ...profile.conditions,
+      final conditionId = ChronicConditionId.uuid();
+      await _conditions.put(
+        conditionId,
         ChronicCondition(
-          id: ChronicConditionId.uuid(),
+          id: conditionId,
           healthProfileId: profile.id,
           name: trimmedName,
           icd10Code: normalizedIcd10,
           onsetYear: onsetYear,
           createdAt: DateTime.now().toUtc(),
         ),
-      ]);
-      await _dao.put(profile.id, profile);
+        scope: profile.id,
+      );
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'condition_added'),
@@ -108,6 +113,7 @@ class AddChronicConditionUseCase {
 final addChronicConditionUseCaseProvider = Provider<AddChronicConditionUseCase>((ref) {
   return AddChronicConditionUseCase(
     dao: ref.watch(profileDataSourceProvider),
+    conditions: ref.watch(chronicConditionsDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

@@ -3,112 +3,90 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:profile/profile.dart';
 
-/// `put` writes the whole aggregate — head row AND child collections.
+/// The profile's child collections, each through its own scoped source.
 ///
-/// Reads have always hydrated allergies, conditions and contacts; writes used
-/// to go through addAllergy/removeAllergy/… instead. That asymmetry is gone,
-/// so these pin what replaced it: children round-trip, ids survive an edit,
-/// and a child dropped from the value is deleted (last-write-wins).
+/// They were briefly written by `put` on the aggregate; that made a write of
+/// one collection able to delete another, so each is its own source now with
+/// the generic contract. These pin that the split actually isolates them.
 void main() {
   late AppDatabase db;
   late HealthProfilesDataSource dao;
-  const user = UserId.value('u-agg');
+  late AllergiesDataSource allergies;
+  late ChronicConditionsDataSource conditions;
+  const user = UserId.value('u-children');
+  late HealthProfileId profileId;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     await db.ensureSelfHealthProfile(user);
     dao = DriftProfileDataSource(db: db, activeUser: () => user);
+    profileId = (await dao.getProfile(user))!.id;
+    allergies = DriftAllergiesDataSource(db: db, activeProfile: () => profileId);
+    conditions = DriftChronicConditionsDataSource(db: db, activeProfile: () => profileId);
   });
   tearDown(() => db.close());
 
-  Future<HealthProfile> load() async => (await dao.getProfile(user))!;
-
-  Allergy allergy(String name, {AllergyId? id, HealthProfileId? profile}) => Allergy(
+  Allergy allergy(String name, {AllergyId? id}) => Allergy(
         id: id ?? AllergyId.uuid(),
-        healthProfileId: profile ?? const HealthProfileId.value('hp'),
+        healthProfileId: profileId,
         name: name,
         severity: 'mild',
         isControlledSubstance: false,
         createdAt: DateTime.now().toUtc(),
       );
 
-  test('children round-trip through put', () async {
-    var p = await load();
-    p = p.copyWith(allergies: [allergy('Penicillin', profile: p.id)]);
-    await dao.put(p.id, p);
-
-    final back = await load();
-    expect(back.allergies.map((a) => a.name), ['Penicillin']);
+  test('put then findAll round-trips', () async {
+    final a = allergy('Penicillin');
+    await allergies.put(a.id, a);
+    expect((await allergies.findAll()).map((x) => x.name), ['Penicillin']);
   });
 
-  test('a child dropped from the value is deleted', () async {
-    var p = await load();
-    p = p.copyWith(allergies: [allergy('Penicillin', profile: p.id), allergy('Aspirin', profile: p.id)]);
-    await dao.put(p.id, p);
-    expect((await load()).allergies, hasLength(2));
+  test('re-putting the same id edits rather than duplicating', () async {
+    final a = allergy('Penicilin');
+    await allergies.put(a.id, a);
+    await allergies.put(a.id, allergy('Penicillin', id: a.id));
 
-    final keep = (await load()).allergies.where((a) => a.name == 'Aspirin').toList();
-    await dao.put(p.id, p.copyWith(allergies: keep));
-
-    expect((await load()).allergies.map((a) => a.name), ['Aspirin']);
+    final all = await allergies.findAll();
+    expect(all, hasLength(1), reason: 'an edit must not add a second row');
+    expect(all.single.name, 'Penicillin');
   });
 
-  test('an edit keeps the child id rather than minting a new row', () async {
-    var p = await load();
-    p = p.copyWith(allergies: [allergy('Penicilin', profile: p.id)]);
-    await dao.put(p.id, p);
+  test('delete removes only its own row', () async {
+    final a = allergy('Penicillin');
+    final b = allergy('Aspirin');
+    await allergies.put(a.id, a);
+    await allergies.put(b.id, b);
 
-    final stored = (await load()).allergies.single;
-    await dao.put(
-      p.id,
-      p.copyWith(allergies: [
-        Allergy(
-          id: stored.id,
-          healthProfileId: stored.healthProfileId,
-          name: 'Penicillin',
-          severity: stored.severity,
-          isControlledSubstance: stored.isControlledSubstance,
-          createdAt: stored.createdAt,
-        ),
-      ]),
+    await allergies.delete(a.id);
+    expect((await allergies.findAll()).map((x) => x.name), ['Aspirin']);
+  });
+
+  test('collections cannot disturb each other', () async {
+    final a = allergy('Penicillin');
+    await allergies.put(a.id, a);
+    final c = ChronicCondition(
+      id: ChronicConditionId.uuid(),
+      healthProfileId: profileId,
+      name: 'Hypertension',
+      createdAt: DateTime.now().toUtc(),
     );
+    await conditions.put(c.id, c);
 
-    final after = await load();
-    expect(after.allergies, hasLength(1), reason: 'an edit must not add a second row');
-    expect(after.allergies.single.id, stored.id);
-    expect(after.allergies.single.name, 'Penicillin');
+    // The whole point of the split: clearing one leaves the other alone.
+    await allergies.clear();
+    expect(await allergies.findAll(), isEmpty);
+    expect((await conditions.findAll()).map((x) => x.name), ['Hypertension']);
   });
 
-  test('putting an aggregate with no children clears them', () async {
-    var p = await load();
-    p = p.copyWith(allergies: [allergy('Penicillin', profile: p.id)]);
-    await dao.put(p.id, p);
-
-    await dao.put(p.id, p.copyWith(allergies: const []));
-    expect((await load()).allergies, isEmpty);
+  test('watchAll emits the current set', () async {
+    final a = allergy('Penicillin');
+    await allergies.put(a.id, a);
+    expect(await allergies.watchAll().first, hasLength(1));
   });
 
-  test('each collection is independent', () async {
-    var p = await load();
-    p = p.copyWith(
-      allergies: [allergy('Penicillin', profile: p.id)],
-      conditions: [
-        ChronicCondition(
-          id: ChronicConditionId.uuid(),
-          healthProfileId: p.id,
-          name: 'Hypertension',
-          createdAt: DateTime.now().toUtc(),
-        ),
-      ],
-    );
-    await dao.put(p.id, p);
-
-    // Dropping every allergy must leave the conditions alone.
-    final stored = await load();
-    await dao.put(p.id, stored.copyWith(allergies: const []));
-
-    final after = await load();
-    expect(after.allergies, isEmpty);
-    expect(after.conditions.map((c) => c.name), ['Hypertension']);
+  test('a read with no active profile is empty, and clear is a no-op', () async {
+    final detached = DriftAllergiesDataSource(db: db, activeProfile: () => null);
+    expect(await detached.findAll(), isEmpty);
+    await detached.clear(); // must not throw — idempotent logout cleanup
   });
 }

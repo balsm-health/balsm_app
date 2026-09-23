@@ -5,6 +5,8 @@ import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
+import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 
 /// Adds an [Allergy] to the user's [HealthProfile] and publishes
@@ -15,11 +17,14 @@ import '../../infrastructure/drift/drift_profile_data_source.dart';
 class AddAllergyUseCase {
   const AddAllergyUseCase({
     required HealthProfilesDataSource dao,
+    required AllergiesDataSource allergies,
     required EventBus eventBus,
   })  : _dao = dao,
+        _allergies = allergies,
         _bus = eventBus;
 
   final HealthProfilesDataSource _dao;
+  final AllergiesDataSource _allergies;
   final EventBus _bus;
 
   /// Maximum number of allergies a profile may hold.
@@ -74,10 +79,9 @@ class AddAllergyUseCase {
         );
       }
 
-      // Read-modify-put: `put` writes the aggregate, children included.
       final allergyId = AllergyId.uuid();
-      profile = profile.copyWith(allergies: [
-        ...profile.allergies,
+      await _allergies.put(
+        allergyId,
         Allergy(
           id: allergyId,
           healthProfileId: profile.id,
@@ -86,8 +90,8 @@ class AddAllergyUseCase {
           isControlledSubstance: isControlledSubstance,
           createdAt: DateTime.now().toUtc(),
         ),
-      ]);
-      await _dao.put(profile.id, profile);
+        scope: profile.id,
+      );
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'allergy_added'),
@@ -120,6 +124,7 @@ class AddAllergyUseCase {
 final addAllergyUseCaseProvider = Provider<AddAllergyUseCase>((ref) {
   return AddAllergyUseCase(
     dao: ref.watch(profileDataSourceProvider),
+    allergies: ref.watch(allergiesDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

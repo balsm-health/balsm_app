@@ -5,6 +5,8 @@ import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
+import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 
 /// Removes an [Allergy] from the user's [HealthProfile] and publishes
@@ -15,11 +17,14 @@ import '../../infrastructure/drift/drift_profile_data_source.dart';
 class RemoveAllergyUseCase {
   const RemoveAllergyUseCase({
     required HealthProfilesDataSource dao,
+    required AllergiesDataSource allergies,
     required EventBus eventBus,
   })  : _dao = dao,
+        _allergies = allergies,
         _bus = eventBus;
 
   final HealthProfilesDataSource _dao;
+  final AllergiesDataSource _allergies;
   final EventBus _bus;
 
   /// Deletes the allergy [allergyId] belonging to [userId] and emits an event.
@@ -35,10 +40,7 @@ class RemoveAllergyUseCase {
         );
       }
 
-      await _dao.put(
-        profile.id,
-        profile.copyWith(allergies: profile.allergies.where((a) => a.id != allergyId).toList()),
-      );
+      await _allergies.delete(allergyId, scope: profile.id);
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'allergy_removed'),
@@ -55,6 +57,7 @@ class RemoveAllergyUseCase {
 final removeAllergyUseCaseProvider = Provider<RemoveAllergyUseCase>((ref) {
   return RemoveAllergyUseCase(
     dao: ref.watch(profileDataSourceProvider),
+    allergies: ref.watch(allergiesDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

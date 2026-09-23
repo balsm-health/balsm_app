@@ -5,6 +5,8 @@ import '../../domain/aggregates/health_profile.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
+import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 
 /// Adds an [EmergencyContact] to the user's [HealthProfile] and publishes
@@ -17,11 +19,14 @@ import '../../infrastructure/drift/drift_profile_data_source.dart';
 class AddEmergencyContactUseCase {
   const AddEmergencyContactUseCase({
     required HealthProfilesDataSource dao,
+    required EmergencyContactsDataSource contacts,
     required EventBus eventBus,
   })  : _dao = dao,
+        _contacts = contacts,
         _bus = eventBus;
 
   final HealthProfilesDataSource _dao;
+  final EmergencyContactsDataSource _contacts;
   final EventBus _bus;
 
   /// Maximum number of emergency contacts a profile may hold.
@@ -72,11 +77,11 @@ class AddEmergencyContactUseCase {
         );
       }
 
-      // Read-modify-put: `put` writes the aggregate, children included.
-      profile = profile.copyWith(emergencyContacts: [
-        ...profile.emergencyContacts,
+      final contactId = EmergencyContactId.uuid();
+      await _contacts.put(
+        contactId,
         EmergencyContact(
-          id: EmergencyContactId.uuid(),
+          id: contactId,
           healthProfileId: profile.id,
           name: trimmedName,
           phone: trimmedPhone,
@@ -84,8 +89,8 @@ class AddEmergencyContactUseCase {
           isPrimary: isPrimary,
           createdAt: DateTime.now().toUtc(),
         ),
-      ]);
-      await _dao.put(profile.id, profile);
+        scope: profile.id,
+      );
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'contact_added'),
@@ -102,6 +107,7 @@ class AddEmergencyContactUseCase {
 final addEmergencyContactUseCaseProvider = Provider<AddEmergencyContactUseCase>((ref) {
   return AddEmergencyContactUseCase(
     dao: ref.watch(profileDataSourceProvider),
+    contacts: ref.watch(emergencyContactsDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

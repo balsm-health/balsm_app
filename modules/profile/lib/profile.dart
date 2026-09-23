@@ -28,7 +28,9 @@ export 'src/application/use_cases/remove_care_provider_use_case.dart';
 // PHI stays on-device regardless of who reads the DAO.
 export 'src/application/ports/health_profiles_data_source.dart';
 export 'src/application/ports/care_providers_data_source.dart';
+export 'src/application/ports/profile_child_data_sources.dart';
 export 'src/infrastructure/drift/drift_care_providers_data_source.dart';
+export 'src/infrastructure/drift/drift_profile_child_data_sources.dart';
 export 'src/infrastructure/drift/drift_profile_data_source.dart';
 
 // Presentation
