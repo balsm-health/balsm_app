@@ -847,8 +847,6 @@ class _BootSplash extends StatelessWidget {
               Text(state.strings.boot.boot_preparing,
                   textAlign: TextAlign.center,
                   style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              Text(state.strings.boot.boot_tagline, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
             ]),
           ),
         ]),

@@ -41,8 +41,7 @@
     "auth_locked_retry(String secs)": "Account temporarily locked. Try again in ${secs}s."
   },
   "boot": {
-    "boot_preparing": "Preparing your health record",
-    "boot_tagline": "On your device, by design."
+    "boot_preparing": "Preparing your health record"
   },
   "care": {
     "map_sub": "places mapped nearby",

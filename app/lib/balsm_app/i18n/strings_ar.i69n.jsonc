@@ -42,8 +42,7 @@
     "auth_locked_retry(String secs)": "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية."
   },
   "boot": {
-    "boot_preparing": "نُجهّز سجلّك الصحي",
-    "boot_tagline": "على جهازك، بالتصميم."
+    "boot_preparing": "نُجهّز سجلّك الصحي"
   },
   "care": {
     "map_sub": "مكان بالقرب منك",
