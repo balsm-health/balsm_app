@@ -32,7 +32,8 @@ void main() {
   testWidgets('unchecked box is white with an ink300 outline', (tester) async {
     await _pump(tester, checked: false, radio: false);
     final d = _boxDecoration(tester);
-    expect(d.color, Colors.white);
+    // The surface token, not a literal — it changes with the direction.
+    expect(d.color, T.surface);
     expect((d.border! as Border).top.color, T.ink300);
     expect((d.border! as Border).top.width, 1.5);
   });

@@ -3,6 +3,33 @@ import 'package:flutter/widgets.dart';
 /// Design tokens ported from `colors_and_type.css` + `app.css` of the
 /// claude.ai/design "Patient App" prototype. Colors are the locked Balsm
 /// brand palette (identical to packages/core `_tokens.dart`).
+/// Which visual direction the app paints.
+///
+/// [standard] is the shipped Balsm Design System — `--balsm-surface: #FFFFFF`
+/// and `--radius-lg/xl: 14/20px`, straight out of
+/// `_ds/…/brand/colors_and_type.css`. It is what `Balsm App.html` renders, so
+/// it is the default: the app is meant to match the prototype.
+///
+/// [warm] is `New Design Direction - Warm.html` — "cream surfaces instead of
+/// cool-white cards, larger rounder radii, editorial Montserrat display type".
+/// Montserrat is already the display family, so the two remaining deltas are
+/// the ones below.
+///
+/// Switching this is a BRAND decision, not a styling one: the surface and
+/// radius values are design-SYSTEM tokens shared with the website and every
+/// other Balsm product. Flipping it here alone makes this app diverge from the
+/// system it implements — deliberate divergence, not an accident, which is why
+/// it lives behind a named constant rather than scattered literals. The
+/// durable fix is a themed variant in Balsm-Core that mirrors out to all of
+/// them.
+///
+/// Compile-time on purpose: `const` keeps every token const, so no call site
+/// or `const` widget has to change.
+enum BalsmDirection { standard, warm }
+
+/// The direction this build paints. See [BalsmDirection].
+const kDirection = BalsmDirection.standard;
+
 class T {
   T._();
 
@@ -68,12 +95,11 @@ class T {
 
   // ── Surfaces / foreground roles ────────────────────────────
   /// Card and control background. The kit's shared widgets paint this rather
-  /// than a literal white, so the surface is one token — the prerequisite for
-  /// any alternate direction (see DRIFT.md, "New Design Direction — Warm").
+  /// than a literal white, so the surface is one token.
   ///
   /// White ink painted ON a coloured fill is NOT a surface and stays
   /// `Colors.white`: it must not follow this token when it changes.
-  static const surface = white;
+  static const surface = kDirection == BalsmDirection.warm ? cream100 : white;
   static const surfaceAlt = cream100;
   static const surfaceMuted = ink50;
   static const surfaceInverse = ink900;
@@ -89,9 +115,9 @@ class T {
   // ── Radii ──────────────────────────────────────────────────
   static const rXs = 4.0;
   static const rSm = 6.0;
-  static const rMd = 10.0;
-  static const rLg = 14.0;
-  static const rXl = 20.0;
+  static const rMd = kDirection == BalsmDirection.warm ? 14.0 : 10.0;
+  static const rLg = kDirection == BalsmDirection.warm ? 26.0 : 14.0;
+  static const rXl = kDirection == BalsmDirection.warm ? 32.0 : 20.0;
   static const r2xl = 28.0;
   static const rPill = 999.0;
 
