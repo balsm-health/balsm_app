@@ -54,6 +54,7 @@ class AppDatabase extends _$AppDatabase {
           await _ensureColumn('check_in_symptom', 'urine_color', 'TEXT');
           await _ensureColumn('check_in_symptom', 'urine_ml', 'INTEGER');
           await _ensureColumn('check_in_symptom', 'blood', 'INTEGER NOT NULL DEFAULT 0');
+          await _ensureColumn('care_provider', 'map_url', 'TEXT');
           await _ensurePainSitePk();
           // These indexes must be created AFTER the column patches above — on a
           // pre-existing DB the `medications`/`health_record` tables predate
@@ -256,6 +257,7 @@ const _phiSchema = <String>[
     email TEXT,
     clinic TEXT,
     address TEXT,
+    map_url TEXT,
     notes TEXT,
     created_at INTEGER NOT NULL
   )''',

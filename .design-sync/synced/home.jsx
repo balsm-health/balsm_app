@@ -152,6 +152,9 @@ const RELATIONS = [
   { en: 'Grandparent', ar: 'الجد/الجدة' },
   { en: 'Other', ar: 'أخرى' },
 ];
+/* Current user's handle — shared by Account details (editor) and Profile (QR share). */
+const HANDLE_STORE = window.__balsmHandle || (window.__balsmHandle = { value: 'layla_hassan58' });
+
 /* Handles that resolve when scanned — existing Balsm profiles */
 const SCANNABLE = [
   { handle: 'omar.hassan',  name: { en: 'Omar Hassan',  ar: 'عمر حسن'   }, initials: 'OH', color: 'var(--petal-blue)',    dob: '1994-07-12', relation: { en: 'Son', ar: 'الابن' } },
@@ -828,7 +831,6 @@ function MedsScreen() {
 function PersonalDetailsScreen({ onBack }) {
   const { t, lang, setNavHidden, setProfileComplete } = useApp();
   const [saved, setSaved]         = useState(false);
-  const [qrOpen, setQrOpen]       = useState(false);
   useEffect(() => { setNavHidden(true); return () => setNavHidden(false); }, []);
   const [firstName, setFirstName] = useState(PATIENT.firstName[lang] || PATIENT.firstName.en);
   const [lastName,  setLastName]  = useState(PATIENT.lastName[lang]  || PATIENT.lastName.en);
@@ -846,8 +848,9 @@ function PersonalDetailsScreen({ onBack }) {
   const [emPhone,   setEmPhone]   = useState(PATIENT.emergency.phone);
 
   /* username */
-  const [handle, setHandle, unStatus] = useUsername('layla_hassan58');
-  const committedHandle = useRef('layla_hassan58');
+  const [handle, setHandle, unStatus] = useUsername(HANDLE_STORE.value);
+  const committedHandle = useRef(HANDLE_STORE.value);
+  useEffect(() => { if (unStatus === 'available' || unStatus === 'idle') HANDLE_STORE.value = handle; }, [handle, unStatus]);
   const [handleConfirmOpen, setHandleConfirmOpen] = useState(false);
 
   /* connected accounts */
@@ -882,9 +885,6 @@ function PersonalDetailsScreen({ onBack }) {
           {t('p_personal')}
         </h1>
         {saved && <span className="b-badge b-badge--success"><span className="b-badge__dot" />{t('pd_saved')}</span>}
-        <button className="round-btn" onClick={() => setQrOpen(true)} aria-label={lang === 'ar' ? 'رمز QR' : 'QR code'}>
-          <Icon name="qr-code" />
-        </button>
       </div>
 
       <div className="screen-scroll" style={{ padding: '0 20px 28px' }}>
@@ -907,20 +907,6 @@ function PersonalDetailsScreen({ onBack }) {
             <Icon name="info" size={12} />
             <span dir="ltr" style={{ fontFamily: 'var(--font-mono)', color: 'var(--fg3)' }}>balsm.health/@{handle || '…'}</span>
           </div>
-          <button onClick={() => setQrOpen(true)} style={{
-            display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '12px 14px',
-            background: 'var(--app-accent-50)', border: '1px solid var(--app-accent-100, var(--balsm-ink-100))',
-            borderRadius: 'var(--radius-lg)', cursor: 'pointer', textAlign: 'start',
-          }}>
-            <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 1px 4px rgba(20,32,43,0.08)' }}>
-              <Icon name="qr-code" size={22} style={{ color: 'var(--app-accent)' }} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: 'var(--pt-md)', color: 'var(--fg1)' }}>{lang === 'ar' ? 'مشاركة رمز QR' : 'Share my QR code'}</div>
-              <div style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', marginTop: 1 }}>{lang === 'ar' ? 'شارك ملفك بأمان عبر رمز' : 'Let others scan to connect'}</div>
-            </div>
-            <Icon name={lang === 'ar' ? 'chevron-left' : 'chevron-right'} size={18} style={{ color: 'var(--fg3)', flexShrink: 0 }} />
-          </button>
         </div>
 
         {/* Connected accounts */}
@@ -1016,9 +1002,6 @@ function PersonalDetailsScreen({ onBack }) {
           {saving ? (lang === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : (saved ? t('pd_saved') : t('pd_save'))}
         </DSProgressButton>
       </div>
-      {qrOpen && (
-        <QRShareSheet handle={handle} name={`${firstName} ${lastName}`.trim()} onClose={() => setQrOpen(false)} />
-      )}
       {handleConfirmOpen && (
         <SettingsSheet title={t('hc_title')} onClose={() => { setHandle(committedHandle.current); setHandleConfirmOpen(false); }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 0 18px' }}>
@@ -1062,18 +1045,47 @@ const providerType = (id) => PROVIDER_TYPES.find(p => p.id === id) || PROVIDER_T
 /* places rather than people — their name and "specialty" read differently */
 const PLACE_TYPES = ['pharmacy', 'lab', 'clinic'];
 
+/* Care team store — module-level so added doctors and their files survive leaving the screen. */
+const careCardSvg = (d) => {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="700" height="400" viewBox="0 0 700 400">
+<rect width="700" height="400" rx="24" fill="#F4F3EC"/>
+<rect x="0" y="0" width="14" height="400" fill="#1283FF"/>
+<text x="60" y="120" font-family="Montserrat, sans-serif" font-weight="700" font-size="40" fill="#1F2D3D">${esc(d.name.en)}</text>
+<text x="60" y="165" font-family="IBM Plex Sans, sans-serif" font-size="24" fill="#526174">${esc(d.specialty.en)}</text>
+<line x1="60" y1="205" x2="640" y2="205" stroke="#D9DEE4" stroke-width="2"/>
+<text x="60" y="255" font-family="IBM Plex Mono, monospace" font-size="24" fill="#1F2D3D">+20 2 2555 0100</text>
+<text x="60" y="295" font-family="IBM Plex Sans, sans-serif" font-size="22" fill="#526174">Maadi Medical Center · Road 9, Maadi, Cairo</text>
+<text x="60" y="335" font-family="IBM Plex Sans, sans-serif" font-size="22" fill="#526174">clinic@maadimedical.eg</text>
+</svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+};
+const CARE_STORE = window.__balsmCareStore || (window.__balsmCareStore = {
+  mine: [], overrides: {}, hidden: [],
+  files: DOCTORS[0] ? { [DOCTORS[0].id]: [{ url: careCardSvg(DOCTORS[0]), kind: 'image', name: 'Business card.png' }] } : {},
+});
+
 /* Care team screen */
 function CareTeamScreen({ onBack }) {
   const { t, lang, setTab, setNavHidden } = useApp();
   useEffect(() => { setNavHidden(true); return () => setNavHidden(false); }, []);
   /* Files are kept per doctor id; manually added doctors sit alongside the seeded ones. */
-  const [mine, setMine]     = useState([]);
-  const [files, setFiles]   = useState({});
+  const [mine, setMine]     = useState(CARE_STORE.mine);
+  const [files, setFiles]   = useState(CARE_STORE.files);
+  useEffect(() => { CARE_STORE.mine = mine; }, [mine]);
+  useEffect(() => { CARE_STORE.files = files; }, [files]);
+  const [overrides, setOverrides] = useState(CARE_STORE.overrides || {});
+  const [hidden, setHidden] = useState(CARE_STORE.hidden || []);
+  useEffect(() => { CARE_STORE.overrides = overrides; }, [overrides]);
+  useEffect(() => { CARE_STORE.hidden = hidden; }, [hidden]);
+  const [editingId, setEditingId] = useState(null);
+  const [confirmDel, setConfirmDel] = useState(false);
   const [openId, setOpenId] = useState(null);
+  const [viewer, setViewer] = useState(null); /* { id, i } */
   const [adding, setAdding] = useState(false);
   const [query, setQuery]   = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [form, setForm]     = useState({ type: 'doctor', name: '', specialty: '', phone: '', phone2: '', email: '', clinic: '', address: '', notes: '' });
+  const [form, setForm]     = useState({ type: 'doctor', name: '', specialty: '', phone: '', phone2: '', email: '', clinic: '', address: '', mapUrl: '', notes: '' });
   const [formAtts, setFormAtts] = useState([]);
   const NEW = '__new';
   const pickRef = useRef(null);
@@ -1084,19 +1096,50 @@ function CareTeamScreen({ onBack }) {
   const attach = (id) => { pickFor.current = id; pickRef.current?.click(); };
 
   const resetForm = () => {
-    setForm({ type: 'doctor', name: '', specialty: '', phone: '', phone2: '', email: '', clinic: '', address: '', notes: '' });
+    setForm({ type: 'doctor', name: '', specialty: '', phone: '', phone2: '', email: '', clinic: '', address: '', mapUrl: '', notes: '' });
     setFormAtts([]);
+    setEditingId(null);
+    setConfirmDel(false);
+  };
+  const closeSheet = () => { setAdding(false); resetForm(); };
+
+  const FIELDS = ['type', 'name', 'specialty', 'phone', 'phone2', 'email', 'clinic', 'address', 'mapUrl', 'notes'];
+  const startEdit = (r) => {
+    const f = {};
+    FIELDS.forEach(k => { f[k] = r[k] || ''; });
+    f.type = r.type || 'doctor';
+    setForm(f);
+    setFormAtts(files[r.id] || []);
+    setEditingId(r.id);
+    setConfirmDel(false);
+    setAdding(true);
+  };
+  const deleteProvider = (id) => {
+    if (id.startsWith('mine_')) setMine(m => m.filter(x => x.id !== id));
+    else setHidden(h => [...h, id]);
+    setFiles(f => { const n = { ...f }; delete n[id]; return n; });
+    if (openId === id) setOpenId(null);
+    closeSheet();
   };
 
   const saveDoctor = () => {
     if (!form.name.trim()) return;
+    const clean = (s) => (s || '').trim();
+    if (editingId) {
+      const upd = {};
+      FIELDS.forEach(k => { upd[k] = k === 'type' ? form.type : clean(form[k]); });
+      if (editingId.startsWith('mine_')) setMine(m => m.map(x => x.id === editingId ? { ...x, ...upd } : x));
+      else setOverrides(o => ({ ...o, [editingId]: upd }));
+      setFiles(f => ({ ...f, [editingId]: formAtts }));
+      closeSheet();
+      return;
+    }
     const id = 'mine_' + Date.now();
-    const clean = (s) => s.trim();
     setMine(m => [...m, {
       id, mine: true, type: form.type,
       name: clean(form.name), specialty: clean(form.specialty),
       phone: clean(form.phone), phone2: clean(form.phone2), email: clean(form.email),
-      clinic: clean(form.clinic), address: clean(form.address), notes: clean(form.notes),
+      clinic: clean(form.clinic), address: clean(form.address), mapUrl: clean(form.mapUrl), notes: clean(form.notes),
     }]);
     if (formAtts.length) setFiles(f => ({ ...f, [id]: formAtts }));
     resetForm();
@@ -1105,7 +1148,7 @@ function CareTeamScreen({ onBack }) {
   };
 
   const roster = [
-    ...DOCTORS.map((d, i) => ({ id: d.id, doctor: d, primary: i === 0, name: d.name[lang], specialty: d.specialty[lang] })),
+    ...DOCTORS.filter(d => !hidden.includes(d.id)).map((d, i) => ({ id: d.id, doctor: d, primary: i === 0, name: d.name[lang], specialty: d.specialty[lang], type: 'doctor', ...(overrides[d.id] || {}) })),
     ...mine,
   ];
 
@@ -1193,31 +1236,37 @@ function CareTeamScreen({ onBack }) {
                     </div>
                     {r.specialty && <div style={{ fontSize: 'var(--pt-sm)', color: 'var(--fg3)', marginTop: 2 }}>{r.specialty}</div>}
                     {(r.clinic || r.address) && <div style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', marginTop: 3, display: 'flex', alignItems: 'flex-start', gap: 4 }}><Icon name="map-pin" size={12} style={{ flexShrink: 0, marginTop: 1 }} /><span>{[r.clinic, r.address].filter(Boolean).join(' · ')}</span></div>}
+                    {r.mapUrl && /^https?:\/\//i.test(r.mapUrl) && (
+                      <a href={r.mapUrl} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 'var(--pt-xs)', fontWeight: 700, color: 'var(--app-accent-600)', textDecoration: 'none' }}>
+                        <Icon name="navigation" size={12} />{lang === 'ar' ? 'الاتجاهات' : 'Directions'}
+                      </a>
+                    )}
                     {r.phone && <div dir="ltr" className="num" style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="phone" size={12} />{r.phone}{r.phone2 ? ` · ${r.phone2}` : ''}</div>}
                     {r.email && <div dir="ltr" style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="mail" size={12} />{r.email}</div>}
                     {r.notes && <div style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', marginTop: 5, lineHeight: 1.45, fontStyle: 'italic' }}>{r.notes}</div>}
-                    {r.doctor && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, fontSize: 'var(--pt-xs)', color: 'var(--fg3)' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Icon name="star" size={12} style={{ color: 'var(--balsm-sun-500)' }} /><span className="num">{r.doctor.rating}</span></span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Icon name="briefcase" size={12} />{r.doctor.experience[lang]}</span>
-                      </div>
-                    )}
                   </div>
-                  {r.mine && (
-                    <button className="round-btn ghost" aria-label={lang === 'ar' ? 'حذف' : 'Remove'}
-                      onClick={() => { setMine(m => m.filter(x => x.id !== r.id)); setFiles(f => { const n = { ...f }; delete n[r.id]; return n; }); }}>
-                      <Icon name="x" size={16} />
-                    </button>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                  <button className="b-btn b-btn-md b-btn-secondary b-btn--full" style={{ height: 40, gap: 7, fontSize: 'var(--pt-sm)' }}>
-                    {r.phone ? <><Icon name="phone" size={15} />{lang === 'ar' ? 'اتصال' : 'Call'}</> : <><Icon name="message-circle" size={15} />{lang === 'ar' ? 'رسالة' : 'Message'}</>}
+                  <button className="round-btn ghost" aria-label={lang === 'ar' ? 'تعديل' : 'Edit'} onClick={() => startEdit(r)} style={{ alignSelf: 'flex-start' }}>
+                    <Icon name="pencil" size={16} />
                   </button>
-                  <button className="b-btn b-btn-md b-btn-secondary" onClick={() => setOpenId(expanded ? null : r.id)}
+                </div>
+                {atts.length > 0 && !expanded && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 14, overflowX: 'auto', paddingBottom: 2 }}>
+                    {atts.map((a, i) => (
+                      <AttachmentThumb key={i} att={a} compact height={64} onOpen={() => setViewer({ id: r.id, i })}
+                        style={{ width: 64, flexShrink: 0, borderRadius: 'var(--radius-md)' }} />
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                  <a className="b-btn b-btn-md b-btn-secondary b-btn--full" href={`tel:${(r.phone || (r.doctor && r.doctor.phone) || '+20225550100').replace(/[^\d+]/g, '')}`}
+                    style={{ height: 40, gap: 7, fontSize: 'var(--pt-sm)', textDecoration: 'none' }}>
+                    <Icon name="phone" size={15} />{lang === 'ar' ? 'اتصال' : 'Call'}
+                  </a>
+                  <button className="b-btn b-btn-md b-btn-secondary" onClick={() => atts.length ? setOpenId(expanded ? null : r.id) : attach(r.id)}
                     style={{ height: 40, gap: 7, fontSize: 'var(--pt-sm)', paddingInline: 14, flexShrink: 0 }}>
-                    <Icon name="paperclip" size={15} />
-                    {atts.length > 0 ? <span className="num">{atts.length}</span> : (lang === 'ar' ? 'ملفات' : 'Files')}
+                    <Icon name={atts.length ? (expanded ? 'check' : 'pencil') : 'paperclip'} size={15} />
+                    {atts.length ? (expanded ? (lang === 'ar' ? 'تم' : 'Done') : (lang === 'ar' ? 'إدارة الملفات' : 'Manage files')) : (lang === 'ar' ? 'إرفاق ملف' : 'Attach file')}
                   </button>
                 </div>
                 {expanded && (
@@ -1244,6 +1293,11 @@ function CareTeamScreen({ onBack }) {
             );
           })}
         </div>
+        {viewer && files[viewer.id] && (
+          <AttachmentViewer atts={files[viewer.id]} index={viewer.i}
+            title={(roster.find(x => x.id === viewer.id) || {}).name}
+            onClose={() => setViewer(null)} />
+        )}
 
         {shown.length === 0 && (
           <div style={{ textAlign: 'center', padding: '34px 12px 4px' }}>
@@ -1257,17 +1311,18 @@ function CareTeamScreen({ onBack }) {
           </div>
         )}
 
-        <button className="b-btn b-btn-md b-btn-secondary b-btn--full" style={{ marginTop: 12, gap: 8, borderStyle: 'dashed' }} onClick={() => setAdding(true)}>
-          <Icon name="user-plus" size={17} />{lang === 'ar' ? 'أضف مقدّم رعاية' : 'Add a care provider'}
-        </button>
-
-        <button className="b-btn b-btn-md b-btn-ghost b-btn--full" style={{ marginTop: 8, gap: 8 }} onClick={() => setTab('map')}>
+        <button className="b-btn b-btn-md b-btn-ghost b-btn--full" style={{ marginTop: 12, gap: 8 }} onClick={() => setTab('map')}>
           <Icon name="search" size={16} />{lang === 'ar' ? 'ابحث عن رعاية قريبة' : 'Find care nearby'}
         </button>
+        <div style={{ height: 72 }} />
       </div>
 
+      <button className="rec-fab" onClick={() => setAdding(true)} aria-label={lang === 'ar' ? 'أضف مقدّم رعاية' : 'Add a care provider'}>
+        <Icon name="user-plus" size={22} stroke={2.2} />
+      </button>
+
       {adding && (
-        <SettingsSheet title={lang === 'ar' ? 'إضافة مقدّم رعاية' : 'Add a provider'} onClose={() => { setAdding(false); resetForm(); }}>
+        <SettingsSheet title={editingId ? (lang === 'ar' ? 'تعديل مقدّم الرعاية' : 'Edit provider') : (lang === 'ar' ? 'إضافة مقدّم رعاية' : 'Add a provider')} onClose={closeSheet}>
           <p className="meta" style={{ margin: '4px 0 16px', fontSize: 'var(--pt-xs)', lineHeight: 1.5 }}>
             {lang === 'ar' ? 'الاسم فقط مطلوب. ما تضيفه يبقى على جهازك.' : 'Only the name is required. What you add stays on your device.'}
           </p>
@@ -1330,7 +1385,7 @@ function CareTeamScreen({ onBack }) {
             </div>
             <div className="field" style={{ margin: 0 }}>
               <label>{lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
-              <input className="b-input" dir="ltr" inputMode="email" value={form.email}
+              <input className="b-input" type="email" dir="ltr" inputMode="email" autoComplete="email" value={form.email}
                 placeholder="doctor@clinic.eg"
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             </div>
@@ -1352,6 +1407,31 @@ function CareTeamScreen({ onBack }) {
                 placeholder={lang === 'ar' ? '١٢ شارع ٩، المعادي، القاهرة' : '12 Street 9, Maadi, Cairo'}
                 style={{ resize: 'none', minHeight: 62, paddingBlock: 12 }}
                 onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
+            </div>
+            <div className="field" style={{ margin: 0 }}>
+              <label>{lang === 'ar' ? 'رابط الموقع (اختياري)' : 'Map link (optional)'}</label>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', insetInlineStart: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg3)', display: 'flex', pointerEvents: 'none' }}><Icon name="map-pinned" size={16} /></span>
+                <input className="b-input" type="url" dir="ltr" inputMode="url" value={form.mapUrl}
+                  placeholder="https://maps.app.goo.gl/…"
+                  style={{ paddingInlineStart: 38, paddingInlineEnd: 78 }}
+                  onChange={e => setForm(f => ({ ...f, mapUrl: e.target.value }))} />
+                <button type="button" className="b-btn b-btn-sm b-btn-ghost"
+                  onClick={async () => { try { const v = (await navigator.clipboard.readText()).trim(); if (v) setForm(f => ({ ...f, mapUrl: v })); } catch (e) {} }}
+                  style={{ position: 'absolute', insetInlineEnd: 6, top: '50%', transform: 'translateY(-50%)', height: 32, padding: '0 10px', gap: 5, fontSize: 'var(--pt-xs)', fontWeight: 700, color: 'var(--app-accent)' }}>
+                  <Icon name="clipboard-paste" size={14} />{lang === 'ar' ? 'لصق' : 'Paste'}
+                </button>
+              </div>
+              {form.mapUrl && !/^https?:\/\/\S+\.\S+/i.test(form.mapUrl.trim()) && (
+                <div style={{ fontSize: 'var(--pt-xs)', color: 'var(--balsm-danger)', marginTop: 6 }}>
+                  {lang === 'ar' ? 'يبدو أن هذا ليس رابطًا. انسخ الرابط من خرائط Google أو Apple.' : 'That doesn’t look like a link. Copy it from Google Maps or Apple Maps.'}
+                </div>
+              )}
+              {!form.mapUrl && (
+                <div className="meta" style={{ fontSize: 'var(--pt-xs)', marginTop: 6, lineHeight: 1.5 }}>
+                  {lang === 'ar' ? 'من الخريطة: مشاركة ← نسخ الرابط.' : 'In your maps app: Share → Copy link.'}
+                </div>
+              )}
             </div>
             <div className="field" style={{ margin: 0 }}>
               <label>{lang === 'ar' ? 'ملاحظات' : 'Notes'}</label>
@@ -1394,13 +1474,32 @@ function CareTeamScreen({ onBack }) {
           </div>
 
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-            <button className="b-btn b-btn-lg b-btn-secondary b-btn--full" onClick={() => { setAdding(false); resetForm(); }}>
+            <button className="b-btn b-btn-lg b-btn-secondary b-btn--full" onClick={closeSheet}>
               {lang === 'ar' ? 'إلغاء' : 'Cancel'}
             </button>
             <button className="b-btn b-btn-lg b-btn-primary b-btn--full" onClick={saveDoctor} disabled={!form.name.trim()}>
-              {lang === 'ar' ? 'حفظ' : 'Save provider'}
+              {editingId ? (lang === 'ar' ? 'حفظ التغييرات' : 'Save changes') : (lang === 'ar' ? 'حفظ' : 'Save provider')}
             </button>
           </div>
+          {editingId && (confirmDel ? (
+            <div style={{ marginTop: 14, padding: 14, borderRadius: 'var(--radius-lg)', background: 'var(--balsm-danger-50, #FBECEA)', border: '1px solid var(--balsm-danger)' }}>
+              <div style={{ fontWeight: 700, fontSize: 'var(--pt-sm)', color: 'var(--fg1)' }}>
+                {lang === 'ar' ? `حذف ${form.name || 'مقدّم الرعاية'} من فريق رعايتك؟` : `Remove ${form.name || 'this provider'} from your care team?`}
+              </div>
+              <div style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg2)', marginTop: 4, lineHeight: 1.5 }}>
+                {lang === 'ar' ? 'سيتم حذف بياناته وملفاته المرفقة من جهازك.' : 'Their details and attached files will be deleted from your device.'}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button className="b-btn b-btn-md b-btn-secondary b-btn--full" onClick={() => setConfirmDel(false)}>{lang === 'ar' ? 'تراجع' : 'Keep'}</button>
+                <button className="b-btn b-btn-md b-btn-danger b-btn--full" onClick={() => deleteProvider(editingId)}>{lang === 'ar' ? 'حذف' : 'Remove'}</button>
+              </div>
+            </div>
+          ) : (
+            <button className="b-btn b-btn-md b-btn-ghost b-btn--full" onClick={() => setConfirmDel(true)}
+              style={{ marginTop: 10, gap: 8, color: 'var(--balsm-danger)' }}>
+              <Icon name="trash-2" size={16} />{lang === 'ar' ? 'حذف من فريق الرعاية' : 'Remove from care team'}
+            </button>
+          ))}
         </SettingsSheet>
       )}
     </div>
@@ -1691,6 +1790,7 @@ function ProfileScreen() {
   const [emergencyOpen, setEmergencyOpen] = useState(false);
   const [fbOpen, setFbOpen]             = useState(false);
   const [ecoOpen, setEcoOpen]           = useState(false);
+  const [qrOpen, setQrOpen]             = useState(false);
   if (personalOpen) return <PersonalDetailsScreen onBack={() => setPersonalOpen(false)} />;
   if (careOpen)     return <CareTeamScreen onBack={() => setCareOpen(false)} />;
   if (privacyOpen)  return <PrivacyDataScreen onBack={() => setPrivacyOpen(false)} />;
@@ -1712,11 +1812,21 @@ function ProfileScreen() {
   return (
     <div className="screen-scroll fade-in">
       <div className="pad-top" />
-      <div className="appbar"><h1 className="grow">{t('profile')}</h1></div>
+      <div className="appbar">
+        <h1 className="grow">{t('profile')}</h1>
+        <button className="round-btn" onClick={() => setQrOpen(true)} aria-label={lang === 'ar' ? 'مشاركة رمز QR' : 'Share my QR code'}>
+          <Icon name="qr-code" />
+        </button>
+      </div>
       <div className="profile-head">
         <div className="avatar" style={{ background: account.color }}>{account.initials}</div>
         <div className="pname">{account.name[lang]}</div>
         <div className="pmeta">{t('since')} {account.since[lang]}</div>
+        <button onClick={() => setQrOpen(true)} dir="ltr"
+          style={{ margin: '10px auto 0', display: 'inline-flex', alignItems: 'center', gap: 7, height: 34, padding: '0 14px', borderRadius: 9999, border: '1px solid var(--app-accent-100, var(--balsm-ink-100))', background: 'var(--app-accent-50)', color: 'var(--app-accent-600)', fontSize: 'var(--pt-sm)', fontWeight: 700, cursor: 'pointer' }}>
+          <Icon name="qr-code" size={15} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>@{HANDLE_STORE.value}</span>
+        </button>
         <div className="chip-wrap" style={{ justifyContent: 'center', marginTop: 12 }}>
           {account.conditions.map((c, i) => (
             <span key={i} className="b-badge" style={{ background: 'var(--balsm-ink-100)', color: 'var(--balsm-ink-700)' }}>{c[lang]}</span>
@@ -1781,6 +1891,7 @@ function ProfileScreen() {
       {storageSheet  && <StorageSyncSheet onClose={() => setStorageSheet(false)} />}
       {fbOpen        && <FeedbackSheet    onClose={() => setFbOpen(false)} />}
       {ecoOpen       && <EcosystemSheet   onClose={() => setEcoOpen(false)} onFeedback={() => setFbOpen(true)} />}
+      {qrOpen        && <QRShareSheet handle={HANDLE_STORE.value} name={account.name[lang]} onClose={() => setQrOpen(false)} />}
     </div>
   );
 }

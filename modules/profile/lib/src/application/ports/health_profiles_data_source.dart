@@ -60,6 +60,9 @@ abstract class HealthProfilesDataSource extends UserDataSource<HealthProfileId, 
 
   /// Deletes the care-provider row with the given [providerId]; its files go
   /// with it (`ON DELETE CASCADE`).
+  /// Overwrites the editable fields of an existing provider row.
+  Future<void> updateProvider(CareProviderId providerId, CareProvider provider);
+
   Future<void> removeProvider(CareProviderId providerId);
 
   /// Vault-relative paths of [providerId]'s files, oldest first.

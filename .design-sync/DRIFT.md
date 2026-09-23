@@ -312,3 +312,34 @@ Tier 5 layer) is `BalsmWindow` / `BalsmWindowClass` / `BalsmDensity` in
 `packages/core/lib/src/kit/_tokens.dart`. Upstream still says `--petal-*`;
 this repo says `hue*` (naming only). `app.jsx` `ACCENTS.violet` is `#8350DE`
 while the DS token is `#724DD0` — the DS wins (`T.hueViolet`).
+
+## 2026-09-23 — the cache was stale against the live project
+
+`status` compares `current/` to `synced/`. It cannot see that `current/` itself
+has fallen behind the live design project, so it reported **clean** while four
+areas had moved. Re-fetching `qrshare.jsx`, `ecosystem.jsx`, `settings.jsx` and
+`home.jsx` through `DesignSync get_file` found real deltas in three of them.
+
+**This is the same class of hole as the unread canvases** — `status` answers
+"has what I fetched changed since I ported it", never "is what I fetched still
+what the project holds". Before trusting a clean report, re-fetch.
+
+| File | Delta | Status |
+|---|---|---|
+| `ecosystem.jsx` | Follow-Balsm row (7 social links), share-the-app action with the download link, outbound provider/contributor pages, `--bg2` tint named outright as `--balsm-ink-50` | **Ported** |
+| `home.jsx` | QR sharing moved off Account details onto Profile; care-team card's remove became edit; map link + Directions; guarded removal | **Ported** |
+| `settings.jsx` | none | clean |
+| `qrshare.jsx` | a permanence note: "This is your permanent code — it doesn't expire" | **Deliberately not ported** — see below |
+
+### `qrshare.jsx`'s permanence note is not true of this app
+
+The prototype's QR is a plain handle link (`balsm.health/@handle`) that never
+expires, so the note is accurate there. This app's sheet is the FR-017
+emergency QR: it mints a token with a chosen TTL (`eqr_ttl_1h` … `eqr_ttl_7d`,
+plus `eqr_ttl_permanent`) and supports rotate and revoke. Printing "it doesn't
+expire" on a sheet that just minted a one-hour token would be a false claim
+about the patient's own data, so the copy stays off until the two surfaces are
+reconciled — either the app grows a separate non-expiring handle QR, or the
+design adopts the TTL. That decision is product's, not a port's.
+
+`report.jsx` (+4 −60) also remains unported and predates this sweep.

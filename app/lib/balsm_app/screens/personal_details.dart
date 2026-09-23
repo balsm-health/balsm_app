@@ -408,11 +408,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           children: [
             Expanded(
                 child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-            if (saved) ...[
-              Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
-              const SizedBox(width: 8)
-            ],
-            RoundBtn(icon: LucideIcons.qrCode, onTap: () => _showQr(context)),
+            if (saved) Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
           ],
         ),
         Expanded(
@@ -490,38 +486,6 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         const SizedBox(width: 5),
                         Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
                       ]),
-                      const SizedBox(height: 14),
-                      Pressable(
-                        onTap: () => _showQr(context),
-                        scale: 0.98,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                              color: s.accent.bg,
-                              borderRadius: BorderRadius.circular(T.rLg),
-                              border: Border.all(color: T.ink100)),
-                          child: Row(children: [
-                            Container(
-                                width: 40,
-                                height: 40,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(T.rMd),
-                                    boxShadow: T.shadowXs),
-                                child: Icon(LucideIcons.qrCode, size: 22, color: s.accent.main)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(s.strings.profile.pd_share_qr,
-                                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                              const SizedBox(height: 1),
-                              Text(s.strings.profile.pd_share_qr_h, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-                            ])),
-                            Chevron(rtl: s.rtl, color: T.fg3),
-                          ]),
-                        ),
-                      ),
                     ]),
                     // Connected accounts — visual match of home.jsx. Connect is
                     // shown disconnected until a real Apple/Google link API exists;
@@ -606,15 +570,6 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                   ],
                 ))),
       ]),
-    );
-  }
-
-  void _showQr(BuildContext context) {
-    showAppSheet<void>(
-      context,
-      barrierColor: const Color(0x6B14202B),
-      textDirection: s.dir,
-      builder: (_) => _QrShareSheet(s: s, name: '${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
     );
   }
 
@@ -1042,6 +997,21 @@ class _RelationshipSheet extends StatelessWidget {
 /// the server (FR-013/FR-014). Before minting, the user picks a TTL (FR-017);
 /// an active token shows its expiry + a Revoke action. Slides up; in-sheet toast
 /// confirms copy/save/revoke.
+/// Opens the patient's shareable QR.
+///
+/// `home.jsx` moved this out of Account details and onto the Profile tab, so
+/// the entry point is [ProfileScreen] now — but the sheet itself, with its
+/// mint/rotate/revoke controller, stays here next to the rest of the account
+/// surface.
+Future<void> openQrShare(BuildContext context, {required PatientAppState s, required String name}) {
+  return showAppSheet<void>(
+    context,
+    barrierColor: const Color(0x6B14202B),
+    textDirection: s.dir,
+    builder: (_) => _QrShareSheet(s: s, name: name),
+  );
+}
+
 class _QrShareSheet extends ConsumerStatefulWidget {
   const _QrShareSheet({required this.s, required this.name});
   final PatientAppState s;

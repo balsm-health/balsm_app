@@ -50,6 +50,7 @@ class AddCareProviderUseCase {
     String? email,
     String? clinic,
     String? address,
+    String? mapUrl,
     String? notes,
   }) async {
     String? clean(String? value, {int max = maxFieldLength}) {
@@ -97,6 +98,7 @@ class AddCareProviderUseCase {
         email: clean(email),
         clinic: clean(clinic),
         address: clean(address),
+        mapUrl: clean(mapUrl),
         notes: clean(notes, max: maxNotesLength),
         createdAt: DateTime.now().toUtc(),
       );

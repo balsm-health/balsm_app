@@ -18,6 +18,7 @@ class CareProvider {
     this.email,
     this.clinic,
     this.address,
+    this.mapUrl,
     this.notes,
     required this.createdAt,
   });
@@ -43,6 +44,11 @@ class CareProvider {
   final String? clinic;
   final String? address;
 
+  /// A link the patient pasted from their maps app, used for the card's
+  /// "Directions" action. Patient-entered like everything else here; it is
+  /// only ever opened, never fetched or resolved.
+  final String? mapUrl;
+
   /// Free-text reminder: visiting hours, who referred them.
   final String? notes;
 
@@ -60,6 +66,7 @@ class CareProvider {
         email: email,
         clinic: clinic,
         address: address,
+        mapUrl: mapUrl,
         notes: notes,
         createdAt: createdAt,
       );
@@ -68,5 +75,15 @@ class CareProvider {
   String? get placeLine {
     final parts = [clinic, address].where((p) => p != null && p.isNotEmpty);
     return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  /// Only an `http(s)` link is offered as Directions. Anything else the patient
+  /// typed stays stored but is not turned into a tappable action — a bare
+  /// address is not a destination, and a non-web scheme is not one we launch.
+  bool get hasDirections {
+    final v = mapUrl?.trim();
+    if (v == null || v.isEmpty) return false;
+    final uri = Uri.tryParse(v);
+    return uri != null && uri.hasAuthority && (uri.scheme == 'http' || uri.scheme == 'https');
   }
 }

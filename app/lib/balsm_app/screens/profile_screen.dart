@@ -59,6 +59,15 @@ class ProfileScreen extends ConsumerWidget {
           const PadTop(),
           AppBarRow(children: [
             Expanded(child: Text(s.strings.common.profile, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+            // `home.jsx` moved QR sharing here from Account details.
+            Semantics(
+              label: s.strings.profile.pd_share_qr,
+              button: true,
+              child: RoundBtn(
+                icon: LucideIcons.qrCode,
+                onTap: () => openQrShare(context, s: s, name: displayName),
+              ),
+            ),
           ]),
 
           // Profile head — real account summary (name + handle) plus the
@@ -89,10 +98,11 @@ class ProfileScreen extends ConsumerWidget {
                     ar: s.rtl,
                     onTap: () => refreshAccountSummary(ref)),
               ],
+              // The handle doubles as the QR entry point — tapping it opens
+              // the same sheet as the app-bar button.
               if (summary?.handle != null && summary!.handle!.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text('@${summary.handle}',
-                    textDirection: TextDirection.ltr, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                const SizedBox(height: 10),
+                _HandleQrPill(handle: summary.handle!, name: displayName),
               ],
               // `.profile-head .chip-wrap` — the patient's own chronic
               // conditions. Real on-device PHI shown to the data subject; the
@@ -746,6 +756,48 @@ class _SelectRow extends StatelessWidget {
               ),
             if (selected) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
           ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// `.profile-head` — the patient's handle as a tappable accent pill that opens
+/// their shareable QR. Latin either way, so it stays LTR in Arabic.
+class _HandleQrPill extends StatelessWidget {
+  const _HandleQrPill({required this.handle, required this.name});
+  final String handle;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Semantics(
+      label: s.strings.profile.pd_share_qr,
+      button: true,
+      child: Pressable(
+        onTap: () => openQrShare(context, s: s, name: name),
+        child: Container(
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: s.accent.bg,
+            borderRadius: BorderRadius.circular(T.rPill),
+            border: Border.all(color: T.ink100),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(LucideIcons.qrCode, size: 15, color: s.accent.d),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text('@$handle',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.num(size: FS.sm, color: s.accent.d).copyWith(fontWeight: FontWeight.w600)),
+              ),
+            ]),
+          ),
         ),
       ),
     );

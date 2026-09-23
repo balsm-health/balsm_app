@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
+
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -108,17 +110,6 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     return hay.contains(q);
   }
 
-  Future<void> _remove(CareProvider p) async {
-    final userId = ref.read(currentUserIdProvider);
-    if (userId == null) return;
-    // Resolved before the await: the strings are needed after it, and the
-    // context may be gone by then.
-    final c = AppScope.of(context).strings.care;
-    final result = await ref.read(removeCareProviderUseCaseProvider).execute(userId: userId, providerId: p.id);
-    ref.invalidate(careTeamProvider);
-    _snack(result.isSuccess ? c.care_removed : c.care_save_failed);
-  }
-
   Future<void> _add() async {
     final added = await showAppSheet<bool>(
       context,
@@ -128,6 +119,30 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     if (added ?? false) {
       ref.invalidate(careTeamProvider);
       if (mounted) _snack(AppScope.of(context).strings.care.care_saved);
+    }
+  }
+
+  /// The same sheet in edit mode. It returns `true` when the row was saved and
+  /// `false` when it was deleted, so the toast can say which happened.
+  Future<void> _edit(CareProvider p) async {
+    final saved = await showAppSheet<bool>(
+      context,
+      size: SheetSize.lg,
+      builder: (_) => AddCareProviderSheet(provider: p),
+    );
+    if (saved == null) return;
+    ref.invalidate(careTeamProvider);
+    if (!mounted) return;
+    final c = AppScope.of(context).strings.care;
+    _snack(saved ? c.care_saved : c.care_removed);
+  }
+
+  /// Opens a patient-pasted map link. Only `http(s)` reaches here — the entity
+  /// gates that — and nothing about the destination is logged.
+  Future<void> _directions(CareProvider p) async {
+    final uri = Uri.parse(p.mapUrl!.trim());
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) _snack(AppScope.of(context).strings.care.care_save_failed);
     }
   }
 
@@ -183,7 +198,12 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
           const SizedBox(height: 16),
         ],
         for (final p in shown) ...[
-          _ProviderCard(provider: p, onCall: _call, onRemove: () => _remove(p)),
+          _ProviderCard(
+            provider: p,
+            onCall: _call,
+            onEdit: () => _edit(p),
+            onDirections: p.hasDirections ? () => _directions(p) : null,
+          ),
           const SizedBox(height: 12),
         ],
         // Two different nothings: an empty care team asks to be filled, a
@@ -253,10 +273,18 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
 /// One care-team member. Mirrors the design card: type disc, name with its
 /// type badge, then only the lines the patient actually filled in.
 class _ProviderCard extends ConsumerStatefulWidget {
-  const _ProviderCard({required this.provider, required this.onCall, required this.onRemove});
+  const _ProviderCard({
+    required this.provider,
+    required this.onCall,
+    required this.onEdit,
+    this.onDirections,
+  });
   final CareProvider provider;
   final Future<void> Function(String phone) onCall;
-  final VoidCallback onRemove;
+  final VoidCallback onEdit;
+
+  /// Null unless the patient saved a usable `http(s)` map link.
+  final VoidCallback? onDirections;
 
   @override
   ConsumerState<_ProviderCard> createState() => _ProviderCardState();
@@ -363,16 +391,34 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
                   child: Text(v, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
                 ),
               if (provider.placeLine case final String v?) line(LucideIcons.mapPin, v),
+              if (widget.onDirections != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Pressable(
+                    onTap: widget.onDirections,
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(LucideIcons.navigation, size: 12, color: s.accent.d),
+                      const SizedBox(width: 4),
+                      Text(c.care_directions,
+                          style: Typo.bodySm(ar: s.rtl)
+                              .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, color: s.accent.d)),
+                    ]),
+                  ),
+                ),
               if (phones.isNotEmpty) line(LucideIcons.phone, phones, ltr: true),
               if (provider.email case final String v when v.isNotEmpty) line(LucideIcons.mail, v, ltr: true),
               if (provider.notes case final String v when v.isNotEmpty) line(LucideIcons.stickyNote, v, italic: true),
             ]),
           ),
           const SizedBox(width: 6),
+          // The design swapped remove for edit here: a provider's number or
+          // clinic changes far more often than the provider does, and removing
+          // and re-adding them lost their attached files. Removal now lives
+          // inside the edit sheet, behind a confirm.
           Semantics(
             button: true,
-            label: c.care_remove,
-            child: RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 16, onTap: widget.onRemove),
+            label: c.care_edit,
+            child: RoundBtn(icon: LucideIcons.pencil, ghost: true, iconSize: 16, onTap: widget.onEdit),
           ),
         ]),
         // The design always shows a Call/Message pair; Message has nowhere to
@@ -552,7 +598,11 @@ class _TypeChip extends StatelessWidget {
 /// Only the name is required; everything else is optional free text. Pops
 /// `true` once the row is written so the caller can refresh and confirm.
 class AddCareProviderSheet extends ConsumerStatefulWidget {
-  const AddCareProviderSheet({super.key});
+  const AddCareProviderSheet({super.key, this.provider});
+
+  /// Non-null puts the sheet in edit mode: the fields arrive filled, the
+  /// button says "Save changes", and a remove action appears at the bottom.
+  final CareProvider? provider;
 
   @override
   ConsumerState<AddCareProviderSheet> createState() => _AddCareProviderSheetState();
@@ -567,15 +617,73 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   final _email = TextEditingController();
   final _clinic = TextEditingController();
   final _address = TextEditingController();
+  final _mapUrl = TextEditingController();
   final _notes = TextEditingController();
   bool _saving = false;
 
+  /// Second stage of removal — the design asks before it deletes.
+  bool _confirmDelete = false;
+
+  CareProvider? get _editing => widget.provider;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.provider;
+    if (p == null) return;
+    _type = p.type;
+    _name.text = p.name;
+    _specialty.text = p.specialty ?? '';
+    _phone.text = p.phone ?? '';
+    _phone2.text = p.phone2 ?? '';
+    _email.text = p.email ?? '';
+    _clinic.text = p.clinic ?? '';
+    _address.text = p.address ?? '';
+    _mapUrl.text = p.mapUrl ?? '';
+    _notes.text = p.notes ?? '';
+  }
+
   @override
   void dispose() {
-    for (final c in [_name, _specialty, _phone, _phone2, _email, _clinic, _address, _notes]) {
+    for (final c in [_name, _specialty, _phone, _phone2, _email, _clinic, _address, _mapUrl, _notes]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// `true` once what the patient typed stops looking like a link at all. An
+  /// empty field is fine — the whole field is optional.
+  bool get _mapUrlLooksWrong {
+    final v = _mapUrl.text.trim();
+    if (v.isEmpty) return false;
+    final uri = Uri.tryParse(v);
+    return uri == null || !uri.hasAuthority || (uri.scheme != 'http' && uri.scheme != 'https');
+  }
+
+  Future<void> _pasteMapUrl() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final v = data?.text?.trim();
+    if (v == null || v.isEmpty || !mounted) return;
+    setState(() => _mapUrl.text = v);
+  }
+
+  Future<void> _delete() async {
+    if (_saving) return;
+    final p = _editing;
+    final userId = ref.read(currentUserIdProvider);
+    if (p == null || userId == null) {
+      _fail();
+      return;
+    }
+    setState(() => _saving = true);
+    final result = await ref.read(removeCareProviderUseCaseProvider).execute(userId: userId, providerId: p.id);
+    if (!mounted) return;
+    if (result.isSuccess) {
+      Navigator.pop(context, false);
+      return;
+    }
+    setState(() => _saving = false);
+    _fail();
   }
 
   Future<void> _save() async {
@@ -588,20 +696,37 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
       return;
     }
     setState(() => _saving = true);
-    final result = await ref.read(addCareProviderUseCaseProvider).execute(
-          userId: userId,
-          type: _type,
-          name: _name.text,
-          specialty: _specialty.text,
-          // Arabic-Indic digits normalize on the way in, as everywhere else a
-          // phone number is captured (FR-213).
-          phone: normalizeArabicNumerals(_phone.text),
-          phone2: normalizeArabicNumerals(_phone2.text),
-          email: _email.text,
-          clinic: _clinic.text,
-          address: _address.text,
-          notes: _notes.text,
-        );
+    final editing = _editing;
+    // Arabic-Indic digits normalize on the way in, as everywhere else a phone
+    // number is captured (FR-213).
+    final result = editing == null
+        ? await ref.read(addCareProviderUseCaseProvider).execute(
+              userId: userId,
+              type: _type,
+              name: _name.text,
+              specialty: _specialty.text,
+              phone: normalizeArabicNumerals(_phone.text),
+              phone2: normalizeArabicNumerals(_phone2.text),
+              email: _email.text,
+              clinic: _clinic.text,
+              address: _address.text,
+              mapUrl: _mapUrl.text,
+              notes: _notes.text,
+            )
+        : await ref.read(updateCareProviderUseCaseProvider).execute(
+              userId: userId,
+              provider: editing,
+              type: _type,
+              name: _name.text,
+              specialty: _specialty.text,
+              phone: normalizeArabicNumerals(_phone.text),
+              phone2: normalizeArabicNumerals(_phone2.text),
+              email: _email.text,
+              clinic: _clinic.text,
+              address: _address.text,
+              mapUrl: _mapUrl.text,
+              notes: _notes.text,
+            );
     if (!mounted) return;
     if (result.isSuccess) {
       Navigator.pop(context, true);
@@ -637,7 +762,8 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
           padding: const EdgeInsets.fromLTRB(20, 0, 16, 10),
           child: Row(children: [
             Expanded(
-                child: Text(c.care_add_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
+                child: Text(_editing == null ? c.care_add_title : c.care_edit_title,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
             RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
           ]),
         ),
@@ -699,6 +825,15 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
               const SizedBox(height: 14),
               _Field(label: c.care_f_address, controller: _address, hint: c.care_ph_address, lines: 2),
               const SizedBox(height: 14),
+              // A map link the patient pastes from their maps app. Paste, not
+              // a picker: the design's own hint is "Share -> Copy link".
+              _MapLinkField(
+                controller: _mapUrl,
+                onPaste: _pasteMapUrl,
+                onChanged: () => setState(() {}),
+                looksWrong: _mapUrlLooksWrong,
+              ),
+              const SizedBox(height: 14),
               _Field(label: c.care_f_notes, controller: _notes, hint: c.care_ph_notes, lines: 2),
               const SizedBox(height: 20),
               Row(children: [
@@ -714,7 +849,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: PButton(
-                    c.care_save,
+                    _editing == null ? c.care_save : c.care_save_changes,
                     variant: BtnVariant.primary,
                     accent: s.accent,
                     ar: s.rtl,
@@ -722,6 +857,66 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                   ),
                 ),
               ]),
+              // Removal only exists in edit mode, and only behind a confirm —
+              // the row's attached files go with it.
+              if (_editing != null) ...[
+                if (!_confirmDelete)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: PButton(
+                      c.care_delete,
+                      icon: LucideIcons.trash2,
+                      variant: BtnVariant.ghost,
+                      block: true,
+                      color: T.danger,
+                      accent: s.accent,
+                      ar: s.rtl,
+                      onTap: _saving ? null : () => setState(() => _confirmDelete = true),
+                    ),
+                  )
+                else
+                  Container(
+                    margin: const EdgeInsets.only(top: 14),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: T.dangerBg,
+                      borderRadius: BorderRadius.circular(T.rLg),
+                      border: Border.all(color: T.danger),
+                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      Text(c.care_delete_q(_name.text.trim()),
+                          style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                      const SizedBox(height: 4),
+                      Text(c.care_delete_h,
+                          style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, color: T.fg2, height: 1.5)),
+                      const SizedBox(height: 12),
+                      Row(children: [
+                        Expanded(
+                          child: PButton(
+                            c.care_keep,
+                            variant: BtnVariant.secondary,
+                            size: BtnSize.sm,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: _saving ? null : () => setState(() => _confirmDelete = false),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: PButton(
+                            c.care_remove,
+                            variant: BtnVariant.primary,
+                            size: BtnSize.sm,
+                            color: T.danger,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: _saving ? null : _delete,
+                          ),
+                        ),
+                      ]),
+                    ]),
+                  ),
+              ],
             ]),
           ),
         ),
@@ -795,6 +990,64 @@ class _Field extends StatelessWidget {
           focusedBorder: border(s.accent.main),
         ),
       ),
+    ]);
+  }
+}
+
+/// The map-link row: a pin, the URL, and a Paste button sitting inside the
+/// field, with the design's help text underneath until something is typed.
+class _MapLinkField extends StatelessWidget {
+  const _MapLinkField({
+    required this.controller,
+    required this.onPaste,
+    required this.onChanged,
+    required this.looksWrong,
+  });
+  final TextEditingController controller;
+  final VoidCallback onPaste;
+  final VoidCallback onChanged;
+  final bool looksWrong;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final c = s.strings.care;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(c.care_f_map, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+      const SizedBox(height: 6),
+      Stack(alignment: AlignmentDirectional.centerEnd, children: [
+        TextField(
+          controller: controller,
+          onChanged: (_) => onChanged(),
+          keyboardType: TextInputType.url,
+          textDirection: TextDirection.ltr,
+          style: Typo.body(ar: s.rtl),
+          decoration: InputDecoration(
+            hintText: c.care_ph_map,
+            prefixIcon: const Icon(LucideIcons.mapPinned, size: 16, color: T.fg3),
+            prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+            // Room for the Paste button so the text never runs under it.
+            contentPadding: const EdgeInsetsDirectional.fromSTEB(0, 14, 82, 14),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 6),
+          child: PButton(
+            c.care_paste,
+            icon: LucideIcons.clipboardPaste,
+            variant: BtnVariant.ghost,
+            size: BtnSize.sm,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: onPaste,
+          ),
+        ),
+      ]),
+      const SizedBox(height: 6),
+      if (looksWrong)
+        Text(c.care_map_bad, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, color: T.danger))
+      else if (controller.text.trim().isEmpty)
+        Text(c.care_map_help, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, height: 1.5)),
     ]);
   }
 }

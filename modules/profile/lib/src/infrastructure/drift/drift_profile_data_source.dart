@@ -419,6 +419,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
         email: r.readNullable<String>('email'),
         clinic: r.readNullable<String>('clinic'),
         address: r.readNullable<String>('address'),
+        mapUrl: r.readNullable<String>('map_url'),
         notes: r.readNullable<String>('notes'),
         createdAt: DateTime.fromMillisecondsSinceEpoch(r.read<int>('created_at'), isUtc: true),
       );
@@ -458,8 +459,8 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     await _db.customInsert(
       '''
       INSERT INTO care_provider
-        (id, health_profile_id, type, name, specialty, phone, phone2, email, clinic, address, notes, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, health_profile_id, type, name, specialty, phone, phone2, email, clinic, address, map_url, notes, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ''',
       variables: [
         Variable.withString(id.value),
@@ -472,11 +473,42 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
         opt(provider.email),
         opt(provider.clinic),
         opt(provider.address),
+        opt(provider.mapUrl),
         opt(provider.notes),
         Variable.withInt(DateTime.now().millisecondsSinceEpoch),
       ],
     );
     return id;
+  }
+
+  /// Overwrites [providerId]'s editable fields. `created_at` and the profile
+  /// it hangs off are not editable, and the attached files are untouched.
+  @override
+  Future<void> updateProvider(CareProviderId providerId, CareProvider provider) async {
+    Variable<Object> opt(String? value) =>
+        value == null || value.isEmpty ? const Variable(null) : Variable.withString(value);
+    await _db.customUpdate(
+      '''
+      UPDATE care_provider
+         SET type = ?, name = ?, specialty = ?, phone = ?, phone2 = ?, email = ?,
+             clinic = ?, address = ?, map_url = ?, notes = ?
+       WHERE id = ?
+      ''',
+      variables: [
+        Variable.withString(provider.type.id),
+        Variable.withString(provider.name),
+        opt(provider.specialty),
+        opt(provider.phone),
+        opt(provider.phone2),
+        opt(provider.email),
+        opt(provider.clinic),
+        opt(provider.address),
+        opt(provider.mapUrl),
+        opt(provider.notes),
+        Variable.withString(providerId.value),
+      ],
+      updateKind: UpdateKind.update,
+    );
   }
 
   /// Deletes the care-provider row with the given [providerId].
