@@ -2419,6 +2419,12 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get att_add => "Add file";
   String get att_one_file => "1 file";
   String att_n_files(String n) => "$n files";
+  String rec_n_selected(String n) => "$n selected";
+  String rec_delete_n_title(String n) => "Delete $n records?";
+  String get rec_delete_n_body =>
+      "The records and their files are removed from this device. This cannot be undone.";
+  String get rec_delete_confirm => "Delete";
+  String get rec_delete_1_title => "Delete this record?";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2526,6 +2532,16 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return att_one_file;
       case 'att_n_files':
         return att_n_files;
+      case 'rec_n_selected':
+        return rec_n_selected;
+      case 'rec_delete_n_title':
+        return rec_delete_n_title;
+      case 'rec_delete_n_body':
+        return rec_delete_n_body;
+      case 'rec_delete_confirm':
+        return rec_delete_confirm;
+      case 'rec_delete_1_title':
+        return rec_delete_1_title;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

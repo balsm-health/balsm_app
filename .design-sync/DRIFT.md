@@ -6,6 +6,42 @@ Regenerate with `.claude/skills/apply-design/scripts/ds_sync.py status`.
 
 30 of 31 source files compared; 29 clean, 1 outstanding on purpose.
 
+## Ported this run (2026-09-23c) — the UX enhancement screens
+
+| Design screen | Landed in |
+|---|---|
+| Full check-in — DS Steps | `checkin_shared.dart` `CheckInSteps`, `report_flow.dart` |
+| Quick-log — undo after save | `quick_log.dart` (4s window, `_UndoToast`) |
+| Nearby map — offline mode | `map_screen.dart` (ink-50 cached card, "Offline" badge) |
+| Storage — sync status | `storage_sheet.dart` ("Backed up · synced 2m ago") |
+| Records — bulk select | `records_screen.dart` (long-press, count bar, confirmed bulk delete) |
+
+`Pill` gained an optional icon; `PCard`/`Pressable` gained long-press and a
+border override.
+
+### Not ported, with reasons
+
+- **Storage ceiling warning** ("92% of 5 GB", the breakdown bar). No
+  storage-metering provider exists. An earlier session removed a fabricated
+  breakdown from this exact screen for this exact reason; re-adding invented
+  numbers would undo that.
+- **Bulk "Move N records to iCloud".** Cloud backup has no backend — the
+  storage sheet deliberately shows cloud targets as unavailable. The button
+  would move nothing.
+- **Per-pin map freshness** ("cached 2 days ago" on each place). Staleness is
+  tracked per result set, not per pin.
+- **Household — active-account accent.** `selectFamilyMember` is, in its own
+  words, a "session-only visual switch [that] does not change the signed-in
+  health profile". The design's chrome — "Karim's health", "Viewing: Karim",
+  "His readings, his streak" — would label the *signed-in patient's own PHI*
+  as someone else's. That is worse than the confusion it sets out to fix.
+  Blocked until profile switching actually re-points the data (P00X, which
+  `currentProfileIdProvider` is already shaped for).
+- **First-run tour.** Its two cards assert things that are not true of this
+  app: "your appointments are still one tap away" (the appointments screen was
+  removed) and one-cloud-instead-of-many (there is currently no cloud). The
+  mechanism is easy; the copy is a product decision, not a port.
+
 ## Ported this run (2026-09-23b) — the backlog, cleared
 
 `attachments.jsx` was the last design file never ported. It and the three
@@ -147,12 +183,28 @@ Emergency QR with a TTL and the key in the `#k=` fragment; the handle still
 appears under the code, but it is not what the QR carries. The look, the copy
 and the centre mark are ported; the payload deliberately is not.
 
-## Not compared
+## The HTML canvases — corrected 2026-09-23c
+
+**This section was wrong, and cost three rounds of "still not updated".** It
+used to dismiss every `.html` in the project as an "exploration board, not the
+product". They were never opened. One of them,
+`UX Enhancement Screens.html`, holds seven fully-designed screens.
+
+Checked, with what each actually is:
+
+| File | What it is |
+|---|---|
+| `Balsm App.html` | The entry point. Loads the `.jsx` files and nothing else — no UI of its own. Correctly not ported. |
+| `UX Enhancement Screens.html` | **Seven designed screens.** See the port table above. |
+| `UX Enhancements.html` | A prioritization board of 17 ideas, which says of itself "Proposal only — no changes have been made to the app". Not a design to port; a list to choose from. |
+| `Canvas.dc.html`, `New Design Direction - Warm.html`, `Walkthrough Options.html`, `App Store Screenshots.html`, `Store Screenshots.html`, `_test-rx5.html` | Not yet opened. Given the above, assume nothing about these until someone reads them. |
 
 Prototype-only (`NOT_PORTED`): `image-slot.js`, `support.js`, `dsloaders.jsx`,
-`tweaks-panel.jsx`, `devconfig.jsx` (dev overlay has its own Dart under
-`dev/`), `Balsm App.html`, `New Design Direction - Warm.html` and the other
-canvases (exploration boards, not the product).
+`tweaks-panel.jsx`, `devconfig.jsx` (dev overlay has its own Dart under `dev/`).
+
+`ds_sync.py` tracks `.jsx/.js/.css/.html` but the HTML files were never seeded
+into the baseline, so `status` never reported them. That is the hole — the same
+shape as the one that let the brand assets go stale.
 
 ## Assets (2026-09-23)
 

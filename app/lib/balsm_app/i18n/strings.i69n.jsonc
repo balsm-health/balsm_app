@@ -748,7 +748,12 @@
     "att_section": "Attachments",
     "att_add": "Add file",
     "att_one_file": "1 file",
-    "att_n_files(String n)": "$n files"
+    "att_n_files(String n)": "$n files",
+    "rec_n_selected(String n)": "$n selected",
+    "rec_delete_n_title(String n)": "Delete $n records?",
+    "rec_delete_n_body": "The records and their files are removed from this device. This cannot be undone.",
+    "rec_delete_confirm": "Delete",
+    "rec_delete_1_title": "Delete this record?"
   },
   "settings": {
     "trust_private": "Private by default",

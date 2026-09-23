@@ -2434,6 +2434,12 @@ class RecordsStrings_ar extends RecordsStrings {
   String get att_add => "إضافة ملف";
   String get att_one_file => "ملف واحد";
   String att_n_files(String n) => "$n ملفات";
+  String rec_n_selected(String n) => "$n محدد";
+  String rec_delete_n_title(String n) => "حذف $n من السجلات؟";
+  String get rec_delete_n_body =>
+      "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.";
+  String get rec_delete_confirm => "حذف";
+  String get rec_delete_1_title => "حذف هذا السجل؟";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2541,6 +2547,16 @@ class RecordsStrings_ar extends RecordsStrings {
         return att_one_file;
       case 'att_n_files':
         return att_n_files;
+      case 'rec_n_selected':
+        return rec_n_selected;
+      case 'rec_delete_n_title':
+        return rec_delete_n_title;
+      case 'rec_delete_n_body':
+        return rec_delete_n_body;
+      case 'rec_delete_confirm':
+        return rec_delete_confirm;
+      case 'rec_delete_1_title':
+        return rec_delete_1_title;
       default:
         return super[key];
     }

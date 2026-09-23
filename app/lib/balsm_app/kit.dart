@@ -310,12 +310,27 @@ class Avatar extends StatelessWidget {
 
 /// White rounded card (.card).
 class PCard extends StatelessWidget {
-  const PCard({super.key, required this.child, this.margin, this.padding, this.flat = false, this.onTap});
+  const PCard({
+    super.key,
+    required this.child,
+    this.margin,
+    this.padding,
+    this.flat = false,
+    this.onTap,
+    this.onLongPress,
+    this.border,
+  });
   final Widget child;
   final EdgeInsetsGeometry? margin;
   final EdgeInsetsGeometry? padding;
   final bool flat;
   final VoidCallback? onTap;
+
+  /// Long-press handler — how a selectable list enters selection mode.
+  final VoidCallback? onLongPress;
+
+  /// Overrides the hairline, e.g. a selected row ringed in the accent.
+  final Color? border;
   @override
   Widget build(BuildContext context) {
     final card = Container(
@@ -324,14 +339,14 @@ class PCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(T.rLg),
-        border: Border.all(color: T.border),
+        border: Border.all(color: border ?? T.border, width: border == null ? 1 : 1.5),
         boxShadow: flat ? null : T.shadowSm,
       ),
       child: child,
     );
-    if (onTap == null) return card;
+    if (onTap == null && onLongPress == null) return card;
     // Gentle press feedback on tappable cards.
-    return Pressable(onTap: onTap, scale: 0.99, child: card);
+    return Pressable(onTap: onTap, onLongPress: onLongPress, scale: 0.99, child: card);
   }
 }
 
@@ -764,11 +779,13 @@ class Pressable extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.onLongPress,
     this.scale = 0.98,
     this.behavior = HitTestBehavior.opaque,
   });
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double scale;
   final HitTestBehavior behavior;
 
@@ -779,7 +796,7 @@ class Pressable extends StatefulWidget {
 class _PressableState extends State<Pressable> {
   bool _down = false;
   void _set(bool v) {
-    if (widget.onTap != null && _down != v) setState(() => _down = v);
+    if ((widget.onTap ?? widget.onLongPress) != null && _down != v) setState(() => _down = v);
   }
 
   @override
@@ -789,6 +806,7 @@ class _PressableState extends State<Pressable> {
     return GestureDetector(
       behavior: widget.behavior,
       onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
       onTapDown: (_) => _set(true),
       onTapUp: (_) => _set(false),
       onTapCancel: () => _set(false),

@@ -748,7 +748,12 @@
     "att_section": "المرفقات",
     "att_add": "إضافة ملف",
     "att_one_file": "ملف واحد",
-    "att_n_files(String n)": "$n ملفات"
+    "att_n_files(String n)": "$n ملفات",
+    "rec_n_selected(String n)": "$n محدد",
+    "rec_delete_n_title(String n)": "حذف $n من السجلات؟",
+    "rec_delete_n_body": "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.",
+    "rec_delete_confirm": "حذف",
+    "rec_delete_1_title": "حذف هذا السجل؟"
   },
   "settings": {
     "trust_private": "خصوصية افتراضية",

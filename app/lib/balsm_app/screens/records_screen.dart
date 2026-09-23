@@ -68,6 +68,68 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
   RecordType? _filter;
   final _query = TextEditingController();
 
+  /// `UX Enhancement Screens.html` — "Records · bulk select". Null means the
+  /// normal browsing list; a (possibly empty) set means selection mode.
+  Set<String>? _selected;
+
+  bool get _selecting => _selected != null;
+
+  void _enterSelection(RecordDocument first) => setState(() => _selected = {first.id.value});
+
+  void _exitSelection() => setState(() => _selected = null);
+
+  void _toggle(RecordDocument r) => setState(() {
+        final sel = _selected;
+        if (sel == null) return;
+        if (!sel.remove(r.id.value)) sel.add(r.id.value);
+      });
+
+  /// Deletes every selected record and its encrypted blob, through the records
+  /// module's own use case so the blob-before-row ordering still holds.
+  Future<void> _deleteSelected(List<RecordDocument> shown) async {
+    final sel = _selected;
+    final userId = ref.read(currentUserIdProvider);
+    if (sel == null || sel.isEmpty || userId == null) return;
+    final doomed = shown.where((r) => sel.contains(r.id.value)).toList();
+    final confirmed = await _confirmDelete(doomed.length);
+    if (!confirmed) return;
+    final deleteRecord = ref.read(deleteRecordDocumentUseCaseProvider);
+    for (final r in doomed) {
+      await deleteRecord.call(r, scope: userId);
+    }
+    ref.invalidate(recordListProvider);
+    if (mounted) _exitSelection();
+  }
+
+  /// Deleting PHI in bulk is irreversible, so it asks first — the design's
+  /// destructive affordance sits in a selection bar where a mis-tap is easy.
+  Future<bool> _confirmDelete(int count) async {
+    final s = AppScope.of(context);
+    final r = s.strings.records;
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              // One record reads badly through a plural template.
+              count == 1 ? r.rec_delete_1_title : r.rec_delete_n_title('$count'),
+              style: Typo.subhead(ar: s.rtl),
+            ),
+            content: Text(r.rec_delete_n_body, style: Typo.body(ar: s.rtl)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(s.strings.common.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(r.rec_delete_confirm, style: const TextStyle(color: T.danger)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   @override
   void dispose() {
     _query.dispose();
@@ -96,13 +158,38 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
         maxWidth: 720,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const PadTop(),
-          AppBarRow(children: [
-            if (widget.onBack != null) ...[
-              RoundBtn(icon: backArrow(context), onTap: widget.onBack),
-              const SizedBox(width: 12),
-            ],
-            Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
-          ]),
+          if (_selecting)
+            // The design tints the whole bar and swaps the title for a count.
+            Container(
+              color: s.accent.bg,
+              child: AppBarRow(children: [
+                RoundBtn(icon: LucideIcons.x, ghost: true, onTap: _exitSelection),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    s.strings.records.rec_n_selected('${_selected!.length}'),
+                    style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.lg, color: s.accent.d),
+                  ),
+                ),
+                Opacity(
+                  opacity: _selected!.isEmpty ? 0.4 : 1,
+                  child: RoundBtn(
+                    icon: LucideIcons.trash2,
+                    ghost: true,
+                    fg: T.danger,
+                    onTap: _selected!.isEmpty ? null : () => _deleteSelected(shown),
+                  ),
+                ),
+              ]),
+            )
+          else
+            AppBarRow(children: [
+              if (widget.onBack != null) ...[
+                RoundBtn(icon: backArrow(context), onTap: widget.onBack),
+                const SizedBox(width: 12),
+              ],
+              Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
+            ]),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: _SearchField(controller: _query, onChanged: () => setState(() {})),
@@ -127,7 +214,11 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (_, i) => _RecordCard(
                           record: shown[i],
-                          onTap: () => _openDetail(context, shown[i]),
+                          selected: _selecting ? _selected!.contains(shown[i].id.value) : null,
+                          // Long-press is how selection starts, the way every
+                          // list on the platform does it; a tap then toggles.
+                          onTap: () => _selecting ? _toggle(shown[i]) : _openDetail(context, shown[i]),
+                          onLongPress: _selecting ? null : () => _enterSelection(shown[i]),
                         ),
                       ),
           ),
@@ -253,19 +344,40 @@ class _FilterChips extends StatelessWidget {
 }
 
 class _RecordCard extends StatelessWidget {
-  const _RecordCard({required this.record, required this.onTap});
+  const _RecordCard({required this.record, required this.onTap, this.selected, this.onLongPress});
   final RecordDocument record;
   final VoidCallback onTap;
+
+  /// null = not in selection mode; true/false = the checkbox state.
+  final bool? selected;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final style = recordTypeStyle(record.type);
     final source = record.source.isSelf ? s.strings.records.rec_self : record.source.value;
+    final isSelected = selected ?? false;
     return PCard(
       padding: const EdgeInsets.all(14),
       onTap: onTap,
+      onLongPress: onLongPress,
+      border: isSelected ? s.accent.main : null,
       child: Row(children: [
+        if (selected != null) ...[
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isSelected ? s.accent.main : Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: isSelected ? s.accent.main : T.ink300, width: 2),
+            ),
+            child: isSelected ? const Icon(LucideIcons.check, size: 12, color: Colors.white) : null,
+          ),
+          const SizedBox(width: 12),
+        ],
         Container(
           width: 46,
           height: 46,
@@ -287,8 +399,10 @@ class _RecordCard extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         StorageBadge(storage: s.storageProvider),
-        const SizedBox(width: 6),
-        Chevron(rtl: s.rtl),
+        if (selected == null) ...[
+          const SizedBox(width: 6),
+          Chevron(rtl: s.rtl),
+        ],
       ]),
     );
   }
