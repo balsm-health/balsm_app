@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:core/core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,10 +15,41 @@ import '../../domain/value_objects/ids.dart';
 /// A null scope resolves the ACTIVE profile from the injected [activeProfile]
 /// callback; mutations with no active profile throw, reads come back empty.
 class DriftCareProvidersDataSource extends CareProvidersDataSource {
-  DriftCareProvidersDataSource({required AppDatabase db, required this.activeProfile}) : _db = db;
+  /// [outbox] is null in tests and in any build without cloud sync — the data
+  /// source then behaves exactly as it did before sync existed, writing only
+  /// locally.
+  DriftCareProvidersDataSource({
+    required AppDatabase db,
+    required this.activeProfile,
+    SyncOutboxDao? outbox,
+  })  : _db = db,
+        _outbox = outbox;
 
   final AppDatabase _db;
+  final SyncOutboxDao? _outbox;
   final HealthProfileId? Function() activeProfile;
+
+  /// Table name the outbox queues under, matching the cloud table.
+  static const _entity = 'care_provider';
+
+  /// The wire shape of one provider, matching UpsertCareProviderRequest.toJson
+  /// in `balsm_api`. Kept here rather than on the entity so the domain stays
+  /// free of transport concerns.
+  static Map<String, dynamic> _payload(CareProviderId id, HealthProfileId profileId, CareProvider p) => {
+        'id': id.value,
+        'health_profile_id': profileId.value,
+        'type': p.type.id,
+        'name': p.name,
+        'specialty': p.specialty,
+        'phone': p.phone,
+        'phone2': p.phone2,
+        'email': p.email,
+        'clinic': p.clinic,
+        'address': p.address,
+        'map_url': p.mapUrl,
+        'notes': p.notes,
+        'created_at': p.createdAt.toUtc().toIso8601String(),
+      };
 
   HealthProfileId? _resolve(HealthProfileId? scope) => scope ?? activeProfile();
 
@@ -110,6 +143,13 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
         Variable.withInt(value.createdAt.millisecondsSinceEpoch),
       ],
     );
+    // Local write already happened — the queue is a mirror, never a gate (ADR-11).
+    await _outbox?.enqueue(
+      entity: _entity,
+      entityId: key.value,
+      op: OutboxOp.upsert,
+      payload: jsonEncode(_payload(key, profileId, value)),
+    );
   }
 
   @override
@@ -125,6 +165,12 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
       'DELETE FROM care_provider WHERE id = ?',
       variables: [Variable.withString(key.value)],
       updateKind: UpdateKind.delete,
+    );
+    await _outbox?.enqueue(
+      entity: _entity,
+      entityId: key.value,
+      op: OutboxOp.delete,
+      payload: '{}',
     );
   }
 
@@ -219,5 +265,6 @@ final careProvidersDataSourceProvider = Provider<CareProvidersDataSource>((ref) 
   return DriftCareProvidersDataSource(
     db: ref.watch(appDatabaseProvider),
     activeProfile: () => ref.read(currentProfileIdProvider),
+    outbox: SyncOutboxDao(ref.watch(appDatabaseProvider)),
   );
 });
