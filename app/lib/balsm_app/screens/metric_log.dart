@@ -179,9 +179,13 @@ class MetricLog extends StatelessWidget {
   }
 }
 
-/// Symptoms the design pairs with the body map (`loc: true`). Catalog-only —
-/// urine/stool/tingling from the prototype are not in [SymptomId].
-const _locatedSymptomIds = {'swelling', 'chestTightness'};
+/// Symptoms the design pairs with the body map (`loc: true`). Derived from the
+/// catalog so the screen and the domain cannot disagree — they did while
+/// tingling and itching were missing from [SymptomId] entirely.
+final _locatedSymptomIds = {
+  for (final s in SymptomId.catalog)
+    if (s.hasLocation) s.id,
+};
 
 mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   PatientAppState get s;

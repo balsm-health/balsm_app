@@ -593,6 +593,9 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get sd_u_dark => "Dark";
   String get sd_u_red => "Red/pink";
   String get sd_u_brown => "Brown";
+  String get sym_tingling => "Tingling or numbness";
+  String get sym_itching => "Itching";
+  String get sym_vomiting => "Vomiting";
   String get sym_urine => "Urine";
   String get sym_stool => "Stool";
   String get st_mood => "Mood";
@@ -793,6 +796,12 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return sd_u_red;
       case 'sd_u_brown':
         return sd_u_brown;
+      case 'sym_tingling':
+        return sym_tingling;
+      case 'sym_itching':
+        return sym_itching;
+      case 'sym_vomiting':
+        return sym_vomiting;
       case 'sym_urine':
         return sym_urine;
       case 'sym_stool':

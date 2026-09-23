@@ -599,6 +599,9 @@ class CheckinStrings_ar extends CheckinStrings {
   String get sd_u_dark => "داكن";
   String get sd_u_red => "أحمر/وردي";
   String get sd_u_brown => "بني";
+  String get sym_tingling => "تنميل أو خدر";
+  String get sym_itching => "حكة";
+  String get sym_vomiting => "قيء";
   String get sym_urine => "البول";
   String get sym_stool => "البراز";
   String get st_mood => "المزاج";
@@ -799,6 +802,12 @@ class CheckinStrings_ar extends CheckinStrings {
         return sd_u_red;
       case 'sd_u_brown':
         return sd_u_brown;
+      case 'sym_tingling':
+        return sym_tingling;
+      case 'sym_itching':
+        return sym_itching;
+      case 'sym_vomiting':
+        return sym_vomiting;
       case 'sym_urine':
         return sym_urine;
       case 'sym_stool':

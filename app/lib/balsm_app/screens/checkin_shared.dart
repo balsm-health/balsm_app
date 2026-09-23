@@ -26,6 +26,9 @@ const symptomIcons = <(SymptomId, IconData)>[
   (SymptomId.chestTightness, LucideIcons.heartPulse),
   (SymptomId.nausea, LucideIcons.frown),
   (SymptomId.thirst, LucideIcons.cupSoda),
+  (SymptomId.tingling, LucideIcons.zap),
+  (SymptomId.itching, LucideIcons.hand),
+  (SymptomId.vomiting, LucideIcons.thermometer),
   (SymptomId.urine, LucideIcons.droplets),
   (SymptomId.stool, LucideIcons.toilet),
 ];
@@ -48,6 +51,9 @@ String symptomLabel(PatientAppState s, SymptomId id) {
   if (id == SymptomId.chestTightness) return c.sym_chest_tightness;
   if (id == SymptomId.nausea) return c.sym_nausea;
   if (id == SymptomId.thirst) return c.sym_thirst;
+  if (id == SymptomId.tingling) return c.sym_tingling;
+  if (id == SymptomId.itching) return c.sym_itching;
+  if (id == SymptomId.vomiting) return c.sym_vomiting;
   if (id == SymptomId.urine) return c.sym_urine;
   if (id == SymptomId.stool) return c.sym_stool;
   return id.id;

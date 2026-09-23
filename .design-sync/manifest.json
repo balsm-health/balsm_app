@@ -177,11 +177,11 @@
       "current_sha": "4f0b34f48f3f7641dea28ba02ab0bba9ccff7282e31549c65b57a65b1303369a",
       "fetched_at": "2026-09-23T11:45:22+00:00",
       "ported_to": [
-        "app/lib/balsm_app/screens/metric_log.dart",
-        "app/lib/balsm_app/widgets/date_time_row.dart"
+        "modules/self_report/lib/src/domain/value_objects/symptom.dart",
+        "app/lib/balsm_app/screens/checkin_shared.dart"
       ],
       "source": "export:balsm-claude-design-files.json",
-      "synced_at": "2026-09-22T18:45:34+00:00",
+      "synced_at": "2026-09-23T12:01:33+00:00",
       "synced_sha": "4f0b34f48f3f7641dea28ba02ab0bba9ccff7282e31549c65b57a65b1303369a"
     },
     "numpad.jsx": {
