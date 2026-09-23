@@ -30,7 +30,7 @@ void openCareTeam(BuildContext context) => pushSubScreen(context, (s) => const C
 
 /// One provider's attached files (vault-relative paths), oldest first.
 final careProviderFilesProvider = StreamProvider.autoDispose.family<List<String>, CareProviderId>((ref, id) {
-  return ref.watch(profileDataSourceProvider).watchProviderFiles(id);
+  return ref.watch(careProvidersDataSourceProvider).watchFiles(id);
 });
 
 /// The patient's care team, newest write reflected immediately.
@@ -41,7 +41,7 @@ final careProviderFilesProvider = StreamProvider.autoDispose.family<List<String>
 final careTeamProvider = StreamProvider.autoDispose<List<CareProvider>>((ref) {
   final profileId = ref.watch(currentProfileIdProvider);
   if (profileId == null) return Stream.value(const <CareProvider>[]);
-  return ref.watch(profileDataSourceProvider).watchProviders(profileId);
+  return ref.watch(careProvidersDataSourceProvider).watchAll(scope: profileId);
 });
 
 /// Icon per provider type — the design's `PROVIDER_TYPES` icons.
@@ -328,7 +328,7 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
     try {
       final store = ref.read(userFileStoreProvider);
       final path = await store.save(picked.name ?? 'attachment', picked.bytes!);
-      await ref.read(profileDataSourceProvider).addProviderFile(provider.id, path);
+      await ref.read(careProvidersDataSourceProvider).putFile(provider.id, path);
       ref.invalidate(careProviderFilesProvider(provider.id));
       if (mounted) setState(() => _filesOpen = true);
     } catch (_) {
@@ -341,7 +341,7 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
   }
 
   Future<void> _detach(String path) async {
-    await ref.read(profileDataSourceProvider).removeProviderFile(provider.id, path);
+    await ref.read(careProvidersDataSourceProvider).deleteFile(provider.id, path);
     ref.invalidate(careProviderFilesProvider(provider.id));
   }
 

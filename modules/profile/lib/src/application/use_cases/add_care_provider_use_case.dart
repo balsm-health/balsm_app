@@ -6,7 +6,9 @@ import '../../domain/entities/care_provider.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../../domain/value_objects/care_provider_type.dart';
 import '../../domain/value_objects/ids.dart';
+import '../../infrastructure/drift/drift_care_providers_data_source.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
+import '../ports/care_providers_data_source.dart';
 import '../ports/health_profiles_data_source.dart';
 
 /// Adds a [CareProvider] to the patient's care team and publishes
@@ -22,11 +24,15 @@ import '../ports/health_profiles_data_source.dart';
 class AddCareProviderUseCase {
   const AddCareProviderUseCase({
     required HealthProfilesDataSource dao,
+    required CareProvidersDataSource providers,
     required EventBus eventBus,
   })  : _dao = dao,
+        _providers = providers,
         _bus = eventBus;
 
+  /// Only to resolve (or create) the profile the row hangs off.
   final HealthProfilesDataSource _dao;
+  final CareProvidersDataSource _providers;
   final EventBus _bus;
 
   /// Ceiling on care-team size. Generous — a chronic patient accumulates
@@ -79,16 +85,18 @@ class AddCareProviderUseCase {
         await _dao.upsertProfile(profile);
       }
 
-      final existing = await _dao.listProviders(profile.id);
+      final existing = await _providers.findAll(scope: profile.id);
       if (existing.length >= maxProviders) {
         return AppResult.failure(
           const ValidationFailure('Cannot add more than $maxProviders care providers'),
         );
       }
 
+      // The caller mints the id: `put` is an upsert keyed on it, so there is
+      // no add-returns-an-id round trip.
+      final id = CareProviderId.uuid();
       final draft = CareProvider(
-        // The DAO generates the real id; this placeholder never reaches a row.
-        id: const CareProviderId.empty(),
+        id: id,
         healthProfileId: profile.id,
         type: type,
         name: cleanName,
@@ -102,11 +110,11 @@ class AddCareProviderUseCase {
         notes: clean(notes, max: maxNotesLength),
         createdAt: DateTime.now().toUtc(),
       );
-      final id = await _dao.addProvider(profile.id, draft);
+      await _providers.put(id, draft, scope: profile.id);
 
       _bus.publish(HealthProfileUpdated(userId: userId, fieldChanged: 'care_provider_added'));
 
-      return AppResult.success(draft.withId(id));
+      return AppResult.success(draft);
     } catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
@@ -116,6 +124,7 @@ class AddCareProviderUseCase {
 final addCareProviderUseCaseProvider = Provider<AddCareProviderUseCase>((ref) {
   return AddCareProviderUseCase(
     dao: ref.watch(profileDataSourceProvider),
+    providers: ref.watch(careProvidersDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

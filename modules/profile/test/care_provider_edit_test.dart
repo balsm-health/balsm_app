@@ -11,6 +11,7 @@ import 'package:profile/profile.dart';
 void main() {
   late AppDatabase db;
   late HealthProfilesDataSource dao;
+  late CareProvidersDataSource providers;
   late EventBus bus;
   late AddCareProviderUseCase add;
   late UpdateCareProviderUseCase update;
@@ -20,9 +21,10 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     await db.ensureSelfHealthProfile(user);
     dao = DriftProfileDataSource(db: db, activeUser: () => user);
+    providers = DriftCareProvidersDataSource(db: db, activeProfile: () => null);
     bus = EventBus();
-    add = AddCareProviderUseCase(dao: dao, eventBus: bus);
-    update = UpdateCareProviderUseCase(dao: dao, eventBus: bus);
+    add = AddCareProviderUseCase(dao: dao, providers: providers, eventBus: bus);
+    update = UpdateCareProviderUseCase(providers: providers, eventBus: bus);
   });
   tearDown(() => db.close());
 
@@ -42,7 +44,7 @@ void main() {
   group('editing', () {
     test('an edit keeps the row id, so attached files survive it', () async {
       final p = await seed();
-      await dao.addProviderFile(p.id, 'vault/card.png');
+      await providers.putFile(p.id, 'vault/card.png');
 
       final r = await update.execute(
         userId: user,
@@ -54,7 +56,7 @@ void main() {
 
       expect(r.isSuccess, isTrue);
       expect(r.value.id, p.id, reason: 'a new id would orphan the files');
-      expect(await dao.listProviderFiles(p.id), ['vault/card.png']);
+      expect(await providers.findFiles(p.id), ['vault/card.png']);
     });
 
     test('cleared fields persist as null, not empty strings', () async {
@@ -67,7 +69,7 @@ void main() {
         specialty: '',
         clinic: '   ',
       );
-      final stored = (await dao.listProviders(p.healthProfileId)).single;
+      final stored = (await providers.findAll(scope: p.healthProfileId)).single;
       expect(stored.specialty, isNull);
       expect(stored.clinic, isNull);
     });
@@ -80,20 +82,20 @@ void main() {
         type: CareProviderType.lab,
         name: p.name,
       );
-      expect((await dao.listProviders(p.healthProfileId)).single.type, CareProviderType.lab);
+      expect((await providers.findAll(scope: p.healthProfileId)).single.type, CareProviderType.lab);
     });
 
     test('a nameless edit is refused and changes nothing', () async {
       final p = await seed();
       final r = await update.execute(userId: user, provider: p, type: p.type, name: '  ');
       expect(r.isSuccess, isFalse);
-      expect((await dao.listProviders(p.healthProfileId)).single.name, 'Dr. Sara Kamal');
+      expect((await providers.findAll(scope: p.healthProfileId)).single.name, 'Dr. Sara Kamal');
     });
 
     test('editing does not add a second row', () async {
       final p = await seed();
       await update.execute(userId: user, provider: p, type: p.type, name: 'Dr. S. Kamal');
-      final all = await dao.listProviders(p.healthProfileId);
+      final all = await providers.findAll(scope: p.healthProfileId);
       expect(all, hasLength(1));
       expect(all.single.name, 'Dr. S. Kamal');
     });
@@ -102,28 +104,28 @@ void main() {
       final p = await seed();
       // Compared row-to-row: `created_at` is stored as epoch milliseconds, so
       // the in-memory entity's microseconds do not survive the first write.
-      final before = (await dao.listProviders(p.healthProfileId)).single.createdAt;
+      final before = (await providers.findAll(scope: p.healthProfileId)).single.createdAt;
       await update.execute(userId: user, provider: p, type: p.type, name: 'Dr. S. Kamal');
-      expect((await dao.listProviders(p.healthProfileId)).single.createdAt, before);
+      expect((await providers.findAll(scope: p.healthProfileId)).single.createdAt, before);
     });
   });
 
   group('map link', () {
     test('an https link round-trips and offers directions', () async {
       final p = await seed(mapUrl: 'https://maps.app.goo.gl/abc123');
-      final stored = (await dao.listProviders(p.healthProfileId)).single;
+      final stored = (await providers.findAll(scope: p.healthProfileId)).single;
       expect(stored.mapUrl, 'https://maps.app.goo.gl/abc123');
       expect(stored.hasDirections, isTrue);
     });
 
     test('no link, no directions', () async {
       final p = await seed();
-      expect((await dao.listProviders(p.healthProfileId)).single.hasDirections, isFalse);
+      expect((await providers.findAll(scope: p.healthProfileId)).single.hasDirections, isFalse);
     });
 
     test('a typed address is stored but is not a destination', () async {
       final p = await seed(mapUrl: '12 Street 9, Maadi');
-      final stored = (await dao.listProviders(p.healthProfileId)).single;
+      final stored = (await providers.findAll(scope: p.healthProfileId)).single;
       expect(stored.mapUrl, '12 Street 9, Maadi', reason: 'what the patient typed is kept');
       expect(stored.hasDirections, isFalse, reason: 'but it is not launchable');
     });
@@ -132,7 +134,7 @@ void main() {
       for (final bad in ['javascript:alert(1)', 'file:///etc/passwd', 'tel:+20225550100']) {
         final p = await seed(mapUrl: bad);
         expect(
-          (await dao.listProviders(p.healthProfileId)).last.hasDirections,
+          (await providers.findAll(scope: p.healthProfileId)).last.hasDirections,
           isFalse,
           reason: '$bad must not become a tappable link',
         );
@@ -148,7 +150,7 @@ void main() {
         name: p.name,
         mapUrl: 'https://maps.apple.com/?q=Maadi',
       );
-      expect((await dao.listProviders(p.healthProfileId)).single.hasDirections, isTrue);
+      expect((await providers.findAll(scope: p.healthProfileId)).single.hasDirections, isTrue);
     });
   });
 }

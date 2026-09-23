@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/care_provider.dart';
 import '../../domain/events/health_profile_updated.dart';
 import '../../domain/value_objects/care_provider_type.dart';
-import '../../infrastructure/drift/drift_profile_data_source.dart';
-import '../ports/health_profiles_data_source.dart';
+import '../../infrastructure/drift/drift_care_providers_data_source.dart';
+import '../ports/care_providers_data_source.dart';
 import 'add_care_provider_use_case.dart';
 
 /// Edits an existing [CareProvider] in place.
@@ -22,12 +22,12 @@ import 'add_care_provider_use_case.dart';
 /// On-device SQLCipher only: no network call, and no provider detail in logs.
 class UpdateCareProviderUseCase {
   const UpdateCareProviderUseCase({
-    required HealthProfilesDataSource dao,
+    required CareProvidersDataSource providers,
     required EventBus eventBus,
-  })  : _dao = dao,
+  })  : _providers = providers,
         _bus = eventBus;
 
-  final HealthProfilesDataSource _dao;
+  final CareProvidersDataSource _providers;
   final EventBus _bus;
 
   Future<AppResult<CareProvider>> execute({
@@ -72,7 +72,7 @@ class UpdateCareProviderUseCase {
         // The row keeps the date it was first saved.
         createdAt: provider.createdAt,
       );
-      await _dao.updateProvider(provider.id, updated);
+      await _providers.put(provider.id, updated, scope: provider.healthProfileId);
 
       _bus.publish(HealthProfileUpdated(userId: userId, fieldChanged: 'care_provider_updated'));
 
@@ -85,7 +85,7 @@ class UpdateCareProviderUseCase {
 
 final updateCareProviderUseCaseProvider = Provider<UpdateCareProviderUseCase>((ref) {
   return UpdateCareProviderUseCase(
-    dao: ref.watch(profileDataSourceProvider),
+    providers: ref.watch(careProvidersDataSourceProvider),
     eventBus: ref.watch(eventBusProvider),
   );
 });

@@ -115,7 +115,7 @@ Future<void> _seedCareTeam(ProviderContainer container, UserId userId) async {
   final dao = container.read(profileDataSourceProvider);
   final profile = await dao.getProfile(userId);
   if (profile == null) return;
-  if ((await dao.listProviders(profile.id)).isNotEmpty) return;
+  if ((await container.read(careProvidersDataSourceProvider).findAll(scope: profile.id)).isNotEmpty) return;
 
   final add = container.read(addCareProviderUseCaseProvider);
   final team = <({

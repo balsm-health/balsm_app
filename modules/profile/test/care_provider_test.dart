@@ -11,6 +11,7 @@ import 'package:profile/profile.dart';
 void main() {
   late AppDatabase db;
   late HealthProfilesDataSource dao;
+  late CareProvidersDataSource providers;
   late EventBus bus;
   late AddCareProviderUseCase add;
   late RemoveCareProviderUseCase remove;
@@ -21,16 +22,17 @@ void main() {
     // Creates the profile row every care_provider row must reference.
     await db.ensureSelfHealthProfile(user);
     dao = DriftProfileDataSource(db: db, activeUser: () => user);
+    providers = DriftCareProvidersDataSource(db: db, activeProfile: () => null);
     bus = EventBus();
-    add = AddCareProviderUseCase(dao: dao, eventBus: bus);
-    remove = RemoveCareProviderUseCase(dao: dao, eventBus: bus);
+    add = AddCareProviderUseCase(dao: dao, providers: providers, eventBus: bus);
+    remove = RemoveCareProviderUseCase(providers: providers, eventBus: bus);
   });
   tearDown(() => db.close());
 
   Future<HealthProfileId> profileId() async => (await dao.getProfile(user))!.id;
 
   test('a fresh profile has no care team', () async {
-    expect(await dao.listProviders(await profileId()), isEmpty);
+    expect(await providers.findAll(scope: await profileId()), isEmpty);
   });
 
   test('every field round-trips', () async {
@@ -48,7 +50,7 @@ void main() {
     );
     expect(result.isSuccess, isTrue);
 
-    final saved = (await dao.listProviders(await profileId())).single;
+    final saved = (await providers.findAll(scope: await profileId())).single;
     expect(saved.type, CareProviderType.pharmacy);
     expect(saved.name, 'Corner pharmacy');
     expect(saved.specialty, 'Delivery');
@@ -72,7 +74,7 @@ void main() {
     );
     expect(result.isSuccess, isTrue);
 
-    final saved = (await dao.listProviders(await profileId())).single;
+    final saved = (await providers.findAll(scope: await profileId())).single;
     expect(saved.name, 'The nurse from the clinic');
     // Empty strings would defeat every "has a value" check the card makes.
     expect(saved.specialty, isNull);
@@ -84,7 +86,7 @@ void main() {
     final result = await add.execute(userId: user, type: CareProviderType.doctor, name: '  ');
     expect(result.isSuccess, isFalse);
     expect(result.error, isA<ValidationFailure>());
-    expect(await dao.listProviders(await profileId()), isEmpty);
+    expect(await providers.findAll(scope: await profileId()), isEmpty);
   });
 
   test('over-long free text is truncated, not rejected', () async {
@@ -94,7 +96,7 @@ void main() {
       name: 'x' * 500,
       notes: 'n' * 900,
     );
-    final saved = (await dao.listProviders(await profileId())).single;
+    final saved = (await providers.findAll(scope: await profileId())).single;
     expect(saved.name.length, AddCareProviderUseCase.maxFieldLength);
     expect(saved.notes!.length, AddCareProviderUseCase.maxNotesLength);
   });
@@ -103,7 +105,7 @@ void main() {
     for (final name in ['first', 'second', 'third']) {
       await add.execute(userId: user, type: CareProviderType.doctor, name: name);
     }
-    final team = await dao.listProviders(await profileId());
+    final team = await providers.findAll(scope: await profileId());
     expect(team.map((p) => p.name), ['first', 'second', 'third']);
   });
 
@@ -114,13 +116,13 @@ void main() {
       name: 'Balsm Medical Centre',
       address: 'Maadi, Cairo',
     );
-    final saved = (await dao.listProviders(await profileId())).single;
+    final saved = (await providers.findAll(scope: await profileId())).single;
     expect(saved.placeLine, 'Maadi, Cairo');
   });
 
   test('removing takes the row out and publishes', () async {
     await add.execute(userId: user, type: CareProviderType.lab, name: 'Alfa Lab');
-    final saved = (await dao.listProviders(await profileId())).single;
+    final saved = (await providers.findAll(scope: await profileId())).single;
 
     final events = <AppEvent>[];
     final sub = bus.events.listen(events.add);
@@ -128,7 +130,7 @@ void main() {
 
     final result = await remove.execute(userId: user, providerId: saved.id);
     expect(result.isSuccess, isTrue);
-    expect(await dao.listProviders(await profileId()), isEmpty);
+    expect(await providers.findAll(scope: await profileId()), isEmpty);
     await Future<void>.delayed(Duration.zero);
     expect(events.single, isA<HealthProfileUpdated>());
   });
@@ -142,12 +144,12 @@ void main() {
     await add.execute(userId: user, type: CareProviderType.doctor, name: 'Dr. Someone');
     final id = await profileId();
     await dao.delete(id);
-    expect(await dao.listProviders(id), isEmpty);
+    expect(await providers.findAll(scope: id), isEmpty);
   });
 
   test('watchProviders emits the current team', () async {
     await add.execute(userId: user, type: CareProviderType.physio, name: 'Physio');
-    final team = await dao.watchProviders(await profileId()).first;
+    final team = await providers.watchAll(scope: await profileId()).first;
     expect(team.single.name, 'Physio');
   });
 
@@ -167,43 +169,43 @@ void main() {
   group('provider files', () {
     Future<CareProviderId> withProvider() async {
       await add.execute(userId: user, type: CareProviderType.doctor, name: 'Dr. Ahmed');
-      return (await dao.listProviders(await profileId())).single.id;
+      return (await providers.findAll(scope: await profileId())).single.id;
     }
 
     test('files attach and read back oldest first', () async {
       final id = await withProvider();
-      await dao.addProviderFile(id, 'vault/card.jpg');
-      await dao.addProviderFile(id, 'vault/referral.pdf');
-      expect(await dao.listProviderFiles(id), ['vault/card.jpg', 'vault/referral.pdf']);
+      await providers.putFile(id, 'vault/card.jpg');
+      await providers.putFile(id, 'vault/referral.pdf');
+      expect(await providers.findFiles(id), ['vault/card.jpg', 'vault/referral.pdf']);
     });
 
     test('detaching removes only the named path', () async {
       final id = await withProvider();
-      await dao.addProviderFile(id, 'vault/a.jpg');
-      await dao.addProviderFile(id, 'vault/b.jpg');
-      await dao.removeProviderFile(id, 'vault/a.jpg');
-      expect(await dao.listProviderFiles(id), ['vault/b.jpg']);
+      await providers.putFile(id, 'vault/a.jpg');
+      await providers.putFile(id, 'vault/b.jpg');
+      await providers.deleteFile(id, 'vault/a.jpg');
+      expect(await providers.findFiles(id), ['vault/b.jpg']);
     });
 
     test('removing the provider cascades its files away', () async {
       final id = await withProvider();
-      await dao.addProviderFile(id, 'vault/card.jpg');
+      await providers.putFile(id, 'vault/card.jpg');
       await remove.execute(userId: user, providerId: id);
-      expect(await dao.listProviderFiles(id), isEmpty);
+      expect(await providers.findFiles(id), isEmpty);
     });
 
     test('files are scoped to their own provider', () async {
       final first = await withProvider();
       await add.execute(userId: user, type: CareProviderType.lab, name: 'Alfa');
-      final second = (await dao.listProviders(await profileId())).last.id;
-      await dao.addProviderFile(first, 'vault/only-first.jpg');
-      expect(await dao.listProviderFiles(second), isEmpty);
+      final second = (await providers.findAll(scope: await profileId())).last.id;
+      await providers.putFile(first, 'vault/only-first.jpg');
+      expect(await providers.findFiles(second), isEmpty);
     });
 
     test('watchProviderFiles emits the current set', () async {
       final id = await withProvider();
-      await dao.addProviderFile(id, 'vault/card.jpg');
-      expect(await dao.watchProviderFiles(id).first, ['vault/card.jpg']);
+      await providers.putFile(id, 'vault/card.jpg');
+      expect(await providers.watchFiles(id).first, ['vault/card.jpg']);
     });
   });
 }
