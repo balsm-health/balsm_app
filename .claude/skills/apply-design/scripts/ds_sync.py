@@ -93,7 +93,21 @@ NOT_PORTED = {
     # no changes have been made to the app". Its screens live in
     # `UX Enhancement Screens.html`, which IS ported.
     "UX Enhancements.html",
+    # Prototype infrastructure with no Flutter counterpart. Each was checked
+    # against the live project on 2026-09-23 and has no portable UI.
+    "data.jsx",  # the prototype's sample patient — PHI rule, never ported
+    "dialcodes.jsx",  # dial codes; the app reads CountryRegistry instead
+    "ios-frame.jsx",  # the prototype's own device chrome
+    "app.jsx",  # prototype shell: mounts the screens, no UI of its own
+    "base.jsx",  # prototype helpers (cx, Icon, useApp)
+    "wt-compare.jsx",  # side-by-side treatment harness, a design tool
 }
+
+# `status` compares current/ to synced/. It CANNOT tell that current/ itself
+# has fallen behind the live project — a stale cache reports "clean" no matter
+# how far the design has moved, which is how two sweeps missed real changes.
+# Start a full sweep with a fresh export or a get_file pass; a clean status on
+# an old cache means nothing.
 
 TEXT_SUFFIXES = {".jsx", ".js", ".css", ".html", ".json", ".md", ".svg", ".txt"}
 

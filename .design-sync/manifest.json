@@ -48,9 +48,12 @@
     "appointments.jsx": {
       "current_sha": "03fd15da3ff246c86bb388e7c93aee902aa28d8c09e02ac8d328e73d1a374df1",
       "fetched_at": "2026-09-23T11:45:22+00:00",
+      "ported_to": [
+        "app/lib/balsm_app/screens/"
+      ],
       "source": "export:balsm-claude-design-files.json",
-      "synced_at": "2026-09-18T13:13:14+00:00",
-      "synced_sha": "03fd15da3ff246c86bb388e7c93aee902aa28d8c09e02ac8d328e73d1a374df1"
+      "synced_at": "2026-09-23T12:02:29+00:00",
+      "synced_sha": "b427d39da792216c12185a8bbb53d4adc88a6e7acfd881a398b909b0176e6d9c"
     },
     "attachments.jsx": {
       "current_sha": "912e25d2e76035cb9eaddd619238885d8d8269b288916ad101963ca636a9c94f",

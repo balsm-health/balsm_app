@@ -40,7 +40,7 @@ function AppointmentsScreen({ onBack }) {
             background: 'var(--app-accent)', color: '#fff',
             boxShadow: 'var(--app-accent-shadow)', position: 'relative', overflow: 'hidden',
           }}>
-            <img src={window.__resources ? window.__resources['icon'] : 'assets/icon.svg?v=5'} alt="" style={{
+            <img src={window.__resources ? window.__resources['icon-mono-white'] : 'assets/icon-mono-white.svg?v=7'} alt="" style={{
               position: 'absolute', right: -20, top: -20, width: 120, opacity: 0.12, pointerEvents: 'none',
               filter: 'brightness(0) invert(1)',
             }} />

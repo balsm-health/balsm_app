@@ -343,3 +343,73 @@ reconciled — either the app grows a separate non-expiring handle QR, or the
 design adopts the TTL. That decision is product's, not a port's.
 
 `report.jsx` (+4 −60) also remains unported and predates this sweep.
+
+
+## 2026-09-23 (later) — every source re-fetched against the live project
+
+The earlier sweep re-fetched four files. This one covers the rest, because a
+cache that was wrong about three of four cannot be trusted about the other
+twenty-six.
+
+**Re-fetched and CLEAN** (cache matched live): `settings.jsx`, `quicklog.jsx`,
+`records.jsx`, `storage.jsx`, `prescriptions.jsx`, `attachments.jsx`,
+`map.jsx`, `metric-inputs.jsx`, `auth.jsx`, `numpad.jsx`, `bodymap.jsx`,
+`walkthrough.css`, `wt-core.jsx`, `wt-treatments.jsx`, and the design system's
+`brand/colors_and_type.css`.
+
+**Re-fetched and DRIFTED** — all now ported:
+
+| File | What moved |
+|---|---|
+| `app.css` | `.hero-card .petal-wm` drops `brightness(0) invert(1)` for the real `icon-mono-white.svg` |
+| `feedback.jsx` | lit rating marks become one uniform gold; a mono "N of 5" line; `aria-pressed` |
+| `appointments.jsx` | same watermark swap — **no Dart target**, see below |
+| `report.jsx` | already matched; only the baseline was stale |
+
+### `report.jsx` was a stale BASELINE, not unported work
+
+`synced/` held a seven-step wizard and `current/` a four-step one, which read
+as the design deleting pain, symptoms and note from the daily check-in. It had
+not: `quicklog.jsx` shows they moved to quick-log, each symptom its own row
+with its own detail screen. The app already matches — `defaultFullCheckup` is
+mood → bp → glucose (+ meds), with pain and symptoms deliberately excluded and
+first-class in quick-log. Nothing to port; the baseline was simply never
+promoted after that work landed.
+
+### `appointments.jsx` has no Flutter counterpart
+
+There is no appointments screen in this app, and the design's own is
+"read-only for MVP" over prototype `APPOINTMENTS` sample data. Its watermark
+change is moot until that feature exists. Promoted so the next diff is clean;
+building the screen is a feature, not a port.
+
+### `petalmark.jsx` — cache stale, app already correct
+
+Live carries the tight ink-box viewBox, `cy="70.08" r="58.65"` heads, and a
+per-instance uid for gradient ids. The cached copy predates all three. No Dart
+change is needed: the app renders `assets/brand/icon.svg`, which already has
+that exact geometry (pinned by `brand_assets_test.dart`), and per-document
+gradient-id collisions cannot happen in `flutter_svg`, which compiles each
+picture independently.
+
+The cached file is left stale on purpose. It is a generated gradient blob, and
+the porting rules name hand-retyping exactly that as the top transcription
+hazard — a slipped character there is indistinguishable from a redesign. It
+should be refreshed by the next bulk export, not by hand.
+
+### Not fetched, and why
+
+`data.jsx` (prototype sample PHI — never ported), `dialcodes.jsx` (the app uses
+`CountryRegistry`), `ios-frame.jsx` (prototype device chrome), `app.jsx` /
+`base.jsx` (prototype shell and helpers), `wt-compare.jsx` (the side-by-side
+comparison harness, reached from the `Walkthrough Options.html` entry point
+already in `NOT_PORTED`). None of these has UI that lands in Flutter.
+
+### The tooling gap, stated plainly
+
+`ds_sync status` answers "has what I fetched changed since I ported it". It
+cannot answer "is what I fetched still what the project holds" — so a stale
+`current/` reports **clean** no matter how far the live project has moved.
+Both times this went wrong it reported clean. Until the script can compare
+against the project itself, a sweep MUST start with a fresh bulk export or a
+`get_file` pass, and a clean `status` on an old cache means nothing.
