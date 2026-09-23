@@ -12,8 +12,18 @@ class DeleteAccountScreen extends ConsumerWidget {
   const DeleteAccountScreen({super.key});
 
   static const _retained = ['Disclosure record', 'Deletion log'];
-  static const _deleted = ['Account', 'Handle', 'Sessions'];
-  static const _wiped = ['All PHI on device', 'All PHI on server (after grace)'];
+
+  /// Deleted from Balsm's own servers. Care team is named explicitly rather than
+  /// left to "All PHI on server": it is the only health record the patient can
+  /// see in the app that Balsm also holds, so a patient reading this column has
+  /// to be able to find it (FR-513).
+  static const _deleted = ['Account', 'Handle', 'Sessions', 'Care team (cloud copy)'];
+
+  static const _wiped = [
+    'All PHI on device',
+    'Care team',
+    'All PHI on server (after grace)',
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
