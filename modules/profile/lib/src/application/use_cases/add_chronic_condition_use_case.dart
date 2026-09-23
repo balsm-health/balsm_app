@@ -79,8 +79,9 @@ class AddChronicConditionUseCase {
         await _dao.upsertProfile(profile);
       }
 
-      await _dao.addCondition(
-        profile.id,
+      // Read-modify-put: `put` writes the aggregate, children included.
+      profile = profile.copyWith(conditions: [
+        ...profile.conditions,
         ChronicCondition(
           id: ChronicConditionId.uuid(),
           healthProfileId: profile.id,
@@ -89,7 +90,8 @@ class AddChronicConditionUseCase {
           onsetYear: onsetYear,
           createdAt: DateTime.now().toUtc(),
         ),
-      );
+      ]);
+      await _dao.put(profile.id, profile);
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'condition_added'),

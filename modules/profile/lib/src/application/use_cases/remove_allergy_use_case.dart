@@ -35,7 +35,10 @@ class RemoveAllergyUseCase {
         );
       }
 
-      await _dao.removeAllergy(allergyId);
+      await _dao.put(
+        profile.id,
+        profile.copyWith(allergies: profile.allergies.where((a) => a.id != allergyId).toList()),
+      );
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'allergy_removed'),

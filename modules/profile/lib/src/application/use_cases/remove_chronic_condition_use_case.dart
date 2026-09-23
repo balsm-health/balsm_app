@@ -34,7 +34,10 @@ class RemoveChronicConditionUseCase {
         );
       }
 
-      await _dao.removeCondition(conditionId);
+      await _dao.put(
+        profile.id,
+        profile.copyWith(conditions: profile.conditions.where((c) => c.id != conditionId).toList()),
+      );
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'condition_removed'),

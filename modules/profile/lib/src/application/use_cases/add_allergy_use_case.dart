@@ -74,17 +74,20 @@ class AddAllergyUseCase {
         );
       }
 
-      final allergyId = await _dao.addAllergy(
-        profile.id,
+      // Read-modify-put: `put` writes the aggregate, children included.
+      final allergyId = AllergyId.uuid();
+      profile = profile.copyWith(allergies: [
+        ...profile.allergies,
         Allergy(
-          id: AllergyId.uuid(),
+          id: allergyId,
           healthProfileId: profile.id,
           name: trimmedName,
           severity: severity,
           isControlledSubstance: isControlledSubstance,
           createdAt: DateTime.now().toUtc(),
         ),
-      );
+      ]);
+      await _dao.put(profile.id, profile);
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'allergy_added'),

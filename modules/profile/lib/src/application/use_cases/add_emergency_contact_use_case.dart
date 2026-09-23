@@ -72,8 +72,9 @@ class AddEmergencyContactUseCase {
         );
       }
 
-      await _dao.addContact(
-        profile.id,
+      // Read-modify-put: `put` writes the aggregate, children included.
+      profile = profile.copyWith(emergencyContacts: [
+        ...profile.emergencyContacts,
         EmergencyContact(
           id: EmergencyContactId.uuid(),
           healthProfileId: profile.id,
@@ -83,7 +84,8 @@ class AddEmergencyContactUseCase {
           isPrimary: isPrimary,
           createdAt: DateTime.now().toUtc(),
         ),
-      );
+      ]);
+      await _dao.put(profile.id, profile);
 
       _bus.publish(
         HealthProfileUpdated(userId: userId, fieldChanged: 'contact_added'),
