@@ -72,3 +72,13 @@ Care-team sync also has its own `careTeamSyncStatusProvider` rather than stampin
 the Drive backup's `syncStatusProvider`, which was telling patients with no Drive
 session that their data was backed up.
 
+- **Existing rosters are backfilled once.** Before this, only providers added
+  *after* the upgrade were ever pushed — so the patient in the spec's opening
+  scenario (six providers, lost phone) was exactly the one the feature did not
+  cover. `_backfillOnce` queues the pre-sync rows on first sync per profile,
+  skipping any id already queued, and marks itself done in `sync_cursor`.
+- **Local writes stamp `updated_at`.** Without it the LWW comparison weighed a
+  server timestamp against a local *creation* time, so a device with a slightly
+  fast clock silently dropped remote edits and deletes and never revisited them —
+  the cursor had already moved past.
+

@@ -125,13 +125,13 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
     await _db.customInsert(
       '''
       INSERT INTO care_provider
-        (id, health_profile_id, type, name, specialty, phone, phone2, email, clinic, address, map_url, notes, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, health_profile_id, type, name, specialty, phone, phone2, email, clinic, address, map_url, notes, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         type = excluded.type, name = excluded.name, specialty = excluded.specialty,
         phone = excluded.phone, phone2 = excluded.phone2, email = excluded.email,
         clinic = excluded.clinic, address = excluded.address, map_url = excluded.map_url,
-        notes = excluded.notes
+        notes = excluded.notes, updated_at = excluded.updated_at
       ''',
       variables: [
         Variable.withString(key.value),
@@ -147,6 +147,11 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
         _opt(value.mapUrl),
         _opt(value.notes),
         Variable.withInt(value.createdAt.millisecondsSinceEpoch),
+        // Stamp the local edit time. Without it the LWW comparison in
+        // CareTeamSyncService weighs a server updated_at against a local
+        // CREATION time, so a device with a slightly fast clock silently drops
+        // remote edits and deletes and never revisits them.
+        Variable.withInt(DateTime.now().toUtc().millisecondsSinceEpoch),
       ],
     );
     // Local write already happened — the queue is a mirror, never a gate (ADR-11).

@@ -42,6 +42,9 @@ class CareTeamSyncService {
 
   static const _entity = 'care_provider';
 
+  /// Cursor row marking that the pre-sync roster has been queued once.
+  static const _backfillMarker = 'care_provider_backfill';
+
   bool _inFlight = false;
 
   /// Drain then pull. Push first so a local edit is never clobbered by a pull
@@ -51,6 +54,7 @@ class CareTeamSyncService {
     _inFlight = true;
     _status.set(SyncState.syncing);
     try {
+      await _backfillOnce(profileId);
       await _drainInner();
       await _pullInner(profileId);
       _status.set(SyncState.synced, lastSyncedAt: DateTime.now());
@@ -77,6 +81,66 @@ class CareTeamSyncService {
     } catch (e) {
       _status.set(SyncState.offline, message: e.toString());
     }
+  }
+
+  /// Queues every care_provider row that already existed when this build was
+  /// installed. Without it only providers added AFTER the upgrade ever reach the
+  /// cloud, so the patient in the spec's opening scenario — six providers, lost
+  /// phone — is exactly the one the feature does not cover. Runs once per
+  /// profile, guarded by a marker row.
+  Future<void> _backfillOnce(HealthProfileId profileId) async {
+    final user = _activeUser();
+    if (user == null) return;
+
+    final done = await _db.customSelect(
+      'SELECT value FROM sync_cursor WHERE entity = ? AND scope = ?',
+      variables: [Variable.withString(_backfillMarker), Variable.withString(profileId.value)],
+    ).getSingleOrNull();
+    if (done != null) return;
+
+    // Rows already queued by a normal write in this session must not be queued
+    // twice — the server absorbs the duplicate, but the second push is pointless
+    // work and makes the queue misreport what is outstanding.
+    final rows = await _db.customSelect(
+      '''
+      SELECT * FROM care_provider
+       WHERE health_profile_id = ?
+         AND id NOT IN (SELECT entity_id FROM sync_outbox WHERE entity = ?)
+      ''',
+      variables: [Variable.withString(profileId.value), Variable.withString(_entity)],
+    ).get();
+
+    for (final r in rows) {
+      await _outbox.enqueue(
+        entity: _entity,
+        entityId: r.read<String>('id'),
+        op: OutboxOp.upsert,
+        payload: jsonEncode({
+          'id': r.read<String>('id'),
+          'health_profile_id': r.read<String>('health_profile_id'),
+          'type': r.read<String>('type'),
+          'name': r.read<String>('name'),
+          'specialty': r.readNullable<String>('specialty'),
+          'phone': r.readNullable<String>('phone'),
+          'phone2': r.readNullable<String>('phone2'),
+          'email': r.readNullable<String>('email'),
+          'clinic': r.readNullable<String>('clinic'),
+          'address': r.readNullable<String>('address'),
+          'map_url': r.readNullable<String>('map_url'),
+          'notes': r.readNullable<String>('notes'),
+          'created_at': DateTime.fromMillisecondsSinceEpoch(r.read<int>('created_at'), isUtc: true).toIso8601String(),
+        }),
+        userId: user.value,
+      );
+    }
+
+    await _db.customStatement(
+      '''
+      INSERT INTO sync_cursor (entity, scope, value) VALUES (?, ?, ?)
+      ON CONFLICT(entity, scope) DO UPDATE SET value = excluded.value
+      ''',
+      [_backfillMarker, profileId.value, DateTime.now().toUtc().toIso8601String()],
+    );
   }
 
   Future<void> _drainInner() async {

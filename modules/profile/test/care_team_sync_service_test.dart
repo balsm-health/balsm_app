@@ -330,6 +330,37 @@ void main() {
     });
   });
 
+  group('backfill (C5)', () {
+    /// Rows that predate this build were never queued, so the patient in the
+    /// spec's opening scenario — six providers, lost phone — was exactly the one
+    /// the feature did not cover.
+    test('sync queues and pushes rows that predate cloud sync', () async {
+      // A row written with no outbox attached, as if it were created by the
+      // previous build.
+      final legacy = DriftCareProvidersDataSource(db: db, activeProfile: () => profileId);
+      final id = CareProviderId.uuid();
+      await legacy.put(id, provider(id, name: 'Pre-existing Provider'));
+      expect(await outbox.pendingCount(), 0);
+
+      final api = FakeCareTeamApi();
+      await service(api).sync(profileId);
+
+      expect(api.upserted.map((r) => r.name), contains('Pre-existing Provider'));
+    });
+
+    test('backfill runs once, not on every sync', () async {
+      final legacy = DriftCareProvidersDataSource(db: db, activeProfile: () => profileId);
+      final id = CareProviderId.uuid();
+      await legacy.put(id, provider(id));
+
+      final api = FakeCareTeamApi();
+      await service(api).sync(profileId);
+      await service(api).sync(profileId);
+
+      expect(api.upserted, hasLength(1));
+    });
+  });
+
   group('sync', () {
     test('drains before pulling so a local edit is not clobbered', () async {
       final id = CareProviderId.uuid();
