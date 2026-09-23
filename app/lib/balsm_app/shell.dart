@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:core/core.dart';
+import 'package:profile/profile.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
@@ -71,7 +72,7 @@ class PatientApp extends ConsumerStatefulWidget {
   ConsumerState<PatientApp> createState() => _PatientAppState();
 }
 
-class _PatientAppState extends ConsumerState<PatientApp> {
+class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObserver {
   late final PatientAppState state = ref.read(patientAppStateProvider);
   final _navKey = GlobalKey<NavigatorState>();
 
@@ -103,6 +104,10 @@ class _PatientAppState extends ConsumerState<PatientApp> {
       }
     }
     LogBuffer.instance.install();
+    // FR-509: care team reconciles with the cloud when the app comes back to
+    // the foreground. Sign-in / profile-switch is handled by the listen in
+    // build(); pull-to-refresh by the care-team screen itself.
+    WidgetsBinding.instance.addObserver(this);
     _bindDebugServiceExtensions();
     // Hold 2300ms, or 1200 under reduced motion — the spinner is the only
     // thing left to watch. Read off the dispatcher rather than a MediaQuery,
@@ -111,6 +116,27 @@ class _PatientAppState extends ConsumerState<PatientApp> {
     Timer(Duration(milliseconds: reduce ? 1200 : 2300), () {
       if (mounted) setState(() => _booting = false);
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle != AppLifecycleState.resumed) return;
+    _syncCareTeam();
+  }
+
+  /// Fire-and-forget: the care-team screen reads from drift, so a failed sync
+  /// costs the patient nothing visible — [CareTeamSyncService] records it on
+  /// the sync-status provider and retries on the next trigger.
+  void _syncCareTeam() {
+    final profileId = ref.read(currentProfileIdProvider);
+    if (profileId == null) return;
+    unawaited(ref.read(careTeamSyncServiceProvider).sync(profileId));
   }
 
   /// Debug-only VM hooks so design QA can switch tabs and open nested
@@ -217,6 +243,12 @@ class _PatientAppState extends ConsumerState<PatientApp> {
     // ref.watch rebuilds this subtree on every state notification — the
     // Riverpod equivalent of the old AnimatedBuilder(animation: state).
     ref.watch(patientAppStateProvider);
+    // FR-509: reconcile on sign-in and on a dependant-profile switch. Firing on
+    // the null -> non-null edge means a signed-out app never calls the API, and
+    // a restored device pulls its roster as soon as the profile resolves.
+    ref.listen<HealthProfileId?>(currentProfileIdProvider, (previous, next) {
+      if (next != null && next != previous) _syncCareTeam();
+    });
     return AppScope(
       state: state,
       child: Builder(

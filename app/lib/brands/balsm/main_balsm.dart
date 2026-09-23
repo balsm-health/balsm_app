@@ -167,6 +167,16 @@ Future<void> bootstrap({
       ref.onDispose(service.dispose);
       return service;
     }),
+    // ── Care-team cloud sync (structured PHI rows → Balsm's own database) ──
+    // Distinct from the Drive blob backup above, and running alongside it: this
+    // mirrors care_provider rows to Balsm so the roster survives device loss for
+    // patients with no Google session (email-OTP / Apple), who get no blob at all.
+    careTeamSyncServiceProvider.overrideWith((ref) => CareTeamSyncService(
+          api: ref.watch(careTeamApiProvider),
+          outbox: SyncOutboxDao(ref.watch(appDatabaseProvider)),
+          db: ref.watch(appDatabaseProvider),
+          status: ref.watch(syncStatusProvider.notifier),
+        )),
     restoreServiceProvider.overrideWith((ref) => RestoreService(
           adapter: DriveBackupAdapter(),
           snapshot: ref.watch(snapshotServiceProvider),

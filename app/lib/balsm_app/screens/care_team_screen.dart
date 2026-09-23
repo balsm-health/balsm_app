@@ -174,6 +174,14 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
       // `home.jsx` replaced the dashed "Add a care provider" row with a FAB,
       // so adding is reachable without scrolling past the whole roster.
       floating: _CareFab(onTap: _add),
+      // FR-509: sign-in and foreground are handled by the shell; this is the
+      // explicit user refresh. The list itself keeps reading from drift, so the
+      // rows are already on screen — this only reconciles with the cloud.
+      onRefresh: () async {
+        final profileId = ref.read(currentProfileIdProvider);
+        if (profileId == null) return;
+        await ref.read(careTeamSyncServiceProvider).sync(profileId);
+      },
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),

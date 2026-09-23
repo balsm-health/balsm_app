@@ -53,6 +53,12 @@ final careDirectoryApiProvider = Provider<CareDirectoryApi>((ref) {
   return DioCareDirectoryApi(net: ref.watch(networkManagerProvider));
 });
 
+/// The patient's OWN care team (PHI), distinct from [careDirectoryApiProvider]
+/// above, which serves Balsm-owned non-PHI reference data about public places.
+final careTeamApiProvider = Provider<CareTeamApi>((ref) {
+  return DioCareTeamApi(net: ref.watch(networkManagerProvider));
+});
+
 /// Map-pack bytes downloader.
 ///
 /// Deliberately NOT built on [balsmApiClientProvider]'s Dio: basemaps come

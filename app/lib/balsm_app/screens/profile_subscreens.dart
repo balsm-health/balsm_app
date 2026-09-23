@@ -40,6 +40,7 @@ class SubScreen extends StatelessWidget {
     this.trailing,
     this.maxWidth = 640,
     this.floating,
+    this.onRefresh,
   });
   final PatientAppState s;
   final String title;
@@ -51,6 +52,10 @@ class SubScreen extends StatelessWidget {
   /// the trailing edge, 24 above the home indicator. Leave null for the
   /// sub-screens that have no primary add.
   final Widget? floating;
+
+  /// Pull-to-refresh handler. Null (the default) means no indicator at all, so
+  /// every sub-screen that has nothing to refresh is untouched.
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -68,7 +73,15 @@ class SubScreen extends StatelessWidget {
             Expanded(
               child: ContentColumn(
                 maxWidth: maxWidth,
-                child: ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 28), children: children),
+                child: _maybeRefreshable(
+                  ListView(
+                    // A refreshable list must always be draggable, even when it
+                    // is short enough not to scroll, or the gesture never starts.
+                    physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                    children: children,
+                  ),
+                ),
               ),
             ),
           ]),
@@ -81,6 +94,9 @@ class SubScreen extends StatelessWidget {
             ),
         ]),
       );
+
+  Widget _maybeRefreshable(Widget list) =>
+      onRefresh == null ? list : RefreshIndicator(onRefresh: onRefresh!, child: list);
 }
 
 class _SectionHead extends StatelessWidget {
