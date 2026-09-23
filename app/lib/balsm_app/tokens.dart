@@ -29,10 +29,12 @@ enum BalsmDirection { standard, warm }
 
 /// The direction this build paints. See [BalsmDirection].
 ///
-/// Set to [BalsmDirection.warm] on request. To go back to the design system's
-/// shipped look — which is what `Balsm App.html` renders — change this one
-/// word to `standard`. Nothing else has to change.
-const kDirection = BalsmDirection.warm;
+/// [BalsmDirection.standard] is the design system's shipped look — what
+/// `Balsm App.html` renders, and what `_ds/…/brand/colors_and_type.css` shares
+/// with every other Balsm product. Warm was tried here and read as worse on
+/// device, so this stays standard. Flipping the one word swaps surface and
+/// radii; nothing else has to change.
+const kDirection = BalsmDirection.standard;
 
 class T {
   T._();
