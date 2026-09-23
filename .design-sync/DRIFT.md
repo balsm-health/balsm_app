@@ -216,7 +216,7 @@ All eight are now read. What each actually is:
 | `_test-rx5.html` | Harness rendering `PrescriptionsScreen` alone. Already clean. |
 | `Canvas.dc.html` | Empty `<x-dc>` stub. Nothing in it. |
 | `UX Enhancements.html` | Prioritization board of 17 ideas; says "Proposal only — no changes have been made to the app". |
-| `New Design Direction - Warm.html` | An alternative visual direction. **Built, shipped, then reverted** — see below. |
+| `New Design Direction - Warm.html` | An **alternative visual direction**. Measured against the app, it is three changes — see below. |
 | `App Store Screenshots.html`, `Store Screenshots.html` | ASO marketing compositions and a store-submission size checklist. Ops, not product. |
 
 So there is no unported product UI left in the canvases.
@@ -236,11 +236,11 @@ Taken one at a time:
 | Larger, rounder radii | `--radius-lg: 14px` / `--radius-xl: 20px`, same file. `app.css` only consumes them — it never redefines them. |
 | Real photography | Every image is an `image-slot` placeholder ("A calm, human moment", "Cover photo"). The assets do not exist. |
 
-**Built, shipped on request, then reverted.** `kDirection` in `tokens.dart`
-switches the two app-side tokens (`T.surface`, `T.rMd/rLg/rXl`) between the
-directions at compile time. It was set to `warm`, looked worse on device, and
-is back to `standard`. The variant stays in the code as a one-word switch; the
-reservation below is why it should not be flipped again app-side.
+**Tried and rejected, 2026-09-23.** The two app-side deltas were built behind
+a `kDirection` constant, shipped on request, and looked worse on device. The
+whole variant has been reverted out — surfaces are `white` and radii are
+10/14/20 again, matching the design system. Do not rebuild it app-side; if the
+direction is wanted, it goes in Balsm-Core first (below).
 
 The two outstanding changes are **Balsm Design System tokens, not app tokens**.
 `_ds/` is the shared design system mirrored into this repo — the porting rules

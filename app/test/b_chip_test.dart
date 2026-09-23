@@ -22,8 +22,7 @@ void main() {
   testWidgets('inactive chip is outlined, no check', (tester) async {
     await _pump(tester, active: false);
     final d = tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).decoration! as BoxDecoration;
-    // The surface token, not a literal — it changes with the direction.
-    expect(d.color, T.surface);
+    expect(d.color, Colors.white);
     expect((d.border! as Border).top.color, T.border);
     expect(find.byIcon(LucideIcons.check), findsNothing);
     expect(find.text('Blood pressure'), findsOneWidget);
