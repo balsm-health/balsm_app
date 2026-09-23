@@ -17,6 +17,7 @@ import '../widgets/vault_file_viewer.dart';
 import '../widgets/photo_attach.dart';
 import '../routes.dart';
 import '../tokens.dart';
+import 'care_import_sheet.dart';
 import 'profile_subscreens.dart';
 
 /// Care team (`home.jsx` `CareTeamScreen` + its "Add a provider" sheet).
@@ -123,6 +124,22 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     }
   }
 
+  /// Import from the phone's contacts. Returns the number of rows created, or
+  /// -1 when the patient chose to type one in by hand instead.
+  Future<void> _import() async {
+    final result = await showAppSheet<int>(
+      context,
+      size: SheetSize.lg,
+      builder: (_) => const CareImportSheet(),
+    );
+    if (!mounted || result == null) return;
+    if (result == -1) return _add();
+    if (result <= 0) return;
+
+    ref.invalidate(careTeamProvider);
+    _snack(AppScope.of(context).strings.care.care_import_done('$result'));
+  }
+
   /// The same sheet in edit mode. It returns `true` when the row was saved and
   /// `false` when it was deleted, so the toast can say which happened.
   Future<void> _edit(CareProvider p) async {
@@ -186,6 +203,19 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),
           child: Text(c.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
+        ),
+        // Import sits beside the intro rather than on the FAB: the FAB is the
+        // primary add, and routing it through the OS picker would make typing
+        // a provider in by hand the slower path.
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: BalsmButton(
+            // No icon: the Arabic label is long enough that icon + text
+            // overflows the row at narrow widths.
+            label: c.care_import,
+            variant: BalsmButtonVariant.secondary,
+            onPressed: _import,
+          ),
         ),
         if (team.isNotEmpty) ...[
           _CareSearchField(controller: _query, hint: c.care_search_ph, onChanged: () => setState(() {})),

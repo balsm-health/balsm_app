@@ -35,3 +35,23 @@ indicator, so every other sub-screen is untouched. Note the indicator is
 refreshable sub-screen need material_ui's `MaterialApp`, as `care_team_test.dart`
 already uses.
 
+## Care-team contact import
+
+`CareImportSheet` is the review step after the OS contact picker (design:
+`care-import.jsx`, its `initial` branch). The picker is the selection surface,
+so the sheet confirms rather than browses: it lists what was picked, proposes a
+type per contact that one tap corrects, and marks anyone already on the team.
+
+Entry is a button in the screen body, **not** the FAB. The FAB is the primary
+add, and routing it through the OS picker would make typing a provider in by
+hand the slower path — two existing tests assert that, correctly.
+
+The sheet's copy says care-team records sync to the Balsm account. The old
+"stays on your device" line in `care_add_note` was corrected at the same time:
+it stopped being true when care team gained a cloud mirror, and the deletion
+pre-confirm screen already says so in both columns.
+
+`BalsmButton` does not ellipsize its label, so a long Arabic label plus an icon
+overflows the row at narrow widths. The import button carries no icon and its
+label is short for that reason.
+
