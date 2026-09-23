@@ -67,12 +67,32 @@ STATIC_MAP = {
 }
 
 # Design files that are prototype plumbing with no Flutter counterpart.
+#
+# A name belongs here only after somebody has OPENED it. Every `.html` in this
+# project was once waved off as an "exploration board" on the strength of its
+# filename; one of them, `UX Enhancement Screens.html`, turned out to hold seven
+# designed screens, and the mistake survived three rounds of "the UI is not
+# updated". Each entry below carries what it actually is.
 NOT_PORTED = {
-    "image-slot.js",
-    "support.js",
-    "dsloaders.jsx",
-    "tweaks-panel.jsx",
-    "_test-rx5.html",
+    "image-slot.js",  # <image-slot> placeholder element for design mockups
+    "support.js",  # design-canvas runtime
+    "dsloaders.jsx",  # design-system bundle loader
+    "tweaks-panel.jsx",  # dev overlay; the app has its own under dev/
+    "devconfig.jsx",  # dev server switcher; the app has its own
+    "_test-rx5.html",  # harness rendering PrescriptionsScreen alone
+    "Canvas.dc.html",  # empty <x-dc> canvas stub
+    "Balsm App.html",  # entry point: loads the .jsx files, no UI of its own
+    "Walkthrough Options.html",  # entry point for wt-core/treatments/compare.jsx
+    "Store Screenshots.html",  # store submission size checklist (ops)
+    "App Store Screenshots.html",  # ASO marketing compositions
+    # A different visual direction (cream surfaces, Montserrat display, real
+    # photography via image-slot). Adopting it is a brand decision and needs
+    # photography that does not exist — not a port. Read, not assumed.
+    "New Design Direction - Warm.html",
+    # A prioritization board of 17 ideas that says of itself "Proposal only —
+    # no changes have been made to the app". Its screens live in
+    # `UX Enhancement Screens.html`, which IS ported.
+    "UX Enhancements.html",
 }
 
 TEXT_SUFFIXES = {".jsx", ".js", ".css", ".html", ".json", ".md", ".svg", ".txt"}

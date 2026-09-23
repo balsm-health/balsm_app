@@ -183,28 +183,38 @@ Emergency QR with a TTL and the key in the `#k=` fragment; the handle still
 appears under the code, but it is not what the QR carries. The look, the copy
 and the centre mark are ported; the payload deliberately is not.
 
-## The HTML canvases — corrected 2026-09-23c
+## The HTML canvases — all eight read, 2026-09-23c
 
-**This section was wrong, and cost three rounds of "still not updated".** It
-used to dismiss every `.html` in the project as an "exploration board, not the
-product". They were never opened. One of them,
-`UX Enhancement Screens.html`, holds seven fully-designed screens.
+**This section used to be wrong, and the mistake cost three rounds of "still
+not updated".** It dismissed every `.html` in the project as an "exploration
+board, not the product" on the strength of the filenames. Nobody had opened
+one. `UX Enhancement Screens.html` holds seven designed screens.
 
-Checked, with what each actually is:
+All eight are now read. What each actually is:
 
-| File | What it is |
+| File | Verdict |
 |---|---|
-| `Balsm App.html` | The entry point. Loads the `.jsx` files and nothing else — no UI of its own. Correctly not ported. |
-| `UX Enhancement Screens.html` | **Seven designed screens.** See the port table above. |
-| `UX Enhancements.html` | A prioritization board of 17 ideas, which says of itself "Proposal only — no changes have been made to the app". Not a design to port; a list to choose from. |
-| `Canvas.dc.html`, `New Design Direction - Warm.html`, `Walkthrough Options.html`, `App Store Screenshots.html`, `Store Screenshots.html`, `_test-rx5.html` | Not yet opened. Given the above, assume nothing about these until someone reads them. |
+| `UX Enhancement Screens.html` | **Seven designed screens.** Five ported (see above); two held back for stated reasons. |
+| `Balsm App.html` | Entry point. Loads the `.jsx` files; no UI of its own. The `?file=` the design URL opens on — i.e. "the app", which is the `.jsx` set. |
+| `Walkthrough Options.html` | Entry point for `wt-core/wt-treatments/wt-compare.jsx`. All three already clean. |
+| `_test-rx5.html` | Harness rendering `PrescriptionsScreen` alone. Already clean. |
+| `Canvas.dc.html` | Empty `<x-dc>` stub. Nothing in it. |
+| `UX Enhancements.html` | Prioritization board of 17 ideas; says "Proposal only — no changes have been made to the app". |
+| `New Design Direction - Warm.html` | An **alternative visual direction** — cream surfaces, Montserrat display type, rounder radii, real photography via `image-slot` placeholders. Its own note calls it "bending Balsm's rules". Adopting it restyles the whole app and needs photography that does not exist: a brand decision, not a port. |
+| `App Store Screenshots.html`, `Store Screenshots.html` | ASO marketing compositions and a store-submission size checklist. Ops, not product. |
+
+So there is no unported product UI left in the canvases.
 
 Prototype-only (`NOT_PORTED`): `image-slot.js`, `support.js`, `dsloaders.jsx`,
-`tweaks-panel.jsx`, `devconfig.jsx` (dev overlay has its own Dart under `dev/`).
+`tweaks-panel.jsx`, `devconfig.jsx` (the app has its own dev overlay under
+`dev/`).
 
-`ds_sync.py` tracks `.jsx/.js/.css/.html` but the HTML files were never seeded
-into the baseline, so `status` never reported them. That is the hole — the same
-shape as the one that let the brand assets go stale.
+**Why `status` never flagged any of this.** It only reports what is in
+`current/`, and these files were never fetched — so they were invisible rather
+than listed as unknown. `ds_sync.py paths --listing` does cover `.html`; the
+process, not the tool, was the hole. Each canvas now sits in `NOT_PORTED` with
+a note saying what it is, and that set carries a warning: a name goes in there
+only after somebody has opened the file.
 
 ## Assets (2026-09-23)
 
