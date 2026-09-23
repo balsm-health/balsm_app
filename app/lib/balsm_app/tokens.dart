@@ -28,7 +28,11 @@ import 'package:flutter/widgets.dart';
 enum BalsmDirection { standard, warm }
 
 /// The direction this build paints. See [BalsmDirection].
-const kDirection = BalsmDirection.standard;
+///
+/// Set to [BalsmDirection.warm] on request. To go back to the design system's
+/// shipped look — which is what `Balsm App.html` renders — change this one
+/// word to `standard`. Nothing else has to change.
+const kDirection = BalsmDirection.warm;
 
 class T {
   T._();

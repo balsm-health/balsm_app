@@ -216,7 +216,7 @@ All eight are now read. What each actually is:
 | `_test-rx5.html` | Harness rendering `PrescriptionsScreen` alone. Already clean. |
 | `Canvas.dc.html` | Empty `<x-dc>` stub. Nothing in it. |
 | `UX Enhancements.html` | Prioritization board of 17 ideas; says "Proposal only — no changes have been made to the app". |
-| `New Design Direction - Warm.html` | An **alternative visual direction**. Measured against the app, it is three changes — see below. |
+| `New Design Direction - Warm.html` | An alternative visual direction. **Built and shipped** behind `kDirection` — see below. |
 | `App Store Screenshots.html`, `Store Screenshots.html` | ASO marketing compositions and a store-submission size checklist. Ops, not product. |
 
 So there is no unported product UI left in the canvases.
@@ -235,6 +235,10 @@ Taken one at a time:
 | Cream surfaces instead of white cards | `--balsm-surface: #FFFFFF` is defined in `_ds/…/brand/colors_and_type.css`. |
 | Larger, rounder radii | `--radius-lg: 14px` / `--radius-xl: 20px`, same file. `app.css` only consumes them — it never redefines them. |
 | Real photography | Every image is an `image-slot` placeholder ("A calm, human moment", "Cover photo"). The assets do not exist. |
+
+**Shipped on request:** `kDirection = BalsmDirection.warm` in `tokens.dart`.
+One word back to `standard` returns the design-system look. The reservation
+below stands and was overridden deliberately, not missed.
 
 The two outstanding changes are **Balsm Design System tokens, not app tokens**.
 `_ds/` is the shared design system mirrored into this repo — the porting rules
