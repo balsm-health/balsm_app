@@ -1465,7 +1465,17 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   /// identified nobody, which is the one thing a person opening "my QR code"
   /// is looking for.
   List<Widget> _identity() {
-    final handle = ref.watch(accountSummaryProvider).valueOrNull?.handle;
+    final account = ref.watch(accountSummaryProvider);
+    final handle = account.valueOrNull?.handle;
+    // `GET /account/self` failing (an expired session 401s through the
+    // refresh) used to render as simply no handle — indistinguishable from
+    // never having claimed one. Say which it is.
+    if (account.hasError && (handle == null || handle.isEmpty)) {
+      return [
+        Text(s.strings.profile.acct_load_failed,
+            textAlign: TextAlign.center, style: Typo.bodySm(ar: ar).copyWith(color: T.fg3)),
+      ];
+    }
     return [
       if (widget.name.isNotEmpty)
         Text(widget.name,
