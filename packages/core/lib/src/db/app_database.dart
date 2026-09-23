@@ -55,6 +55,11 @@ class AppDatabase extends _$AppDatabase {
           await _ensureColumn('check_in_symptom', 'urine_ml', 'INTEGER');
           await _ensureColumn('check_in_symptom', 'blood', 'INTEGER NOT NULL DEFAULT 0');
           await _ensureColumn('care_provider', 'map_url', 'TEXT');
+          // Cloud-sync bookkeeping (FR-507/FR-508). Nullable so pre-existing rows
+          // migrate without a backfill; the sync service treats a null updated_at
+          // as created_at.
+          await _ensureColumn('care_provider', 'updated_at', 'INTEGER');
+          await _ensureColumn('care_provider', 'deleted_at', 'INTEGER');
           await _ensurePainSitePk();
           // These indexes must be created AFTER the column patches above — on a
           // pre-existing DB the `medications`/`health_record` tables predate
@@ -273,6 +278,22 @@ const _phiSchema = <String>[
     created_at INTEGER NOT NULL
   )''',
   'CREATE INDEX IF NOT EXISTS idx_care_provider_file_provider ON care_provider_file(care_provider_id)',
+  // Durable push queue for cloud sync (FR-506). Generic by column shape so later
+  // entities can reuse it; today only care_provider enqueues here. The payload is
+  // a JSON copy of a PHI row, so this table lives in the SQLCipher database like
+  // every other table here and is never logged.
+  '''
+  CREATE TABLE IF NOT EXISTS sync_outbox (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    op TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_sync_outbox_entity ON sync_outbox(entity, id)',
   '''
   CREATE TABLE IF NOT EXISTS medications (
     id TEXT PRIMARY KEY,

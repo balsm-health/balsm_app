@@ -84,6 +84,8 @@ export 'src/config/flavor.dart';
 export 'src/config/server_preset.dart';
 export 'src/config/active_server.dart';
 export 'src/config/recaptcha_adapter.dart';
+export 'src/sync/outbox_entry.dart';
+export 'src/sync/sync_outbox_dao.dart';
 export 'src/backup/backup_adapter.dart';
 export 'src/backup/backup_key_derivation.dart';
 export 'src/backup/backup_debouncer.dart';
