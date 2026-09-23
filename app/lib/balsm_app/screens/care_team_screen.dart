@@ -209,12 +209,14 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
         // a provider in by hand the slower path.
         Padding(
           padding: const EdgeInsets.only(bottom: 14),
-          child: BalsmButton(
-            // No icon: the Arabic label is long enough that icon + text
-            // overflows the row at narrow widths.
-            label: c.care_import,
-            variant: BalsmButtonVariant.secondary,
-            onPressed: _import,
+          child: PButton(
+            c.care_import,
+            icon: LucideIcons.contactRound,
+            variant: BtnVariant.secondary,
+            block: true,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: _import,
           ),
         ),
         if (team.isNotEmpty) ...[

@@ -15,6 +15,10 @@ import 'care_team_screen.dart';
 /// The OS picker is the selection surface, so this sheet's job is confirmation,
 /// not browsing: it shows what was picked, proposes a type per contact that the
 /// patient can correct in one tap, and marks anyone already on the team.
+///
+/// Carries its own chrome — grab handle, header, scroll — because
+/// [showAppSheet] supplies only the route and the width cap, exactly as
+/// `AddCareProviderSheet` does.
 class CareImportSheet extends ConsumerStatefulWidget {
   const CareImportSheet({super.key});
 
@@ -105,76 +109,137 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
     final selectable = _picked.where((p) => !p.isAlreadyOnTeam(team)).toList();
     final count = selectable.where((p) => _selected.contains(p.id)).length;
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(c.care_import_title, style: Typo.subhead(ar: s.rtl)),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(0, 2, 0, 14),
-        child: Text(
-          picker.isAvailable ? c.care_import_note : c.care_import_unavailable,
-          style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5),
-        ),
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
       ),
-      if (picker.isAvailable)
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        const SheetGrab(),
+        const SizedBox(height: 12),
         Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: BalsmButton(
-            label: _picked.isEmpty ? c.care_import_pick : c.care_import_more,
-            icon: LucideIcons.contactRound,
-            variant: BalsmButtonVariant.secondary,
-            onPressed: _busy ? null : _pick,
+          padding: const EdgeInsets.fromLTRB(20, 0, 16, 10),
+          child: Row(children: [
+            Expanded(
+              child: Text(c.care_import_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            ),
+            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+          ]),
+        ),
+        const Divider(height: 1, color: T.ink100),
+        Flexible(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context, base: 32)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(
+                picker.isAvailable ? c.care_import_note : c.care_import_unavailable,
+                style: Typo.meta(ar: s.rtl).copyWith(height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              if (_picked.isEmpty)
+                _EmptyPick(s: s, onPick: picker.isAvailable && !_busy ? _pick : null)
+              else ...[
+                for (final contact in _picked) ...[
+                  _ContactRow(
+                    s: s,
+                    contact: contact,
+                    onTeam: contact.isAlreadyOnTeam(team),
+                    selected: _selected.contains(contact.id),
+                    typeOpen: _typeOpen == contact.id,
+                    onToggle: () => setState(() {
+                      _selected.contains(contact.id) ? _selected.remove(contact.id) : _selected.add(contact.id);
+                    }),
+                    onTypeTap: () => setState(() => _typeOpen = _typeOpen == contact.id ? null : contact.id),
+                    onType: (t) => _setType(contact, t),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (picker.isAvailable)
+                  PButton(
+                    c.care_import_more,
+                    icon: LucideIcons.contactRound,
+                    variant: BtnVariant.secondary,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _busy ? null : _pick,
+                  ),
+              ],
+              const SizedBox(height: 18),
+              PButton(
+                count == 0 ? c.care_import_none : c.care_import_cta('$count'),
+                variant: BtnVariant.primary,
+                block: true,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: (count == 0 || _busy) ? null : () => _import(team),
+              ),
+              const SizedBox(height: 8),
+              PButton(
+                c.care_import_manual,
+                icon: LucideIcons.pencilLine,
+                variant: BtnVariant.ghost,
+                block: true,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: _busy ? null : () => Navigator.pop(context, -1),
+              ),
+            ]),
           ),
         ),
-      if (_picked.isEmpty)
-        _EmptyPick(s: s)
-      else
-        ..._picked.map((contact) => _ContactRow(
-              s: s,
-              contact: contact,
-              onTeam: contact.isAlreadyOnTeam(team),
-              selected: _selected.contains(contact.id),
-              typeOpen: _typeOpen == contact.id,
-              onToggle: () => setState(() {
-                _selected.contains(contact.id) ? _selected.remove(contact.id) : _selected.add(contact.id);
-              }),
-              onTypeTap: () => setState(() => _typeOpen = _typeOpen == contact.id ? null : contact.id),
-              onType: (t) => _setType(contact, t),
-            )),
-      const SizedBox(height: 20),
-      BalsmButton(
-        label: count == 0 ? c.care_import_none : c.care_import_cta('$count'),
-        variant: BalsmButtonVariant.primary,
-        onPressed: (count == 0 || _busy) ? null : () => _import(team),
-      ),
-      const SizedBox(height: 6),
-      BalsmButton(
-        label: c.care_import_manual,
-        icon: LucideIcons.pencilLine,
-        variant: BalsmButtonVariant.secondary,
-        onPressed: _busy ? null : () => Navigator.pop(context, -1),
-      ),
-    ]);
+      ]),
+    );
   }
 }
 
+/// Nothing picked yet — the picker either has not opened or was cancelled.
 class _EmptyPick extends StatelessWidget {
-  const _EmptyPick({required this.s});
+  const _EmptyPick({required this.s, required this.onPick});
   final PatientAppState s;
+
+  /// Null when the platform has no picker, which leaves the card as an
+  /// explanation rather than a dead button.
+  final VoidCallback? onPick;
 
   @override
   Widget build(BuildContext context) {
     final c = s.strings.care;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28),
+    return PCard(
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       child: Column(children: [
-        const Icon(LucideIcons.contactRound, size: 30, color: T.fg3),
-        const SizedBox(height: 10),
-        Text(c.care_import_empty, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600)),
+        Container(
+          width: 52,
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
+          child: Icon(LucideIcons.contactRound, size: 24, color: s.accent.main),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          c.care_import_empty,
+          textAlign: TextAlign.center,
+          style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2),
+        ),
         const SizedBox(height: 4),
         Text(
           c.care_import_empty_h,
           textAlign: TextAlign.center,
           style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5),
         ),
+        if (onPick != null) ...[
+          const SizedBox(height: 16),
+          PButton(
+            c.care_import_pick,
+            icon: LucideIcons.contactRound,
+            variant: BtnVariant.primary,
+            block: true,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: onPick,
+          ),
+        ],
       ]),
     );
   }
@@ -182,6 +247,9 @@ class _EmptyPick extends StatelessWidget {
 
 /// One picked contact: tick, initials, name, number, and the type it will be
 /// saved as.
+///
+/// The whole card toggles, so the tick is a target rather than the only one —
+/// a 22px box is a poor tap area on a phone.
 class _ContactRow extends StatelessWidget {
   const _ContactRow({
     required this.s,
@@ -219,20 +287,25 @@ class _ContactRow extends StatelessWidget {
 
     return Opacity(
       opacity: onTeam ? 0.55 : 1,
-      child: Container(
-        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.border))),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      child: PCard(
+        padding: const EdgeInsets.all(12),
+        // A ticked row is ringed in the accent, the same selected-row language
+        // the records list uses.
+        border: !onTeam && selected ? s.accent.main : null,
+        onTap: onTeam ? null : onToggle,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
-            if (!onTeam) _Tick(on: selected, accent: s.accent.main, onTap: onToggle) else const SizedBox(width: 22),
+            if (onTeam)
+              const Icon(LucideIcons.check, size: 18, color: T.ink300)
+            else
+              _Tick(on: selected, accent: s.accent.main),
             const SizedBox(width: 12),
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: T.ink50,
-              child: Text(
-                _initials(contact.name),
-                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2),
-              ),
+            Avatar(
+              initials: _initials(contact.name),
+              color: onTeam ? T.ink300 : s.accent.main,
+              size: 40,
+              fontSize: FS.sm,
+              ar: s.rtl,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -241,115 +314,120 @@ class _ContactRow extends StatelessWidget {
                   contact.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600),
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1),
                 ),
                 if (phone.isNotEmpty)
-                  Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: Text('$phone$extra', style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Text(
+                        '$phone$extra',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3),
+                      ),
+                    ),
                   ),
               ]),
             ),
-            if (onTeam)
-              Text(c.care_import_on_team, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3))
-            else if (selected)
-              _TypeChip(s: s, type: contact.type, onTap: onTypeTap),
-          ]),
-          if (selected && typeOpen && !onTeam)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 34, top: 10, bottom: 4),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: CareProviderType.values
-                    .map((t) => _TypeOption(s: s, type: t, active: t == contact.type, onTap: () => onType(t)))
-                    .toList(),
+            if (onTeam) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  c.care_import_on_team,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3, fontWeight: FontWeight.w600),
+                ),
               ),
+            ],
+          ]),
+          // The type only matters for a row that is actually going to be
+          // saved, so it appears with the tick rather than on every row.
+          if (selected && !onTeam) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: s.rtl ? Alignment.centerRight : Alignment.centerLeft,
+              child: _TypeChip(s: s, type: contact.type, open: typeOpen, onTap: onTypeTap),
             ),
+            if (typeOpen)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: [
+                    for (final t in CareProviderType.values)
+                      BChip(
+                        careTypeLabel(c, t),
+                        active: t == contact.type,
+                        accent: s.accent.main,
+                        ar: s.rtl,
+                        onTap: () => onType(t),
+                      ),
+                  ],
+                ),
+              ),
+          ],
         ]),
       ),
     );
   }
 }
 
+/// The card's own tick. Not interactive on its own — the whole card toggles,
+/// and a nested tap target inside a tappable card only creates dead zones.
 class _Tick extends StatelessWidget {
-  const _Tick({required this.on, required this.accent, required this.onTap});
+  const _Tick({required this.on, required this.accent});
   final bool on;
   final Color accent;
-  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: on ? accent : T.border, width: 1.5),
-            color: on ? accent : Colors.white,
-          ),
-          child: on ? const Icon(LucideIcons.check, size: 14, color: Colors.white) : null,
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: Motion.fast,
+        curve: Motion.easeOut,
+        width: 20,
+        height: 20,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: on ? accent : T.ink300, width: 1.5),
+          color: on ? accent : Colors.white,
         ),
+        child: on ? const Icon(LucideIcons.check, size: 13, color: Colors.white) : null,
       );
 }
 
+/// Current type, tapped to open the full set.
 class _TypeChip extends StatelessWidget {
-  const _TypeChip({required this.s, required this.type, required this.onTap});
+  const _TypeChip({required this.s, required this.type, required this.open, required this.onTap});
   final PatientAppState s;
   final CareProviderType type;
+  final bool open;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 30,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: s.accent.main),
-            color: s.accent.main.withValues(alpha: 0.08),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(careTypeIcon(type), size: 13, color: s.accent.main),
-            const SizedBox(width: 5),
-            Text(
-              careTypeLabel(s.strings.care, type),
-              style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.main),
-            ),
-            Icon(LucideIcons.chevronDown, size: 12, color: s.accent.main),
-          ]),
-        ),
-      );
-}
-
-class _TypeOption extends StatelessWidget {
-  const _TypeOption({required this.s, required this.type, required this.active, required this.onTap});
-  final PatientAppState s;
-  final CareProviderType type;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Pressable(
         onTap: onTap,
         child: Container(
           height: 32,
           padding: const EdgeInsets.symmetric(horizontal: 11),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: active ? s.accent.main : T.border),
-            color: active ? s.accent.main.withValues(alpha: 0.08) : Colors.white,
+            borderRadius: BorderRadius.circular(T.rPill),
+            border: Border.all(color: s.accent.main.withValues(alpha: 0.45), width: 1.5),
+            color: s.accent.bg,
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(careTypeIcon(type), size: 13, color: active ? s.accent.main : T.fg2),
-            const SizedBox(width: 5),
+            Icon(careTypeIcon(type), size: 14, color: s.accent.d),
+            const SizedBox(width: 6),
             Text(
               careTypeLabel(s.strings.care, type),
-              style: Typo.meta(ar: s.rtl).copyWith(
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w600, color: active ? s.accent.main : T.fg2),
+              style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d),
             ),
+            const SizedBox(width: 4),
+            Icon(open ? LucideIcons.chevronUp : LucideIcons.chevronDown, size: 13, color: s.accent.d),
           ]),
         ),
       );
