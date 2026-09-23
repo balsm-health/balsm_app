@@ -104,3 +104,13 @@ Only what the address book holds is carried over. Specialty, clinic, address and
 notes stay null rather than being inferred: an invented clinic is worse than a
 blank one.
 
+`ImportCareContactsUseCase` writes the confirmed drafts through
+`CareProvidersDataSource.putBulk`, so an imported row queues a cloud push exactly
+as a hand-typed one does — there is no separate import path to the server.
+
+It skips rather than fails, in three cases: a contact already on the team
+(matched on phone), a blank name, and anything past the 100-provider ceiling. A
+patient near the ceiling who picks five more gets the ones that fit; refusing the
+whole batch would throw away the work of choosing. One `HealthProfileUpdated`
+per batch, not per row.
+
