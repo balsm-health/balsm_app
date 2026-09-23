@@ -42,8 +42,7 @@
   },
   "boot": {
     "boot_preparing": "Preparing your health record",
-    "boot_tagline": "On your device, by design.",
-    "boot_promise": "Your care. Your data. Your system."
+    "boot_tagline": "On your device, by design."
   },
   "care": {
     "map_sub": "places mapped nearby",

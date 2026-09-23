@@ -212,7 +212,6 @@ class BootStrings_ar extends BootStrings {
   const BootStrings_ar(this._parent) : super(_parent);
   String get boot_preparing => "نُجهّز سجلّك الصحي";
   String get boot_tagline => "على جهازك، بالتصميم.";
-  String get boot_promise => "رعايتك. بياناتك. نظامك.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -223,8 +222,6 @@ class BootStrings_ar extends BootStrings {
         return boot_preparing;
       case 'boot_tagline':
         return boot_tagline;
-      case 'boot_promise':
-        return boot_promise;
       default:
         return super[key];
     }

@@ -199,6 +199,15 @@ Emergency QR with a TTL and the key in the `#k=` fragment; the handle still
 appears under the code, but it is not what the QR carries. The look, the copy
 and the centre mark are ported; the payload deliberately is not.
 
+**`auth.jsx`'s `SplashScreen` bloom** — reverted on request (2026-09-23). The
+design's boot splash is a five-hue aura scaling up behind the mark, the mark
+blooming from 0.86, a rising promise line and a footer with animated dots.
+Flutter is back to its own splash: the mark spinner over the wash backdrop,
+`boot_preparing` + `boot_tagline`, no entrance animation. `widgets/splash_bloom.dart`
+is deleted. The rest of `auth.jsx` (welcome, sign-in, OTP) stays ported, so the
+baseline is left promoted rather than reverted — un-promoting the whole file
+would report a delta for screens that are correct.
+
 ## The HTML canvases — all eight read, 2026-09-23c
 
 **This section used to be wrong, and the mistake cost three rounds of "still

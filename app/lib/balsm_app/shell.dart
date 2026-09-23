@@ -18,7 +18,6 @@ import 'kit.dart';
 import 'offline_banner.dart';
 import 'responsive.dart';
 import 'tokens.dart';
-import 'widgets/splash_bloom.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
@@ -36,6 +35,7 @@ import 'screens/storage_sheet.dart';
 import 'screens/add_prescription_sheet.dart';
 import 'screens/report_flow.dart';
 import 'widgets/account_switcher.dart';
+import 'widgets/balsm_mark.dart';
 import 'deep_link_handler.dart';
 import 'dev/shake_to_dev_config.dart';
 import 'screens/care_team_screen.dart';
@@ -104,9 +104,9 @@ class _PatientAppState extends ConsumerState<PatientApp> {
     }
     LogBuffer.instance.install();
     _bindDebugServiceExtensions();
-    // `SplashScreen`: hold 2300ms, or 1200 under reduced motion — there is no
-    // entrance animation left to watch. Read off the dispatcher rather than a
-    // MediaQuery, which initState has no safe access to.
+    // Hold 2300ms, or 1200 under reduced motion — the spinner is the only
+    // thing left to watch. Read off the dispatcher rather than a MediaQuery,
+    // which initState has no safe access to.
     final reduce = WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.disableAnimations;
     Timer(Duration(milliseconds: reduce ? 1200 : 2300), () {
       if (mounted) setState(() => _booting = false);
@@ -821,9 +821,7 @@ class _BootSplash extends StatelessWidget {
           Image.asset(
             Assets.brand_background,
             fit: BoxFit.cover,
-            // `.splash-bg { background-position: 78% top }` — the same crop
-            // the welcome screen uses, so the cross-fade lands on itself.
-            alignment: const Alignment(0.56, -1),
+            alignment: Alignment.center,
             opacity: const AlwaysStoppedAnimation(0.95),
             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
@@ -841,41 +839,18 @@ class _BootSplash extends StatelessWidget {
               ),
             ),
           ),
-          // `.splash-core` — the mark and its promise, optically centred, with
-          // `.splash-foot` pinned to the bottom.
-          Column(children: [
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const SplashMark(),
-                    // `.splash-promise { margin-top: 22px }`
-                    const SizedBox(height: 22),
-                    SplashRise(
-                      delay: const Duration(milliseconds: 550),
-                      child: Text(
-                        state.strings.boot.boot_promise,
-                        textAlign: TextAlign.center,
-                        style: Typo.heading(ar: ar).copyWith(fontSize: FS.lg, height: 1.35, letterSpacing: -0.01),
-                      ),
-                    ),
-                  ]),
-                ),
-              ),
-            ),
-            SplashRise(
-              delay: const Duration(milliseconds: 800),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 0, 24, MediaQuery.paddingOf(context).bottom + 42),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(state.strings.ecosystem.eco_tagline, style: Typo.eyebrow(T.wordmark, ar: ar)),
-                  const SizedBox(height: 16),
-                  const SplashDots(),
-                ]),
-              ),
-            ),
-          ]),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const MarkSpinner(size: 96),
+              const SizedBox(height: 28),
+              Text(state.strings.boot.boot_preparing,
+                  textAlign: TextAlign.center,
+                  style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 6),
+              Text(state.strings.boot.boot_tagline, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
+            ]),
+          ),
         ]),
       ),
     );

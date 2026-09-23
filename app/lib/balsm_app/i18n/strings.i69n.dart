@@ -209,7 +209,6 @@ class BootStrings implements i69n.I69nMessageBundle {
   const BootStrings(this._parent);
   String get boot_preparing => "Preparing your health record";
   String get boot_tagline => "On your device, by design.";
-  String get boot_promise => "Your care. Your data. Your system.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -220,8 +219,6 @@ class BootStrings implements i69n.I69nMessageBundle {
         return boot_preparing;
       case 'boot_tagline':
         return boot_tagline;
-      case 'boot_promise':
-        return boot_promise;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
