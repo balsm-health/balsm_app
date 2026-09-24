@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:dio/dio.dart';
 
 /// Re-finds the dev server when a request cannot reach it, and replays that
@@ -37,8 +39,13 @@ class DevHostInterceptor extends Interceptor {
       return handler.next(err);
     }
 
+    developer.log(
+      'cannot reach ${err.requestOptions.baseUrl} — looking for the server again',
+      name: 'balsm.devhost',
+    );
     final found = await (_inFlight ??= rediscover().whenComplete(() => _inFlight = null));
     if (found == null) return handler.next(err);
+    developer.log('retrying ${err.requestOptions.path} against $found', name: 'balsm.devhost');
 
     final options = err.requestOptions
       ..baseUrl = found

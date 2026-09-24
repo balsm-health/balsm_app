@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:balsm_api/balsm_api.dart' show ApiRoutes;
@@ -69,15 +70,26 @@ class DevHostLocator {
   /// answer on a simulator and on desktop, and fails in a millisecond
   /// everywhere else — and only then the sweep.
   Future<String?> find(int port, {String? preferred}) async {
+    final started = DateTime.now();
     for (final candidate in [lastKnown, preferred, '127.0.0.1']) {
       if (candidate == null || candidate.isEmpty) continue;
       if (await _probe(candidate, port, probeTimeout)) {
         lastKnown = candidate;
+        _log('serving on $candidate:$port');
         return candidate;
       }
     }
 
-    for (final prefix in await _subnets()) {
+    final prefixes = await _subnets();
+    if (prefixes.isEmpty) {
+      // Nothing to sweep: no usable IPv4 interface. On a phone that means
+      // Wi-Fi is off and only cellular is up, which the dev machine is not on.
+      _log('no LAN interface to sweep — is the device on Wi-Fi?');
+      return null;
+    }
+    _log('sweeping ${prefixes.map((p) => '$p.0/24').join(', ')} for :$port');
+
+    for (final prefix in prefixes) {
       // .255 is broadcast and .0 is the network itself; neither is a host.
       final hosts = [for (var i = 1; i < 255; i++) '$prefix.$i'];
       for (var i = 0; i < hosts.length; i += sweepBatch) {
@@ -86,12 +98,21 @@ class DevHostLocator {
         final hit = answers.firstWhere((h) => h != null, orElse: () => null);
         if (hit != null) {
           lastKnown = hit;
+          _log('found $hit:$port in ${DateTime.now().difference(started).inMilliseconds}ms');
           return hit;
         }
       }
     }
+    _log('nothing answered $port on ${prefixes.join(', ')} — is the server '
+        'bound to 0.0.0.0, and is the firewall open? (iOS: the local-network '
+        'prompt must be allowed)');
     return null;
   }
+
+  /// Dev-only breadcrumb. The locator is invisible when it works and baffling
+  /// when it does not, and the reasons it fails — wrong network, a server on
+  /// localhost only, a refused permission prompt — are all outside the app.
+  static void _log(String message) => developer.log(message, name: 'balsm.devhost');
 
   /// Whether [host] serves the Balsm API.
   ///
@@ -123,7 +144,16 @@ class DevHostLocator {
   /// sweeping a carrier network would be both useless and rude.
   static Future<List<String>> _localSubnets() async {
     final prefixes = <String>{};
-    for (final iface in await NetworkInterface.list(type: InternetAddressType.IPv4, includeLoopback: false)) {
+    final List<NetworkInterface> interfaces;
+    try {
+      interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4, includeLoopback: false);
+    } on SocketException catch (e) {
+      // Some Android builds refuse to enumerate interfaces. Nothing to sweep
+      // is a dead end, not a crash on the path that opens the app.
+      _log('cannot list network interfaces: ${e.message}');
+      return const [];
+    }
+    for (final iface in interfaces) {
       final name = iface.name.toLowerCase();
       if (name.startsWith('pdp_ip') || name.startsWith('utun') || name.startsWith('ipsec')) continue;
       for (final addr in iface.addresses) {
