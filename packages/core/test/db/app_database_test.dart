@@ -41,6 +41,34 @@ void main() {
     expect(idx, isNotEmpty, reason: 'index created after the column patch');
   });
 
+  test('opens a legacy DB whose sync_outbox predates user_id', () async {
+    // The crash a device hit after the outbox gained user scoping: the table
+    // already existed from an earlier build, so `CREATE TABLE IF NOT EXISTS`
+    // left it alone and the new index referenced a column that was still one
+    // patch away. Indexing belongs after the patch block, never in _phiSchema.
+    final dir = await Directory.systemTemp.createTemp('balsm_legacy_outbox');
+    final file = File('${dir.path}/legacy.db');
+    addTearDown(() => dir.delete(recursive: true));
+
+    final seed = sqlite3.open(file.path);
+    seed.execute(
+      'CREATE TABLE sync_outbox (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+      'entity TEXT NOT NULL, entity_id TEXT NOT NULL, op TEXT NOT NULL, '
+      'payload TEXT NOT NULL, created_at INTEGER NOT NULL, '
+      'attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT)',
+    );
+    seed.dispose();
+
+    final legacy = AppDatabase(NativeDatabase(file));
+    addTearDown(legacy.close);
+    final cols = await legacy.customSelect('PRAGMA table_info(sync_outbox)').get();
+    expect(cols.map((r) => r.read<String>('name')), contains('user_id'));
+    final idx = await legacy
+        .customSelect("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_sync_outbox_user'")
+        .get();
+    expect(idx, isNotEmpty, reason: 'index created after the column patch');
+  });
+
   test('PHI schema creates the profile-anchor columns and indexes', () async {
     for (final table in ['medications', 'health_record']) {
       final cols = await db.customSelect('PRAGMA table_info($table)').get();

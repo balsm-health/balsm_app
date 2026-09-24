@@ -71,6 +71,7 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
           await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)');
+          await customStatement('CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)');
           await runProfileAnchorBackfill();
         },
       );
@@ -298,7 +299,9 @@ const _phiSchema = <String>[
     user_id TEXT
   )''',
   'CREATE INDEX IF NOT EXISTS idx_sync_outbox_entity ON sync_outbox(entity, id)',
-  'CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)',
+  // idx_sync_outbox_user is NOT here: user_id was added to this table after it
+  // shipped, so on an existing device the CREATE TABLE above is a no-op and the
+  // column only appears in the patch block. See the index note in `beforeOpen`.
   // Incremental-pull cursor per (entity, scope). Deliberately in the PHI database
   // rather than SharedPreferences: the cursor is derived from PHI timestamps and
   // must be wiped with the rows it describes. A cursor that outlived a local wipe
