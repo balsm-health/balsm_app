@@ -65,12 +65,14 @@ class AppDatabase extends _$AppDatabase {
           await _ensureColumn('sync_outbox', 'user_id', 'TEXT');
           await _ensurePainSitePk();
           // These indexes must be created AFTER the column patches above — on a
-          // pre-existing DB the `medications`/`health_record` tables predate
-          // `health_profile_id`, so indexing it inside `_phiSchema` (which runs
-          // before the patches) would fail with "no such column".
+          // pre-existing DB the `medications`/`health_record`/`sync_outbox`
+          // tables predate `health_profile_id`/`user_id`, so indexing those
+          // columns inside `_phiSchema` (which runs before the patches) would
+          // fail with "no such column".
           await customStatement('CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
           await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)');
+          await customStatement('CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)');
           await runProfileAnchorBackfill();
         },
       );
@@ -298,7 +300,9 @@ const _phiSchema = <String>[
     user_id TEXT
   )''',
   'CREATE INDEX IF NOT EXISTS idx_sync_outbox_entity ON sync_outbox(entity, id)',
-  'CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)',
+  // idx_sync_outbox_user is created in beforeOpen AFTER the sync_outbox.user_id
+  // column patch — see the comment there — since a pre-existing DB's
+  // sync_outbox table predates that column.
   // Incremental-pull cursor per (entity, scope). Deliberately in the PHI database
   // rather than SharedPreferences: the cursor is derived from PHI timestamps and
   // must be wiped with the rows it describes. A cursor that outlived a local wipe
