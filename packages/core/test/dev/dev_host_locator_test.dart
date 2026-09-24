@@ -57,6 +57,39 @@ void main() {
     expect(asked, ['10.0.0.9'], reason: 'DEV_HOST from the launch, asked first and right');
   });
 
+  test('asks the emulator alias before sweeping anything', () async {
+    // An Android emulator does not share a network with its host: the AVD sits
+    // on 192.168.232.0/24 and the host is only reachable through 10.0.2.2, so
+    // sweeping the guest's own subnet can never find it.
+    final asked = <String>[];
+    final l = DevHostLocator(
+      probe: (host, port, timeout) async {
+        asked.add(host);
+        return host == '10.0.2.2';
+      },
+      subnets: () async => const ['192.168.232'],
+      aliases: DevHostLocator.androidEmulatorAliases,
+    );
+
+    expect(await l.resolve('http://localhost:5050'), 'http://10.0.2.2:5050');
+    expect(asked, ['127.0.0.1', '10.0.2.2'], reason: 'no sweep was needed');
+  });
+
+  test('an alias that answers nothing still leaves the sweep to work', () async {
+    final asked = <String>[];
+    final l = DevHostLocator(
+      probe: (host, port, timeout) async {
+        asked.add(host);
+        return host == '192.168.1.24';
+      },
+      subnets: () async => const ['192.168.1'],
+      aliases: DevHostLocator.androidEmulatorAliases,
+    );
+
+    expect(await l.resolve('http://localhost:5050'), 'http://192.168.1.24:5050');
+    expect(asked.take(3), ['127.0.0.1', '10.0.2.2', '10.0.3.2']);
+  });
+
   test('returns the URL untouched when nothing answers', () async {
     final l = locator();
     expect(await l.resolve('http://localhost:5050'), 'http://localhost:5050');

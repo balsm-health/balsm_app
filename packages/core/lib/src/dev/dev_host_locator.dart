@@ -24,10 +24,12 @@ class DevHostLocator {
   DevHostLocator({
     Future<bool> Function(String host, int port, Duration timeout)? probe,
     Future<List<String>> Function()? subnets,
+    List<String>? aliases,
     this.probeTimeout = const Duration(milliseconds: 400),
     this.sweepBatch = 32,
   })  : _probe = probe ?? _healthProbe,
-        _subnets = subnets ?? _localSubnets;
+        _subnets = subnets ?? _localSubnets,
+        aliases = aliases ?? defaultAliases;
 
   final Future<bool> Function(String host, int port, Duration timeout) _probe;
   final Future<List<String>> Function() _subnets;
@@ -41,6 +43,23 @@ class DevHostLocator {
   final int sweepBatch;
 
   static const Set<String> loopback = {'localhost', '127.0.0.1', '::1'};
+
+  /// Addresses that mean "the machine running the emulator".
+  ///
+  /// An Android emulator does not share a network with its host: the AVD's
+  /// Wi-Fi sits on 192.168.232.0/24 and the host is not on it, reachable only
+  /// through an alias the emulator special-cases — 10.0.2.2 for the standard
+  /// AVD, 10.0.3.2 for Genymotion. Sweeping the guest's own subnet can never
+  /// find the host, so these are asked directly.
+  static const List<String> androidEmulatorAliases = ['10.0.2.2', '10.0.3.2'];
+
+  /// [androidEmulatorAliases] on Android, nothing elsewhere. A real handset
+  /// pays one refused connection for them, which is cheaper than the sweep
+  /// they save on an emulator.
+  static List<String> get defaultAliases => Platform.isAndroid ? androidEmulatorAliases : const [];
+
+  /// Tried after the cheap candidates and before the sweep.
+  final List<String> aliases;
 
   /// The host found last time, tried first on the next lookup.
   ///
@@ -65,13 +84,13 @@ class DevHostLocator {
   /// The machine answering on [port], or null.
   ///
   /// Ordered by how likely each candidate is and how much it costs to ask:
-  /// the last known host, then whatever the caller preferred (a `DEV_HOST`
-  /// baked in at launch, say), then loopback itself — which is the right
-  /// answer on a simulator and on desktop, and fails in a millisecond
-  /// everywhere else — and only then the sweep.
+  /// the last known host, then whatever the caller preferred, then loopback
+  /// itself — the right answer on a simulator and on desktop, and a failure in
+  /// a millisecond everywhere else — then the emulator [aliases], and only
+  /// then the sweep.
   Future<String?> find(int port, {String? preferred}) async {
     final started = DateTime.now();
-    for (final candidate in [lastKnown, preferred, '127.0.0.1']) {
+    for (final candidate in [lastKnown, preferred, '127.0.0.1', ...aliases]) {
       if (candidate == null || candidate.isEmpty) continue;
       if (await _probe(candidate, port, probeTimeout)) {
         lastKnown = candidate;
