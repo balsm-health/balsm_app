@@ -3,26 +3,84 @@ import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 
-/// Debug-only Dio interceptor that logs the FULL request and response —
-/// method, URL, every header, and the complete body — to the dev console
-/// (`dart:developer.log`, tag `balsm.http`). Nothing is scrubbed or redacted.
+/// Debug-only Dio interceptor that logs the request and response — method,
+/// URL, headers, and body — to the dev console (`dart:developer.log`, tag
+/// `balsm.http`), with credentials replaced.
 ///
-/// DEBUG BUILDS ONLY. It is wired in `BalsmApiController.create` behind
-/// `kDebugMode`, and added AFTER the auth interceptor so the outgoing bearer
-/// token is visible in the request log. It prints PHI and access/refresh
-/// tokens verbatim — NEVER enable it in a release build.
+/// Credentials are redacted because this log is made to be pasted: into a
+/// terminal, a bug report, a chat with whoever is helping. A bearer token, a
+/// password, or a one-time code that reaches any of those places has left the
+/// device, and none of them are needed to debug the request that carried them.
+/// Everything else prints in full, including PHI — so this is still DEBUG
+/// BUILDS ONLY. It is wired in `BalsmApiController.create` behind
+/// `kDebugMode`.
 class HttpLogInterceptor extends Interceptor {
   const HttpLogInterceptor();
 
   static const _name = 'balsm.http';
   static const _encoder = JsonEncoder.withIndent('  ');
 
+  /// Stands in for any value that must not be printed.
+  static const redacted = '••• redacted •••';
+
+  /// Body keys whose value is a credential. Matched case-insensitively and by
+  /// containment, so `new_password`, `refreshToken` and `id_token` are covered
+  /// without listing every spelling the API uses.
+  static const _secretKeyParts = [
+    'password',
+    'token',
+    'secret',
+    'code',
+    'authorization',
+    'cookie',
+  ];
+
+  static bool _isSecret(Object? key) {
+    final k = key.toString().toLowerCase();
+    return _secretKeyParts.any(k.contains);
+  }
+
+  /// [data] with every credential value replaced.
+  ///
+  /// Maps and lists are walked; anything else is returned untouched rather
+  /// than guessed at — a redactor that mangles an unrecognised body makes the
+  /// log useless for the case you most need it.
+  static Object? redactBody(Object? data) {
+    if (data is Map) {
+      return {
+        for (final entry in data.entries) entry.key: _isSecret(entry.key) ? redacted : redactBody(entry.value),
+      };
+    }
+    if (data is List) return [for (final item in data) redactBody(item)];
+    return data;
+  }
+
+  /// [headers] with credential values replaced, keeping the auth scheme —
+  /// knowing a request went out as `Bearer` with no token attached is often
+  /// the whole answer.
+  static Map<String, dynamic> redactHeaders(Map<String, dynamic> headers) => {
+        for (final entry in headers.entries)
+          entry.key: !_isSecret(entry.key)
+              ? entry.value
+              : entry.key.toLowerCase().contains('authorization')
+                  ? _schemeOnly(entry.value)
+                  : redacted,
+      };
+
+  /// `Bearer <token>` → `Bearer •••`. Only for Authorization, where the scheme
+  /// is the useful half; a cookie has no such split and is replaced whole.
+  static String _schemeOnly(Object? value) {
+    final raw = value is List ? value.join(', ') : value.toString();
+    final space = raw.indexOf(' ');
+    return space > 0 ? '${raw.substring(0, space)} $redacted' : redacted;
+  }
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     options.extra['_log_ts'] = DateTime.now().microsecondsSinceEpoch;
     final b = StringBuffer('→ ${options.method} ${options.uri}');
-    _headers(b, options.headers);
-    _body(b, options.data);
+    _headers(b, redactHeaders(options.headers));
+    _body(b, redactBody(options.data));
     b.write('\n  curl: ${_curl(options)}');
     developer.log(b.toString(), name: _name, level: 700);
     handler.next(options);
@@ -32,8 +90,8 @@ class HttpLogInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     final o = response.requestOptions;
     final b = StringBuffer('← ${response.statusCode} ${o.method} ${o.uri}${_elapsed(o)}');
-    _headers(b, response.headers.map);
-    _body(b, response.data);
+    _headers(b, redactHeaders(response.headers.map));
+    _body(b, redactBody(response.data));
     developer.log(b.toString(), name: _name, level: 800);
     handler.next(response);
   }
@@ -44,22 +102,23 @@ class HttpLogInterceptor extends Interceptor {
     final res = err.response;
     final b = StringBuffer('✗ ${res?.statusCode ?? err.type.name} ${o.method} ${o.uri}${_elapsed(o)}');
     if (res != null) {
-      _headers(b, res.headers.map);
-      _body(b, res.data);
+      _headers(b, redactHeaders(res.headers.map));
+      _body(b, redactBody(res.data));
     }
     developer.log(b.toString(), name: _name, level: 1000, error: err.message);
     handler.next(err);
   }
 
-  /// Appends every header verbatim (string or `List<String>` values).
+  /// Appends headers (string or `List<String>` values) as given — callers pass
+  /// them through [redactHeaders] first.
   void _headers(StringBuffer b, Map<String, dynamic> headers) {
     if (headers.isEmpty) return;
     b.write('\n  headers:');
     headers.forEach((k, v) => b.write('\n    $k: ${v is List ? v.join(', ') : v}'));
   }
 
-  /// Appends the full body, pretty-printed for maps/lists, indented under the
-  /// log line. No fields are omitted.
+  /// Appends the body, pretty-printed for maps/lists, indented under the log
+  /// line. Callers pass it through [redactBody] first.
   void _body(StringBuffer b, Object? data) {
     if (data == null) return;
     String out;
@@ -84,16 +143,17 @@ class HttpLogInterceptor extends Interceptor {
     return ' (${ms.toStringAsFixed(0)}ms)';
   }
 
-  /// Builds a copy-pasteable `curl` equivalent of [options] — method, every
-  /// header, and the body verbatim. Same no-redaction policy as the rest of
-  /// this interceptor: the bearer token and any PHI print in full.
+  /// Builds a copy-pasteable `curl` equivalent of [options]. Credentials are
+  /// redacted here too — this is the line most likely to be pasted somewhere,
+  /// and a runnable command carrying a live bearer token is exactly the
+  /// accident worth preventing. Replace the placeholders to run it.
   String _curl(RequestOptions options) {
     final b = StringBuffer('curl -X ${options.method} ${_shQuote(options.uri.toString())}');
-    options.headers.forEach((k, v) {
+    redactHeaders(options.headers).forEach((k, v) {
       final value = v is List ? v.join(', ') : v.toString();
       b.write(' \\\n    -H ${_shQuote('$k: $value')}');
     });
-    final data = options.data;
+    final data = redactBody(options.data);
     if (data != null) {
       String body;
       if (data is Map || data is List) {
