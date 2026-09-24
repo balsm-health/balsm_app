@@ -2,17 +2,6 @@
   "version": "2.0.0",
   "tasks": [
     {
-      // Writes app/env/dev_host.json so a device build reaches this machine
-      // instead of its own localhost. Runs before every debug launch.
-      "label": "Flutter: dev host",
-      "type": "shell",
-      "command": "${workspaceFolder}/bin/balsm",
-      "args": [
-        "devhost"
-      ],
-      "problemMatcher": []
-    },
-    {
       "label": "Flutter: code generation",
       "type": "shell",
       "command": "${workspaceFolder}/bin/balsm",

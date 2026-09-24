@@ -59,35 +59,24 @@ A phone's `localhost` is the phone, so a `Local` preset reaches nothing from a
 device on the desk — and nothing on the handset knows which machine is serving
 it. The app therefore **asks the network, at runtime**: `DevHostLocator` sweeps
 the device's own subnet for a machine answering `/api/v1/health` on the
-preset's port, and points the client at the first one that does. Debug builds
-only; a URL that names a real host is never probed and never rewritten.
+preset's port, and points the client at the first one that does. Candidates
+are tried cheapest first — the host found last time, then loopback itself,
+which is the right answer on a simulator and on desktop — so the usual case
+never sweeps.
 
-Because it happens at runtime rather than at compile time, moving between
-Wi-Fi networks or picking up a new DHCP lease costs a reconnect, not a
-rebuild. A connection failure mid-session re-runs the lookup and replays the
-request once (`DevHostInterceptor`), so the app follows the server when it
-moves under a running session.
+Nothing is configured, and nothing is compiled in: moving between Wi-Fi
+networks or picking up a new DHCP lease costs a reconnect, not a rebuild. A
+connection failure mid-session re-runs the lookup and replays the request once
+(`DevHostInterceptor`), so the app follows the server when it moves under a
+running session.
 
-Order of candidates, cheapest first: the host found last time, then `DEV_HOST`
-if the launch compiled one in, then loopback itself — which is the right
-answer on a simulator and on desktop — and only then the sweep.
+Debug builds only, and only for a loopback URL: a staging or production URL is
+never probed and never rewritten.
 
-`DEV_HOST` is that optional hint, not a rewrite: `bin/balsm run` and the
-`Flutter: dev host` preLaunchTask write this machine's address into
-`app/env/dev_host.json` (git-ignored, generated), which both launch paths pass
-with `--dart-define-from-file`. It turns the usual case into one request
-instead of a sweep, and a stale value costs one failed probe.
-
-```bash
-bin/balsm run balsm dev                      # writes the hint, then launches
-bin/balsm run balsm dev --dev-host=mac.local # mDNS name instead of an address
-bin/balsm run balsm dev --dev-host=off       # no hint; the sweep does the work
-bin/balsm devhost                            # rewrite the hint, launch nothing
-```
-
-Two things still have to be true on this machine: the API listens on all
-interfaces (`http://0.0.0.0:5050`, not `localhost:5050`), and the firewall
-lets the port through — the sweep finds nothing that is not actually
-reachable. iOS is already set up for it: `NSAllowsLocalNetworking` and
+Two things have to be true on the machine serving: the API listens on all
+interfaces (`http://0.0.0.0:5050`, not `localhost:5050`), and the firewall lets
+the port through — the sweep finds nothing that is not actually reachable. iOS
+is already set up for it: `NSAllowsLocalNetworking` and
 `NSLocalNetworkUsageDescription` are in `Info.plist`, and the phone asks once
-for local-network permission.
+for local-network permission. Refusing that prompt leaves the sweep with
+nothing to find.

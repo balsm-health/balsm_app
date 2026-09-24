@@ -56,17 +56,7 @@ class BalsmApiController {
   ///
   /// On a simulator or desktop that is loopback itself and the lookup costs one
   /// local request. On a device it is the machine on the desk, found by sweep.
-  /// `DEV_HOST`, when a launch compiled one in, is offered as the first guess
-  /// so the usual case never sweeps at all.
-  Future<String> _resolve(String url) {
-    // DEV_HOST is a guess to try first, never a rewrite: it was true when the
-    // build launched, and the whole point of looking at runtime is that it
-    // stops being true. Applying it blindly would hide a moved server behind
-    // an address that no longer answers.
-    final preferred =
-        FlavorConfig.current.flavor == Flavor.prod || FlavorConfig.devHost.isEmpty ? null : FlavorConfig.devHost;
-    return _devHost.resolve(url, preferred: preferred);
-  }
+  Future<String> _resolve(String url) => _devHost.resolve(url);
 
   /// Looks the host up again and repoints the client.
   ///

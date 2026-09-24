@@ -89,36 +89,6 @@ class FlavorConfig {
 
   bool get isPro => brand == AppBrand.balsm_pro;
 
-  /// The dev machine's own address on the LAN, injected at launch by
-  /// `bin/balsm run` (`--dart-define=DEV_HOST=…`). Empty in every build that
-  /// did not ask for it, which is every release build.
-  static const String devHost = String.fromEnvironment('DEV_HOST', defaultValue: '');
-
-  static const Set<String> _loopback = {'localhost', '127.0.0.1', '::1'};
-
-  /// Points a loopback URL at the dev machine instead.
-  ///
-  /// A phone's `localhost` is the phone, so a `http://localhost:5050` preset
-  /// reaches nothing from a device on the desk. [devHost] carries the address
-  /// the desktop actually answers on; scheme, port and path are preserved, and
-  /// a URL whose host is not loopback is returned untouched. An empty
-  /// [devHost] — a CI build, a plain `flutter run`, a release — is a no-op, so
-  /// this only ever changes a build that asked for it.
-  static String resolveDevHost(String url, {String? host}) {
-    final h = (host ?? devHost).trim();
-    if (h.isEmpty) return url;
-    final uri = Uri.tryParse(url);
-    if (uri == null || !_loopback.contains(uri.host)) return url;
-    return uri.replace(host: h).toString();
-  }
-
-  /// [resolveDevHost], refused in prod.
-  ///
-  /// Nothing should ever repoint a production build, and a prod binary that
-  /// somehow carries a `DEV_HOST` define is a mistake worth ignoring rather
-  /// than honouring.
-  String withDevHost(String url) => flavor == Flavor.prod ? url : resolveDevHost(url);
-
   static AppBrand brandFromString(String? s) => s == 'balsm_pro' ? AppBrand.balsm_pro : AppBrand.balsm;
   static Flavor flavorFromString(String? s) => switch (s) {
         'prod' => Flavor.prod,
@@ -181,14 +151,7 @@ class FlavorConfig {
     const envSocialSignInEnabled = bool.fromEnvironment('SOCIAL_SIGN_IN_ENABLED');
     const envGoogleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
     const envGoogleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID', defaultValue: '');
-    final parsed = (servers != null && servers.isNotEmpty) ? servers : _parseServers(serversRaw);
-    // Rewritten here rather than at the call site so every reader — the boot
-    // default, the Dev Config list, a test — sees the same set of servers.
-    final resolved = flavor == Flavor.prod
-        ? parsed
-        : [
-            for (final p in parsed) ServerPreset(label: p.label, apiBaseUrl: resolveDevHost(p.apiBaseUrl)),
-          ];
+    final resolved = (servers != null && servers.isNotEmpty) ? servers : _parseServers(serversRaw);
     final base = brand == AppBrand.balsm_pro ? 'Balsm Pro' : 'Balsm';
     final envSuffix = switch (flavor) { Flavor.dev => ' Dev', Flavor.staging => ' Staging', Flavor.prod => '' };
     _current = FlavorConfig(
