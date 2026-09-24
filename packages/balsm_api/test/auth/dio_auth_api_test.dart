@@ -63,7 +63,7 @@ void main() {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"code": "otp_expired"}', status: 400));
     final api = DioAuthApi(net: fakeNet(adapter));
     expect(
-      api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG', purpose: OtpPurpose.register)),
+      api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG', purpose: OtpPurpose.continueFlow)),
       throwsA(isA<ApiException>().having((e) => e.code, 'code', 'otp_expired')),
     );
   });
