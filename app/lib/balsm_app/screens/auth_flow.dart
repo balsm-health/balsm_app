@@ -152,7 +152,6 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                     const SizedBox(height: 30),
                     PButton(s.strings.onboarding.w_start(s.gender),
                         variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
-                      s.setAuthIntent(AuthIntent.signUp);
                       s.go(AppRoutes.phone);
                     }),
                     const SizedBox(height: 16),
@@ -178,19 +177,6 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                           style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 12),
                     ],
-                    GestureDetector(
-                      onTap: () {
-                        s.setAuthIntent(AuthIntent.signIn);
-                        s.go(AppRoutes.phone);
-                      },
-                      child: RichText(
-                          text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
-                        TextSpan(text: '${s.strings.onboarding.w_have} '),
-                        TextSpan(
-                            text: s.strings.onboarding.w_signin,
-                            style: TextStyle(color: s.accent.main, fontWeight: FontWeight.w700)),
-                      ])),
-                    ),
                   ]),
                 ),
               ),
@@ -478,6 +464,10 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   // in [CredentialsController].
   final ctrl = TextEditingController();
   final pwCtrl = TextEditingController();
+
+  /// Set when the password was refused: the screen then asks whether to send a
+  /// code rather than sending one on its own.
+  bool _offerCode = false;
   bool _showPw = false;
 
   bool get _submitting => ref.read(credentialsControllerProvider).submitting;
@@ -513,33 +503,56 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     );
   }
 
+  /// One entry for everyone: try the password, and on a plain refusal offer a
+  /// code instead.
+  ///
+  /// The refusal covers three server-side realities — no account, an account
+  /// with no password, a wrong password — and deliberately does not say which.
+  /// So this branches on "sign-in failed", never on "account exists", and the
+  /// step that follows reads identically in every case.
   Future<void> _continue() async {
     final s = AppScope.of(context);
-    final isSignup = s.authIntent == AuthIntent.signUp;
     final address = ctrl.text.trim();
     final controller = ref.read(credentialsControllerProvider.notifier);
 
-    if (!isSignup) {
-      final ok = await controller.signIn(email: address, password: pwCtrl.text);
-      if (!mounted) return;
-      if (ok) {
-        // Credentials are proven good — this is what raises the platform
-        // "Save password?" prompt. Nothing before this point should, or a
-        // typo gets offered to the keychain.
-        TextInput.finishAutofillContext();
-        s.setAuthContact(method: AuthMethod.email, email: address);
-        unawaited(enterAfterSignIn(context, ref, s));
-      } else {
-        // Wrong password / lockout: discard, so the OS does not offer to save.
-        TextInput.finishAutofillContext(shouldSave: false);
-      }
+    final ok = await controller.signIn(email: address, password: pwCtrl.text);
+    if (!mounted) return;
+    if (ok) {
+      // Credentials are proven good — this is what raises the platform
+      // "Save password?" prompt. Nothing before this point should, or a
+      // typo gets offered to the keychain.
+      TextInput.finishAutofillContext();
+      s.setAuthContact(method: AuthMethod.email, email: address);
+      unawaited(enterAfterSignIn(context, ref, s));
       return;
     }
 
-    final ok = await controller.requestSignupOtp(email: address, countryCode: s.country.value);
+    // Nothing proven: never offer the typed password to the keychain.
+    TextInput.finishAutofillContext(shouldSave: false);
+
+    // A lockout is not an invalid credential, and neither is an unreachable
+    // server. Offering a code for either would walk around the lockout, or
+    // email someone because the Wi-Fi dropped.
+    final error = ref.read(credentialsControllerProvider).error;
+    if (error == null || error.kind != AuthErrorKind.invalidCredentials) return;
+
+    setState(() => _offerCode = true);
+  }
+
+  /// Sends the code the patient just asked for, then moves to the code step.
+  Future<void> _sendCode() async {
+    final s = AppScope.of(context);
+    final address = ctrl.text.trim();
+    final ok = await ref
+        .read(credentialsControllerProvider.notifier)
+        .requestContinueOtp(email: address, countryCode: s.country.value);
     if (!mounted || !ok) return;
     s.setAuthContact(method: AuthMethod.email, email: address);
+    // Held only for the length of the flow: if the code proves a NEW account
+    // it becomes that account's password, and if it proves an existing one the
+    // patient is asked whether to adopt it. Cleared either way.
     s.setAuthPassword(pwCtrl.text);
+    setState(() => _offerCode = false);
     s.go(AppRoutes.otp);
   }
 
@@ -548,7 +561,6 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     final s = AppScope.of(context);
     // Subscribe: the bridge getters above read this provider's current state.
     ref.watch(credentialsControllerProvider);
-    final isSignup = s.authIntent == AuthIntent.signUp;
     return Container(
       color: T.cream50,
       // Groups the email and password fields into one credential set, so the
@@ -565,11 +577,11 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const SizedBox(height: 18),
-                Text(isSignup ? s.strings.emergency.em_pw_signup_title : s.strings.emergency.em_pw_title,
-                    style: Typo.title(ar: s.rtl)),
+                // One title for both audiences. Which one this patient is, the
+                // screen is not told and must not imply.
+                Text(s.strings.emergency.em_one_title, style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 8),
-                Text(isSignup ? s.strings.emergency.em_pw_signup_help : s.strings.emergency.em_pw_help,
-                    style: Typo.body(ar: s.rtl)),
+                Text(s.strings.emergency.em_one_help, style: Typo.body(ar: s.rtl)),
                 const SizedBox(height: 24),
                 _Label(s.strings.emergency.em_label, ar: s.rtl),
                 const SizedBox(height: 8),
@@ -585,12 +597,13 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 const SizedBox(height: 16),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   _Label(s.strings.auth.pw_label, ar: s.rtl),
-                  if (!isSignup)
-                    GestureDetector(
-                      onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
-                      child: Text(s.strings.auth.forgot_pw,
-                          style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
-                    ),
+                  // Shown to everyone now: the screen does not know whether
+                  // this address has a password to forget.
+                  GestureDetector(
+                    onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
+                    child: Text(s.strings.auth.forgot_pw,
+                        style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                  ),
                 ]),
                 const SizedBox(height: 8),
                 _Input(
@@ -600,9 +613,10 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     obscure: !_showPw,
                     forceLtr: true,
                     accent: s.accent,
-                    // newPassword is what makes iOS offer to GENERATE a strong
-                    // one on sign-up; password asks it to fill an existing.
-                    autofillHints: [isSignup ? AutofillHints.newPassword : AutofillHints.password],
+                    // `password`, not `newPassword`: the screen cannot know
+                    // this is a signup, and asking iOS to generate a strong one
+                    // for a returning patient would fight their saved entry.
+                    autofillHints: const [AutofillHints.password],
                     suffixIcon: GestureDetector(
                       onTap: () => setState(() => _showPw = !_showPw),
                       child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
@@ -620,13 +634,33 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                         textAlign: TextAlign.center,
                         style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
                   ),
+                // The password was refused. Ask before sending anything: a
+                // mistyped password would otherwise email whoever owns that
+                // address, every time.
+                if (_offerCode) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      s.strings.emergency.em_send_code_q(ctrl.text.trim()),
+                      textAlign: TextAlign.center,
+                      style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5),
+                    ),
+                  ),
+                  PButton(
+                    s.strings.emergency.em_send_code,
+                    variant: BtnVariant.primary,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _submitting ? null : _sendCode,
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 Opacity(
                     opacity: ok && !_submitting ? 1 : 0.4,
-                    child: PButton(
-                        _submitting && !isSignup
-                            ? s.strings.auth.pw_signing_in
-                            : (isSignup ? s.strings.auth.pw_signup : s.strings.auth.pw_signin),
-                        variant: BtnVariant.primary,
+                    child: PButton(_submitting ? s.strings.auth.pw_signing_in : s.strings.auth.pw_continue,
+                        variant: _offerCode ? BtnVariant.secondary : BtnVariant.primary,
                         large: true,
                         block: true,
                         accent: s.accent,
@@ -689,6 +723,60 @@ Future<void> enterAfterSignIn(BuildContext context, WidgetRef ref, PatientAppSta
   if (didAccept == true) s.go(AppRoutes.app);
 }
 
+/// Asked once, after a code signed an EXISTING account in: should the password
+/// typed a moment ago become this account's password?
+///
+/// Separate and explicit because the two things are not the same act. The code
+/// proved the mailbox; it did not say "replace my credentials". Someone who
+/// simply mistyped their password would otherwise lose the one they have.
+class _AdoptPasswordSheet extends StatelessWidget {
+  const _AdoptPasswordSheet({required this.s});
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = s.strings.emergency;
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        const SheetGrab(),
+        const SizedBox(height: 16),
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 24)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(c.em_adopt_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(c.em_adopt_help, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
+            const SizedBox(height: 20),
+            PButton(
+              c.em_adopt_yes,
+              variant: BtnVariant.primary,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, true),
+            ),
+            const SizedBox(height: 8),
+            PButton(
+              c.em_adopt_no,
+              variant: BtnVariant.secondary,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, false),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
 // ── OTP ──────────────────────────────────────────────────────
 class _OtpScreen extends ConsumerStatefulWidget {
   const _OtpScreen();
@@ -700,6 +788,17 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
   // View state only: input + focus. Countdown/verify live in [OtpController].
   final ctrl = TextEditingController();
   final focus = FocusNode();
+
+  /// Set when the session is fine but something after it was not — a password
+  /// that failed to save. Not an auth error, so it does not clear the boxes.
+  String? _notice;
+
+  /// Asks whether to adopt the password typed before the code was requested.
+  /// Null when the sheet is dismissed, which means no.
+  Future<bool?> _askAdoptPassword(PatientAppState s) => showAppSheet<bool>(
+        context,
+        builder: (_) => _AdoptPasswordSheet(s: s),
+      );
 
   int get secs => ref.read(otpControllerProvider).secs;
   bool get _verifying => ref.read(otpControllerProvider).verifying;
@@ -738,14 +837,29 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
     }
   }
 
-  /// Post-verify navigation. On the password sign-up path a password was stashed
-  /// on the app state — the session now exists, so apply it via setPassword
-  /// (best-effort: the account is already usable regardless) before routing.
+  /// Post-verify navigation, and what becomes of the password that was typed
+  /// before the code was asked for.
+  ///
+  /// A new account keeps it: they chose it a moment ago and never typed it
+  /// twice. An existing account is ASKED. Verifying a code proves the mailbox,
+  /// not an intent to change credentials — silently adopting whatever was in
+  /// the password field would let a typo replace a working password for good.
   Future<void> _afterVerify(PatientAppState s, {required bool isNewUser}) async {
     final pw = s.authPassword;
+    s.setAuthPassword(null); // transient either way — never persisted
     if (pw != null && pw.isNotEmpty) {
-      await ref.read(signInUseCaseProvider).setPassword(password: pw);
-      s.setAuthPassword(null); // clear the transient password
+      final apply = isNewUser || (await _askAdoptPassword(s) ?? false);
+      if (!mounted) return;
+      if (apply) {
+        final result = await ref.read(signInUseCaseProvider).setPassword(password: pw);
+        if (!mounted) return;
+        if (result.isFailure) {
+          // The account exists and the session is live; only the password did
+          // not stick. Say so rather than let them find out next launch.
+          setState(
+              () => _notice = isNewUser ? s.strings.emergency.em_pw_set_failed : s.strings.emergency.em_adopt_failed);
+        }
+      }
     }
     if (!mounted) return;
     // Design 2026-09: the profile-setup step left the registration flow. A new
@@ -785,9 +899,17 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                 const SizedBox(height: 8),
                 RichText(
                     text: TextSpan(style: Typo.body(ar: s.rtl), children: [
-                  TextSpan(text: '${s.strings.emergency.em_otp_h} '),
+                  // Says nothing about whether this address has an account.
+                  // The screen is reached identically either way, and the copy
+                  // is the last place that distinction could leak.
+                  TextSpan(text: '${s.strings.emergency.em_otp_neutral_h} '),
                   TextSpan(text: contact, style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
                 ])),
+                if (_notice != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_notice!,
+                      style: Typo.meta(ar: s.rtl).copyWith(color: T.sun500, fontWeight: FontWeight.w600, height: 1.5)),
+                ],
                 const SizedBox(height: 28),
                 GestureDetector(
                   onTap: () => focus.requestFocus(),

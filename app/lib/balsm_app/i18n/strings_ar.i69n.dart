@@ -106,6 +106,7 @@ class AuthStrings_ar extends AuthStrings {
   String get pw_label => "كلمة المرور";
   String get pw_ph => "أدخل كلمة المرور";
   String get forgot_pw => "نسيت كلمة المرور؟";
+  String get pw_continue => "متابعة";
   String get pw_signin => "تسجيل الدخول";
   String get pw_signup => "إنشاء حساب";
   String get pw_signing_in => "جارٍ تسجيل الدخول…";
@@ -174,6 +175,8 @@ class AuthStrings_ar extends AuthStrings {
         return pw_ph;
       case 'forgot_pw':
         return forgot_pw;
+      case 'pw_continue':
+        return pw_continue;
       case 'pw_signin':
         return pw_signin;
       case 'pw_signup':
@@ -1143,6 +1146,24 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get em_fire => "الإطفاء والإنقاذ";
   String get em_tourist => "شرطة السياحة";
   String get emergency => "الطوارئ";
+  String get em_one_title => "تسجيل الدخول أو إنشاء حساب";
+  String get em_one_help =>
+      "أدخل بريدك وكلمة مرور. جديد هنا؟ سنرسل رمزاً إلى بريدك لتأكيده.";
+  String em_send_code_q(String email) =>
+      "تعذّر ذلك. نرسل رمزاً إلى $email للمتابعة؟";
+  String get em_send_code => "أرسل لي رمزاً";
+  String get em_otp_neutral_h =>
+      "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
+  String get em_adopt_title => "نستخدم كلمة المرور هذه من الآن؟";
+  String get em_adopt_help =>
+      "سجّلت الدخول برمز. احفظ كلمة المرور التي كتبتها لتعمل في المرة القادمة.";
+  String get em_adopt_yes => "احفظ كلمة المرور";
+  String get em_adopt_no => "أبقِ الحالية";
+  String get em_adopt_saved => "تم تحديث كلمة المرور.";
+  String get em_adopt_failed =>
+      "تعذّر حفظ كلمة المرور. يمكنك ضبطها من الإعدادات.";
+  String get em_pw_set_failed =>
+      "حسابك جاهز، لكن لم تُحفظ كلمة المرور. اضبطها من الإعدادات.";
   String get em_pw_title => "أهلاً بعودتك";
   String get em_pw_help => "أدخل كلمة المرور لتسجيل الدخول.";
   String get em_pw_signup_title => "أنشئ حسابك";
@@ -1217,6 +1238,30 @@ class EmergencyStrings_ar extends EmergencyStrings {
         return em_tourist;
       case 'emergency':
         return emergency;
+      case 'em_one_title':
+        return em_one_title;
+      case 'em_one_help':
+        return em_one_help;
+      case 'em_send_code_q':
+        return em_send_code_q;
+      case 'em_send_code':
+        return em_send_code;
+      case 'em_otp_neutral_h':
+        return em_otp_neutral_h;
+      case 'em_adopt_title':
+        return em_adopt_title;
+      case 'em_adopt_help':
+        return em_adopt_help;
+      case 'em_adopt_yes':
+        return em_adopt_yes;
+      case 'em_adopt_no':
+        return em_adopt_no;
+      case 'em_adopt_saved':
+        return em_adopt_saved;
+      case 'em_adopt_failed':
+        return em_adopt_failed;
+      case 'em_pw_set_failed':
+        return em_pw_set_failed;
       case 'em_pw_title':
         return em_pw_title;
       case 'em_pw_help':

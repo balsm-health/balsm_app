@@ -33,41 +33,28 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('welcome → Get started opens sign-up, not sign-in', (tester) async {
+  testWidgets('welcome → one screen serves everyone', (tester) async {
     final state = PatientAppState();
     await pumpAuth(tester, state);
 
     expect(find.text('Get started'), findsOneWidget);
+    // The separate sign-in route is gone: sign-up and sign-in merged into one
+    // email+password screen that falls back to an emailed code.
+    expect(find.textContaining('I already have an account', findRichText: true), findsNothing);
 
-    // Get started sets AuthIntent.signUp, so this is account creation: no
-    // "Forgot password?" (there is no account yet) and the button says so.
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
-    expect(find.text('Create your account'), findsOneWidget);
-    expect(find.text('Password'), findsWidgets);
-    expect(find.text('Sign up'), findsOneWidget);
-    expect(find.text('Forgot password?'), findsNothing);
 
-    // DOB is NOT asked here. The age gate and date of birth live on profile
-    // setup, and asking at sign-up would collect PHI before the account
-    // exists.
-    expect(find.text('Date of birth'), findsNothing);
-  });
-
-  testWidgets('welcome → I already have an account opens sign-in', (tester) async {
-    final state = PatientAppState();
-    await pumpAuth(tester, state);
-
-    // One RichText — "I already have an account" plus an accented "Sign in" —
-    // so find.text, which only sees whole Text widgets, matches nothing.
-    await tester.tap(find.textContaining('I already have an account', findRichText: true));
-    await tester.pumpAndSettle();
-
-    // The same screen under AuthIntent.signIn: a returning patient, so
-    // password recovery appears and the button changes.
-    expect(find.text('Welcome back'), findsOneWidget);
+    // Copy that names neither audience — which one this patient is, the screen
+    // is not told and must not imply.
+    expect(find.text('Sign in or create an account'), findsOneWidget);
+    expect(find.text('Create your account'), findsNothing);
+    expect(find.text('Welcome back'), findsNothing);
     expect(find.text('Forgot password?'), findsOneWidget);
-    expect(find.text('Sign in'), findsWidgets);
+
+    // DOB is NOT asked here. The age gate lives on profile setup, and asking
+    // sooner would collect PHI before the account exists.
+    expect(find.text('Date of birth'), findsNothing);
   });
 
   testWidgets('welcome shows the language pill and toggles AR ⇄ EN', (tester) async {

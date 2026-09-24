@@ -102,6 +102,7 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get pw_label => "Password";
   String get pw_ph => "Enter your password";
   String get forgot_pw => "Forgot password?";
+  String get pw_continue => "Continue";
   String get pw_signin => "Sign in";
   String get pw_signup => "Sign up";
   String get pw_signing_in => "Signing in…";
@@ -169,6 +170,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return pw_ph;
       case 'forgot_pw':
         return forgot_pw;
+      case 'pw_continue':
+        return pw_continue;
       case 'pw_signin':
         return pw_signin;
       case 'pw_signup':
@@ -1140,6 +1143,23 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get em_fire => "Fire & rescue";
   String get em_tourist => "Tourist police";
   String get emergency => "Emergency";
+  String get em_one_title => "Sign in or create an account";
+  String get em_one_help =>
+      "Enter your email and a password. New here? We'll email you a code to confirm the address.";
+  String em_send_code_q(String email) =>
+      "That didn't work. Send a code to $email to continue?";
+  String get em_send_code => "Send me a code";
+  String get em_otp_neutral_h => "Enter the 6-digit code we sent to";
+  String get em_adopt_title => "Use this password from now on?";
+  String get em_adopt_help =>
+      "You signed in with a code. Save the password you just typed so it works next time.";
+  String get em_adopt_yes => "Save this password";
+  String get em_adopt_no => "Keep my current one";
+  String get em_adopt_saved => "Password updated.";
+  String get em_adopt_failed =>
+      "Couldn't save the password. You can set one in Settings.";
+  String get em_pw_set_failed =>
+      "Your account is ready, but the password wasn't saved. Set one in Settings.";
   String get em_pw_title => "Welcome back";
   String get em_pw_help => "Enter your password to sign in.";
   String get em_pw_signup_title => "Create your account";
@@ -1214,6 +1234,30 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return em_tourist;
       case 'emergency':
         return emergency;
+      case 'em_one_title':
+        return em_one_title;
+      case 'em_one_help':
+        return em_one_help;
+      case 'em_send_code_q':
+        return em_send_code_q;
+      case 'em_send_code':
+        return em_send_code;
+      case 'em_otp_neutral_h':
+        return em_otp_neutral_h;
+      case 'em_adopt_title':
+        return em_adopt_title;
+      case 'em_adopt_help':
+        return em_adopt_help;
+      case 'em_adopt_yes':
+        return em_adopt_yes;
+      case 'em_adopt_no':
+        return em_adopt_no;
+      case 'em_adopt_saved':
+        return em_adopt_saved;
+      case 'em_adopt_failed':
+        return em_adopt_failed;
+      case 'em_pw_set_failed':
+        return em_pw_set_failed;
       case 'em_pw_title':
         return em_pw_title;
       case 'em_pw_help':
