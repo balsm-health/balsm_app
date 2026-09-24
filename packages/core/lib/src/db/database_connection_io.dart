@@ -5,13 +5,19 @@ import 'package:drift/native.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
+import 'package:sqlite3/open.dart';
 
 /// Load SQLCipher into this isolate so `sqlite3` `source: process` can resolve
 /// `sqlite3_initialize`. Android ships `libsqlcipher.so`; iOS/macOS ship
 /// `SQLCipher.framework` via CocoaPods.
 void _ensureSqlCipherLoaded() {
   if (Platform.isAndroid) {
-    openCipherOnAndroid();
+    // Calling `openCipherOnAndroid()` directly loads libsqlcipher.so but
+    // discards the handle, so sqlite3's native-assets FFI resolver still
+    // can't see `sqlite3_initialize` and falls back to a process-wide symbol
+    // lookup that fails (BALSM-APP-S). Registering it as the open override
+    // makes sqlite3 resolve against that handle instead.
+    open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
     return;
   }
   if (Platform.isIOS || Platform.isMacOS) {
