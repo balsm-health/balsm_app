@@ -100,3 +100,26 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
+
+// sqlcipher_flutter_libs 0.5.x pulls net.zetetic:android-database-sqlcipher,
+// whose libsqlcipher.so has 4 KB-aligned LOAD segments. Devices with 16 KB
+// pages refuse to run it natively, and Play requires 16 KB support — it is the
+// only library in a release build of this app that is not already aligned.
+//
+// The plugin's 0.6.x line does this swap itself, but it also moves the Apple
+// podspec to SQLCipher 4.10, and this app resolves sqlite3 symbols with
+// `source: process` (app/pubspec.yaml): with that pod the symbols stop being
+// reachable and the database cannot open. Doing it here keeps the fix on the
+// platform that needs it.
+//
+// Safe because nothing in this app touches the AAR's Java API. The plugin
+// exists so System.loadLibrary("sqlcipher") works and Dart dlopens the
+// library; the replacement ships the same libsqlcipher.so, exporting the same
+// sqlite3_* symbols.
+configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("net.zetetic:android-database-sqlcipher"))
+            .using(module("net.zetetic:sqlcipher-android:4.10.0"))
+            .because("16 KB page alignment; the old artifact is end-of-line at 4.5.4")
+    }
+}
