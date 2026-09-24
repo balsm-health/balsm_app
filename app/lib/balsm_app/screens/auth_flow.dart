@@ -11,6 +11,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
 import '../auth/auth_flow_controllers.dart';
+import '../dev/shake_to_dev_config.dart';
 import '../routes.dart';
 import '../assets.dart';
 import '../kit.dart';
@@ -209,31 +210,42 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                     _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
                   ]),
             ),
-            Pressable(
-              onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
-              child: Semantics(
-                button: true,
-                label: s.lang == LanguageCode.ar ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0x6B1A1A17),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0x52FFFFFF)),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.languages, size: 17, color: Colors.white),
-                    const SizedBox(width: 7),
-                    Text(
-                      s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
-                      style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
-                          .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Pressable(
+                onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
+                child: Semantics(
+                  button: true,
+                  label: s.lang == LanguageCode.ar ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
+                  child: Container(
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0x6B1A1A17),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0x52FFFFFF)),
                     ),
-                  ]),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.languages, size: 17, color: Colors.white),
+                      const SizedBox(width: 7),
+                      Text(
+                        s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
+                        style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
+                            .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ]),
+                  ),
                 ),
               ),
-            ),
+              // Dev Config, reachable before anyone signs in. The shake gesture
+              // opens the same screen, but a shake is not available on a
+              // simulator and not discoverable on a device, and the server this
+              // build talks to is the first thing that goes wrong. Never in
+              // prod: `serverSwitchingEnabled` is dev + staging only.
+              if (FlavorConfig.current.serverSwitchingEnabled) ...[
+                const SizedBox(width: 8),
+                _DevConfigPill(onClosed: () => setState(() {})),
+              ],
+            ]),
             const SizedBox(height: 4),
           ]),
         ),
@@ -251,6 +263,73 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
               style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
         ]),
       );
+}
+
+/// Opens Dev Config from the welcome screen, labelled with the server this
+/// build is actually talking to.
+///
+/// The host rather than the preset name: "Local" reads the same whether it
+/// resolved to this machine, to an emulator's host alias, or to nothing at
+/// all, and which one it is decides whether anything works. Shown only where
+/// the server can be switched — dev and staging — so it never reaches a
+/// patient.
+class _DevConfigPill extends ConsumerWidget {
+  const _DevConfigPill({required this.onClosed});
+
+  /// Dev Config can repoint the client while this pill is showing where it
+  /// points, so the caller rebuilds when it closes.
+  final VoidCallback onClosed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The live client where there is one, the configured default where there
+    // is not: a widget test or a docshots run builds this screen in a scope
+    // that never overrode the controller, and a dev affordance must not be
+    // what takes the welcome screen down.
+    String base;
+    try {
+      base = ref.watch(balsmApiControllerProvider).client.baseUrl;
+    } catch (_) {
+      base = FlavorConfig.current.defaultServer.apiBaseUrl;
+    }
+    final url = Uri.tryParse(base);
+    final label = url == null || url.host.isEmpty ? '?' : (url.hasPort ? '${url.host}:${url.port}' : url.host);
+
+    return Pressable(
+      onTap: () async {
+        await openDevConfig(context);
+        onClosed();
+      },
+      child: Semantics(
+        button: true,
+        label: 'Dev config',
+        child: Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0x6B1A1A17),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0x52FFFFFF)),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(LucideIcons.wrench, size: 16, color: Colors.white),
+            const SizedBox(width: 7),
+            // Narrow enough to sit beside the language pill on a 402px screen;
+            // a long staging host ellipsises rather than overflowing the row.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 132),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.bodySm().copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 /// Welcome `.wactions` hairline divider — `or` between 28% white rules.
