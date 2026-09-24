@@ -45,9 +45,18 @@ class BalsmApiController {
   }
 
   Future<void> reconfigure(ServerPreset preset) async {
+    // Repointed the same way a saved preset is on boot: picking "Local" in Dev
+    // Config, or typing a localhost URL into a custom environment, means this
+    // machine — which from a device on the desk is a LAN address, not its own
+    // loopback. Stored as chosen, so the rewrite follows the machine rather
+    // than being baked into secure storage.
+    final resolved = ServerPreset(
+      label: preset.label,
+      apiBaseUrl: FlavorConfig.current.withDevHost(preset.apiBaseUrl),
+    );
     await _store.write(preset);
-    _client.baseUrl = preset.apiBaseUrl;
-    _bus.publish(ServerReconfigured(preset));
+    _client.baseUrl = resolved.apiBaseUrl;
+    _bus.publish(ServerReconfigured(resolved));
   }
 
   static BalsmApiController create({

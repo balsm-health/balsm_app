@@ -7,6 +7,7 @@
 //   action  : run | test | integration | gen
 //             build --artifact=<key>   (or the artifact key as the action)
 //             install                  push a collected artifact to a device
+//             devhost                  write app/env/dev_host.json (DEV_HOST)
 //   artifact: apk | aab | ipa | ipa-appstore | ipa-archive
 //             web | macos | windows | linux
 //   brand   : balsm (default)  — see tool/build_config.dart
@@ -35,7 +36,7 @@ import 'dart:io';
 
 import 'build_config.dart';
 
-final _actions = {'run', 'test', 'integration', 'gen', 'install', 'build', ..._artifacts.keys};
+final _actions = {'run', 'test', 'integration', 'gen', 'devhost', 'install', 'build', ..._artifacts.keys};
 
 /// One buildable artifact: what flutter is asked for, where it lands, and what
 /// the collected copy is called.
@@ -164,7 +165,7 @@ Future<void> main(List<String> argv) async {
   final args = [...argv];
   if (args.isEmpty || args.first == '-h' || args.first == '--help') {
     _fail('usage: dart run tool/build.dart <action> [brand] [env] [options] [-- extra]\n'
-        '  action  : run | test | integration | gen | install | build | <artifact>\n'
+        '  action  : run | test | integration | gen | devhost | install | build | <artifact>\n'
         '  brand   : ${brands.keys.join(' | ')} (default: ${brands.keys.first})\n'
         '  env     : dev | staging | prod (default: dev)\n'
         '  artifact: ${_artifacts.keys.join(' | ')}\n'
@@ -184,6 +185,14 @@ Future<void> main(List<String> argv) async {
   // brand/env parsing below, which does not apply.
   if (action == 'gen') {
     await _codegen(args);
+    return;
+  }
+
+  // Same reason `run` does it, for the launch paths that never reach this
+  // script's `run`: VS Code invokes `flutter run` itself, so the address is
+  // written to a file both can pass with --dart-define-from-file.
+  if (action == 'devhost') {
+    await _writeDevHostFile(_takeOption(args, 'dev-host'));
     return;
   }
 
@@ -257,18 +266,14 @@ Future<void> main(List<String> argv) async {
   // rewrites its loopback presets to match (FlavorConfig.resolveDevHost).
   // Only `run`: a collected artifact outlives today's DHCP lease.
   final devHostOpt = _takeOption(args, 'dev-host');
-  final devHost = action == 'run' && devHostOpt != 'off' ? (devHostOpt ?? await _lanAddress()) : null;
-  if (action == 'run' && devHost == null && devHostOpt == null) {
-    stderr.writeln('! no LAN address found — localhost presets stay as they are, '
-        'which only works on a simulator. Pass --dev-host=<ip> to set one.');
-  }
+  if (action == 'run') await _writeDevHostFile(devHostOpt);
 
   final extra = args; // remaining args pass straight through to flutter
   final target = 'lib/brands/$brandKey/main_$brandKey.dart';
   final defines = [
     '--dart-define-from-file=env/$brandKey/$env.json',
     '--dart-define-from-file=env/$servers.json',
-    if (devHost != null) '--dart-define=DEV_HOST=$devHost',
+    if (action == 'run') '--dart-define-from-file=env/dev_host.json',
   ];
   // Omitted where Flutter has no flavor concept — see [Artifact.flavor].
   final flavor = (artifact?.flavor ?? true) ? ['--flavor', brand.flavor] : const <String>[];
@@ -326,6 +331,30 @@ Future<void> main(List<String> argv) async {
 
 /// Extracts `--name=value` from [args] and removes it, so the rest can pass
 /// through to flutter untouched. Returns null when absent.
+/// Writes `app/env/dev_host.json`, the one place both launch paths read the
+/// dev machine's address from.
+///
+/// A file rather than a `--dart-define` because VS Code runs `flutter run`
+/// itself and cannot compute an address into `launch.json`; it runs this as a
+/// preLaunchTask and passes the file. Always written, never partially: a
+/// missing file makes `--dart-define-from-file` fail the build, and an empty
+/// DEV_HOST is a no-op in the app, so "no LAN" and "opted out" both write an
+/// empty value rather than leaving stale one behind.
+///
+/// [option] is the caller's `--dev-host`: an address or hostname to use
+/// verbatim, `off` to write nothing, or null to look one up.
+Future<void> _writeDevHostFile(String? option) async {
+  final host = option == 'off' ? '' : (option ?? await _lanAddress() ?? '');
+  final file = File.fromUri(Platform.script.resolve('../app/env/dev_host.json'));
+  file.writeAsStringSync('${jsonEncode({'DEV_HOST': host})}\n');
+  if (host.isEmpty && option == null) {
+    stderr.writeln('! no LAN address found — localhost presets stay as they are, which '
+        'only works on a simulator. Pass --dev-host=<ip> to set one.');
+  } else if (host.isNotEmpty) {
+    stderr.writeln('  DEV_HOST=$host  (localhost presets are rewritten to this)');
+  }
+}
+
 /// This machine's address on the LAN, or null when it has none.
 ///
 /// Interfaces that are up but never route to a phone are skipped by name —

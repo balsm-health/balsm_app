@@ -48,6 +48,9 @@ app/ios/signing/*
 app/env/shared*.json
 # …except the template a fresh clone copies from.
 !app/env/shared.example.json
+# Generated before every launch: this machine's LAN address, so a device build
+# reaches it instead of its own localhost. See app/env/README.md.
+app/env/dev_host.json
 # Widget Preview related
 .widget_preview/
 

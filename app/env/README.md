@@ -66,11 +66,22 @@ outrank it.
 Nothing else changes: other presets are untouched, a prod build refuses the
 rewrite, and a plain `flutter run` or a CI build compiles no `DEV_HOST` at all.
 
+The address is written to `app/env/dev_host.json` (git-ignored, generated) and
+passed with `--dart-define-from-file`, because the two launch paths cannot
+share a `--dart-define`: VS Code runs `flutter run` itself and cannot compute
+an address into `launch.json`. It runs `bin/balsm devhost` as a preLaunchTask
+instead, and `bin/balsm run` writes the same file. Either way the app sees the
+same `DEV_HOST`.
+
 ```bash
 bin/balsm run balsm dev                      # LAN address, found automatically
 bin/balsm run balsm dev --dev-host=mac.local # mDNS, survives a new DHCP lease
 bin/balsm run balsm dev --dev-host=off       # leave localhost alone
+bin/balsm devhost                            # rewrite the file, launch nothing
 ```
+
+Moving to a different network changes the address, so re-launch (or re-run
+`bin/balsm devhost` and hot-restart) after switching Wi-Fi.
 
 Two things still have to be true on this machine: the API listens on all
 interfaces (`http://0.0.0.0:5050`, not `localhost:5050`), and the firewall
