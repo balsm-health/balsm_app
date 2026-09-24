@@ -53,6 +53,31 @@ initialise and then fail sending to a host that does not exist.
 `ENVS` entries appear in the Dev Config server picker, which is only reachable
 in the `dev` and `staging` flavors.
 
+### `localhost` on a real device
+
+A phone's `localhost` is the phone, so a `Local` preset reaches nothing from a
+device on the desk. `bin/balsm run` (and every `melos run run:*` that wraps it)
+looks up this machine's LAN address and passes it as `--dart-define=DEV_HOST=…`;
+`FlavorConfig` then rewrites any preset whose host is `localhost`, `127.0.0.1`
+or `::1`, keeping the scheme, port and path. A previously saved choice is
+rewritten on read too, so a `Local` picked during a simulator session does not
+outrank it.
+
+Nothing else changes: other presets are untouched, a prod build refuses the
+rewrite, and a plain `flutter run` or a CI build compiles no `DEV_HOST` at all.
+
+```bash
+bin/balsm run balsm dev                      # LAN address, found automatically
+bin/balsm run balsm dev --dev-host=mac.local # mDNS, survives a new DHCP lease
+bin/balsm run balsm dev --dev-host=off       # leave localhost alone
+```
+
+Two things still have to be true on this machine: the API listens on all
+interfaces (`http://0.0.0.0:5050`, not `localhost:5050`), and the firewall
+lets the port through. iOS is already set up for it — `NSAllowsLocalNetworking`
+and `NSLocalNetworkUsageDescription` are in `Info.plist`, and the phone asks
+once for local-network permission.
+
 ### A constraint worth knowing
 
 `--dart-define-from-file` stringifies non-primitive values with Dart's

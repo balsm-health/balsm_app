@@ -13,7 +13,13 @@ class ActiveServerStore {
     if (json == null) return null;
     try {
       final m = jsonDecode(json) as Map<String, dynamic>;
-      return ServerPreset(label: m['label'] as String, apiBaseUrl: m['apiBaseUrl'] as String);
+      // A loopback URL saved on a previous run is repointed too: the phone
+      // kept "Local — http://localhost:5050" from a simulator session, and
+      // without this the saved choice quietly outranks the launch's DEV_HOST.
+      return ServerPreset(
+        label: m['label'] as String,
+        apiBaseUrl: FlavorConfig.current.withDevHost(m['apiBaseUrl'] as String),
+      );
     } catch (_) {
       return null;
     }

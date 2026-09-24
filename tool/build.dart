@@ -15,6 +15,8 @@
 //             --export=adhoc|appstore|none    ipa signing profile
 //             --servers=shared|shared.tunnel  which server list to compile in
 //             --device=<id>                   skip the device picker
+//             --dev-host=<ip|host|off>        override the LAN address that
+//                                             replaces localhost on `run`
 //
 // Every build collects its artifact into
 //   output/<brand>/<platform>/<brand>-<version>-<env>[.<ext>]
@@ -250,11 +252,23 @@ Future<void> main(List<String> argv) async {
   final device = _takeOption(args, 'device');
   if (device != null) args.addAll(['-d', device]);
 
+  // A device on the desk cannot reach this machine's `localhost`, so `run`
+  // hands the app the address this machine actually answers on and the app
+  // rewrites its loopback presets to match (FlavorConfig.resolveDevHost).
+  // Only `run`: a collected artifact outlives today's DHCP lease.
+  final devHostOpt = _takeOption(args, 'dev-host');
+  final devHost = action == 'run' && devHostOpt != 'off' ? (devHostOpt ?? await _lanAddress()) : null;
+  if (action == 'run' && devHost == null && devHostOpt == null) {
+    stderr.writeln('! no LAN address found — localhost presets stay as they are, '
+        'which only works on a simulator. Pass --dev-host=<ip> to set one.');
+  }
+
   final extra = args; // remaining args pass straight through to flutter
   final target = 'lib/brands/$brandKey/main_$brandKey.dart';
   final defines = [
     '--dart-define-from-file=env/$brandKey/$env.json',
     '--dart-define-from-file=env/$servers.json',
+    if (devHost != null) '--dart-define=DEV_HOST=$devHost',
   ];
   // Omitted where Flutter has no flavor concept — see [Artifact.flavor].
   final flavor = (artifact?.flavor ?? true) ? ['--flavor', brand.flavor] : const <String>[];
@@ -312,6 +326,31 @@ Future<void> main(List<String> argv) async {
 
 /// Extracts `--name=value` from [args] and removes it, so the rest can pass
 /// through to flutter untouched. Returns null when absent.
+/// This machine's address on the LAN, or null when it has none.
+///
+/// Interfaces that are up but never route to a phone are skipped by name —
+/// Apple's peer-to-peer and tunnel interfaces, and the host side of a
+/// container or VM bridge — and so are link-local (169.254/16) addresses,
+/// which mean DHCP did not answer. A private address is preferred over a
+/// public one: a machine with a routable address still serves the desk from
+/// its LAN interface.
+Future<String?> _lanAddress() async {
+  const skip = ['awdl', 'llw', 'utun', 'bridge', 'docker', 'vbox', 'vmnet', 'tap', 'tun'];
+  bool private(String ip) =>
+      ip.startsWith('192.168.') || ip.startsWith('10.') || RegExp(r'^172\.(1[6-9]|2\d|3[01])\.').hasMatch(ip);
+
+  final candidates = <String>[];
+  for (final iface in await NetworkInterface.list(type: InternetAddressType.IPv4, includeLoopback: false)) {
+    if (skip.any((s) => iface.name.toLowerCase().startsWith(s))) continue;
+    for (final addr in iface.addresses) {
+      if (addr.address.startsWith('169.254.')) continue;
+      candidates.add(addr.address);
+    }
+  }
+  if (candidates.isEmpty) return null;
+  return candidates.firstWhere(private, orElse: () => candidates.first);
+}
+
 String? _takeOption(List<String> args, String name) {
   final i = args.indexWhere((a) => a.startsWith('--$name='));
   if (i < 0) return null;
