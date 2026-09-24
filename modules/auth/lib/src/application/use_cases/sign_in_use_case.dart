@@ -53,6 +53,24 @@ class SignInUseCase {
 
   // ── Email OTP flow ────────────────────────────────────────────────────────
 
+  /// The code that follows a failed email+password attempt.
+  ///
+  /// One entry serves everyone, so this address may or may not have an
+  /// account and the caller must not find out: the server sends a code either
+  /// way and answers identically. Verifying it signs the owner in or creates
+  /// the account, and reports which only afterwards — by which point the
+  /// mailbox is proven.
+  Future<AppResult<void>> requestContinueOtp(String email, String countryCode) async {
+    try {
+      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.continueFlow);
+      return AppResult.success(null);
+    } on AuthException catch (e) {
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
   /// Step 1 of forgot-password: request a reset code for an existing user.
   /// Email-OTP login was removed, so this is reset-only; the code is submitted
   /// to `resetPassword`. An unknown email returns success with no email sent.

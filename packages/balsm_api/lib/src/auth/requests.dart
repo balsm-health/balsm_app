@@ -1,9 +1,21 @@
 /// PHI constraint (all auth DTOs): never log or stringify these — they
 /// carry emails, device identifiers, and tokens.
 
-/// Why an OTP email is requested. The server sends an email only for these two
-/// flows — email-OTP login was removed to conserve email quota.
-enum OtpPurpose { register, reset }
+/// Why an OTP email is requested.
+///
+/// [continueFlow] is the merged entry: the code that follows a failed
+/// email+password attempt, for an address that may or may not have an account.
+/// The server sends it either way and never says which — that is the point.
+/// [reset] keeps its own path for forgot-password, where the server stays
+/// silent for an address it does not know.
+enum OtpPurpose {
+  continueFlow,
+  reset;
+
+  /// The spelling the server expects. `continue` is a Dart keyword, so the
+  /// enum value cannot simply be named after it.
+  String get wireName => this == continueFlow ? 'continue' : name;
+}
 
 class RequestOtpRequest {
   const RequestOtpRequest({
@@ -14,7 +26,7 @@ class RequestOtpRequest {
   final String email;
   final String countryCode;
   final OtpPurpose purpose;
-  Map<String, dynamic> toJson() => {'email': email, 'country_code': countryCode, 'purpose': purpose.name};
+  Map<String, dynamic> toJson() => {'email': email, 'country_code': countryCode, 'purpose': purpose.wireName};
 }
 
 class VerifyOtpRequest {

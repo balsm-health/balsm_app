@@ -17,6 +17,10 @@ const _uid = 'balsm.user_id';
 const _did = 'balsm.device_id';
 
 void main() {
+  // mocktail needs a concrete value before `any(named: 'purpose')` can stand
+  // in for an enum argument.
+  setUpAll(() => registerFallbackValue(OtpPurpose.reset));
+
   late _MockAdapter adapter;
   late _MockStorage storage;
   late EventBus bus;
@@ -37,6 +41,30 @@ void main() {
   });
 
   Future<void> flush() => Future<void>.delayed(Duration.zero);
+
+  group('requestContinueOtp', () {
+    test('asks for the merged-entry purpose, not reset', () async {
+      // The code that follows a failed email+password attempt. The address may
+      // or may not have an account; the server sends either way and says
+      // nothing about which, which is the only reason the merged screen is
+      // safe. Reset is a different purpose with a different rule.
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).thenAnswer((_) async {});
+
+      final r = await usecase.requestContinueOtp('a@b.com', 'EG');
+
+      expect(r.isSuccess, isTrue);
+      verify(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).called(1);
+    });
+
+    test('a transport failure is reported, not swallowed', () async {
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow))
+          .thenThrow(const AuthException(code: 'network', message: 'no route'));
+
+      final r = await usecase.requestContinueOtp('a@b.com', 'EG');
+
+      expect(r.isFailure, isTrue);
+    });
+  });
 
   group('verifyEmailOtp', () {
     test('success persists tokens and publishes UserSignedIn(email)', () async {
