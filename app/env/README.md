@@ -56,55 +56,38 @@ in the `dev` and `staging` flavors.
 ### `localhost` on a real device
 
 A phone's `localhost` is the phone, so a `Local` preset reaches nothing from a
-device on the desk. `bin/balsm run` (and every `melos run run:*` that wraps it)
-looks up this machine's LAN address and passes it as `--dart-define=DEV_HOST=…`;
-`FlavorConfig` then rewrites any preset whose host is `localhost`, `127.0.0.1`
-or `::1`, keeping the scheme, port and path. A previously saved choice is
-rewritten on read too, so a `Local` picked during a simulator session does not
-outrank it.
+device on the desk — and nothing on the handset knows which machine is serving
+it. The app therefore **asks the network, at runtime**: `DevHostLocator` sweeps
+the device's own subnet for a machine answering `/api/v1/health` on the
+preset's port, and points the client at the first one that does. Debug builds
+only; a URL that names a real host is never probed and never rewritten.
 
-Nothing else changes: other presets are untouched, a prod build refuses the
-rewrite, and a plain `flutter run` or a CI build compiles no `DEV_HOST` at all.
+Because it happens at runtime rather than at compile time, moving between
+Wi-Fi networks or picking up a new DHCP lease costs a reconnect, not a
+rebuild. A connection failure mid-session re-runs the lookup and replays the
+request once (`DevHostInterceptor`), so the app follows the server when it
+moves under a running session.
 
-The address is written to `app/env/dev_host.json` (git-ignored, generated) and
-passed with `--dart-define-from-file`, because the two launch paths cannot
-share a `--dart-define`: VS Code runs `flutter run` itself and cannot compute
-an address into `launch.json`. It runs `bin/balsm devhost` as a preLaunchTask
-instead, and `bin/balsm run` writes the same file. Either way the app sees the
-same `DEV_HOST`.
+Order of candidates, cheapest first: the host found last time, then `DEV_HOST`
+if the launch compiled one in, then loopback itself — which is the right
+answer on a simulator and on desktop — and only then the sweep.
+
+`DEV_HOST` is that optional hint, not a rewrite: `bin/balsm run` and the
+`Flutter: dev host` preLaunchTask write this machine's address into
+`app/env/dev_host.json` (git-ignored, generated), which both launch paths pass
+with `--dart-define-from-file`. It turns the usual case into one request
+instead of a sweep, and a stale value costs one failed probe.
 
 ```bash
-bin/balsm run balsm dev                      # LAN address, found automatically
-bin/balsm run balsm dev --dev-host=mac.local # mDNS, survives a new DHCP lease
-bin/balsm run balsm dev --dev-host=off       # leave localhost alone
-bin/balsm devhost                            # rewrite the file, launch nothing
+bin/balsm run balsm dev                      # writes the hint, then launches
+bin/balsm run balsm dev --dev-host=mac.local # mDNS name instead of an address
+bin/balsm run balsm dev --dev-host=off       # no hint; the sweep does the work
+bin/balsm devhost                            # rewrite the hint, launch nothing
 ```
-
-Moving to a different network changes the address, so re-launch (or re-run
-`bin/balsm devhost` and hot-restart) after switching Wi-Fi.
 
 Two things still have to be true on this machine: the API listens on all
 interfaces (`http://0.0.0.0:5050`, not `localhost:5050`), and the firewall
-lets the port through. iOS is already set up for it — `NSAllowsLocalNetworking`
-and `NSLocalNetworkUsageDescription` are in `Info.plist`, and the phone asks
-once for local-network permission.
-
-### A constraint worth knowing
-
-`--dart-define-from-file` stringifies non-primitive values with Dart's
-`toString()`, not as JSON — `ENVS` reaches the app as
-`[{name: Local, url: http://...}]`, unquoted. The parser splits on `, ` and
-`: `, so **a name or URL containing `, ` or `: ` will not parse**. URLs are safe
-(`://` and `:8080` have no space); names like `"EU, West"` are not.
-
-## Variants
-
-Any `shared<suffix>.json` works — pass it with `--servers=<stem>`:
-
-```bash
-dart run tool/build.dart ipa balsm dev --servers=shared.tunnel
-```
-
-A common one is `shared.tunnel.json`, adding a devtunnel and a LAN address for
-testing against a machine on the desk. It is ignored like the rest, so create
-it yourself when you want it.
+lets the port through — the sweep finds nothing that is not actually
+reachable. iOS is already set up for it: `NSAllowsLocalNetworking` and
+`NSLocalNetworkUsageDescription` are in `Info.plist`, and the phone asks once
+for local-network permission.

@@ -114,6 +114,8 @@ export 'src/dev/dev_log_buffer.dart' show DevLogBuffer;
 export 'src/dev/dev_config_store.dart' show DevConfigStore, DevFlag, kDevFlags, kFlagMapNoZoomFloor;
 export 'src/dev/dev_flags_provider.dart' show devConfigStoreProvider, devFlagProvider;
 export 'src/dev/server_health.dart' show ServerHealthProbe, ServerHealthResult, ServerHealthy, ServerUnreachable;
+export 'src/dev/dev_host_locator.dart' show DevHostLocator;
+export 'src/network/dev_host_interceptor.dart' show DevHostInterceptor;
 
 // Test kit: gated by DEV environment flag.
 export 'src/test_kit/fakes.dart' if (dart.library.html) 'src/test_kit/fakes.dart';

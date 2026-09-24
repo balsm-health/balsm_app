@@ -13,13 +13,11 @@ class ActiveServerStore {
     if (json == null) return null;
     try {
       final m = jsonDecode(json) as Map<String, dynamic>;
-      // A loopback URL saved on a previous run is repointed too: the phone
-      // kept "Local — http://localhost:5050" from a simulator session, and
-      // without this the saved choice quietly outranks the launch's DEV_HOST.
-      return ServerPreset(
-        label: m['label'] as String,
-        apiBaseUrl: FlavorConfig.current.withDevHost(m['apiBaseUrl'] as String),
-      );
+      // Returned exactly as it was saved, loopback included. Repointing a
+      // `Local` preset at the machine actually serving it is the caller's job
+      // (BalsmApiController resolves it at runtime) — baking an address in
+      // here would persist one that is only true on today's network.
+      return ServerPreset(label: m['label'] as String, apiBaseUrl: m['apiBaseUrl'] as String);
     } catch (_) {
       return null;
     }

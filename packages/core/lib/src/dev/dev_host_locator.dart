@@ -1,0 +1,138 @@
+import 'dart:io';
+
+import 'package:balsm_api/balsm_api.dart' show ApiRoutes;
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+
+/// Finds the machine serving the dev API, at runtime, from the device.
+///
+/// A phone's `localhost` is the phone, so a `http://localhost:5050` preset
+/// reaches nothing from a device on the desk. Nothing on the handset knows
+/// which machine is serving it, so this asks the network: the device's own
+/// subnet is swept for something answering the API's health route, and the
+/// first machine that does becomes the host.
+///
+/// Runtime rather than a compile-time define, so moving between Wi-Fi networks
+/// — or the router handing out a new lease overnight — costs a reconnect
+/// instead of a rebuild.
+///
+/// Debug builds only. [resolve] returns its argument untouched in a release
+/// build, on web, and for any URL whose host is not loopback, so a staging or
+/// production URL is never probed and never rewritten.
+class DevHostLocator {
+  DevHostLocator({
+    Future<bool> Function(String host, int port, Duration timeout)? probe,
+    Future<List<String>> Function()? subnets,
+    this.probeTimeout = const Duration(milliseconds: 400),
+    this.sweepBatch = 32,
+  })  : _probe = probe ?? _healthProbe,
+        _subnets = subnets ?? _localSubnets;
+
+  final Future<bool> Function(String host, int port, Duration timeout) _probe;
+  final Future<List<String>> Function() _subnets;
+
+  /// Per-host budget. Short: a machine that is up answers a LAN request in
+  /// single-digit milliseconds, and an absent one has to time out 253 times.
+  final Duration probeTimeout;
+
+  /// How many hosts are probed at once. High enough to sweep a /24 in a couple
+  /// of seconds, low enough not to exhaust the socket table.
+  final int sweepBatch;
+
+  static const Set<String> loopback = {'localhost', '127.0.0.1', '::1'};
+
+  /// The host found last time, tried first on the next lookup.
+  ///
+  /// Held in memory only. A cached address that is stale after a network
+  /// change costs one failed probe before the sweep runs, whereas a persisted
+  /// one would outlive the machine it names.
+  String? lastKnown;
+
+  /// [baseUrl] with its host replaced by whatever is actually serving, or
+  /// unchanged when nothing is.
+  Future<String> resolve(String baseUrl, {String? preferred}) async {
+    if (!kDebugMode || kIsWeb) return baseUrl;
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null || !loopback.contains(uri.host)) return baseUrl;
+
+    final port = uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 80);
+    final host = await find(port, preferred: preferred);
+    if (host == null) return baseUrl;
+    return uri.replace(host: host).toString();
+  }
+
+  /// The machine answering on [port], or null.
+  ///
+  /// Ordered by how likely each candidate is and how much it costs to ask:
+  /// the last known host, then whatever the caller preferred (a `DEV_HOST`
+  /// baked in at launch, say), then loopback itself — which is the right
+  /// answer on a simulator and on desktop, and fails in a millisecond
+  /// everywhere else — and only then the sweep.
+  Future<String?> find(int port, {String? preferred}) async {
+    for (final candidate in [lastKnown, preferred, '127.0.0.1']) {
+      if (candidate == null || candidate.isEmpty) continue;
+      if (await _probe(candidate, port, probeTimeout)) {
+        lastKnown = candidate;
+        return candidate;
+      }
+    }
+
+    for (final prefix in await _subnets()) {
+      // .255 is broadcast and .0 is the network itself; neither is a host.
+      final hosts = [for (var i = 1; i < 255; i++) '$prefix.$i'];
+      for (var i = 0; i < hosts.length; i += sweepBatch) {
+        final batch = hosts.sublist(i, (i + sweepBatch).clamp(0, hosts.length));
+        final answers = await Future.wait(batch.map((h) async => await _probe(h, port, probeTimeout) ? h : null));
+        final hit = answers.firstWhere((h) => h != null, orElse: () => null);
+        if (hit != null) {
+          lastKnown = hit;
+          return hit;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Whether [host] serves the Balsm API.
+  ///
+  /// The health route rather than a bare TCP connect: plenty of things listen
+  /// on a development port, and pointing the app at the wrong one fails later
+  /// and less legibly than not finding it at all.
+  static Future<bool> _healthProbe(String host, int port, Duration timeout) async {
+    final dio = Dio(BaseOptions(
+      baseUrl: 'http://$host:$port',
+      connectTimeout: timeout,
+      receiveTimeout: timeout,
+      validateStatus: (_) => true,
+    ));
+    try {
+      final res = await dio.get<dynamic>(ApiRoutes.health);
+      final code = res.statusCode ?? 0;
+      return code >= 200 && code < 300;
+    } catch (_) {
+      return false;
+    } finally {
+      dio.close(force: true);
+    }
+  }
+
+  /// The `a.b.c` prefix of every network this device is on.
+  ///
+  /// Assumes a /24, which every home and office LAN a phone joins is. Cellular
+  /// and VPN interfaces are skipped: the dev machine is not down there, and
+  /// sweeping a carrier network would be both useless and rude.
+  static Future<List<String>> _localSubnets() async {
+    final prefixes = <String>{};
+    for (final iface in await NetworkInterface.list(type: InternetAddressType.IPv4, includeLoopback: false)) {
+      final name = iface.name.toLowerCase();
+      if (name.startsWith('pdp_ip') || name.startsWith('utun') || name.startsWith('ipsec')) continue;
+      for (final addr in iface.addresses) {
+        final ip = addr.address;
+        if (ip.startsWith('169.254.')) continue;
+        final dot = ip.lastIndexOf('.');
+        if (dot > 0) prefixes.add(ip.substring(0, dot));
+      }
+    }
+    return prefixes.toList();
+  }
+}
