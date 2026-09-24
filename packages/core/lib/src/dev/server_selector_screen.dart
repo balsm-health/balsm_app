@@ -11,6 +11,7 @@ import 'dev_config_store.dart';
 import 'dev_diagnostics.dart';
 import 'dev_log_buffer.dart';
 import 'server_health.dart';
+import 'server_url.dart';
 
 // Dark "terminal" chrome from the Dev Config design (claude.ai/design · Balsm App).
 const _kTermBg = Color(0xFF1A1A17);
@@ -454,8 +455,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 ElevatedButton(
                   onPressed: () {
                     final n = _editNameCtrl.text.trim();
-                    final u = _editUrlCtrl.text.trim();
-                    if (n.isEmpty || u.isEmpty) return;
+                    final rawUrl = _editUrlCtrl.text.trim();
+                    if (n.isEmpty || rawUrl.isEmpty) return;
+                    final u = normalizeServerUrl(rawUrl);
+                    if (u == null) {
+                      _snack('Enter a valid server URL, e.g. http://192.168.1.10:5050');
+                      return;
+                    }
                     _store.updateSavedEnv(se.id, n, u);
                     setState(() => _editingId = null);
                   },
@@ -1264,6 +1270,11 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     });
     try {
       await widget.controller.reconfigure(preset);
+    } on FormatException catch (e) {
+      // A preset saved before URL normalization existed (or edited outside
+      // this screen) can still carry a schemeless host — surface it instead
+      // of an uncaught crash.
+      _snack('Cannot use "${preset.apiBaseUrl}" — ${e.message}');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1271,8 +1282,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   Future<void> _saveCustom() async {
     final name = _nameCtrl.text.trim();
-    final url = _urlCtrl.text.trim();
-    if (name.isEmpty || url.isEmpty) return;
+    final rawUrl = _urlCtrl.text.trim();
+    if (name.isEmpty || rawUrl.isEmpty) return;
+    final url = normalizeServerUrl(rawUrl);
+    if (url == null) {
+      _snack('Enter a valid server URL, e.g. http://192.168.1.10:5050');
+      return;
+    }
     final env = await _store.addSavedEnv(name, url);
     await _select(ServerPreset(label: env.name, apiBaseUrl: env.url));
     if (mounted) setState(() => _addingCustom = false);
