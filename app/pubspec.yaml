@@ -109,7 +109,15 @@ dependency_overrides:
 hooks:
   user_defines:
     sqlite3:
-      source: process
+      # `source: process` resolves sqlite3_* through a process-wide symbol
+      # lookup. sqlcipher_flutter_libs loads SQLCipher with
+      # DynamicLibrary.open, which does NOT publish symbols globally, so on
+      # Android that lookup fails at the first query with
+      # "undefined symbol: sqlite3_initialize" — the database never opens.
+      # `system` emits DynamicLoadingSystem instead: package:sqlite3 dlopens
+      # the named library itself, no global symbols required.
+      source: system
+      name_android: sqlcipher
 flutter:
   uses-material-design: true
   generate: true
