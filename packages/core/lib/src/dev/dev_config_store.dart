@@ -117,6 +117,21 @@ class DevConfigStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Mints a new log-encryption key and keeps it.
+  ///
+  /// The key is shown in Dev Config and copied out to whoever is meant to open
+  /// an exported bundle, so it travels: into a chat, a ticket, a screenshot.
+  /// Regenerating is how a key that has travelled stops opening the next
+  /// export. Bundles already exported keep their old key and are unreadable
+  /// with this one — the exports are encrypted with the key of the moment, not
+  /// re-encrypted later.
+  Future<String> regenerateEncKey() async {
+    _encKey = _generateKey();
+    await _secure.write(key: _kEncKey, value: _encKey);
+    notifyListeners();
+    return _encKey;
+  }
+
   Future<void> _persistEnvs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kSavedEnvs, jsonEncode(_savedEnvs.map((e) => e.toJson()).toList()));

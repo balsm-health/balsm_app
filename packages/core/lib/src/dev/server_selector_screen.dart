@@ -917,20 +917,56 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 style: const TextStyle(fontFamily: _kMono, fontSize: 11, color: Color(0xFFC8C8BE)),
               ),
             ),
-            GestureDetector(
-              onTap: () {
+            _keyChip(
+              'copy',
+              () {
                 Clipboard.setData(ClipboardData(text: _store.encKey));
                 _snack('Key copied');
               },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: const Color(0x14FFFFFF), borderRadius: BorderRadius.circular(5)),
-                child: const Text('copy', style: TextStyle(fontFamily: _kMono, fontSize: 10, color: Color(0xFF888888))),
-              ),
             ),
+            const SizedBox(width: 6),
+            // The key travels — into a chat, a ticket, a screenshot of this
+            // very card. Regenerating is how one that has travelled stops
+            // opening the next export.
+            _keyChip('new', _regenerateKey),
           ],
         ),
       );
+
+  Widget _keyChip(String label, VoidCallback onTap) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(color: const Color(0x14FFFFFF), borderRadius: BorderRadius.circular(5)),
+          child: Text(label, style: const TextStyle(fontFamily: _kMono, fontSize: 10, color: Color(0xFF888888))),
+        ),
+      );
+
+  /// Replaces the log-encryption key, after saying what that costs: bundles
+  /// already saved keep the key they were encrypted with, and this one will not
+  /// open them.
+  Future<void> _regenerateKey() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kTermBg,
+        title: const Text('New encryption key?',
+            style: TextStyle(fontFamily: _kMono, fontSize: 14, color: Color(0xFFC8C8BE))),
+        content: const Text(
+          'Exports you have already saved stay encrypted with the current key — '
+          'the new one will not open them. Keep the old key if you still need those.',
+          style: TextStyle(fontFamily: _kMono, fontSize: 11, color: BalsmColors.fg3),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Regenerate')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _store.regenerateEncKey();
+    if (mounted) _snack('New key — it applies to the next export');
+  }
 
   Widget _exportButton({
     required IconData icon,
