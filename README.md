@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/banner.png" alt="تطبيق بلسم · Balsm App" width="880">
+</p>
+
 # Balsm Patient App
 
 Flutter app for the Balsm healthcare platform (iOS · Android · Web). Patients track
