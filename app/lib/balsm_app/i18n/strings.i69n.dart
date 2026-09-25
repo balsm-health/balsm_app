@@ -916,6 +916,18 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get profile => "Profile";
   String get your_accounts => "Your accounts";
   String get pages => "pages";
+  String get a11y_show_pw => "Show password";
+  String get a11y_hide_pw => "Hide password";
+  String get a11y_close => "Close";
+  String get a11y_back => "Back";
+  String get a11y_next => "Next";
+  String get a11y_delete => "Delete";
+  String get a11y_add => "Add";
+  String get a11y_locate => "Find my location";
+  String get a11y_download => "Download";
+  String get a11y_qr => "QR code";
+  String get a11y_edit => "Edit";
+  String get a11y_notifications => "Notifications";
   String get cancel => "Cancel";
   String get acc_active => "Active account";
   String get acc_not_signed_in => "Not signed in";
@@ -1010,6 +1022,30 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return your_accounts;
       case 'pages':
         return pages;
+      case 'a11y_show_pw':
+        return a11y_show_pw;
+      case 'a11y_hide_pw':
+        return a11y_hide_pw;
+      case 'a11y_close':
+        return a11y_close;
+      case 'a11y_back':
+        return a11y_back;
+      case 'a11y_next':
+        return a11y_next;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'a11y_add':
+        return a11y_add;
+      case 'a11y_locate':
+        return a11y_locate;
+      case 'a11y_download':
+        return a11y_download;
+      case 'a11y_qr':
+        return a11y_qr;
+      case 'a11y_edit':
+        return a11y_edit;
+      case 'a11y_notifications':
+        return a11y_notifications;
       case 'cancel':
         return cancel;
       case 'acc_active':

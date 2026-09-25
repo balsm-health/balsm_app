@@ -476,7 +476,15 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
           Semantics(
             button: true,
             label: c.care_edit,
-            child: RoundBtn(icon: LucideIcons.pencil, ghost: true, iconSize: 16, onTap: widget.onEdit),
+            child: RoundBtn(
+                icon: LucideIcons.pencil,
+                // The card already carries the generic "Edit" above; this one
+                // names who is being edited, which is what a screen reader
+                // user needs when several cards are open.
+                semanticLabel: '${c.care_edit} ${provider.name}',
+                ghost: true,
+                iconSize: 16,
+                onTap: widget.onEdit),
           ),
         ]),
         // Collapsed, the card previews what is attached: a 64pt strip that
@@ -856,7 +864,12 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
             Expanded(
                 child: Text(_editing == null ? c.care_add_title : c.care_edit_title,
                     style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 18,
+                onTap: () => Navigator.pop(context)),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),

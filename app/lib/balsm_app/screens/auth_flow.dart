@@ -197,28 +197,31 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                   ]),
             ),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Pressable(
-                onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
-                child: Semantics(
-                  button: true,
-                  label: s.lang == LanguageCode.ar ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
-                  child: Container(
-                    height: 38,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0x6B1A1A17),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: const Color(0x52FFFFFF)),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(LucideIcons.languages, size: 17, color: Colors.white),
-                      const SizedBox(width: 7),
-                      Text(
-                        s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
-                        style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
-                            .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
-                      ),
-                    ]),
+              Semantics(
+                button: true,
+                label: s.lang == LanguageCode.ar ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
+                child: MinTapTarget(
+                  child: Pressable(
+                    onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
+                    child: Builder(
+                        builder: (context) => Container(
+                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: const Color(0x6B1A1A17),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: const Color(0x52FFFFFF)),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(LucideIcons.languages, size: 17, color: Colors.white),
+                                const SizedBox(width: 7),
+                                Text(
+                                  s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
+                                  style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
+                                      .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+                                ),
+                              ]),
+                            )),
                   ),
                 ),
               ),
@@ -281,40 +284,41 @@ class _DevConfigPill extends ConsumerWidget {
     final url = Uri.tryParse(base);
     final label = url == null || url.host.isEmpty ? '?' : (url.hasPort ? '${url.host}:${url.port}' : url.host);
 
-    return Pressable(
-      onTap: () async {
-        await openDevConfig(context);
-        onClosed();
-      },
-      child: Semantics(
+    return Semantics(
         button: true,
         label: 'Dev config',
-        child: Container(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: const Color(0x6B1A1A17),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0x52FFFFFF)),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(LucideIcons.wrench, size: 16, color: Colors.white),
-            const SizedBox(width: 7),
-            // Narrow enough to sit beside the language pill on a 402px screen;
-            // a long staging host ellipsises rather than overflowing the row.
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 132),
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Typo.bodySm().copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+        child: MinTapTarget(
+          child: Pressable(
+            onTap: () async {
+              await openDevConfig(context);
+              onClosed();
+            },
+            child: Container(
+              height: 38,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0x6B1A1A17),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0x52FFFFFF)),
               ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.wrench, size: 16, color: Colors.white),
+                const SizedBox(width: 7),
+                // Narrow enough to sit beside the language pill on a 402px screen;
+                // a long staging host ellipsises rather than overflowing the row.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 132),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.bodySm().copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ),
+              ]),
             ),
-          ]),
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }
 
@@ -346,7 +350,7 @@ class _AuthHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
       child: Row(children: [
-        RoundBtn(icon: backArrow(context), onTap: onBack),
+        RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: onBack),
         const Spacer(),
         Row(children: [
           for (var i = 0; i < 3; i++)
@@ -387,7 +391,10 @@ class _UnderEighteenScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
               child: Row(children: [
-                RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).maybePop()),
+                RoundBtn(
+                    icon: backArrow(context),
+                    semanticLabel: s.strings.common.a11y_back,
+                    onTap: () => Navigator.of(context).maybePop()),
               ]),
             ),
             const Spacer(),
@@ -634,9 +641,17 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     // this is a signup, and asking iOS to generate a strong one
                     // for a returning patient would fight their saved entry.
                     autofillHints: const [AutofillHints.password],
-                    suffixIcon: GestureDetector(
-                      onTap: () => setState(() => _showPw = !_showPw),
-                      child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
+                    // Icon-only, so a screen reader has nothing to read, and
+                    // 17px is well under a fingertip.
+                    suffixIcon: Semantics(
+                      button: true,
+                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                      child: MinTapTarget(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _showPw = !_showPw),
+                          child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
+                        ),
+                      ),
                     ),
                     onChanged: (_) => setState(() {})),
               ]),
@@ -1123,7 +1138,10 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
               child: Row(children: [
-                RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).maybePop()),
+                RoundBtn(
+                    icon: backArrow(context),
+                    semanticLabel: s.strings.common.a11y_back,
+                    onTap: () => Navigator.of(context).maybePop()),
               ]),
             ),
             Expanded(
@@ -1714,9 +1732,13 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                   obscure: !_showPw,
                   forceLtr: true,
                   accent: s.accent,
-                  suffixIcon: GestureDetector(
-                      onTap: () => setState(() => _showPw = !_showPw),
-                      child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3)),
+                  suffixIcon: Semantics(
+                      button: true,
+                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                      child: MinTapTarget(
+                          child: GestureDetector(
+                              onTap: () => setState(() => _showPw = !_showPw),
+                              child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3)))),
                   onChanged: (_) => setState(() {})),
             ],
             if (_error != null)

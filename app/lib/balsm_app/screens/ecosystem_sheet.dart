@@ -176,7 +176,12 @@ class _EcosystemSheetState extends State<_EcosystemSheet> {
           padding: const EdgeInsets.fromLTRB(20, 0, 16, 10),
           child: Row(children: [
             Expanded(child: Text(e.eco_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 18,
+                onTap: () => Navigator.of(context).pop()),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),

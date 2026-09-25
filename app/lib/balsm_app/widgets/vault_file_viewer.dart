@@ -92,7 +92,10 @@ class _VaultFileViewerState extends ConsumerState<VaultFileViewer> {
         Positioned(
           top: MediaQuery.paddingOf(context).top + 8,
           left: 12,
-          child: RoundBtn(icon: LucideIcons.x, onTap: () => Navigator.of(context).pop()),
+          child: RoundBtn(
+              icon: LucideIcons.x,
+              semanticLabel: s.strings.common.a11y_close,
+              onTap: () => Navigator.of(context).pop()),
         ),
         if (title != null && title!.isNotEmpty)
           Positioned(

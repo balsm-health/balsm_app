@@ -128,7 +128,8 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
       child: ListView(padding: EdgeInsets.zero, children: [
         const PadTop(),
         AppBarRow(children: [
-          RoundBtn(icon: backArrow(context), onTap: () => s.setTab(AppTab.home)),
+          RoundBtn(
+              icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => s.setTab(AppTab.home)),
           const SizedBox(width: 12),
           Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
           _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),

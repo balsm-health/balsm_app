@@ -117,7 +117,12 @@ class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
                     child: Text(s.strings.storage.storage,
                         style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                 if (canClose)
-                  RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
+                  RoundBtn(
+                      icon: LucideIcons.x,
+                      semanticLabel: s.strings.common.a11y_close,
+                      ghost: true,
+                      iconSize: 17,
+                      onTap: () => Navigator.pop(context)),
               ]),
             ),
           ]),

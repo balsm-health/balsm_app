@@ -401,7 +401,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       body: Column(children: [
         const PadTop(),
         AppBarRow(
-          leading: RoundBtn(icon: backArrow(context), onTap: () => Navigator.pop(context)),
+          leading: RoundBtn(
+              icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => Navigator.pop(context)),
           children: [
             Expanded(
                 child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
@@ -1257,7 +1258,12 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                   Expanded(
                       child: Text(s.strings.emergency.eqr_title,
                           style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
-                  RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
+                  RoundBtn(
+                      icon: LucideIcons.x,
+                      semanticLabel: s.strings.common.a11y_close,
+                      ghost: true,
+                      iconSize: 17,
+                      onTap: () => Navigator.pop(context)),
                 ]),
               ),
             ]),

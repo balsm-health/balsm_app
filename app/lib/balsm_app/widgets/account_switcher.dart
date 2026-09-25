@@ -91,7 +91,12 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
             Expanded(
                 child: Text(s.strings.common.your_accounts,
                     style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 17,
+                onTap: () => Navigator.pop(context)),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),
@@ -391,7 +396,12 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-          RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: widget.onClose),
+          RoundBtn(
+              icon: LucideIcons.x,
+              semanticLabel: s.strings.common.a11y_close,
+              ghost: true,
+              iconSize: 17,
+              onTap: widget.onClose),
         ]),
         const SizedBox(height: 8),
         const Divider(height: 1, color: T.ink100),

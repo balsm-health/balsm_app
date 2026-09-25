@@ -163,7 +163,11 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
             Container(
               color: s.accent.bg,
               child: AppBarRow(children: [
-                RoundBtn(icon: LucideIcons.x, ghost: true, onTap: _exitSelection),
+                RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: s.strings.common.a11y_close,
+                    ghost: true,
+                    onTap: _exitSelection),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -175,6 +179,7 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
                   opacity: _selected!.isEmpty ? 0.4 : 1,
                   child: RoundBtn(
                     icon: LucideIcons.trash2,
+                    semanticLabel: s.strings.common.a11y_delete,
                     ghost: true,
                     fg: T.danger,
                     onTap: _selected!.isEmpty ? null : () => _deleteSelected(shown),
@@ -185,7 +190,7 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
           else
             AppBarRow(children: [
               if (widget.onBack != null) ...[
-                RoundBtn(icon: backArrow(context), onTap: widget.onBack),
+                RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: widget.onBack),
                 const SizedBox(width: 12),
               ],
               Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),

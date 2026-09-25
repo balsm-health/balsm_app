@@ -77,9 +77,9 @@ Widget roundBtn() => Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 12,
       children: [
-        RoundBtn(icon: LucideIcons.x, onTap: () {}),
-        RoundBtn(icon: LucideIcons.download, ghost: true, onTap: () {}),
-        RoundBtn(icon: LucideIcons.locateFixed, bg: Colors.white, fg: T.fg2, onTap: () {}),
+        RoundBtn(icon: LucideIcons.x, semanticLabel: 'Close', onTap: () {}),
+        RoundBtn(icon: LucideIcons.download, semanticLabel: 'Download', ghost: true, onTap: () {}),
+        RoundBtn(icon: LucideIcons.locateFixed, semanticLabel: 'Locate', bg: Colors.white, fg: T.fg2, onTap: () {}),
       ],
     );
 
@@ -136,7 +136,7 @@ Widget avatar() => const Row(
 
 @Preview(name: 'AppBarRow', group: 'Containers', size: Size(390, 140), wrapper: balsmPreviewPadded)
 Widget appBarRow() => AppBarRow(
-      leading: RoundBtn(icon: LucideIcons.arrowLeft, ghost: true, onTap: () {}),
+      leading: RoundBtn(icon: LucideIcons.arrowLeft, semanticLabel: 'Back', ghost: true, onTap: () {}),
       children: [Text('Screen title', style: Typo.subhead().copyWith(fontWeight: FontWeight.w700))],
     );
 

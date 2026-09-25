@@ -193,7 +193,7 @@ void main() {
                     padding: const EdgeInsets.all(16),
                     child: Row(children: [
                       const Expanded(child: Text(longAr, style: TextStyle(fontSize: 18))),
-                      RoundBtn(icon: LucideIcons.x, ghost: true, onTap: () {}),
+                      RoundBtn(icon: LucideIcons.x, semanticLabel: 'Close', ghost: true, onTap: () {}),
                     ]),
                   ),
                   Flexible(

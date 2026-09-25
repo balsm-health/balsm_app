@@ -38,7 +38,10 @@ class RecordDetailScreen extends ConsumerWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const PadTop(),
           AppBarRow(children: [
-            RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: backArrow(context),
+                semanticLabel: s.strings.common.a11y_back,
+                onTap: () => Navigator.of(context).pop()),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
@@ -374,7 +377,12 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
                 Expanded(
                     child: Text(confirming ? st.store_delete_rec : st.store_manage,
                         style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-                RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
+                RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: s.strings.common.a11y_close,
+                    ghost: true,
+                    iconSize: 17,
+                    onTap: () => Navigator.pop(context)),
               ]),
             ),
           ]),
@@ -549,7 +557,12 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
           child: Row(children: [
             if (_type != null && widget.initialType == null)
-              RoundBtn(icon: backArrow(context), ghost: true, iconSize: 18, onTap: () => setState(() => _type = null)),
+              RoundBtn(
+                  icon: backArrow(context),
+                  semanticLabel: s.strings.common.a11y_back,
+                  ghost: true,
+                  iconSize: 18,
+                  onTap: () => setState(() => _type = null)),
             Expanded(
               child: Text(
                   _done
@@ -559,7 +572,12 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
                           : recordTypeLabelOne(s, _type!),
                   style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             ),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 18,
+                onTap: () => Navigator.of(context).pop()),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),

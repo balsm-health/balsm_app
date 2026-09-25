@@ -374,7 +374,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       PositionedDirectional(
         bottom: _selectedId != null ? 220 : 20,
         end: 14,
-        child: RoundBtn(icon: LucideIcons.locateFixed, bg: Colors.white, fg: s.accent.main, onTap: _recenter),
+        child: RoundBtn(
+            icon: LucideIcons.locateFixed,
+            semanticLabel: s.strings.common.a11y_locate,
+            bg: Colors.white,
+            fg: s.accent.main,
+            onTap: _recenter),
       ),
       // Offline map packs — download a governorate's basemap + places for
       // use without a connection. Stacked above recenter, same horizontal
@@ -383,8 +388,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       PositionedDirectional(
         bottom: (_selectedId != null ? 220 : 20) + 56,
         end: 14,
-        child:
-            RoundBtn(icon: LucideIcons.download, bg: Colors.white, fg: T.fg2, onTap: () => showMapPacksSheet(context)),
+        child: RoundBtn(
+            icon: LucideIcons.download,
+            semanticLabel: s.strings.common.a11y_download,
+            bg: Colors.white,
+            fg: T.fg2,
+            onTap: () => showMapPacksSheet(context)),
       ),
       if (_selectedId != null) _selectedCard(s),
     ]);
@@ -497,6 +506,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     RoundBtn(
                         icon: LucideIcons.x,
+                        semanticLabel: s.strings.common.a11y_close,
                         ghost: true,
                         iconSize: 16,
                         onTap: () => setState(() => _selectedId = null)),

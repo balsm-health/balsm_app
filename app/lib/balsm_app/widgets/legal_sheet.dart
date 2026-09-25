@@ -72,7 +72,12 @@ class _LegalSheet extends ConsumerWidget {
             Expanded(
                 child: Text(kind == LegalKind.terms ? s.strings.auth.legal_terms_t : s.strings.auth.legal_priv_t,
                     style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 17,
+                onTap: () => Navigator.pop(context)),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),

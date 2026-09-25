@@ -65,6 +65,7 @@ class ProfileScreen extends ConsumerWidget {
               button: true,
               child: RoundBtn(
                 icon: LucideIcons.qrCode,
+                semanticLabel: s.strings.common.a11y_qr,
                 onTap: () => openQrShare(context, s: s, name: displayName),
               ),
             ),

@@ -125,7 +125,12 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
             Expanded(
               child: Text(c.care_import_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             ),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 18,
+                onTap: () => Navigator.pop(context)),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),

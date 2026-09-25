@@ -115,7 +115,12 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
             Expanded(
               child: Text(f.fb_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             ),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 17,
+                onTap: () => Navigator.of(context).pop()),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),

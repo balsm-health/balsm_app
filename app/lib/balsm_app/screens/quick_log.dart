@@ -258,6 +258,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
                     if (showBack) ...[
                       RoundBtn(
                           icon: backArrow(context),
+                          semanticLabel: s.strings.common.a11y_back,
                           ghost: true,
                           iconSize: 18,
                           onTap: () => setState(() {
@@ -272,7 +273,12 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
                         style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+                    RoundBtn(
+                        icon: LucideIcons.x,
+                        semanticLabel: s.strings.common.a11y_close,
+                        ghost: true,
+                        iconSize: 18,
+                        onTap: () => Navigator.pop(context)),
                   ]),
                 ),
               ]),

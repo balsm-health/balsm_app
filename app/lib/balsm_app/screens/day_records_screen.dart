@@ -85,7 +85,10 @@ class DayRecordsScreen extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const PadTop(),
           AppBarRow(children: [
-            RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: backArrow(context),
+                semanticLabel: s.strings.common.a11y_back,
+                onTap: () => Navigator.of(context).pop()),
             const SizedBox(width: 12),
             Expanded(
               child: Text('${d.day} ${checkInMonthShort(s, d)}', style: Typo.heading(ar: s.rtl)),

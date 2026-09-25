@@ -122,7 +122,12 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
             ]),
           ),
           // Add medication — disabled (hidden) when signed out.
-          if (userId != null) RoundBtn(icon: LucideIcons.plus, iconSize: 20, onTap: () => _openAddMedication(userId)),
+          if (userId != null)
+            RoundBtn(
+                icon: LucideIcons.plus,
+                semanticLabel: s.strings.common.a11y_add,
+                iconSize: 20,
+                onTap: () => _openAddMedication(userId)),
         ]),
 
         // Adherence (last 7 days). Gradient card from the Claude Design.
@@ -367,7 +372,12 @@ class _SheetChrome extends StatelessWidget {
                     child: Padding(
                         padding: const EdgeInsets.only(left: 4),
                         child: Text(title, style: Typo.subhead(ar: st.rtl).copyWith(fontWeight: FontWeight.w700)))),
-                RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+                RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: st.strings.common.a11y_close,
+                    ghost: true,
+                    iconSize: 18,
+                    onTap: () => Navigator.pop(context)),
               ]),
             ),
           ]),

@@ -223,8 +223,22 @@ class AppBarRow extends StatelessWidget {
 /// 44px round icon button (.round-btn). Background darkens on press
 /// (`:active { background: ink100 }`) over `--dur-base`.
 class RoundBtn extends StatefulWidget {
-  const RoundBtn({super.key, required this.icon, this.onTap, this.bg, this.fg, this.ghost = false, this.iconSize = 21});
+  const RoundBtn({
+    super.key,
+    required this.icon,
+    required this.semanticLabel,
+    this.onTap,
+    this.bg,
+    this.fg,
+    this.ghost = false,
+    this.iconSize = 21,
+  });
   final IconData icon;
+
+  /// What a screen reader announces. Required, not optional: this control is a
+  /// glyph in a circle and there is nothing else for it to read. Every call
+  /// site is forced to answer, which is the point.
+  final String semanticLabel;
   final VoidCallback? onTap;
   final Color? bg;
   final Color? fg;
@@ -243,25 +257,54 @@ class _RoundBtnState extends State<RoundBtn> {
   @override
   Widget build(BuildContext context) {
     final rest = widget.ghost ? Colors.transparent : (widget.bg ?? T.ink50);
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => _set(true),
-      onTapUp: (_) => _set(false),
-      onTapCancel: () => _set(false),
-      child: AnimatedContainer(
-        duration: Motion.base,
-        curve: Motion.easeOut,
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: _down ? T.ink100 : rest,
-          shape: BoxShape.circle,
-          border: widget.ghost ? null : Border.all(color: T.border),
+    return Semantics(
+      button: true,
+      enabled: widget.onTap != null,
+      label: widget.semanticLabel,
+      // The circle stays 44 — the design's size — inside a 48 target, the
+      // smallest Android's guideline accepts and roughly a fingertip. Nothing
+      // painted changes; the control stops being hard to hit.
+      child: MinTapTarget(
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onTapDown: (_) => _set(true),
+          onTapUp: (_) => _set(false),
+          onTapCancel: () => _set(false),
+          child: AnimatedContainer(
+            duration: Motion.base,
+            curve: Motion.easeOut,
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _down ? T.ink100 : rest,
+              shape: BoxShape.circle,
+              border: widget.ghost ? null : Border.all(color: T.border),
+            ),
+            child: Icon(widget.icon, size: widget.iconSize, color: widget.fg ?? T.ink700),
+          ),
         ),
-        child: Icon(widget.icon, size: widget.iconSize, color: widget.fg ?? T.ink700),
       ),
     );
   }
+}
+
+/// Smallest touch target the platform guidelines accept — Android asks 48,
+/// iOS 44, so 48 satisfies both. Hit area only: whatever is painted inside
+/// keeps the size the design gave it.
+const double kMinTapTarget = 48;
+
+/// Grows [child]'s touch target to [kMinTapTarget] without resizing [child].
+class MinTapTarget extends StatelessWidget {
+  const MinTapTarget({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
+        // No size factors: those make Center shrink-wrap the child, which
+        // hands back the very size the minimum was meant to raise.
+        child: Center(child: child),
+      );
 }
 
 /// Back-navigation arrow that points the correct way for the ambient text
@@ -621,7 +664,20 @@ class PButton extends StatelessWidget {
       ),
     );
     // .b-btn:active { transform: scale(0.98) } — press feedback.
-    return Opacity(opacity: enabled ? 1 : 0.4, child: Pressable(onTap: onTap, child: child));
+    //
+    // Semantics wrap every button in the app, since Pressable underneath is a
+    // bare GestureDetector and announces nothing on its own. The label is
+    // already on screen, so the children are excluded to stop a screen reader
+    // reading it twice.
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      excludeSemantics: true,
+      child: MinTapTarget(
+        child: Opacity(opacity: enabled ? 1 : 0.4, child: Pressable(onTap: onTap, child: child)),
+      ),
+    );
   }
 }
 

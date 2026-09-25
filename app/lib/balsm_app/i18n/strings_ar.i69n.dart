@@ -921,6 +921,18 @@ class CommonStrings_ar extends CommonStrings {
   String get profile => "الملف الشخصي";
   String get your_accounts => "حساباتك";
   String get pages => "صفحات";
+  String get a11y_show_pw => "إظهار كلمة المرور";
+  String get a11y_hide_pw => "إخفاء كلمة المرور";
+  String get a11y_close => "إغلاق";
+  String get a11y_back => "رجوع";
+  String get a11y_next => "التالي";
+  String get a11y_delete => "حذف";
+  String get a11y_add => "إضافة";
+  String get a11y_locate => "تحديد موقعي";
+  String get a11y_download => "تنزيل";
+  String get a11y_qr => "رمز QR";
+  String get a11y_edit => "تعديل";
+  String get a11y_notifications => "الإشعارات";
   String get cancel => "إلغاء";
   String get acc_active => "الحساب النشط";
   String get acc_not_signed_in => "لم يتم تسجيل الدخول";
@@ -1013,6 +1025,30 @@ class CommonStrings_ar extends CommonStrings {
         return your_accounts;
       case 'pages':
         return pages;
+      case 'a11y_show_pw':
+        return a11y_show_pw;
+      case 'a11y_hide_pw':
+        return a11y_hide_pw;
+      case 'a11y_close':
+        return a11y_close;
+      case 'a11y_back':
+        return a11y_back;
+      case 'a11y_next':
+        return a11y_next;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'a11y_add':
+        return a11y_add;
+      case 'a11y_locate':
+        return a11y_locate;
+      case 'a11y_download':
+        return a11y_download;
+      case 'a11y_qr':
+        return a11y_qr;
+      case 'a11y_edit':
+        return a11y_edit;
+      case 'a11y_notifications':
+        return a11y_notifications;
       case 'cancel':
         return cancel;
       case 'acc_active':

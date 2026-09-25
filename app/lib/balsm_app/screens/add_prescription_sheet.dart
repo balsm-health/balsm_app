@@ -178,7 +178,12 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
                 child:
                     Text(_done ? '' : m.rx_add, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
               ),
-              RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+              RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 18,
+                  onTap: () => Navigator.pop(context)),
             ]),
           ]),
         ),

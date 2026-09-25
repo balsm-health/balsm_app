@@ -73,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
                 if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
               ]),
             ),
-            RoundBtn(icon: LucideIcons.bell, onTap: () {}),
+            RoundBtn(icon: LucideIcons.bell, semanticLabel: s.strings.common.a11y_notifications, onTap: () {}),
           ]),
 
           // `UX Enhancement Screens.html` — "Household · active-account
