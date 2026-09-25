@@ -923,6 +923,9 @@ class CommonStrings_ar extends CommonStrings {
   String get pages => "صفحات";
   String get a11y_show_pw => "إظهار كلمة المرور";
   String get a11y_hide_pw => "إخفاء كلمة المرور";
+  String get a11y_code_field => "رمز التحقق";
+  String a11y_code_progress(String n) => "أُدخل $n من 6 أرقام";
+  String get a11y_error => "خطأ";
   String get a11y_close => "إغلاق";
   String get a11y_back => "رجوع";
   String get a11y_next => "التالي";
@@ -1029,6 +1032,12 @@ class CommonStrings_ar extends CommonStrings {
         return a11y_show_pw;
       case 'a11y_hide_pw':
         return a11y_hide_pw;
+      case 'a11y_code_field':
+        return a11y_code_field;
+      case 'a11y_code_progress':
+        return a11y_code_progress;
+      case 'a11y_error':
+        return a11y_error;
       case 'a11y_close':
         return a11y_close;
       case 'a11y_back':

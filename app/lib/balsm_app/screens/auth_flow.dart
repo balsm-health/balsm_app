@@ -172,9 +172,11 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                       // WelcomeScreen): email is the only route where social is off.
                       const SizedBox(height: 18),
                     if (_error != null) ...[
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                      Semantics(
+                          liveRegion: true,
+                          child: Text(_error!,
+                              textAlign: TextAlign.center,
+                              style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                       const SizedBox(height: 12),
                     ],
                   ]),
@@ -663,9 +665,11 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(_error!,
-                        textAlign: TextAlign.center,
-                        style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
                 // The password was refused. Ask before sending anything: a
                 // mistyped password would otherwise email whoever owns that
@@ -944,16 +948,28 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                       style: Typo.meta(ar: s.rtl).copyWith(color: T.sun500, fontWeight: FontWeight.w600, height: 1.5)),
                 ],
                 const SizedBox(height: 28),
-                GestureDetector(
+                // Six painted boxes, one field. Read separately they are six
+                // unnamed containers: no name, no way to hear how many digits
+                // have landed, no sign it is an input at all. The boxes are
+                // excluded and the group carries the label and the count.
+                Semantics(
+                  textField: true,
+                  label: s.strings.common.a11y_code_field,
+                  value: s.strings.common.a11y_code_progress('${code.length}'),
                   onTap: () => focus.requestFocus(),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    for (var i = 0; i < 6; i++)
-                      _OtpBox(
-                        char: i < code.length ? code[i] : '',
-                        active: code.length == i,
-                        accent: s.accent,
-                      ),
-                  ]),
+                  child: ExcludeSemantics(
+                    child: GestureDetector(
+                      onTap: () => focus.requestFocus(),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        for (var i = 0; i < 6; i++)
+                          _OtpBox(
+                            char: i < code.length ? code[i] : '',
+                            active: code.length == i,
+                            accent: s.accent,
+                          ),
+                      ]),
+                    ),
+                  ),
                 ),
                 Opacity(
                     opacity: 0,
@@ -977,9 +993,11 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: Text(_error!,
-                        textAlign: TextAlign.center,
-                        style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
                 const SizedBox(height: 24),
                 Center(
@@ -1221,9 +1239,11 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(_error!,
-                        textAlign: TextAlign.center,
-                        style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
                 Opacity(
                   opacity: _readToEnd && !_submitting ? 1 : 0.4,
@@ -1745,8 +1765,10 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
             if (_error != null)
               Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(_error!,
-                      style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  child: Semantics(
+                      liveRegion: true,
+                      child: Text(_error!,
+                          style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)))),
             const SizedBox(height: 20),
             if (_step == ResetStep.email)
               Opacity(

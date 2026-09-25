@@ -918,6 +918,9 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get pages => "pages";
   String get a11y_show_pw => "Show password";
   String get a11y_hide_pw => "Hide password";
+  String get a11y_code_field => "Verification code";
+  String a11y_code_progress(String n) => "$n of 6 digits entered";
+  String get a11y_error => "Error";
   String get a11y_close => "Close";
   String get a11y_back => "Back";
   String get a11y_next => "Next";
@@ -1026,6 +1029,12 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return a11y_show_pw;
       case 'a11y_hide_pw':
         return a11y_hide_pw;
+      case 'a11y_code_field':
+        return a11y_code_field;
+      case 'a11y_code_progress':
+        return a11y_code_progress;
+      case 'a11y_error':
+        return a11y_error;
       case 'a11y_close':
         return a11y_close;
       case 'a11y_back':

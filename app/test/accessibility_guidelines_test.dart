@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/tokens.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
@@ -93,6 +94,29 @@ void main() {
     for (final fill in [T.hueMint600, T.hueAqua600, T.hueEmerald600, T.sun500, T.danger, T.hueViolet600]) {
       expect(contrast(T.onFill(fill), fill), greaterThanOrEqualTo(4.5));
     }
+  });
+
+  testWidgets('the code boxes are one field, not six blank containers', (tester) async {
+    // Six painted boxes announced as six unlabelled nodes, which is what a
+    // screen reader met before: no name, no way to know how many digits had
+    // landed, no way to tell it was an input at all.
+    final handle = await pump(tester, const AuthRouter());
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'patient@example.test');
+    await tester.enterText(find.byType(TextField).last, 'a-real-password');
+    await tester.pump();
+
+    // Straight to the code step through the router's own state.
+    AppScope.of(tester.element(find.text('Continue'))).go(AppRoutes.otp);
+    await tester.pumpAndSettle();
+
+    final field = find.bySemanticsLabel('Verification code');
+    expect(field, findsOneWidget);
+    // How many digits have landed is the value, not the label — a screen
+    // reader reads it back as the field's contents.
+    expect(tester.getSemantics(field).value, contains('0 of 6'));
+    handle.dispose();
   });
 
   testWidgets('the welcome screen', (tester) async {
