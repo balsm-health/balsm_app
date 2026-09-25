@@ -4,5 +4,8 @@
     { "name": "Staging", "url": "https://staging.example.com" },
     { "name": "Production", "url": "https://api.example.com" }
   ],
-  "SENTRY_DSN": ""
+  "SENTRY_DSN": "",
+    "SOCIAL_SIGN_IN_ENABLED": true,
+  "GOOGLE_SERVER_CLIENT_ID": "REPLACE_ME.apps.googleusercontent.com",
+  "GOOGLE_IOS_CLIENT_ID": "REPLACE_ME.apps.googleusercontent.com"
 }
