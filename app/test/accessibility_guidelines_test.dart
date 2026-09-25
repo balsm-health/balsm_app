@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/tokens.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:core/core.dart';
@@ -63,6 +66,34 @@ void main() {
     await tester.pumpAndSettle();
     return handle;
   }
+
+  // ── The tokens themselves ───────────────────────────────────────────────
+  // A screen test only catches what that screen happens to paint. These are
+  // the values every screen draws from, checked at the source.
+
+  double contrast(Color a, Color b) {
+    double lum(Color c) {
+      double ch(double v) => v <= 0.03928 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+      return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+    }
+
+    final la = lum(a);
+    final lb = lum(b);
+    return ((la > lb ? la : lb) + 0.05) / ((la > lb ? lb : la) + 0.05);
+  }
+
+  test('every text ink clears 4.5:1 on the cream ground', () {
+    for (final (name, ink) in [('fg1', T.fg1), ('fg2', T.fg2), ('fg3', T.fg3), ('fg4', T.fg4)]) {
+      expect(contrast(ink, T.cream50), greaterThanOrEqualTo(4.5), reason: '$name is body text somewhere');
+    }
+  });
+
+  test('a filled button picks text that can be read on it', () {
+    // White was assumed everywhere; on mint it measures 2.28:1.
+    for (final fill in [T.hueMint600, T.hueAqua600, T.hueEmerald600, T.sun500, T.danger, T.hueViolet600]) {
+      expect(contrast(T.onFill(fill), fill), greaterThanOrEqualTo(4.5));
+    }
+  });
 
   testWidgets('the welcome screen', (tester) async {
     final handle = await pump(tester, const AuthRouter());

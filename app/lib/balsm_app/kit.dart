@@ -576,7 +576,9 @@ class PButton extends StatelessWidget {
     switch (variant) {
       case BtnVariant.primary:
         bg = a.main;
-        fg = Colors.white;
+        // Measured against the fill rather than assumed: white on the mint and
+        // sun accents is 2.28:1 and 1.93:1, which is not readable.
+        fg = T.onFill(a.main);
         shadow = a.boxShadow;
         break;
       case BtnVariant.secondary:
@@ -594,7 +596,7 @@ class PButton extends StatelessWidget {
         break;
       case BtnVariant.danger:
         bg = T.danger;
-        fg = Colors.white;
+        fg = T.onFill(T.danger);
         break;
       case BtnVariant.link:
         bg = Colors.transparent;
