@@ -7,6 +7,7 @@ import 'package:disclosure/disclosure.dart'
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockSignInUseCase extends Mock implements SignInUseCase {}
@@ -147,6 +148,29 @@ void main() {
     await tester.pumpAndSettle();
 
     verifyNever(() => signIn.requestContinueOtp(any(), any()));
+  });
+
+  testWidgets('backing out of the code step keeps what was typed', (tester) async {
+    // The code did not arrive, or it went to the wrong address. Going back to
+    // fix one character should not mean retyping an email and a password —
+    // and a blank password field invites a different one, which then fails.
+    when(() => signIn.passwordSignIn(email: any(named: 'email'), password: any(named: 'password')))
+        .thenAnswer((_) async => AppResult.failure(const NetworkFailure('invalid')));
+    when(() => signIn.requestContinueOtp(any(), any())).thenAnswer((_) async => AppResult.success(null));
+
+    await pump(tester);
+    await enterCredentials(tester);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Send me a code'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(LucideIcons.arrowLeft));
+    await tester.pumpAndSettle();
+
+    expect(find.text('patient@example.test'), findsOneWidget);
+    final password = tester.widget<TextField>(find.byType(TextField).last);
+    expect(password.controller?.text, 'a-real-password');
   });
 
   testWidgets('the code step says nothing about whether the account existed', (tester) async {

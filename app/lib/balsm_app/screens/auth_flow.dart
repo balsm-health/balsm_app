@@ -468,6 +468,23 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// Set when the password was refused: the screen then asks whether to send a
   /// code rather than sending one on its own.
   bool _offerCode = false;
+
+  bool _seeded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_seeded) return;
+    _seeded = true;
+    // Coming back from the code step — the code never arrived, or it went to a
+    // mistyped address — should not mean retyping both fields. A blank password
+    // box invites a different password, which then fails for a new reason.
+    // Cleared for real on sign-out and once a verified code has consumed it.
+    final s = AppScope.of(context);
+    ctrl.text = s.authEmail;
+    pwCtrl.text = s.authPassword ?? '';
+  }
+
   bool _showPw = false;
 
   bool get _submitting => ref.read(credentialsControllerProvider).submitting;
