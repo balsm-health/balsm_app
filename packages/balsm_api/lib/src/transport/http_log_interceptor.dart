@@ -23,22 +23,34 @@ class HttpLogInterceptor extends Interceptor {
   /// Stands in for any value that must not be printed.
   static const redacted = '••• redacted •••';
 
-  /// Body keys whose value is a credential. Matched case-insensitively and by
-  /// containment, so `new_password`, `refreshToken` and `id_token` are covered
-  /// without listing every spelling the API uses.
+  /// Body keys whose value is always a credential. Matched case-insensitively
+  /// and by containment, so `new_password`, `refreshToken` and `id_token` are
+  /// covered without listing every spelling the API uses.
   static const _secretKeyParts = [
     'password',
     'token',
     'secret',
-    'code',
     'authorization',
     'cookie',
   ];
 
-  static bool _isSecret(Object? key) {
+  /// `code` is not one of them. It is the one-time code on the way out and the
+  /// FAILURE NAME on the way back — InvalidCredentials, RateLimitExceeded,
+  /// AccountLocked — and hiding those leaves a log that says a request failed
+  /// and refuses to say how. So a code is judged by its value: four to eight
+  /// digits and nothing else is an OTP; anything else is a name, a country, or
+  /// a status.
+  static final _otpValue = RegExp(r'^\d{4,8}$');
+
+  static bool _isSecretKey(Object? key) {
     final k = key.toString().toLowerCase();
     return _secretKeyParts.any(k.contains);
   }
+
+  static bool _isSecret(Object? key, Object? value) =>
+      _isSecretKey(key) || (key.toString().toLowerCase().contains('code') && _looksLikeOtp(value));
+
+  static bool _looksLikeOtp(Object? value) => value is String && _otpValue.hasMatch(value);
 
   /// [data] with every credential value replaced.
   ///
@@ -48,7 +60,8 @@ class HttpLogInterceptor extends Interceptor {
   static Object? redactBody(Object? data) {
     if (data is Map) {
       return {
-        for (final entry in data.entries) entry.key: _isSecret(entry.key) ? redacted : redactBody(entry.value),
+        for (final entry in data.entries)
+          entry.key: _isSecret(entry.key, entry.value) ? redacted : redactBody(entry.value),
       };
     }
     if (data is List) return [for (final item in data) redactBody(item)];
@@ -60,7 +73,7 @@ class HttpLogInterceptor extends Interceptor {
   /// the whole answer.
   static Map<String, dynamic> redactHeaders(Map<String, dynamic> headers) => {
         for (final entry in headers.entries)
-          entry.key: !_isSecret(entry.key)
+          entry.key: !_isSecretKey(entry.key)
               ? entry.value
               : entry.key.toLowerCase().contains('authorization')
                   ? _schemeOnly(entry.value)

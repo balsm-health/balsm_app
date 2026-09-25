@@ -36,6 +36,36 @@ void main() {
       expect(out.values.join(), isNot(contains('eyJhbGciOi')));
     });
 
+    test('keeps an error code — that is the answer, not a secret', () {
+      // The server names failures: InvalidCredentials, RateLimitExceeded,
+      // AccountLocked. Hiding those leaves a log that says a request failed
+      // and refuses to say how.
+      final out = HttpLogInterceptor.redactBody({
+        'error': {'code': 'InvalidCredentials', 'message': 'Invalid email or password.'}
+      }) as Map;
+
+      expect((out['error'] as Map)['code'], 'InvalidCredentials');
+      expect((out['error'] as Map)['message'], 'Invalid email or password.');
+    });
+
+    test('keeps a country code', () {
+      final out = HttpLogInterceptor.redactBody({'country_code': 'EG'}) as Map;
+
+      expect(out['country_code'], 'EG');
+    });
+
+    test('keeps a numeric status code', () {
+      final out = HttpLogInterceptor.redactBody({'status_code': 429}) as Map;
+
+      expect(out['status_code'], 429);
+    });
+
+    test('still hides a six-digit one-time code', () {
+      final out = HttpLogInterceptor.redactBody({'code': '123456'}) as Map;
+
+      expect(out['code'], isNot('123456'));
+    });
+
     test('reaches nested maps and lists', () {
       final out = HttpLogInterceptor.redactBody({
         'data': {
