@@ -556,6 +556,12 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     // Nothing proven: never offer the typed password to the keychain.
     TextInput.finishAutofillContext(shouldSave: false);
 
+    // Felt, not only shown. The message is visible and announced to a screen
+    // reader; a patient who is deaf and not using one has neither a sound nor
+    // speech, and a buzz says "that did not work" without their having to be
+    // looking at the one line where it says so.
+    unawaited(HapticFeedback.heavyImpact());
+
     // A lockout is not an invalid credential, and neither is an unreachable
     // server. Offering a code for either would walk around the lockout, or
     // email someone because the Wi-Fi dropped.
@@ -864,6 +870,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
     final s = AppScope.of(context);
     final isNewUser = await ref.read(otpControllerProvider.notifier).verify(email: s.authEmail, code: code);
     if (!mounted) return;
+    unawaited(isNewUser == null ? HapticFeedback.heavyImpact() : HapticFeedback.lightImpact());
     if (isNewUser != null) {
       // The sign-up password is applied in _afterVerify; the account now
       // exists, so the credentials are worth saving.

@@ -5,6 +5,7 @@ import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
     show DisclosureAcceptance, DisclosureDao, DisclosureId, disclosureDaoProvider;
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -148,6 +149,33 @@ void main() {
     await tester.pumpAndSettle();
 
     verifyNever(() => signIn.requestContinueOtp(any(), any()));
+  });
+
+  testWidgets('a refusal is felt, not only shown', (tester) async {
+    // The error line is visible and announced, which covers sight and screen
+    // readers. A patient who is deaf and not using one gets neither a sound
+    // nor speech, so the phone buzzes: a failure should register without
+    // looking at the exact spot the message appears.
+    final haptics = <String>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String? ?? 'vibrate');
+        return null;
+      },
+    );
+    addTearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+
+    when(() => signIn.passwordSignIn(email: any(named: 'email'), password: any(named: 'password')))
+        .thenAnswer((_) async => AppResult.failure(const NetworkFailure('invalid')));
+
+    await pump(tester);
+    await enterCredentials(tester);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(haptics, isNotEmpty, reason: 'the refusal should be felt');
   });
 
   testWidgets('backing out of the code step keeps what was typed', (tester) async {
