@@ -646,11 +646,12 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     suffixIcon: Semantics(
                       button: true,
                       label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
-                      child: MinTapTarget(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _showPw = !_showPw),
-                          child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
-                        ),
+                      child: GestureDetector(
+                        // Opaque, so the whole slot the decoration reserves is
+                        // tappable rather than just the glyph.
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => setState(() => _showPw = !_showPw),
+                        child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
                       ),
                     ),
                     onChanged: (_) => setState(() {})),
@@ -1735,10 +1736,10 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
                   suffixIcon: Semantics(
                       button: true,
                       label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
-                      child: MinTapTarget(
-                          child: GestureDetector(
-                              onTap: () => setState(() => _showPw = !_showPw),
-                              child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3)))),
+                      child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => setState(() => _showPw = !_showPw),
+                          child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3))),
                   onChanged: (_) => setState(() {})),
             ],
             if (_error != null)
