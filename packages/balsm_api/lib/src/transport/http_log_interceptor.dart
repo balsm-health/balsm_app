@@ -3,19 +3,25 @@ import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 
-/// Debug-only Dio interceptor that logs the request and response — method,
-/// URL, headers, and body — to the dev console (`dart:developer.log`, tag
-/// `balsm.http`), with credentials replaced.
+/// Debug-only Dio interceptor that logs the FULL request and response —
+/// method, URL, every header, and the complete body — to the dev console
+/// (`dart:developer.log`, tag `balsm.http`).
 ///
-/// Credentials are redacted because this log is made to be pasted: into a
-/// terminal, a bug report, a chat with whoever is helping. A bearer token, a
-/// password, or a one-time code that reaches any of those places has left the
-/// device, and none of them are needed to debug the request that carried them.
-/// Everything else prints in full, including PHI — so this is still DEBUG
-/// BUILDS ONLY. It is wired in `BalsmApiController.create` behind
-/// `kDebugMode`.
+/// Verbatim by default, including bearer tokens, passwords and one-time codes:
+/// the whole point of this log is to see exactly what went over the wire, and
+/// a curl line you cannot run is not much use. [redact] replaces credentials
+/// for the times a log is going somewhere other than your own terminal — a bug
+/// report, a chat, a screen recording. Anything pasted out of an unredacted log
+/// has left the device with live credentials in it.
+///
+/// DEBUG BUILDS ONLY either way — it prints PHI, and it is wired in
+/// `BalsmApiController.create` behind `kDebugMode`.
 class HttpLogInterceptor extends Interceptor {
-  const HttpLogInterceptor();
+  const HttpLogInterceptor({this.redact = false});
+
+  /// Replace credentials with [redacted] instead of printing them. Off by
+  /// default; see the class comment for when to turn it on.
+  final bool redact;
 
   static const _name = 'balsm.http';
   static const _encoder = JsonEncoder.withIndent('  ');
@@ -92,8 +98,8 @@ class HttpLogInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     options.extra['_log_ts'] = DateTime.now().microsecondsSinceEpoch;
     final b = StringBuffer('→ ${options.method} ${options.uri}');
-    _headers(b, redactHeaders(options.headers));
-    _body(b, redactBody(options.data));
+    _headers(b, _headersFor(options.headers));
+    _body(b, _bodyFor(options.data));
     b.write('\n  curl: ${_curl(options)}');
     developer.log(b.toString(), name: _name, level: 700);
     handler.next(options);
@@ -103,8 +109,8 @@ class HttpLogInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     final o = response.requestOptions;
     final b = StringBuffer('← ${response.statusCode} ${o.method} ${o.uri}${_elapsed(o)}');
-    _headers(b, redactHeaders(response.headers.map));
-    _body(b, redactBody(response.data));
+    _headers(b, _headersFor(response.headers.map));
+    _body(b, _bodyFor(response.data));
     developer.log(b.toString(), name: _name, level: 800);
     handler.next(response);
   }
@@ -115,15 +121,19 @@ class HttpLogInterceptor extends Interceptor {
     final res = err.response;
     final b = StringBuffer('✗ ${res?.statusCode ?? err.type.name} ${o.method} ${o.uri}${_elapsed(o)}');
     if (res != null) {
-      _headers(b, redactHeaders(res.headers.map));
-      _body(b, redactBody(res.data));
+      _headers(b, _headersFor(res.headers.map));
+      _body(b, _bodyFor(res.data));
     }
     developer.log(b.toString(), name: _name, level: 1000, error: err.message);
     handler.next(err);
   }
 
+  Object? _bodyFor(Object? data) => redact ? redactBody(data) : data;
+
+  Map<String, dynamic> _headersFor(Map<String, dynamic> headers) => redact ? redactHeaders(headers) : headers;
+
   /// Appends headers (string or `List<String>` values) as given — callers pass
-  /// them through [redactHeaders] first.
+  /// them through [_headersFor] first.
   void _headers(StringBuffer b, Map<String, dynamic> headers) {
     if (headers.isEmpty) return;
     b.write('\n  headers:');
@@ -131,7 +141,7 @@ class HttpLogInterceptor extends Interceptor {
   }
 
   /// Appends the body, pretty-printed for maps/lists, indented under the log
-  /// line. Callers pass it through [redactBody] first.
+  /// line. Callers pass it through [_bodyFor] first.
   void _body(StringBuffer b, Object? data) {
     if (data == null) return;
     String out;
@@ -156,17 +166,16 @@ class HttpLogInterceptor extends Interceptor {
     return ' (${ms.toStringAsFixed(0)}ms)';
   }
 
-  /// Builds a copy-pasteable `curl` equivalent of [options]. Credentials are
-  /// redacted here too — this is the line most likely to be pasted somewhere,
-  /// and a runnable command carrying a live bearer token is exactly the
-  /// accident worth preventing. Replace the placeholders to run it.
+  /// Builds a copy-pasteable `curl` equivalent of [options] — method, every
+  /// header, and the body. Runnable as printed unless [redact] is on, in which
+  /// case the placeholders have to be filled in by hand.
   String _curl(RequestOptions options) {
     final b = StringBuffer('curl -X ${options.method} ${_shQuote(options.uri.toString())}');
-    redactHeaders(options.headers).forEach((k, v) {
+    _headersFor(options.headers).forEach((k, v) {
       final value = v is List ? v.join(', ') : v.toString();
       b.write(' \\\n    -H ${_shQuote('$k: $value')}');
     });
-    final data = redactBody(options.data);
+    final data = _bodyFor(options.data);
     if (data != null) {
       String body;
       if (data is Map || data is List) {

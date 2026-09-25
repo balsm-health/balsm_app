@@ -8,6 +8,18 @@ import 'package:test/test.dart';
 /// tokens, passwords, and one-time codes, and none of those are needed to
 /// debug the request that carried them.
 void main() {
+  group('the switch', () {
+    test('debug logging is raw by default — nothing is hidden', () {
+      // The point of this log is to see exactly what went over the wire.
+      // Redaction is opt-in, for the times a log is going somewhere else.
+      expect(const HttpLogInterceptor().redact, isFalse);
+    });
+
+    test('asking for it turns it on', () {
+      expect(const HttpLogInterceptor(redact: true).redact, isTrue);
+    });
+  });
+
   group('body', () {
     test('keeps the fields that identify a request', () {
       final out = HttpLogInterceptor.redactBody({'email': 'patient@example.test', 'device_label': 'iPhone'}) as Map;
