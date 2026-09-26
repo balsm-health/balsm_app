@@ -73,7 +73,9 @@ class HomeScreen extends ConsumerWidget {
                 if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
               ]),
             ),
-            RoundBtn(icon: LucideIcons.bell, semanticLabel: s.strings.common.a11y_notifications, onTap: () {}),
+            // Bell hidden: it had an empty onTap, so it announced itself to a
+            // screen reader as a working button and then did nothing. Restore
+            // it with the screen it is meant to open.
           ]),
 
           // `UX Enhancement Screens.html` — "Household · active-account
