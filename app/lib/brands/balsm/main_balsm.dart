@@ -6,7 +6,6 @@ import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geofence_block/geofence_block.dart';
 import 'package:profile/profile.dart';
 import 'package:app/balsm_app/app_state.dart';
@@ -69,7 +68,10 @@ Future<void> bootstrap({
   // the platform secure store before the container is built.
   // macOS: legacy file keychain — the data-protection keychain needs a
   // provisioned keychain-access-group entitlement (-34018 without it).
-  const secureStorage = FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
+  // core's canonical config — the auth use cases write tokens through the same
+  // one. A differently-configured instance is a DIFFERENT Android store, so the
+  // session would read back empty here and route to the welcome screen.
+  const secureStorage = balsmSecureStorage;
   final userId = await secureStorage.read(key: 'balsm.user_id');
 
   // A session needs a REFRESH token to be revivable, not just an id. With the id
@@ -130,7 +132,9 @@ Future<void> bootstrap({
     // balsmApiClientProvider reads `.client` off it.
     balsmApiControllerProvider.overrideWith(
       (ref) => BalsmApiController.create(
-        storage: const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false)),
+        // Must match the store the auth use cases write to, or AuthInterceptor
+        // finds no refresh token on the first authenticated call and signs out.
+        storage: balsmSecureStorage,
         bus: ref.watch(eventBusProvider),
       ),
     ),
