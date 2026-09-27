@@ -53,3 +53,6 @@ app/env/shared*.json
 
 # claude.ai/design fetch cache (baseline in synced/ is committed)
 .design-sync/current/
+
+# JetBrains per-machine caches (device streaming lists, etc.)
+.idea/caches/
