@@ -66,6 +66,10 @@ class PatientAppState extends ChangeNotifier {
   Gender gender = Gender.other;
 
   /// Active backup target. Closed catalog — see [StorageTarget].
+  ///
+  /// Read-only on purpose: there is no setter because no cloud can receive a
+  /// copy yet (see `storage_sheet.dart`), and a persisted non-local target is
+  /// downgraded on load. Add a setter alongside a working adapter, not before.
   StorageTarget storageProvider = StorageTarget.local;
 
   /// Session-only extra family members the patient added from the account
@@ -231,12 +235,6 @@ class PatientAppState extends ChangeNotifier {
 
   /// Debug-only: ReportFlow registers this while the check-in is open.
   VoidCallback? qaCheckinAdvance;
-
-  void switchCloudProvider(StorageTarget to) {
-    storageProvider = to;
-    _save();
-    notifyListeners();
-  }
 
   void setCountry(CountryCode c) {
     country = c;

@@ -56,7 +56,7 @@ void main() {
 
       expect(r.isSuccess, isTrue);
       expect(r.value.id, p.id, reason: 'a new id would orphan the files');
-      expect(await providers.findFiles(p.id), ['vault/card.png']);
+      expect([for (final a in await providers.findFiles(p.id)) a.locator], ['vault/card.png']);
     });
 
     test('cleared fields persist as null, not empty strings', () async {

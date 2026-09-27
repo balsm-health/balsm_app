@@ -13,12 +13,15 @@ import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../widgets/attachment_thumb.dart';
+import '../widgets/phone_field.dart';
 import '../widgets/vault_file_viewer.dart';
 import '../widgets/photo_attach.dart';
 import '../routes.dart';
 import '../tokens.dart';
 import 'care_import_sheet.dart';
 import 'profile_subscreens.dart';
+import '../storage_target.dart';
+import '../widgets/data_loc_pill.dart';
 
 /// Care team (`home.jsx` `CareTeamScreen` + its "Add a provider" sheet).
 ///
@@ -29,8 +32,8 @@ import 'profile_subscreens.dart';
 ///
 void openCareTeam(BuildContext context) => pushSubScreen(context, (s) => const CareTeamScreen());
 
-/// One provider's attached files (vault-relative paths), oldest first.
-final careProviderFilesProvider = StreamProvider.autoDispose.family<List<String>, CareProviderId>((ref, id) {
+/// One provider's attachments — vault files and links together, oldest first.
+final careProviderFilesProvider = StreamProvider.autoDispose.family<List<CareProviderFile>, CareProviderId>((ref, id) {
   return ref.watch(careProvidersDataSourceProvider).watchFiles(id);
 });
 
@@ -84,6 +87,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
 
   @override
   void dispose() {
+    _importedTimer?.cancel();
     _query.dispose();
     super.dispose();
   }
@@ -112,6 +116,19 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     return hay.contains(q);
   }
 
+  /// How many rows the last import created, for the inline banner. Zero hides
+  /// it. `home.jsx` clears it after 5s rather than leaving it on the screen.
+  int _imported = 0;
+  Timer? _importedTimer;
+
+  void _showImported(int n) {
+    setState(() => _imported = n);
+    _importedTimer?.cancel();
+    _importedTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _imported = 0);
+    });
+  }
+
   Future<void> _add() async {
     final added = await showAppSheet<bool>(
       context,
@@ -137,7 +154,12 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     if (result <= 0) return;
 
     ref.invalidate(careTeamProvider);
-    _snack(AppScope.of(context).strings.care.care_import_done('$result'));
+    // Clear any filter, so rows just added are actually in view.
+    setState(() {
+      _typeFilter = null;
+      _query.clear();
+    });
+    _showImported(result);
   }
 
   /// The same sheet in edit mode. It returns `true` when the row was saved and
@@ -188,9 +210,11 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
     return SubScreen(
       s: s,
       title: s.strings.profile.p_care,
-      // `home.jsx` replaced the dashed "Add a care provider" row with a FAB,
-      // so adding is reachable without scrolling past the whole roster.
-      floating: _CareFab(onTap: _add),
+      trailing: const DataLocPill(category: DataCategory.care),
+      // `home.jsx` routes the FAB through the phone's contacts: most of a care
+      // team is already in the address book, so typing one in by hand is the
+      // fallback, reachable from inside the import sheet.
+      floating: _CareFab(onTap: _import),
       // FR-509: sign-in and foreground are handled by the shell; this is the
       // explicit user refresh. The list itself keeps reading from drift, so the
       // rows are already on screen — this only reconciles with the cloud.
@@ -204,21 +228,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
           padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),
           child: Text(c.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
         ),
-        // Import sits beside the intro rather than on the FAB: the FAB is the
-        // primary add, and routing it through the OS picker would make typing
-        // a provider in by hand the slower path.
-        Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: PButton(
-            c.care_import,
-            icon: LucideIcons.contactRound,
-            variant: BtnVariant.secondary,
-            block: true,
-            accent: s.accent,
-            ar: s.rtl,
-            onTap: _import,
-          ),
-        ),
+        if (_imported > 0) _ImportedBanner(s: s, count: _imported),
         if (team.isNotEmpty) ...[
           _CareSearchField(controller: _query, hint: c.care_search_ph, onChanged: () => setState(() {})),
           if (present.length > 1) ...[
@@ -301,6 +311,39 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
   }
 }
 
+/// Confirmation that an import landed, and a nudge to fill in what the address
+/// book could not supply (`home.jsx`, the `imported` block).
+///
+/// An inline banner rather than a toast: it names an action the patient takes on
+/// rows that are now on screen, and a toast is gone before they can read it.
+class _ImportedBanner extends StatelessWidget {
+  const _ImportedBanner({required this.s, required this.count});
+  final PatientAppState s;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(color: T.successBg, borderRadius: BorderRadius.circular(T.rLg)),
+          child: Semantics(
+            liveRegion: true,
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Icon(LucideIcons.circleCheck, size: 17, color: T.success),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  s.strings.care.care_import_banner('$count'),
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1, height: 1.4),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      );
+}
+
 /// `.rec-fab` with the add-provider glyph. Same 56pt disc as the records
 /// vault's, so the two "add" actions read as one affordance.
 class _CareFab extends StatelessWidget {
@@ -311,7 +354,7 @@ class _CareFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Semantics(
-      label: s.strings.care.care_add,
+      label: s.strings.care.care_import_fab,
       button: true,
       child: Pressable(
         onTap: onTap,
@@ -349,46 +392,19 @@ class _ProviderCard extends ConsumerStatefulWidget {
 }
 
 class _ProviderCardState extends ConsumerState<_ProviderCard> {
-  /// The design keeps one provider's drawer open at a time (`openId`); here it
-  /// is per-card, which behaves the same from the patient's side.
-  bool _filesOpen = false;
-  bool _busy = false;
-
   CareProvider get provider => widget.provider;
 
-  /// Saves the picked bytes into the encrypted vault, then links the path.
   /// Bytes never land in the database and never touch plaintext disk.
-  Future<void> _attach() async {
-    if (_busy) return;
-    final c = AppScope.of(context).strings.care;
-    final picked = await pickFileAttach();
-    if (picked == null || picked.bytes == null) return;
-    if (!mounted) return;
-    setState(() => _busy = true);
-    try {
-      final store = ref.read(userFileStoreProvider);
-      final path = await store.save(picked.name ?? 'attachment', picked.bytes!);
-      await ref.read(careProvidersDataSourceProvider).putFile(provider.id, path);
-      ref.invalidate(careProviderFilesProvider(provider.id));
-      if (mounted) setState(() => _filesOpen = true);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(c.care_save_failed)));
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _detach(String path) async {
-    await ref.read(careProvidersDataSourceProvider).deleteFile(provider.id, path);
-    ref.invalidate(careProviderFilesProvider(provider.id));
-  }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final files = ref.watch(careProviderFilesProvider(provider.id)).valueOrNull ?? const <String>[];
+    final files = ref.watch(careProviderFilesProvider(provider.id)).valueOrNull ?? const <CareProviderFile>[];
+    // Only vault files have a thumbnail; a link is not something to preview.
+    final thumbs = [
+      for (final f in files)
+        if (!f.isLink) f.locator
+    ];
     final c = s.strings.care;
     final phone = provider.phone;
     final phones = [provider.phone, provider.phone2].where((p) => p != null && p.isNotEmpty).join(' · ');
@@ -473,124 +489,55 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
           // clinic changes far more often than the provider does, and removing
           // and re-adding them lost their attached files. Removal now lives
           // inside the edit sheet, behind a confirm.
-          Semantics(
-            button: true,
-            label: c.care_edit,
-            child: RoundBtn(
-                icon: LucideIcons.pencil,
-                // The card already carries the generic "Edit" above; this one
-                // names who is being edited, which is what a screen reader
-                // user needs when several cards are open.
-                semanticLabel: '${c.care_edit} ${provider.name}',
-                ghost: true,
-                iconSize: 16,
-                onTap: widget.onEdit),
-          ),
+          // One node, naming who is being edited — what a screen reader user
+          // needs when several cards are open. An outer generic "Edit" wrapper
+          // used to sit here; it merged into this node, so it only duplicated
+          // the word.
+          RoundBtn(
+              icon: LucideIcons.pencil,
+              semanticLabel: '${c.care_edit} ${provider.name}',
+              ghost: true,
+              iconSize: 16,
+              onTap: widget.onEdit),
         ]),
-        // Collapsed, the card previews what is attached: a 64pt strip that
-        // opens the viewer at whichever file was tapped. It gives way to the
-        // full gallery once the drawer is open.
-        if (files.isNotEmpty && !_filesOpen) ...[
+        // The card previews what is attached: a 64pt strip that opens the
+        // viewer at whichever file was tapped. Managing them is the edit
+        // sheet's job, so there is no drawer for this to give way to.
+        if (thumbs.isNotEmpty) ...[
           const SizedBox(height: 14),
           SizedBox(
             height: 64,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.zero,
-              itemCount: files.length,
+              itemCount: thumbs.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, i) => SizedBox(
                 width: 64,
                 child: VaultAttachmentThumb(
-                  path: files[i],
+                  path: thumbs[i],
                   compact: true,
                   height: 64,
-                  onOpen: () => VaultFileViewer.openAll(context, paths: files, index: i, title: provider.name),
+                  onOpen: () => VaultFileViewer.openAll(context, paths: thumbs, index: i, title: provider.name),
                 ),
               ),
             ),
           ),
         ],
-        // The design always shows a Call/Message pair; Message has nowhere to
-        // go here, so Call appears only when there is a number to dial, and
-        // Files sits beside it exactly as the design places it.
-        const SizedBox(height: 14),
-        Row(children: [
-          if (phone != null && phone.isNotEmpty)
-            Expanded(
-              child: PButton(
-                c.care_call,
-                icon: LucideIcons.phone,
-                variant: BtnVariant.secondary,
-                size: BtnSize.sm,
-                accent: s.accent,
-                ar: s.rtl,
-                block: true,
-                onTap: () => widget.onCall(phone),
-              ),
-            ),
-          if (phone != null && phone.isNotEmpty) const SizedBox(width: 8),
-          // `block` stretches to infinity, which a bare Row child cannot be
-          // given — so the sole button flexes instead.
-          Builder(builder: (context) {
-            // Three states, as the design has them: nothing attached goes
-            // straight to the picker; attached collapses/expands the drawer.
-            final files0 = PButton(
-              files.isEmpty
-                  ? c.care_attach_file
-                  : _filesOpen
-                      ? c.care_files_done
-                      : c.care_manage_files,
-              icon: files.isEmpty
-                  ? LucideIcons.paperclip
-                  : _filesOpen
-                      ? LucideIcons.check
-                      : LucideIcons.pencil,
-              variant: BtnVariant.secondary,
-              size: BtnSize.sm,
-              accent: s.accent,
-              ar: s.rtl,
-              block: phone == null || phone.isEmpty,
-              onTap: files.isEmpty ? _attach : () => setState(() => _filesOpen = !_filesOpen),
-            );
-            return phone == null || phone.isEmpty ? Expanded(child: files0) : files0;
-          }),
-        ]),
-        if (_filesOpen) ...[
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: T.ink100),
-          const SizedBox(height: 12),
-          Row(children: [
-            const Icon(LucideIcons.paperclip, size: 13, color: T.fg3),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(c.care_files_head,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, color: T.fg3)),
-            ),
-            if (_busy)
-              const SizedBox(width: 16, height: 16, child: Spinner(size: 16))
-            else
-              PButton(
-                c.care_attach,
-                icon: LucideIcons.plus,
-                variant: BtnVariant.ghost,
-                size: BtnSize.sm,
-                accent: s.accent,
-                ar: s.rtl,
-                onTap: _attach,
-              ),
-          ]),
-          if (files.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            VaultAttachmentGallery(
-              paths: files,
-              height: 150,
-              title: provider.name,
-              onAdd: _attach,
-              onRemove: (i) => _detach(files[i]),
-              addLabel: c.care_attach_add,
-            ),
-          ],
+        // The design shows Call alone: attaching moved into the edit sheet, so
+        // the card no longer carries a files button or its drawer.
+        if (phone != null && phone.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          PButton(
+            c.care_call,
+            icon: LucideIcons.phone,
+            variant: BtnVariant.secondary,
+            size: BtnSize.sm,
+            accent: s.accent,
+            ar: s.rtl,
+            block: true,
+            onTap: () => widget.onCall(phone),
+          ),
         ],
       ]),
     );
@@ -721,6 +668,17 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   final _notes = TextEditingController();
   bool _saving = false;
 
+  /// Vault paths attached before the row exists. `home.jsx` keeps them in
+  /// `formAtts` and writes them with the provider; add mode has no
+  /// [CareProviderId] to file them under until the save returns one, so they
+  /// wait here and are linked in [_save].
+  ///
+  /// Edit mode never uses this — there the id already exists, so a file is
+  /// linked the moment it is picked, exactly as the card does it.
+  final List<CareProviderFile> _staged = [];
+
+  bool _attaching = false;
+
   /// Second stage of removal — the design asks before it deletes.
   bool _confirmDelete = false;
 
@@ -765,6 +723,91 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
     final v = data?.text?.trim();
     if (v == null || v.isEmpty || !mounted) return;
     setState(() => _mapUrl.text = v);
+  }
+
+  /// Files on this provider: the stored set in edit mode, the staged set in add
+  /// mode.
+  List<CareProviderFile> _files() {
+    final p = _editing;
+    if (p == null) return _staged;
+    return ref.watch(careProviderFilesProvider(p.id)).valueOrNull ?? const <CareProviderFile>[];
+  }
+
+  Future<void> _attachFile() async {
+    if (_attaching || _saving) return;
+    // Ask where from first: Files and Photos are separate pickers on both
+    // platforms, and opening the wrong one is a dead end for a patient whose
+    // business card is a photo.
+    final picked = await pickAttachment(context);
+    if (picked == null || !mounted) return;
+
+    // A link carries no bytes and never touches the vault.
+    if (picked.kind == 'url') {
+      final url = picked.url?.trim() ?? '';
+      if (!isStorableLink(url)) {
+        _fail();
+        return;
+      }
+      await _attachLink(url);
+      return;
+    }
+    if (picked.bytes == null) return;
+
+    setState(() => _attaching = true);
+    try {
+      final path = await ref.read(userFileStoreProvider).save(picked.name ?? 'attachment', picked.bytes!);
+      await _record(CareProviderFile.file(path));
+    } catch (_) {
+      if (mounted) _fail();
+    } finally {
+      if (mounted) setState(() => _attaching = false);
+    }
+  }
+
+  Future<void> _attachLink(String url) async {
+    setState(() => _attaching = true);
+    try {
+      await _record(CareProviderFile.link(url));
+    } catch (_) {
+      if (mounted) _fail();
+    } finally {
+      if (mounted) setState(() => _attaching = false);
+    }
+  }
+
+  /// Stage it in add mode, write it in edit mode.
+  Future<void> _record(CareProviderFile attachment) async {
+    final p = _editing;
+    if (p == null) {
+      if (!_staged.contains(attachment)) _staged.add(attachment);
+      return;
+    }
+    final dao = ref.read(careProvidersDataSourceProvider);
+    if (attachment.isLink) {
+      await dao.putLink(p.id, attachment.locator);
+    } else {
+      await dao.putFile(p.id, attachment.locator);
+    }
+    ref.invalidate(careProviderFilesProvider(p.id));
+  }
+
+  Future<void> _detachFile(CareProviderFile attachment) async {
+    final p = _editing;
+    if (p == null) {
+      setState(() => _staged.remove(attachment));
+      return;
+    }
+    await ref.read(careProvidersDataSourceProvider).deleteFile(p.id, attachment.locator);
+    ref.invalidate(careProviderFilesProvider(p.id));
+  }
+
+  Future<void> _openLink(String url) async {
+    // Only ever what `isStorableLink` let through, and always externally: a
+    // pasted URL is never rendered inside the app.
+    if (!isStorableLink(url)) return;
+    if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+      if (mounted) _fail();
+    }
   }
 
   Future<void> _delete() async {
@@ -829,6 +872,19 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
             );
     if (!mounted) return;
     if (result.isSuccess) {
+      // Add mode: the row only just got an id, so anything attached while
+      // filling the form is filed under it now.
+      if (editing == null && _staged.isNotEmpty) {
+        final dao = ref.read(careProvidersDataSourceProvider);
+        for (final a in _staged) {
+          if (a.isLink) {
+            await dao.putLink(result.value.id, a.locator);
+          } else {
+            await dao.putFile(result.value.id, a.locator);
+          }
+        }
+        if (!mounted) return;
+      }
       Navigator.pop(context, true);
       return;
     }
@@ -847,6 +903,11 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
     // Places and people label the same two fields differently.
     final place = _type.isPlace;
     final ready = _name.text.trim().isNotEmpty && !_saving;
+    final files = _files();
+    final vaultFiles = [
+      for (final a in files)
+        if (!a.isLink) a.locator
+    ];
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
@@ -905,12 +966,12 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                 controller: _specialty,
                 hint: place ? c.care_ph_services : c.care_ph_specialty,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               _Eyebrow(c.care_s_contact, s: s),
-              const SizedBox(height: 10),
-              _Field(label: c.care_f_phone, controller: _phone, phone: true),
               const SizedBox(height: 14),
-              _Field(label: c.care_f_phone2, controller: _phone2, hint: c.care_ph_phone2, phone: true),
+              _LabelledPhone(label: c.care_f_phone, controller: _phone, s: s),
+              const SizedBox(height: 14),
+              _LabelledPhone(label: c.care_f_phone2, controller: _phone2, s: s, hint: c.care_ph_phone2),
               const SizedBox(height: 14),
               _Field(
                 label: c.care_f_email,
@@ -919,9 +980,9 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                 ltr: true,
                 keyboard: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               _Eyebrow(place ? c.care_s_location : c.care_s_clinic, s: s),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               _Field(
                 label: place ? c.care_f_branch : c.care_f_clinic,
                 controller: _clinic,
@@ -940,12 +1001,57 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
               ),
               const SizedBox(height: 14),
               _Field(label: c.care_f_notes, controller: _notes, hint: c.care_ph_notes, lines: 2),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
+              // Business card & files. The design attaches here, not only from
+              // the roster card — a business card is something you have in hand
+              // while you are typing the provider in.
+              Row(children: [
+                Expanded(child: _Eyebrow(c.care_files_head, s: s)),
+                if (_attaching)
+                  const SizedBox(width: 20, height: 20, child: Spinner(size: 20))
+                else
+                  PButton(
+                    c.care_attach,
+                    icon: LucideIcons.plus,
+                    variant: BtnVariant.ghost,
+                    size: BtnSize.sm,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _attachFile,
+                  ),
+              ]),
+              const SizedBox(height: 10),
+              if (files.isEmpty)
+                _AttachEmpty(s: s, onTap: _attaching ? null : _attachFile)
+              else ...[
+                if (vaultFiles.isNotEmpty)
+                  VaultAttachmentGallery(
+                    paths: vaultFiles,
+                    height: 150,
+                    title: _name.text.trim().isEmpty ? c.care_files_head : _name.text.trim(),
+                    onAdd: _attachFile,
+                    onRemove: (i) => _detachFile(CareProviderFile.file(vaultFiles[i])),
+                    addLabel: c.care_attach_add,
+                  ),
+                // Links sit under the gallery as their own rows: there is no
+                // thumbnail to render, and nothing is fetched to make one.
+                for (final link in files.where((a) => a.isLink)) ...[
+                  const SizedBox(height: 8),
+                  _LinkRow(
+                    s: s,
+                    url: link.locator,
+                    onOpen: () => _openLink(link.locator),
+                    onRemove: _saving ? null : () => _detachFile(link),
+                  ),
+                ],
+              ],
+              const SizedBox(height: 16),
               Row(children: [
                 Expanded(
                   child: PButton(
                     s.strings.common.cancel,
                     variant: BtnVariant.secondary,
+                    large: true,
                     accent: s.accent,
                     ar: s.rtl,
                     onTap: () => Navigator.pop(context),
@@ -956,6 +1062,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                   child: PButton(
                     _editing == null ? c.care_save : c.care_save_changes,
                     variant: BtnVariant.primary,
+                    large: true,
                     accent: s.accent,
                     ar: s.rtl,
                     onTap: ready ? _save : null,
@@ -1000,7 +1107,6 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                           child: PButton(
                             c.care_keep,
                             variant: BtnVariant.secondary,
-                            size: BtnSize.sm,
                             accent: s.accent,
                             ar: s.rtl,
                             onTap: _saving ? null : () => setState(() => _confirmDelete = false),
@@ -1011,7 +1117,6 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
                           child: PButton(
                             c.care_remove,
                             variant: BtnVariant.primary,
-                            size: BtnSize.sm,
                             color: T.danger,
                             accent: s.accent,
                             ar: s.rtl,
@@ -1028,6 +1133,127 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
       ]),
     );
   }
+}
+
+/// One attached link. Shows the host rather than the whole URL — a maps or
+/// drive link is unreadable at full length and the host is what tells the
+/// patient where it goes.
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({required this.s, required this.url, required this.onOpen, required this.onRemove});
+  final PatientAppState s;
+  final String url;
+  final VoidCallback onOpen;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final host = Uri.tryParse(url)?.host ?? url;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(T.rMd),
+        border: Border.all(color: T.border),
+      ),
+      child: Row(children: [
+        Expanded(
+          child: Semantics(
+            button: true,
+            label: '${s.strings.care.care_link_opens} $host',
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: onOpen,
+              behavior: HitTestBehavior.opaque,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: kMinTapTarget),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
+                  child: Row(children: [
+                    const Icon(LucideIcons.link, size: 16, color: T.fg3),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        host,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textDirection: TextDirection.ltr,
+                        style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
+                      ),
+                    ),
+                    const Icon(LucideIcons.externalLink, size: 14, color: T.fg3),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+        ),
+        RoundBtn(
+            icon: LucideIcons.x,
+            semanticLabel: '${s.strings.care.care_link_remove} $host',
+            ghost: true,
+            iconSize: 15,
+            onTap: onRemove),
+      ]),
+    );
+  }
+}
+
+/// Nothing attached yet: a dashed invitation rather than an empty gallery, so
+/// the row does not look broken before the patient has added anything.
+class _AttachEmpty extends StatelessWidget {
+  const _AttachEmpty({required this.s, required this.onTap});
+  final PatientAppState s;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = s.strings.care;
+    return Semantics(
+      button: true,
+      label: '${c.care_attach_empty}. ${c.care_attach_empty_h}',
+      excludeSemantics: true,
+      child: Pressable(
+        onTap: onTap,
+        child: DashedBorder(
+          radius: T.rLg,
+          strokeWidth: 1.5,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(children: [
+              const Icon(LucideIcons.paperclip, size: 16, color: T.fg3),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(c.care_attach_empty,
+                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(c.care_attach_empty_h, style: Typo.meta(ar: s.rtl)),
+                  ),
+                ]),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A [PhoneField] under the same label the other fields use, so the form reads
+/// as one column.
+class _LabelledPhone extends StatelessWidget {
+  const _LabelledPhone({required this.label, required this.controller, required this.s, this.hint});
+  final String label;
+  final TextEditingController controller;
+  final PatientAppState s;
+  final String? hint;
+
+  @override
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+        const SizedBox(height: 6),
+        PhoneField(controller: controller, hint: hint ?? kPhoneHintExample),
+      ]);
 }
 
 /// Uppercase tracked section label (`letter-spacing: 0.16em`).
@@ -1048,7 +1274,6 @@ class _Field extends StatelessWidget {
     this.hint,
     this.lines = 1,
     this.ltr = false,
-    this.phone = false,
     this.autofocus = false,
     this.keyboard,
     this.onChanged,
@@ -1058,7 +1283,6 @@ class _Field extends StatelessWidget {
   final String? hint;
   final int lines;
   final bool ltr;
-  final bool phone;
   final bool autofocus;
   final TextInputType? keyboard;
   final VoidCallback? onChanged;
@@ -1079,9 +1303,8 @@ class _Field extends StatelessWidget {
         maxLines: lines,
         minLines: lines,
         onChanged: onChanged == null ? null : (_) => onChanged!(),
-        // Phone numbers are always LTR, whatever the UI language.
-        textDirection: ltr || phone ? TextDirection.ltr : null,
-        keyboardType: keyboard ?? (phone ? TextInputType.phone : TextInputType.text),
+        textDirection: ltr ? TextDirection.ltr : null,
+        keyboardType: keyboard ?? TextInputType.text,
         style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
         decoration: InputDecoration(
           hintText: hint,
@@ -1120,34 +1343,54 @@ class _MapLinkField extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(c.care_f_map, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
       const SizedBox(height: 6),
-      Stack(alignment: AlignmentDirectional.centerEnd, children: [
-        TextField(
-          controller: controller,
-          onChanged: (_) => onChanged(),
-          keyboardType: TextInputType.url,
-          textDirection: TextDirection.ltr,
-          style: Typo.body(ar: s.rtl),
-          decoration: InputDecoration(
-            hintText: c.care_ph_map,
-            prefixIcon: const Icon(LucideIcons.mapPinned, size: 16, color: T.fg3),
-            prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-            // Room for the Paste button so the text never runs under it.
-            contentPadding: const EdgeInsetsDirectional.fromSTEB(0, 14, 82, 14),
+      // Paste rides in the decoration, not in a Stack over it. A Stack sizes to
+      // its children, and a TextField given loose constraints shrink-wraps to
+      // its hint — which put the button in the middle of the field, on top of
+      // the text. As a suffix the field also reserves the room itself.
+      TextField(
+        controller: controller,
+        onChanged: (_) => onChanged(),
+        keyboardType: TextInputType.url,
+        textDirection: TextDirection.ltr,
+        style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
+        decoration: InputDecoration(
+          hintText: c.care_ph_map,
+          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15),
+          prefixIcon: const Icon(LucideIcons.mapPinned, size: 16, color: T.fg3),
+          prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: kMinTapTarget),
+          // IntrinsicWidth, not a bare Padding: [MinTapTarget] centres its
+          // child, and a Center under loose constraints expands to fill them —
+          // so the suffix took the whole field, the button floated to the
+          // middle of it and the content area collapsed to nothing. Sizing the
+          // suffix to the button's own width pins it back to the edge.
+          suffixIcon: IntrinsicWidth(
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(end: 6),
+              child: PButton(
+                c.care_paste,
+                icon: LucideIcons.clipboardPaste,
+                variant: BtnVariant.ghost,
+                size: BtnSize.sm,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: onPaste,
+              ),
+            ),
           ),
+          suffixIconConstraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
+          // The same outline every other field in this form carries; without
+          // it Material falls back to an underline and the prefix icon sits
+          // outside the box.
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 6),
-          child: PButton(
-            c.care_paste,
-            icon: LucideIcons.clipboardPaste,
-            variant: BtnVariant.ghost,
-            size: BtnSize.sm,
-            accent: s.accent,
-            ar: s.rtl,
-            onTap: onPaste,
-          ),
-        ),
-      ]),
+      ),
       const SizedBox(height: 6),
       if (looksWrong)
         Text(c.care_map_bad, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, color: T.danger))

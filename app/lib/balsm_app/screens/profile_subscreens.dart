@@ -10,6 +10,8 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart';
+import '../storage_target.dart';
+import '../widgets/data_loc_pill.dart';
 
 /// Profile sub-screens ported from `home.jsx`: Medical profile, Care team,
 /// Privacy & data, Emergency numbers. Each opens as a pushed full-screen route
@@ -327,7 +329,13 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
       s: s,
       title: s.strings.profile.p_cond,
       maxWidth: 560,
-      trailing: saved ? Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl) : null,
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        const DataLocPill(category: DataCategory.medical),
+        if (saved) ...[
+          const SizedBox(width: 8),
+          Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
+        ],
+      ]),
       children: [
         _SectionHead(LucideIcons.clipboardList, s.strings.profile.pd_conditions, s: s),
         _ConditionEditor(

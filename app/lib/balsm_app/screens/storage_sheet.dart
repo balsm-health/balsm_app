@@ -1,36 +1,53 @@
-import 'dart:async';
-import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../app_state.dart';
+import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../storage_target.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
 
-/// Storage & sync sheet (storage.jsx `StorageSyncSheet`) — the single-active-
-/// cloud backup flow. Phases: idle (provider picker) → connecting / migrating
-/// (animated ring + stepped checklist) → done, plus confirm-disconnect.
+/// Storage & sync (design: `storage.jsx` `StorageSyncSheet`).
+///
+/// The design's model: this device always holds a copy, and each data category
+/// can additionally sync to any connected cloud. That model is ported whole —
+/// cloud accounts, the per-category map, the per-category editor — but every
+/// cloud in it is rendered unavailable, because none of them can receive a
+/// byte in this build:
+///
+///  * `ICloudBackupAdapter` throws on every call (the `cloud_kit` plugin was
+///    removed and not replaced).
+///  * Balsm Cloud has no adapter at all.
+///  * `BackupService` is not wired to `DriveBackupAdapter`, and backs up the
+///    journal as one blob, so it has no concept of a category either.
+///
+/// So there is no Connect, no toggle and no "synced N minutes ago" — a screen
+/// that tells a patient their health record reached a cloud it never left for
+/// is the one failure this screen cannot have. [StorageTargetAvailability]
+/// holds the gate; when an adapter lands, flipping it lights this screen up.
 void showStorageSync(BuildContext context) {
   final s = AppScope.of(context);
   showAppSheet<void>(
     context,
-    isDismissible: false, // gated by phase — close via the X / Done button
-    enableDrag: false,
     textDirection: s.dir,
     builder: (_) => _StorageSyncSheet(s: s),
   );
 }
 
-// Migration step labels — app i69n keys.
-const _migrateSteps = [
-  'storage.store_step_prepare',
-  'storage.store_step_checkins',
-  'storage.store_step_records',
-  'storage.store_step_rx',
-  'storage.store_step_verify',
-];
+/// Where a category's data actually is. Device-only today; a list rather than a
+/// single target because the design's model is additive and the pill, the
+/// summary line and the stacked icons all read from it.
+List<StorageTarget> syncTargetsFor(DataCategory _) =>
+    StorageTarget.picker.where((t) => !t.isLocal && t.isAvailable).toList();
+
+/// "This device only" / "Device + iCloud" / "Device + 2 clouds".
+String locSummary(StorageStrings s, List<StorageTarget> targets) => switch (targets.length) {
+      0 => s.store_device_only_sum,
+      1 => s.store_device_plus(targets.first.label(s)),
+      _ => s.store_device_plus_n('${targets.length}'),
+    };
 
 class _StorageSyncSheet extends ConsumerStatefulWidget {
   const _StorageSyncSheet({required this.s});
@@ -40,441 +57,423 @@ class _StorageSyncSheet extends ConsumerStatefulWidget {
 }
 
 class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
-  String phase = 'idle'; // idle | connecting | migrating | done | confirm_disconnect
-  StorageTarget? target;
-  int progress = 0;
-  Timer? _timer;
+  /// Null is the map; a category (or [_allData]) is its editor.
+  DataCategory? _view;
+
+  /// The design's `cat === 'all'` branch, which edits every category at once.
+  bool _allView = false;
 
   PatientAppState get s => widget.s;
-  StorageTarget get active => s.storageProvider;
   bool get ar => s.rtl;
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _runPhase(StorageTarget to, String mode) {
-    setState(() {
-      target = to;
-      phase = mode;
-      progress = 0;
-    });
-    final total = mode == 'connecting' ? 1 : _migrateSteps.length;
-    final ms = mode == 'connecting' ? 900 : 550;
-    _timer?.cancel();
-    _timer = Timer.periodic(Duration(milliseconds: ms), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      setState(() => progress++);
-      if (progress >= total) {
-        t.cancel();
-        s.switchCloudProvider(to);
-        Future.delayed(const Duration(milliseconds: 250), () {
-          if (mounted) setState(() => phase = 'done');
-        });
-      }
-    });
-  }
-
-  void _select(StorageTarget to) {
-    if (to == active) return;
-    if (to.isLocal) {
-      setState(() {
-        target = StorageTarget.local;
-        phase = 'confirm_disconnect';
-      });
-    } else if (active.isLocal) {
-      _runPhase(to, 'connecting');
-    } else {
-      _runPhase(to, 'migrating');
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final canClose = phase == 'idle' || phase == 'done' || phase == 'confirm_disconnect';
-    return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.92),
-      decoration:
-          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-          child: Column(children: [
-            const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
-            Container(
-              padding: const EdgeInsets.only(bottom: 12),
-              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
-              child: Row(children: [
-                const Icon(LucideIcons.hardDrive, size: 20, color: T.fg3),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Text(s.strings.storage.storage,
-                        style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
-                if (canClose)
+    final st = s.strings.storage;
+    return Material(
+      color: Colors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.92),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+            child: Column(children: [
+              const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
+              Container(
+                padding: const EdgeInsets.only(bottom: 12),
+                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
+                child: Row(children: [
+                  const Icon(LucideIcons.hardDrive, size: 20, color: T.fg3),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(st.storage, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
                   RoundBtn(
                       icon: LucideIcons.x,
                       semanticLabel: s.strings.common.a11y_close,
                       ghost: true,
                       iconSize: 17,
                       onTap: () => Navigator.pop(context)),
-              ]),
-            ),
-          ]),
-        ),
-        Flexible(
-          child: SingleChildScrollView(
-            physics: phase == 'idle' ? null : const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 36)),
-            child: switch (phase) {
-              'connecting' => _connecting(),
-              'migrating' => _migrating(),
-              'done' => _done(),
-              'confirm_disconnect' => _confirmDisconnect(),
-              _ => _idle(),
-            },
+                ]),
+              ),
+            ]),
           ),
-        ),
-      ]),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 36)),
+              child: (_view != null || _allView)
+                  ? CategorySyncBody(
+                      s: s,
+                      category: _view,
+                      onBack: () => setState(() {
+                        _view = null;
+                        _allView = false;
+                      }),
+                    )
+                  : _map(),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 
-  // ── IDLE: provider selector ────────────────────────────────
-  // The fabricated per-category storage-usage breakdown was removed — P001 has
-  // no real storage-metering provider, so only the (real) active-target picker
-  // is shown. Reintroduce a breakdown here only when it is backed by real data.
-  Widget _idle() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  /// The map: cloud accounts, then every data category and where it lives.
+  Widget _map() {
+    final st = s.strings.storage;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
-        child: Text(s.strings.storage.store_choose_help, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+        padding: const EdgeInsets.fromLTRB(0, 12, 0, 14),
+        child: Text(st.store_intro, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
       ),
-      ...StorageTarget.picker.map(_providerCard),
+      _Eyebrow(st.store_accounts, ar: ar),
+      const SizedBox(height: 10),
+      _Grouped(children: [
+        for (final t in StorageTarget.picker.where((t) => !t.isLocal)) _CloudAccountRow(s: s, target: t),
+      ]),
+      const SizedBox(height: 18),
+      Row(children: [
+        Expanded(child: _Eyebrow(st.store_your_data, ar: ar)),
+        // `storage.jsx` puts "Sync all" here. It opens the every-category
+        // editor, which is the honest half of it — there is nothing to sync.
+        PButton(
+          st.store_all_data,
+          icon: LucideIcons.layers,
+          variant: BtnVariant.ghost,
+          accent: s.accent,
+          ar: ar,
+          color: s.accent.main,
+          onTap: () => setState(() => _allView = true),
+        ),
+      ]),
+      const SizedBox(height: 10),
+      _Grouped(children: [
+        for (final cat in DataCategory.values)
+          _CategoryRow(s: s, category: cat, onTap: () => setState(() => _view = cat)),
+      ]),
+      const SizedBox(height: 14),
+      Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
     ]);
   }
+}
 
-  /// Localized "just now / 2m / 3h / 4d", matching core's `SyncStatusBadge`
-  /// bands but through the i69n bundle rather than hardcoded English.
-  String _syncedAgo(DateTime t) {
+/// Where one category — or every category, when [category] is null — is kept.
+///
+/// The design lets the patient tick clouds here and hit "Save & sync". Nothing
+/// is tickable while no cloud is available, so what remains is the honest part:
+/// the device row, the clouds greyed with why, and what will happen when they
+/// do arrive.
+class CategorySyncBody extends StatelessWidget {
+  const CategorySyncBody({super.key, required this.s, required this.category, this.onBack});
+  final PatientAppState s;
+
+  /// Null means the design's `cat === 'all'` branch.
+  final DataCategory? category;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
     final st = s.strings.storage;
-    final d = DateTime.now().difference(t);
-    if (d.inMinutes < 1) return st.store_sync_now;
-    if (d.inMinutes < 60) return st.store_sync_m('${d.inMinutes}');
-    if (d.inHours < 24) return st.store_sync_h('${d.inHours}');
-    return st.store_sync_d('${d.inDays}');
-  }
+    final ar = s.rtl;
+    final all = category == null;
+    final targets = all ? const <StorageTarget>[] : syncTargetsFor(category!);
 
-  Widget _providerCard(StorageTarget p) {
-    final cfg = storageCfg(p);
-    final isActive = active == p;
-    final isLocal = p.isLocal;
-    // Cloud backup is switched off in the design: iCloud, Google Drive and
-    // Balsm Cloud are shown but not selectable. There is no cloud backup
-    // backend in P001 — the connect flow was a simulated progress animation,
-    // so tapping one told the patient their health record was backed up when
-    // nothing had left the device. Local stays the only real target.
-    final unavailable = !isLocal;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Opacity(
-        opacity: unavailable ? 0.55 : 1,
-        child: Pressable(
-          onTap: (isActive || unavailable) ? null : () => _select(p),
-          scale: (isActive || unavailable) ? 1.0 : 0.99,
-          // `transition: all var(--dur-base) var(--ease-out)` on active swap.
-          child: AnimatedContainer(
-            duration: Motion.base,
-            curve: Motion.easeOut,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isActive ? cfg.bg : Colors.white,
-              borderRadius: BorderRadius.circular(T.rXl),
-              border: Border.all(color: isActive ? cfg.color : T.border, width: 1.5),
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (onBack != null)
+        Align(
+          alignment: ar ? Alignment.centerRight : Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: PButton(
+              st.store_all_data_back,
+              icon: ar ? LucideIcons.arrowRight : LucideIcons.arrowLeft,
+              variant: BtnVariant.ghost,
+              accent: s.accent,
+              ar: ar,
+              color: s.accent.main,
+              onTap: onBack,
             ),
+          ),
+        ),
+      const SizedBox(height: 8),
+      Row(children: [
+        Container(
+          width: 42,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+          child: Icon(all ? LucideIcons.layers : categoryIcon(category!), size: 20, color: T.fg2),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(all ? st.store_all_data : category!.label(st),
+                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(all ? st.store_all_applies : locSummary(st, targets), style: Typo.meta(ar: ar)),
+            ),
+          ]),
+        ),
+      ]),
+      const SizedBox(height: 18),
+      _Eyebrow(st.store_stored_in, ar: ar),
+      const SizedBox(height: 10),
+      _Grouped(children: [
+        _StoredInRow(s: s, target: StorageTarget.local, on: true),
+        for (final t in StorageTarget.picker.where((t) => !t.isLocal))
+          _StoredInRow(s: s, target: t, on: targets.contains(t)),
+      ]),
+      const SizedBox(height: 14),
+      Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+      const SizedBox(height: 10),
+      Text(st.store_encrypted_note, textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+    ]);
+  }
+}
+
+/// Glyph per data category, matching `DATA_CATS`.
+IconData categoryIcon(DataCategory c) => switch (c) {
+      DataCategory.records => LucideIcons.folder,
+      DataCategory.rx => LucideIcons.fileText,
+      DataCategory.meds => LucideIcons.pill,
+      DataCategory.checkins => LucideIcons.clipboardCheck,
+      DataCategory.symptoms => LucideIcons.activity,
+      DataCategory.vitals => LucideIcons.heartPulse,
+      DataCategory.medical => LucideIcons.clipboardList,
+      DataCategory.care => LucideIcons.users,
+      DataCategory.appts => LucideIcons.calendar,
+    };
+
+/// Uppercase section label (`eyebrow` in `storage.jsx`).
+class _Eyebrow extends StatelessWidget {
+  const _Eyebrow(this.text, {required this.ar});
+  final String text;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text.toUpperCase(),
+        style: Typo.meta(ar: ar).copyWith(
+          fontSize: FS.xs,
+          fontWeight: FontWeight.w700,
+          letterSpacing: ar ? 0 : 1.4,
+          color: T.fg3,
+        ),
+      );
+}
+
+/// Hairline-separated rows inside one rounded outline.
+class _Grouped extends StatelessWidget {
+  const _Grouped({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(T.rLg),
+          border: Border.all(color: T.border),
+          color: Colors.white,
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const Divider(height: 1, color: T.ink100),
+            children[i],
+          ],
+        ]),
+      );
+}
+
+/// One cloud account. Unavailable, so it carries the reason rather than a
+/// Connect button that would fail.
+class _CloudAccountRow extends StatelessWidget {
+  const _CloudAccountRow({required this.s, required this.target});
+  final PatientAppState s;
+  final StorageTarget target;
+
+  @override
+  Widget build(BuildContext context) {
+    final st = s.strings.storage;
+    final cfg = storageCfg(target);
+    final available = target.isAvailable;
+    return Opacity(
+      opacity: available ? 1 : 0.65,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rMd)),
+              child: Icon(cfg.icon, size: 18, color: T.fg3),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(target.label(st),
+                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child:
+                      Text(available ? st.store_not_connected : st.store_available_soon, style: Typo.meta(ar: s.rtl)),
+                ),
+              ]),
+            ),
+            const SizedBox(width: 8),
+            // The design's Connect button. Present but inert: an enabled
+            // control here would start a flow that cannot finish.
+            Pill(available ? st.store_connect : st.store_coming_soon, ar: s.rtl),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// One data category on the map: glyph, name, where it lives, chevron.
+class _CategoryRow extends StatelessWidget {
+  const _CategoryRow({required this.s, required this.category, required this.onTap});
+  final PatientAppState s;
+  final DataCategory category;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final st = s.strings.storage;
+    final targets = syncTargetsFor(category);
+    return Semantics(
+      button: true,
+      label: '${category.label(st)}, ${locSummary(st, targets)}',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 58),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             child: Row(children: [
-              AnimatedContainer(
-                duration: Motion.base,
-                curve: Motion.easeOut,
-                width: 46,
-                height: 46,
-                alignment: Alignment.center,
-                decoration:
-                    BoxDecoration(color: isActive ? cfg.color : T.ink100, borderRadius: BorderRadius.circular(T.rMd)),
-                child: Icon(cfg.icon, size: 22, color: isActive ? Colors.white : T.fg3),
-              ),
-              const SizedBox(width: 14),
+              Icon(categoryIcon(category), size: 18, color: T.fg3),
+              const SizedBox(width: 12),
               Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text(p.label(s.strings.storage),
-                      style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                  if (isLocal) ...[
-                    const SizedBox(width: 8),
-                    Pill(s.strings.storage.store_always_on,
-                        kind: PillKind.neutral,
-                        dot: false,
-                        ar: ar,
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
-                  ],
-                  if (unavailable) ...[
-                    const SizedBox(width: 8),
-                    Pill(s.strings.storage.store_coming_soon,
-                        kind: PillKind.neutral,
-                        dot: false,
-                        ar: ar,
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1)),
-                  ],
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(category.label(st),
+                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Text(locSummary(st, targets), style: Typo.meta(ar: s.rtl)),
+                  ),
                 ]),
-                // "Backed up · synced 2m ago" (UX Enhancement Screens.html,
-                // "Storage — sync status"). Shown only once a sync has really
-                // happened: the timestamp is the whole point, so an invented
-                // one would be worse than none.
-                if (isActive)
-                  if (ref.watch(syncStatusProvider).lastSyncedAt case final syncedAt?) ...[
-                    const SizedBox(height: 4),
-                    Row(children: [
-                      Icon(LucideIcons.circleCheck, size: 12, color: cfg.color),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          s.strings.storage.store_synced(_syncedAgo(syncedAt)),
-                          style: Typo.bodySm(ar: ar)
-                              .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: cfg.color),
-                        ),
-                      ),
-                    ]),
-                  ],
-                const SizedBox(height: 3),
-                Row(children: [
-                  if (isActive) ...[
-                    Icon(LucideIcons.checkCircle, size: 12, color: cfg.color),
-                    const SizedBox(width: 5),
-                  ],
-                  Text(
-                      isActive
-                          ? (isLocal ? s.strings.storage.store_local_only : s.strings.storage.store_backed)
-                          // Design: unavailable targets read "Available soon"
-                          // rather than inviting a tap that does nothing.
-                          : (isLocal ? s.strings.storage.store_no_backup : s.strings.storage.store_available_soon),
-                      style: Typo.meta(ar: ar).copyWith(
-                          fontSize: FS.xs,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                          color: isActive ? cfg.color : T.fg4)),
-                ]),
-              ])),
-              if (isActive)
-                Icon(LucideIcons.checkCircle2, size: 22, color: cfg.color)
-              else if (!unavailable)
-                Chevron(rtl: ar),
+              ),
+              const SizedBox(width: 8),
+              LocIcons(targets: targets, size: 22),
+              const SizedBox(width: 6),
+              Chevron(rtl: s.rtl),
             ]),
           ),
         ),
       ),
     );
   }
+}
 
-  // ── CONNECTING ─────────────────────────────────────────────
-  Widget _connecting() {
-    final cfg = storageCfg(target!);
-    return RiseIn(
-        child: Padding(
-      padding: const EdgeInsets.fromLTRB(0, 32, 0, 8),
-      child: Column(children: [
-        Container(
-          width: 72,
-          height: 72,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: cfg.bg, borderRadius: BorderRadius.circular(T.rXl)),
-          child: Spinner(size: 34, stroke: 3, color: cfg.color),
-        ),
-        const SizedBox(height: 18),
-        Text(s.strings.storage.store_connecting(target!.label(s.strings.storage)),
-            textAlign: TextAlign.center, style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl)),
-        const SizedBox(height: 6),
-        Text(s.strings.storage.store_auto_start, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
-      ]),
-    ));
-  }
+/// A destination inside the editor: on, off, or not available at all.
+class _StoredInRow extends StatelessWidget {
+  const _StoredInRow({required this.s, required this.target, required this.on});
+  final PatientAppState s;
+  final StorageTarget target;
+  final bool on;
 
-  // ── MIGRATING: from→to, progress ring, stepped checklist ───
-  Widget _migrating() {
-    final from = storageCfg(active);
-    final cfg = storageCfg(target!);
-    final pct = (progress / _migrateSteps.length * 100).round();
-    return RiseIn(
-        child: Padding(
-      padding: const EdgeInsets.fromLTRB(0, 24, 0, 8),
-      child: Column(children: [
-        // From → To strip
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rXl)),
-          child: Row(children: [
-            _miniIco(from),
-            const SizedBox(width: 12),
-            Icon(forwardArrow(context), size: 18, color: T.fg3),
-            const SizedBox(width: 12),
-            _miniIco(cfg),
-            const SizedBox(width: 14),
-            Expanded(
+  @override
+  Widget build(BuildContext context) {
+    final st = s.strings.storage;
+    final cfg = storageCfg(target);
+    final available = target.isAvailable;
+    return Opacity(
+      opacity: available ? 1 : 0.65,
+      child: ColoredBox(
+        color: on && !target.isLocal ? cfg.bg : Colors.white,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: on ? cfg.color : T.ink100,
+                  borderRadius: BorderRadius.circular(T.rMd),
+                ),
+                child: Icon(cfg.icon, size: 18, color: on ? Colors.white : T.fg3),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.strings.storage.store_migrating,
-                  style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              Text('${active.label(s.strings.storage)} → ${target!.label(s.strings.storage)}',
-                  style: Typo.meta(ar: ar)),
-            ])),
-            Text('$pct%', style: Typo.num(size: FS.md, weight: FontWeight.w700, color: cfg.color)),
-          ]),
+                  Text(target.label(st),
+                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Text(
+                      target.isLocal
+                          ? st.store_local_always
+                          : available
+                              ? st.store_not_connected
+                              : st.store_available_soon,
+                      style: Typo.meta(ar: s.rtl),
+                    ),
+                  ),
+                ]),
+              ),
+              const SizedBox(width: 8),
+              // The device row is locked in the design too — it is the one
+              // copy that always exists.
+              Icon(target.isLocal ? LucideIcons.lock : LucideIcons.minus, size: 16, color: T.fg3),
+            ]),
+          ),
         ),
-        const SizedBox(height: 20),
-        // Progress ring (animated stroke)
-        RingProgress(
-            progress: pct / 100,
-            color: cfg.color,
-            size: 80,
-            label: '$pct%',
-            labelStyle: Typo.num(size: FS.md, weight: FontWeight.w700)),
-        const SizedBox(height: 20),
-        // Step checklist
-        ..._migrateSteps.indexed.map((e) => _stepRow(e.$1, cfg)),
-      ]),
-    ));
-  }
-
-  Widget _miniIco(StorageChrome cfg) => Container(
-        width: 40,
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(color: cfg.bg, borderRadius: BorderRadius.circular(T.rMd)),
-        child: Icon(cfg.icon, size: 20, color: cfg.color),
-      );
-
-  Widget _stepRow(int i, StorageChrome cfg) {
-    final done = i < progress;
-    final act = i == progress; // current in-flight step
-    return AnimatedContainer(
-      duration: Motion.base,
-      curve: Motion.easeOut,
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: act ? cfg.bg : Colors.transparent,
-        borderRadius: BorderRadius.circular(T.rMd),
       ),
-      child: Row(children: [
-        SizedBox(
-          width: 17,
-          height: 17,
-          child: done
-              ? const Icon(LucideIcons.checkCircle2, size: 17, color: T.hueMint600)
-              : act
-                  ? Spinner(size: 17, stroke: 2, color: cfg.color)
-                  : const Icon(LucideIcons.circle, size: 17, color: T.ink200),
-        ),
-        const SizedBox(width: 10),
-        Text(s.t(_migrateSteps[i]),
-            style: Typo.bodySm(ar: ar).copyWith(
-                fontWeight: act ? FontWeight.w600 : FontWeight.w400, color: done ? T.fg4 : (act ? T.fg1 : T.fg4))),
-      ]),
     );
   }
+}
 
-  // ── DONE ───────────────────────────────────────────────────
-  Widget _done() {
-    final cfg = storageCfg(target!);
-    final toLocal = target!.isLocal;
-    return RiseIn(
-        child: Padding(
-      padding: const EdgeInsets.fromLTRB(0, 28, 0, 8),
-      child: Column(children: [
-        Container(
-          width: 68,
-          height: 68,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
-          child: const Icon(LucideIcons.check, size: 32, color: T.hueMint600),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          toLocal ? s.strings.storage.store_removed_done : s.strings.storage.store_synced_done,
-          textAlign: TextAlign.center,
-          style: Typo.heading(ar: ar).copyWith(fontSize: FS.xl),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-              color: cfg.bg, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: cfg.border)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(cfg.icon, size: 18, color: cfg.color),
-            const SizedBox(width: 10),
-            Flexible(
-                child: Text(
-                    toLocal
-                        ? s.strings.storage.store_device_only
-                        : s.strings.storage.store_synced_with(target!.label(s.strings.storage)),
-                    style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1))),
-          ]),
-        ),
-        const SizedBox(height: 16),
-        PButton(s.strings.storage.store_done,
-            variant: BtnVariant.primary,
-            large: true,
-            block: true,
-            accent: s.accent,
-            ar: ar,
-            onTap: () => Navigator.pop(context)),
-      ]),
-    ));
-  }
+/// Overlapping location glyphs: the device, then each cloud the category syncs
+/// to (`LocIcons` in `storage.jsx`).
+class LocIcons extends StatelessWidget {
+  const LocIcons({super.key, required this.targets, this.size = 22});
+  final List<StorageTarget> targets;
+  final double size;
 
-  // ── CONFIRM DISCONNECT ─────────────────────────────────────
-  Widget _confirmDisconnect() {
-    return RiseIn(
-        child: Padding(
-      padding: const EdgeInsets.fromLTRB(0, 20, 0, 4),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-              color: const Color(0xFFFEF3F2),
-              borderRadius: BorderRadius.circular(T.rXl),
-              border: Border.all(color: const Color(0xFFFECDCA))),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(LucideIcons.cloudOff, size: 22, color: T.danger),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.strings.storage.store_remove_q,
-                  style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              const SizedBox(height: 4),
-              Text(s.strings.storage.store_remove_help(active.label(s.strings.storage)),
-                  style: Typo.meta(ar: ar).copyWith(height: 1.5)),
-            ])),
-          ]),
-        ),
-        const SizedBox(height: 14),
-        PButton(s.strings.storage.store_remove_cta,
-            variant: BtnVariant.danger,
-            large: true,
-            block: true,
-            ar: ar,
-            onTap: () => _runPhase(StorageTarget.local, 'connecting')),
-        const SizedBox(height: 10),
-        PButton(s.strings.common.cancel,
-            variant: BtnVariant.secondary,
-            block: true,
-            ar: ar,
-            onTap: () => setState(() {
-                  phase = 'idle';
-                  target = null;
-                })),
-      ]),
-    ));
+  @override
+  Widget build(BuildContext context) {
+    final all = [StorageTarget.local, ...targets];
+    return SizedBox(
+      width: size + (all.length - 1) * (size - 6),
+      height: size,
+      child: Stack(
+        children: [
+          for (var i = 0; i < all.length; i++)
+            PositionedDirectional(
+              // Stacked start-to-end, so the order survives in Arabic.
+              start: i * (size - 6),
+              child: Container(
+                width: size,
+                height: size,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: storageCfg(all[i]).bg,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Icon(storageCfg(all[i]).icon, size: size * 0.55, color: storageCfg(all[i]).color),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

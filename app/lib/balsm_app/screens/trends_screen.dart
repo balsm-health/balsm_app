@@ -10,6 +10,8 @@ import '../tokens.dart';
 import '../widgets/line_chart.dart';
 import 'checkin_shared.dart';
 import 'day_records_screen.dart';
+import '../storage_target.dart';
+import '../widgets/data_loc_pill.dart';
 
 /// How far back the charts look.
 enum TrendRange { week, month, quarter }
@@ -132,6 +134,8 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
               icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => s.setTab(AppTab.home)),
           const SizedBox(width: 12),
           Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
+          const DataLocPill(category: DataCategory.vitals),
+          const SizedBox(width: 8),
           _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),
         ]),
         // Metric filter — a dropdown selector (the design replaced the chip

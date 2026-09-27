@@ -54,8 +54,9 @@ void main() {
     // Nothing to search or filter yet.
     expect(find.byType(TextField), findsNothing);
     expect(find.text(s.strings.care.care_all), findsNothing);
-    // The way in is always offered — as the FAB now, not a dashed row.
-    expect(find.bySemanticsLabel(s.strings.care.care_add), findsOne);
+    // The way in is always offered — the FAB, which now opens the phone's
+    // contacts rather than the blank form.
+    expect(find.bySemanticsLabel(s.strings.care.care_import_fab), findsOne);
   });
 
   testWidgets('one provider type needs no filter row', (tester) async {
@@ -186,11 +187,11 @@ void main() {
     });
   });
 
-  group('provider file drawer', () {
+  group('provider files on the card', () {
     Future<PatientAppState> pumpWithFiles(
       WidgetTester tester,
       List<CareProvider> team, {
-      List<String> files = const [],
+      List<CareProviderFile> files = const [],
     }) async {
       final state = PatientAppState();
       await tester.pumpWidget(ProviderScope(
@@ -207,48 +208,41 @@ void main() {
       return state;
     }
 
-    testWidgets('every provider offers the files action, phone or not', (tester) async {
-      final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')]);
-      expect(find.text(s.strings.care.care_attach_file), findsOne);
-      expect(find.text(s.strings.care.care_call), findsNothing);
-    });
-
-    testWidgets('with nothing attached there is no drawer to open', (tester) async {
-      final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')]);
-      // Not tapped on purpose: with no files the button goes straight to the
-      // system picker, which has no binding in a widget test. The label split
-      // below is what distinguishes the two routes; the drawer-opening path is
-      // covered by 'managing opens the gallery' with files present.
-      expect(find.text(s.strings.care.care_attach_file), findsOne);
-      expect(find.text(s.strings.care.care_manage_files), findsNothing);
-      expect(find.text(s.strings.care.care_files_head), findsNothing);
-      expect(find.byType(VaultAttachmentGallery), findsNothing);
-    });
-
-    testWidgets('with files attached the button offers to manage them', (tester) async {
-      final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')], files: ['v/a.pdf', 'v/b.pdf']);
-      expect(find.text(s.strings.care.care_manage_files), findsOne);
-      expect(find.text(s.strings.care.care_attach_file), findsNothing);
-      // Collapsed, the card previews them.
+    testWidgets('previews what is attached', (tester) async {
+      await pumpWithFiles(tester, [provider('Dr. Ahmed')],
+          files: const [CareProviderFile.file('v/a.pdf'), CareProviderFile.file('v/b.pdf')]);
+      // Unconditional now: `home.jsx` dropped the drawer the strip used to give
+      // way to, so the card always shows what is there.
       expect(find.byType(VaultAttachmentThumb), findsNWidgets(2));
     });
 
-    testWidgets('managing opens the gallery and the button becomes Done', (tester) async {
-      final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')], files: ['v/a.pdf']);
-      await tester.tap(find.text(s.strings.care.care_manage_files));
-      await tester.pumpAndSettle();
-      expect(find.byType(VaultAttachmentGallery), findsOne);
-      expect(find.text(s.strings.records.att_one_file), findsOne);
-      expect(find.text(s.strings.care.care_files_done), findsOne);
-      expect(find.text(s.strings.care.care_manage_files), findsNothing);
+    testWidgets('nothing attached means no strip', (tester) async {
+      await pumpWithFiles(tester, [provider('Dr. Ahmed')]);
+      expect(find.byType(VaultAttachmentThumb), findsNothing);
     });
 
-    testWidgets('each provider drawer opens on its own', (tester) async {
-      final s = await pumpWithFiles(tester, [provider('Dr. A'), provider('Dr. B')], files: ['v/a.pdf']);
-      await tester.tap(find.text(s.strings.care.care_manage_files).first);
-      await tester.pumpAndSettle();
-      // One open drawer, not both.
-      expect(find.text(s.strings.care.care_files_head), findsOne);
+    testWidgets('never manages files — that moved into the edit sheet', (tester) async {
+      final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')], files: const [CareProviderFile.file('v/a.pdf')]);
+      final c = s.strings.care;
+      // The whole files button and its drawer are gone from the roster: a card
+      // is a summary, and attaching belongs where the provider is described.
+      expect(find.text(c.care_attach_file), findsNothing);
+      expect(find.text(c.care_manage_files), findsNothing);
+      expect(find.text(c.care_files_done), findsNothing);
+      expect(find.text(c.care_files_head), findsNothing);
+      expect(find.byType(VaultAttachmentGallery), findsNothing);
+      // Editing is still one tap away, which is where files now live.
+      expect(find.byIcon(LucideIcons.pencil), findsOne);
+    });
+
+    testWidgets('a provider with no number offers no Call', (tester) async {
+      final s = await pumpWithFiles(tester, [provider('Dr. Ahmed')]);
+      expect(find.text(s.strings.care.care_call), findsNothing);
+    });
+
+    testWidgets('a provider with a number offers Call alone', (tester) async {
+      final s = await pumpWithFiles(tester, [provider('Dr. Ahmed', phone: '+20 2 2555 0100')]);
+      expect(find.text(s.strings.care.care_call), findsOne);
     });
   });
 }

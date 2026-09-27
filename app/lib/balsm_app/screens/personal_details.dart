@@ -22,6 +22,7 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart';
 import '../widgets/balsm_mark.dart';
+import '../widgets/phone_field.dart';
 
 /// Opens the account/identity editor (home.jsx AccountDetailsScreen).
 void openPersonalDetails(BuildContext context) {
@@ -519,7 +520,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                     // Contact — phone, national ID (PHI/PII, encrypted), nationality.
                     _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
                     _card([
-                      _field(s.strings.profile.pd_phone, _phoneCtrl, mono: true),
+                      _phoneField(s.strings.profile.pd_phone, _phoneCtrl),
                       const SizedBox(height: 14),
                       _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
                       const SizedBox(height: 14),
@@ -539,7 +540,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Expanded(child: _labeled(s.strings.profile.pd_em_rel, _relationField())),
                           const SizedBox(width: 12),
-                          Expanded(child: _field(s.strings.profile.pd_em_phone, emPhone, mono: true)),
+                          Expanded(child: _phoneField(s.strings.profile.pd_em_phone, emPhone)),
                         ]),
                         const SizedBox(height: 14),
                         PButton(s.strings.profile.pd_add_contact,
@@ -644,6 +645,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       ));
+
+  /// Phone entry with its country picker. Every number the patient gives us is
+  /// captured this way — a bare text field left the country code to guesswork.
+  Widget _phoneField(String label, TextEditingController c) => _labeled(label, PhoneField(controller: c));
 
   /// Date-of-birth field — opens a date picker; shows dd / mm / yyyy.
   Widget _dobField() => GestureDetector(
@@ -1410,6 +1415,11 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
               onTap: expired ? null : _copy),
         ]),
       ),
+      // `qrshare.jsx` adds a permanence note here ("this is your permanent code
+      // — it doesn't expire"). Deliberately not ported: the prototype withdrew
+      // expiring codes, this build still mints them, and a legacy token that
+      // reports `isPermanent` gets no reassurance rather than a promise the app
+      // cannot keep. Guarded by `test/qr_no_permanence_test.dart`.
       const SizedBox(height: 16),
       if (expired)
         // Token lapsed → offer a fresh mint (returns to the affordance).

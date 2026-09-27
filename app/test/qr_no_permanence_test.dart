@@ -14,9 +14,13 @@ void main() {
   test('no permanence copy survives in either bundle', () {
     for (final f in ['strings.i69n.jsonc', 'strings_ar.i69n.jsonc']) {
       final s = bundle(f);
-      expect(s, isNot(contains('"eqr_permanent"')), reason: '$f still carries the permanent badge');
+      // Prefix, not exact key: a design sweep reintroduced this as
+      // `eqr_permanent_note`, which an exact match waved through.
+      expect(s, isNot(contains('"eqr_permanent')), reason: '$f still carries permanence copy');
       expect(s, isNot(contains('"eqr_ttl_permanent"')), reason: '$f still offers an unlimited TTL');
-      expect(s, isNot(contains('does not expire')), reason: '$f still claims the code never expires');
+      for (final claim in ['does not expire', "doesn't expire", 'لا تنتهي صلاحيته']) {
+        expect(s, isNot(contains(claim)), reason: '$f still claims the code never expires');
+      }
     }
   });
 
@@ -40,5 +44,12 @@ void main() {
     expect(seconds, isNotEmpty);
     // 0 is the sentinel the mint API reads as "never expires".
     expect(seconds, everyElement(greaterThan(0)), reason: 'an unbounded TTL is offered again');
+  });
+
+  test('the screen renders no permanence note, however it is worded', () {
+    final s = File('lib/balsm_app/screens/personal_details.dart').readAsStringSync();
+    // `qrshare.jsx` draws it as an infinity glyph beside the reassurance. The
+    // glyph is the tell that the note came back in some other wording.
+    expect(s, isNot(contains('LucideIcons.infinity')), reason: 'the permanence note was ported again');
   });
 }

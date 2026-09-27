@@ -55,6 +55,9 @@ class AppDatabase extends _$AppDatabase {
           await _ensureColumn('check_in_symptom', 'urine_ml', 'INTEGER');
           await _ensureColumn('check_in_symptom', 'blood', 'INTEGER NOT NULL DEFAULT 0');
           await _ensureColumn('care_provider', 'map_url', 'TEXT');
+          // Pre-existing attachment rows are all vault files, which is exactly
+          // what the default backfills.
+          await _ensureColumn('care_provider_file', 'kind', "TEXT NOT NULL DEFAULT 'file'");
           // Cloud-sync bookkeeping (FR-507/FR-508). Nullable so pre-existing rows
           // migrate without a backfill; the sync service treats a null updated_at
           // as created_at.
@@ -272,13 +275,22 @@ const _phiSchema = <String>[
   )''',
   'CREATE INDEX IF NOT EXISTS idx_care_provider_profile ON care_provider(health_profile_id)',
   // A provider's business card and files (attachments.jsx AttachmentGallery).
-  // `path` is vault-relative — the bytes live encrypted in the user file store,
-  // never in the database and never in plaintext on disk.
+  //
+  // `path` is the locator and `kind` says how to read it:
+  //   'file' — vault-relative; the bytes live encrypted in the user file store,
+  //            never in the database and never in plaintext on disk.
+  //   'link' — an absolute http(s) URL the patient pasted. Nothing is fetched;
+  //            it is opened externally on tap.
+  //
+  // One column rather than a second nullable `url`: `path` is NOT NULL and
+  // SQLite cannot drop that, so a link row would have had to carry a dummy
+  // path. A discriminator keeps every row honest about what it holds.
   '''
   CREATE TABLE IF NOT EXISTS care_provider_file (
     id TEXT PRIMARY KEY,
     care_provider_id TEXT NOT NULL REFERENCES care_provider(id) ON DELETE CASCADE,
     path TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'file',
     created_at INTEGER NOT NULL
   )''',
   'CREATE INDEX IF NOT EXISTS idx_care_provider_file_provider ON care_provider_file(care_provider_id)',

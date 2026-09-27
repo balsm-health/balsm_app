@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:typed_data';
+
+import 'package:flutter/services.dart' show Clipboard;
 
 import 'package:core/core.dart';
 import 'package:file_picker/file_picker.dart';
@@ -6,6 +9,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:profile/profile.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
@@ -45,6 +50,355 @@ Future<PickedAttach?> pickFileAttach() async {
   if (bytes == null) return null;
   if (ext == 'pdf') return PickedAttach(kind: 'pdf', bytes: bytes, name: file.name);
   return PickedAttach(kind: 'image', bytes: bytes, name: file.name);
+}
+
+/// Where an attachment comes from.
+///
+/// The web prototype has one `<input type="file">` and no chooser, because the
+/// browser supplies it. iOS and Android put Files and Photos behind different
+/// pickers, so the choice has to be made in-app before either opens.
+enum AttachSource {
+  /// The system document picker — a PDF or an image already saved on device.
+  files,
+
+  /// The photo library.
+  gallery,
+
+  /// Whatever is on the clipboard: an image if there is one, otherwise a link.
+  paste,
+
+  /// A web address the patient types or pastes. Stored as an address only —
+  /// Balsm never fetches it.
+  url,
+}
+
+/// Reads the clipboard: an image if it holds one, otherwise a link.
+///
+/// Returns null when the clipboard holds neither, and on any platform without
+/// clipboard support, so the caller treats "nothing usable" uniformly.
+Future<PickedAttach?> pasteAttachment() async {
+  final clipboard = SystemClipboard.instance;
+  if (clipboard == null) return null;
+  final reader = await clipboard.read();
+
+  const imageFormats = <SimpleFileFormat>[Formats.png, Formats.jpeg, Formats.webp];
+  for (final format in imageFormats) {
+    if (!reader.canProvide(format)) continue;
+    final bytes = await _readClipboardFile(reader, format);
+    if (bytes != null) return PickedAttach(kind: 'image', bytes: bytes, name: 'pasted-image');
+  }
+  if (reader.canProvide(Formats.pdf)) {
+    final bytes = await _readClipboardFile(reader, Formats.pdf);
+    if (bytes != null) return PickedAttach(kind: 'pdf', bytes: bytes, name: 'pasted.pdf');
+  }
+
+  final text = await reader.readValue(Formats.plainText);
+  final trimmed = text?.trim() ?? '';
+  if (isStorableLink(trimmed)) return PickedAttach(kind: 'url', url: trimmed);
+  return null;
+}
+
+Future<Uint8List?> _readClipboardFile(ClipboardDataReader reader, FileFormat format) {
+  final done = Completer<Uint8List?>();
+  reader.getFile(
+    format,
+    (file) async {
+      try {
+        done.complete(await file.readAll());
+      } catch (_) {
+        if (!done.isCompleted) done.complete(null);
+      }
+    },
+    onError: (_) {
+      if (!done.isCompleted) done.complete(null);
+    },
+  );
+  return done.future;
+}
+
+/// Asks where the file should come from, then opens that picker.
+///
+/// Returns null when the sheet or the picker was dismissed, so a cancel at
+/// either step is indistinguishable to the caller — as it should be.
+Future<PickedAttach?> pickAttachment(BuildContext context) async {
+  final source = await showAppSheet<AttachSource>(
+    context,
+    textDirection: AppScope.of(context).dir,
+    builder: (_) => const AttachSourceSheet(),
+  );
+  if (source == null || !context.mounted) return null;
+  return switch (source) {
+    AttachSource.files => pickFileAttach(),
+    AttachSource.gallery => pickImageAttach(camera: false),
+    AttachSource.paste => pasteAttachment(),
+    AttachSource.url => askForLink(context),
+  };
+}
+
+/// Small dialog for typing or pasting a web address.
+///
+/// Says plainly that the address is all that is kept: an attachment the patient
+/// cannot open offline, and that Balsm never downloads, should not be mistaken
+/// for a copy of the document.
+Future<PickedAttach?> askForLink(BuildContext context) async {
+  final s = AppScope.of(context);
+  final url = await showAppSheet<String>(
+    context,
+    textDirection: s.dir,
+    builder: (_) => const _LinkPromptSheet(),
+  );
+  final trimmed = url?.trim() ?? '';
+  return isStorableLink(trimmed) ? PickedAttach(kind: 'url', url: trimmed) : null;
+}
+
+class _LinkPromptSheet extends StatefulWidget {
+  const _LinkPromptSheet();
+
+  @override
+  State<_LinkPromptSheet> createState() => _LinkPromptSheetState();
+}
+
+class _LinkPromptSheetState extends State<_LinkPromptSheet> {
+  final _url = TextEditingController();
+  bool _touched = false;
+
+  @override
+  void dispose() {
+    _url.dispose();
+    super.dispose();
+  }
+
+  Future<void> _paste() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final v = data?.text?.trim();
+    if (v == null || v.isEmpty || !mounted) return;
+    setState(() => _url.text = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final r = s.strings.records;
+    final typed = _url.text.trim();
+    final bad = _touched && typed.isNotEmpty && !isStorableLink(typed);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
+            child: Row(children: [
+              Expanded(
+                child: Text(r.att_url_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+              ),
+              RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: () => Navigator.pop(context)),
+            ]),
+          ),
+          const Divider(height: 1, color: T.ink100),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context, base: 28)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              TextField(
+                controller: _url,
+                autofocus: true,
+                keyboardType: TextInputType.url,
+                textDirection: TextDirection.ltr,
+                onChanged: (_) => setState(() => _touched = true),
+                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
+                decoration: InputDecoration(
+                  hintText: r.att_url_hint,
+                  hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+                  isDense: true,
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                  prefixIcon: const Icon(LucideIcons.link, size: 16, color: T.fg3),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: kMinTapTarget),
+                  suffixIcon: IntrinsicWidth(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 6),
+                      child: PButton(
+                        s.strings.care.care_paste,
+                        icon: LucideIcons.clipboardPaste,
+                        variant: BtnVariant.ghost,
+                        size: BtnSize.sm,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _paste,
+                      ),
+                    ),
+                  ),
+                  suffixIconConstraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(T.rMd),
+                      borderSide: BorderSide(color: bad ? T.danger : T.border, width: 1.5)),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(T.rMd),
+                      borderSide: BorderSide(color: bad ? T.danger : s.accent.main, width: 1.5)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Semantics(
+                liveRegion: bad,
+                child: Text(
+                  bad ? r.att_url_bad : r.att_url_note,
+                  style: Typo.meta(ar: s.rtl).copyWith(height: 1.5, color: bad ? T.danger : T.fg3),
+                ),
+              ),
+              const SizedBox(height: 16),
+              PButton(
+                s.strings.common.continue_,
+                variant: BtnVariant.primary,
+                large: true,
+                block: true,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: isStorableLink(typed) ? () => Navigator.pop(context, typed) : null,
+              ),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Public so a test can scope to this sheet rather than to whichever route
+/// happens to be last in the tree.
+class AttachSourceSheet extends StatelessWidget {
+  const AttachSourceSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final r = s.strings.records;
+    return Material(
+      color: Colors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        const SheetGrab(),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
+          child: Row(children: [
+            Expanded(
+              child: Text(r.att_source_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            ),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 17,
+                onTap: () => Navigator.pop(context)),
+          ]),
+        ),
+        const Divider(height: 1, color: T.ink100),
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, 8, 20, sheetBottomInset(context, base: 28)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            _SourceRow(
+              s: s,
+              icon: LucideIcons.folderOpen,
+              label: r.att_src_files,
+              sub: r.att_src_files_h,
+              onTap: () => Navigator.pop(context, AttachSource.files),
+            ),
+            const Divider(height: 1, color: T.ink100),
+            _SourceRow(
+              s: s,
+              icon: LucideIcons.image,
+              label: r.att_src_gallery,
+              sub: r.att_src_gallery_h,
+              onTap: () => Navigator.pop(context, AttachSource.gallery),
+            ),
+            const Divider(height: 1, color: T.ink100),
+            _SourceRow(
+              s: s,
+              icon: LucideIcons.clipboardPaste,
+              label: r.att_src_paste,
+              sub: r.att_src_paste_h,
+              onTap: () => Navigator.pop(context, AttachSource.paste),
+            ),
+            const Divider(height: 1, color: T.ink100),
+            _SourceRow(
+              s: s,
+              icon: LucideIcons.link,
+              label: r.att_src_url,
+              sub: r.att_src_url_h,
+              onTap: () => Navigator.pop(context, AttachSource.url),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _SourceRow extends StatelessWidget {
+  const _SourceRow({
+    required this.s,
+    required this.icon,
+    required this.label,
+    required this.sub,
+    required this.onTap,
+  });
+  final PatientAppState s;
+  final IconData icon;
+  final String label;
+  final String sub;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: '$label. $sub',
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
+                  child: Icon(icon, size: 19, color: s.accent.main),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(sub, style: Typo.meta(ar: s.rtl)),
+                    ),
+                  ]),
+                ),
+                const SizedBox(width: 8),
+                Chevron(rtl: s.rtl, size: 16),
+              ]),
+            ),
+          ),
+        ),
+      );
 }
 
 /// Claude Design `NoteAttach` camera row under a note field.

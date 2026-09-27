@@ -13,15 +13,20 @@ StorageChrome storageCfg(StorageTarget which) => switch (which) {
           bg: T.hueBlue50,
           border: const Color(0xFFB8D4FF),
         ),
+      // Drive keeps Google's own green rather than a Balsm hue: it is a vendor
+      // mark in a list of vendors, and `storage.jsx` sets it literally for the
+      // same reason. Deliberately not a token.
       StorageTarget.gdrive => (
-          icon: LucideIcons.cloud,
-          color: T.hueMint600,
-          bg: T.hueMint50,
-          border: const Color(0xFFA8ECD8),
+          icon: LucideIcons.folderOpen,
+          color: const Color(0xFF1E8E3E),
+          bg: const Color(0xFFE6F4EA),
+          border: const Color(0xFFB3DFBB),
         ),
+      // Ours, so it does use tokens — and the petal, not a third cloud glyph
+      // in a row of clouds.
       StorageTarget.balsmCloud => (
-          icon: LucideIcons.cloud,
-          color: T.hueAqua,
+          icon: LucideIcons.flower,
+          color: T.hueAqua600,
           bg: T.hueAqua50,
           border: const Color(0xFFB8EDE8),
         ),

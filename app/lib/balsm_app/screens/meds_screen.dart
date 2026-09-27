@@ -9,6 +9,8 @@ import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../storage_target.dart';
+import '../widgets/data_loc_pill.dart';
 
 /// Medications tab (home.jsx MedsScreen).
 ///
@@ -121,6 +123,8 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
               Text(s.strings.meds.regimen, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),
           ),
+          const DataLocPill(category: DataCategory.meds),
+          const SizedBox(width: 8),
           // Add medication — disabled (hidden) when signed out.
           if (userId != null)
             RoundBtn(

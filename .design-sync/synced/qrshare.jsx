@@ -161,6 +161,16 @@ function QRShareSheet({ onClose, handle, name }) {
             </button>
           </div>
 
+          {/* Permanence note — no temporary/expiring codes in this release */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginTop: 14, padding: '0 2px' }}>
+            <Icon name="infinity" size={15} style={{ color: 'var(--fg3)', flexShrink: 0, marginTop: 2 }} />
+            <p className="body" style={{ margin: 0, fontSize: 'var(--pt-sm)', color: 'var(--fg3)' }}>
+              {lang === 'ar'
+                ? 'هذا رمزك الدائم ولا تنتهي صلاحيته. يمكنك طباعته أو مشاركته بأمان — ولن يرى أحد بياناتك الصحية دون موافقتك.'
+                : "This is your permanent code — it doesn't expire. Print it or share it safely; no one sees your health data without your approval."}
+            </p>
+          </div>
+
           {/* Actions */}
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <button className="b-btn b-btn-lg b-btn-secondary" style={{ flex: 1, gap: 8 }} onClick={download}>
