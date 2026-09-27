@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show Clipboard;
-
 import 'package:core/core.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
@@ -10,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:profile/profile.dart';
-import 'package:super_clipboard/super_clipboard.dart';
+import 'package:pasteboard/pasteboard.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
@@ -74,46 +72,35 @@ enum AttachSource {
 
 /// Reads the clipboard: an image if it holds one, otherwise a link.
 ///
-/// Returns null when the clipboard holds neither, and on any platform without
-/// clipboard support, so the caller treats "nothing usable" uniformly.
+/// Returns null when the clipboard holds neither, so the caller treats
+/// "nothing usable" uniformly.
+///
+/// `pasteboard`, not `super_clipboard`: the latter builds its Rust side through
+/// cargokit, whose Gradle plugin calls `Project.exec()` — removed in Gradle 9,
+/// which this app is on (9.3.1 / AGP 9.1.0). It failed the Android build
+/// outright. The cost is per-format negotiation: a PDF on the clipboard is no
+/// longer offered, only an image or a link. Copying a PDF as clipboard *data*
+/// is vanishingly rare on a phone, and Files still covers it.
 Future<PickedAttach?> pasteAttachment() async {
-  final clipboard = SystemClipboard.instance;
-  if (clipboard == null) return null;
-  final reader = await clipboard.read();
-
-  const imageFormats = <SimpleFileFormat>[Formats.png, Formats.jpeg, Formats.webp];
-  for (final format in imageFormats) {
-    if (!reader.canProvide(format)) continue;
-    final bytes = await _readClipboardFile(reader, format);
-    if (bytes != null) return PickedAttach(kind: 'image', bytes: bytes, name: 'pasted-image');
+  Uint8List? image;
+  try {
+    image = await Pasteboard.image;
+  } catch (_) {
+    image = null;
   }
-  if (reader.canProvide(Formats.pdf)) {
-    final bytes = await _readClipboardFile(reader, Formats.pdf);
-    if (bytes != null) return PickedAttach(kind: 'pdf', bytes: bytes, name: 'pasted.pdf');
+  if (image != null && image.isNotEmpty) {
+    return PickedAttach(kind: 'image', bytes: image, name: 'pasted-image');
   }
 
-  final text = await reader.readValue(Formats.plainText);
+  String? text;
+  try {
+    text = await Pasteboard.text;
+  } catch (_) {
+    text = null;
+  }
   final trimmed = text?.trim() ?? '';
   if (isStorableLink(trimmed)) return PickedAttach(kind: 'url', url: trimmed);
   return null;
-}
-
-Future<Uint8List?> _readClipboardFile(ClipboardDataReader reader, FileFormat format) {
-  final done = Completer<Uint8List?>();
-  reader.getFile(
-    format,
-    (file) async {
-      try {
-        done.complete(await file.readAll());
-      } catch (_) {
-        if (!done.isCompleted) done.complete(null);
-      }
-    },
-    onError: (_) {
-      if (!done.isCompleted) done.complete(null);
-    },
-  );
-  return done.future;
 }
 
 /// Asks where the file should come from, then opens that picker.
@@ -135,7 +122,7 @@ Future<PickedAttach?> pickAttachment(BuildContext context) async {
   };
 }
 
-/// Small dialog for typing or pasting a web address.
+/// Small sheet for typing or pasting a web address.
 ///
 /// Says plainly that the address is all that is kept: an attachment the patient
 /// cannot open offline, and that Balsm never downloads, should not be mistaken
@@ -169,8 +156,7 @@ class _LinkPromptSheetState extends State<_LinkPromptSheet> {
   }
 
   Future<void> _paste() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final v = data?.text?.trim();
+    final v = (await Pasteboard.text)?.trim();
     if (v == null || v.isEmpty || !mounted) return;
     setState(() => _url.text = v);
   }
@@ -275,8 +261,6 @@ class _LinkPromptSheetState extends State<_LinkPromptSheet> {
   }
 }
 
-/// Public so a test can scope to this sheet rather than to whichever route
-/// happens to be last in the tree.
 class AttachSourceSheet extends StatelessWidget {
   const AttachSourceSheet({super.key});
 
