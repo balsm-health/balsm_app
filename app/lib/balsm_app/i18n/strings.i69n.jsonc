@@ -197,7 +197,7 @@
     "range_w": "Week",
     "range_m": "Month",
     "range_3m": "3 months",
-    "trend_all_metrics": "All metrics",
+    "trend_all_metrics": "All",
     "trend_n_metrics(String n)": "$n metrics",
     "avg": "avg",
     "no_checkins": "No check-ins yet",

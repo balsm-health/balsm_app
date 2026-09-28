@@ -198,7 +198,7 @@
     "range_w": "أسبوع",
     "range_m": "شهر",
     "range_3m": "3 أشهر",
-    "trend_all_metrics": "كل المقاييس",
+    "trend_all_metrics": "الكل",
     "trend_n_metrics(String n)": "$n من المقاييس",
     "avg": "متوسط",
     "no_checkins": "لا توجد متابعات بعد",

@@ -25,10 +25,24 @@ xcrun simctl uninstall $UDID app.balsm.health; xcrun simctl keychain $UDID reset
 fvm flutter run --flavor balsm -t lib/brands/balsm/main_docshots.dart \
   --dart-define-from-file=env/balsm/dev.json \
   --dart-define-from-file=env/shared.json -d $UDID
-# once running: grant location (map tab) and drive the captures
+# once running: grant location AND set one (the map searches around the
+# device's position — permission alone leaves it with no centre and it
+# captures empty), then drive the captures
 xcrun simctl privacy $UDID grant location app.balsm.health
+xcrun simctl location $UDID set 30.0444,31.2357   # Downtown Cairo
 fvm dart run tool/docshots.dart <vm-service-uri-from-run-output> $UDID
 # optional 3rd arg redirects output (store captures write elsewhere)
+```
+
+The map fixture (`docshots_places.dart`) is 60 real Cairo facilities generated
+from OpenStreetMap. Regenerate it with:
+
+```sh
+curl -H 'User-Agent: balsm-docshots/1.0' --data-urlencode 'data=
+[out:json][timeout:60];
+( node["amenity"~"^(hospital|clinic|doctors|pharmacy|dentist)$"]["name"]
+       (29.98,31.18,30.11,31.30); );
+out body 400;' https://overpass-api.de/api/interpreter
 ```
 
 Captures use `simctl io screenshot` while `tool/docshots.dart` navigates via

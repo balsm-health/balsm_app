@@ -135,18 +135,21 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           const SizedBox(width: 12),
           Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
           const DataLocPill(category: DataCategory.vitals),
-          const SizedBox(width: 8),
-          _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),
         ]),
-        // Metric filter — a dropdown selector (the design replaced the chip
-        // row with one): trigger summarising the selection, opening a
-        // checkbox panel that closes on an outside tap.
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: _MetricsDropdown(visible: _visible, onToggle: _toggle),
-          ),
+        // Range and metric filter share one row under the title: the tabs keep
+        // their intrinsic width and the dropdown takes what is left. Putting
+        // either beside the title squeezed the heading onto two lines, worst
+        // in Arabic where "الرسوم البيانية" is long.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+          child: Row(children: [
+            _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),
+            const SizedBox(width: 8),
+            // Metric filter — a dropdown selector (the design replaced the
+            // chip row with one): trigger summarising the selection, opening
+            // a checkbox panel that closes on an outside tap.
+            Expanded(child: _MetricsDropdown(visible: _visible, onToggle: _toggle)),
+          ]),
         ),
         if (charts.isEmpty)
           _NoReadings(range: _range)
@@ -331,10 +334,19 @@ class _MetricsDropdown extends StatelessWidget {
             borderRadius: BorderRadius.circular(T.rMd),
             border: Border.all(color: T.border, width: 1.5),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
+          // Fills the row (`width: 100%` in the design) rather than shrink-
+          // wrapping, so the tabs beside it keep a stable width.
+          child: Row(children: [
             const Icon(LucideIcons.slidersHorizontal, size: 15, color: T.fg3),
             const SizedBox(width: 8),
-            Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
+              ),
+            ),
             const SizedBox(width: 8),
             AnimatedRotation(
               turns: controller.isOpen ? 0.5 : 0,

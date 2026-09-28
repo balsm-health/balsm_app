@@ -200,6 +200,10 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
             child: _SearchField(controller: _query, onChanged: () => setState(() {})),
           ),
           _FilterChips(selected: _filter, onSelect: (f) => setState(() => _filter = f)),
+          // The chip rail is a fixed 36 with no vertical padding of its own, so
+          // without this the first record sits flush against it. Matches the
+          // 12 under the search field above.
+          const SizedBox(height: 12),
           Expanded(
             child: async.isLoading
                 ? const _LoadingList()

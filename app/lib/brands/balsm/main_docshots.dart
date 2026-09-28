@@ -12,6 +12,7 @@ import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'docshots_places.dart';
 import 'docshots_persona.dart';
 import 'docshots_seed.dart';
 import 'main_balsm.dart' as app;
@@ -34,7 +35,28 @@ Future<void> main() async {
         ..displayNameByLanguage = const {
           'en': DocshotsPersona.nameEn,
           'ar': DocshotsPersona.nameAr,
-        },
+        }
+        // A completed profile: the personal-details screen photographs as a
+        // filled form rather than a column of empty rows.
+        ..firstNameByLanguage = const {
+          'en': DocshotsPersona.firstNameEn,
+          'ar': DocshotsPersona.firstNameAr,
+        }
+        ..lastNameByLanguage = const {
+          'en': DocshotsPersona.lastNameEn,
+          'ar': DocshotsPersona.lastNameAr,
+        }
+        ..gender = 'female'
+        ..nationality = 'EG'
+        ..phone = '+20 100 555 0101'
+        ..dateOfBirth = '1991-04-17'
+        ..nationalId = '29104170101234'
+        ..bio = 'Living well with type 2 diabetes.',
+      // The default fixtures are named "E2E …" on purpose so a test can never
+      // mistake them for real places, which a store screenshot obviously
+      // cannot show. `docshotsPlaces` is 60 real Cairo facilities generated
+      // from OpenStreetMap — see docshots_places.dart.
+      careDirectory: FakeCareDirectoryApi(places: docshotsPlaces),
     ),
     // Populates the on-device DB with a synthetic record so the clinical
     // screens capture with content instead of empty states. Docshots only —

@@ -7,20 +7,35 @@
 // The app is driven signed-OUT (route jump only, no auth) — synthetic/empty
 // state, so no PHI can appear in a capture.
 //
-// Usage (app running on a simulator via `bin/balsm run balsm dev`):
-//   fvm dart run tool/docshots.dart <vm-service-uri> <simulator-udid> [out-dir]
+// Works against an iOS simulator (`simctl`) or an Android device/emulator
+// (`adb exec-out screencap`). The driver is identical; only the shutter differs.
+//
+// Usage (app running via `bin/balsm run balsm dev`):
+//   fvm dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> [out-dir]
+//
+// The target is detected from the id: an Android serial (`emulator-5554`, or
+// anything `adb devices` lists) uses adb, everything else uses simctl. Force it
+// with --ios / --android when the id is ambiguous.
 
 import 'dart:io';
 
 import 'package:vm_service/vm_service_io.dart';
 
 Future<void> main(List<String> args) async {
-  if (args.length < 2) {
-    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <sim-udid> [out-dir]');
+  final flags = args.where((a) => a.startsWith('--')).toSet();
+  final positional = args.where((a) => !a.startsWith('--')).toList();
+  if (positional.length < 2) {
+    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> [out-dir] [--ios|--android]');
     exit(64);
   }
-  final wsUri = args[0].replaceFirst('http://', 'ws://') + (args[0].endsWith('/') ? 'ws' : '/ws');
-  final udid = args[1];
+  final wsUri = positional[0].replaceFirst('http://', 'ws://') + (positional[0].endsWith('/') ? 'ws' : '/ws');
+  final deviceId = positional[1];
+
+  // adb serials are `emulator-NNNN` or a device serial; simulator UDIDs are
+  // dashed UUIDs. Guessing wrong only costs one failed shutter, and the flags
+  // override it.
+  final android =
+      flags.contains('--android') || (!flags.contains('--ios') && !RegExp(r'^[0-9A-Fa-f-]{36}$').hasMatch(deviceId));
 
   final vm = await vmServiceConnectUri(wsUri);
   final vmInfo = await vm.getVM();
@@ -32,14 +47,37 @@ Future<void> main(List<String> args) async {
   // Output root: screenshots/<lang>/<name>.png. A third argument redirects the
   // whole run somewhere else (the marketing capture writes into the store
   // screenshot tree), so docs and store captures share one driver.
-  final outRoot = args.length > 2 ? args[2] : 'screenshots';
+  final outRoot = positional.length > 2 ? positional[2] : 'screenshots';
+  stdout.writeln('capturing ${android ? 'Android (adb)' : 'iOS (simctl)'} $deviceId -> $outRoot');
 
   Future<void> shot(String lang, String name) async {
-    await Future<void>.delayed(const Duration(seconds: 2));
+    // 2s was enough for static screens but not for the map: raster tiles are
+    // fetched over the network and 60 markers cluster on top of them, so the
+    // capture landed on a grey, tileless canvas.
+    await Future<void>.delayed(Duration(seconds: name.contains('map') ? 8 : 3));
     final dir = Directory('$outRoot/$lang');
     if (!dir.existsSync()) dir.createSync(recursive: true);
     final path = '${dir.path}/$name.png';
-    final r = await Process.run('xcrun', ['simctl', 'io', udid, 'screenshot', path]);
+
+    if (android) {
+      // `exec-out` streams the PNG on stdout; stdoutEncoding null keeps it
+      // bytes, since any text decoding corrupts the image.
+      final r = await Process.run(
+        'adb',
+        ['-s', deviceId, 'exec-out', 'screencap', '-p'],
+        stdoutEncoding: null,
+      );
+      final bytes = r.stdout as List<int>;
+      if (r.exitCode == 0 && bytes.isNotEmpty) {
+        File(path).writeAsBytesSync(bytes);
+        stdout.writeln('captured $lang/$name');
+      } else {
+        stdout.writeln('FAILED $lang/$name: ${r.stderr}');
+      }
+      return;
+    }
+
+    final r = await Process.run('xcrun', ['simctl', 'io', deviceId, 'screenshot', path]);
     stdout.writeln(r.exitCode == 0 ? 'captured $lang/$name' : 'FAILED $lang/$name: ${r.stderr}');
   }
 
@@ -71,6 +109,25 @@ Future<void> main(List<String> args) async {
       await ext('ext.balsm.setTab', {'tab': tab});
       await shot(lang, name);
     }
+
+    // The two things a patient actually DOES in the app, rather than screens
+    // they read. Both are modal flows, so each is opened from the shell and
+    // closed again before the next one — leaving one open would photograph it
+    // on top of whatever comes next.
+    // Back to home first: the tab loop ends on Profile, and a sheet captured
+    // over the profile screen shows an arbitrary backdrop.
+    await ext('ext.balsm.setTab', {'tab': 'home'});
+    await ext('ext.balsm.open', {'screen': 'quicklog'});
+    await shot(lang, '11_self_log');
+    await ext('ext.balsm.open', {'screen': 'close'});
+
+    // Step 1 only. Advancing needs a mood selected — `Continue` is disabled
+    // until one is, and `ext.balsm.checkinNext` goes through the same guard —
+    // so steps 2-4 (BP, glucose, meds) cannot be reached from the driver as it
+    // stands. Capturing them needs an extension that sets a step's value.
+    await ext('ext.balsm.open', {'screen': 'checkin'});
+    await shot(lang, '12_checkin_step1_mood');
+    await ext('ext.balsm.open', {'screen': 'close'});
   }
 
   await vm.dispose();

@@ -15,6 +15,13 @@ class DocshotsPersona {
   /// Patient. Matches the app's default `female` body-map figure.
   static const nameAr = 'نور عبد الرحمن';
   static const nameEn = 'Nour Abdelrahman';
+
+  /// Split forms, because the greeting and the avatar initials use the given
+  /// and family names rather than the display name.
+  static const firstNameAr = 'نور';
+  static const firstNameEn = 'Nour';
+  static const lastNameAr = 'عبد الرحمن';
+  static const lastNameEn = 'Abdelrahman';
   static const handle = 'nour.abdelrahman';
   static const email = 'test+1@balsm.test'; // .test is reserved (RFC 2606)
 

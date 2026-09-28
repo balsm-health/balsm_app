@@ -179,9 +179,11 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       // its own CachedValue — so drop that cache too. Harmless elsewhere.
       final account = ref.read(accountApiProvider);
       if (account is FakeAccountApi) account.language = code;
-      final uid = ref.read(currentUserIdProvider);
-      if (uid != null) await ref.read(readAccountRepositoryProvider).refresh(uid.value);
-      ref.invalidate(accountSummaryProvider);
+      // `refreshAccountSummary` and not a hand-rolled refresh: the summary is
+      // cached under the literal key 'self', not under the user id, so
+      // refreshing by id invalidated a different row and the UI kept serving
+      // the previous locale's name.
+      await refreshAccountSummary(ref);
       // Let the rebuild settle (RTL flips the whole tree) before the capture.
       await Future<void>.delayed(const Duration(milliseconds: 420));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'lang': code}));
