@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 2,
+  "appName": "Balsm",
+  "themeId": "balsm",
+  "connectedCanvas": true,
+  "locales": [
+    "en",
+    "ar"
+  ],
+  "locale": "en",
+  "device": "android",
+  "orientation": "portrait",
+  "appIcon": "/app-icon.png",
+  "slidesByDevice": {
+    "iphone": [
+      {
+        "id": "s_balsm_1",
+        "layout": "device-bottom",
+        "label": {
+          "en": "DAILY CHECK-IN",
+          "ar": "متابعة يومية"
+        },
+        "headline": {
+          "en": "How are you\nfeeling today?",
+          "ar": "كيف تشعر\nاليوم؟"
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/01.png"
+      },
+      {
+        "id": "s_balsm_2",
+        "layout": "device-top",
+        "label": {
+          "en": "CARE NEARBY",
+          "ar": "رعاية قريبة"
+        },
+        "headline": {
+          "en": "Find trusted care,\nwherever you are.",
+          "ar": "رعاية موثوقة\nأينما كنت."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/02.png"
+      },
+      {
+        "id": "s_balsm_3",
+        "layout": "hero",
+        "inverted": true,
+        "label": {
+          "en": "SEE THE PATTERN",
+          "ar": "اقرأ النمط"
+        },
+        "headline": {
+          "en": "Your numbers,\nover time.",
+          "ar": "أرقامك\nعبر الوقت."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/03.png"
+      },
+      {
+        "id": "s_balsm_4",
+        "layout": "device-bottom",
+        "label": {
+          "en": "LOG IT IN SECONDS",
+          "ar": "سجّل في ثوانٍ"
+        },
+        "headline": {
+          "en": "One tap.\nEvery reading.",
+          "ar": "ضغطة واحدة.\nكل قياس."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/04.png"
+      },
+      {
+        "id": "s_balsm_5",
+        "layout": "device-top",
+        "label": {
+          "en": "FOUR QUICK STEPS",
+          "ar": "أربع خطوات"
+        },
+        "headline": {
+          "en": "A full check-in,\nin two minutes.",
+          "ar": "متابعة كاملة\nفي دقيقتين."
+        },
+        "screenshot": "/screenshots/apple/iphone/{locale}/05.png"
+      }
+    ],
+    "android": [
+      {
+        "id": "s_and_1",
+        "layout": "device-bottom",
+        "label": {
+          "en": "DAILY CHECK-IN",
+          "ar": "متابعة يومية"
+        },
+        "headline": {
+          "en": "How are you\nfeeling today?",
+          "ar": "كيف تشعر\nاليوم؟"
+        },
+        "screenshot": "/screenshots/android/phone/{locale}/01.png"
+      },
+      {
+        "id": "s_and_2",
+        "layout": "device-top",
+        "label": {
+          "en": "CARE NEARBY",
+          "ar": "رعاية قريبة"
+        },
+        "headline": {
+          "en": "Find trusted care,\nwherever you are.",
+          "ar": "رعاية موثوقة\nأينما كنت."
+        },
+        "screenshot": "/screenshots/android/phone/{locale}/02.png"
+      },
+      {
+        "id": "s_and_3",
+        "layout": "hero",
+        "inverted": true,
+        "label": {
+          "en": "SEE THE PATTERN",
+          "ar": "اقرأ النمط"
+        },
+        "headline": {
+          "en": "Your numbers,\nover time.",
+          "ar": "أرقامك\nعبر الوقت."
+        },
+        "screenshot": "/screenshots/android/phone/{locale}/03.png"
+      },
+      {
+        "id": "s_and_4",
+        "layout": "device-bottom",
+        "label": {
+          "en": "LOG IT IN SECONDS",
+          "ar": "سجّل في ثوانٍ"
+        },
+        "headline": {
+          "en": "One tap.\nEvery reading.",
+          "ar": "ضغطة واحدة.\nكل قياس."
+        },
+        "screenshot": "/screenshots/android/phone/{locale}/04.png"
+      },
+      {
+        "id": "s_and_5",
+        "layout": "device-top",
+        "label": {
+          "en": "FOUR QUICK STEPS",
+          "ar": "أربع خطوات"
+        },
+        "headline": {
+          "en": "A full check-in,\nin two minutes.",
+          "ar": "متابعة كاملة\nفي دقيقتين."
+        },
+        "screenshot": "/screenshots/android/phone/{locale}/05.png"
+      }
+    ],
+    "ipad": [
+      {
+        "id": "s_ipad_1",
+        "layout": "device-bottom",
+        "label": {
+          "en": "DAILY CHECK-IN",
+          "ar": "متابعة يومية"
+        },
+        "headline": {
+          "en": "How are you\nfeeling today?",
+          "ar": "كيف تشعر\nاليوم؟"
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/01.png"
+      },
+      {
+        "id": "s_ipad_2",
+        "layout": "device-top",
+        "label": {
+          "en": "CARE NEARBY",
+          "ar": "رعاية قريبة"
+        },
+        "headline": {
+          "en": "Find trusted care,\nwherever you are.",
+          "ar": "رعاية موثوقة\nأينما كنت."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/02.png"
+      },
+      {
+        "id": "s_ipad_3",
+        "layout": "hero",
+        "inverted": true,
+        "label": {
+          "en": "SEE THE PATTERN",
+          "ar": "اقرأ النمط"
+        },
+        "headline": {
+          "en": "Your numbers,\nover time.",
+          "ar": "أرقامك\nعبر الوقت."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/03.png"
+      },
+      {
+        "id": "s_ipad_4",
+        "layout": "device-bottom",
+        "label": {
+          "en": "LOG IT IN SECONDS",
+          "ar": "سجّل في ثوانٍ"
+        },
+        "headline": {
+          "en": "One tap.\nEvery reading.",
+          "ar": "ضغطة واحدة.\nكل قياس."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/04.png"
+      },
+      {
+        "id": "s_ipad_5",
+        "layout": "device-top",
+        "label": {
+          "en": "FOUR QUICK STEPS",
+          "ar": "أربع خطوات"
+        },
+        "headline": {
+          "en": "A full check-in,\nin two minutes.",
+          "ar": "متابعة كاملة\nفي دقيقتين."
+        },
+        "screenshot": "/screenshots/apple/ipad/{locale}/05.png"
+      }
+    ],
+    "android-7": [
+      {
+        "id": "s_mtre5hx6_d",
+        "layout": "hero",
+        "label": {
+          "en": "YOUR HEALTH FILE",
+          "ar": "ملفك الصحي"
+        },
+        "headline": {
+          "en": "Everything,\nside by side.",
+          "ar": "كل شيء\nجنبًا إلى جنب."
+        },
+        "screenshot": "/screenshots/android/tablet-7/portrait/{locale}/01.png"
+      },
+      {
+        "id": "s_mtre5hx6_e",
+        "layout": "split-landscape",
+        "label": {
+          "en": "CARE TEAM",
+          "ar": "فريق رعايتك"
+        },
+        "headline": {
+          "en": "Your doctors,\nin one place.",
+          "ar": "أطباؤك\nفي مكان واحد."
+        },
+        "screenshot": "/screenshots/android/tablet-7/portrait/{locale}/02.png"
+      }
+    ],
+    "android-10": [
+      {
+        "id": "s_mtre5hx6_f",
+        "layout": "hero",
+        "label": {
+          "en": "YOUR HEALTH FILE",
+          "ar": "ملفك الصحي"
+        },
+        "headline": {
+          "en": "Everything,\nside by side.",
+          "ar": "كل شيء\nجنبًا إلى جنب."
+        },
+        "screenshot": "/screenshots/android/tablet-10/portrait/{locale}/01.png"
+      },
+      {
+        "id": "s_mtre5hx6_g",
+        "layout": "split-landscape",
+        "label": {
+          "en": "CARE TEAM",
+          "ar": "فريق رعايتك"
+        },
+        "headline": {
+          "en": "Your doctors,\nin one place.",
+          "ar": "أطباؤك\nفي مكان واحد."
+        },
+        "screenshot": "/screenshots/android/tablet-10/portrait/{locale}/02.png"
+      }
+    ],
+    "feature-graphic": [
+      {
+        "id": "s_balsm_fg",
+        "layout": "feature-graphic",
+        "label": {},
+        "headline": {
+          "en": "Your care. Your data. Your system.",
+          "ar": "رعايتك. بياناتك. نظامك."
+        },
+        "screenshot": ""
+      }
+    ]
+  },
+  "crossScreenMockupsByDevice": {
+    "iphone": [],
+    "ipad": [],
+    "android": [],
+    "android-7": [],
+    "android-10": [],
+    "feature-graphic": []
+  }
+}
