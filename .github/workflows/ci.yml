@@ -38,7 +38,8 @@ jobs:
           if git grep -nIE '/Volumes/|[A-Za-z]:\\Users\\|(^|[^A-Za-z0-9_.-])/(Users|home)/[A-Za-z_][A-Za-z0-9_-]*/|~/Dev/' \
                -- . ':(exclude).agents/**' ':(exclude).claude/**' \
                     ':(exclude).githooks/pre-commit' ':(exclude).github/workflows/ci.yml' \
-                    ':(exclude)CODING_STANDARDS.md'; then
+                    ':(exclude)CODING_STANDARDS.md' \
+             | grep -vF 'machine-path-ok'; then
             echo ""
             echo "::error::Machine-specific absolute path in a tracked file (see matches above)."
             echo "Use a repo-relative path, \"\$(git rev-parse --show-toplevel)\", or ../<sibling-repo>."

@@ -34,7 +34,12 @@ added=$(git diff --cached --diff-filter=ACM -U0 -- . \
 # /Volumes/ and C:\ are always machine paths. /Users/ and /home/ only count
 # when followed by a name segment, so prose like "medications/home/profile"
 # does not trip the guard.
-bad=$(printf '%s\n' "$added" | grep -nE '/Volumes/|[A-Za-z]:\\Users\\|(^|[^A-Za-z0-9_.-])/(Users|home)/[A-Za-z_][A-Za-z0-9_-]*/|~/Dev/')
+# A line may opt out with a trailing `machine-path-ok` marker, for the cases
+# where an absolute path IS the subject: a test asserting a path is redacted,
+# a mounted DMG volume, an illustrative CLI transcript.
+bad=$(printf '%s\n' "$added" \
+  | grep -vF 'machine-path-ok' \
+  | grep -nE '/Volumes/|[A-Za-z]:\\Users\\|(^|[^A-Za-z0-9_.-])/(Users|home)/[A-Za-z_][A-Za-z0-9_-]*/|~/Dev/')
 if [ -n "$bad" ]; then
   echo ""
   echo "✖ pre-commit: machine-specific absolute path in staged content."

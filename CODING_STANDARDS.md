@@ -66,6 +66,11 @@ Write instead:
 | `/Volumes/Dev/Balsm/Balsm-Core` | `../Balsm-Core` (sibling repo in the workspace) |
 | `~/Dev/Balsm` | "the workspace root", the parent of this repo |
 
+Sometimes an absolute path **is** the subject: a test asserting that a path is
+redacted, a mounted DMG volume (`/Volumes/Balsm/...` after `hdiutil attach`),
+an illustrative CLI transcript. Put `machine-path-ok` on that line and both
+checks skip it. Use it for those cases only — not to land a real checkout path.
+
 Enforced twice: `.githooks/pre-commit` scans added lines and blocks the commit
 (enable once per clone with `git config core.hooksPath .githooks`), and the
 `hygiene` CI job greps the whole tracked tree, which is what catches a
