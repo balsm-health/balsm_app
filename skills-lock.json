@@ -1,11 +1,137 @@
 {
   "version": 1,
   "skills": {
+    "ab-test-store-listing": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ab-test-store-listing/SKILL.md",
+      "computedHash": "a146d36a8725cee8a93893d8399dcc7eebd9889849aea2ce5eb033da7db0cad3"
+    },
+    "android-aso": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/android-aso/SKILL.md",
+      "computedHash": "f5402ea96ce5a41918382de166827a94a28cf6cc35ba29cebfbf811cd619f0b8"
+    },
+    "app-analytics": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-analytics/SKILL.md",
+      "computedHash": "d448c0b063be9aaf8a50e34e396708a705cf5a03553ecd7d6a09d621b6e11cc4"
+    },
+    "app-clips": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-clips/SKILL.md",
+      "computedHash": "0d3ae448ca7832326876110775fce256dd75664033a62e05c6f83f72afd0490b"
+    },
+    "app-icon-optimization": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-icon-optimization/SKILL.md",
+      "computedHash": "cbd6d2c1ad5708dc4c00fe542dad3dcc575cc66ceb82b3ead411d6ac20173a1a"
+    },
+    "app-launch": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-launch/SKILL.md",
+      "computedHash": "8297e9160f591268bc6005c6f8996efd8dbfc2000811ffe5b1a79c75ebd9123d"
+    },
+    "app-marketing-context": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-marketing-context/SKILL.md",
+      "computedHash": "190347fce5aee1aad7c946d954289547c0475b325d46359cbde83323f3d5fb02"
+    },
+    "app-preview-video": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-preview-video/SKILL.md",
+      "computedHash": "3e8340da41bba08c79781daf618b0b9b8d04f3325d67b2bb0754c5090acbc3b8"
+    },
+    "app-rejection-recovery": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-rejection-recovery/SKILL.md",
+      "computedHash": "5148516364825cda6b70152418c8429b4252bc0f6d993b223d41c8560a1a9bba"
+    },
+    "app-store-featured": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/app-store-featured/SKILL.md",
+      "computedHash": "775924f2040d0895ab321cf726adb45a2130420351d9ae26c7ca1e1801a59395"
+    },
     "app-store-screenshots": {
       "source": "ParthJadhav/app-store-screenshots",
       "sourceType": "github",
       "skillPath": "skills/app-store-screenshots/SKILL.md",
       "computedHash": "e4ad544c2e347745a05a6cecd9c4b01146e6360ea4ea507e77d5484d4b452175"
+    },
+    "apple-search-ads": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/apple-search-ads/SKILL.md",
+      "computedHash": "735639c0470adc80af02040d9f87b7331f2d38e7af2527f8ffcbfb9c19bd0451"
+    },
+    "asc-metrics": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/asc-metrics/SKILL.md",
+      "computedHash": "f073b14bcbe9f7cc6da9c41799ae5ab2471bfe50ecb0c4432be41ae578da5ce7"
+    },
+    "aso-audit": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/aso-audit/SKILL.md",
+      "computedHash": "3d2eb475a58f5913bb78802491f6845f713da3bbf1d5581e2a2c54f0ae540941"
+    },
+    "aso-router": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/aso-router/SKILL.md",
+      "computedHash": "e24b5883b018c92215665d0234b904bbea4bf743ba29d27622a831ecbba2f4c0"
+    },
+    "attribution-setup": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/attribution-setup/SKILL.md",
+      "computedHash": "ea6f8bb64b3922f53789578ef2458eab43fee0ea1c354a2e8d824bba45d769c8"
+    },
+    "category-positioning": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/category-positioning/SKILL.md",
+      "computedHash": "043a2e8ada2e3f8fa6bc872111de32686219e9d083d7f64384112a5ddff84aac"
+    },
+    "competitor-analysis": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/competitor-analysis/SKILL.md",
+      "computedHash": "0cb970b55d107547a5edd9eb833d06644fd27f9c6aef6126b7c3fe5cd045ef0e"
+    },
+    "competitor-tracking": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/competitor-tracking/SKILL.md",
+      "computedHash": "63064b2caabfd053c04d6281227dcf7ec29ee43ea1118233815f19d5963b382f"
+    },
+    "crash-analytics": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/crash-analytics/SKILL.md",
+      "computedHash": "4b202563ac2b174b84f9184bee0a20b1b2b94c7cdbd1b6b8b57425bee738cc76"
+    },
+    "creator-ugc-marketing": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/creator-ugc-marketing/SKILL.md",
+      "computedHash": "1ecda189e848e60bfa2147d4983dfca5063dead6dd96ee714211d8a10540a983"
+    },
+    "custom-product-pages": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/custom-product-pages/SKILL.md",
+      "computedHash": "56728f769e5a118cbaeba4190989197e291759be64bc4278be6315c9cac99cf6"
     },
     "dart-add-unit-test": {
       "source": "flutter/skills",
@@ -162,6 +288,120 @@
       "sourceType": "github",
       "skillPath": "skills/flutter-use-http-package/SKILL.md",
       "computedHash": "17efcf4da9933afaf9c1d41940bd6b92f1ae73dcae4bf6c59cfe24f7e487ee9f"
+    },
+    "in-app-events": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/in-app-events/SKILL.md",
+      "computedHash": "ecba95962ddc4055e364174ffdc0e68f6408fdf8d918bf12399d60752c399c7d"
+    },
+    "keyword-research": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/keyword-research/SKILL.md",
+      "computedHash": "16189d57cc4e195b71ddc82445b3a16e8b2f9090669e01fb39e8c8d094f6a06c"
+    },
+    "localization": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/localization/SKILL.md",
+      "computedHash": "279d66d00f89289182335e62a3bb780058c9daf0944c1584676501df66aeb2a5"
+    },
+    "market-movers": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/market-movers/SKILL.md",
+      "computedHash": "a80f5778b19cce22278923e653dd7f69b2463f25de46c0ccb2926e72b5ceb638"
+    },
+    "market-pulse": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/market-pulse/SKILL.md",
+      "computedHash": "2a118a484a70877347bc1f28699ac8451ee64d6e148b41b7c234147557cef47f"
+    },
+    "metadata-optimization": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/metadata-optimization/SKILL.md",
+      "computedHash": "16ad5203b36914d9b19b46f67c394931c9c2eb82fa45c3d3d0f46c1c994c80fd"
+    },
+    "monetization-strategy": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/monetization-strategy/SKILL.md",
+      "computedHash": "7b175044a2f7c1e5e747a0c3c8a24f5e2f74c1e52ef8b3fbd463a3badf150fb5"
+    },
+    "onboarding-optimization": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/onboarding-optimization/SKILL.md",
+      "computedHash": "ad4ecee81dec8ecce4a83759e7a5a1f19d8f6a393500d27a231525e735311747"
+    },
+    "paywall-optimization": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/paywall-optimization/SKILL.md",
+      "computedHash": "5ac1d3afc2a3ccac0bcfe9d34bea83f2e1fc7a8d81e6b4cc7634852b303a061d"
+    },
+    "press-and-pr": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/press-and-pr/SKILL.md",
+      "computedHash": "52bd8a304af5afc42f73a8cb9653a5864a47bb77c3c45fac9e337b1a6abefe7f"
+    },
+    "rating-prompt-strategy": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/rating-prompt-strategy/SKILL.md",
+      "computedHash": "d9a3471479fb02249d5c5272e105db7ab53e07a786c5f2041c38479d245adbda"
+    },
+    "referral-program": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/referral-program/SKILL.md",
+      "computedHash": "06222b37e4d53a6dc1307913e07abd6303d59661e05185e1122838105202c69a"
+    },
+    "retention-optimization": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/retention-optimization/SKILL.md",
+      "computedHash": "396b63944c41a206b6c1971a74266ce75ef086a679d72f8054d0f531bf4afc25"
+    },
+    "review-management": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/review-management/SKILL.md",
+      "computedHash": "3bf51fff1800b1a8b7984cd232c89ee62f58a1d4b2c2cd88107d1260acfbe21d"
+    },
+    "screenshot-optimization": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/screenshot-optimization/SKILL.md",
+      "computedHash": "c48beb6c88a9a56d89fc302d5c1dfe2c48929cad719136edf0029d9d4577d244"
+    },
+    "seasonal-aso": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/seasonal-aso/SKILL.md",
+      "computedHash": "9b3a8d8e23e9964ee0d9e91aa6fc8da5c97b29262169f44ed17335121f656a27"
+    },
+    "subscription-lifecycle": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/subscription-lifecycle/SKILL.md",
+      "computedHash": "c37ae50bd23c541fddee4ed232d56c2aefcad267dd3a98a4f0b136078570d2ee"
+    },
+    "ua-campaign": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ua-campaign/SKILL.md",
+      "computedHash": "fd7e9079c30e86943060ab7da00d3ef36034b9c318820d28dd53b8424fc7b96d"
+    },
+    "web-to-app-funnel": {
+      "source": "eronred/aso-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-to-app-funnel/SKILL.md",
+      "computedHash": "2f6bc44b80332490a1f22289b699282c4e90b75a2e3ccb1f2151576edbe656b7"
     }
   }
 }

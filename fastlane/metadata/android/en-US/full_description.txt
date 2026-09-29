@@ -1,0 +1,29 @@
+Balsm keeps your health record where it belongs: on your phone.
+
+Medications, dose history, prescriptions and health records are stored on your
+device, encrypted. They are not uploaded, not synced to our servers, and not
+shared. We do not track you, we do not advertise, and we do not measure how
+you use the app. Balsm reports crashes so we can fix them, with your health
+data stripped out before anything is sent.
+
+WHAT YOU CAN DO
+• Keep a medication list with dose history you actually record as you take it
+• Photograph prescriptions and health records and keep them organised
+• Build a care team of the doctors, clinics and pharmacies you use
+• Carry an emergency card for the information someone would need in a crisis
+• Find clinics and pharmacies near you
+• Keep separate profiles for the people you care for
+
+ARABIC AND ENGLISH
+Balsm is built for both, not translated into one. The entire interface mirrors
+to right-to-left in Arabic, with Arabic typography throughout.
+
+WHAT BALSM IS NOT
+Balsm does not diagnose, does not give medical advice, and does not replace
+your doctor. It is a record-keeping tool for adults managing their own care.
+
+YOUR DATA
+Your account (name, email, country) and your care-team entries reach our
+servers so your account works across devices. Your medications, doses and
+records do not. You can delete your account, and everything with it, from
+inside the app at any time.
