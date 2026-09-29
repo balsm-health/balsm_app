@@ -14,33 +14,35 @@
 # 1. Machine-specific absolute paths.
 #
 # A checkout location is one developer's accident, not a fact about the repo.
-# `/Volumes/Dev/Balsm/balsm_app/...` in a doc or script is wrong for everyone
-# else and for CI, and it silently leaks the author's directory layout. Write
+# An absolute path into somebody's checkout is wrong in every other clone and
+# on CI, and it silently leaks the author's directory layout. Write
 # repo-relative paths, `$(git rev-parse --show-toplevel)`, or `../<sibling>`
 # for another repo in the workspace.
 #
 # Only ADDED lines are scanned, so existing content never blocks an unrelated
-# commit. Vendored third-party skills under .agents/ and .claude/ are exempt —
-# they are not ours to rewrite.
-# The three files that must spell the patterns out — this hook, the CI job that
-# backstops it, and the standard that documents it — are exempt, or the guard
-# would forbid its own definition.
+# commit. The one blanket exclusion is the vendored `*/skills/**` trees, which
+# are installed third-party content. Nothing else is excluded: the patterns
+# below are written with character classes so this file does not match itself,
+# which is what lets the check run over its own definition. Self-exemptions are
+# how 146 bad paths once hid in `.claude/agents/**`.
 added=$(git diff --cached --diff-filter=ACM -U0 -- . \
           ':(exclude).agents/skills/**' ':(exclude).claude/skills/**' \
-          ':(exclude).cursor/skills/**' \
-          ':(exclude).githooks/pre-commit' ':(exclude).github/workflows/ci.yml' \
-          ':(exclude)CODING_STANDARDS.md' \
+          ':(exclude).agent/skills/**' ':(exclude).qwen/skills/**' \
+          ':(exclude).cursor/skills/**' ':(exclude)plugin/skills/**' \
         | grep '^+' | grep -v '^+++')
 
-# /Volumes/ and C:\ are always machine paths. /Users/ and /home/ only count
-# when followed by a name segment, so prose like "medications/home/profile"
-# does not trip the guard.
+# Mount roots and Windows user directories are always machine paths. The unix
+# home directories count only when followed by a name segment, so an import
+# like `@/pages/Users/...` or prose like "medications/home/profile" does not
+# trip the guard.
+#
 # A line may opt out with a trailing `machine-path-ok` marker, for the cases
 # where an absolute path IS the subject: a test asserting a path is redacted,
-# a mounted DMG volume, an illustrative CLI transcript.
+# a mounted installer volume, an illustrative CLI transcript.
 bad=$(printf '%s\n' "$added" \
   | grep -vF 'machine-path-ok' \
-  | grep -nE '/Volumes/|[A-Za-z]:\\Users\\|(^|[^A-Za-z0-9_.-])/(Users|home)/[A-Za-z_][A-Za-z0-9_-]*/|~/Dev/')
+  | grep -nE '/Vol[u]mes/|[A-Za-z]:\\Us[e]rs\\|(^|[^A-Za-z0-9_.-])/(Us[e]rs|ho[m]e)/[A-Za-z_][A-Za-z0-9_-]*/|~/D[e]v/')
+
 if [ -n "$bad" ]; then
   echo ""
   echo "✖ pre-commit: machine-specific absolute path in staged content."
@@ -48,6 +50,7 @@ if [ -n "$bad" ]; then
   echo ""
   echo "  Use a repo-relative path, \"\$(git rev-parse --show-toplevel)\", or"
   echo "  ../<sibling-repo> for another repo in the workspace."
+  echo "  If the path IS the point, add  machine-path-ok  to that line."
   echo "  (Override only if you must:  git commit --no-verify)"
   exit 1
 fi

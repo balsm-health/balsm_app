@@ -50,32 +50,36 @@
 
 ### No machine-specific paths
 
-Nothing committed may contain an absolute path to somebody's checkout —
-`/Volumes/...`, `/Users/<name>/...`, `/home/<name>/...`, `C:\Users\...`,
-`~/Dev/...`. A checkout location is one developer's accident, not a fact about
-the repo: the path is wrong in every other clone and on CI, and it publishes
-the author's directory layout. This applies to docs and plans as much as to
-code and scripts — a runbook nobody else can paste is not a runbook.
+Nothing committed may contain an absolute path into somebody's checkout — one
+that starts at a mount point, a user home (`$HOME`, or the Windows equivalent),
+or a hard-coded workspace root. A checkout location is one developer's
+accident, not a fact about the repo: the path is wrong in every other clone and
+on CI, and it publishes the author's directory layout. This applies to docs and
+plans as much as to code and scripts — a runbook nobody else can paste is not a
+runbook.
 
 Write instead:
 
 | Instead of | Use |
 |---|---|
-| `cd /Volumes/Dev/Balsm/balsm_app` | `cd "$(git rev-parse --show-toplevel)"`, or just document commands as run from the repo root |
-| `/Volumes/Dev/Balsm/balsm_app/app/lib/...` | `app/lib/...` (repo-relative) |
-| `/Volumes/Dev/Balsm/Balsm-Core` | `../Balsm-Core` (sibling repo in the workspace) |
-| `~/Dev/Balsm` | "the workspace root", the parent of this repo |
+| `cd <abs-path-to-this-repo>` | `cd "$(git rev-parse --show-toplevel)"`, or document commands as run from the repo root |
+| `<abs-path-to-this-repo>/app/lib/...` | `app/lib/...` (repo-relative) |
+| `<abs-path-to-workspace>/Balsm-Core` | `../Balsm-Core` (sibling repo in the workspace) |
+| `<abs-path-to-workspace>` | "the workspace root", the parent of this repo |
 
 Sometimes an absolute path **is** the subject: a test asserting that a path is
-redacted, a mounted DMG volume (`/Volumes/Balsm/...` after `hdiutil attach`),
-an illustrative CLI transcript. Put `machine-path-ok` on that line and both
-checks skip it. Use it for those cases only — not to land a real checkout path.
+redacted, a mounted installer volume after `hdiutil attach`, an illustrative
+CLI transcript. Put `machine-path-ok` on that line and both checks skip it. Use
+it for those cases only — not to land a real checkout path.
 
 Enforced twice: `.githooks/pre-commit` scans added lines and blocks the commit
 (enable once per clone with `git config core.hooksPath .githooks`), and the
 `hygiene` CI job greps the whole tracked tree, which is what catches a
-`--no-verify` or a clone that never enabled the hook. Vendored third-party
-skills under `.agents/` and `.claude/` are exempt; they are not ours to rewrite.
+`--no-verify` or a clone that never enabled the hook. Both write their patterns
+with character classes so neither file matches itself — otherwise they would
+need exemptions, and exemptions are what let 146 bad paths hide in
+`.claude/agents/**` on the first pass. The only exclusions left are the
+vendored `*/skills/**` trees, which are installed third-party content.
 
 ## 6. Flutter Performance
 

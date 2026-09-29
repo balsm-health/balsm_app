@@ -24,22 +24,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # A checkout location is one developer's accident, not a fact about the
-      # repo: an absolute /Volumes/... or /Users/<name>/... path is wrong for
-      # every other clone and for this runner, and it leaks the author's
-      # directory layout. .githooks/pre-commit catches these before they are
+      # repo: an absolute path into somebody's checkout is wrong for every
+      # other clone and for this runner, and it leaks the author's directory
+      # layout. The pattern below uses character classes so this file does not
+      # match itself and need an exemption. .githooks/pre-commit catches these before they are
       # committed; this is the backstop for --no-verify and for clones that
       # never ran `git config core.hooksPath .githooks`.
       #
-      # /Users/ and /home/ must be followed by a name segment, so prose such as
+      # The unix home dirs must be followed by a name segment, so prose such as
       # "medications/home/profile" does not match. Vendored third-party skills
       # are exempt — they are not ours to rewrite.
       - name: Reject absolute machine paths in tracked files
         run: |
-          if git grep -nIE '/Volumes/|[A-Za-z]:\\Users\\|(^|[^A-Za-z0-9_.-])/(Users|home)/[A-Za-z_][A-Za-z0-9_-]*/|~/Dev/' \
+          if git grep -nIE '/Vol[u]mes/|[A-Za-z]:\\Us[e]rs\\|(^|[^A-Za-z0-9_.-])/(Us[e]rs|ho[m]e)/[A-Za-z_][A-Za-z0-9_-]*/|~/D[e]v/' \
                -- . ':(exclude).agents/skills/**' ':(exclude).claude/skills/**' \
                     ':(exclude).cursor/skills/**' \
-                    ':(exclude).githooks/pre-commit' ':(exclude).github/workflows/ci.yml' \
-                    ':(exclude)CODING_STANDARDS.md' \
              | grep -vF 'machine-path-ok'; then
             echo ""
             echo "::error::Machine-specific absolute path in a tracked file (see matches above)."
