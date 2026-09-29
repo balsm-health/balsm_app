@@ -59,6 +59,35 @@ else. `phi_leak_interceptor.dart` in balsm_api enforces the request side.
   (`AuthApi`, `EmergencyQrApi`, …) with dio implementations. Raw dio never
   appears in a feature module.
 
+### Ports a module owns
+
+A module that needs something it may not import declares the interface itself,
+under its own `application/ports/`, and `app/` binds the implementation at
+bootstrap. Core contracts are for what several contexts share; a port like this
+is for one context's private dependency — `deletion` needing re-auth, `account`
+needing the geofence's denied countries, `auth` needing social credentials.
+
+The default implementation **fails closed**. `ReauthPort` unbound returns
+`UnauthorizedFailure`, so an app that forgets the override cannot advance the
+flow rather than advancing it unproven. Anything guarding an irreversible or
+PHI-bearing action follows that rule: the recoverable direction is the one that
+refuses.
+
+### Public routes
+
+Four paths the shell serves from `Uri.base` on web **before** the auth gate,
+listed in `PublicQrPaths`:
+
+| Path | Screen | Why it cannot require a session |
+|---|---|---|
+| `/t/{jti}#k=` | emergency resolve | scanned by a responder who has no account |
+| `/emergency/{jti}#k=` | same, dev-era alias | codes already in the wild |
+| `/delete-account` | public delete | Google Play requires it to work without the app installed |
+| `/delete-account-cancel` | cancel a pending delete | linked from the confirmation email |
+
+Session-less does not mean unauthenticated: the deletion screens prove identity
+in-screen with a one-time code through `ReauthPort` before anything is erased.
+
 ## Persistence
 
 Three tiers, all on-device:

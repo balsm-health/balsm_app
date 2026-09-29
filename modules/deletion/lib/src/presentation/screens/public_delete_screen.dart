@@ -3,7 +3,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../application/ports/reauth_port.dart';
 import '../../application/use_cases/request_deletion_use_case.dart';
+import '../i18n/i18n.dart';
 import '../widgets/reauth_form.dart';
 
 /// Public, session-less account-deletion flow (route `/account/delete`).
@@ -26,15 +28,40 @@ class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
   String? _error;
   DateTime? _graceUntil;
 
-  void _onReauthed(ReauthCredentials _) {
-    // Re-auth succeeded for this session/identity. Credentials are not logged
-    // or retained (no PHI). Advance to the explicit confirmation step.
-    // Seam: when auth exposes a shared re-auth use case, await it here before
-    // advancing.
+  Future<void> _sendCode(ReauthChannel channel, String identifier) async {
+    setState(() => _error = null);
+    final result = await ref.read(reauthPortProvider).requestChallenge(channel, identifier);
+    if (!mounted) return;
+    switch (result) {
+      case AppSuccess():
+        break;
+      case AppFailureResult(:final failure):
+        setState(() => _error = failure.message);
+    }
+  }
+
+  /// Verifies the code before advancing. Nothing here trusts the form: the
+  /// only way past this stage is a success from [ReauthPort], whose default
+  /// implementation refuses. Credentials are never logged or retained.
+  Future<void> _onReauthed(ReauthCredentials credentials) async {
     setState(() {
+      _submitting = true;
       _error = null;
-      _stage = _Stage.preconfirm;
     });
+    final result = await ref.read(reauthPortProvider).verify(credentials);
+    if (!mounted) return;
+    switch (result) {
+      case AppSuccess():
+        setState(() {
+          _submitting = false;
+          _stage = _Stage.preconfirm;
+        });
+      case AppFailureResult(:final failure):
+        setState(() {
+          _submitting = false;
+          _error = failure.message;
+        });
+    }
   }
 
   Future<void> _confirmDelete() async {
@@ -59,6 +86,7 @@ class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(deletionStringsProvider);
     return Scaffold(
       backgroundColor: BalsmColors.cream50,
       body: SafeArea(
@@ -69,9 +97,9 @@ class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
               padding: const EdgeInsets.all(24),
               shrinkWrap: true,
               children: [
-                const Text(
-                  'Delete your account',
-                  style: TextStyle(
+                Text(
+                  m.publicTitle,
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: BalsmColors.fg1,
@@ -80,7 +108,10 @@ class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
                 const SizedBox(height: 16),
                 switch (_stage) {
                   _Stage.reauth => ReauthForm(
-                      submitLabel: 'Continue',
+                      submitLabel: m.verifyContinue,
+                      submitting: _submitting,
+                      error: _error,
+                      onRequestChallenge: _sendCode,
                       onSubmit: _onReauthed,
                     ),
                   _Stage.preconfirm => _PreConfirm(

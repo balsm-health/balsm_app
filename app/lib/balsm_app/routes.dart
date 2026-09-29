@@ -59,4 +59,14 @@ abstract final class PublicQrPaths {
 
   /// Serving alias for dev-era codes: `/emergency/{jti}#k={key}`.
   static const legacyEmergency = 'emergency';
+
+  /// Session-less account deletion: `/delete-account`. This is the URL given to
+  /// Google Play's Data deletion field, which requires a route reachable
+  /// WITHOUT the app installed, so the shell must serve it before any auth
+  /// gate. Identity is proven inside the screen by one-time code.
+  static const deleteAccount = 'delete-account';
+
+  /// Session-less cancellation of a pending deletion, linked from the email
+  /// that confirms the request: `/delete-account-cancel`.
+  static const deleteAccountCancel = 'delete-account-cancel';
 }

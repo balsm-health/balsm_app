@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:account/account.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
+import 'package:deletion/deletion.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -147,6 +148,7 @@ Future<void> bootstrap({
       (ref) => _AccountProfileIdentityReader(ref, PatientAppPrefs(globalKV)),
     ),
     // Account country-change consults the geofence denied-countries repo.
+    reauthPortProvider.overrideWith((ref) => _AuthReauthPort(ref)),
     deniedCountriesPortProvider.overrideWith(
       (ref) => _GeofenceDeniedCountriesPort(
         ref.watch(deniedCountriesRepositoryProvider),
@@ -375,3 +377,38 @@ class _GeofenceDeniedCountriesPort implements DeniedCountriesPort {
 
 /// Production entrypoint. See [bootstrap].
 Future<void> main() => bootstrap();
+
+/// Binds `deletion`'s [ReauthPort] to `auth`'s OTP use cases.
+///
+/// `deletion` must not import `auth`, so the composition happens here. This
+/// reuses the same challenge the app's own sign-in uses: proving control of
+/// the mailbox is exactly the bar for deleting what that mailbox owns.
+class _AuthReauthPort implements ReauthPort {
+  _AuthReauthPort(this._ref);
+
+  final Ref _ref;
+
+  @override
+  Future<AppResult<void>> requestChallenge(ReauthChannel channel, String identifier) async {
+    if (channel != ReauthChannel.email) {
+      return AppResult.failure(const ValidationFailure('Use your account email.'));
+    }
+    final country = _ref.read(patientAppStateProvider).country.value;
+    return _ref.read(signInUseCaseProvider).requestEmailOtp(identifier, country);
+  }
+
+  @override
+  Future<AppResult<void>> verify(ReauthCredentials credentials) async {
+    if (credentials.channel != ReauthChannel.email) {
+      return AppResult.failure(const ValidationFailure('Use your account email.'));
+    }
+    final result = await _ref.read(signInUseCaseProvider).verifyEmailOtp(
+          email: credentials.identifier,
+          code: credentials.secret,
+        );
+    return switch (result) {
+      AppSuccess() => AppResult.success(null),
+      AppFailureResult(:final failure) => AppResult.failure(failure),
+    };
+  }
+}

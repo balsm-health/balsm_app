@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:core/core.dart';
+import 'package:deletion/deletion.dart';
 import 'package:profile/profile.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
@@ -94,6 +95,12 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   /// stays in the URL fragment, read by the resolve screen itself.
   String? _publicResolveJti;
 
+  /// Web only: `/delete-account` and `/delete-account-cancel` render the
+  /// session-less deletion screens. Google Play requires the deletion route to
+  /// work for someone who no longer has the app, so it must not eject to auth.
+  bool _publicDelete = false;
+  bool _publicDeleteCancel = false;
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +108,10 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       final segs = Uri.base.pathSegments.where((p) => p.isNotEmpty).toList();
       if (segs.length == 2 && (segs[0] == PublicQrPaths.token || segs[0] == PublicQrPaths.legacyEmergency)) {
         _publicResolveJti = segs[1];
+      } else if (segs.length == 1 && segs[0] == PublicQrPaths.deleteAccount) {
+        _publicDelete = true;
+      } else if (segs.length == 1 && segs[0] == PublicQrPaths.deleteAccountCancel) {
+        _publicDeleteCancel = true;
       }
     }
     LogBuffer.instance.install();
@@ -321,10 +332,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                       // whole — app.css `.app-body > .screen:not(.app-shell)`.
                       _publicResolveJti != null
                           ? AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
-                          : state.route == AppRoutes.app
-                              ? const _MainApp()
-                              : const AdaptiveFrame(child: AuthRouter()),
-                      if (_publicResolveJti == null)
+                          : _publicDelete
+                              ? const AdaptiveFrame(child: PublicDeleteScreen())
+                              : _publicDeleteCancel
+                                  ? const AdaptiveFrame(child: PublicDeleteCancelledScreen())
+                                  : state.route == AppRoutes.app
+                                      ? const _MainApp()
+                                      : const AdaptiveFrame(child: AuthRouter()),
+                      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
                         Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
                     ]),
                   ),

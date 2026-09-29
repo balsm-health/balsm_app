@@ -12,10 +12,21 @@ class Messages_ar extends Messages {
   String get title => "حذف الحساب";
   String get confirm => "تأكيد الحذف";
   String get cancelled => "تم إلغاء الحذف";
+  String get publicTitle => "حذف حسابك";
+  String get verifyHeading => "تأكيد هويتك";
+  String get verifyBody =>
+      "نرسل رمزًا لمرة واحدة حتى لا يتمكن غيرك من حذف حسابك.";
+  String get verifyContinue => "متابعة";
+  String get sendCode => "أرسل لي رمزًا";
+  String get sendCodeAgain => "أرسل رمزًا جديدًا";
+  String get otpLabel => "الرمز لمرة واحدة";
+  String get publicCancelTitle => "إلغاء حذف الحساب";
+  String get publicCancelAction => "إلغاء الحذف";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -24,6 +35,24 @@ class Messages_ar extends Messages {
         return confirm;
       case 'cancelled':
         return cancelled;
+      case 'publicTitle':
+        return publicTitle;
+      case 'verifyHeading':
+        return verifyHeading;
+      case 'verifyBody':
+        return verifyBody;
+      case 'verifyContinue':
+        return verifyContinue;
+      case 'sendCode':
+        return sendCode;
+      case 'sendCodeAgain':
+        return sendCodeAgain;
+      case 'otpLabel':
+        return otpLabel;
+      case 'publicCancelTitle':
+        return publicCancelTitle;
+      case 'publicCancelAction':
+        return publicCancelAction;
       default:
         return super[key];
     }
