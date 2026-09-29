@@ -25,7 +25,19 @@ bun dev       # http://localhost:3000
 Two ways:
 
 1. **Drop a file in the inspector** — drag-and-drop or click Pick. The file is sent to `/api/upload`, hashed, and written to `public/screenshots/uploaded/<hash>.png`. The slide stores the resulting `/screenshots/uploaded/...` path, so commit those files alongside `app-store-screenshots.json` and the screenshots survive a `git clone`.
-2. **Reference a static file** — put PNGs under `public/screenshots/{platform}/{device}/{locale}/` and reference them by path. Default sample slides expect:
+2. **Reference a static file** — put PNGs under `public/screenshots/{platform}/{device}/{locale}/` and reference them by path.
+
+   These deck trees are **git-ignored and generated**, not committed: every slot is a copy of a shot under `captures/`, renumbered into deck order by `tool/collect.mjs`. After a fresh clone the editor shows broken images until you rebuild them:
+
+   ```bash
+   node tool/collect.mjs captures/iphone  iphone
+   node tool/collect.mjs captures/ipad    ipad
+   node tool/collect.mjs captures/android android
+   ```
+
+   `captures/` is the source of truth — every screen `app/tool/docshots.dart` photographs, per locale per device, of which each deck picks a few. Change which shot sells which slide by editing `DECKS` in `tool/collect.mjs`, not by moving files. The driver needs an explicit brand/device-scoped out-dir; point it at `captures/<device>` for a store run and at `app/screenshots/<brand>/<device>` for the docs set.
+
+   Default sample slides expect:
    - `public/screenshots/apple/iphone/en/...`
    - `public/screenshots/android/phone/en/...`
    - `public/screenshots/apple/ipad/en/...`

@@ -5,3 +5,15 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# Derived screenshot decks. Every file the deck slots address is a
+# byte-identical copy of one under captures/, renumbered into position by
+# tool/collect.mjs. captures/ is the source of truth; tracking both stored the
+# same ~31MB of PNG twice. Rebuild the served tree with:
+#   node tool/collect.mjs captures/iphone  iphone
+#   node tool/collect.mjs captures/ipad    ipad
+#   node tool/collect.mjs captures/android android
+# uploaded/ is exempt: those come from the editor's drop target, not from a
+# capture, so nothing can regenerate them and they must stay in git.
+public/screenshots/*
+!public/screenshots/uploaded/

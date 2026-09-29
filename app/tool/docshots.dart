@@ -11,7 +11,12 @@
 // (`adb exec-out screencap`). The driver is identical; only the shutter differs.
 //
 // Usage (app running via `bin/balsm run balsm dev`):
-//   fvm dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> [out-dir]
+//   fvm dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> <out-dir>
+//
+// <out-dir> is required and is brand- and device-scoped, because this repo
+// hosts every Balsm app rather than one: `screenshots/<brand>/<device>`, e.g.
+// `screenshots/balsm/iphone`. There is no default — a driver that guessed
+// would let the next brand's run overwrite balsm's captures.
 //
 // The target is detected from the id: an Android serial (`emulator-5554`, or
 // anything `adb devices` lists) uses adb, everything else uses simctl. Force it
@@ -24,8 +29,9 @@ import 'package:vm_service/vm_service_io.dart';
 Future<void> main(List<String> args) async {
   final flags = args.where((a) => a.startsWith('--')).toSet();
   final positional = args.where((a) => !a.startsWith('--')).toList();
-  if (positional.length < 2) {
-    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> [out-dir] [--ios|--android]');
+  if (positional.length < 3) {
+    stderr.writeln('usage: dart run tool/docshots.dart <vm-service-uri> <udid-or-serial> <out-dir> [--ios|--android]');
+    stderr.writeln('  <out-dir> is brand/device scoped, e.g. screenshots/balsm/iphone');
     exit(64);
   }
   final wsUri = positional[0].replaceFirst('http://', 'ws://') + (positional[0].endsWith('/') ? 'ws' : '/ws');
@@ -44,10 +50,11 @@ Future<void> main(List<String> args) async {
   Future<void> ext(String method, Map<String, String> params) =>
       vm.callServiceExtension(method, isolateId: isolateId, args: params);
 
-  // Output root: screenshots/<lang>/<name>.png. A third argument redirects the
-  // whole run somewhere else (the marketing capture writes into the store
-  // screenshot tree), so docs and store captures share one driver.
-  final outRoot = positional.length > 2 ? positional[2] : 'screenshots';
+  // Output root: <out-dir>/<lang>/<name>.png. Docs and store captures share one
+  // driver and differ only by where they are pointed — `screenshots/<brand>/
+  // <device>` for the README and docs, the marketing tree's `captures/<device>`
+  // for a store deck.
+  final outRoot = positional[2];
   stdout.writeln('capturing ${android ? 'Android (adb)' : 'iOS (simctl)'} $deviceId -> $outRoot');
 
   Future<void> shot(String lang, String name) async {

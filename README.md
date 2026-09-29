@@ -14,13 +14,19 @@ encrypted or non-PHI payloads.
 > [CODING_STANDARDS.md](CODING_STANDARDS.md).
 
 <p align="center">
-  <img src="app/screenshots/04_home.png"        width="19%" alt="Home" />
-  <img src="app/screenshots/05_care_map.png"    width="19%" alt="Care map" />
-  <img src="app/screenshots/06_medications.png" width="19%" alt="Medications" />
-  <img src="app/screenshots/08_records.png"     width="19%" alt="Health records" />
-  <img src="app/screenshots/10_profile.png"     width="19%" alt="Profile" />
+  <img src="app/screenshots/balsm/iphone/ar/04_home.png"        width="16%" alt="الرئيسية — Home" />
+  <img src="app/screenshots/balsm/iphone/ar/05_care_map.png"    width="16%" alt="رعاية قريبة — Care map" />
+  <img src="app/screenshots/balsm/iphone/ar/06_medications.png" width="16%" alt="الأدوية — Medications" />
+  <img src="app/screenshots/balsm/iphone/ar/08_records.png"     width="16%" alt="السجلات الصحية — Health records" />
+  <img src="app/screenshots/balsm/iphone/ar/09_trends.png"      width="16%" alt="الرسوم البيانية — Trends" />
+  <img src="app/screenshots/balsm/iphone/ar/10_profile.png"     width="16%" alt="الملف — Profile" />
 </p>
-<p align="center"><sub>Synthetic "E2E Tester" data — full set + regeneration guide in
+<p align="center">
+  <img src="app/screenshots/balsm/ipad/ar/09_trends.png" width="45%" alt="iPad — الرسوم البيانية" />
+  <img src="app/screenshots/balsm/ipad/ar/04_home.png"   width="45%" alt="iPad — الرئيسية" />
+</p>
+<p align="center"><sub>iPhone and iPad, Arabic (RTL) — the tablet layout moves the tab bar to a
+side rail. Synthetic seeded data, never real PHI; English set and regeneration guide in
 <a href="docs/screenshots.md">docs/screenshots.md</a>.</sub></p>
 
 ## Repository map
