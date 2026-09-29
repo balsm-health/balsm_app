@@ -18,6 +18,34 @@ env:
     packages/sessions app
 
 jobs:
+  hygiene:
+    name: No machine-specific paths
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # A checkout location is one developer's accident, not a fact about the
+      # repo: an absolute /Volumes/... or /Users/<name>/... path is wrong for
+      # every other clone and for this runner, and it leaks the author's
+      # directory layout. .githooks/pre-commit catches these before they are
+      # committed; this is the backstop for --no-verify and for clones that
+      # never ran `git config core.hooksPath .githooks`.
+      #
+      # /Users/ and /home/ must be followed by a name segment, so prose such as
+      # "medications/home/profile" does not match. Vendored third-party skills
+      # are exempt — they are not ours to rewrite.
+      - name: Reject absolute machine paths in tracked files
+        run: |
+          if git grep -nIE '/Volumes/|[A-Za-z]:\\Users\\|(^|[^A-Za-z0-9_.-])/(Users|home)/[A-Za-z_][A-Za-z0-9_-]*/|~/Dev/' \
+               -- . ':(exclude).agents/**' ':(exclude).claude/**' \
+                    ':(exclude).githooks/pre-commit' ':(exclude).github/workflows/ci.yml' \
+                    ':(exclude)CODING_STANDARDS.md'; then
+            echo ""
+            echo "::error::Machine-specific absolute path in a tracked file (see matches above)."
+            echo "Use a repo-relative path, \"\$(git rev-parse --show-toplevel)\", or ../<sibling-repo>."
+            exit 1
+          fi
+          echo "No machine-specific paths found."
+
   analyze:
     name: Analyze (all packages)
     runs-on: ubuntu-latest

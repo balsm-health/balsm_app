@@ -48,6 +48,30 @@
 - tests per package (`fvm flutter test` in `packages/core` etc.); analyze before committing
 - **code generation**: `dart run tool/build.dart gen` (also `melos run gen`, or the "Flutter: code generation" VS Code task) — runs `build_runner` across every package that depends on it (i69n bundles, drift, json/freezed) and skips the rest; add `--watch` for continuous rebuilds. Regenerate after editing any `*.i69n.json`, drift table, or annotated model.
 
+### No machine-specific paths
+
+Nothing committed may contain an absolute path to somebody's checkout —
+`/Volumes/...`, `/Users/<name>/...`, `/home/<name>/...`, `C:\Users\...`,
+`~/Dev/...`. A checkout location is one developer's accident, not a fact about
+the repo: the path is wrong in every other clone and on CI, and it publishes
+the author's directory layout. This applies to docs and plans as much as to
+code and scripts — a runbook nobody else can paste is not a runbook.
+
+Write instead:
+
+| Instead of | Use |
+|---|---|
+| `cd /Volumes/Dev/Balsm/balsm_app` | `cd "$(git rev-parse --show-toplevel)"`, or just document commands as run from the repo root |
+| `/Volumes/Dev/Balsm/balsm_app/app/lib/...` | `app/lib/...` (repo-relative) |
+| `/Volumes/Dev/Balsm/Balsm-Core` | `../Balsm-Core` (sibling repo in the workspace) |
+| `~/Dev/Balsm` | "the workspace root", the parent of this repo |
+
+Enforced twice: `.githooks/pre-commit` scans added lines and blocks the commit
+(enable once per clone with `git config core.hooksPath .githooks`), and the
+`hygiene` CI job greps the whole tracked tree, which is what catches a
+`--no-verify` or a clone that never enabled the hook. Vendored third-party
+skills under `.agents/` and `.claude/` are exempt; they are not ours to rewrite.
+
 ## 6. Flutter Performance
 
 - `const` constructors wherever possible

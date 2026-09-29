@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-04
 **Status:** Approved (design), pending implementation plan
-**Artifact:** standalone repo `~/Dev/Balsm/db_benchmark` (NOT a dependency of `balsm_app`)
+**Artifact:** standalone repo `../db_benchmark` (NOT a dependency of `balsm_app`)
 **Motivation:** pick the local persistence engine for the Balsm patient app on evidence, not vendor claims. Balsm ships all six Flutter platforms, stores PHI (encryption mandatory), and is read-heavy over small relational datasets. See the storage architecture spec (`2026-07-02-storage-layer-design.md`) for the tier taxonomy this feeds.
 **Prior art:** [PowerSync Flutter DB comparison](https://powersync.com/blog/flutter-database-comparison-sqlite-async-sqflite-objectbox-isar) — the classic 16-test SQLite suite across sqlite_async / sqflite / ObjectBox / Isar. Headline finding: *batching/transactions matter more than which engine you pick.* Caveat: INSERT-SELECT tests favor SQL engines. No encryption tested. This benchmark mirrors their row counts and rigor (for comparability) and **extends** with Floor / Hive CE / sembast and an encryption dimension.
 

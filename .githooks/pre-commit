@@ -1,6 +1,7 @@
 #!/bin/sh
-# Balsm pre-commit — block a commit when any staged *.dart is not
-# `dart format`-clean.
+# Balsm pre-commit — two guards:
+#   1. no machine-specific absolute paths in staged content
+#   2. every staged *.dart is `dart format`-clean
 #
 # Enable once per clone:
 #   git config core.hooksPath .githooks
@@ -9,6 +10,44 @@
 # else dart's default. To auto-fix:  dart format . && git add -u
 # Bypass in a genuine emergency:  git commit --no-verify  (discouraged).
 
+# ---------------------------------------------------------------------------
+# 1. Machine-specific absolute paths.
+#
+# A checkout location is one developer's accident, not a fact about the repo.
+# `/Volumes/Dev/Balsm/balsm_app/...` in a doc or script is wrong for everyone
+# else and for CI, and it silently leaks the author's directory layout. Write
+# repo-relative paths, `$(git rev-parse --show-toplevel)`, or `../<sibling>`
+# for another repo in the workspace.
+#
+# Only ADDED lines are scanned, so existing content never blocks an unrelated
+# commit. Vendored third-party skills under .agents/ and .claude/ are exempt —
+# they are not ours to rewrite.
+# The three files that must spell the patterns out — this hook, the CI job that
+# backstops it, and the standard that documents it — are exempt, or the guard
+# would forbid its own definition.
+added=$(git diff --cached --diff-filter=ACM -U0 -- . \
+          ':(exclude).agents/**' ':(exclude).claude/**' \
+          ':(exclude).githooks/pre-commit' ':(exclude).github/workflows/ci.yml' \
+          ':(exclude)CODING_STANDARDS.md' \
+        | grep '^+' | grep -v '^+++')
+
+# /Volumes/ and C:\ are always machine paths. /Users/ and /home/ only count
+# when followed by a name segment, so prose like "medications/home/profile"
+# does not trip the guard.
+bad=$(printf '%s\n' "$added" | grep -nE '/Volumes/|[A-Za-z]:\\Users\\|(^|[^A-Za-z0-9_.-])/(Users|home)/[A-Za-z_][A-Za-z0-9_-]*/|~/Dev/')
+if [ -n "$bad" ]; then
+  echo ""
+  echo "✖ pre-commit: machine-specific absolute path in staged content."
+  printf '%s\n' "$bad" | sed 's/^/    /' | cut -c1-140
+  echo ""
+  echo "  Use a repo-relative path, \"\$(git rev-parse --show-toplevel)\", or"
+  echo "  ../<sibling-repo> for another repo in the workspace."
+  echo "  (Override only if you must:  git commit --no-verify)"
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Dart formatting.
 # Prefer fvm's dart (repo standard), else fall back to PATH dart.
 if command -v fvm >/dev/null 2>&1; then
   DART="fvm dart"
