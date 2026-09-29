@@ -26,7 +26,8 @@
 # backstops it, and the standard that documents it — are exempt, or the guard
 # would forbid its own definition.
 added=$(git diff --cached --diff-filter=ACM -U0 -- . \
-          ':(exclude).agents/**' ':(exclude).claude/**' \
+          ':(exclude).agents/skills/**' ':(exclude).claude/skills/**' \
+          ':(exclude).cursor/skills/**' \
           ':(exclude).githooks/pre-commit' ':(exclude).github/workflows/ci.yml' \
           ':(exclude)CODING_STANDARDS.md' \
         | grep '^+' | grep -v '^+++')
