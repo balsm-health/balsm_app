@@ -7,6 +7,7 @@ class AuthTokensResponse {
     required this.refreshToken,
     required this.userId,
     this.isNewUser = false,
+    this.adoptedClientId = false,
   });
 
   final String accessToken;
@@ -14,11 +15,16 @@ class AuthTokensResponse {
   final String userId;
   final bool isNewUser;
 
+  /// Whether the server kept the client-supplied `client_account_id` as the
+  /// account's id (see [VerifyOtpRequest.clientAccountId]).
+  final bool adoptedClientId;
+
   factory AuthTokensResponse.fromJson(Map<String, dynamic> json) => AuthTokensResponse(
         accessToken: json['access_token'] as String,
         refreshToken: json['refresh_token'] as String,
         userId: json['user_id'] as String,
         isNewUser: (json['is_new_user'] as bool?) ?? false,
+        adoptedClientId: (json['adopted_client_id'] as bool?) ?? false,
       );
 }
 

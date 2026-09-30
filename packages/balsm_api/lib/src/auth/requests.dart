@@ -35,16 +35,22 @@ class VerifyOtpRequest {
     required this.code,
     required this.deviceId,
     required this.deviceLabel,
+    this.clientAccountId,
   });
   final String email;
   final String code;
   final String deviceId;
   final String deviceLabel;
+
+  /// Offline-created account id the server may adopt (new emails only).
+  final String? clientAccountId;
+
   Map<String, dynamic> toJson() => {
         'email': email,
         'code': code,
         'device_id': deviceId,
         'device_label': deviceLabel,
+        if (clientAccountId != null) 'client_account_id': clientAccountId,
       };
 }
 

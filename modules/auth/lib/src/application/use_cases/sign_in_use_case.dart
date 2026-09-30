@@ -31,6 +31,34 @@ class SignInLockout extends SignInResult {
   final LockedOut session;
 }
 
+/// Result of [SignInUseCase.goOnline] — a device-only account's OTP verify
+/// while asking the server to keep its offline id.
+sealed class GoOnlineResult {
+  const GoOnlineResult();
+}
+
+/// Server kept the device's id: nothing to re-key.
+class GoOnlineAdopted extends GoOnlineResult {
+  const GoOnlineAdopted();
+}
+
+/// New server account under a different id (collision): re-key locally.
+class GoOnlineNewId extends GoOnlineResult {
+  const GoOnlineNewId(this.userId);
+  final String userId;
+}
+
+/// The email already had an account; the user must choose merge or discard.
+class GoOnlineExistingAccount extends GoOnlineResult {
+  const GoOnlineExistingAccount(this.userId);
+  final String userId;
+}
+
+class GoOnlineLockout extends GoOnlineResult {
+  const GoOnlineLockout(this.session);
+  final LockedOut session;
+}
+
 /// Handles sign-in for all providers (email OTP, Google, Apple).
 ///
 /// Differences from [SignUpUseCase]:
@@ -113,6 +141,38 @@ class SignInUseCase {
     } on AuthException catch (e) {
       if (e.code == 'account_locked') {
         return _handleLockout(e, email);
+      }
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
+  /// Device-only account going online. Persists the session like
+  /// [verifyEmailOtp] but leaves publishing [UserSignedIn] to the caller,
+  /// which may first need to re-key local data to the returned id.
+  Future<AppResult<GoOnlineResult>> goOnline({
+    required String email,
+    required String code,
+    required String clientAccountId,
+  }) async {
+    try {
+      final deviceId = await _ensureDeviceId();
+      final r = await _adapter.verifyOtpClaim(email, code, deviceId, _deviceLabel(), clientAccountId);
+      await _persistTokens(
+        accessToken: r.tokens.accessToken,
+        refreshToken: r.tokens.refreshToken,
+        userId: r.tokens.userId,
+      );
+      if (!r.tokens.isNewUser) return AppResult.success(GoOnlineExistingAccount(r.tokens.userId));
+      if (r.adoptedClientId) return AppResult.success(const GoOnlineAdopted());
+      return AppResult.success(GoOnlineNewId(r.tokens.userId));
+    } on AuthException catch (e) {
+      if (e.code == 'account_locked') {
+        final locked = await _handleLockout(e, email);
+        if (locked.isSuccess && locked.value is SignInLockout) {
+          return AppResult.success(GoOnlineLockout((locked.value as SignInLockout).session));
+        }
       }
       return AppResult.failure(NetworkFailure(e.message));
     } catch (_) {

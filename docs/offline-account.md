@@ -107,3 +107,36 @@ meant to be called once at app bootstrap, before anything reads the mode —
 cleans up the orphaned offline-account keys left behind if `create()` crashed
 before it could write `balsm.account_mode`, without ever deleting
 `balsm.user_id` while a real online session's refresh token is present.
+
+## Going online
+
+`VerifyOtpRequest.clientAccountId` (`packages/balsm_api/lib/src/auth/requests.dart`)
+is an optional field on the existing `POST /auth/otp/verify` request; it is
+omitted from the JSON body entirely when null, and set to the device's
+offline `balsm.user_id` when a device-only account is going online. The
+response carries `AuthTokensResponse.adoptedClientId` (from wire field
+`adopted_client_id`, defaulting to `false` for every other caller of this
+endpoint).
+
+`BalsmAuthAdapter.verifyOtpClaim(...)` (`modules/auth/lib/src/infrastructure/api/balsm_auth_adapter.dart`)
+calls the same endpoint with the client's id attached, and
+`SignInUseCase.goOnline(...)` (`modules/auth/lib/src/application/use_cases/sign_in_use_case.dart`)
+interprets the result as one of three outcomes:
+
+- **Adopted** (`GoOnlineAdopted`) — the server kept the device's offline id as
+  the real account id. Nothing to re-key locally.
+- **New id** (`GoOnlineNewId(userId)`) — the email had no account, but the
+  server assigned a different id than the one offered (an id collision).
+  Local data keyed to the old offline id needs to be re-keyed to `userId`.
+- **Existing account** (`GoOnlineExistingAccount(userId)`) — the email
+  already had a server account; the user must choose to merge or discard
+  the local device-only data.
+
+`goOnline` persists the returned tokens exactly like `verifyEmailOtp` (access
+token, refresh token, user id all written via `SecureStorageWrapper`), but
+does **not** publish `UserSignedIn` itself — the caller publishes it only
+after handling any re-key/merge decision the outcome requires.
+
+`adopted_client_id` is on the non-PHI telemetry allowlist (it is a boolean
+outcome flag); `client_account_id` is not — it is a device-generated account
+id and stays redacted like any other id-shaped field.

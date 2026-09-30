@@ -224,4 +224,45 @@ void main() {
       expect(r.error, isA<NetworkFailure>());
     });
   });
+
+  group('goOnline', () {
+    ({AuthTokens tokens, bool adoptedClientId}) claim(
+            {required String userId, required bool isNew, required bool adopted}) =>
+        (
+          tokens: (accessToken: 'at', refreshToken: 'rt', userId: userId, isNewUser: isNew),
+          adoptedClientId: adopted,
+        );
+
+    setUp(() {
+      when(() => storage.readToken(_did)).thenAnswer((_) async => 'device-1');
+      when(() => storage.writeToken(any(), any())).thenAnswer((_) async {});
+    });
+
+    test('adopted → GoOnlineAdopted, tokens persisted, no UserSignedIn yet', () async {
+      when(() => adapter.verifyOtpClaim('a@b.co', '123456', 'device-1', any(), 'off-1'))
+          .thenAnswer((_) async => claim(userId: 'off-1', isNew: true, adopted: true));
+
+      final r = await usecase.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1');
+
+      expect(r.value, isA<GoOnlineAdopted>());
+      verify(() => storage.writeToken(_at, 'at')).called(1);
+      verify(() => storage.writeToken(_rt, 'rt')).called(1);
+      verify(() => storage.writeToken(_uid, 'off-1')).called(1);
+      expect(events.whereType<UserSignedIn>(), isEmpty);
+    });
+
+    test('new account under a different id → GoOnlineNewId', () async {
+      when(() => adapter.verifyOtpClaim(any(), any(), any(), any(), any()))
+          .thenAnswer((_) async => claim(userId: 'srv-9', isNew: true, adopted: false));
+      final r = await usecase.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1');
+      expect((r.value as GoOnlineNewId).userId, 'srv-9');
+    });
+
+    test('existing account → GoOnlineExistingAccount', () async {
+      when(() => adapter.verifyOtpClaim(any(), any(), any(), any(), any()))
+          .thenAnswer((_) async => claim(userId: 'srv-1', isNew: false, adopted: false));
+      final r = await usecase.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1');
+      expect((r.value as GoOnlineExistingAccount).userId, 'srv-1');
+    });
+  });
 }

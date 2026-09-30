@@ -35,7 +35,7 @@ const Set<String> kNonPhiAllowlist = {
   // NAME but their VALUE is rewritten by [redactUrl] — see below.
   'status_code', 'method', 'url', 'correlationId',
   // Non-PHI domain/telemetry fields
-  'expires_in_seconds', 'ttl_seconds', 'is_new_user', 'deletion_state',
+  'expires_in_seconds', 'ttl_seconds', 'is_new_user', 'adopted_client_id', 'deletion_state',
   'token_id', 'expires_at', 'revoked', 'revoked_count',
   // Analytics dimensions.
   //

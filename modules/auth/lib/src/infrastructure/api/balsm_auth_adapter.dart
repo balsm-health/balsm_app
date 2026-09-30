@@ -56,6 +56,30 @@ class BalsmAuthAdapter {
             cancelToken: cancelToken,
           )));
 
+  /// POST /auth/otp/verify for a device-only account going online. Returns
+  /// whether the server kept the device's id.
+  Future<({AuthTokens tokens, bool adoptedClientId})> verifyOtpClaim(
+    String email,
+    String code,
+    String deviceId,
+    String deviceLabel,
+    String clientAccountId, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async {
+        final r = await _api.verifyOtp(
+          VerifyOtpRequest(
+            email: email,
+            code: code,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+            clientAccountId: clientAccountId,
+          ),
+          cancelToken: cancelToken,
+        );
+        return (tokens: _toAuthTokens(r), adoptedClientId: r.adoptedClientId);
+      });
+
   /// POST /auth/otp/verify-link — redeem a magic sign-in link token.
   Future<AuthTokens> verifyLink(
     String token,
