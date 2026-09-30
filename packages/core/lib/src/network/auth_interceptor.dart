@@ -80,7 +80,14 @@ class AuthInterceptor extends Interceptor {
       if (AccountMode.fromWire(await _storage.read(key: kAccountModeKey)) == AccountMode.deviceOnly) {
         return handler.reject(DioException(
           requestOptions: options,
-          type: DioExceptionType.cancel,
+          // connectionError (not cancel): ApiException.fromDioException short-
+          // circuits `cancel` to a silently-ignored `cancelled` code before it
+          // ever looks at the wrapped error. connectionError instead flows
+          // through to `isOfflineError`, which treats that DioExceptionType as
+          // offline — so callers see this exactly like being offline, per the
+          // class doc, while `.error` still carries DeviceOnlyAccountException
+          // for anything that wants the precise reason.
+          type: DioExceptionType.connectionError,
           error: const DeviceOnlyAccountException(),
         ));
       }

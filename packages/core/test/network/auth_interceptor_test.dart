@@ -310,5 +310,28 @@ void main() {
       await h.controller.client.dio.post<void>(ApiRoutes.auth_otp_request, data: const {});
       expect(h.adapter.requests, hasLength(1));
     });
+
+    test('surfaces to ApiException.fromDioException as offline, not cancelled', () async {
+      // Callers never see the raw DioException — NetworkManager funnels every
+      // failure through ApiException.fromDioException first. `cancel` is
+      // special-cased there to a silently-ignored `cancelled` code before it
+      // even looks at `.error`, which would swallow this refusal instead of
+      // treating it like being offline (per account_mode.dart's doc).
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly'});
+      final h = harness(storage, (o) => _json('{}'));
+
+      DioException? caught;
+      try {
+        await h.controller.client.dio.get<void>(ApiRoutes.account_self);
+      } on DioException catch (e) {
+        caught = e;
+      }
+
+      expect(caught, isNotNull);
+      expect(caught!.error, isA<DeviceOnlyAccountException>());
+      final apiException = ApiException.fromDioException(caught);
+      expect(apiException.isOffline, isTrue);
+      expect(apiException.isCancelled, isFalse);
+    });
   });
 }
