@@ -79,7 +79,8 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   final _navKey = GlobalKey<NavigatorState>();
 
   /// Rasterisation root for the desktop menu's Save-screenshot action.
-  final _captureKey = GlobalKey();
+  // Shared with Dev Config, which screenshots the app for bug reports.
+  final _captureKey = appCaptureKey;
 
   void _menuOpen(void Function(BuildContext) opener) {
     final ctx = _navKey.currentContext;

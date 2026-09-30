@@ -23,8 +23,12 @@ const _kMono = 'monospace';
 /// read-only diagnostics with the switcher hidden (a mis-pointed prod build
 /// could leak PHI to the wrong backend).
 class ServerSelectorScreen extends StatefulWidget {
-  const ServerSelectorScreen({super.key, required this.controller});
+  const ServerSelectorScreen({super.key, required this.controller, this.screenshot});
   final BalsmApiController controller;
+
+  /// PNG of the app as it was just before Dev Config opened — what the Report
+  /// bug tab shows and can attach. Null when nothing was captured.
+  final Uint8List? screenshot;
 
   @override
   State<ServerSelectorScreen> createState() => _ServerSelectorScreenState();
@@ -58,6 +62,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   final _bugStepsCtrl = TextEditingController();
   String _bugSeverity = 'medium';
   bool _reportCopied = false;
+  bool _attachShot = true;
+  String? _bugSendStatus; // null | sending | sent | error
 
   String get _currentBaseUrl => widget.controller.client.baseUrl;
 
@@ -118,7 +124,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 52),
                 children: switch (_tab) {
                   'logs' => _logsBody(cfg),
-                  'bug' => _bugBody(),
+                  'bug' => _bugBody(cfg),
                   _ => _envBody(cfg),
                 },
               ),
@@ -1073,63 +1079,128 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       );
 
   // ══ BUG REPORT TAB ═══════════════════════════════════════════════════════════
-  List<Widget> _bugBody() => [
-        _eyebrow('Screenshot'),
-        Container(
-          height: 130,
-          decoration: BoxDecoration(
-            color: BalsmColors.ink50,
-            borderRadius: BorderRadius.circular(BalsmRadius.lg),
-            border: Border.all(color: BalsmColors.border),
+  List<Widget> _bugBody(FlavorConfig cfg) {
+    final canSend = cfg.serverSwitchingEnabled; // dev/staging only, like log export
+    final shot = widget.screenshot;
+    final size = MediaQuery.sizeOf(context);
+    return [
+      _eyebrow('Screenshot'),
+      Container(
+        constraints: const BoxConstraints(minHeight: 130),
+        decoration: BoxDecoration(
+          color: BalsmColors.ink50,
+          borderRadius: BorderRadius.circular(BalsmRadius.lg),
+          border: Border.all(color: BalsmColors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        alignment: Alignment.center,
+        child: shot == null
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.image_outlined, size: 26, color: BalsmColors.fg4),
+                  SizedBox(height: 8),
+                  Text('No screenshot captured',
+                      style: TextStyle(fontFamily: _kMono, fontSize: 12, color: BalsmColors.fg4)),
+                ]),
+              )
+            : Opacity(
+                opacity: _attachShot ? 1 : 0.35,
+                child: Image.memory(shot, height: 220, fit: BoxFit.contain, semanticLabel: 'App screenshot'),
+              ),
+      ),
+      if (shot != null) ...[
+        const SizedBox(height: 6),
+        Row(children: [
+          const Expanded(
+            child: Text('May show health data — only attach from test accounts.',
+                style: TextStyle(fontSize: 11, color: BalsmColors.fg3)),
           ),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.image_outlined, size: 26, color: BalsmColors.fg4),
-              SizedBox(height: 8),
-              Text('No screenshot captured',
-                  style: TextStyle(fontFamily: _kMono, fontSize: 12, color: BalsmColors.fg4)),
-            ],
+          TextButton(
+            onPressed: () => setState(() => _attachShot = !_attachShot),
+            child: Text(_attachShot ? 'Remove' : 'Attach'),
           ),
+        ]),
+      ],
+      const SizedBox(height: 16),
+      _fieldLabel('Title'),
+      TextField(
+        controller: _bugTitleCtrl,
+        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+        decoration: _inputDeco('Brief description of the bug'),
+      ),
+      const SizedBox(height: 12),
+      _fieldLabel('Steps to reproduce'),
+      TextField(
+        controller: _bugStepsCtrl,
+        minLines: 3,
+        maxLines: 6,
+        onTapOutside: (_) => FocusScope.of(context).unfocus(),
+        decoration: _inputDeco('1. Go to…\n2. Tap…\n3. Expected: …\n4. Actual: …'),
+      ),
+      const SizedBox(height: 14),
+      _fieldLabel('Severity'),
+      Row(
+        children: [
+          ...const [
+            ['low', 'Low'],
+            ['medium', 'Medium'],
+            ['high', 'High'],
+            ['critical', 'Critical'],
+          ].map((s) => Expanded(child: _sevButton(s[0], s[1]))),
+        ],
+      ),
+      const SizedBox(height: 16),
+      // Auto context — the design's "context auto-attached" block.
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: _kTermBg, borderRadius: BorderRadius.circular(10)),
+        child: DefaultTextStyle(
+          style: const TextStyle(fontFamily: _kMono, fontSize: 10.5, height: 1.9, color: Color(0xFFC8C8BE)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('// context auto-attached',
+                style: TextStyle(color: _kTermAccent, fontWeight: FontWeight.w700, fontSize: 11)),
+            Text('env       ${_activeLabel(cfg)} — $_currentBaseUrl'),
+            Text('logs      ${_buffer.total} entries · ${_buffer.errorCount} errors'),
+            Text('viewport  ${size.width.round()}×${size.height.round()}'),
+            Text('shot      ${shot == null ? 'none' : _attachShot ? 'attached' : 'removed'}'),
+          ]),
         ),
-        const SizedBox(height: 16),
-        _fieldLabel('Title'),
-        TextField(
-          controller: _bugTitleCtrl,
-          decoration: _inputDeco('Brief description of the bug'),
-        ),
-        const SizedBox(height: 12),
-        _fieldLabel('Steps to reproduce'),
-        TextField(
-          controller: _bugStepsCtrl,
-          minLines: 3,
-          maxLines: 6,
-          decoration: _inputDeco('1. Go to…\n2. Tap…\n3. Expected: …\n4. Actual: …'),
-        ),
-        const SizedBox(height: 14),
-        _fieldLabel('Severity'),
-        Row(
-          children: [
-            ...const [
-              ['low', 'Low'],
-              ['medium', 'Medium'],
-              ['high', 'High'],
-              ['critical', 'Critical'],
-            ].map((s) => Expanded(child: _sevButton(s[0], s[1]))),
-          ],
-        ),
-        const SizedBox(height: 16),
+      ),
+      const SizedBox(height: 16),
+      if (canSend) ...[
         ElevatedButton.icon(
-          onPressed: _copyReport,
+          onPressed: _bugSendStatus == 'sending' ? null : _sendBugReport,
           style: ElevatedButton.styleFrom(
             backgroundColor: BalsmColors.appAccent,
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 50),
           ),
-          icon: Icon(_reportCopied ? Icons.check : Icons.copy, size: 17),
-          label: Text(_reportCopied ? 'Copied to clipboard!' : 'Copy report to clipboard'),
+          icon: Icon(
+              switch (_bugSendStatus) {
+                'sent' => Icons.check,
+                'error' => Icons.warning_amber_rounded,
+                _ => Icons.send,
+              },
+              size: 17),
+          label: Text(switch (_bugSendStatus) {
+            'sending' => 'Sending…',
+            'sent' => 'Report sent to Sentry!',
+            'error' => 'Failed to send',
+            _ => 'Send report to Sentry',
+          }),
         ),
-      ];
+        const SizedBox(height: 8),
+      ],
+      OutlinedButton.icon(
+        onPressed: _copyReport,
+        style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 46)),
+        icon: Icon(_reportCopied ? Icons.check : Icons.copy, size: 17),
+        label: Text(_reportCopied ? 'Copied to clipboard!' : 'Copy report to clipboard'),
+      ),
+    ];
+  }
 
   Widget _fieldLabel(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
@@ -1345,6 +1416,28 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     }
     await Future.delayed(const Duration(milliseconds: 3200));
     if (mounted) setState(() => _sendStatus = null);
+  }
+
+  Future<void> _sendBugReport() async {
+    final size = MediaQuery.sizeOf(context);
+    setState(() => _bugSendStatus = 'sending');
+    try {
+      final ok = await DevDiagnostics.sendBugReport(
+        title: _bugTitleCtrl.text,
+        steps: _bugStepsCtrl.text,
+        severity: _bugSeverity,
+        entries: _buffer.entries,
+        envLabel: _activeLabel(FlavorConfig.current),
+        envUrl: _currentBaseUrl,
+        viewport: '${size.width.round()}×${size.height.round()}',
+        screenshot: _attachShot ? widget.screenshot : null,
+      );
+      if (mounted) setState(() => _bugSendStatus = ok ? 'sent' : 'error');
+    } catch (_) {
+      if (mounted) setState(() => _bugSendStatus = 'error');
+    }
+    await Future.delayed(const Duration(milliseconds: 3200));
+    if (mounted) setState(() => _bugSendStatus = null);
   }
 
   void _copyReport() {

@@ -30,6 +30,20 @@ buffer, so Logs → **Send to Sentry** carries the app's real, scrubbed trail.
 Before it existed that buffer only saw `debugPrint` and crashes, and every
 manual bundle arrived empty.
 
+## Dev Config bug reports
+
+Dev Config's **Report bug** tab (shake, the desktop menu, or the welcome
+screen's server pill) shows a screenshot of the screen the tester was on,
+captured through `appCaptureKey` just before Dev Config opened. **Send report
+to Sentry** (`DevDiagnostics.sendBugReport`) files it as its own issue:
+- the title is the message, and severity sets the level (critical → fatal)
+- steps, env and the last 50 redacted log lines go in the `bug_report` context
+- the PNG is attached as `screenshot.png`
+
+Sending is dev/staging only, the same gate as log export. A screenshot is
+whatever was on screen, health data included, so the tab says so and lets the
+tester remove it.
+
 ## In-app feedback
 
 The feedback sheet sends through `feedbackReporterProvider` (a `FeedbackReporter`
