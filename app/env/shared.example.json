@@ -5,6 +5,8 @@
     { "name": "Production", "url": "https://api.example.com" }
   ],
   "SENTRY_DSN": "",
+  "POSTHOG_API_KEY": "",
+  "POSTHOG_HOST": "https://eu.i.posthog.com",
     "SOCIAL_SIGN_IN_ENABLED": true,
   "GOOGLE_SERVER_CLIENT_ID": "REPLACE_ME.apps.googleusercontent.com",
   "GOOGLE_IOS_CLIENT_ID": "REPLACE_ME.apps.googleusercontent.com"

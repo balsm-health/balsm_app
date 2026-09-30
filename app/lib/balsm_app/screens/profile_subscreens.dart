@@ -752,67 +752,81 @@ class _ConditionEditorState extends State<_ConditionEditor> {
 }
 
 // ── Privacy & data ───────────────────────────────────────────
-class PrivacyDataScreen extends StatefulWidget {
+class PrivacyDataScreen extends ConsumerStatefulWidget {
   const PrivacyDataScreen({super.key, required this.s, this.onDeleteAccount});
   final PatientAppState s;
   final VoidCallback? onDeleteAccount;
   @override
-  State<PrivacyDataScreen> createState() => _PrivacyDataScreenState();
+  ConsumerState<PrivacyDataScreen> createState() => _PrivacyDataScreenState();
 }
 
-class _PrivacyDataScreenState extends State<PrivacyDataScreen> {
+class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
   PatientAppState get s => widget.s;
-  bool shareTeam = true, analytics = false, research = false, bioLock = true, pin = false;
+  bool shareTeam = true, research = false, bioLock = true, pin = false;
+
+  /// Product-analytics consent — the one toggle on this screen that is real.
+  /// Persisted device-wide and pushed straight to whichever analytics backends
+  /// the composition root registered, so switching it off stops collection now,
+  /// not on the next launch. Which vendor that is, is not this screen's
+  /// business. The rest are still design placeholders.
+  void _setAnalytics(bool enabled) {
+    final consent = ref.read(analyticsConsentProvider);
+    // Order matters on the way OUT: consent lands first, so the event below is
+    // already gated and a patient who just opted out sends nothing.
+    consent.set(enabled);
+    ref.read(analyticsLoggerProvider).logEvent('analytics_consent_changed', props: {'enabled': enabled});
+  }
 
   @override
-  Widget build(BuildContext context) => SubScreen(
-        s: s,
-        title: s.strings.profile.p_privacy,
-        children: [
-          _SectionHead(LucideIcons.share2, s.strings.privacy.pv_sharing, s: s),
-          _listCard([
-            _toggle(s.strings.privacy.pv_share_team, s.strings.privacy.pv_share_team_h, shareTeam,
-                (v) => setState(() => shareTeam = v)),
-            _toggle(s.strings.privacy.pv_analytics, s.strings.privacy.pv_analytics_h, analytics,
-                (v) => setState(() => analytics = v)),
-            _toggle(s.strings.privacy.pv_research, s.strings.privacy.pv_research_h, research,
-                (v) => setState(() => research = v),
-                last: true),
-          ]),
-          _SectionHead(LucideIcons.lock, s.strings.privacy.pv_security, s: s),
-          _listCard([
-            _action(
-              LucideIcons.mail,
-              s.strings.emergency.em_label,
-              s.authEmail.isEmpty ? '—' : s.authEmail,
-              ltrDesc: true,
-            ),
-            _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
-            _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v),
-                last: true),
-          ]),
-          _SectionHead(LucideIcons.database, s.strings.privacy.pv_yourdata, s: s),
-          _listCard([
-            _action(LucideIcons.download, s.strings.privacy.pv_export, s.strings.privacy.pv_export_h),
-            _action(LucideIcons.folderHeart, s.strings.privacy.pv_download, s.strings.privacy.pv_download_h),
-            _action(LucideIcons.appWindow, s.strings.privacy.pv_connected, s.strings.privacy.pv_connected_h,
-                last: true),
-          ]),
-          _SectionHead(LucideIcons.alertTriangle, s.strings.privacy.pv_danger, s: s),
-          _listCard([
-            _action(LucideIcons.trash2, s.strings.privacy.pv_delete, s.strings.privacy.pv_delete_h,
-                danger: true, last: true, onTap: widget.onDeleteAccount),
-          ]),
-          Padding(
-            padding: const EdgeInsets.only(top: 18),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),
-              const SizedBox(width: 6),
-              Text(s.strings.privacy.pv_encrypted, style: Typo.meta(ar: s.rtl)),
-            ]),
+  Widget build(BuildContext context) {
+    final analytics = ref.watch(analyticsConsentProvider).enabled;
+    return SubScreen(
+      s: s,
+      title: s.strings.profile.p_privacy,
+      children: [
+        _SectionHead(LucideIcons.share2, s.strings.privacy.pv_sharing, s: s),
+        _listCard([
+          _toggle(s.strings.privacy.pv_share_team, s.strings.privacy.pv_share_team_h, shareTeam,
+              (v) => setState(() => shareTeam = v)),
+          _toggle(s.strings.privacy.pv_analytics, s.strings.privacy.pv_analytics_h, analytics, _setAnalytics),
+          _toggle(s.strings.privacy.pv_research, s.strings.privacy.pv_research_h, research,
+              (v) => setState(() => research = v),
+              last: true),
+        ]),
+        _SectionHead(LucideIcons.lock, s.strings.privacy.pv_security, s: s),
+        _listCard([
+          _action(
+            LucideIcons.mail,
+            s.strings.emergency.em_label,
+            s.authEmail.isEmpty ? '—' : s.authEmail,
+            ltrDesc: true,
           ),
-        ],
-      );
+          _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
+          _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v),
+              last: true),
+        ]),
+        _SectionHead(LucideIcons.database, s.strings.privacy.pv_yourdata, s: s),
+        _listCard([
+          _action(LucideIcons.download, s.strings.privacy.pv_export, s.strings.privacy.pv_export_h),
+          _action(LucideIcons.folderHeart, s.strings.privacy.pv_download, s.strings.privacy.pv_download_h),
+          _action(LucideIcons.appWindow, s.strings.privacy.pv_connected, s.strings.privacy.pv_connected_h, last: true),
+        ]),
+        _SectionHead(LucideIcons.alertTriangle, s.strings.privacy.pv_danger, s: s),
+        _listCard([
+          _action(LucideIcons.trash2, s.strings.privacy.pv_delete, s.strings.privacy.pv_delete_h,
+              danger: true, last: true, onTap: widget.onDeleteAccount),
+        ]),
+        Padding(
+          padding: const EdgeInsets.only(top: 18),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),
+            const SizedBox(width: 6),
+            Text(s.strings.privacy.pv_encrypted, style: Typo.meta(ar: s.rtl)),
+          ]),
+        ),
+      ],
+    );
+  }
 
   Widget _listCard(List<Widget> rows) => PCard(
         padding: EdgeInsets.zero,

@@ -14,8 +14,7 @@ class Messages_ar extends Messages {
   String get cancelled => "تم إلغاء الحذف";
   String get publicTitle => "حذف حسابك";
   String get verifyHeading => "تأكيد هويتك";
-  String get verifyBody =>
-      "نرسل رمزًا لمرة واحدة حتى لا يتمكن غيرك من حذف حسابك.";
+  String get verifyBody => "نرسل رمزًا لمرة واحدة حتى لا يتمكن غيرك من حذف حسابك.";
   String get verifyContinue => "متابعة";
   String get sendCode => "أرسل لي رمزًا";
   String get sendCodeAgain => "أرسل رمزًا جديدًا";
@@ -25,8 +24,7 @@ class Messages_ar extends Messages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':

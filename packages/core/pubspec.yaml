@@ -30,6 +30,11 @@ dependencies:
   http: ^1.2.0
   sign_in_with_apple: ^8.2.0
   sentry_flutter: ^9.0.0
+  # Product analytics (behaviour, funnels, campaign attribution). Reached only
+  # through the AnalyticsLogger facade in src/telemetry — see
+  # posthog_analytics_logger.dart. Manual init (AUTO_INIT: false on both native
+  # sides) so the patient's consent is read before the SDK ever starts.
+  posthog_flutter: ^5.50.0
   flutter_local_notifications: ^18.0.0
   timezone: ^0.9.4
   permission_handler: ^11.3.0

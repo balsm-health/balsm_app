@@ -612,7 +612,10 @@
     "wt_demo_mood_great": "Great",
     "wt_demo_pin1": "Zahran Pharmacy",
     "wt_demo_pin2": "Nour Clinic",
-    "wt_demo_pin3": "City Lab"
+    "wt_demo_pin3": "City Lab",
+    // Analytics is opt-OUT, so the first run is the only honest place to say
+    // it is already on. Points at the switch rather than just mentioning it.
+    "wt_analytics_note": "We also collect anonymous usage data to improve Balsm — never your health records. You can turn it off any time in Profile → Privacy & data."
   },
   "privacy": {
     "pv_sharing": "Data sharing",

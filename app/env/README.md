@@ -8,7 +8,7 @@ read once at startup by `FlavorConfig.resolve` (`packages/core/lib/src/config/fl
 | File | Tracked | What it holds |
 |---|---|---|
 | `<brand>/dev.json`, `staging.json`, `prod.json` | yes | per-environment, non-secret |
-| `shared*.json` | **no — git-ignored** | server list + Sentry DSN |
+| `shared*.json` | **no — git-ignored** | server list + Sentry DSN + PostHog token |
 | `shared.example.json` | yes | the template the above is copied from |
 
 `shared*.json` is ignored because it carries a Sentry DSN and whatever server
@@ -38,17 +38,32 @@ negation in `.gitignore`), so keep fake values in it.
     { "name": "Staging",    "url": "https://staging.example.com" },
     { "name": "Production", "url": "https://api.example.com" }
   ],
-  "SENTRY_DSN": ""
+  "SENTRY_DSN": "",
+  "POSTHOG_API_KEY": "",
+  "POSTHOG_HOST": "https://eu.i.posthog.com"
 }
 ```
 
-Both keys tolerate being empty. An empty `ENVS` falls back to a single `Local`
-preset at `http://localhost:5000`; an empty `SENTRY_DSN` disables Sentry. So a
-checked-out repo builds and runs before you have filled anything in.
+Every key tolerates being empty. An empty `ENVS` falls back to a single `Local`
+preset at `http://localhost:5000`; an empty `SENTRY_DSN` disables Sentry; an
+empty `POSTHOG_API_KEY` disables product analytics. So a checked-out repo builds
+and runs before you have filled anything in.
 
 `SENTRY_DSN` is empty rather than a fake DSN in the template on purpose: empty
 disables Sentry cleanly, whereas a plausible-looking fake one would have the SDK
-initialise and then fail sending to a host that does not exist.
+initialise and then fail sending to a host that does not exist. `POSTHOG_API_KEY`
+is empty for the same reason.
+
+`POSTHOG_API_KEY` is the PostHog **project token** — publishable, like the Sentry
+DSN (write-only ingest, and it already ships inside the client bundle). It lives
+in the git-ignored `shared.json` because it identifies a real project, not
+because it is a secret.
+
+`POSTHOG_HOST` defaults to PostHog **EU Cloud** (`https://eu.i.posthog.com`):
+patient behavioural data for a MENA health app stays in the EU. Point it at a
+self-hosted instance to keep it off a third party entirely. What PostHog may
+receive is bounded by `kTelemetryAllowlist` — see
+`packages/core/lib/src/telemetry/`.
 
 `ENVS` entries appear in the Dev Config server picker, which is only reachable
 in the `dev` and `staging` flavors.

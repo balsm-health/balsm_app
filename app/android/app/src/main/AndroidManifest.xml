@@ -23,6 +23,10 @@
       <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>
     </activity>
     <meta-data android:name="flutterEmbedding" android:value="2"/>
+    <!-- PostHog starts from Dart (core's initPostHog), never automatically:
+         automatic init would begin collecting before the patient's analytics
+         consent has been read off disk, and before the PHI scrub is installed. -->
+    <meta-data android:name="com.posthog.posthog.AUTO_INIT" android:value="false"/>
   </application>
   <uses-permission android:name="android.permission.INTERNET"/>
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>

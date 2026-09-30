@@ -4,6 +4,9 @@ import 'server_preset.dart';
 /// Environment axis (a.k.a. build env).
 enum Flavor { dev, staging, prod }
 
+/// PostHog EU Cloud. See [FlavorConfig.posthogHost].
+const String kDefaultPosthogHost = 'https://eu.i.posthog.com';
+
 /// Brand axis. `balsm` is the consumer app; `balsm_pro` the professional build.
 enum AppBrand { balsm, balsm_pro }
 
@@ -36,6 +39,18 @@ class FlavorConfig {
   }
 
   final String? sentryDsn;
+
+  /// PostHog project token for product analytics. Not a secret — a project
+  /// token is write-only ingest credential and ships in the client bundle, same
+  /// as [sentryDsn]. Null/empty disables product analytics entirely
+  /// (`initPostHog` becomes a no-op).
+  final String? posthogApiKey;
+
+  /// PostHog ingestion host. EU Cloud by default: patient behavioural data for a
+  /// MENA health app stays in the EU rather than crossing to US Cloud. Point it
+  /// at a self-hosted instance by setting `POSTHOG_HOST`.
+  final String posthogHost;
+
   final String appName;
   final String appNameSuffix;
 
@@ -73,6 +88,8 @@ class FlavorConfig {
     required this.flavor,
     required this.servers,
     this.sentryDsn,
+    this.posthogApiKey,
+    this.posthogHost = kDefaultPosthogHost,
     required this.appName,
     required this.appNameSuffix,
     required this.serverSwitchingEnabled,
@@ -127,7 +144,8 @@ class FlavorConfig {
   }
 
   /// Resolve from `--dart-define`s (`APP`, `FLAVOR`/`ENV`, `ENVS`,
-  /// `SENTRY_DSN`). This is the single source of truth — call once at startup.
+  /// `SENTRY_DSN`, `POSTHOG_API_KEY`, `POSTHOG_HOST`). This is the single source
+  /// of truth — call once at startup.
   static void initFromEnvironment() {
     const app = String.fromEnvironment('APP', defaultValue: 'balsm');
     const flavorStr = String.fromEnvironment(
@@ -148,6 +166,8 @@ class FlavorConfig {
   }) {
     const serversRaw = String.fromEnvironment('ENVS', defaultValue: '');
     const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
+    const posthogApiKey = String.fromEnvironment('POSTHOG_API_KEY', defaultValue: '');
+    const posthogHost = String.fromEnvironment('POSTHOG_HOST', defaultValue: kDefaultPosthogHost);
     const envSocialSignInEnabled = bool.fromEnvironment('SOCIAL_SIGN_IN_ENABLED');
     const envGoogleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
     const envGoogleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID', defaultValue: '');
@@ -159,6 +179,8 @@ class FlavorConfig {
       flavor: flavor,
       servers: resolved,
       sentryDsn: sentryDsn.isEmpty ? null : sentryDsn,
+      posthogApiKey: posthogApiKey.isEmpty ? null : posthogApiKey,
+      posthogHost: posthogHost.isEmpty ? kDefaultPosthogHost : posthogHost,
       appName: '$base$envSuffix',
       appNameSuffix: envSuffix,
       serverSwitchingEnabled: flavor == Flavor.dev || flavor == Flavor.staging,

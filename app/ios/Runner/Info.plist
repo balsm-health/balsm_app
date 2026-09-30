@@ -51,6 +51,11 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Balsm connects to a Balsm development API server on your local network.</string>
+	<!-- PostHog starts from Dart (core's initPostHog), never automatically:
+	     automatic init would begin collecting before the patient's analytics
+	     consent has been read off disk, and before the PHI scrub is installed. -->
+	<key>com.posthog.posthog.AUTO_INIT</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

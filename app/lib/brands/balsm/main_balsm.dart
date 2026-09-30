@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:account/account.dart';
 import 'package:auth/auth.dart';
+import 'package:app_links/app_links.dart';
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:emergency_card/emergency_card.dart';
@@ -62,6 +63,27 @@ Future<void> bootstrap({
   // place that constructs it; everything else sees KeyValueDataSource.
   final globalKV = await SharedPrefsKVDataSource.create();
 
+  // Product analytics (PostHog): behaviour, funnels, campaign attribution.
+  // Opt-OUT — on unless the patient turned it off in Profile → Privacy & data.
+  // The choice is read from disk BEFORE the SDK is set up, so an opted-out
+  // device emits nothing on this launch, not even the native
+  // `$application_opened`. Crash reporting (Sentry, above) is deliberately NOT
+  // gated by it — see kAnalyticsConsentDefault.
+  final analyticsConsent = await AnalyticsConsent.load(globalKV);
+  final postHogAnalytics = PostHogAnalyticsLogger(enabled: analyticsConsent.enabled);
+  analyticsConsent.addSink(postHogAnalytics);
+  // First-touch campaign attribution: the utm_* parameters on the link that
+  // first opened the app, if any. Read here rather than in DeepLinkHandler
+  // because it has to reach the SDK before the first event — and because
+  // attribution is about the FIRST launch, which is a boot-time question.
+  // The link's own token/fragment is never touched; only the marketing
+  // parameters are read, and only the allowlisted ones.
+  final campaign = await CampaignAttribution.resolve(
+    globalKV,
+    launchUri: await _launchUri(),
+  );
+  await initPostHog(analyticsEnabled: analyticsConsent.enabled, campaign: campaign);
+
   // On-device encrypted PHI database (opened once, injected as a value).
   final db = await AppDatabase.open();
   // Map-pack downloads live here — see map_pack_download_controller.dart.
@@ -104,14 +126,18 @@ Future<void> bootstrap({
   final container = ProviderContainer(overrides: [
     // The app-shell state: one instance, owned by Riverpod (see app_state).
     patientAppStateProvider.overrideWith((ref) => state),
-    // Fan out telemetry to a list of providers: Sentry always, plus a console
-    // sink (scrubbed) added only in debug builds.
+    // Fan out telemetry to a list of providers: Sentry (crash/diagnostics) and
+    // PostHog (product analytics, consent-gated) always, plus a console sink
+    // (scrubbed) added only in debug builds.
     analyticsLoggerProvider.overrideWithValue(
-      const MultiAnalyticsLogger([
-        SentryAnalyticsLogger(),
-        if (kDebugMode) ConsoleAnalyticsLogger(),
+      MultiAnalyticsLogger([
+        const SentryAnalyticsLogger(),
+        postHogAnalytics,
+        if (kDebugMode) const ConsoleAnalyticsLogger(),
       ]),
     ),
+    // The patient's product-analytics choice, so Privacy & data can flip it.
+    analyticsConsentProvider.overrideWith((ref) => analyticsConsent),
     // Bind the account module's adapter into core's cross-module read port so
     // other modules (e.g. home) read the account summary without importing it.
     readAccountRepositoryProvider.overrideWith(buildAccountAdapter),
@@ -218,6 +244,9 @@ Future<void> bootstrap({
 
   // Seed the in-session user id from the boot-time secure-storage value.
   container.read(_sessionUserIdProvider.notifier).state = UserId.fromString(userId);
+  // Bind telemetry to the restored session (opaque id only). Null when signed
+  // out, which resets the analytics identity — see the sign-out listener.
+  analytics.setUser(containerUserId?.value);
 
   // Keep the in-session user id live: sign-in sets it, sign-out clears it, so
   // every PHI reader (profile/meds/emergency/backup) sees the current user
@@ -232,6 +261,10 @@ Future<void> bootstrap({
     }
     containerUserId = e.userId;
     container.read(_sessionUserIdProvider.notifier).state = e.userId;
+    // Opaque id only. Attributes this session's telemetry to the account that
+    // is actually signed in — without it every event stays on the device's
+    // anonymous id and cohort/retention reporting is meaningless.
+    analytics.setUser(e.userId.value);
     // Also on sign-IN, not just sign-out: a crash mid-session leaves rows
     // behind, and the next account to sign in would inherit them. Re-fetching
     // a summary on sign-in is correct anyway.
@@ -240,6 +273,11 @@ Future<void> bootstrap({
   container.read(eventBusProvider).on<UserSignedOut>().listen((_) {
     containerUserId = null;
     container.read(_sessionUserIdProvider.notifier).state = null;
+    // Severs the analytics identity. Without this the next account to sign in
+    // on this device keeps emitting under the previous patient's person — the
+    // telemetry equivalent of the cache and permanent-QR sweeps below, and the
+    // reason this is a privacy fix rather than a metrics one.
+    analytics.setUser(null);
     // Cached read models are per-account. Leaving them would show the previous
     // user's handle to whoever signs in next on this device.
     unawaited(container.read(cacheStoreProvider).clearAll());
@@ -287,6 +325,9 @@ Future<void> bootstrap({
   container.read(eventBusProvider).on<SessionExpired>().listen((_) {
     containerUserId = null;
     container.read(_sessionUserIdProvider.notifier).state = null;
+    // Same reason as the UserSignedOut sweep: the session is over, so the
+    // analytics identity must not carry into whoever signs in next.
+    analytics.setUser(null);
     paPrefs.setSignedIn(false);
     unawaited(container.read(cacheStoreProvider).clearAll());
     if (state.route == AppRoutes.app) state.go(AppRoutes.welcome);
@@ -373,6 +414,20 @@ class _GeofenceDeniedCountriesPort implements DeniedCountriesPort {
 
   @override
   Future<bool> isDenied(String countryCode) => _repo.isDenied(countryCode);
+}
+
+/// The link that launched this run, or null for a normal launch.
+///
+/// Guarded and time-boxed: this is a platform-channel call on the boot path, and
+/// campaign attribution is never worth delaying — let alone failing — a launch
+/// over. `DeepLinkHandler` reads the same link again for routing; querying it
+/// twice is free.
+Future<Uri?> _launchUri() async {
+  try {
+    return await AppLinks().getInitialLink().timeout(const Duration(seconds: 2));
+  } catch (_) {
+    return null;
+  }
 }
 
 /// Production entrypoint. See [bootstrap].

@@ -17,12 +17,13 @@ Add under **Repo → Settings → Secrets and variables → Actions**.
 
 | Secret | What |
 |---|---|
-| `SHARED_ENV_JSON` | Contents of a real `app/env/shared.json` (server list + Sentry DSN) |
+| `SHARED_ENV_JSON` | Contents of a real `app/env/shared.json` (server list + Sentry DSN + PostHog project token) |
 
 Optional. `release.yml` writes it to `app/env/shared.json` before building;
 absent, the tracked `shared.example.json` template is used instead (builds
-work, but with placeholder servers and no Sentry DSN). CI builds always use
-the template.
+work, but with placeholder servers, no Sentry DSN and no product analytics —
+both keys are empty in the template, which disables each SDK cleanly). CI builds
+always use the template.
 
 ## Android signing (release APK)
 

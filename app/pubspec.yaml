@@ -83,6 +83,9 @@ dependencies:
 dev_dependencies:
   # Test-only: care_repository_test opens an in-memory AppDatabase.
   drift: ^2.29.0
+  # Test-only: analytics_consent_toggle_test seeds the KV store via
+  # SharedPreferences.setMockInitialValues.
+  shared_preferences: ^2.3.0
   patrol: ^4.9.0
   flutter_test:
     sdk: flutter

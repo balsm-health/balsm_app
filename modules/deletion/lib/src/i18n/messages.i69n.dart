@@ -13,8 +13,7 @@ class Messages implements i69n.I69nMessageBundle {
   String get cancelled => "Deletion cancelled";
   String get publicTitle => "Delete your account";
   String get verifyHeading => "Verify it is you";
-  String get verifyBody =>
-      "We send a one-time code so nobody else can delete your account.";
+  String get verifyBody => "We send a one-time code so nobody else can delete your account.";
   String get verifyContinue => "Continue";
   String get sendCode => "Send me a code";
   String get sendCodeAgain => "Send a new code";
@@ -24,8 +23,7 @@ class Messages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':

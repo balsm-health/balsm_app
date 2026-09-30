@@ -21,6 +21,7 @@ import pasteboard
 import path_provider_foundation
 import patrol
 import pdfium_flutter
+import posthog_flutter
 import sentry_flutter
 import share_plus
 import shared_preferences_foundation
@@ -45,6 +46,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   PatrolPlugin.register(with: registry.registrar(forPlugin: "PatrolPlugin"))
   PDFiumFlutterPlugin.register(with: registry.registrar(forPlugin: "PDFiumFlutterPlugin"))
+  PosthogFlutterPlugin.register(with: registry.registrar(forPlugin: "PosthogFlutterPlugin"))
   SentryFlutterPlugin.register(with: registry.registrar(forPlugin: "SentryFlutterPlugin"))
   SharePlusMacosPlugin.register(with: registry.registrar(forPlugin: "SharePlusMacosPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))

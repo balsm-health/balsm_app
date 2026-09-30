@@ -116,3 +116,9 @@ fully unit-tested and ready.
 
 Real product-analytics backend (PostHog/Amplitude — abstraction leaves room);
 on-device log persistence; Sentry replay/tracing.
+
+> **Update 2026-09-30:** the product-analytics backend landed — PostHog EU Cloud,
+> as a second `AnalyticsLogger` behind `MultiAnalyticsLogger`, with a patient
+> opt-out. No call site changed, which was the point of this design. See
+> [2026-09-30 PostHog Product Analytics](./2026-09-30-posthog-product-analytics.md).
+> Sentry replay/tracing and on-device log persistence remain out of scope.

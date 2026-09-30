@@ -42,6 +42,13 @@ device — it rides only in the QR URL fragment), field-encrypted DOB, care
 directory queries, map-pack downloads, and PHI-scrubbed telemetry. Nothing
 else. `phi_leak_interceptor.dart` in balsm_api enforces the request side.
 
+Telemetry has two destinations, both behind core's `AnalyticsLogger` facade and
+both scrubbed deny-by-default against `kTelemetryAllowlist`: **Sentry**
+(crashes/diagnostics, always on) and **PostHog EU Cloud** (product analytics,
+opt-out — the patient switches it off in Profile → Privacy & data). Session replay
+is off on every surface. See
+`docs/superpowers/specs/2026-09-30-posthog-product-analytics.md`.
+
 ## Layers and the boundary rule
 
 - **`app/`** — composition root. Binds core ports to module implementations,

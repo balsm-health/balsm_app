@@ -106,6 +106,58 @@ void main() {
       expect(offenders, isEmpty, reason: offenders.join('\n'));
     });
   });
+
+  group('telemetry goes through the facade', () {
+    // Everything that logs goes through core's `AnalyticsLogger`, so the
+    // composition root decides which backends run and no call site can bypass
+    // the PHI scrub the adapters apply on the way out. Same shape as the Drift
+    // rule above: name the concretes in exactly one place.
+    //
+    // This lives here rather than in balsm_boundary_lint because custom_lint is
+    // commented out of every package's analysis_options.yaml (isolate leak,
+    // 2026-07-31), so a rule added there would never run.
+    const vendors = ['sentry_flutter', 'sentry', 'posthog_flutter', 'firebase_analytics', 'mixpanel_flutter'];
+
+    /// The adapters and SDK inits — an `AnalyticsLogger` implementation, or the
+    /// setup the composition root calls. Extending this list is the review
+    /// moment where a new backend's scrub and consent gate get checked.
+    const adapters = [
+      '/packages/core/lib/src/telemetry/sentry_analytics_logger.dart',
+      '/packages/core/lib/src/telemetry/posthog_analytics_logger.dart',
+      '/packages/core/lib/src/telemetry/posthog_init.dart',
+      '/packages/core/lib/src/crash/sentry_init.dart',
+      // Reads Sentry's own client state for the Dev Config diagnostics screen.
+      '/packages/core/lib/src/dev/dev_diagnostics.dart',
+    ];
+
+    test('no vendor SDK is imported outside its adapter', () {
+      final offenders = <String>[];
+      final roots = <String>[
+        '${root.path}/app/lib',
+        '${root.path}/packages/core/lib',
+        for (final m in modules) '${root.path}/modules/$m/lib',
+      ];
+      for (final dir in roots) {
+        for (final f in _dartFiles(dir)) {
+          if (adapters.any(f.path.endsWith)) continue;
+          for (final vendor in vendors) {
+            if (f.text.contains("package:$vendor/")) {
+              offenders.add('${f.rel(root)} imports package:$vendor/');
+            }
+          }
+        }
+      }
+      expect(offenders, isEmpty,
+          reason: 'use ref.watch(analyticsLoggerProvider), or add a new backend '
+              'adapter to the `adapters` list above:\n${offenders.join('\n')}');
+    });
+
+    test('the adapter list is real, so the rule cannot pass vacuously', () {
+      for (final adapter in adapters) {
+        expect(File('${root.path}$adapter').existsSync(), isTrue, reason: 'stale exemption: $adapter');
+      }
+    });
+  });
 }
 
 /// Walks up from the test's working directory to the melos workspace root.
