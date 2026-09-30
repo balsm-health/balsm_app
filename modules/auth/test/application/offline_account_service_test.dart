@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -109,6 +111,61 @@ void main() {
     await svc.setPendingMerge(true);
     await svc.wipe();
     expect(storage.m, isEmpty);
+  });
+
+  test('stale lockout does not carry into a new create', () async {
+    storage.m['balsm.offline.lockout'] = jsonEncode({
+      'failures': 5,
+      'until': clock.add(const Duration(hours: 1)).toIso8601String(),
+    });
+
+    await svc.create(email: 'a@b.co', password: 'correct-horse');
+
+    expect(await svc.unlock('correct-horse'), isA<Unlocked>());
+  });
+
+  test('discardIncompleteCreate wipes orphans when mode is absent', () async {
+    storage.m['balsm.offline.email'] = 'a@b.co';
+    storage.m['balsm.offline.pw_hash'] = 'h:x';
+    storage.m['balsm.offline.pw_plain'] = 'x';
+    storage.m['balsm.user_id'] = 'usr-orphan';
+    // No balsm.account_mode, no balsm.refresh_token.
+
+    await svc.discardIncompleteCreate();
+
+    expect(storage.m, isEmpty);
+  });
+
+  test('discardIncompleteCreate leaves the user id when a refresh token exists', () async {
+    storage.m['balsm.offline.email'] = 'a@b.co';
+    storage.m['balsm.user_id'] = 'usr-real';
+    storage.m['balsm.refresh_token'] = 'rt-real';
+    // No balsm.account_mode.
+
+    await svc.discardIncompleteCreate();
+
+    expect(storage.m['balsm.user_id'], 'usr-real');
+    expect(storage.m['balsm.refresh_token'], 'rt-real');
+    expect(storage.m.containsKey('balsm.offline.email'), isFalse);
+  });
+
+  test('discardIncompleteCreate is a no-op once mode is deviceOnly', () async {
+    await svc.create(email: 'a@b.co', password: 'correct-horse');
+    final before = Map<String, String>.from(storage.m);
+
+    await svc.discardIncompleteCreate();
+
+    expect(storage.m, before);
+  });
+
+  test('discardIncompleteCreate is a no-op when online with a pending pw_plain', () async {
+    await svc.create(email: 'a@b.co', password: 'correct-horse');
+    await svc.markOnline();
+    final before = Map<String, String>.from(storage.m);
+
+    await svc.discardIncompleteCreate();
+
+    expect(storage.m, before);
   });
 
   test('Argon2id hasher round-trips and rejects a wrong password', () async {

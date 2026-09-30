@@ -47,6 +47,7 @@ class OfflineAccountService {
   static const kPlain = 'balsm.offline.pw_plain';
   static const kLockout = 'balsm.offline.lockout';
   static const kPendingMerge = 'balsm.pending_merge';
+  static const kRefreshToken = 'balsm.refresh_token';
 
   static const minPasswordLength = 8;
   static const _freeAttempts = 4; // the 5th failure starts the first wait
@@ -56,6 +57,11 @@ class OfflineAccountService {
     if (password.length < minPasswordLength) {
       throw ArgumentError.value('<redacted>', 'password', 'must be at least $minPasswordLength characters');
     }
+    // A stale lockout/pending-merge from a previous device-only account must
+    // never carry into a new one — otherwise a freshly created account could
+    // start locked, or wrongly flagged for merge.
+    await _s.deleteToken(kLockout);
+    await _s.deleteToken(kPendingMerge);
     final id = UuidV7.generate().toString();
     final normalized = email.trim().toLowerCase();
     final hash = await _hasher.hash(password);
@@ -70,6 +76,36 @@ class OfflineAccountService {
   }
 
   Future<AccountMode> mode() async => AccountMode.fromWire(await _s.readToken(kAccountModeKey));
+
+  /// Cleans up a `create()` that crashed before it could write
+  /// `balsm.account_mode` (the last write `create()` makes). Call this once,
+  /// at app bootstrap, *before* anything reads [mode] — a later task wires
+  /// that call in.
+  ///
+  /// `balsm.account_mode` absent means `create()` never finished:
+  /// `markOnline()` always writes an explicit `'online'`, so a missing key
+  /// can't be a completed account of either mode. If any offline-account key
+  /// is present in that state, it is an orphan from the crash and is
+  /// deleted, along with `balsm.pending_merge`. `balsm.user_id` is deleted
+  /// too, but only if `balsm.refresh_token` is absent — a present refresh
+  /// token means a real online session owns that id, which this must never
+  /// disturb. Once `create()` has completed (mode `deviceOnly`) or
+  /// `markOnline()` has run (mode `online`, where a lingering `pw_plain` is
+  /// the legitimate pending `SetPassword`, not an orphan), this is a no-op.
+  Future<void> discardIncompleteCreate() async {
+    if (await _s.readToken(kAccountModeKey) != null) return;
+    final orphaned = await _s.readToken(kEmail) != null ||
+        await _s.readToken(kHash) != null ||
+        await _s.readToken(kPlain) != null ||
+        await _s.readToken(kLockout) != null;
+    if (!orphaned) return;
+    for (final k in [kEmail, kHash, kPlain, kLockout, kPendingMerge]) {
+      await _s.deleteToken(k);
+    }
+    if (await _s.readToken(kRefreshToken) == null) {
+      await _s.deleteToken(kUserId);
+    }
+  }
 
   Future<LockedUntil?> lockout() async {
     final st = await _readLockout();

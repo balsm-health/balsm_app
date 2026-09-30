@@ -99,3 +99,11 @@ account, as opposed to `markOnline()`, which only drops the offline-only
 credential keys (`email`, `pw_hash`, `lockout`) and switches the mode to
 `online`, keeping `balsm.user_id` and `balsm.offline.pw_plain` until the
 go-online flow consumes it.
+
+`create()` clears any stale `balsm.offline.lockout` / `balsm.pending_merge`
+before writing its own keys (so a freshly created account never inherits a
+previous account's lockout or merge flag), and `discardIncompleteCreate()` —
+meant to be called once at app bootstrap, before anything reads the mode —
+cleans up the orphaned offline-account keys left behind if `create()` crashed
+before it could write `balsm.account_mode`, without ever deleting
+`balsm.user_id` while a real online session's refresh token is present.
