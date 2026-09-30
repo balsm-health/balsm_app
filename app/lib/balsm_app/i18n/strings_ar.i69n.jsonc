@@ -54,7 +54,8 @@
     "unlock_help": "أدخل كلمة المرور التي عيّنتها على هذا الجهاز.",
     "unlock_wrong": "كلمة مرور غير صحيحة.",
     "unlock_locked(String secs)": "محاولات كثيرة. أعد المحاولة بعد $secs ث.",
-    "unlock_btn": "فتح"
+    "unlock_btn": "فتح",
+    "unlock_failed": "تعذّر فتح التطبيق الآن. حاول مرة أخرى."
   },
   "boot": {
     "boot_preparing": "نُجهّز سجلّك الصحي"

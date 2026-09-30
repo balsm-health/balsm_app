@@ -167,14 +167,19 @@ provisional, and a real design should be requested before release.
   immediately rather than waiting for a failed attempt.
 - Submitting calls `OfflineAccountService.unlock(password)`, checked entirely
   on-device against the stored Argon2id hash:
-  - `Unlocked` → goes straight to `AppRoutes.app` (no disclosure-gate replay —
-    the device-only account already accepted disclosure locally when it was
-    created).
+  - `Unlocked` → clears the field, then goes straight to `AppRoutes.app` (no
+    disclosure-gate replay — the device-only account already accepted
+    disclosure locally when it was created). The password is never left
+    sitting in the text controller after a successful unlock.
   - `WrongPassword` → shows a generic "wrong password" message and clears the
     field.
   - `LockedUntil` → clears the field and starts a countdown; the unlock
     button is disabled for the duration, and the message counts down once a
     second until it expires.
+  - Any other failure (e.g. a secure-storage read error) is caught, the
+    field is cleared, and a generic retry message (`auth.unlock_failed`) is
+    shown — never the exception's own text, so nothing from a storage error
+    leaks onto the screen or into logs.
 - There is **no password-recovery path** on this screen (and none exists for
   a device-only account at all, per `device_warning`): the password is the
   only way in until the account goes online and a server-side reset becomes

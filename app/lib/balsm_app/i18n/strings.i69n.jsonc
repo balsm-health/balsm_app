@@ -53,7 +53,8 @@
     "unlock_help": "Enter the password you set on this device.",
     "unlock_wrong": "Wrong password.",
     "unlock_locked(String secs)": "Too many attempts. Try again in ${secs}s.",
-    "unlock_btn": "Unlock"
+    "unlock_btn": "Unlock",
+    "unlock_failed": "Couldn't unlock right now. Try again."
   },
   "boot": {
     "boot_preparing": "Preparing your health record"

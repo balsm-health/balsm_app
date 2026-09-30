@@ -146,6 +146,7 @@ class AuthStrings_ar extends AuthStrings {
   String unlock_locked(String secs) =>
       "محاولات كثيرة. أعد المحاولة بعد $secs ث.";
   String get unlock_btn => "فتح";
+  String get unlock_failed => "تعذّر فتح التطبيق الآن. حاول مرة أخرى.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -257,6 +258,8 @@ class AuthStrings_ar extends AuthStrings {
         return unlock_locked;
       case 'unlock_btn':
         return unlock_btn;
+      case 'unlock_failed':
+        return unlock_failed;
       default:
         return super[key];
     }

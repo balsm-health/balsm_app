@@ -141,6 +141,7 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String unlock_locked(String secs) =>
       "Too many attempts. Try again in ${secs}s.";
   String get unlock_btn => "Unlock";
+  String get unlock_failed => "Couldn't unlock right now. Try again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -252,6 +253,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return unlock_locked;
       case 'unlock_btn':
         return unlock_btn;
+      case 'unlock_failed':
+        return unlock_failed;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

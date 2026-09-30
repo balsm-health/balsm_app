@@ -920,6 +920,7 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
       if (!mounted) return;
       switch (result) {
         case Unlocked():
+          _pwCtrl.clear();
           s.go(AppRoutes.app);
         case WrongPassword():
           _pwCtrl.clear();
@@ -927,6 +928,13 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
         case LockedUntil(:final until):
           _pwCtrl.clear();
           _startLockout(until);
+      }
+    } catch (_) {
+      // Never the exception's own text (could be a secure-storage failure —
+      // no reason to surface or log its message); a generic retry is enough.
+      if (mounted) {
+        _pwCtrl.clear();
+        setState(() => _error = s.strings.auth.unlock_failed);
       }
     } finally {
       if (mounted) setState(() => _busy = false);

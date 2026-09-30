@@ -363,10 +363,32 @@ void main() {
       await pumpAtRoute(tester, AppRoutes.unlock);
       await tester.enterText(find.byType(TextField), 'correct-horse');
       await tester.pump();
+      // Captured before the tap — the screen unmounts once the route moves
+      // to 'app', but the controller object itself survives disposal, so
+      // this is still how to prove the password didn't linger in it.
+      final pwCtrl = tester.widget<TextField>(find.byType(TextField)).controller!;
       await tester.tap(find.text('Unlock'));
       await tester.pumpAndSettle();
 
       expect(state.route, AppRoutes.app);
+      expect(pwCtrl.text, '', reason: 'the password must not linger in the controller after unlocking');
+    });
+
+    testWidgets('an unlock failure shows a retry message, never the exception', (tester) async {
+      when(() => offline.lockout()).thenAnswer((_) async => null);
+      when(() => offline.unlock('correct-horse')).thenThrow(Exception('secure storage unavailable'));
+
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      await tester.enterText(find.byType(TextField), 'correct-horse');
+      await tester.pump();
+      await tester.tap(find.text('Unlock'));
+      await tester.pumpAndSettle();
+
+      expect(find.text("Couldn't unlock right now. Try again."), findsOneWidget);
+      expect(find.textContaining('secure storage unavailable'), findsNothing,
+          reason: 'the exception text must never reach the screen');
+      expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, '');
+      expect(state.route, isNot(AppRoutes.app));
     });
 
     testWidgets('lockout disables the button and counts down', (tester) async {
