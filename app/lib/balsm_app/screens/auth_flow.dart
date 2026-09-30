@@ -492,6 +492,14 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// path never touches.
   bool _creating = false;
 
+  /// Set when [_createOnDevice] fails (e.g. secure-storage write failed).
+  /// Never the exception's own text — a generic retry prompt only.
+  String? _deviceError;
+
+  /// The error line to show under the fields: the device-only failure while
+  /// in that mode, the online controller's error otherwise.
+  String? get _displayError => _mode == _AuthMode.deviceOnly ? _deviceError : _error;
+
   bool _seeded = false;
 
   @override
@@ -612,13 +620,20 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// (Task 3).
   Future<void> _createOnDevice(PatientAppState s) async {
     if (_creating) return;
-    setState(() => _creating = true);
+    setState(() {
+      _creating = true;
+      _deviceError = null;
+    });
     try {
       await ref.read(offlineAccountServiceProvider).create(email: ctrl.text.trim(), password: pwCtrl.text);
       if (!mounted) return;
       s.setAccountMode(AccountMode.deviceOnly);
       TextInput.finishAutofillContext();
       await enterAfterSignIn(context, ref, s);
+    } catch (_) {
+      // Never the exception's own text (could be a secure-storage failure —
+      // no reason to surface or log its message); a generic retry is enough.
+      if (mounted) setState(() => _deviceError = s.strings.auth.device_create_failed);
     } finally {
       if (mounted) setState(() => _creating = false);
     }
@@ -654,7 +669,24 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     leftValue: _AuthMode.online,
                     rightValue: _AuthMode.deviceOnly,
                     value: _mode,
-                    onChanged: (m) => setState(() => _mode = m),
+                    // Ignored while a device-only create is in flight — the
+                    // switch must not move out from under it.
+                    onChanged: _creating
+                        ? (_) {}
+                        : (m) {
+                            setState(() {
+                              _mode = m;
+                              // An online refusal's "send a code?" offer is
+                              // meaningless (and its button hits the network)
+                              // once the screen is showing the device-only
+                              // path instead.
+                              _offerCode = false;
+                              _deviceError = null;
+                            });
+                            // Clears any stale online sign-in error too —
+                            // rebuilding the controller resets its state.
+                            ref.invalidate(credentialsControllerProvider);
+                          },
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -735,19 +767,19 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
               child: Column(children: [
-                if (_error != null)
+                if (_displayError != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Semantics(
                         liveRegion: true,
-                        child: Text(_error!,
+                        child: Text(_displayError!,
                             textAlign: TextAlign.center,
                             style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
                 // The password was refused. Ask before sending anything: a
                 // mistyped password would otherwise email whoever owns that
-                // address, every time.
-                if (_offerCode) ...[
+                // address, every time. Online only — device-only has no OTP.
+                if (_offerCode && _mode == _AuthMode.online) ...[
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
@@ -773,7 +805,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                         _mode == _AuthMode.deviceOnly
                             ? s.strings.auth.device_create
                             : (_submitting ? s.strings.auth.pw_signing_in : s.strings.auth.pw_continue),
-                        variant: _offerCode ? BtnVariant.secondary : BtnVariant.primary,
+                        variant: _offerCode && _mode == _AuthMode.online ? BtnVariant.secondary : BtnVariant.primary,
                         large: true,
                         block: true,
                         accent: s.accent,
@@ -1683,6 +1715,12 @@ class _Segmented<V> extends StatelessWidget {
             button: true,
             selected: active,
             label: label,
+            // The node itself must carry the tap action — `excludeSemantics`
+            // below hides the GestureDetector's own semantics (which would
+            // otherwise duplicate the label), so without this the node has no
+            // SemanticsAction.tap and a screen reader's activate gesture does
+            // nothing.
+            onTap: onTap,
             excludeSemantics: true,
             child: MinTapTarget(
               child: GestureDetector(

@@ -118,6 +118,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get device_warning =>
       "Your email isn't verified yet, so your password can't be recovered until you go online. If you lose this device before then, your data goes with it.";
   String get device_create => "Create account on device";
+  String get device_create_failed =>
+      "Couldn't create the account on this device. Try again.";
   String get fp_title => "Reset your password";
   String get fp_help =>
       "Enter your email — we'll send a code to reset your password.";
@@ -208,6 +210,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return device_warning;
       case 'device_create':
         return device_create;
+      case 'device_create_failed':
+        return device_create_failed;
       case 'fp_title':
         return fp_title;
       case 'fp_help':

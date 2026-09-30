@@ -8,6 +8,7 @@ import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
     show DisclosureAcceptance, DisclosureDao, DisclosureId, disclosureDaoProvider;
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -131,6 +132,38 @@ void main() {
     await tester.pumpAndSettle();
 
     await expectAccessible(tester);
+    handle.dispose();
+  });
+
+  testWidgets('the online/device-only segmented control is reachable by screen reader', (tester) async {
+    // The tap-target-size guideline above only checks geometry — a node with
+    // no SemanticsAction.tap at all would still pass it, silently. This test
+    // is what actually proves TalkBack/VoiceOver can activate the segment.
+    final handle = await pump(tester, const AuthRouter());
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+
+    final node = tester.getSemantics(find.bySemanticsLabel('Device only'));
+    expect(
+      node,
+      matchesSemantics(
+        isButton: true,
+        hasTapAction: true,
+        hasSelectedState: true,
+        isSelected: false,
+        label: 'Device only',
+      ),
+    );
+
+    // The activation a screen reader's gesture sends — not a raw widget tap.
+    // `rootPipelineOwner`'s owner doesn't hold this node's id in this test
+    // harness (the action silently no-ops); `pipelineOwner` is what actually
+    // owns the rendered semantics tree here, deprecated or not.
+    // ignore: deprecated_member_use
+    tester.binding.pipelineOwner.semanticsOwner!.performAction(node.id, SemanticsAction.tap);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Account on this device'), findsOneWidget, reason: 'the semantics action must switch mode');
     handle.dispose();
   });
 

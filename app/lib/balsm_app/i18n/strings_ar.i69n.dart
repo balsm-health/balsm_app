@@ -122,6 +122,8 @@ class AuthStrings_ar extends AuthStrings {
   String get device_warning =>
       "بريدك غير مُتحقَّق منه بعد، لذا لا يمكن استعادة كلمة المرور حتى تتصل بالإنترنت. إن فقدت جهازك قبل ذلك، تُفقد بياناتك.";
   String get device_create => "إنشاء الحساب على الجهاز";
+  String get device_create_failed =>
+      "تعذّر إنشاء الحساب على هذا الجهاز. حاول مرة أخرى.";
   String get fp_title => "إعادة تعيين كلمة المرور";
   String get fp_help =>
       "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
@@ -213,6 +215,8 @@ class AuthStrings_ar extends AuthStrings {
         return device_warning;
       case 'device_create':
         return device_create;
+      case 'device_create_failed':
+        return device_create_failed;
       case 'fp_title':
         return fp_title;
       case 'fp_help':

@@ -264,5 +264,60 @@ void main() {
       verifyNever(() => signIn.requestContinueOtp(any(), any()));
       expect(state.accountMode, AccountMode.deviceOnly);
     });
+
+    testWidgets('switching away from an online refusal clears its send-code offer', (tester) async {
+      // Review finding: the offer (and its network-hitting button) survived a
+      // mode switch, because only `_mode` was reset, not `_offerCode`.
+      when(() => signIn.passwordSignIn(email: any(named: 'email'), password: any(named: 'password')))
+          .thenAnswer((_) async => AppResult.failure(const NetworkFailure('invalid')));
+
+      await pumpPhoneScreen(tester);
+      await tester.enterText(find.byType(TextField).first, 'patient@example.test');
+      await tester.enterText(find.byType(TextField).last, 'a-real-password');
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Send me a code'), findsOneWidget, reason: 'setup: the refusal must offer a code first');
+
+      await tester.tap(find.text('Device only'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Send me a code'), findsNothing);
+      expect(
+        tester.widget<PButton>(find.widgetWithText(PButton, 'Create account on device')).variant,
+        BtnVariant.primary,
+      );
+
+      // And the button drives account creation, never the leftover OTP path.
+      when(() => offline.create(email: any(named: 'email'), password: any(named: 'password')))
+          .thenAnswer((_) async => 'off-1');
+      await tester.enterText(find.byType(TextField).first, 'layla@example.com');
+      await tester.enterText(find.byType(TextField).last, 'correct-horse');
+      await tester.pump();
+      await tester.tap(find.text('Create account on device'));
+      await tester.pumpAndSettle();
+
+      verify(() => offline.create(email: 'layla@example.com', password: 'correct-horse')).called(1);
+      verifyNever(() => signIn.requestContinueOtp(any(), any()));
+    });
+
+    testWidgets('a create failure shows a retry message, never the exception', (tester) async {
+      when(() => offline.create(email: any(named: 'email'), password: any(named: 'password')))
+          .thenThrow(Exception('secure storage unavailable'));
+
+      await pumpPhoneScreen(tester);
+      await tester.tap(find.text('Device only'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'layla@example.com');
+      await tester.enterText(find.byType(TextField).last, 'correct-horse');
+      await tester.pump();
+      await tester.tap(find.text('Create account on device'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining("Couldn't create the account on this device"), findsOneWidget);
+      expect(find.textContaining('secure storage unavailable'), findsNothing,
+          reason: 'the exception text must never reach the screen');
+      expect(state.accountMode, isNot(AccountMode.deviceOnly));
+    });
   });
 }

@@ -36,6 +36,7 @@
     "device_pw_label": "Password to lock the app",
     "device_warning": "Your email isn't verified yet, so your password can't be recovered until you go online. If you lose this device before then, your data goes with it.",
     "device_create": "Create account on device",
+    "device_create_failed": "Couldn't create the account on this device. Try again.",
     "fp_title": "Reset your password",
     "fp_help": "Enter your email — we'll send a code to reset your password.",
     "fp_send": "Send reset code",

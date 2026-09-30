@@ -129,6 +129,12 @@ on the sign-in screen. Switching to "Device only":
   every other sign-in path; while device-only, the disclosure API call is
   refused locally by the interceptor (see above) and tolerated, since
   acceptance is what's actually stored on-device.
+- If creation itself fails (e.g. a secure-storage write error), a generic
+  retry message is shown — never the exception's own text, so nothing from a
+  storage error accidentally leaks onto the screen.
+- Switching back to "Online" (or away from it) clears any offer/error left
+  over from the other mode, so a failed online sign-in's "send a code?"
+  prompt can't linger into the device-only path and reach its network call.
 
 ## App startup
 
