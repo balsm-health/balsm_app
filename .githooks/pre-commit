@@ -75,7 +75,10 @@ staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart' \
 [ -z "$staged" ] && exit 0
 
 # --set-exit-if-changed makes dart exit non-zero if any file would be reformatted.
-if ! printf '%s\n' "$staged" | xargs $DART format --output=none --set-exit-if-changed; then
+# git exports GIT_INDEX_FILE (and GIT_DIR in worktrees) to hooks. fvm runs its
+# own git commands to check its SDK cache; inheriting these points them at the
+# index being committed, and its cache "repair" silently empties the commit.
+if ! printf '%s\n' "$staged" | xargs env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE $DART format --output=none --set-exit-if-changed; then
   echo ""
   echo "✖ pre-commit: staged Dart files are not formatted."
   echo "  Fix with:  dart format . && git add -u"
