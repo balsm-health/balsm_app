@@ -28,6 +28,8 @@ changing identity.
 | D3 | Server-backed features stay visible while device-only; tapping them opens the Go-online sheet. |
 | D4 | ID linkage approach A: server adopts the client-generated ID when free. |
 | D5 | Password minimum is 8 characters everywhere (design copy changes from 6 → 8). |
+| D7 | Prerequisite: the on-device DB is not actually encrypted today (`database_connection_io.dart` never applies the key; key bytes are not random). Fix first: `Random.secure()` 32-byte key in the shared `SecureStorageWrapper` store, applied via `PRAGMA key`. No plaintext→encrypted migration (app not launched); existing dev/test installs must reinstall. |
+| D8 | Offline password is an app-lock gate only. The DB key stays in Keychain/Keystore exactly as for online accounts; the password is verified against its Argon2id hash. No password-derived key wrapping. |
 | D6 | Device-only accounts may sync only to iCloud or Google Drive. Balsm Cloud requires going online. iCloud and Google Drive are "Coming soon" today, so in practice device-only data stays on the device until those ship or the user goes online. |
 
 **Out of scope**
@@ -43,8 +45,6 @@ changing identity.
 2. **Device only + email + password (≥ 8)** →
    - generate `accountId` = UUIDv7 on device;
    - Argon2id-hash the password;
-   - derive a key-encryption key (KEK) from the password and wrap the SQLCipher
-     database key with it;
    - persist offline account record (see §4) to secure storage;
    - run the local disclosure gate (terms/privacy acceptance recorded locally,
      uploaded at go-online);
@@ -108,7 +108,6 @@ Secure storage keys (Keychain / Keystore via `flutter_secure_storage`):
 | `balsm.offline.email` | normalized email | until online |
 | `balsm.offline.pw_hash` | Argon2id encoded hash | until online (then local unlock uses the normal path) |
 | `balsm.offline.pw_plain` | plaintext password | until `SetPassword` succeeds or merge/discard completes |
-| `balsm.offline.wrapped_db_key` | SQLCipher key wrapped by password-derived KEK | permanent while device-only |
 | `balsm.offline.lockout` | `{failures, until}` | permanent while device-only |
 | `balsm.pending_merge` | `true` while merge-or-discard unresolved | until resolved |
 
@@ -117,7 +116,7 @@ Secure storage keys (Keychain / Keystore via `flutter_secure_storage`):
 - `OfflineAccountService` (new, in `modules/auth` business layer — shared, live):
   `create(email, password)`, `unlock(password)`, `lockoutState()`,
   `goOnlineCompleted(result)`, `wipe()`. Pure logic over ports
-  (`SecureStore`, `PasswordHasher`, `KeyWrapper`, `Clock`, `UuidGen`).
+  (`SecureStore`, `PasswordHasher`, `Clock`, `UuidGen`).
 - `AuthApi` DTO: add `clientAccountId` to verify-OTP request, `adoptedClientId`
   to token response.
 - UI in `app/lib/balsm_app/screens/auth_flow.dart` (the live auth UI — **not**
@@ -160,8 +159,9 @@ and resumes. Covered by tests even though it should almost never happen.
 
 - Access is granted only by a verified email (OTP) + JWT. A client ID alone
   grants nothing and is never attached to an existing account.
-- Offline password: Argon2id on device; KEK wraps the SQLCipher key so a
-  stolen, locked device doesn't expose data.
+- On-device DB encrypted with SQLCipher using a `Random.secure()` 32-byte key
+  held in Keychain/Keystore (D7). Offline password is an Argon2id-verified
+  app-lock gate (D8); it does not derive or wrap the DB key.
 - Plaintext password held in secure storage only until handed to `SetPassword`
   (or discarded on merge/discard), then deleted.
 - Lockout state in secure storage (survives app reinstall on iOS; acknowledged).
