@@ -62,6 +62,30 @@ void registerExtensionOnce(String name, developer.ServiceExtensionHandler handle
   developer.registerExtension(name, handler);
 }
 
+/// Swallows a route the OS pushes straight into Flutter's default Navigator
+/// channel (e.g. a universal/app link delivered while `FlutterDeepLinkingEnabled`
+/// is on) instead of crashing.
+///
+/// The shell doesn't use named Navigator routes — [PatientAppState.route]/`tab`
+/// drive navigation instead — and the real deep-link entry points
+/// ([DeepLinkHandler], `DeeplinkRouter`) already listen on `app_links`'
+/// own stream. Without this, any link the platform also forwards through
+/// `pushRouteInformation` (anything other than the literal `/`) has no
+/// generator and `MaterialApp` throws `onUnknownRoute was not set`.
+@visibleForTesting
+Route<dynamic> handleUnknownRoute(RouteSettings settings) {
+  return PageRouteBuilder<void>(
+    settings: settings,
+    opaque: false,
+    pageBuilder: (context, _, __) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+      });
+      return const SizedBox.shrink();
+    },
+  );
+}
+
 class PatientApp extends ConsumerStatefulWidget {
   const PatientApp({super.key, required this.navObserver});
 
@@ -256,6 +280,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
           debugShowCheckedModeBanner: false,
           navigatorKey: _navKey,
           navigatorObservers: [widget.navObserver],
+          onUnknownRoute: handleUnknownRoute,
           // G2: wire Flutter's Material/Cupertino/widget localizations so date
           // pickers, semantics and default tooltips localize. The app's own
           // string system (i69n `tr()`) is unchanged; these delegates only
