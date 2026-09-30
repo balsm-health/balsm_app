@@ -140,3 +140,14 @@ after handling any re-key/merge decision the outcome requires.
 `adopted_client_id` is on the non-PHI telemetry allowlist (it is a boolean
 outcome flag); `client_account_id` is not — it is a device-generated account
 id and stays redacted like any other id-shaped field.
+
+## Re-keying local data
+
+`packages/core/lib/src/db/owner_rekey.dart` — `rekeyOwner(db, from, to, dropOutbox)` moves
+every locally-owned row from account `from` to account `to`. It discovers tables by
+detecting the `user_id` column rather than using a hard-coded list, so a module that
+adds a `user_id` table later is covered without touching this function. All changes
+happen in one transaction: a crash leaves either every row on the old id or every row
+on the new id, never a mix. When `dropOutbox` is true, rows in `sync_outbox` owned by
+`from` are deleted instead of re-keyed (on merge: the retired offline account's
+pending account-level updates must not overwrite the existing account's server profile).
