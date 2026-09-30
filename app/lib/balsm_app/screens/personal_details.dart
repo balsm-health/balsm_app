@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'go_online_sheet.dart';
 import 'profile_subscreens.dart';
 import 'package:core/core.dart';
 import 'package:account/account.dart';
@@ -1006,7 +1007,13 @@ class _RelationshipSheet extends StatelessWidget {
 /// the entry point is [ProfileScreen] now — but the sheet itself, with its
 /// mint/rotate/revoke controller, stays here next to the rest of the account
 /// surface.
-Future<void> openQrShare(BuildContext context, {required PatientAppState s, required String name}) {
+///
+/// Sharing needs a server account, so a device-only account is offered the
+/// go-online sheet first ([requireOnline]).
+Future<void> openQrShare(BuildContext context, WidgetRef ref,
+    {required PatientAppState s, required String name}) async {
+  if (!await requireOnline(context, ref)) return;
+  if (!context.mounted) return;
   return showAppSheet<void>(
     context,
     barrierColor: const Color(0x6B14202B),

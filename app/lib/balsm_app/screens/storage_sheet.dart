@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
@@ -8,6 +9,7 @@ import '../kit.dart';
 import '../storage_target.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
+import 'go_online_sheet.dart';
 
 /// Storage & sync (design: `storage.jsx` `StorageSyncSheet`).
 ///
@@ -286,18 +288,25 @@ class _Grouped extends StatelessWidget {
 
 /// One cloud account. Unavailable, so it carries the reason rather than a
 /// Connect button that would fail.
+///
+/// The one exception is Balsm Cloud on a device-only account: the first thing
+/// it needs is a server account at all, so the row offers "Go online" (at full
+/// opacity) and opens that sheet. iCloud / Google Drive stay "Coming soon".
 class _CloudAccountRow extends StatelessWidget {
   const _CloudAccountRow({required this.s, required this.target});
   final PatientAppState s;
   final StorageTarget target;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(listenable: s, builder: (context, _) => _row(context));
+
+  Widget _row(BuildContext context) {
     final st = s.strings.storage;
     final cfg = storageCfg(target);
     final available = target.isAvailable;
-    return Opacity(
-      opacity: available ? 1 : 0.65,
+    final goOnline = target == StorageTarget.balsmCloud && s.accountMode == AccountMode.deviceOnly;
+    final row = Opacity(
+      opacity: available || goOnline ? 1 : 0.65,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 60),
         child: Padding(
@@ -325,9 +334,25 @@ class _CloudAccountRow extends StatelessWidget {
             const SizedBox(width: 8),
             // The design's Connect button. Present but inert: an enabled
             // control here would start a flow that cannot finish.
-            Pill(available ? st.store_connect : st.store_coming_soon, ar: s.rtl),
+            Pill(
+                goOnline
+                    ? s.strings.offline.go_cloud_pill
+                    : available
+                        ? st.store_connect
+                        : st.store_coming_soon,
+                kind: goOnline ? PillKind.brand : PillKind.neutral,
+                ar: s.rtl),
           ]),
         ),
+      ),
+    );
+    if (!goOnline) return row;
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => showGoOnlineSheet(context),
+        child: row,
       ),
     );
   }

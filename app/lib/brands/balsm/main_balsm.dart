@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geofence_block/geofence_block.dart';
 import 'package:profile/profile.dart';
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
@@ -330,6 +331,13 @@ Future<void> bootstrap({
   // every relaunch and the app silently reverts to the default server. Must run
   // before runApp — no API request is issued before this point.
   await container.read(balsmApiControllerProvider).init();
+
+  // Go-online retry: an account that went online but whose offline password
+  // never reached the server (SetPassword failed) still holds it in
+  // `balsm.offline.pw_plain`. Try again now; on success it is deleted.
+  if (accountMode == AccountMode.online && containerUserId != null) {
+    unawaited(container.read(goOnlineControllerProvider).finishPasswordIfPending());
+  }
 
   // Permanent medical-profile QR: if one exists, silently re-sync its
   // server-side ciphertext with the current on-device profile so a scan

@@ -15,6 +15,7 @@ import '../shell.dart';
 import 'personal_details.dart';
 import 'ecosystem_sheet.dart';
 import 'feedback_sheet.dart';
+import 'go_online_sheet.dart';
 import 'care_team_screen.dart';
 import 'profile_subscreens.dart';
 import 'storage_sheet.dart';
@@ -40,7 +41,7 @@ class ProfileScreen extends ConsumerWidget {
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
-      (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
+      (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context, ref), false),
       (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'profile.p_notif', null, false),
       (
@@ -66,7 +67,7 @@ class ProfileScreen extends ConsumerWidget {
               child: RoundBtn(
                 icon: LucideIcons.qrCode,
                 semanticLabel: s.strings.common.a11y_qr,
-                onTap: () => openQrShare(context, s: s, name: displayName),
+                onTap: () => openQrShare(context, ref, s: s, name: displayName),
               ),
             ),
           ]),
@@ -149,6 +150,14 @@ class ProfileScreen extends ConsumerWidget {
                     Pill(s.storageProvider.label(s.strings.storage), kind: PillKind.neutral, dot: false, ar: s.rtl),
                 first: true,
                 onTap: () => showStorageSync(context)),
+            // Device-only accounts: the way to a server account (Balsm Cloud,
+            // sharing). Same row widget as Storage, directly beneath it.
+            if (s.accountMode == AccountMode.deviceOnly)
+              _ListRow(
+                  icon: LucideIcons.cloud,
+                  label: s.strings.offline.go_row,
+                  sub: s.strings.offline.go_row_sub,
+                  onTap: () => showGoOnlineSheet(context)),
           ]),
 
           // Menu
@@ -464,6 +473,7 @@ class _ListRow extends StatelessWidget {
   const _ListRow(
       {required this.icon,
       required this.label,
+      this.sub,
       this.trailing,
       this.trailingWidget,
       this.onTap,
@@ -473,6 +483,9 @@ class _ListRow extends StatelessWidget {
       this.first = false});
   final IconData icon;
   final String label;
+
+  /// Optional second line under [label].
+  final String? sub;
   final String? trailing;
   final Widget? trailingWidget;
   final VoidCallback? onTap;
@@ -493,8 +506,11 @@ class _ListRow extends StatelessWidget {
           IconSquare(icon, bg: iconBg ?? s.accent.bg, fg: iconFg ?? s.accent.d, size: 34, iconSize: 19, radius: T.rSm),
           const SizedBox(width: 14),
           Expanded(
-              child: Text(label,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1))),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1)),
+            if (sub != null)
+              Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub!, style: Typo.meta(ar: s.rtl))),
+          ])),
           if (trailingWidget != null) trailingWidget!,
           if (trailing != null)
             Padding(
@@ -765,19 +781,19 @@ class _SelectRow extends StatelessWidget {
 
 /// `.profile-head` — the patient's handle as a tappable accent pill that opens
 /// their shareable QR. Latin either way, so it stays LTR in Arabic.
-class _HandleQrPill extends StatelessWidget {
+class _HandleQrPill extends ConsumerWidget {
   const _HandleQrPill({required this.handle, required this.name});
   final String handle;
   final String name;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     return Semantics(
       label: s.strings.profile.pd_share_qr,
       button: true,
       child: Pressable(
-        onTap: () => openQrShare(context, s: s, name: name),
+        onTap: () => openQrShare(context, ref, s: s, name: name),
         child: Container(
           height: 34,
           padding: const EdgeInsets.symmetric(horizontal: 14),

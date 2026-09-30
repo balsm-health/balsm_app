@@ -17,6 +17,7 @@ import '../assets.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../widgets/auth_fields.dart';
 import '../widgets/legal_sheet.dart';
 import 'walkthrough_screen.dart';
 
@@ -708,7 +709,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 const SizedBox(height: 24),
                 _Label(s.strings.emergency.em_label, ar: s.rtl),
                 const SizedBox(height: 8),
-                _Input(
+                AuthInput(
                     controller: ctrl,
                     id: 'emailField',
                     hint: s.strings.emergency.em_ph,
@@ -733,7 +734,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     ),
                 ]),
                 const SizedBox(height: 8),
-                _Input(
+                AuthInput(
                     controller: pwCtrl,
                     id: 'passwordField',
                     // D5: 8 characters minimum in both modes — shown as the
@@ -836,7 +837,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 // [PatientAppState.load] boots a device-only account straight here (Task 8)
 // instead of the welcome screen. No DesignSync design exists for this screen
 // yet — it is built from _PhoneScreen's own pieces (cream background, the
-// password _Input with its show/hide eye, the device-only warning card) so it
+// password AuthInput with its show/hide eye, the device-only warning card) so it
 // at least looks native meanwhile; ask for a real design before release (see
 // docs/offline-account.md, "Unlock").
 class _UnlockScreen extends ConsumerStatefulWidget {
@@ -963,7 +964,7 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
                 const SizedBox(height: 24),
                 _Label(s.strings.auth.pw_label, ar: s.rtl),
                 const SizedBox(height: 8),
-                _Input(
+                AuthInput(
                     controller: _pwCtrl,
                     id: 'unlockPasswordField',
                     hint: s.strings.auth.pw_ph,
@@ -1271,7 +1272,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                       onTap: () => focus.requestFocus(),
                       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         for (var i = 0; i < 6; i++)
-                          _OtpBox(
+                          OtpBox(
                             char: i < code.length ? code[i] : '',
                             active: code.length == i,
                             accent: s.accent,
@@ -1343,33 +1344,6 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
           ]),
         ),
       ),
-    );
-  }
-}
-
-class _OtpBox extends StatelessWidget {
-  const _OtpBox({required this.char, required this.active, required this.accent});
-  final String char;
-  final bool active;
-  final Accent accent;
-  @override
-  Widget build(BuildContext context) {
-    final filled = char.isNotEmpty;
-    // `.otp-box` — border + focus ring animate over --dur-base ease-out.
-    return AnimatedContainer(
-      duration: Motion.base,
-      curve: Motion.easeOut,
-      width: 48,
-      height: 60,
-      margin: const EdgeInsets.symmetric(horizontal: 5),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(T.rMd),
-        border: Border.all(color: active || filled ? accent.main : T.border, width: 1.5),
-        boxShadow: active ? [BoxShadow(color: accent.bg, blurRadius: 0, spreadRadius: 4)] : null,
-      ),
-      child: Text(char, style: Typo.num(size: FS.xl2, weight: FontWeight.w600)),
     );
   }
 }
@@ -1752,7 +1726,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                       child: _Field(
                           label: s.strings.onboarding.pf_fname,
                           ar: s.rtl,
-                          child: _Input(
+                          child: AuthInput(
                               controller: first,
                               hint: s.strings.onboarding.pf_fname_ph,
                               accent: s.accent,
@@ -1762,7 +1736,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                       child: _Field(
                           label: s.strings.onboarding.pf_lname,
                           ar: s.rtl,
-                          child: _Input(
+                          child: AuthInput(
                               controller: last,
                               hint: s.strings.onboarding.pf_lname_ph,
                               accent: s.accent,
@@ -1777,7 +1751,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                     child: GestureDetector(
                       onTap: _pickDob,
                       child: AbsorbPointer(
-                        child: _Input(
+                        child: AuthInput(
                             controller: dob,
                             hint: 'DD / MM / YYYY',
                             mono: true,
@@ -1848,7 +1822,7 @@ class _UsernameField extends StatelessWidget {
         ar: s.rtl,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Stack(alignment: Alignment.centerLeft, children: [
-            _Input(
+            AuthInput(
                 controller: controller,
                 hint: s.strings.auth.un_ph,
                 mono: true,
@@ -2073,7 +2047,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
             if (_step == ResetStep.email) ...[
               Text(s.strings.auth.fp_help, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
               const SizedBox(height: 16),
-              _Input(
+              AuthInput(
                   controller: _email,
                   hint: s.strings.emergency.em_ph,
                   keyboard: TextInputType.emailAddress,
@@ -2089,7 +2063,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
               const SizedBox(height: 16),
               _Label(s.strings.auth.fp_code_label, ar: s.rtl),
               const SizedBox(height: 8),
-              _Input(
+              AuthInput(
                   controller: _code,
                   hint: '••••••',
                   keyboard: TextInputType.number,
@@ -2100,7 +2074,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
               const SizedBox(height: 14),
               _Label(s.strings.auth.fp_new_pw, ar: s.rtl),
               const SizedBox(height: 8),
-              _Input(
+              AuthInput(
                   controller: _newPw,
                   hint: s.strings.auth.pw_ph,
                   obscure: !_showPw,
@@ -2163,78 +2137,6 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
         ),
       ),
     );
-  }
-}
-
-class _Input extends StatelessWidget {
-  const _Input(
-      {required this.controller,
-      required this.hint,
-      this.id,
-      this.keyboard,
-      this.mono = false,
-      this.forceLtr = false,
-      this.obscure = false,
-      this.prefix,
-      this.prefixIcon,
-      this.suffixIcon,
-      required this.accent,
-      this.onChanged,
-      this.autofillHints});
-  final TextEditingController controller;
-  final String hint;
-
-  /// Stable test selector. Set it and the field becomes addressable by both
-  /// drivers: Patrol matches the Flutter [Key], Maestro matches the platform
-  /// accessibility identifier the semantics node exposes. Label text is not a
-  /// usable selector — it is translated, so an Arabic run would miss it.
-  final String? id;
-  final TextInputType? keyboard;
-  final bool mono;
-  final bool forceLtr;
-  final bool obscure;
-  final String? prefix;
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
-  final Accent accent;
-  final ValueChanged<String>? onChanged;
-
-  /// Tells the OS what this field holds, so the platform password manager can
-  /// fill it and offer to save it. Null for fields that are not credentials —
-  /// an OTP code or a display name must never be offered to a keychain.
-  final List<String>? autofillHints;
-  @override
-  Widget build(BuildContext context) {
-    final style = mono ? Typo.num(size: FS.lg) : Typo.body(ar: false).copyWith(fontSize: FS.lg, color: T.fg1);
-    final field = TextField(
-      key: id == null ? null : Key(id!),
-      controller: controller,
-      keyboardType: keyboard,
-      onChanged: onChanged,
-      obscureText: obscure,
-      autofillHints: autofillHints,
-      textDirection: forceLtr ? TextDirection.ltr : null,
-      style: style,
-      decoration: InputDecoration(
-        isDense: true,
-        prefixText: prefix,
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
-        prefixStyle: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3),
-        hintText: hint,
-        hintStyle: (mono ? Typo.num(size: FS.lg, color: T.fg4) : Typo.body().copyWith(fontSize: FS.lg, color: T.fg4)),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: accent.main, width: 1.5)),
-      ),
-    );
-    // Maestro selects on the platform accessibility identifier, which only
-    // exists if a semantics node carries one; Patrol selects on the Key above.
-    return id == null ? field : Semantics(identifier: id, child: field);
   }
 }
 

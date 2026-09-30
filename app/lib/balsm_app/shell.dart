@@ -234,7 +234,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
         case 'medical':
           openMedicalProfile(next);
         case 'care':
-          openCareTeam(next);
+          openCareTeam(next, ref);
         case 'emergency':
           openEmergency(next);
         case 'privacy':

@@ -256,6 +256,52 @@ other verify failure changes nothing locally.
 (`clearPlainPassword()`); on failure it is kept, and the account is still
 online. The next launch retries it.
 
+### Sheet and entry points
+
+`app/lib/balsm_app/screens/go_online_sheet.dart` — `showGoOnlineSheet(context)`
+walks **email → code → done** in the same sheet scaffold as forgot-password
+(grab handle, title, the six `OtpBox`es over one hidden field, a 28 s resend
+countdown, a success mark). The email is prefilled from the device-only
+account (`pendingCredentials().email`); the sixth digit auto-submits. On
+`online` it sets `PatientAppState.accountMode` to `online` (so every gate
+below re-renders) and shows the done step. On `needsMergeChoice` it closes and
+routes to `AppRoutes.mergeOrDiscard`. A lockout shows the standard
+"temporarily locked" wait. `OtpBox` and the sign-in text field (`AuthInput`)
+moved from `auth_flow.dart` to `app/lib/balsm_app/widgets/auth_fields.dart` so
+both flows share them.
+
+`requireOnline(context, ref)` is the server-feature gate: `true` at once for
+an online account; for a device-only account it opens the sheet and returns
+whether the account came back online. Gated entry points:
+
+- `openCareTeam` (`care_team_screen.dart`) — every caller (Profile row, Home
+  shortcut, deep link, dev service extension) now passes its `WidgetRef`.
+- The care-team contacts import (`_import` in the same screen).
+- The QR-share opener `openQrShare` (`personal_details.dart`) — both Profile
+  entry points (app-bar button and handle pill).
+
+Offered, not gated:
+
+- **Profile** — while device-only, a "Go online" row (cloud icon, with a
+  one-line subtitle) sits under the Storage row and opens the sheet.
+- **Storage & sync** — while device-only, the Balsm Cloud account row shows a
+  "Go online" pill at full opacity and opens the sheet. iCloud and Google
+  Drive are unchanged ("Coming soon").
+
+### Password retry at launch
+
+`app/lib/brands/balsm/main_balsm.dart` — after the API client is initialised,
+if the stored account mode is `online` and a session exists, bootstrap fires
+`goOnlineControllerProvider.finishPasswordIfPending()` without awaiting it. It
+is a no-op unless `balsm.offline.pw_plain` is still present (a previous
+`SetPassword` failed).
+
+### Copy note
+
+`go_done_help` says the account "is now on Balsm" rather than the design's
+"your data is syncing": no cloud can receive data yet, so the design's line
+would be untrue. Flagged to design.
+
 ## Disclosure acceptance while device-only
 
 `modules/disclosure/lib/src/application/use_cases/accept_disclosure_use_case.dart` —
