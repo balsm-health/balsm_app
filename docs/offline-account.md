@@ -56,3 +56,46 @@ existed) keeps working unchanged. `deviceOnly` means: this account has a
 `FlutterSecureStorage` instance in production (`SecureStorageWrapper.storage`,
 passed into `BalsmApiController.create`), so the interceptor always reads the
 mode `SecureStorageWrapper` writes.
+
+## Offline account service
+
+`modules/auth/lib/src/application/offline/offline_account_service.dart` —
+`OfflineAccountService` creates and unlocks a device-only account with no
+server round-trip. Secure-storage keys, all written/read via
+`SecureStorageWrapper`:
+
+- `balsm.user_id` — the account id (UUIDv7), shared with the rest of the app.
+- `balsm.account_mode` — `kAccountModeKey` (see above); `create()` writes it
+  last, so a crash mid-creation leaves an ordinary signed-out install rather
+  than a half-created device-only one.
+- `balsm.offline.email` — normalized (trimmed, lower-cased) email.
+- `balsm.offline.pw_hash` — the Argon2id PHC string (below).
+- `balsm.offline.pw_plain` — the plaintext password. Held only so the
+  eventual go-online flow can set it as the real server password
+  (`SetPassword`, Task 11), which then calls `clearPlainPassword()`. Never
+  logged; deleted as soon as it is no longer needed.
+- `balsm.offline.lockout` — JSON `{"failures": n, "until": <ISO-8601|null>}`,
+  so a lockout survives an app restart.
+- `balsm.pending_merge` — set when a device-only account needs to be merged
+  into a server account after coming online (`setPendingMerge`).
+
+`Argon2idOfflinePasswordHasher` (`offline_password_hasher.dart`) hashes with
+OWASP's Argon2id minimum: `m=19456` (19 MiB), `t=2` iterations, `p=1` lane,
+a 32-byte derived hash and a 16-byte random salt, encoded as a PHC string
+(`$argon2id$v=19$m=19456,t=2,p=1$<salt>$<hash>`). Verification re-derives the
+key from the stored salt and compares in constant time.
+
+`unlock(password)` returns a `sealed class UnlockResult`: `Unlocked`,
+`WrongPassword(failures)`, or `LockedUntil(until)`. The first 4 wrong
+attempts just count failures; the 5th and each subsequent wrong attempt (while
+not already locked) escalates through a fixed schedule — 30 s, 1 min, 5 min,
+15 min, then a 1 h cap for the 9th failure and beyond. While `until` is in the
+future, even the correct password is refused; a correct password at any other
+time resets the failure count and clears `balsm.offline.lockout`.
+
+`wipe()` deletes every `balsm.offline.*` key plus `balsm.pending_merge`,
+`balsm.account_mode`, and `balsm.user_id` — a full reset of the device-only
+account, as opposed to `markOnline()`, which only drops the offline-only
+credential keys (`email`, `pw_hash`, `lockout`) and switches the mode to
+`online`, keeping `balsm.user_id` and `balsm.offline.pw_plain` until the
+go-online flow consumes it.
