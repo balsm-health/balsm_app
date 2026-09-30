@@ -141,6 +141,23 @@ after handling any re-key/merge decision the outcome requires.
 outcome flag); `client_account_id` is not — it is a device-generated account
 id and stays redacted like any other id-shaped field.
 
+## Disclosure acceptance while device-only
+
+`modules/disclosure/lib/src/application/use_cases/accept_disclosure_use_case.dart` —
+`AcceptDisclosureUseCase.execute()` accepts a disclosure in three steps: (1) stores
+the acceptance on-device via `DisclosureDao.insert()`, (2) syncs to the cloud with
+a best-effort `POST /disclosure/accept` call, and (3) publishes a `DisclosureAccepted`
+domain event. When the account is `deviceOnly`, step 2 fails (the interceptor rejects
+the request locally), but steps 1 and 3 complete normally, so the disclosure is
+marked accepted on-device.
+
+`AcceptDisclosureUseCase.resync()` re-sends stored acceptances after going online,
+retrieving them from local storage and calling `POST /disclosure/accept` with the
+same details (country code, supervisory authority, language, timestamp). It is
+best-effort — if the call fails or no acceptance is stored, it returns `false`
+without throwing, allowing the go-online flow to proceed. Designed to run
+after `goOnline` completes and tokens are live.
+
 ## Re-keying local data
 
 `packages/core/lib/src/db/owner_rekey.dart` — `rekeyOwner(db, from, to, dropOutbox)` moves
