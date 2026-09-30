@@ -28,6 +28,7 @@ changing identity.
 | D3 | Server-backed features stay visible while device-only; tapping them opens the Go-online sheet. |
 | D4 | ID linkage approach A: server adopts the client-generated ID when free. |
 | D5 | Password minimum is 8 characters everywhere (design copy changes from 6 → 8). |
+| D6 | Device-only accounts may sync only to iCloud or Google Drive. Balsm Cloud requires going online. iCloud and Google Drive are "Coming soon" today, so in practice device-only data stays on the device until those ship or the user goes online. |
 
 **Out of scope**
 
@@ -54,7 +55,12 @@ changing identity.
 4. **Server-backed features while device-only** (Balsm Cloud sync target, care
    team sharing, appointments, care import, QR share to clinician) → tap opens
    `GoOnlineSheet`. Also reachable from Profile and Storage → Balsm Cloud row.
-   iCloud / Google Drive backup remain available (they don't need a Balsm account).
+   **Storage targets for device-only accounts (D6):** `local` always; `icloud`
+   and `gdrive` allowed (no Balsm account needed) but currently render the
+   existing "Coming soon" state in `storage_sheet.dart`, unchanged; `balsmCloud`
+   renders as available-after-go-online and its Connect action opens
+   `GoOnlineSheet` instead of connecting. When iCloud / Google Drive ship, they
+   work for device-only accounts with no further change to this feature.
 5. **Go online** (`GoOnlineSheet`): email (prefilled) → `RequestOtp` →
    `VerifyOtp(clientAccountId)`.
    - `adoptedClientId = true` → `SetPassword(offlinePassword)` → wipe stored
@@ -181,7 +187,8 @@ and resumes. Covered by tests even though it should almost never happen.
   plaintext wiped after online / wipe; re-key resume after simulated crash.
 - **Flutter widget**: Device-only tab validation (8 chars), unlock screen,
   `GoOnlineSheet` states, merge-or-discard incl. destructive confirm, server
-  feature gate opens sheet.
+  feature gate opens sheet; storage sheet in device-only mode shows iCloud /
+  Google Drive as "Coming soon" and Balsm Cloud Connect opens `GoOnlineSheet`.
 - **Integration**: airplane-mode sign-up → add record → go online against fake
   API → record synced under same ID. Second run with existing email → merge
   path.
