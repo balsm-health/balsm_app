@@ -1031,8 +1031,8 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
 // the id/version the disclosure module's routes default to (`consolidated` /
 // `1`). Acceptance is tracked per (id, version), so bumping the version here
 // re-gates every user until they accept the new notice (fail-closed).
-const String _kDisclosureId = 'consolidated';
-const String _kDisclosureVersion = '1';
+const String kDisclosureId = 'consolidated';
+const String kDisclosureVersion = '1';
 
 /// Fail-closed disclosure GATE — interposed between a successful sign-in and
 /// reaching 'app'. Shared by BOTH the OTP-verify and the email+password
@@ -1048,8 +1048,8 @@ Future<void> enterAfterSignIn(BuildContext context, WidgetRef ref, PatientAppSta
   final accepted = await ref
       .read(disclosureDaoProvider)
       .watchAcceptance(
-        const DisclosureId.value(_kDisclosureId),
-        _kDisclosureVersion,
+        const DisclosureId.value(kDisclosureId),
+        kDisclosureVersion,
       )
       .first;
   if (!context.mounted) return;
@@ -1436,8 +1436,8 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
     });
     // Real use-case: on-device persist (FR-040 snapshots) + cloud sync + event.
     final result = await ref.read(acceptDisclosureUseCaseProvider).execute(
-          disclosureId: const DisclosureId.value(_kDisclosureId),
-          version: _kDisclosureVersion,
+          disclosureId: const DisclosureId.value(kDisclosureId),
+          version: kDisclosureVersion,
           countryCode: s.country.value,
           supervisoryAuthority: registry.supervisoryAuthority(s.country.value),
           preferredLanguage: s.lang.value,

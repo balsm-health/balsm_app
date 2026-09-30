@@ -32,6 +32,7 @@ class Strings_ar extends Strings {
   SettingsStrings_ar get settings => SettingsStrings_ar(this);
   StorageStrings_ar get storage => StorageStrings_ar(this);
   MapPacksStrings_ar get map_packs => MapPacksStrings_ar(this);
+  OfflineStrings_ar get offline => OfflineStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -77,6 +78,8 @@ class Strings_ar extends Strings {
         return storage;
       case 'map_packs':
         return map_packs;
+      case 'offline':
+        return offline;
       default:
         return super[key];
     }
@@ -3280,6 +3283,57 @@ class MapPacksStrings_ar extends MapPacksStrings {
         return cancel;
       case 'offline_notice':
         return offline_notice;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class OfflineStrings_ar extends OfflineStrings {
+  final Strings_ar _parent;
+  const OfflineStrings_ar(this._parent) : super(_parent);
+  String get go_title => "الاتصال بالإنترنت";
+  String get go_help =>
+      "نرسل رمزًا إلى بريدك للتحقق منه، ثم تبدأ مزامنة بياناتك الموجودة على هذا الجهاز.";
+  String get go_send => "إرسال الرمز";
+  String get go_code_help => "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
+  String get go_verify => "تحقق واتصل";
+  String get go_done_title => "أنت متصل الآن";
+  String get go_done_help =>
+      "تم التحقق من بريدك. حسابك الآن على بلسم، ويمكنك اختيار مكان حفظ كل نوع من البيانات.";
+  String get go_done => "تم";
+  String get go_row => "الاتصال بالإنترنت";
+  String get go_row_sub => "تحقّق من بريدك لاستخدام بلسم كلاود والمشاركة";
+  String get go_cloud_pill => "اتصل";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'go_title':
+        return go_title;
+      case 'go_help':
+        return go_help;
+      case 'go_send':
+        return go_send;
+      case 'go_code_help':
+        return go_code_help;
+      case 'go_verify':
+        return go_verify;
+      case 'go_done_title':
+        return go_done_title;
+      case 'go_done_help':
+        return go_done_help;
+      case 'go_done':
+        return go_done;
+      case 'go_row':
+        return go_row;
+      case 'go_row_sub':
+        return go_row_sub;
+      case 'go_cloud_pill':
+        return go_cloud_pill;
       default:
         return super[key];
     }

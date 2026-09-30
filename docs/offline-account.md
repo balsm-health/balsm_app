@@ -218,6 +218,44 @@ after handling any re-key/merge decision the outcome requires.
 outcome flag); `client_account_id` is not — it is a device-generated account
 id and stays redacted like any other id-shaped field.
 
+## Go online flow
+
+`app/lib/balsm_app/auth/go_online_controller.dart` — `GoOnlineController`
+(`goOnlineControllerProvider`) drives a device-only account online by email →
+6-digit code. `sendCode(email)` calls `SignInUseCase.requestContinueOtp` with
+the current country. `verify(email:, code:)` runs, in order:
+
+1. Reads the pending offline credentials and the device's `balsm.user_id`
+   (the local id) — before `goOnline`, which overwrites `balsm.user_id` with
+   the server's id when it persists the session. (`GeneratedDatabase` is
+   re-exported from `package:core` so the app can hand the drift DB to
+   `rekeyOwner` without a direct drift dependency.)
+2. `SignInUseCase.goOnline(email, code, clientAccountId: localId)`.
+3. **Adopted** → no re-key.
+4. **New id** → `rekeyOwner(db, from: localId, to: newId, dropOutbox: false)`
+   moves every local row to the server id (one transaction; a failure is
+   returned as a `StorageFailure` and nothing else happens).
+5. For both: `OfflineAccountService.markOnline()`, then publishes
+   `UserSignedIn(provider: 'email')` with the final id, then
+   `finishPasswordIfPending()`, then `AcceptDisclosureUseCase.resync(...)`
+   with the same disclosure id/version the post-sign-in gate uses
+   (`kDisclosureId` / `kDisclosureVersion` in `auth_flow.dart`). Returns
+   `GoOnlineOutcome.online`.
+6. **Existing account** → `setPendingMerge(true)`; the target server id is
+   kept on the controller (`pendingTargetId`) and in secure storage under
+   `balsm.pending_merge_target`. Returns `GoOnlineOutcome.needsMergeChoice`.
+   The account is **not** marked online and no `UserSignedIn` is published
+   — the merge-or-discard screen finishes that.
+
+A server lockout returns a failure and sets `lockedUntil` for the UI; any
+other verify failure changes nothing locally.
+
+`finishPasswordIfPending()` sends the password chosen offline
+(`balsm.offline.pw_plain`) as the real server password via
+`SignInUseCase.setPassword`. On success the plaintext is deleted
+(`clearPlainPassword()`); on failure it is kept, and the account is still
+online. The next launch retries it.
+
 ## Disclosure acceptance while device-only
 
 `modules/disclosure/lib/src/application/use_cases/accept_disclosure_use_case.dart` —

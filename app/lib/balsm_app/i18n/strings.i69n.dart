@@ -28,6 +28,7 @@ class Strings implements i69n.I69nMessageBundle {
   SettingsStrings get settings => SettingsStrings(this);
   StorageStrings get storage => StorageStrings(this);
   MapPacksStrings get map_packs => MapPacksStrings(this);
+  OfflineStrings get offline => OfflineStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -73,6 +74,8 @@ class Strings implements i69n.I69nMessageBundle {
         return storage;
       case 'map_packs':
         return map_packs;
+      case 'offline':
+        return offline;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -3267,6 +3270,57 @@ class MapPacksStrings implements i69n.I69nMessageBundle {
         return cancel;
       case 'offline_notice':
         return offline_notice;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class OfflineStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const OfflineStrings(this._parent);
+  String get go_title => "Go online";
+  String get go_help =>
+      "We'll send a code to your email to verify it, then the data on this device starts syncing.";
+  String get go_send => "Send code";
+  String get go_code_help => "Enter the 6-digit code we sent to";
+  String get go_verify => "Verify and go online";
+  String get go_done_title => "You're online";
+  String get go_done_help =>
+      "Email verified. Your account is now on Balsm, and you can choose where each type of data is stored.";
+  String get go_done => "Done";
+  String get go_row => "Go online";
+  String get go_row_sub => "Verify your email to use Balsm Cloud and sharing";
+  String get go_cloud_pill => "Go online";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'go_title':
+        return go_title;
+      case 'go_help':
+        return go_help;
+      case 'go_send':
+        return go_send;
+      case 'go_code_help':
+        return go_code_help;
+      case 'go_verify':
+        return go_verify;
+      case 'go_done_title':
+        return go_done_title;
+      case 'go_done_help':
+        return go_done_help;
+      case 'go_done':
+        return go_done;
+      case 'go_row':
+        return go_row;
+      case 'go_row_sub':
+        return go_row_sub;
+      case 'go_cloud_pill':
+        return go_cloud_pill;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
