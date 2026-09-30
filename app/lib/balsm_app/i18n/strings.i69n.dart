@@ -2572,7 +2572,8 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
   String get fb_optional => "optional";
   String get fb_ph => "What worked well? What didn't?";
   String get fb_privacy =>
-      "Reviewed by the Balsm team, inside Balsm — never an app store. Your health data stays on your device.";
+      "Sent to the Balsm team, not an app store. Please don't include health details — your health data stays on your device.";
+  String get fb_failed => "Couldn't send your feedback. Please try again.";
   String get fb_send => "Send feedback";
   String get fb_thanks => "Received. Thank you.";
   String get fb_thanks_sub =>
@@ -2618,6 +2619,8 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
         return fb_ph;
       case 'fb_privacy':
         return fb_privacy;
+      case 'fb_failed':
+        return fb_failed;
       case 'fb_send':
         return fb_send;
       case 'fb_thanks':

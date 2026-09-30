@@ -126,14 +126,19 @@ Future<void> bootstrap({
     patientAppStateProvider.overrideWith((ref) => state),
     // Fan out telemetry to a list of providers: Sentry (crash/diagnostics) and
     // PostHog (product analytics, consent-gated) always, plus a console sink
-    // (scrubbed) added only in debug builds.
+    // (scrubbed) added only in debug builds, and the Dev Config log buffer in
+    // dev/staging.
     analyticsLoggerProvider.overrideWithValue(
       MultiAnalyticsLogger([
         const SentryAnalyticsLogger(),
         postHogAnalytics,
         if (kDebugMode) const ConsoleAnalyticsLogger(),
+        // Feeds Dev Config's log bundle; only where that buffer is installed.
+        if (FlavorConfig.current.serverSwitchingEnabled) DevLogAnalyticsLogger(),
       ]),
     ),
+    // In-app feedback → Sentry's User Feedback inbox.
+    feedbackReporterProvider.overrideWithValue(const SentryFeedbackReporter()),
     // The patient's product-analytics choice, so Privacy & data can flip it.
     analyticsConsentProvider.overrideWith((ref) => analyticsConsent),
     // Bind the account module's adapter into core's cross-module read port so

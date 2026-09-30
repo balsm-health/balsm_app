@@ -2585,7 +2585,8 @@ class FeedbackStrings_ar extends FeedbackStrings {
   String get fb_optional => "اختياري";
   String get fb_ph => "ما الذي أعجبك؟ وما الذي لم يعجبك؟";
   String get fb_privacy =>
-      "يراجعها فريق بلسم داخل بلسم — وليس في متجر التطبيقات. بياناتك الصحية تبقى على جهازك.";
+      "تُرسل إلى فريق بلسم، وليس إلى متجر التطبيقات. من فضلك لا تكتب تفاصيل صحية — بياناتك الصحية تبقى على جهازك.";
+  String get fb_failed => "تعذّر إرسال ملاحظتك. حاول مرة أخرى.";
   String get fb_send => "إرسال الملاحظات";
   String get fb_thanks => "وصلتنا. شكراً لك.";
   String get fb_thanks_sub =>
@@ -2631,6 +2632,8 @@ class FeedbackStrings_ar extends FeedbackStrings {
         return fb_ph;
       case 'fb_privacy':
         return fb_privacy;
+      case 'fb_failed':
+        return fb_failed;
       case 'fb_send':
         return fb_send;
       case 'fb_thanks':

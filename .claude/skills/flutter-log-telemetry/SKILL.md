@@ -24,6 +24,23 @@ Writing a new call site means thinking about neither. Both receive the same
 call, each maps it to its own primitives, and both scrub against the same
 allowlist.
 
+Two more sinks sit in the same fan-out: the console (debug builds only) and
+`DevLogAnalyticsLogger` (dev/staging only). The second fills the Dev Config log
+buffer, so Logs → **Send to Sentry** carries the app's real, scrubbed trail.
+Before it existed that buffer only saw `debugPrint` and crashes, and every
+manual bundle arrived empty.
+
+## In-app feedback
+
+The feedback sheet sends through `feedbackReporterProvider` (a `FeedbackReporter`
+facade, same idea as the logger). The app binds `SentryFeedbackReporter`, so a
+submission lands in Sentry's User Feedback inbox, tagged `feedback.rating` and
+`feedback.topics` (topic ids, never labels). The note is the feedback's message
+and is sent as typed; the sheet asks people to leave health details out.
+Feedback events skip `beforeSend`. `sentry_init` points `beforeSendFeedback` at
+the same scrub, so their breadcrumbs and route are cleaned like any other
+event's.
+
 ## Get the logger
 
 ```dart

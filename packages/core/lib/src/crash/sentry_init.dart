@@ -20,6 +20,10 @@ Future<void> initSentry() async {
     // this catches anything Sentry auto-instrumentation adds.
     options.beforeSend = (event, hint) => _scrub(event);
     options.beforeBreadcrumb = (breadcrumb, hint) => _scrubBreadcrumb(breadcrumb);
+    // In-app feedback is its own event type and skips beforeSend. Its message
+    // is the patient's note and is sent as typed; the breadcrumbs and route it
+    // carries get the same scrub as everything else.
+    options.beforeSendFeedback = (event, hint) => _scrub(event);
   });
 }
 
