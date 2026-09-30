@@ -87,21 +87,42 @@ Future<void> bootstrap({
   final db = await AppDatabase.open();
   // Map-pack downloads live here — see map_pack_download_controller.dart.
   final mapPacksDir = await getApplicationSupportDirectory();
+  // Clean up a create() that crashed before it could write balsm.account_mode
+  // — must run before anything below reads balsm.user_id / balsm.account_mode,
+  // otherwise an orphaned offline-account key could be mistaken for a real
+  // device-only account. The container isn't built yet, so this is
+  // constructed directly rather than read from Riverpod; it publishes nothing
+  // so a throwaway EventBus is fine.
+  await OfflineAccountService(
+    storage: SecureStorageWrapper(),
+    hasher: Argon2idOfflinePasswordHasher(),
+    eventBus: EventBus(),
+  ).discardIncompleteCreate();
+
   // Current authenticated user id (opaque, non-PHI), if signed in. Read from
   // the platform secure store before the container is built.
   // The same store sign-in writes to — see SecureStorageWrapper.storage.
   const secureStorage = SecureStorageWrapper.storage;
   final userId = await secureStorage.read(key: 'balsm.user_id');
 
-  // A session needs a REFRESH token to be revivable, not just an id. With the id
-  // alone the shell opens signed-in and stays broken: every read resolves to
-  // nothing, and the interceptor cannot mint a new access token, so on a
-  // network the app cannot reach there is no rejection to fire SessionExpired
-  // and nothing ever routes the patient out. Partial state like this comes from
-  // a sign-out interrupted mid-way — the three keys are deleted one at a time.
+  final accountMode = AccountMode.fromWire(await secureStorage.read(key: kAccountModeKey));
+  final pendingMerge = await secureStorage.read(key: 'balsm.pending_merge') == 'true';
+
+  // A session needs a REFRESH token to be revivable, not just an id — UNLESS
+  // the account is device-only, which has an id and no tokens by design. With
+  // an online id alone the shell opens signed-in and stays broken: every read
+  // resolves to nothing, and the interceptor cannot mint a new access token,
+  // so on a network the app cannot reach there is no rejection to fire
+  // SessionExpired and nothing ever routes the patient out. Partial state
+  // like this comes from a sign-out interrupted mid-way — the three keys are
+  // deleted one at a time.
   final refreshToken = await secureStorage.read(key: 'balsm.refresh_token');
-  final revivable = userId != null && userId.isNotEmpty && refreshToken != null && refreshToken.isNotEmpty;
-  if (userId != null && !revivable) {
+  final hasId = userId != null && userId.isNotEmpty;
+  // A device-only account has an id and no tokens by design — that is not the
+  // interrupted-sign-out remnant this guard exists for.
+  final revivable =
+      hasId && (accountMode == AccountMode.deviceOnly || (refreshToken != null && refreshToken.isNotEmpty));
+  if (hasId && !revivable) {
     // Unrecoverable remnant. Clear it so the next launch agrees with the
     // keychain rather than repeating this.
     await secureStorage.delete(key: 'balsm.user_id');
@@ -115,7 +136,12 @@ Future<void> bootstrap({
   final paPrefs = PatientAppPrefs(globalKV);
   await paPrefs.migrate();
   // Route on the credentials, not just the prefs flag — see load()'s doc.
-  final state = await PatientAppState.load(paPrefs, hasSession: containerUserId != null);
+  final state = await PatientAppState.load(
+    paPrefs,
+    hasSession: containerUserId != null,
+    accountMode: accountMode,
+    pendingMerge: pendingMerge,
+  );
   final fileStore = await createUserFileStore(
     activeUser: () => containerUserId,
     keychain: keychain,

@@ -25,6 +25,12 @@ abstract final class AppRoutes {
 
   /// The signed-in tabbed shell.
   static const app = 'app';
+
+  /// Device-only account cold start: password unlock before the shell.
+  static const unlock = 'unlock';
+
+  /// Going online found an existing account: merge this device's data or discard it.
+  static const mergeOrDiscard = 'merge';
 }
 
 /// Tabs and sub-screens inside the signed-in shell ([PatientAppState.tab]).

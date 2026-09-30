@@ -40,6 +40,15 @@ class PatientAppState extends ChangeNotifier {
   /// Auth route: walkthrough | welcome | phone | otp | profile | app
   String route = AppRoutes.welcome;
 
+  /// Whether this account has server credentials (see core `AccountMode`).
+  AccountMode accountMode = AccountMode.online;
+
+  void setAccountMode(AccountMode m) {
+    if (accountMode == m) return;
+    accountMode = m;
+    notifyListeners();
+  }
+
   /// Active tab/sub-screen: home | map | meds | profile | trends | records | appts
   AppTab tab = AppTab.home;
 
@@ -101,7 +110,12 @@ class PatientAppState extends ChangeNotifier {
   /// a null user id, where every account and PHI read resolves to nothing and
   /// nothing ever recovers: no token means no refresh, so `SessionExpired`
   /// never fires. Trust the credentials, and clear the stale flag.
-  static Future<PatientAppState> load(PatientAppPrefs prefs, {required bool hasSession}) async {
+  static Future<PatientAppState> load(
+    PatientAppPrefs prefs, {
+    required bool hasSession,
+    AccountMode accountMode = AccountMode.online,
+    bool pendingMerge = false,
+  }) async {
     final s = PatientAppState();
     s._prefs = prefs;
     try {
@@ -120,7 +134,12 @@ class PatientAppState extends ChangeNotifier {
       // claiming the record is backed up to a cloud that never received it.
       final storedTarget = await prefs.storage();
       s.storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local;
-      if (await prefs.signedIn() && hasSession) {
+      s.accountMode = accountMode;
+      if (hasSession && pendingMerge) {
+        s.route = AppRoutes.mergeOrDiscard;
+      } else if (hasSession && accountMode == AccountMode.deviceOnly) {
+        s.route = AppRoutes.unlock;
+      } else if (await prefs.signedIn() && hasSession) {
         s.route = AppRoutes.app;
       } else {
         // Stale flag without credentials — persist signed-out so the next

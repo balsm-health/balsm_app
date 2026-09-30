@@ -108,6 +108,24 @@ cleans up the orphaned offline-account keys left behind if `create()` crashed
 before it could write `balsm.account_mode`, without ever deleting
 `balsm.user_id` while a real online session's refresh token is present.
 
+## App startup
+
+`app/lib/brands/balsm/main_balsm.dart` (`bootstrap()`) runs the incomplete-create
+cleanup first, before anything reads `balsm.user_id` or `balsm.account_mode`:
+it constructs `OfflineAccountService` directly (the provider container doesn't
+exist yet) and calls `discardIncompleteCreate()`, so a crashed `create()` never
+gets mistaken for a real device-only account on this launch.
+
+Only then does bootstrap read the account mode and decide whether the stored
+id is revivable. A `deviceOnly` account keeps its `balsm.user_id` with no
+refresh token — that is by design, not the interrupted-sign-out remnant the
+revivability guard exists for — and `PatientAppState.load(...)` routes it to
+`AppRoutes.unlock` (`app/lib/balsm_app/routes.dart`) so the shell asks for the
+on-device password before anything else. An unresolved `balsm.pending_merge`
+takes priority over that and resumes on `AppRoutes.mergeOrDiscard` instead,
+whatever the account mode. Neither case reaches the ordinary signed-in shell
+(`AppRoutes.app`) directly.
+
 ## Going online
 
 `VerifyOtpRequest.clientAccountId` (`packages/balsm_api/lib/src/auth/requests.dart`)
