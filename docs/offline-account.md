@@ -423,3 +423,38 @@ name inside the active owner's partition.
 `UserFileStore.deleteOwnerFiles(owner:)` removes the owner's partition and
 file key. The in-memory store used on web is not partitioned by owner; both
 are no-ops there.
+
+### Controller
+
+`GoOnlineController.merge()` and `GoOnlineController.discard()`
+(`app/lib/balsm_app/auth/go_online_controller.dart`) read the device's id
+from `balsm.offline.local_id` (never `balsm.user_id`, which `goOnline` has
+already overwritten with the existing account's id) and the existing account's
+id from `balsm.pending_merge_target`; if either is missing they return a
+`ValidationFailure` and touch nothing. Then:
+
+- **Merge** — `mergeOwner(db, from: localId, to: target)`, then
+  `UserFileStore.mergeOwnerFiles(from: localId, to: target)`.
+- **Discard** — refuses (`StorageFailure`) if the device id equals the target,
+  so the signed-in account's own data can never be deleted; otherwise
+  `discardOwner(db, owner: localId)`, then
+  `UserFileStore.deleteOwnerFiles(owner: localId)`.
+
+If the data step throws, the result is a `StorageFailure` and nothing else
+changes; the screen offers a retry. After it succeeds, both: write
+`balsm.user_id = target` (already true, rewritten for safety),
+`clearPlainPassword()` — the existing account keeps its own password (D2);
+`SetPassword` is never called — `markOnline()`, publish
+`UserSignedIn(provider: 'email')` for the existing account, then
+`setPendingMerge(false)` and delete `balsm.pending_merge_target` and
+`balsm.offline.local_id`. Merge also sets `balsm.offline.disclosure_pending`
+before clearing the pending keys and runs the disclosure resync after, exactly
+as the go-online flow does (the launch retry picks up a failure). Discard
+does not resync: the existing account's own acceptance is on the server.
+
+Both are resumable: the pending keys are cleared last, so a crash anywhere
+before that boots back to the merge screen (`PatientAppState.load` routes a
+pending merge there), and running either choice again finishes — the data
+steps find nothing left under the device id. The offline email for the
+`UserSignedIn` event is read before `markOnline()` deletes it; on a resume past
+that point it is empty. Nothing is logged.

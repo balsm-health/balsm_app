@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
@@ -61,6 +63,8 @@ void main() {
     disclosure = _MockDisclosure();
     files = _MockFiles();
     when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {});
+    when(() => files.mergeOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {});
+    when(() => files.deleteOwnerFiles(owner: any(named: 'owner'))).thenAnswer((_) async {});
     storage = _MemStorage();
     bus = EventBus();
     events = [];
@@ -292,5 +296,130 @@ void main() {
     when(() => offline.pendingCredentials()).thenAnswer((_) async => null);
     await controller.finishPasswordIfPending();
     verifyNever(() => signIn.setPassword(password: any(named: 'password')));
+  });
+
+  group('merge or discard', () {
+    /// The state a GoOnlineExistingAccount verify leaves behind: goOnline has
+    /// already written the existing account's id to balsm.user_id; the
+    /// device's own id is pinned; the target is persisted.
+    Future<void> seedPendingMerge({required String localId, required String target}) async {
+      storage.data['balsm.user_id'] = target;
+      storage.data['balsm.offline.local_id'] = localId;
+      storage.data['balsm.pending_merge_target'] = target;
+      storage.data['balsm.offline.email'] = 'a@b.co';
+      await db.customStatement("INSERT INTO prescription VALUES ('r1', '$localId'), ('r2', '$target')");
+      await db.customStatement('CREATE TABLE sync_outbox (id INTEGER PRIMARY KEY, user_id TEXT)');
+      await db.customStatement("INSERT INTO sync_outbox (user_id) VALUES ('$localId')");
+      when(() => offline.pendingCredentials()).thenAnswer((_) async => (email: 'a@b.co', password: 'offline-pw'));
+    }
+
+    Future<List<String?>> outboxOwners() async => (await db.customSelect('SELECT user_id FROM sync_outbox').get())
+        .map((r) => r.read<String?>('user_id'))
+        .toList();
+
+    void expectCleared() {
+      expect(storage.data.containsKey('balsm.offline.local_id'), isFalse);
+      expect(storage.data.containsKey('balsm.pending_merge_target'), isFalse);
+      verify(() => offline.setPendingMerge(false)).called(1);
+      expect(storage.data['balsm.user_id'], 'srv-1');
+    }
+
+    test('merge: local rows move to the existing account, outbox dropped, offline password discarded', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      final r = await controller.merge();
+      await flush();
+
+      expect(r.isSuccess, isTrue);
+      expect(await owners(db), ['srv-1', 'srv-1']);
+      expect(await outboxOwners(), isEmpty);
+      verify(() => files.mergeOwnerFiles(from: 'off-1', to: 'srv-1')).called(1);
+      verify(() => offline.clearPlainPassword()).called(1);
+      verify(() => offline.markOnline()).called(1);
+      verifyNever(() => signIn.setPassword(password: any(named: 'password')));
+      final signedIn = events.whereType<UserSignedIn>().single;
+      expect(signedIn.userId.value, 'srv-1');
+      expect(signedIn.provider, 'email');
+      verify(() => disclosure.resync(disclosureId: any(named: 'disclosureId'), version: any(named: 'version')))
+          .called(1);
+      expect(storage.data.containsKey('balsm.offline.disclosure_pending'), isFalse);
+      expectCleared();
+    });
+
+    test('merge: a failed disclosure resync is flagged for the launch retry', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      when(() => disclosure.resync(disclosureId: any(named: 'disclosureId'), version: any(named: 'version')))
+          .thenAnswer((_) async => false);
+      await controller.merge();
+      expect(storage.data['balsm.offline.disclosure_pending'], 'true');
+    });
+
+    test('merge: a storage failure changes nothing else and can be retried', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      when(() => files.mergeOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenThrow(StateError('disk'));
+
+      final first = await controller.merge();
+      await flush();
+      expect(first.isFailure, isTrue);
+      verifyNever(() => offline.markOnline());
+      verifyNever(() => offline.setPendingMerge(false));
+      expect(events.whereType<UserSignedIn>(), isEmpty);
+      expect(storage.data['balsm.offline.local_id'], 'off-1');
+      expect(storage.data['balsm.pending_merge_target'], 'srv-1');
+
+      when(() => files.mergeOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {});
+      final second = await controller.merge();
+      await flush();
+      expect(second.isSuccess, isTrue);
+      expect(await owners(db), ['srv-1', 'srv-1']);
+      expectCleared();
+    });
+
+    test('discard: local rows and files are gone, user signed in to existing account', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      final r = await controller.discard();
+      await flush();
+
+      expect(r.isSuccess, isTrue);
+      expect(await owners(db), ['srv-1']);
+      expect(await outboxOwners(), isEmpty);
+      verify(() => files.deleteOwnerFiles(owner: 'off-1')).called(1);
+      verify(() => offline.clearPlainPassword()).called(1);
+      verify(() => offline.markOnline()).called(1);
+      verifyNever(() => signIn.setPassword(password: any(named: 'password')));
+      expect(events.whereType<UserSignedIn>().single.userId.value, 'srv-1');
+      expectCleared();
+    });
+
+    test('discard: re-running after a crash part-way finishes the job', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      when(() => files.deleteOwnerFiles(owner: any(named: 'owner'))).thenThrow(const FileSystemException('x'));
+      expect((await controller.discard()).isFailure, isTrue);
+      verifyNever(() => offline.markOnline());
+
+      when(() => files.deleteOwnerFiles(owner: any(named: 'owner'))).thenAnswer((_) async {});
+      expect((await controller.discard()).isSuccess, isTrue);
+      await flush();
+      expect(await owners(db), ['srv-1']);
+      expect(events.whereType<UserSignedIn>().single.userId.value, 'srv-1');
+    });
+
+    test('without a pinned device id or target, both refuse and touch nothing', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      storage.data.remove('balsm.pending_merge_target');
+      expect((await controller.merge()).isFailure, isTrue);
+      expect((await controller.discard()).isFailure, isTrue);
+      expect(await owners(db), ['off-1', 'srv-1']);
+
+      storage.data['balsm.pending_merge_target'] = 'srv-1';
+      storage.data.remove('balsm.offline.local_id');
+      expect((await controller.discard()).isFailure, isTrue);
+      expect(await owners(db), ['off-1', 'srv-1']);
+    });
+
+    test('discard refuses when the device id is the target (would delete the account itself)', () async {
+      await seedPendingMerge(localId: 'srv-1', target: 'srv-1');
+      expect((await controller.discard()).isFailure, isTrue);
+      expect(await owners(db), ['srv-1', 'srv-1']);
+    });
   });
 }

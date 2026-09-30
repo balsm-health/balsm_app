@@ -131,6 +131,63 @@ class GoOnlineController {
     return AppResult.success(GoOnlineOutcome.online);
   }
 
+  /// Merge-or-discard, choice 1: adds this phone's data to the existing
+  /// account the verify found ([kPendingMergeTarget]).
+  ///
+  /// Rows move with [mergeOwner] (profile consolidated, outbox dropped) and
+  /// files with [UserFileStore.mergeOwnerFiles]. The existing account keeps
+  /// its own password (D2): the offline one is discarded, never sent. The
+  /// disclosure acceptance recorded offline is re-sent like [verify] does.
+  ///
+  /// Resumable: the pending keys are cleared only after everything else, so
+  /// a crash anywhere lands back on the merge screen and a re-run finishes
+  /// (both moves find nothing left under the device id). A storage failure
+  /// returns [StorageFailure] and changes nothing past the data moves.
+  Future<AppResult<void>> merge() => _resolvePending((localId, target) async {
+        await mergeOwner(_db, from: localId, to: target);
+        await _files.mergeOwnerFiles(from: localId, to: target);
+      }, resyncDisclosure: true);
+
+  /// Merge-or-discard, choice 2: deletes everything this phone holds for the
+  /// device-only account — every row it owns (and their dependants) and its
+  /// vault files and key — then continues as the existing account. The
+  /// screen confirms twice before calling this. Resumable like [merge].
+  Future<AppResult<void>> discard() => _resolvePending((localId, target) async {
+        // Never delete the account being signed in to.
+        if (localId == target) throw StateError('device id is the target');
+        await discardOwner(_db, owner: localId);
+        await _files.deleteOwnerFiles(owner: localId);
+      }, resyncDisclosure: false);
+
+  Future<AppResult<void>> _resolvePending(
+    Future<void> Function(String localId, String target) moveData, {
+    required bool resyncDisclosure,
+  }) async {
+    final localId = await _storage.readToken(kLocalId);
+    final target = await _storage.readToken(kPendingMergeTarget);
+    if (localId == null || localId.isEmpty || target == null || target.isEmpty) {
+      return AppResult.failure(const ValidationFailure('No pending merge'));
+    }
+    try {
+      await moveData(localId, target);
+    } catch (_) {
+      return AppResult.failure(const StorageFailure());
+    }
+    // Read before markOnline() deletes it; empty on a resume past that point.
+    final email = await _storage.readToken(OfflineAccountService.kEmail) ?? '';
+    await _storage.writeToken(kUserId, target);
+    await _offline.clearPlainPassword();
+    await _offline.markOnline();
+    if (resyncDisclosure) await _storage.writeToken(kDisclosurePending, 'true');
+    _bus.publish(UserSignedIn(userId: UserId.value(target), email: email, provider: 'email'));
+    await _offline.setPendingMerge(false);
+    await _storage.deleteToken(kPendingMergeTarget);
+    await _storage.deleteToken(kLocalId);
+    pendingTargetId = null;
+    if (resyncDisclosure) await _resyncDisclosure();
+    return AppResult.success(null);
+  }
+
   /// [kLocalId] if pinned; otherwise pins the current `balsm.user_id`.
   Future<String?> _localId() async {
     final pinned = await _storage.readToken(kLocalId);
