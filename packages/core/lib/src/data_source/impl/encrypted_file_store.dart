@@ -167,11 +167,7 @@ class EncryptedFileStore implements UserFileStore {
   /// other existing target key or partition throws [StateError].
   @override
   Future<void> rekeyOwnerFiles({required String from, required String to}) async {
-    for (final id in [from, to]) {
-      if (id.isEmpty || id == '.' || id == '..' || id.contains('/') || id.contains(r'\')) {
-        throw ArgumentError.value('<redacted>', 'id', 'must be a single path segment');
-      }
-    }
+    _checkIds([from, to]);
     if (from == to) return;
     final kc = _keychain;
     final fromKey = await kc?.readToken(_keyId(from));
@@ -188,5 +184,57 @@ class EncryptedFileStore implements UserFileStore {
     if (kc != null && fromKey != null && toKey == null) await kc.writeToken(_keyId(to), fromKey);
     if (hasFromDir) await fromDir.rename(toDir.path);
     if (kc != null && fromKey != null) await kc.deleteToken(_keyId(from));
+  }
+
+  /// A target with neither a key nor a partition takes [from]'s wholesale
+  /// ([rekeyOwnerFiles]). Otherwise every `<root>/<from>/*.enc` is decrypted
+  /// with [from]'s key and saved under [to] with [to]'s key, then removed —
+  /// one file at a time, so a crash leaves each file readable under at least
+  /// one owner and a re-run just finishes. [from]'s partition goes before its
+  /// key, so a partition is never left without the key that opens it.
+  @override
+  Future<void> mergeOwnerFiles({required String from, required String to}) async {
+    _checkIds([from, to]);
+    if (from == to) return;
+    final kc = _keychain;
+    final toKey = await kc?.readToken(_keyId(to));
+    if (toKey == null && !await _partitionOf(to).exists()) {
+      return rekeyOwnerFiles(from: from, to: to);
+    }
+    final src = UserId.value(from);
+    final dst = UserId.value(to);
+    final fromDir = _partitionOf(from);
+    if (await fromDir.exists()) {
+      await for (final entry in fromDir.list()) {
+        if (entry is! File) continue;
+        final name = entry.uri.pathSegments.last;
+        if (!name.endsWith('.enc')) continue;
+        final bytes = await read(name, scope: src);
+        if (bytes != null) await save(name.substring(0, name.length - 4), bytes, scope: dst);
+        await entry.delete();
+      }
+      await fromDir.delete(recursive: true);
+    }
+    if (kc != null) await kc.deleteToken(_keyId(from));
+  }
+
+  @override
+  Future<void> deleteOwnerFiles({required String owner}) async {
+    _checkIds([owner]);
+    final dir = _partitionOf(owner);
+    try {
+      if (await dir.exists()) await dir.delete(recursive: true);
+    } catch (e) {
+      throw StorageWriteException('delete owner files failed', e);
+    }
+    await _keychain?.deleteToken(_keyId(owner));
+  }
+
+  static void _checkIds(List<String> ids) {
+    for (final id in ids) {
+      if (id.isEmpty || id == '.' || id == '..' || id.contains('/') || id.contains(r'\')) {
+        throw ArgumentError.value('<redacted>', 'id', 'must be a single path segment');
+      }
+    }
   }
 }

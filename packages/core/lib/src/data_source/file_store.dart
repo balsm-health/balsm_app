@@ -43,4 +43,15 @@ abstract class UserFileStore {
   /// [from] is a no-op. Throws [StateError] if [to] already owns files;
   /// combining two owners' files is not this method's job.
   Future<void> rekeyOwnerFiles({required String from, required String to});
+
+  /// Merges every file owned by [from] into [to], which may already own files
+  /// of its own (an offline account merged into an existing one). When [to]
+  /// has nothing yet this is [rekeyOwnerFiles]; otherwise each of [from]'s
+  /// files is re-written under [to] (and [to]'s key), then [from]'s partition
+  /// and key are removed. Idempotent, and resumable after a crash part-way.
+  Future<void> mergeOwnerFiles({required String from, required String to});
+
+  /// Removes every file owned by [owner] and whatever decrypts them (an
+  /// offline account's data discarded). Idempotent.
+  Future<void> deleteOwnerFiles({required String owner});
 }

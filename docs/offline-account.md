@@ -361,3 +361,65 @@ target already has a different key or a partition, it throws
 `StateError('target owner already has files')` — combining two owners' files
 (merge) is not done here. Ids must be single path segments. The in-memory
 store used on web has no per-owner partition and treats it as a no-op.
+
+## Merge or discard
+
+When going online finds that the email already has a Balsm account
+(`GoOnlineExistingAccount`), the patient is signed in to that account's
+session but the account is not yet online on this phone: `balsm.pending_merge`
+is set, the existing account's id is in `balsm.pending_merge_target`, and the
+device's own id stays pinned in `balsm.offline.local_id`. The patient then
+chooses what happens to the data on this phone.
+
+### Merging the database
+
+`packages/core/lib/src/db/owner_rekey.dart` — `mergeOwner(db, from:, to:)`
+moves the offline account's rows into the existing account in one
+transaction:
+
+1. **Profile consolidation.** `health_profile` has no UNIQUE(user_id), so a
+   plain re-key would leave the merged account with two self profiles when the
+   existing account has used this phone before. If `to` already owns a
+   `health_profile` row, every `health_profile_id` column (tables discovered
+   by column, like `user_id`) that points at the offline profile is re-pointed
+   to the existing profile, and the offline profile row is deleted. The
+   existing profile's own head fields (blood type, height, weight) are kept.
+   If `to` has no profile, the offline profile simply moves over with the
+   re-key.
+2. **Re-key.** Every `user_id` row moves from `from` to `to`, and the offline
+   account's `sync_outbox` rows are dropped (as `rekeyOwner(dropOutbox: true)`).
+
+A crash rolls the whole merge back; a second run finds nothing owned by
+`from` and does nothing. `ownedTables(db)` / `tablesWithColumn(db, column)`
+are the shared column-discovery queries.
+
+### Discarding the database
+
+`discardOwner(db, owner:)` deletes, in one transaction, every row keyed to
+one of the owner's health profiles, then every `user_id` row the owner has.
+Rows that depend on those through a foreign key (for example dose events under
+a medication, or files under a care provider) are deleted first, found by
+following `pragma_foreign_key_list` down, so a non-cascading foreign key never
+blocks the delete and nothing is left orphaned even with foreign keys off.
+The `dose_events` append-only trigger (FR-019) guards history against edits;
+a discard is the patient removing everything this phone holds for the
+offline account (twice confirmed), so the trigger is dropped for that one
+delete and re-created straight after, inside the same transaction. Rows owned
+by any other account are never touched. Idempotent.
+
+### Merging and deleting files
+
+`UserFileStore.mergeOwnerFiles(from:, to:)`: when the existing account has
+neither a file key nor a vault partition on this phone, this is
+`rekeyOwnerFiles` (the partition is renamed and the key moved). Otherwise the
+two owners' files can't share a key, so each offline file is decrypted with
+the offline key and saved under the existing account with its own key, then
+the offline copy is deleted — one file at a time, so after a crash each file
+is readable under at least one owner and a re-run finishes the job. The
+offline partition is removed before the offline key. Stored paths
+(`<owner>/<name>.enc`) keep working: the store resolves a path by its file
+name inside the active owner's partition.
+
+`UserFileStore.deleteOwnerFiles(owner:)` removes the owner's partition and
+file key. The in-memory store used on web is not partitioned by owner; both
+are no-ops there.
