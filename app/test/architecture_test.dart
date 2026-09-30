@@ -158,6 +158,24 @@ void main() {
       }
     });
   });
+
+  test('session credentials have one secure store', () {
+    // On Android the FlutterSecureStorage options pick the backing file. Sign-in
+    // wrote through SecureStorageWrapper while boot and the auth interceptor
+    // built their own default-options store — a different, empty file — so
+    // every Android restart looked signed out. Found by the deep-link device run.
+    final tokenKey = RegExp(r"'balsm\.(user_id|refresh_token|access_token)'");
+    final offenders = <String>[
+      for (final dir in [
+        '${root.path}/app/lib',
+        '${root.path}/packages/core/lib',
+        for (final m in modules) '${root.path}/modules/$m/lib'
+      ])
+        for (final f in _dartFiles(dir))
+          if (tokenKey.hasMatch(f.text) && f.text.contains('FlutterSecureStorage(')) f.rel(root),
+    ];
+    expect(offenders, isEmpty, reason: 'use SecureStorageWrapper.storage:\n${offenders.join('\n')}');
+  });
 }
 
 /// Walks up from the test's working directory to the melos workspace root.

@@ -87,6 +87,15 @@ analytics.setUser(userId);                             // opaque id ONLY
 8. **`$`-prefixed PostHog properties pass the scrub** — they are SDK-generated
    (`$screen_name`, `$app_version`). Never set one yourself from app data.
 
+## Deep links
+
+Inbound links are counted by `DeepLinkHandler` as `deep_link_opened` with
+`{source, result}`. `source` comes from `deepLinkKind(Uri)`, which returns a
+**constant** — never a slice of the URI, because the magic-link token is a query
+param and the emergency-QR AES key is the fragment. `result` separates `ok`,
+`failed`, `malformed` and `ignored`; `ignored` is the count of links that reach
+the app and are routed nowhere.
+
 ## Build identity
 
 `brand` (`balsm` / `balsm_pro`) and `flavor` (`dev` / `staging` / `prod`) are

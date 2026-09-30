@@ -1,1 +1,27 @@
-{"applinks":{"details":[{"appIDs":["TEAMID.health.balsm.app"],"components":[{"/":"/emergency/*"},{"/":"/account/delete"},{"/":"/account/delete-cancelled"}]}]}}
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["8F78S7D344.app.balsm.health"],
+        "components": [
+          { "/": "/t/*", "comment": "Profile QR (spec v2.0). Key rides in the #k= fragment." },
+          { "/": "/emergency/*", "comment": "Profile QR, legacy alias" },
+          { "/": "/delete-account", "comment": "Session-less account deletion" },
+          { "/": "/delete-account-cancel", "comment": "Cancel a pending deletion" },
+          { "/": "/account/delete", "comment": "Legacy deletion path" },
+          { "/": "/account/delete-cancelled", "comment": "Legacy cancellation path" },
+          { "/": "/auth/link", "comment": "Magic sign-in link; token is the ?t= query" },
+          { "/": "/home" },
+          { "/": "/map" },
+          { "/": "/meds" },
+          { "/": "/profile" },
+          { "/": "/profile/*", "comment": "medical, privacy, emergency-numbers, care-team, details" },
+          { "/": "/rx" },
+          { "/": "/records" },
+          { "/": "/trends" },
+          { "/": "/checkin" }
+        ]
+      }
+    ]
+  }
+}

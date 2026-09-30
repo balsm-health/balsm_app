@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 import '../config/flavor.dart';
+import 'campaign_attribution.dart';
 import 'posthog_analytics_logger.dart';
 
 /// Initialises the PostHog SDK for product analytics. No-op when no project
@@ -70,7 +71,8 @@ Future<void> initPostHog({
   // Register AFTER setup — super properties need an initialised SDK.
   final superProperties = <String, Object>{
     ...postHogBuildProperties(FlavorConfig.current),
-    ...campaign,
+    // `initial_utm_*`, not `utm_*` — see initialCampaignSuperProperties.
+    ...initialCampaignSuperProperties(campaign),
   };
   for (final entry in superProperties.entries) {
     await Posthog().register(entry.key, entry.value);

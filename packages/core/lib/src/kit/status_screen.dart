@@ -439,7 +439,7 @@ class _SupportFooter extends StatelessWidget {
 // PUBLIC route. Mirrors `emergencyCardRoutes` (`/emergency/public/:token`): the
 // app router's redirect/auth guard MUST allowlist `/status` so the page is
 // reachable WITHOUT authentication, on web and as a deeplink. See
-// `deeplink_router.dart` for the deeplink branch.
+// `app/lib/balsm_app/deep_links.dart` for the deep-link route table.
 final statusRoutes = <RouteBase>[
   GoRoute(
     path: StatusScreen.routePath,

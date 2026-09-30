@@ -91,4 +91,25 @@ void main() {
       expect(await CampaignAttribution.resolve(store), {'utm_source': 'instagram'});
     });
   });
+
+  group('initialCampaignSuperProperties', () {
+    test('first touch is registered under initial_*, never plain utm_*', () {
+      // Plain utm_* is reserved for the campaign on a specific event; sharing
+      // the name would let an organic open inherit the install's campaign.
+      expect(
+        initialCampaignSuperProperties({'utm_source': 'instagram', 'utm_campaign': 'ramadan-2026'}),
+        {'initial_utm_source': 'instagram', 'initial_utm_campaign': 'ramadan-2026'},
+      );
+    });
+
+    test('every initial_* key survives the scrub', () {
+      final initial = initialCampaignSuperProperties({for (final k in kCampaignParameters) k: 'x'});
+      final scrubbed = scrubPostHogProperties(initial);
+      expect(scrubbed.values, everyElement('x'), reason: 'an initial_* key is missing from the allowlist');
+    });
+
+    test('an organic install registers nothing', () {
+      expect(initialCampaignSuperProperties(const {}), isEmpty);
+    });
+  });
 }

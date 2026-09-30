@@ -107,7 +107,6 @@ export 'src/kit/theme.dart';
 export 'src/kit/shared_widgets.dart';
 export 'src/kit/not_found_screen.dart';
 export 'src/kit/status_screen.dart';
-export 'src/deeplink/deeplink_router.dart';
 export 'src/backup/icloud_backup_adapter.dart';
 export 'src/backup/drive_backup_adapter.dart';
 

@@ -1,0 +1,19 @@
+// Patient web app + deep-link verification files on app.balsm.health.
+//
+//   balsm web balsm <env>                       # builds app/build/web
+//   npx wrangler deploy -c deploy/web/wrangler.jsonc
+//
+// A Worker with static assets, not Pages: a Worker custom domain creates its own
+// DNS record and certificate. app/web/_headers serves the AASA as JSON, and
+// app/web/.well-known/ must stay reachable without a redirect or bot challenge,
+// or iOS Universal Links / Android App Links stop verifying (docs/deep-links.md).
+{
+  "name": "balsm-app-web",
+  "account_id": "11f27ce927c9ed271353738cc6f9d002",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "../../app/build/web",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [{ "pattern": "app.balsm.health", "custom_domain": true }]
+}

@@ -1,0 +1,118 @@
+appId: app.balsm.health
+# Deep-link end-to-end — run against the e2e build (fake API), both platforms:
+#   maestro test app/.maestro/deep_links.yaml
+#
+# Covers every path class in lib/balsm_app/deep_links.dart via the balsm://
+# scheme, across the two delivery paths DeepLinkHandler has:
+#   COLD — link launches a stopped app  → AppLinks.getInitialLink()
+#   WARM — link arrives while running   → AppLinks.uriLinkStream
+#
+# Sign-in uses the magic link itself: the e2e FakeAuthApi.verifyLink issues a
+# session for any token, so this also proves the magic-link route end to end.
+# The https (App Link / Universal Link) form needs domain verification and is
+# tested separately — see docs/deep-links.md.
+---
+# ── Fresh install, signed out ──────────────────────────────────────────────
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Skip"
+    timeout: 15000
+- takeScreenshot: dl-00-fresh-install
+
+# 1. WARM · public route while signed out → opens immediately.
+- openLink: "balsm://delete-account"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: "Delete your account"
+    timeout: 10000
+- takeScreenshot: dl-01-warm-public-delete-account
+
+# 2. COLD · public route: profile QR with token id + fragment key.
+- stopApp
+- openLink: "balsm://t/01J8E2ETESTTOKEN#k=ZTJlLWtleQ"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*[Ee]mergency card.*"
+    timeout: 15000
+- takeScreenshot: dl-02-cold-public-qr-resolve
+
+# 3. WARM · signed-in route while signed out → held, NOT shown yet.
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Skip"
+    timeout: 15000
+- openLink: "balsm://map?type=pharmacy"
+- tapOn:
+    text: "Open"
+    optional: true
+- assertNotVisible: "Nearby care"
+- takeScreenshot: dl-03-deferred-map-while-signed-out
+
+# 4. WARM · magic sign-in link → disclosure gate → shell, and the held map link
+#    from step 3 is applied on arrival, pre-filtered to pharmacies.
+- openLink: "balsm://auth/link?t=e2e-magic-token"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: "I agree & continue"
+    timeout: 15000
+# The accept button stays disabled until the disclosure is scrolled to the end
+# (read-through gate), so scroll first — it is pinned and always "visible".
+- repeat:
+    times: 5
+    commands:
+      - scroll
+- tapOn: "I agree & continue"
+- extendedWaitUntil:
+    visible: "Nearby care"
+    timeout: 15000
+- assertVisible: "Pharmacies"
+- takeScreenshot: dl-04-signed-in-deferred-map-pharmacy
+
+# ── Signed in ──────────────────────────────────────────────────────────────
+# 5. WARM · tab route.
+- openLink: "balsm://meds"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*Your daily regimen.*"
+    timeout: 10000
+- takeScreenshot: dl-05-warm-tab-meds
+
+# 6. WARM · pushed screen route.
+- openLink: "balsm://profile/privacy"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*Anonymous analytics.*"
+    timeout: 10000
+- takeScreenshot: dl-06-warm-screen-privacy
+
+# 7. COLD · signed-in route on a restored session, map with a multi-type filter.
+- stopApp
+- openLink: "balsm://map?type=lab,scan&utm_source=e2e"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: "Nearby care"
+    timeout: 20000
+- assertVisible: "2 types"
+- takeScreenshot: dl-07-cold-map-lab-scan
+
+# 8. WARM · unknown path → ignored, app stays where it was (no crash, no jump).
+- openLink: "balsm://no-such-route"
+- tapOn:
+    text: "Open"
+    optional: true
+- assertVisible: "Nearby care"
+- takeScreenshot: dl-08-unknown-route-ignored

@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'care/care_entity.dart';
 import 'prefs.dart';
 import 'routes.dart';
 import 'storage_target.dart';
@@ -218,6 +219,18 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The latest request to open the care map with a type filter (a deep link
+  /// like `/map?type=pharmacy`). Null until one arrives; [MapScreen] applies it.
+  MapFilterRequest? mapFilterRequest;
+  int _mapFilterSerial = 0;
+
+  /// Switches to the map tab with [types] selected (empty = "All").
+  void openMap({Set<CareEntityType> types = const {}}) {
+    mapFilterRequest = MapFilterRequest(types: types, serial: ++_mapFilterSerial);
+    tab = AppTab.map;
+    notifyListeners();
+  }
+
   /// Clears every account-scoped piece of in-memory + preference state when
   /// the user signs out, so the NEXT account on this device never inherits
   /// the previous one (family members, gendered copy, completion state,
@@ -372,6 +385,20 @@ String accountInitials(String displayName) {
   if (parts.isEmpty) return '';
   if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
   return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+}
+
+/// A one-shot instruction to the care map: select exactly [types].
+///
+/// [serial] makes each request distinct even when [types] repeat. Without it,
+/// opening the same `/map?type=pharmacy` link twice would do nothing the second
+/// time if the patient had changed the filter by hand in between — the map
+/// would see an "unchanged" request and keep the patient's selection.
+@immutable
+class MapFilterRequest {
+  const MapFilterRequest({required this.types, required this.serial});
+
+  final Set<CareEntityType> types;
+  final int serial;
 }
 
 /// InheritedNotifier exposing [PatientAppState] to the widget tree.

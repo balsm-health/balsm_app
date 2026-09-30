@@ -6,6 +6,13 @@ final secureStorageProvider = Provider<SecureStorageWrapper>(
 );
 
 class SecureStorageWrapper {
+  /// The one secure store for session credentials. Anything that reads or
+  /// writes `balsm.*` tokens directly must use THIS instance: on Android the
+  /// options pick the backing file, so a `FlutterSecureStorage()` with default
+  /// options reads a different, empty store — every restart then looked
+  /// signed out, and the interceptor could never find the refresh token.
+  static const storage = _storage;
+
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     // macOS: the iOS-style data-protection keychain demands a

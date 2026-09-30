@@ -39,6 +39,7 @@ import 'screens/report_flow.dart';
 import 'widgets/account_switcher.dart';
 import 'widgets/balsm_mark.dart';
 import 'deep_link_handler.dart';
+import 'deep_links.dart';
 import 'dev/shake_to_dev_config.dart';
 import 'screens/care_team_screen.dart';
 
@@ -105,13 +106,19 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   void initState() {
     super.initState();
     if (kIsWeb) {
-      final segs = Uri.base.pathSegments.where((p) => p.isNotEmpty).toList();
-      if (segs.length == 2 && (segs[0] == PublicQrPaths.token || segs[0] == PublicQrPaths.legacyEmergency)) {
-        _publicResolveJti = segs[1];
-      } else if (segs.length == 1 && segs[0] == PublicQrPaths.deleteAccount) {
-        _publicDelete = true;
-      } else if (segs.length == 1 && segs[0] == PublicQrPaths.deleteAccountCancel) {
-        _publicDeleteCancel = true;
+      // Same route table as the mobile deep-link handler (deep_links.dart), so a
+      // path means the same thing in a browser and in the app. Only the public
+      // pages replace the shell here — a web visitor to one has no app behind
+      // it to return to. Everything else is left to the mobile-style handler.
+      switch (parseDeepLink(Uri.base)) {
+        case EmergencyCardTarget(:final tokenId):
+          _publicResolveJti = tokenId;
+        case DeleteAccountTarget():
+          _publicDelete = true;
+        case DeleteAccountCancelTarget():
+          _publicDeleteCancel = true;
+        default:
+          break;
       }
     }
     LogBuffer.instance.install();
@@ -438,7 +445,7 @@ class _MainAppState extends State<_MainApp> {
     // resolves to the "coming next" placeholder rather than crashing.
     final screen = switch (s.tab) {
       AppTab.home => const HomeScreen(),
-      AppTab.map => const MapScreen(),
+      AppTab.map => MapScreen(filterRequest: s.mapFilterRequest),
       AppTab.meds => const MedsScreen(),
       AppTab.records => RecordsScreen(onBack: () => s.setTab(AppTab.home)),
       AppTab.trends => const TrendsScreen(),

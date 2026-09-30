@@ -8,7 +8,6 @@ import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geofence_block/geofence_block.dart';
 import 'package:profile/profile.dart';
 import 'package:app/balsm_app/app_state.dart';
@@ -90,9 +89,8 @@ Future<void> bootstrap({
   final mapPacksDir = await getApplicationSupportDirectory();
   // Current authenticated user id (opaque, non-PHI), if signed in. Read from
   // the platform secure store before the container is built.
-  // macOS: legacy file keychain — the data-protection keychain needs a
-  // provisioned keychain-access-group entitlement (-34018 without it).
-  const secureStorage = FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
+  // The same store sign-in writes to — see SecureStorageWrapper.storage.
+  const secureStorage = SecureStorageWrapper.storage;
   final userId = await secureStorage.read(key: 'balsm.user_id');
 
   // A session needs a REFRESH token to be revivable, not just an id. With the id
@@ -157,7 +155,7 @@ Future<void> bootstrap({
     // balsmApiClientProvider reads `.client` off it.
     balsmApiControllerProvider.overrideWith(
       (ref) => BalsmApiController.create(
-        storage: const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false)),
+        storage: SecureStorageWrapper.storage,
         bus: ref.watch(eventBusProvider),
       ),
     ),

@@ -37,6 +37,19 @@ Map<String, String> campaignPropertiesFrom(Uri uri) {
   return out;
 }
 
+/// First-touch campaign as super properties, renamed `initial_<param>`.
+///
+/// The rename is what keeps the two attributions apart. Registered super
+/// properties ride on every event, and an event prop of the SAME name overrides
+/// them only on the events that set it. Registering first touch as plain
+/// `utm_campaign` would mean `deep_link_opened` reports the link's own campaign
+/// while an organic open silently inherits the install's — the same column
+/// meaning two different things. `initial_*` mirrors PostHog's own
+/// `$initial_utm_*` convention on the web SDK, so both surfaces read alike.
+Map<String, String> initialCampaignSuperProperties(Map<String, String> firstTouch) => {
+      for (final e in firstTouch.entries) 'initial_${e.key}': e.value,
+    };
+
 /// First-touch campaign attribution.
 ///
 /// **First touch, not last.** The question a campaign report answers is "which

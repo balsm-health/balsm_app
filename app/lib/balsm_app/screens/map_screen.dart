@@ -22,7 +22,11 @@ import 'map_packs_sheet.dart';
 /// Data comes from [careDirectoryProvider] (a placeholder until the
 /// care-directory backend exists); no PHI is involved.
 class MapScreen extends ConsumerStatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({super.key, this.filterRequest});
+
+  /// A type filter to apply, from a deep link (`/map?type=pharmacy`). Applied on
+  /// mount and again whenever a new request arrives while the map is showing.
+  final MapFilterRequest? filterRequest;
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
@@ -173,6 +177,38 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _select(CareEntity e) => setState(() => _selectedId = _selectedId == e.id ? null : e.id);
 
   void _selectPin(CarePin p) => setState(() => _selectedId = _selectedId == p.id ? null : p.id);
+
+  /// Selects exactly the requested types (empty = "All"). Runs in initState,
+  /// before the first search, and from didUpdateWidget for a request that
+  /// lands while the map is already on screen.
+  void _applyFilterRequest(MapFilterRequest request) {
+    _activeTypes
+      ..clear()
+      ..addAll(request.types);
+    _appliedFilterSerial = request.serial;
+  }
+
+  /// Serial of the last request applied, so a rebuild does not re-apply the same
+  /// request over a filter the patient has since changed by hand.
+  int? _appliedFilterSerial;
+
+  @override
+  void initState() {
+    super.initState();
+    final request = widget.filterRequest;
+    if (request != null) _applyFilterRequest(request);
+  }
+
+  @override
+  void didUpdateWidget(MapScreen old) {
+    super.didUpdateWidget(old);
+    final request = widget.filterRequest;
+    if (request == null || request.serial == _appliedFilterSerial) return;
+    setState(() {
+      _applyFilterRequest(request);
+      _pushSearch(immediate: true);
+    });
+  }
 
   void _clearFilters() => setState(() {
         _query = '';

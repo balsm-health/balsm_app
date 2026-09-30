@@ -57,8 +57,12 @@ const Set<String> kNonPhiAllowlist = {
   'step', 'variant', 'enabled', 'source', 'result',
   // Campaign attribution. These describe the ad that produced the install,
   // never the person.
+  // Plain `utm_*` = the campaign on THIS event (e.g. the link that just opened
+  // the app); `initial_*` = first touch, registered once as super properties.
   'campaign', 'referrer',
   'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+  'initial_campaign', 'initial_referrer',
+  'initial_utm_source', 'initial_utm_medium', 'initial_utm_campaign', 'initial_utm_content', 'initial_utm_term',
 };
 
 /// Keys whose value is a URL and must be reduced before egress. Allowlisting

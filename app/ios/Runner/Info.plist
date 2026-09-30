@@ -56,6 +56,11 @@
 	     consent has been read off disk, and before the PHI scrub is installed. -->
 	<key>com.posthog.posthog.AUTO_INIT</key>
 	<false/>
+	<!-- Links are routed by app_links + DeepLinkHandler only. Flutter's built-in
+	     deep linking would also push each URL as a Navigator route — a second copy
+	     of the home screen stacked over the real one. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

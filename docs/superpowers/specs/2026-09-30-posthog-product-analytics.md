@@ -138,8 +138,21 @@ widen what reaches telemetry. The link's own token and fragment are never
 touched. The boot-path call is guarded and time-boxed — attribution is never
 worth delaying, let alone failing, a launch.
 
-True install attribution (a click before the App Store, with no link to read)
-still needs SKAdNetwork or an MMP; that remains out of scope.
+**Two attributions, two names.** First touch is registered as `initial_utm_*`
+(mirroring PostHog's own `$initial_utm_*` on the web SDK). Plain `utm_*` means
+"the campaign on this event" and is set per event — today on `deep_link_opened`,
+from that link's own query. Registering first touch as plain `utm_*` would let an
+organic open silently inherit the install's campaign, since an unset event prop
+falls back to the super property of the same name.
+
+A warm-resume link also records first touch if none exists yet (an organic
+install later re-engaged by a campaign email); it reaches the `initial_*` super
+properties on the next launch, because those are registered once at boot.
+
+**Fresh store installs are still blank.** A tap on a store ad launches the app
+with no link, so nothing here sees it. On Android the Play Install Referrer
+carries the store link's `utm_source` / `utm_campaign`; on iOS there is no
+equivalent short of SKAdNetwork / AdAttributionKit or an MMP. Not wired.
 
 ### If filtering is not enough
 
