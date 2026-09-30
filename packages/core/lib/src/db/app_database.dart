@@ -53,6 +53,7 @@ class AppDatabase extends _$AppDatabase {
           await _ensureColumn('prescription', 'attachment_kind', 'TEXT');
           await _ensureColumn('check_in_symptom', 'urine_color', 'TEXT');
           await _ensureColumn('check_in_symptom', 'urine_ml', 'INTEGER');
+          await _ensureColumn('medications', 'notes', 'TEXT');
           await _ensureColumn('check_in_symptom', 'blood', 'INTEGER NOT NULL DEFAULT 0');
           await _ensureColumn('care_provider', 'map_url', 'TEXT');
           // Pre-existing attachment rows are all vault files, which is exactly
@@ -336,7 +337,8 @@ const _phiSchema = <String>[
     schedule_config TEXT NOT NULL,
     start_date TEXT NOT NULL,
     end_date TEXT,
-    is_controlled INTEGER NOT NULL DEFAULT 0
+    is_controlled INTEGER NOT NULL DEFAULT 0,
+    notes TEXT
   )''',
   '''
   CREATE TABLE IF NOT EXISTS dose_events (

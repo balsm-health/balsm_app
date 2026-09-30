@@ -2,12 +2,14 @@ import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:medications/medications.dart';
 import 'package:prescriptions/prescriptions.dart';
 import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../tokens.dart';
 import '../widgets/date_time_row.dart';
+import '../widgets/med_plan_form.dart';
 import '../widgets/photo_attach.dart';
 
 Future<void> showAddPrescription(BuildContext context) => showAppSheet<void>(
@@ -23,35 +25,11 @@ class AddPrescriptionSheet extends ConsumerStatefulWidget {
   ConsumerState<AddPrescriptionSheet> createState() => _AddPrescriptionSheetState();
 }
 
-class _MedDraft {
-  _MedDraft();
-  final name = TextEditingController();
-  final dose = TextEditingController();
-  final desc = TextEditingController();
-  final freqOther = TextEditingController();
-  final durOther = TextEditingController();
-  final freqN = TextEditingController(text: '2');
-  final durN = TextEditingController();
-  String freqType = 'once';
-  String freqUnit = 'hours';
-  String durType = 'ongoing';
-
-  void dispose() {
-    name.dispose();
-    dose.dispose();
-    desc.dispose();
-    freqOther.dispose();
-    durOther.dispose();
-    freqN.dispose();
-    durN.dispose();
-  }
-}
-
 class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
   final _title = TextEditingController();
   final _doctor = TextEditingController();
   final _url = TextEditingController();
-  final _meds = [_MedDraft()];
+  final _meds = [MedPlanDraft()];
   DateTime _issued = DateTime.now();
   DateTime? _expiry;
   PickedAttach? _attach;
@@ -71,29 +49,8 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
 
   bool get _ready {
     final hasFile = _attach != null || _url.text.trim().isNotEmpty;
-    final hasMeds = _meds.any((m) => m.name.text.trim().isNotEmpty);
+    final hasMeds = _meds.any((m) => m.isNamed);
     return hasFile || hasMeds;
-  }
-
-  String _freqDisplay(MedsStrings m, _MedDraft d) {
-    return switch (d.freqType) {
-      'once' => m.freq_once,
-      'per_day' => m.freq_n_per_day(d.freqN.text.isEmpty ? '1' : d.freqN.text),
-      'every_x' =>
-        '${m.freq_every} ${d.freqN.text.isEmpty ? '1' : d.freqN.text} ${d.freqUnit == 'days' ? m.unit_days : m.unit_hours}',
-      _ => d.freqOther.text.trim().isEmpty ? m.freq_other : d.freqOther.text.trim(),
-    };
-  }
-
-  String? _durDisplay(MedsStrings m, _MedDraft d) {
-    return switch (d.durType) {
-      'until_empty' => m.dur_until_empty,
-      'ongoing' => null,
-      'other' => d.durOther.text.trim().isEmpty ? null : d.durOther.text.trim(),
-      'weeks' => d.durN.text.isEmpty ? null : '${d.durN.text} ${m.unit_weeks}',
-      'months' => d.durN.text.isEmpty ? null : '${d.durN.text} ${m.unit_months}',
-      _ => d.durN.text.isEmpty ? null : '${d.durN.text} ${m.unit_days}',
-    };
   }
 
   Future<void> _save() async {
@@ -102,17 +59,13 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
     setState(() => _saving = true);
     final s = AppScope.of(context);
     final m = s.strings.meds;
-    final named = _meds.where((d) => d.name.text.trim().isNotEmpty).toList();
+    final named = _meds.where((d) => d.isNamed).toList();
     final items = [
       for (final d in named)
         PrescribedItem(
           name: d.name.text.trim(),
-          dose: [
-            d.dose.text.trim(),
-            _freqDisplay(m, d),
-            _durDisplay(m, d),
-          ].where((p) => p != null && p.isNotEmpty).join(' · '),
-          notes: d.desc.text.trim().isEmpty ? null : d.desc.text.trim(),
+          dose: d.summary(m),
+          notes: d.notes.text.trim().isEmpty ? null : d.notes.text.trim(),
         ),
     ];
     String? attachPath;
@@ -145,6 +98,14 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
             createdAt: DateTime.now(),
           ),
         );
+    // Each med also joins the Meds tab's daily list, on its own schedule.
+    final addMedication = ref.read(addMedicationUseCaseProvider(userId));
+    for (final d in named) {
+      await addMedication.call(d.toMedication(userId));
+    }
+    ref
+      ..invalidate(todayDosesProvider)
+      ..invalidate(medicationListProvider);
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -227,12 +188,10 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
       const SizedBox(height: 18),
       _SectionLabel(icon: LucideIcons.pill, label: m.rx_manual, accent: s.accent.main),
       for (var i = 0; i < _meds.length; i++) ...[
-        _MedCard(
+        MedPlanCard(
+          key: ObjectKey(_meds[i]),
           draft: _meds[i],
-          canRemove: _meds.length > 1,
-          onRemove: () => setState(() {
-            _meds.removeAt(i).dispose();
-          }),
+          onRemove: _meds.length > 1 ? () => setState(() => _meds.removeAt(i).dispose()) : null,
           onChanged: () => setState(() {}),
         ),
         const SizedBox(height: 10),
@@ -246,7 +205,7 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
           size: BtnSize.sm,
           accent: s.accent,
           ar: s.rtl,
-          onTap: () => setState(() => _meds.add(_MedDraft())),
+          onTap: () => setState(() => _meds.add(MedPlanDraft())),
         ),
       ),
       const SizedBox(height: 20),
@@ -347,187 +306,5 @@ class _LabeledField extends StatelessWidget {
         ),
       ),
     ]);
-  }
-}
-
-class _MedCard extends StatelessWidget {
-  const _MedCard({required this.draft, required this.canRemove, required this.onRemove, required this.onChanged});
-  final _MedDraft draft;
-  final bool canRemove;
-  final VoidCallback onRemove;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final m = s.strings.meds;
-    return PCard(
-      margin: EdgeInsets.zero,
-      padding: const EdgeInsets.all(14),
-      child: Stack(children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _plain(s, draft.name, m.rx_med_name_ph, onChanged),
-          const SizedBox(height: 12),
-          _plain(s, draft.dose, m.rx_med_dose_ph, onChanged),
-          const SizedBox(height: 12),
-          _plain(s, draft.desc, m.rx_med_desc_ph, onChanged, lines: 2),
-          const SizedBox(height: 12),
-          Text(m.rx_frequency, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-          const SizedBox(height: 6),
-          Row(children: [
-            Expanded(
-              child: _Select(
-                value: draft.freqType,
-                items: [
-                  ('once', m.freq_once),
-                  ('per_day', m.freq_per_day),
-                  ('every_x', m.freq_every_x),
-                  ('other', m.freq_other),
-                ],
-                onChanged: (v) {
-                  draft.freqType = v;
-                  onChanged();
-                },
-              ),
-            ),
-            if (draft.freqType == 'per_day' || draft.freqType == 'every_x') ...[
-              const SizedBox(width: 8),
-              SizedBox(width: 64, child: _plain(s, draft.freqN, '', onChanged, number: true)),
-            ],
-            if (draft.freqType == 'every_x') ...[
-              const SizedBox(width: 8),
-              Expanded(
-                child: _Select(
-                  value: draft.freqUnit,
-                  items: [('hours', m.unit_hours), ('days', m.unit_days)],
-                  onChanged: (v) {
-                    draft.freqUnit = v;
-                    onChanged();
-                  },
-                ),
-              ),
-            ],
-          ]),
-          if (draft.freqType == 'other') ...[
-            const SizedBox(height: 8),
-            _plain(s, draft.freqOther, m.freq_other_ph, onChanged),
-          ],
-          const SizedBox(height: 12),
-          Text(m.rx_duration, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
-          const SizedBox(height: 6),
-          Row(children: [
-            Expanded(
-              child: _Select(
-                value: draft.durType,
-                items: [
-                  ('days', m.dur_days),
-                  ('weeks', m.dur_weeks),
-                  ('months', m.dur_months),
-                  ('until_empty', m.dur_until_empty),
-                  ('ongoing', m.dur_ongoing),
-                  ('other', m.dur_other),
-                ],
-                onChanged: (v) {
-                  draft.durType = v;
-                  onChanged();
-                },
-              ),
-            ),
-            if (draft.durType == 'days' || draft.durType == 'weeks' || draft.durType == 'months') ...[
-              const SizedBox(width: 8),
-              SizedBox(width: 64, child: _plain(s, draft.durN, '', onChanged, number: true)),
-            ],
-          ]),
-          if (draft.durType == 'other') ...[
-            const SizedBox(height: 8),
-            _plain(s, draft.durOther, m.dur_other_ph, onChanged),
-          ],
-        ]),
-        if (canRemove)
-          PositionedDirectional(
-            top: 0,
-            end: 0,
-            child: Material(
-              color: T.ink50,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: onRemove,
-                child: const SizedBox(width: 26, height: 26, child: Icon(LucideIcons.x, size: 13, color: T.fg3)),
-              ),
-            ),
-          ),
-      ]),
-    );
-  }
-
-  Widget _plain(
-    PatientAppState s,
-    TextEditingController c,
-    String hint,
-    VoidCallback onChanged, {
-    int lines = 1,
-    bool number = false,
-  }) {
-    return TextField(
-      controller: c,
-      minLines: lines,
-      maxLines: lines,
-      keyboardType: number ? TextInputType.number : TextInputType.text,
-      textAlign: number ? TextAlign.center : TextAlign.start,
-      onChanged: (_) => onChanged(),
-      style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
-      decoration: InputDecoration(
-        hintText: hint.isEmpty ? null : hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
-      ),
-    );
-  }
-}
-
-class _Select extends StatelessWidget {
-  const _Select({required this.value, required this.items, required this.onChanged});
-  final String value;
-  final List<(String, String)> items;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return InputDecorator(
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          icon: const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-          style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
-          items: [
-            for (final (v, label) in items)
-              DropdownMenuItem(value: v, child: Text(label, overflow: TextOverflow.ellipsis)),
-          ],
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
-      ),
-    );
   }
 }

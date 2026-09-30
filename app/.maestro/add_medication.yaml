@@ -1,0 +1,80 @@
+appId: app.balsm.health
+# Add medication → the dose shows up in the Meds tab's daily list.
+# Run against the e2e build (fake API):  maestro test app/.maestro/add_medication.yaml
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Skip"
+    timeout: 15000
+# Sign in through the magic link (e2e FakeAuthApi accepts any token).
+- openLink: "balsm://auth/link?t=e2e-magic-token"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: "I agree & continue"
+    timeout: 15000
+- repeat:
+    times: 5
+    commands:
+      - scroll
+- tapOn: "I agree & continue"
+- openLink: "balsm://meds"
+- tapOn:
+    text: "Open"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*Your daily regimen.*"
+    timeout: 15000
+- takeScreenshot: med-00-empty
+
+# Open the add sheet (the + in the header).
+- tapOn:
+    id: "Add"
+    optional: true
+- tapOn:
+    text: "Add"
+    optional: true
+- extendedWaitUntil:
+    visible: ".*For medicines without a prescription.*"
+    timeout: 10000
+- takeScreenshot: med-01-sheet
+
+- tapOn: "Medication name"
+- inputText: "Test med"
+- tapOn: "Dose (e.g. 500 mg)"
+- inputText: "500 mg"
+# Enter on the single-line dose field closes the keyboard (hideKeyboard
+# doesn't dismiss Flutter's keyboard on iOS, and the keyboard covers the
+# frequency and timing controls).
+- pressKey: Enter
+- waitForAnimationToEnd
+- tapOn: "Evening"
+- takeScreenshot: med-02-evening
+# 3 times a day: auto-spread dose times appear.
+- tapOn: "One time"
+- extendedWaitUntil:
+    visible: "Times per day"
+    timeout: 5000
+- tapOn: "Times per day"
+- extendedWaitUntil:
+    visible: ".*Dose times.*"
+    timeout: 5000
+- assertVisible: "08:00"
+- assertVisible: "20:00"
+- takeScreenshot: med-03-twice-a-day
+- scrollUntilVisible:
+    element: "Add medication"
+    direction: DOWN
+- tapOn:
+    text: "Add medication"
+    index: 1
+- extendedWaitUntil:
+    visible: ".*Medication added.*"
+    timeout: 10000
+- takeScreenshot: med-04-added
+- extendedWaitUntil:
+    visible: ".*Test med.*"
+    timeout: 10000
+- takeScreenshot: med-05-list
