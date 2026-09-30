@@ -31,6 +31,7 @@ class AuthRouter extends StatelessWidget {
       AppRoutes.phone => const _PhoneScreen(),
       AppRoutes.otp => const _OtpScreen(),
       AppRoutes.profileSetup => const _ProfileSetupScreen(),
+      AppRoutes.unlock => const _UnlockScreen(),
       _ => const _WelcomeScreen(),
     };
   }
@@ -669,9 +670,10 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     leftValue: _AuthMode.online,
                     rightValue: _AuthMode.deviceOnly,
                     value: _mode,
-                    // Ignored while a device-only create is in flight — the
-                    // switch must not move out from under it.
-                    onChanged: _creating
+                    // Ignored while a device-only create OR an online sign-in
+                    // is in flight (Ruling 10: controller carry) — the switch
+                    // must not move out from under either in-progress request.
+                    onChanged: _creating || _submitting
                         ? (_) {}
                         : (m) {
                             setState(() {
@@ -826,6 +828,192 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
           ]),
         ),
       )),
+    );
+  }
+}
+
+// ── Unlock (device-only cold start) ──────────────────────────
+// [PatientAppState.load] boots a device-only account straight here (Task 8)
+// instead of the welcome screen. No DesignSync design exists for this screen
+// yet — it is built from _PhoneScreen's own pieces (cream background, the
+// password _Input with its show/hide eye, the device-only warning card) so it
+// at least looks native meanwhile; ask for a real design before release (see
+// docs/offline-account.md, "Unlock").
+class _UnlockScreen extends ConsumerStatefulWidget {
+  const _UnlockScreen();
+  @override
+  ConsumerState<_UnlockScreen> createState() => _UnlockScreenState();
+}
+
+class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
+  final _pwCtrl = TextEditingController();
+  bool _showPw = false;
+  bool _busy = false;
+
+  /// Set when [OfflineAccountService.unlock] refuses the password. Cleared on
+  /// the next attempt.
+  String? _error;
+
+  /// Non-null while locked out; cleared once the countdown reaches zero.
+  DateTime? _lockedUntil;
+  int _secsLeft = 0;
+  Timer? _timer;
+
+  bool get _locked => _lockedUntil != null;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_checkLockout());
+  }
+
+  Future<void> _checkLockout() async {
+    final locked = await ref.read(offlineAccountServiceProvider).lockout();
+    if (!mounted || locked == null) return;
+    _startLockout(locked.until);
+  }
+
+  /// Seeds the countdown from a single `DateTime.now()` read, then ticks the
+  /// local counter down once a second rather than re-reading the clock on
+  /// every tick. The seconds remaining round UP (a 29.9s wait still reads
+  /// "30s") — never show less time than is actually left.
+  void _startLockout(DateTime until) {
+    _timer?.cancel();
+    final ms = until.difference(DateTime.now().toUtc()).inMilliseconds;
+    final secs = ms <= 0 ? 0 : (ms / 1000).ceil();
+    if (secs <= 0) {
+      setState(() => _lockedUntil = null);
+      return;
+    }
+    setState(() {
+      _lockedUntil = until;
+      _secsLeft = secs;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _secsLeft -= 1;
+        if (_secsLeft <= 0) {
+          _lockedUntil = null;
+          _timer?.cancel();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pwCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_locked || _busy || _pwCtrl.text.isEmpty) return;
+    final s = AppScope.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await ref.read(offlineAccountServiceProvider).unlock(_pwCtrl.text);
+      if (!mounted) return;
+      switch (result) {
+        case Unlocked():
+          s.go(AppRoutes.app);
+        case WrongPassword():
+          _pwCtrl.clear();
+          setState(() => _error = s.strings.auth.unlock_wrong);
+        case LockedUntil(:final until):
+          _pwCtrl.clear();
+          _startLockout(until);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final ok = _pwCtrl.text.isNotEmpty && !_locked && !_busy;
+    return Container(
+      color: T.cream50,
+      child: SafeArea(
+        child: ContentColumn(
+          maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
+          child: Column(children: [
+            const SizedBox(height: 28),
+            Expanded(
+                child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.strings.auth.unlock_title, style: Typo.title(ar: s.rtl)),
+                const SizedBox(height: 8),
+                Text(s.strings.auth.unlock_help, style: Typo.body(ar: s.rtl)),
+                const SizedBox(height: 24),
+                _Label(s.strings.auth.pw_label, ar: s.rtl),
+                const SizedBox(height: 8),
+                _Input(
+                    controller: _pwCtrl,
+                    id: 'unlockPasswordField',
+                    hint: s.strings.auth.pw_ph,
+                    obscure: !_showPw,
+                    forceLtr: true,
+                    accent: s.accent,
+                    autofillHints: const [AutofillHints.password],
+                    suffixIcon: Semantics(
+                      button: true,
+                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => setState(() => _showPw = !_showPw),
+                        child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
+                      ),
+                    ),
+                    onChanged: (_) => setState(() {})),
+                const SizedBox(height: 12),
+                _DeviceOnlyWarning(text: s.strings.auth.device_warning, ar: s.rtl),
+              ]),
+            )),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+              child: Column(children: [
+                if (_locked)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(s.strings.auth.unlock_locked(_secsLeft.toString()),
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  )
+                else if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  ),
+                Opacity(
+                    opacity: ok ? 1 : 0.4,
+                    child: PButton(
+                      s.strings.auth.unlock_btn,
+                      variant: BtnVariant.primary,
+                      large: true,
+                      block: true,
+                      accent: s.accent,
+                      ar: s.rtl,
+                      onTap: ok ? _submit : null,
+                    )),
+              ]),
+            ),
+          ]),
+        ),
+      ),
     );
   }
 }

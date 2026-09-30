@@ -154,6 +154,32 @@ takes priority over that and resumes on `AppRoutes.mergeOrDiscard` instead,
 whatever the account mode. Neither case reaches the ordinary signed-in shell
 (`AppRoutes.app`) directly.
 
+## Unlock
+
+`app/lib/balsm_app/screens/auth_flow.dart` (`_UnlockScreen`) is what
+`AppRoutes.unlock` renders. Built from `_PhoneScreen`'s own pieces (cream
+background, the password field with its show/hide eye, the same device-only
+warning card) since no DesignSync design exists for this screen yet — it is
+provisional, and a real design should be requested before release.
+
+- On `initState`, calls `OfflineAccountService.lockout()`; if already locked
+  out (e.g. the app was killed mid-countdown), it starts the countdown
+  immediately rather than waiting for a failed attempt.
+- Submitting calls `OfflineAccountService.unlock(password)`, checked entirely
+  on-device against the stored Argon2id hash:
+  - `Unlocked` → goes straight to `AppRoutes.app` (no disclosure-gate replay —
+    the device-only account already accepted disclosure locally when it was
+    created).
+  - `WrongPassword` → shows a generic "wrong password" message and clears the
+    field.
+  - `LockedUntil` → clears the field and starts a countdown; the unlock
+    button is disabled for the duration, and the message counts down once a
+    second until it expires.
+- There is **no password-recovery path** on this screen (and none exists for
+  a device-only account at all, per `device_warning`): the password is the
+  only way in until the account goes online and a server-side reset becomes
+  possible.
+
 ## Going online
 
 `VerifyOtpRequest.clientAccountId` (`packages/balsm_api/lib/src/auth/requests.dart`)

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
+import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
@@ -71,6 +74,13 @@ void main() {
     await pump(tester);
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
+  }
+
+  /// Lands directly on [route] via the state machine — for screens reached
+  /// by routing logic (cold-start boot) rather than a tap chain from Welcome.
+  Future<void> pumpAtRoute(WidgetTester tester, String route) async {
+    state.route = route;
+    await pump(tester);
   }
 
   /// Welcome → the one credential screen, with credentials typed in.
@@ -318,6 +328,89 @@ void main() {
       expect(find.textContaining('secure storage unavailable'), findsNothing,
           reason: 'the exception text must never reach the screen');
       expect(state.accountMode, isNot(AccountMode.deviceOnly));
+    });
+
+    testWidgets('the segmented control is inert while an online sign-in is in flight', (tester) async {
+      // Ruling 10 (controller carry): the switch already ignored taps while a
+      // device-only create was running (_creating); it must do the same while
+      // the online path is submitting, or a mode switch mid-sign-in could
+      // orphan the in-flight request's UI state.
+      final pending = Completer<AppResult<SignInResult>>();
+      when(() => signIn.passwordSignIn(email: any(named: 'email'), password: any(named: 'password')))
+          .thenAnswer((_) => pending.future);
+
+      await pumpPhoneScreen(tester);
+      await tester.enterText(find.byType(TextField).first, 'patient@example.test');
+      await tester.enterText(find.byType(TextField).last, 'a-real-password');
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pump(); // submitting flips true; passwordSignIn is still pending
+
+      await tester.tap(find.text('Device only'));
+      await tester.pump();
+
+      // Still online — the tap must have been ignored, not just too early.
+      expect(find.text('Forgot password?'), findsOneWidget, reason: 'mode must not switch while submitting');
+      expect(find.text('Create account on device'), findsNothing);
+    });
+  });
+
+  group('Unlock', () {
+    testWidgets('right password enters the app', (tester) async {
+      when(() => offline.lockout()).thenAnswer((_) async => null);
+      when(() => offline.unlock('correct-horse')).thenAnswer((_) async => const Unlocked());
+
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      await tester.enterText(find.byType(TextField), 'correct-horse');
+      await tester.pump();
+      await tester.tap(find.text('Unlock'));
+      await tester.pumpAndSettle();
+
+      expect(state.route, AppRoutes.app);
+    });
+
+    testWidgets('lockout disables the button and counts down', (tester) async {
+      final until = DateTime.now().toUtc().add(const Duration(seconds: 30));
+      when(() => offline.lockout()).thenAnswer((_) async => LockedUntil(until));
+
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      await tester.pump();
+
+      expect(find.textContaining('Try again in'), findsOneWidget);
+      expect(
+        tester.widget<PButton>(find.widgetWithText(PButton, 'Unlock')).onTap,
+        isNull,
+      );
+    });
+
+    testWidgets('the countdown ticks down once a second', (tester) async {
+      final until = DateTime.now().toUtc().add(const Duration(seconds: 3));
+      when(() => offline.lockout()).thenAnswer((_) async => LockedUntil(until));
+
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      await tester.pump();
+      expect(find.textContaining('Try again in 3s'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('Try again in 2s'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('Try again in 1s'), findsOneWidget);
+    });
+
+    testWidgets('a wrong password shows the retry message and clears the field', (tester) async {
+      when(() => offline.lockout()).thenAnswer((_) async => null);
+      when(() => offline.unlock('nope')).thenAnswer((_) async => const WrongPassword(1));
+
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      await tester.enterText(find.byType(TextField), 'nope');
+      await tester.pump();
+      await tester.tap(find.text('Unlock'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Wrong password.'), findsOneWidget);
+      expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, '');
+      expect(state.route, isNot(AppRoutes.app));
     });
   });
 }

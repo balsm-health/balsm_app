@@ -135,6 +135,12 @@ class AuthStrings implements i69n.I69nMessageBundle {
       "Sign-in is unavailable right now. Use your email instead.";
   String auth_locked_retry(String secs) =>
       "Account temporarily locked. Try again in ${secs}s.";
+  String get unlock_title => "Unlock Balsm";
+  String get unlock_help => "Enter the password you set on this device.";
+  String get unlock_wrong => "Wrong password.";
+  String unlock_locked(String secs) =>
+      "Too many attempts. Try again in ${secs}s.";
+  String get unlock_btn => "Unlock";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -236,6 +242,16 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return social_unavailable;
       case 'auth_locked_retry':
         return auth_locked_retry;
+      case 'unlock_title':
+        return unlock_title;
+      case 'unlock_help':
+        return unlock_help;
+      case 'unlock_wrong':
+        return unlock_wrong;
+      case 'unlock_locked':
+        return unlock_locked;
+      case 'unlock_btn':
+        return unlock_btn;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

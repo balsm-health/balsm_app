@@ -48,7 +48,12 @@
     "fp_success": "Password updated. Sign in with your new password.",
     "social_failed": "Sign-in failed. Please try again.",
     "social_unavailable": "Sign-in is unavailable right now. Use your email instead.",
-    "auth_locked_retry(String secs)": "Account temporarily locked. Try again in ${secs}s."
+    "auth_locked_retry(String secs)": "Account temporarily locked. Try again in ${secs}s.",
+    "unlock_title": "Unlock Balsm",
+    "unlock_help": "Enter the password you set on this device.",
+    "unlock_wrong": "Wrong password.",
+    "unlock_locked(String secs)": "Too many attempts. Try again in ${secs}s.",
+    "unlock_btn": "Unlock"
   },
   "boot": {
     "boot_preparing": "Preparing your health record"

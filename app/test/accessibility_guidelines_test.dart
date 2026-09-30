@@ -5,6 +5,7 @@ import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/tokens.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
+import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
     show DisclosureAcceptance, DisclosureDao, DisclosureId, disclosureDaoProvider;
@@ -16,6 +17,8 @@ import 'package:profile/profile.dart' show CareProvider;
 import 'package:mocktail/mocktail.dart';
 
 class _MockDisclosureDao extends Mock implements DisclosureDao {}
+
+class _MockOfflineAccountService extends Mock implements OfflineAccountService {}
 
 /// Flutter's own accessibility guidelines, run against real screens.
 ///
@@ -29,6 +32,7 @@ class _MockDisclosureDao extends Mock implements DisclosureDao {}
 /// proves the flow.
 void main() {
   late _MockDisclosureDao disclosure;
+  late _MockOfflineAccountService offline;
 
   setUpAll(() => registerFallbackValue(const DisclosureId.value('consolidated')));
 
@@ -40,6 +44,8 @@ void main() {
     );
     disclosure = _MockDisclosureDao();
     when(() => disclosure.watchAcceptance(any(), any())).thenAnswer((_) => Stream<DisclosureAcceptance?>.value(null));
+    offline = _MockOfflineAccountService();
+    when(() => offline.lockout()).thenAnswer((_) async => null);
   });
 
   /// Every guideline, so a screen is either accessible or it is not.
@@ -50,18 +56,26 @@ void main() {
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
   }
 
-  Future<SemanticsHandle> pump(WidgetTester tester, Widget screen, {List<Override> overrides = const []}) async {
+  Future<SemanticsHandle> pump(WidgetTester tester, Widget screen,
+      {List<Override> overrides = const [], String? route}) async {
     final handle = tester.ensureSemantics();
     tester.view.physicalSize = const Size(402, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
+    final state = PatientAppState();
+    if (route != null) state.route = route;
+
     await tester.pumpWidget(ProviderScope(
-      overrides: [disclosureDaoProvider.overrideWithValue(disclosure), ...overrides],
+      overrides: [
+        disclosureDaoProvider.overrideWithValue(disclosure),
+        offlineAccountServiceProvider.overrideWithValue(offline),
+        ...overrides,
+      ],
       child: MaterialApp(
         home: Material(
           type: MaterialType.transparency,
-          child: AppScope(state: PatientAppState(), child: screen),
+          child: AppScope(state: state, child: screen),
         ),
       ),
     ));
@@ -131,6 +145,12 @@ void main() {
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
 
+    await expectAccessible(tester);
+    handle.dispose();
+  });
+
+  testWidgets('the unlock screen', (tester) async {
+    final handle = await pump(tester, const AuthRouter(), route: AppRoutes.unlock);
     await expectAccessible(tester);
     handle.dispose();
   });

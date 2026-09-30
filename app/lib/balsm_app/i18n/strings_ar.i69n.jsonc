@@ -49,7 +49,12 @@
     "fp_success": "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.",
     "social_failed": "تعذّر تسجيل الدخول. حاول مرة أخرى.",
     "social_unavailable": "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.",
-    "auth_locked_retry(String secs)": "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية."
+    "auth_locked_retry(String secs)": "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.",
+    "unlock_title": "افتح بلسم",
+    "unlock_help": "أدخل كلمة المرور التي عيّنتها على هذا الجهاز.",
+    "unlock_wrong": "كلمة مرور غير صحيحة.",
+    "unlock_locked(String secs)": "محاولات كثيرة. أعد المحاولة بعد $secs ث.",
+    "unlock_btn": "فتح"
   },
   "boot": {
     "boot_preparing": "نُجهّز سجلّك الصحي"

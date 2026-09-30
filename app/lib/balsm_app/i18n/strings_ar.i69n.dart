@@ -140,6 +140,12 @@ class AuthStrings_ar extends AuthStrings {
       "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.";
   String auth_locked_retry(String secs) =>
       "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
+  String get unlock_title => "افتح بلسم";
+  String get unlock_help => "أدخل كلمة المرور التي عيّنتها على هذا الجهاز.";
+  String get unlock_wrong => "كلمة مرور غير صحيحة.";
+  String unlock_locked(String secs) =>
+      "محاولات كثيرة. أعد المحاولة بعد $secs ث.";
+  String get unlock_btn => "فتح";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -241,6 +247,16 @@ class AuthStrings_ar extends AuthStrings {
         return social_unavailable;
       case 'auth_locked_retry':
         return auth_locked_retry;
+      case 'unlock_title':
+        return unlock_title;
+      case 'unlock_help':
+        return unlock_help;
+      case 'unlock_wrong':
+        return unlock_wrong;
+      case 'unlock_locked':
+        return unlock_locked;
+      case 'unlock_btn':
+        return unlock_btn;
       default:
         return super[key];
     }
