@@ -326,8 +326,13 @@ class _CloudAccountRow extends StatelessWidget {
                     style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
                 Padding(
                   padding: const EdgeInsets.only(top: 1),
-                  child:
-                      Text(available ? st.store_not_connected : st.store_available_soon, style: Typo.meta(ar: s.rtl)),
+                  child: Text(
+                      goOnline
+                          ? s.strings.offline.go_row_sub
+                          : available
+                              ? st.store_not_connected
+                              : st.store_available_soon,
+                      style: Typo.meta(ar: s.rtl)),
                 ),
               ]),
             ),

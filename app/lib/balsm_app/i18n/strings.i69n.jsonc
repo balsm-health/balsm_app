@@ -989,7 +989,8 @@
     "go_done": "Done",
     "go_row": "Go online",
     "go_row_sub": "Verify your email to use Balsm Cloud and sharing",
-    "go_cloud_pill": "Go online"
+    "go_cloud_pill": "Go online",
+    "go_failed": "Couldn't go online right now. Try again."
   },
   "_i69n_import": "package:core/core.dart"
 }

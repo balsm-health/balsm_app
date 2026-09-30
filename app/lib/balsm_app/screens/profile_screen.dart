@@ -41,7 +41,7 @@ class ProfileScreen extends ConsumerWidget {
     final rows = <(IconData, String, VoidCallback?, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
-      (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context, ref), false),
+      (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
       (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
       (LucideIcons.bell, 'profile.p_notif', null, false),
       (
@@ -67,7 +67,7 @@ class ProfileScreen extends ConsumerWidget {
               child: RoundBtn(
                 icon: LucideIcons.qrCode,
                 semanticLabel: s.strings.common.a11y_qr,
-                onTap: () => openQrShare(context, ref, s: s, name: displayName),
+                onTap: () => openQrShare(context, s: s, name: displayName),
               ),
             ),
           ]),
@@ -781,19 +781,19 @@ class _SelectRow extends StatelessWidget {
 
 /// `.profile-head` — the patient's handle as a tappable accent pill that opens
 /// their shareable QR. Latin either way, so it stays LTR in Arabic.
-class _HandleQrPill extends ConsumerWidget {
+class _HandleQrPill extends StatelessWidget {
   const _HandleQrPill({required this.handle, required this.name});
   final String handle;
   final String name;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Semantics(
       label: s.strings.profile.pd_share_qr,
       button: true,
       child: Pressable(
-        onTap: () => openQrShare(context, ref, s: s, name: name),
+        onTap: () => openQrShare(context, s: s, name: name),
         child: Container(
           height: 34,
           padding: const EdgeInsets.symmetric(horizontal: 14),

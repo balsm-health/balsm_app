@@ -987,7 +987,8 @@
     "go_done": "تم",
     "go_row": "الاتصال بالإنترنت",
     "go_row_sub": "تحقّق من بريدك لاستخدام بلسم كلاود والمشاركة",
-    "go_cloud_pill": "اتصل"
+    "go_cloud_pill": "اتصل",
+    "go_failed": "تعذّر الاتصال الآن. حاول مرة أخرى."
   },
   "_i69n_import": "package:core/core.dart"
 }

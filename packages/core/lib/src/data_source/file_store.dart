@@ -36,4 +36,11 @@ abstract class UserFileStore {
 
   /// Removes the user's whole partition (logout / account deletion wipe).
   Future<void> clear({UserId? scope});
+
+  /// Hands every file owned by [from] to [to] — the files and whatever
+  /// decrypts them — when an account's id changes (a device-only account
+  /// going online under a new server id). Idempotent: nothing left under
+  /// [from] is a no-op. Throws [StateError] if [to] already owns files;
+  /// combining two owners' files is not this method's job.
+  Future<void> rekeyOwnerFiles({required String from, required String to});
 }

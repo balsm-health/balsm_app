@@ -24,10 +24,11 @@ Future<void> showGoOnlineSheet(BuildContext context) {
   );
 }
 
-/// Gate for anything that needs a server account (sharing, care-team sync,
-/// Balsm Cloud). True when the account is online; a device-only account gets
-/// the go-online sheet first, and this answers whether it came back online.
-Future<bool> requireOnline(BuildContext context, WidgetRef ref) async {
+/// Gate for anything that needs a server account (sharing, Balsm Cloud) —
+/// never for on-device data. True when the account is online; a device-only
+/// account gets the go-online sheet first, and this answers whether it came
+/// back online.
+Future<bool> requireOnline(BuildContext context) async {
   final s = AppScope.of(context);
   if (s.accountMode != AccountMode.deviceOnly) return true;
   await showGoOnlineSheet(context);
@@ -132,7 +133,21 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
       _busy = true;
       _error = null;
     });
-    final r = await controller.verify(email: _email.text.trim(), code: code);
+    final AppResult<GoOnlineOutcome> r;
+    try {
+      r = await controller.verify(email: _email.text.trim(), code: code);
+    } catch (_) {
+      // Unexpected (e.g. a keychain error part-way). The account may already
+      // be online in storage — make the UI agree with it either way.
+      await _syncModeFromStorage();
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _code.clear();
+        _error = s.strings.offline.go_failed;
+      });
+      return;
+    }
     if (r.isSuccess) {
       switch (r.value) {
         case GoOnlineOutcome.online:
@@ -157,10 +172,21 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     setState(() {
       _busy = false;
       _code.clear();
-      _error = until != null
-          ? s.strings.auth.auth_locked_retry(until.difference(DateTime.now()).inSeconds.clamp(0, 3600).toString())
-          : r.error.message;
+      _error = switch (r.error) {
+        _ when until != null =>
+          s.strings.auth.auth_locked_retry(until.difference(DateTime.now()).inSeconds.clamp(0, 3600).toString()),
+        // Server text (invalid/expired code), display-safe as in sign-in.
+        NetworkFailure(:final message) => message,
+        _ => s.strings.offline.go_failed,
+      };
     });
+  }
+
+  Future<void> _syncModeFromStorage() async {
+    try {
+      final mode = await ref.read(offlineAccountServiceProvider).mode();
+      if (mode == AccountMode.online) s.setAccountMode(AccountMode.online);
+    } catch (_) {}
   }
 
   @override

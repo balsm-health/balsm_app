@@ -19,7 +19,6 @@ import '../widgets/photo_attach.dart';
 import '../routes.dart';
 import '../tokens.dart';
 import 'care_import_sheet.dart';
-import 'go_online_sheet.dart';
 import 'profile_subscreens.dart';
 import '../storage_target.dart';
 import '../widgets/data_loc_pill.dart';
@@ -31,13 +30,7 @@ import '../widgets/data_loc_pill.dart';
 /// on-device PHI like the rest of the profile — nothing is fabricated and
 /// nothing leaves the device.
 ///
-/// Care-team sharing and sync need a server account, so a device-only
-/// account is offered the go-online sheet first ([requireOnline]).
-Future<void> openCareTeam(BuildContext context, WidgetRef ref) async {
-  if (!await requireOnline(context, ref)) return;
-  if (!context.mounted) return;
-  pushSubScreen(context, (s) => const CareTeamScreen());
-}
+void openCareTeam(BuildContext context) => pushSubScreen(context, (s) => const CareTeamScreen());
 
 /// One provider's attachments — vault files and links together, oldest first.
 final careProviderFilesProvider = StreamProvider.autoDispose.family<List<CareProviderFile>, CareProviderId>((ref, id) {
@@ -151,8 +144,6 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
   /// Import from the phone's contacts. Returns the number of rows created, or
   /// -1 when the patient chose to type one in by hand instead.
   Future<void> _import() async {
-    if (!await requireOnline(context, ref)) return;
-    if (!mounted) return;
     final result = await showAppSheet<int>(
       context,
       size: SheetSize.lg,

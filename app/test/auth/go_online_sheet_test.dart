@@ -107,10 +107,33 @@ void main() {
     expect(state.accountMode, AccountMode.deviceOnly);
   });
 
+  testWidgets('an unexpected error resets the sheet, says so, and syncs the mode from storage', (tester) async {
+    when(() => controller.sendCode(any())).thenAnswer((_) async => AppResult.success(null));
+    when(() => controller.verify(email: any(named: 'email'), code: any(named: 'code')))
+        .thenThrow(Exception('keychain'));
+    // markOnline had already run before the error.
+    when(() => offline.mode()).thenAnswer((_) async => AccountMode.online);
+    final state = await pump(tester, mode: AccountMode.deviceOnly, onTap: (context, _) => showGoOnlineSheet(context));
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(state.strings.offline.go_send));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.pumpAndSettle();
+
+    expect(find.text(state.strings.offline.go_failed), findsOneWidget);
+    expect(state.accountMode, AccountMode.online);
+    // Not stuck busy: a new code can be entered and submitted again.
+    await tester.enterText(find.byType(TextField), '654321');
+    await tester.pumpAndSettle();
+    verify(() => controller.verify(email: 'a@b.co', code: '654321')).called(1);
+  });
+
   testWidgets('requireOnline is true at once when already online', (tester) async {
     bool? result;
     final state = await pump(tester,
-        mode: AccountMode.online, onTap: (context, ref) async => result = await requireOnline(context, ref));
+        mode: AccountMode.online, onTap: (context, ref) async => result = await requireOnline(context));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(result, isTrue);
@@ -120,7 +143,7 @@ void main() {
   testWidgets('requireOnline opens the sheet when device-only, false if dismissed', (tester) async {
     bool? result;
     final state = await pump(tester,
-        mode: AccountMode.deviceOnly, onTap: (context, ref) async => result = await requireOnline(context, ref));
+        mode: AccountMode.deviceOnly, onTap: (context, ref) async => result = await requireOnline(context));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(find.text(state.strings.offline.go_title), findsOneWidget);
@@ -140,6 +163,8 @@ void main() {
     final st = state.strings;
 
     expect(find.text(st.offline.go_cloud_pill), findsOneWidget);
+    expect(find.text(st.offline.go_row_sub), findsOneWidget); // not "Available soon"
+    expect(find.text(st.storage.store_available_soon), findsNWidgets(2));
     expect(find.text(st.storage.store_coming_soon), findsNWidgets(2)); // iCloud + Google Drive
 
     await tester.tap(find.text(st.offline.go_cloud_pill));

@@ -225,27 +225,38 @@ id and stays redacted like any other id-shaped field.
 6-digit code. `sendCode(email)` calls `SignInUseCase.requestContinueOtp` with
 the current country. `verify(email:, code:)` runs, in order:
 
-1. Reads the pending offline credentials and the device's `balsm.user_id`
-   (the local id) — before `goOnline`, which overwrites `balsm.user_id` with
-   the server's id when it persists the session. (`GeneratedDatabase` is
-   re-exported from `package:core` so the app can hand the drift DB to
-   `rekeyOwner` without a direct drift dependency.)
+1. Resolves the device's own id (the local id) from secure-storage key
+   `balsm.offline.local_id`. On the first attempt that key is absent, so the
+   current `balsm.user_id` is read and pinned there — before `goOnline`, which
+   overwrites `balsm.user_id` with the server's id when it persists the
+   session. Every retry, and the merge screen, therefore work from the
+   device's id, never the server's. (`GeneratedDatabase` is re-exported from
+   `package:core` so the app can hand the drift DB to `rekeyOwner` without a
+   direct drift dependency.)
 2. `SignInUseCase.goOnline(email, code, clientAccountId: localId)`.
 3. **Adopted** → no re-key.
 4. **New id** → `rekeyOwner(db, from: localId, to: newId, dropOutbox: false)`
-   moves every local row to the server id (one transaction; a failure is
-   returned as a `StorageFailure` and nothing else happens).
+   moves every local row to the server id, then
+   `UserFileStore.rekeyOwnerFiles(from: localId, to: newId)` moves the vault
+   files and their key (see "Re-keying local data"). Both are idempotent; if
+   either fails, verify returns a `StorageFailure`, the pin stays on the
+   device's id, and nothing else happens — a retry re-runs both. Only after
+   both succeed is `balsm.offline.local_id` updated to the new id, so a crash
+   after this point never re-keys from a stale id.
 5. For both: `OfflineAccountService.markOnline()`, then publishes
    `UserSignedIn(provider: 'email')` with the final id, then
-   `finishPasswordIfPending()`, then `AcceptDisclosureUseCase.resync(...)`
-   with the same disclosure id/version the post-sign-in gate uses
-   (`kDisclosureId` / `kDisclosureVersion` in `auth_flow.dart`). Returns
-   `GoOnlineOutcome.online`.
+   `finishPasswordIfPending()`, then sets `balsm.offline.disclosure_pending`
+   and runs `AcceptDisclosureUseCase.resync(...)` with the same disclosure
+   id/version the post-sign-in gate uses (`kDisclosureId` /
+   `kDisclosureVersion` in `auth_flow.dart`); the flag is cleared only when
+   resync returns `true`. Finally `balsm.offline.local_id` is deleted.
+   Returns `GoOnlineOutcome.online`.
 6. **Existing account** → `setPendingMerge(true)`; the target server id is
    kept on the controller (`pendingTargetId`) and in secure storage under
-   `balsm.pending_merge_target`. Returns `GoOnlineOutcome.needsMergeChoice`.
+   `balsm.pending_merge_target`, and `balsm.offline.local_id` stays pinned to
+   the device's id for the merge. Returns `GoOnlineOutcome.needsMergeChoice`.
    The account is **not** marked online and no `UserSignedIn` is published
-   — the merge-or-discard screen finishes that.
+   — the merge-or-discard screen finishes that, and clears the pin.
 
 A server lockout returns a failure and sets `lockedUntil` for the UI; any
 other verify failure changes nothing locally.
@@ -266,17 +277,20 @@ account (`pendingCredentials().email`); the sixth digit auto-submits. On
 `online` it sets `PatientAppState.accountMode` to `online` (so every gate
 below re-renders) and shows the done step. On `needsMergeChoice` it closes and
 routes to `AppRoutes.mergeOrDiscard`. A lockout shows the standard
-"temporarily locked" wait. `OtpBox` and the sign-in text field (`AuthInput`)
+"temporarily locked" wait; a server refusal (e.g. a wrong code) shows the
+server's message; anything else — including an unexpected exception — shows
+the generic `offline.go_failed`, re-enables the sheet, and re-reads the
+account mode from storage so the UI agrees with it if `markOnline()` had
+already run. `OtpBox` and the sign-in text field (`AuthInput`)
 moved from `auth_flow.dart` to `app/lib/balsm_app/widgets/auth_fields.dart` so
 both flows share them.
 
-`requireOnline(context, ref)` is the server-feature gate: `true` at once for
-an online account; for a device-only account it opens the sheet and returns
-whether the account came back online. Gated entry points:
+`requireOnline(context)` is the server-feature gate: `true` at once for an
+online account; for a device-only account it opens the sheet and returns
+whether the account came back online. It gates sharing and sync only — never
+on-device data (spec D3), so the care team and its contacts import stay open
+to a device-only account. Gated entry point:
 
-- `openCareTeam` (`care_team_screen.dart`) — every caller (Profile row, Home
-  shortcut, deep link, dev service extension) now passes its `WidgetRef`.
-- The care-team contacts import (`_import` in the same screen).
 - The QR-share opener `openQrShare` (`personal_details.dart`) — both Profile
   entry points (app-bar button and handle pill).
 
@@ -285,16 +299,20 @@ Offered, not gated:
 - **Profile** — while device-only, a "Go online" row (cloud icon, with a
   one-line subtitle) sits under the Storage row and opens the sheet.
 - **Storage & sync** — while device-only, the Balsm Cloud account row shows a
-  "Go online" pill at full opacity and opens the sheet. iCloud and Google
-  Drive are unchanged ("Coming soon").
+  "Go online" pill at full opacity, with the `go_row_sub` line in place of
+  "Available soon", and opens the sheet. iCloud and Google Drive are
+  unchanged ("Coming soon").
 
-### Password retry at launch
+### Retry at launch
 
 `app/lib/brands/balsm/main_balsm.dart` — after the API client is initialised,
 if the stored account mode is `online` and a session exists, bootstrap fires
-`goOnlineControllerProvider.finishPasswordIfPending()` without awaiting it. It
-is a no-op unless `balsm.offline.pw_plain` is still present (a previous
-`SetPassword` failed).
+`goOnlineControllerProvider.retryPending()` without awaiting it. It retries
+`finishPasswordIfPending()` (a no-op unless `balsm.offline.pw_plain` is still
+present because a previous `SetPassword` failed) and, when
+`balsm.offline.disclosure_pending` is set, the disclosure resync. It never
+throws (each step catches), and the call site adds a `catchError` backstop, so
+a keychain error can't become an unhandled zone error. Nothing is logged.
 
 ### Copy note
 
@@ -329,3 +347,17 @@ happen in one transaction: a crash leaves either every row on the old id or ever
 on the new id, never a mix. When `dropOutbox` is true, rows in `sync_outbox` owned by
 `from` are deleted instead of re-keyed (on merge: the retired offline account's
 pending account-level updates must not overwrite the existing account's server profile).
+
+Attachments live outside the DB. `EncryptedFileStore`
+(`packages/core/lib/src/data_source/impl/encrypted_file_store.dart`) partitions
+them under `<root>/<userId>/` and encrypts them with a per-owner key stored in
+secure storage as `balsm.file_key.<userId>`, so after an id change they would
+be unreachable. `UserFileStore.rekeyOwnerFiles(from:, to:)` hands them over:
+it renames `<root>/<from>/` to `<root>/<to>/` (the store's own injected root)
+and moves the key (writes `balsm.file_key.<to>`, then deletes
+`balsm.file_key.<from>`). Each half is skipped when its source is already
+gone, so a second call or a retry after a crash finishes the job. If the
+target already has a different key or a partition, it throws
+`StateError('target owner already has files')` — combining two owners' files
+(merge) is not done here. Ids must be single path segments. The in-memory
+store used on web has no per-owner partition and treats it as a no-op.

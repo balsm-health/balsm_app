@@ -13,6 +13,8 @@ class _MockOffline extends Mock implements OfflineAccountService {}
 
 class _MockDisclosure extends Mock implements AcceptDisclosureUseCase {}
 
+class _MockFiles extends Mock implements UserFileStore {}
+
 /// In-memory secure store — the controller reads `balsm.user_id` and writes
 /// `balsm.pending_merge_target` through it.
 class _MemStorage extends SecureStorageWrapper {
@@ -42,6 +44,7 @@ void main() {
   late _MockSignIn signIn;
   late _MockOffline offline;
   late _MockDisclosure disclosure;
+  late _MockFiles files;
   late _MemStorage storage;
   late EventBus bus;
   late List<AppEvent> events;
@@ -56,6 +59,8 @@ void main() {
     signIn = _MockSignIn();
     offline = _MockOffline();
     disclosure = _MockDisclosure();
+    files = _MockFiles();
+    when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {});
     storage = _MemStorage();
     bus = EventBus();
     events = [];
@@ -72,6 +77,7 @@ void main() {
       offline: offline,
       disclosure: disclosure,
       db: db,
+      files: files,
       storage: storage,
       eventBus: bus,
       countryCode: () => 'EG',
@@ -107,6 +113,10 @@ void main() {
     expect(await owners(db), ['off-1']);
     expect(events.whereType<UserSignedIn>().single.userId.value, 'off-1');
     verify(() => disclosure.resync(disclosureId: any(named: 'disclosureId'), version: any(named: 'version'))).called(1);
+    verifyNever(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to')));
+    // Flow complete: the pin and the disclosure retry flag are gone.
+    expect(storage.data.containsKey('balsm.offline.local_id'), isFalse);
+    expect(storage.data.containsKey('balsm.offline.disclosure_pending'), isFalse);
   });
 
   test('new id: re-keys local rows before publishing sign-in', () async {
@@ -116,11 +126,67 @@ void main() {
         .thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
     when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
 
+    // Record the order: the files must move before anyone hears of the new id.
+    final order = <String>[];
+    when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to')))
+        .thenAnswer((_) async => order.add('files'));
+    bus.on<UserSignedIn>().listen((_) => order.add('signedIn'));
+
     await controller.verify(email: 'a@b.co', code: '123456');
     await flush();
 
     expect(await owners(db), ['srv-9']);
     expect(events.whereType<UserSignedIn>().single.userId.value, 'srv-9');
+    verify(() => files.rekeyOwnerFiles(from: 'off-1', to: 'srv-9')).called(1);
+    expect(order, ['files', 'signedIn']);
+    expect(storage.data.containsKey('balsm.offline.local_id'), isFalse);
+  });
+
+  test('retry after a failed re-key uses the pinned offline id, not the server id', () async {
+    await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
+    // goOnline persists the session, overwriting balsm.user_id — as the real one does.
+    when(() => signIn.goOnline(
+        email: any(named: 'email'),
+        code: any(named: 'code'),
+        clientAccountId: any(named: 'clientAccountId'))).thenAnswer((_) async {
+      storage.data['balsm.user_id'] = 'srv-9';
+      return AppResult.success(const GoOnlineNewId('srv-9'));
+    });
+    when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
+    await db
+        .customStatement("CREATE TRIGGER boom BEFORE UPDATE ON prescription BEGIN SELECT RAISE(ABORT, 'boom'); END");
+
+    final first = await controller.verify(email: 'a@b.co', code: '123456');
+    expect(first.isFailure, isTrue);
+    expect(await owners(db), ['off-1']);
+    expect(storage.data['balsm.offline.local_id'], 'off-1');
+    verifyNever(() => offline.markOnline());
+
+    await db.customStatement('DROP TRIGGER boom');
+    final second = await controller.verify(email: 'a@b.co', code: '654321');
+    await flush();
+
+    expect(second.value, GoOnlineOutcome.online);
+    verify(() => signIn.goOnline(email: 'a@b.co', code: '654321', clientAccountId: 'off-1')).called(1);
+    expect(await owners(db), ['srv-9']);
+    expect(events.whereType<UserSignedIn>().single.userId.value, 'srv-9');
+  });
+
+  test('a failed file move is a failure and leaves the pin on the offline id', () async {
+    await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
+    when(() => signIn.goOnline(
+            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
+        .thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
+    when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to')))
+        .thenThrow(StateError('target owner already has files'));
+
+    final r = await controller.verify(email: 'a@b.co', code: '123456');
+    await flush();
+
+    expect(r.isFailure, isTrue);
+    expect(storage.data['balsm.offline.local_id'], 'off-1');
+    verifyNever(() => offline.markOnline());
+    expect(events.whereType<UserSignedIn>(), isEmpty);
   });
 
   test('SetPassword failure keeps plaintext for retry; user is still online', () async {
@@ -153,6 +219,38 @@ void main() {
     expect(events.whereType<UserSignedIn>(), isEmpty);
     expect(controller.pendingTargetId, 'srv-1');
     expect(storage.data['balsm.pending_merge_target'], 'srv-1');
+    // The merge screen needs the device's own id; it stays pinned.
+    expect(storage.data['balsm.offline.local_id'], 'off-1');
+  });
+
+  test('a failed disclosure resync is flagged, and retried at launch', () async {
+    await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
+    when(() => signIn.goOnline(
+            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
+        .thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
+    when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
+    when(() => disclosure.resync(disclosureId: any(named: 'disclosureId'), version: any(named: 'version')))
+        .thenAnswer((_) async => false);
+
+    await controller.verify(email: 'a@b.co', code: '123456');
+    expect(storage.data['balsm.offline.disclosure_pending'], 'true');
+
+    when(() => offline.pendingCredentials()).thenAnswer((_) async => null);
+    when(() => disclosure.resync(disclosureId: any(named: 'disclosureId'), version: any(named: 'version')))
+        .thenAnswer((_) async => true);
+    await controller.retryPending();
+    expect(storage.data.containsKey('balsm.offline.disclosure_pending'), isFalse);
+  });
+
+  test('retryPending retries the password and swallows keychain errors', () async {
+    when(() => offline.pendingCredentials()).thenThrow(Exception('keychain'));
+    await expectLater(controller.retryPending(), completes);
+
+    when(() => offline.pendingCredentials()).thenAnswer((_) async => (email: '', password: 'correct-horse'));
+    when(() => signIn.setPassword(password: 'correct-horse')).thenAnswer((_) async => AppResult.success(null));
+    await controller.retryPending();
+    verify(() => offline.clearPlainPassword()).called(1);
+    verifyNever(() => disclosure.resync(disclosureId: any(named: 'disclosureId'), version: any(named: 'version')));
   });
 
   test('verify failure surfaces the failure and changes nothing', () async {

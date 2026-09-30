@@ -26,4 +26,8 @@ class MemoryUserFileStore implements UserFileStore {
 
   @override
   Future<void> clear({UserId? scope}) async => _files.clear();
+
+  /// Not partitioned by owner, so there is nothing to move.
+  @override
+  Future<void> rekeyOwnerFiles({required String from, required String to}) async {}
 }

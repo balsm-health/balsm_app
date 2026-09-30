@@ -3292,6 +3292,7 @@ class OfflineStrings implements i69n.I69nMessageBundle {
   String get go_row => "Go online";
   String get go_row_sub => "Verify your email to use Balsm Cloud and sharing";
   String get go_cloud_pill => "Go online";
+  String get go_failed => "Couldn't go online right now. Try again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3321,6 +3322,8 @@ class OfflineStrings implements i69n.I69nMessageBundle {
         return go_row_sub;
       case 'go_cloud_pill':
         return go_cloud_pill;
+      case 'go_failed':
+        return go_failed;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

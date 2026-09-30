@@ -213,7 +213,7 @@ class _DeepLinkHandlerState extends ConsumerState<DeepLinkHandler> {
           case AppScreen.emergencyNumbers:
             openEmergency(context);
           case AppScreen.careTeam:
-            openCareTeam(context, ref);
+            openCareTeam(context);
           case AppScreen.personalDetails:
             openPersonalDetails(context);
           case AppScreen.checkIn:

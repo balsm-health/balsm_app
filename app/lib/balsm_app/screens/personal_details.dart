@@ -1010,9 +1010,8 @@ class _RelationshipSheet extends StatelessWidget {
 ///
 /// Sharing needs a server account, so a device-only account is offered the
 /// go-online sheet first ([requireOnline]).
-Future<void> openQrShare(BuildContext context, WidgetRef ref,
-    {required PatientAppState s, required String name}) async {
-  if (!await requireOnline(context, ref)) return;
+Future<void> openQrShare(BuildContext context, {required PatientAppState s, required String name}) async {
+  if (!await requireOnline(context)) return;
   if (!context.mounted) return;
   return showAppSheet<void>(
     context,

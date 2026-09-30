@@ -333,10 +333,11 @@ Future<void> bootstrap({
   await container.read(balsmApiControllerProvider).init();
 
   // Go-online retry: an account that went online but whose offline password
-  // never reached the server (SetPassword failed) still holds it in
-  // `balsm.offline.pw_plain`. Try again now; on success it is deleted.
+  // (`balsm.offline.pw_plain`) or disclosure acceptance never reached the
+  // server tries again now. retryPending never throws; the catchError is a
+  // backstop so a keychain error can't surface as an unhandled zone error.
   if (accountMode == AccountMode.online && containerUserId != null) {
-    unawaited(container.read(goOnlineControllerProvider).finishPasswordIfPending());
+    unawaited(container.read(goOnlineControllerProvider).retryPending().catchError((Object _) {}));
   }
 
   // Permanent medical-profile QR: if one exists, silently re-sync its

@@ -3305,6 +3305,7 @@ class OfflineStrings_ar extends OfflineStrings {
   String get go_row => "الاتصال بالإنترنت";
   String get go_row_sub => "تحقّق من بريدك لاستخدام بلسم كلاود والمشاركة";
   String get go_cloud_pill => "اتصل";
+  String get go_failed => "تعذّر الاتصال الآن. حاول مرة أخرى.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3334,6 +3335,8 @@ class OfflineStrings_ar extends OfflineStrings {
         return go_row_sub;
       case 'go_cloud_pill':
         return go_cloud_pill;
+      case 'go_failed':
+        return go_failed;
       default:
         return super[key];
     }

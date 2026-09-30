@@ -298,7 +298,7 @@ class _CareTeamShortcut extends ConsumerWidget {
       // The design counts its seeded roster; count the patient's real team,
       // and say what the screen is for rather than showing them a zero.
       subtitle: count == 0 ? s.strings.home.care_team_sub : '$count ${s.strings.home.care_team_n}',
-      onTap: () => openCareTeam(context, ref),
+      onTap: () => openCareTeam(context),
     );
   }
 }
