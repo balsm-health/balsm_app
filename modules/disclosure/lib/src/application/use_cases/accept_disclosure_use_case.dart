@@ -77,11 +77,11 @@ class AcceptDisclosureUseCase {
   }
 
   /// Re-sends an acceptance recorded while the account had no server session
-  /// (device-only). Best-effort, like step 2 of [execute].
+  /// (device-only). Best-effort, like step 2 of [execute]. Never throws.
   Future<bool> resync({required DisclosureId disclosureId, required String version}) async {
-    final a = await _dao.watchAcceptance(disclosureId, version).first;
-    if (a == null) return false;
     try {
+      final a = await _dao.watchAcceptance(disclosureId, version).first;
+      if (a == null) return false;
       await _api.accept(AcceptDisclosureRequest(
         disclosureId: a.disclosureId.value,
         version: a.version,

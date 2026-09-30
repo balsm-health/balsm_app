@@ -171,10 +171,10 @@ marked accepted on-device.
 
 `AcceptDisclosureUseCase.resync()` re-sends stored acceptances after going online,
 retrieving them from local storage and calling `POST /disclosure/accept` with the
-same details (country code, supervisory authority, language, timestamp). It is
-best-effort — if the call fails or no acceptance is stored, it returns `false`
-without throwing, allowing the go-online flow to proceed. Designed to run
-after `goOnline` completes and tokens are live.
+same details (disclosure id, version, country code, supervisory authority, preferred
+language). It is best-effort — if the call fails or no acceptance is stored, it
+returns `false` without throwing, allowing the go-online flow to proceed. Designed
+to run after `goOnline` completes and tokens are live.
 
 ## Re-keying local data
 

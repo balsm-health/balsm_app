@@ -48,7 +48,11 @@ void main() {
       when(() => api.accept(any())).thenAnswer((_) async {});
       expect(await usecase.resync(disclosureId: const DisclosureId.value('consolidated'), version: 'v1'), isTrue);
       final sent = verify(() => api.accept(captureAny())).captured.single as AcceptDisclosureRequest;
+      expect(sent.disclosureId, 'consolidated');
+      expect(sent.version, 'v1');
       expect(sent.countryCode, 'EG');
+      expect(sent.supervisoryAuthority, 'PDPC');
+      expect(sent.preferredLanguage, 'ar');
     });
 
     test('nothing stored → false, no call', () async {
@@ -68,6 +72,12 @@ void main() {
           )));
       when(() => api.accept(any())).thenThrow(Exception('offline'));
       expect(await usecase.resync(disclosureId: const DisclosureId.value('consolidated'), version: 'v1'), isFalse);
+    });
+
+    test('DAO error → false, no throw, API never called', () async {
+      when(() => dao.watchAcceptance(any(), any())).thenAnswer((_) => Stream.error(Exception('db')));
+      expect(await usecase.resync(disclosureId: const DisclosureId.value('consolidated'), version: 'v1'), isFalse);
+      verifyNever(() => api.accept(any()));
     });
   });
 }
