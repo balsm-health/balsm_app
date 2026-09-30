@@ -4,6 +4,7 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../auth_context/account_mode.dart';
 import '../domain/events/session_expired.dart';
 import '../event_bus/event_bus.dart';
 
@@ -76,6 +77,13 @@ class AuthInterceptor extends Interceptor {
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     if (!_isBootstrap(options.path)) {
+      if (AccountMode.fromWire(await _storage.read(key: kAccountModeKey)) == AccountMode.deviceOnly) {
+        return handler.reject(DioException(
+          requestOptions: options,
+          type: DioExceptionType.cancel,
+          error: const DeviceOnlyAccountException(),
+        ));
+      }
       var token = await _storage.read(key: _kAccess);
       // Proactive refresh: renew at/near expiry before sending, so most requests
       // never hit a 401. If refresh is impossible we fall back to the stored
@@ -133,6 +141,9 @@ class AuthInterceptor extends Interceptor {
   Future<String?> _refresh() => _inFlightRefresh ??= _doRefresh().whenComplete(() => _inFlightRefresh = null);
 
   Future<String?> _doRefresh() async {
+    if (AccountMode.fromWire(await _storage.read(key: kAccountModeKey)) == AccountMode.deviceOnly) {
+      return null; // no session to refresh, and nothing to sign out of
+    }
     final refresh = await _storage.read(key: _kRefresh);
     final deviceId = await _storage.read(key: _kDeviceId);
     if (refresh == null || refresh.isEmpty || deviceId == null || deviceId.isEmpty) {

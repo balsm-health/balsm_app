@@ -56,6 +56,7 @@ export 'package:balsm_api/balsm_api.dart' show BalsmApiClient, PhiLeakIntercepto
 export 'src/network/balsm_api_controller.dart';
 export 'src/network/api_providers.dart';
 export 'src/network/connectivity.dart';
+export 'src/auth_context/account_mode.dart';
 export 'src/auth_context/current_user.dart';
 export 'src/auth_context/current_entity.dart';
 export 'src/auth_context/current_profile.dart';

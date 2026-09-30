@@ -285,4 +285,30 @@ void main() {
 
     expect(h.adapter.requests.single.headers['Authorization'], isNotNull);
   });
+
+  group('device-only account', () {
+    test('an authenticated request is refused locally, never sent', () async {
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly', 'balsm.user_id': 'u1'});
+      final events = <AppEvent>[];
+      final h = harness(storage, (o) => _json('{}'));
+      h.bus.on<SessionExpired>().listen(events.add);
+
+      await expectLater(
+        h.controller.client.dio.get<void>(ApiRoutes.account_self),
+        throwsA(isA<DioException>().having((e) => e.error, 'error', isA<DeviceOnlyAccountException>())),
+      );
+      expect(h.adapter.requests, isEmpty);
+      await Future<void>.delayed(Duration.zero);
+      expect(events, isEmpty);
+      expect(await storage.read(key: 'balsm.user_id'), 'u1');
+    });
+
+    test('bootstrap (OTP) requests still go out', () async {
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly'});
+      final h = harness(storage, (o) => _json('{"data":{}}'));
+
+      await h.controller.client.dio.post<void>(ApiRoutes.auth_otp_request, data: const {});
+      expect(h.adapter.requests, hasLength(1));
+    });
+  });
 }
