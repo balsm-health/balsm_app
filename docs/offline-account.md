@@ -108,6 +108,28 @@ cleans up the orphaned offline-account keys left behind if `create()` crashed
 before it could write `balsm.account_mode`, without ever deleting
 `balsm.user_id` while a real online session's refresh token is present.
 
+## Sign-in: Device only
+
+`app/lib/balsm_app/screens/auth_flow.dart` (`_PhoneScreen`) adds a two-way
+segmented control ("Online" / "Device only") above the email/password fields
+on the sign-in screen. Switching to "Device only":
+
+- Swaps the title, help copy and password label for device-only wording, and
+  hides the "Forgot password?" link — a device-only account has no
+  server-side record to recover a password from.
+- Shows an info card under the password field warning that the password can't
+  be recovered until the account goes online, and that losing the device
+  before then loses the data with it.
+- Requires an 8-character password minimum in **both** modes (D5 — the
+  earlier 6-character design floor was raised so device-only and online share
+  one rule).
+- On submit, calls `OfflineAccountService.create(email, password)` directly —
+  no network call. Success sets `PatientAppState.accountMode` to
+  `AccountMode.deviceOnly` and proceeds through the same disclosure gate as
+  every other sign-in path; while device-only, the disclosure API call is
+  refused locally by the interceptor (see above) and tolerated, since
+  acceptance is what's actually stored on-device.
+
 ## App startup
 
 `app/lib/brands/balsm/main_balsm.dart` (`bootstrap()`) runs the incomplete-create

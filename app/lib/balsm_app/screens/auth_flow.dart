@@ -462,6 +462,11 @@ class _UnderEighteenScreen extends StatelessWidget {
 // Claude Design `PhoneScreen` is email-only in this phase (no mobile
 // signup/login). Collects email + password; sign-up still verifies by OTP
 // before a session exists; sign-in uses the password path.
+
+/// Which credential path this screen is currently on: a normal server
+/// account, or a device-only account created entirely on-device (Task 9).
+enum _AuthMode { online, deviceOnly }
+
 class _PhoneScreen extends ConsumerStatefulWidget {
   const _PhoneScreen();
   @override
@@ -477,6 +482,15 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// Set when the password was refused: the screen then asks whether to send a
   /// code rather than sending one on its own.
   bool _offerCode = false;
+
+  /// Online (server account) vs device-only (Task 9): the segmented control
+  /// at the top of this screen switches it.
+  _AuthMode _mode = _AuthMode.online;
+
+  /// True while [_createOnDevice] is in flight. Separate from [_submitting] —
+  /// that one reflects [credentialsControllerProvider], which the device-only
+  /// path never touches.
+  bool _creating = false;
 
   bool _seeded = false;
 
@@ -516,9 +530,12 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     super.dispose();
   }
 
+  // D5: 8 characters minimum in both modes — the design said 6, but an
+  // offline password can never be server-side rate-limited, so the ruling
+  // raised the floor for everyone, not just device-only.
   bool get ok {
     final emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(ctrl.text.trim());
-    return emailOk && pwCtrl.text.length >= 8;
+    return emailOk && pwCtrl.text.length >= OfflineAccountService.minPasswordLength;
   }
 
   void _showForgotPassword(String email) {
@@ -588,6 +605,25 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     s.go(AppRoutes.otp);
   }
 
+  /// Device-only path: no network round-trip, no OTP. Creates the account
+  /// entirely on-device, then runs the same disclosure gate everyone else
+  /// goes through — while device-only, the disclosure API call is refused
+  /// locally by the interceptor and tolerated; acceptance is stored on-device
+  /// (Task 3).
+  Future<void> _createOnDevice(PatientAppState s) async {
+    if (_creating) return;
+    setState(() => _creating = true);
+    try {
+      await ref.read(offlineAccountServiceProvider).create(email: ctrl.text.trim(), password: pwCtrl.text);
+      if (!mounted) return;
+      s.setAccountMode(AccountMode.deviceOnly);
+      TextInput.finishAutofillContext();
+      await enterAfterSignIn(context, ref, s);
+    } finally {
+      if (mounted) setState(() => _creating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -608,12 +644,33 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: _Segmented<_AuthMode>(
+                    left: s.strings.auth.mode_online,
+                    right: s.strings.auth.mode_device,
+                    leftIcon: LucideIcons.cloud,
+                    rightIcon: LucideIcons.smartphone,
+                    leftValue: _AuthMode.online,
+                    rightValue: _AuthMode.deviceOnly,
+                    value: _mode,
+                    onChanged: (m) => setState(() => _mode = m),
+                  ),
+                ),
                 const SizedBox(height: 18),
-                // One title for both audiences. Which one this patient is, the
-                // screen is not told and must not imply.
-                Text(s.strings.emergency.em_one_title, style: Typo.title(ar: s.rtl)),
+                // One title for both audiences online. Which one this patient
+                // is, the screen is not told and must not imply. Device-only
+                // is its own, separately-named mode — there is only one way
+                // in for it, so nothing to stay neutral about.
+                Text(
+                  _mode == _AuthMode.deviceOnly ? s.strings.auth.device_title : s.strings.emergency.em_one_title,
+                  style: Typo.title(ar: s.rtl),
+                ),
                 const SizedBox(height: 8),
-                Text(s.strings.emergency.em_one_help, style: Typo.body(ar: s.rtl)),
+                Text(
+                  _mode == _AuthMode.deviceOnly ? s.strings.auth.device_help : s.strings.emergency.em_one_help,
+                  style: Typo.body(ar: s.rtl),
+                ),
                 const SizedBox(height: 24),
                 _Label(s.strings.emergency.em_label, ar: s.rtl),
                 const SizedBox(height: 8),
@@ -628,20 +685,26 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     onChanged: (_) => setState(() {})),
                 const SizedBox(height: 16),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  _Label(s.strings.auth.pw_label, ar: s.rtl),
-                  // Shown to everyone now: the screen does not know whether
-                  // this address has a password to forget.
-                  GestureDetector(
-                    onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
-                    child: Text(s.strings.auth.forgot_pw,
-                        style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
-                  ),
+                  _Label(_mode == _AuthMode.deviceOnly ? s.strings.auth.device_pw_label : s.strings.auth.pw_label,
+                      ar: s.rtl),
+                  // Shown only in online mode: a device-only account has no
+                  // server-side record to recover a password from yet (see
+                  // the warning card below), so there is nothing this link
+                  // could do.
+                  if (_mode == _AuthMode.online)
+                    GestureDetector(
+                      onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
+                      child: Text(s.strings.auth.forgot_pw,
+                          style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                    ),
                 ]),
                 const SizedBox(height: 8),
                 _Input(
                     controller: pwCtrl,
                     id: 'passwordField',
-                    hint: s.strings.auth.pw_ph,
+                    // D5: 8 characters minimum in both modes — shown as the
+                    // hint instead of a generic placeholder.
+                    hint: s.strings.auth.pw_min_hint,
                     obscure: !_showPw,
                     forceLtr: true,
                     accent: s.accent,
@@ -663,6 +726,10 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                       ),
                     ),
                     onChanged: (_) => setState(() {})),
+                if (_mode == _AuthMode.deviceOnly) ...[
+                  const SizedBox(height: 12),
+                  _DeviceOnlyWarning(text: s.strings.auth.device_warning, ar: s.rtl),
+                ],
               ]),
             )),
             Padding(
@@ -701,16 +768,23 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                   const SizedBox(height: 10),
                 ],
                 Opacity(
-                    opacity: ok && !_submitting ? 1 : 0.4,
-                    child: PButton(_submitting ? s.strings.auth.pw_signing_in : s.strings.auth.pw_continue,
+                    opacity: ok && !_submitting && !_creating ? 1 : 0.4,
+                    child: PButton(
+                        _mode == _AuthMode.deviceOnly
+                            ? s.strings.auth.device_create
+                            : (_submitting ? s.strings.auth.pw_signing_in : s.strings.auth.pw_continue),
                         variant: _offerCode ? BtnVariant.secondary : BtnVariant.primary,
                         large: true,
                         block: true,
                         accent: s.accent,
                         ar: s.rtl,
-                        onTap: ok && !_submitting
+                        onTap: ok && !_submitting && !_creating
                             ? () {
-                                _continue();
+                                if (_mode == _AuthMode.deviceOnly) {
+                                  _createOnDevice(s);
+                                } else {
+                                  _continue();
+                                }
                               }
                             : null)),
                 const SizedBox(height: 14),
@@ -1601,24 +1675,39 @@ class _Segmented<V> extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     // `.segmented button` — active pill bg/shadow animate over --dur-base.
+    // The pill itself stays the design's height; `MinTapTarget` grows only the
+    // tap/semantics area to the 48px platform minimum, same pattern as
+    // `RoundBtn` — nothing painted changes.
     Widget seg(String label, IconData? icon, bool active, VoidCallback onTap) => Expanded(
-          child: GestureDetector(
-            onTap: onTap,
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: Motion.base,
-              curve: Motion.easeOut,
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  color: active ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                  boxShadow: active ? T.shadowXs : null),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-                if (icon != null) ...[Icon(icon, size: 14, color: active ? T.fg1 : T.fg3), const SizedBox(width: 5)],
-                Text(label,
-                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
-              ]),
+          child: Semantics(
+            button: true,
+            selected: active,
+            label: label,
+            excludeSemantics: true,
+            child: MinTapTarget(
+              child: GestureDetector(
+                onTap: onTap,
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: Motion.base,
+                  curve: Motion.easeOut,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      color: active ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(7),
+                      boxShadow: active ? T.shadowXs : null),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 14, color: active ? T.fg1 : T.fg3),
+                      const SizedBox(width: 5)
+                    ],
+                    Text(label,
+                        style: Typo.bodySm(ar: s.rtl)
+                            .copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
+                  ]),
+                ),
+              ),
             ),
           ),
         );
@@ -1655,6 +1744,29 @@ class _Field extends StatelessWidget {
         const SizedBox(height: 8),
         child,
       ]);
+}
+
+/// Device-only sign-in's unrecoverable-password notice — same info-card shape
+/// used elsewhere in the app (icon + cream-50 fill), under the password field.
+class _DeviceOnlyWarning extends StatelessWidget {
+  const _DeviceOnlyWarning({required this.text, required this.ar});
+  final String text;
+  final bool ar;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: T.cream50, borderRadius: BorderRadius.circular(T.rLg)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(LucideIcons.info, size: 16, color: T.fg3),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.45)),
+          ),
+        ]),
+      );
 }
 
 // ── Forgot-password (email-only reset via OTP code) ──────────

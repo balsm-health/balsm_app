@@ -112,6 +112,16 @@ class AuthStrings_ar extends AuthStrings {
   String get pw_signing_in => "جارٍ تسجيل الدخول…";
   String get otp_verifying => "جارٍ التحقق…";
   String get pw_invalid_creds => "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+  String get pw_min_hint => "8 أحرف على الأقل";
+  String get mode_online => "متصل";
+  String get mode_device => "على الجهاز فقط";
+  String get device_title => "حساب على هذا الجهاز";
+  String get device_help =>
+      "بدون إنترنت وبدون رمز تحقق. تبقى بياناتك على هذا الجهاز فقط، وعند الاتصال بالإنترنت لاحقًا نرسل رمزًا إلى بريدك للتحقق والمزامنة.";
+  String get device_pw_label => "كلمة مرور لقفل التطبيق";
+  String get device_warning =>
+      "بريدك غير مُتحقَّق منه بعد، لذا لا يمكن استعادة كلمة المرور حتى تتصل بالإنترنت. إن فقدت جهازك قبل ذلك، تُفقد بياناتك.";
+  String get device_create => "إنشاء الحساب على الجهاز";
   String get fp_title => "إعادة تعيين كلمة المرور";
   String get fp_help =>
       "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
@@ -187,6 +197,22 @@ class AuthStrings_ar extends AuthStrings {
         return otp_verifying;
       case 'pw_invalid_creds':
         return pw_invalid_creds;
+      case 'pw_min_hint':
+        return pw_min_hint;
+      case 'mode_online':
+        return mode_online;
+      case 'mode_device':
+        return mode_device;
+      case 'device_title':
+        return device_title;
+      case 'device_help':
+        return device_help;
+      case 'device_pw_label':
+        return device_pw_label;
+      case 'device_warning':
+        return device_warning;
+      case 'device_create':
+        return device_create;
       case 'fp_title':
         return fp_title;
       case 'fp_help':

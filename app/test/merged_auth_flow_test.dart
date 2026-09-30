@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
@@ -15,6 +16,8 @@ class _MockSignInUseCase extends Mock implements SignInUseCase {}
 
 class _MockDisclosureDao extends Mock implements DisclosureDao {}
 
+class _MockOfflineAccountService extends Mock implements OfflineAccountService {}
+
 /// One entry for everyone: email + password, and a code when that is refused.
 ///
 /// The screens must never say whether an address has an account. The server
@@ -25,6 +28,7 @@ void main() {
   late PatientAppState state;
   late _MockSignInUseCase signIn;
   late _MockDisclosureDao disclosure;
+  late _MockOfflineAccountService offline;
 
   setUpAll(() => registerFallbackValue(const DisclosureId.value('consolidated')));
 
@@ -37,6 +41,7 @@ void main() {
     state = PatientAppState();
     signIn = _MockSignInUseCase();
     disclosure = _MockDisclosureDao();
+    offline = _MockOfflineAccountService();
     when(() => disclosure.watchAcceptance(any(), any())).thenAnswer((_) => Stream<DisclosureAcceptance?>.value(null));
   });
 
@@ -49,6 +54,7 @@ void main() {
       overrides: [
         signInUseCaseProvider.overrideWithValue(signIn),
         disclosureDaoProvider.overrideWithValue(disclosure),
+        offlineAccountServiceProvider.overrideWithValue(offline),
       ],
       child: MaterialApp(
         home: Material(
@@ -58,6 +64,13 @@ void main() {
       ),
     ));
     await tester.pump();
+  }
+
+  /// Welcome → the credential screen, with nothing typed in yet.
+  Future<void> pumpPhoneScreen(WidgetTester tester) async {
+    await pump(tester);
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
   }
 
   /// Welcome → the one credential screen, with credentials typed in.
@@ -216,5 +229,40 @@ void main() {
     expect(find.textContaining('Enter the 6-digit code we sent to', findRichText: true), findsOneWidget);
     expect(find.textContaining('no account', findRichText: true), findsNothing);
     expect(find.textContaining('already', findRichText: true), findsNothing);
+  });
+
+  group('Device only', () {
+    testWidgets('hides forgot-password, shows warning, enforces 8 chars', (tester) async {
+      await pumpPhoneScreen(tester);
+      await tester.tap(find.text('Device only'));
+      await tester.pumpAndSettle();
+      expect(find.text('Forgot password?'), findsNothing);
+      expect(find.textContaining("can't be recovered"), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).first, 'layla@example.com');
+      await tester.enterText(find.byType(TextField).last, '1234567');
+      await tester.pump();
+      expect(
+        tester.widget<PButton>(find.widgetWithText(PButton, 'Create account on device')).onTap,
+        isNull,
+      );
+    });
+
+    testWidgets('creates the account locally and never calls the API', (tester) async {
+      when(() => offline.create(email: any(named: 'email'), password: any(named: 'password')))
+          .thenAnswer((_) async => 'off-1');
+      await pumpPhoneScreen(tester);
+      await tester.tap(find.text('Device only'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'layla@example.com');
+      await tester.enterText(find.byType(TextField).last, 'correct-horse');
+      await tester.pump();
+      await tester.tap(find.text('Create account on device'));
+      await tester.pumpAndSettle();
+
+      verify(() => offline.create(email: 'layla@example.com', password: 'correct-horse')).called(1);
+      verifyNever(() => signIn.requestContinueOtp(any(), any()));
+      expect(state.accountMode, AccountMode.deviceOnly);
+    });
   });
 }

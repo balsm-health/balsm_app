@@ -108,6 +108,16 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get pw_signing_in => "Signing in…";
   String get otp_verifying => "Verifying…";
   String get pw_invalid_creds => "Invalid email or password.";
+  String get pw_min_hint => "At least 8 characters";
+  String get mode_online => "Online";
+  String get mode_device => "Device only";
+  String get device_title => "Account on this device";
+  String get device_help =>
+      "No internet or verification code needed. Your data stays on this device only — when you go online later, we'll send a code to your email to verify and sync.";
+  String get device_pw_label => "Password to lock the app";
+  String get device_warning =>
+      "Your email isn't verified yet, so your password can't be recovered until you go online. If you lose this device before then, your data goes with it.";
+  String get device_create => "Create account on device";
   String get fp_title => "Reset your password";
   String get fp_help =>
       "Enter your email — we'll send a code to reset your password.";
@@ -182,6 +192,22 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return otp_verifying;
       case 'pw_invalid_creds':
         return pw_invalid_creds;
+      case 'pw_min_hint':
+        return pw_min_hint;
+      case 'mode_online':
+        return mode_online;
+      case 'mode_device':
+        return mode_device;
+      case 'device_title':
+        return device_title;
+      case 'device_help':
+        return device_help;
+      case 'device_pw_label':
+        return device_pw_label;
+      case 'device_warning':
+        return device_warning;
+      case 'device_create':
+        return device_create;
       case 'fp_title':
         return fp_title;
       case 'fp_help':
