@@ -731,6 +731,9 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
   String get body_tap => "انقر لتحديد الموقع";
+  String get body_layer => "الطبقة";
+  String body_remove(String label) => "إزالة $label";
+  String get body_clear_all => "مسح الكل";
   String get list_sep => "، ";
   String get list_mid => " · ";
   String pain_n(String n) => "$n/10";
@@ -910,6 +913,12 @@ class CheckinStrings_ar extends CheckinStrings {
         return body_view_back;
       case 'body_tap':
         return body_tap;
+      case 'body_layer':
+        return body_layer;
+      case 'body_remove':
+        return body_remove;
+      case 'body_clear_all':
+        return body_clear_all;
       case 'list_sep':
         return list_sep;
       case 'list_mid':

@@ -731,6 +731,9 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get body_view_front => "Front";
   String get body_view_back => "Back";
   String get body_tap => "Tap to mark location";
+  String get body_layer => "Layer";
+  String body_remove(String label) => "Remove $label";
+  String get body_clear_all => "Clear all";
   String get list_sep => ", ";
   String get list_mid => " · ";
   String pain_n(String n) => "$n/10";
@@ -905,6 +908,12 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return body_view_back;
       case 'body_tap':
         return body_tap;
+      case 'body_layer':
+        return body_layer;
+      case 'body_remove':
+        return body_remove;
+      case 'body_clear_all':
+        return body_clear_all;
       case 'list_sep':
         return list_sep;
       case 'list_mid':

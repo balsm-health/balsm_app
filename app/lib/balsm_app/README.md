@@ -25,7 +25,7 @@ or `melos run run:patient`, or the **"Balsm Patient App (design)"** VS Code laun
 | `app_state.dart` | `PatientAppState` (ChangeNotifier) + `AppScope` |
 | `shell.dart` | tab bar, FAB, routing, `AdaptiveFrame` (responsive device frame) |
 | `screens/` | home, trends, meds, prescriptions, profile, personal-details, map, auth flow, records, appointments, quicklog, report flow |
-| `widgets/` | mood face, line chart, num pad, body map, balsm flower, badges, account switcher |
+| `widgets/` | mood face, line chart, num pad, body map, balsm flower, badges, account switcher, shared `SelectField<V>` dropdown (`select_field.dart`) |
 
 ## Adaptive
 Full-bleed on phones; centered phone-proportioned device card on

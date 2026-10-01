@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
 import '../tokens.dart';
+import 'select_field.dart';
 
 /// One medication as typed into a form (prescriptions.jsx `MedRow` +
 /// `AddMedSheet`'s "When do you take it?").
@@ -177,7 +178,7 @@ class MedPlanCard extends StatelessWidget {
           _FieldLabel(m.rx_frequency),
           Row(children: [
             Expanded(
-              child: _Select(
+              child: SelectField<String>(
                 value: d.freqType,
                 items: [
                   ('once', m.freq_once),
@@ -198,7 +199,7 @@ class MedPlanCard extends StatelessWidget {
             if (d.freqType == 'every_x') ...[
               const SizedBox(width: 8),
               Expanded(
-                child: _Select(
+                child: SelectField<String>(
                   value: d.freqUnit,
                   items: [('hours', m.unit_hours), ('days', m.unit_days)],
                   onChanged: (v) => _set(() => d.freqUnit = v),
@@ -212,7 +213,7 @@ class MedPlanCard extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           _FieldLabel(m.rx_duration),
-          _Select(
+          SelectField<String>(
             value: d.durType,
             items: [
               ('period', m.dur_period),
@@ -231,7 +232,7 @@ class MedPlanCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _Select(
+                child: SelectField<String>(
                   value: d.durUnit,
                   items: [('days', m.unit_days), ('weeks', m.unit_weeks), ('months', m.unit_months)],
                   onChanged: (v) => _set(() => d.durUnit = v),
@@ -438,42 +439,6 @@ class _Input extends StatelessWidget {
         border: _border(T.border),
         enabledBorder: _border(T.border),
         focusedBorder: _border(s.accent.main),
-      ),
-    );
-  }
-}
-
-class _Select extends StatelessWidget {
-  const _Select({required this.value, required this.items, required this.onChanged});
-  final String value;
-  final List<(String, String)> items;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return InputDecorator(
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-        border: _border(T.border),
-        enabledBorder: _border(T.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          icon: const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-          style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
-          items: [
-            for (final (v, label) in items)
-              DropdownMenuItem(value: v, child: Text(label, overflow: TextOverflow.ellipsis)),
-          ],
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
       ),
     );
   }
