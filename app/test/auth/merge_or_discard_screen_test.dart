@@ -43,6 +43,7 @@ void main() {
       servers: const [ServerPreset(label: 'Local', apiBaseUrl: 'http://localhost:5050')],
     );
     controller = _MockController();
+    when(() => controller.pendingChoice()).thenAnswer((_) async => null);
     dao = _MockDisclosureDao();
     // The disclosure accepted while offline is already on the device.
     when(() => dao.watchAcceptance(any(), any())).thenAnswer((_) => Stream.value(DisclosureAcceptance(
@@ -157,5 +158,40 @@ void main() {
 
     await pump(tester, state);
     expect(find.text(state.strings.offline.merge_title), findsOneWidget);
+  });
+
+  testWidgets('a merge that failed part-way offers only finishing the merge', (tester) async {
+    when(() => controller.merge()).thenAnswer((_) async => AppResult.failure(const StorageFailure()));
+    final state = atMerge();
+    await pump(tester, state);
+    final st = state.strings.offline;
+
+    // The DB half committed; the controller now records the choice.
+    when(() => controller.pendingChoice()).thenAnswer((_) async => MergeChoice.merge);
+    await tester.tap(find.text(st.merge_btn));
+    await tester.pumpAndSettle();
+    expect(find.text(st.merge_failed), findsOneWidget);
+    expect(find.text(st.merge_btn), findsOneWidget);
+    expect(find.text(st.discard_btn), findsNothing);
+  });
+
+  testWidgets('after a restart mid-discard, only Remove is offered', (tester) async {
+    when(() => controller.pendingChoice()).thenAnswer((_) async => MergeChoice.discard);
+    final state = atMerge();
+    await pump(tester, state);
+    await tester.pumpAndSettle();
+    final st = state.strings.offline;
+    expect(find.text(st.discard_btn), findsOneWidget);
+    expect(find.text(st.merge_btn), findsNothing);
+  });
+
+  testWidgets('after a restart mid-merge, only finishing the merge is offered', (tester) async {
+    when(() => controller.pendingChoice()).thenAnswer((_) async => MergeChoice.merge);
+    final state = atMerge();
+    await pump(tester, state);
+    await tester.pumpAndSettle();
+    final st = state.strings.offline;
+    expect(find.text(st.merge_btn), findsOneWidget);
+    expect(find.text(st.discard_btn), findsNothing);
   });
 }

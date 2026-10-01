@@ -16,6 +16,11 @@ enum GoOnlineOutcome {
   needsMergeChoice,
 }
 
+/// Which way the patient resolved the merge-or-discard choice, persisted
+/// under [GoOnlineController.kPendingMergeChoice] before the first destructive
+/// step so a half-finished choice can only be finished, never switched.
+enum MergeChoice { merge, discard }
+
 /// Takes a device-only account online: email → OTP → claim the id.
 ///
 /// The session tokens are persisted by [SignInUseCase.goOnline]; this owns
@@ -55,6 +60,12 @@ class GoOnlineController {
 
   static const kUserId = 'balsm.user_id';
   static const kPendingMergeTarget = 'balsm.pending_merge_target';
+
+  /// The merge-or-discard choice in progress ([MergeChoice.name]). Written
+  /// before the first destructive step: once a merge has committed its rows,
+  /// a Remove would delete the merged records' attachments (and a discard
+  /// half-done can't be merged), so only the recorded choice may run.
+  static const kPendingMergeChoice = 'balsm.pending_merge_choice';
 
   /// The id the device's local rows and files are owned by, pinned before
   /// [SignInUseCase.goOnline] overwrites `balsm.user_id` with a server id.
@@ -131,6 +142,16 @@ class GoOnlineController {
     return AppResult.success(GoOnlineOutcome.online);
   }
 
+  /// The choice a previous run started and did not finish, if any; the
+  /// screen then offers only that one.
+  Future<MergeChoice?> pendingChoice() async {
+    final v = await _storage.readToken(kPendingMergeChoice);
+    for (final c in MergeChoice.values) {
+      if (c.name == v) return c;
+    }
+    return null;
+  }
+
   /// Merge-or-discard, choice 1: adds this phone's data to the existing
   /// account the verify found ([kPendingMergeTarget]).
   ///
@@ -143,48 +164,66 @@ class GoOnlineController {
   /// a crash anywhere lands back on the merge screen and a re-run finishes
   /// (both moves find nothing left under the device id). A storage failure
   /// returns [StorageFailure] and changes nothing past the data moves.
-  Future<AppResult<void>> merge() => _resolvePending((localId, target) async {
+  Future<AppResult<void>> merge() => _resolvePending(MergeChoice.merge, (localId, target) async {
         await mergeOwner(_db, from: localId, to: target);
         await _files.mergeOwnerFiles(from: localId, to: target);
-      }, resyncDisclosure: true);
+      });
 
   /// Merge-or-discard, choice 2: deletes everything this phone holds for the
   /// device-only account — every row it owns (and their dependants) and its
   /// vault files and key — then continues as the existing account. The
   /// screen confirms twice before calling this. Resumable like [merge].
-  Future<AppResult<void>> discard() => _resolvePending((localId, target) async {
-        // Never delete the account being signed in to.
-        if (localId == target) throw StateError('device id is the target');
+  Future<AppResult<void>> discard() => _resolvePending(MergeChoice.discard, (localId, target) async {
         await discardOwner(_db, owner: localId);
         await _files.deleteOwnerFiles(owner: localId);
-      }, resyncDisclosure: false);
+      });
 
   Future<AppResult<void>> _resolvePending(
-    Future<void> Function(String localId, String target) moveData, {
-    required bool resyncDisclosure,
-  }) async {
+    MergeChoice choice,
+    Future<void> Function(String localId, String target) moveData,
+  ) async {
     final localId = await _storage.readToken(kLocalId);
-    final target = await _storage.readToken(kPendingMergeTarget);
-    if (localId == null || localId.isEmpty || target == null || target.isEmpty) {
+    var target = await _storage.readToken(kPendingMergeTarget);
+    // goOnline wrote the existing account's id here before the target key,
+    // so it stands in if a crash came between the two.
+    if (target == null || target.isEmpty) target = await _storage.readToken(kUserId);
+    if (target == null || target.isEmpty) {
       return AppResult.failure(const ValidationFailure('No pending merge'));
     }
-    try {
-      await moveData(localId, target);
-    } catch (_) {
+    final started = await pendingChoice();
+    if (started != null && started != choice) {
+      return AppResult.failure(const ValidationFailure('A different choice is in progress'));
+    }
+    // Never discard the account being signed in to (merging into itself is
+    // simply nothing to move).
+    if (choice == MergeChoice.discard && localId == target) {
       return AppResult.failure(const StorageFailure());
     }
+    // No pinned device id: a previous run got past clearing it, so there is
+    // nothing left to move — just finish the sign-in.
+    if (localId != null && localId.isNotEmpty && localId != target) {
+      try {
+        await _storage.writeToken(kPendingMergeChoice, choice.name);
+        await moveData(localId, target);
+      } catch (_) {
+        return AppResult.failure(const StorageFailure());
+      }
+    }
+    final resync = choice == MergeChoice.merge;
     // Read before markOnline() deletes it; empty on a resume past that point.
     final email = await _storage.readToken(OfflineAccountService.kEmail) ?? '';
     await _storage.writeToken(kUserId, target);
     await _offline.clearPlainPassword();
     await _offline.markOnline();
-    if (resyncDisclosure) await _storage.writeToken(kDisclosurePending, 'true');
+    if (resync) await _storage.writeToken(kDisclosurePending, 'true');
     _bus.publish(UserSignedIn(userId: UserId.value(target), email: email, provider: 'email'));
-    await _offline.setPendingMerge(false);
     await _storage.deleteToken(kPendingMergeTarget);
     await _storage.deleteToken(kLocalId);
+    await _storage.deleteToken(kPendingMergeChoice);
+    // Last: until this is cleared, boot routes back to the merge screen.
+    await _offline.setPendingMerge(false);
     pendingTargetId = null;
-    if (resyncDisclosure) await _resyncDisclosure();
+    if (resync) await _resyncDisclosure();
     return AppResult.success(null);
   }
 

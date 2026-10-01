@@ -1048,9 +1048,31 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
   bool _busy = false;
   String? _error;
 
+  /// A choice a previous attempt started and did not finish. Once one has
+  /// begun only it is offered — e.g. after a merge's rows committed, Remove
+  /// would delete the merged records' attachments.
+  MergeChoice? _started;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadStarted());
+  }
+
+  Future<void> _loadStarted() async {
+    MergeChoice? c;
+    try {
+      c = await ref.read(goOnlineControllerProvider).pendingChoice();
+    } catch (_) {
+      return;
+    }
+    if (mounted && c != _started) setState(() => _started = c);
+  }
+
   Future<void> _merge() => _run((c) => c.merge());
 
-  /// Destructive: a second, explicit confirmation before anything is deleted.
+  /// Destructive: a second, explicit confirmation before anything is deleted
+  /// (also when finishing a discard that already started).
   Future<void> _discard() async {
     if (_busy) return;
     final s = AppScope.of(context);
@@ -1086,6 +1108,7 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
       _busy = false;
       _error = s.strings.offline.merge_failed;
     });
+    await _loadStarted();
   }
 
   @override
@@ -1126,25 +1149,27 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
                 Opacity(
                   opacity: _busy ? 0.4 : 1,
                   child: Column(children: [
-                    PButton(
-                      st.merge_btn,
-                      variant: BtnVariant.primary,
-                      large: true,
-                      block: true,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      onTap: _busy ? null : _merge,
-                    ),
-                    const SizedBox(height: 10),
-                    PButton(
-                      st.discard_btn,
-                      variant: BtnVariant.secondary,
-                      large: true,
-                      block: true,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      onTap: _busy ? null : _discard,
-                    ),
+                    if (_started != MergeChoice.discard)
+                      PButton(
+                        st.merge_btn,
+                        variant: BtnVariant.primary,
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _busy ? null : _merge,
+                      ),
+                    if (_started == null) const SizedBox(height: 10),
+                    if (_started != MergeChoice.merge)
+                      PButton(
+                        st.discard_btn,
+                        variant: BtnVariant.secondary,
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _busy ? null : _discard,
+                      ),
                   ]),
                 ),
               ]),

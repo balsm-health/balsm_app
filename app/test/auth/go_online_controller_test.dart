@@ -403,17 +403,76 @@ void main() {
       expect(events.whereType<UserSignedIn>().single.userId.value, 'srv-1');
     });
 
-    test('without a pinned device id or target, both refuse and touch nothing', () async {
+    test('missing target falls back to balsm.user_id (goOnline wrote the existing id there)', () async {
       await seedPendingMerge(localId: 'off-1', target: 'srv-1');
       storage.data.remove('balsm.pending_merge_target');
+      expect((await controller.merge()).isSuccess, isTrue);
+      expect(await owners(db), ['srv-1', 'srv-1']);
+    });
+
+    test('no target and no session id: refuses and touches nothing', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      storage.data.remove('balsm.pending_merge_target');
+      storage.data.remove('balsm.user_id');
       expect((await controller.merge()).isFailure, isTrue);
       expect((await controller.discard()).isFailure, isTrue);
       expect(await owners(db), ['off-1', 'srv-1']);
+    });
 
-      storage.data['balsm.pending_merge_target'] = 'srv-1';
+    test('resume with no pinned device id: nothing to move, the sign-in completes', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
       storage.data.remove('balsm.offline.local_id');
-      expect((await controller.discard()).isFailure, isTrue);
+      storage.data['balsm.pending_merge_choice'] = 'discard';
+
+      final r = await controller.discard();
+      await flush();
+
+      expect(r.isSuccess, isTrue);
+      // The rows were never identified as the device's: left alone.
       expect(await owners(db), ['off-1', 'srv-1']);
+      verifyNever(() => files.deleteOwnerFiles(owner: any(named: 'owner')));
+      verify(() => offline.markOnline()).called(1);
+      expect(events.whereType<UserSignedIn>().single.userId.value, 'srv-1');
+      expect(storage.data.containsKey('balsm.pending_merge_choice'), isFalse);
+      expectCleared();
+    });
+
+    test('merge that failed after the DB commit can only be finished as a merge', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      when(() => files.mergeOwnerFiles(from: any(named: 'from'), to: any(named: 'to')))
+          .thenThrow(const FileSystemException('x'));
+      expect((await controller.merge()).isFailure, isTrue);
+      expect(await owners(db), ['srv-1', 'srv-1'], reason: 'the DB half committed');
+      expect(await controller.pendingChoice(), MergeChoice.merge);
+
+      // Remove would now delete the merged records' attachments: refused.
+      expect((await controller.discard()).isFailure, isTrue);
+      verifyNever(() => files.deleteOwnerFiles(owner: any(named: 'owner')));
+
+      when(() => files.mergeOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {});
+      expect((await controller.merge()).isSuccess, isTrue);
+      expect(await controller.pendingChoice(), equals(null));
+    });
+
+    test('discard that failed part-way can only be finished as a discard', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      when(() => files.deleteOwnerFiles(owner: any(named: 'owner'))).thenThrow(const FileSystemException('x'));
+      expect((await controller.discard()).isFailure, isTrue);
+      expect(await controller.pendingChoice(), MergeChoice.discard);
+
+      expect((await controller.merge()).isFailure, isTrue);
+      verifyNever(() => files.mergeOwnerFiles(from: any(named: 'from'), to: any(named: 'to')));
+    });
+
+    test('the pending flag is cleared last, after every other pending key', () async {
+      await seedPendingMerge(localId: 'off-1', target: 'srv-1');
+      final leftAtFlagClear = <String>[];
+      when(() => offline.setPendingMerge(false)).thenAnswer((_) async {
+        leftAtFlagClear.addAll(storage.data.keys.where((k) =>
+            k == 'balsm.pending_merge_target' || k == 'balsm.offline.local_id' || k == 'balsm.pending_merge_choice'));
+      });
+      await controller.merge();
+      expect(leftAtFlagClear, isEmpty);
     });
 
     test('discard refuses when the device id is the target (would delete the account itself)', () async {
