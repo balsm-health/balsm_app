@@ -127,6 +127,28 @@ void main() {
     });
   });
 
+  group('account mode', () {
+    // A device-only account left on this phone must never make a server
+    // session look device-only: every request would be refused locally and
+    // the next boot would land on the offline Unlock screen.
+    test('every ordinary sign-in marks the account online', () async {
+      final tokens = (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: false);
+      when(() => adapter.verifyOtp(any(), any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.passwordSignIn(any(), any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.verifyLink(any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.signInWithGoogle(any(), any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.signInWithApple(any(), any(), any(), any(), any())).thenAnswer((_) async => tokens);
+
+      await usecase.verifyEmailOtp(email: 'a@b.com', code: '123456');
+      await usecase.passwordSignIn(email: 'a@b.com', password: 'pw-12345678');
+      await usecase.verifyMagicLink(token: 'tok');
+      await usecase.signInWithGoogle(idToken: 'id', email: 'a@b.com', countryCode: 'EG');
+      await usecase.signInWithApple(idToken: 'id', authCode: 'c', email: 'a@b.com', countryCode: 'EG');
+
+      verify(() => storage.writeToken(kAccountModeKey, AccountMode.online.wire)).called(5);
+    });
+  });
+
   group('requestEmailOtp', () {
     test('success forwards email + country with reset purpose', () async {
       when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.reset)).thenAnswer((_) async {});
@@ -249,6 +271,8 @@ void main() {
       verify(() => storage.writeToken(_rt, 'rt')).called(1);
       verify(() => storage.writeToken(_uid, 'off-1')).called(1);
       expect(events.whereType<UserSignedIn>(), isEmpty);
+      // The caller flips the mode only after local data is moved.
+      verifyNever(() => storage.writeToken(kAccountModeKey, any()));
     });
 
     test('new account under a different id → GoOnlineNewId', () async {

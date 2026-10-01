@@ -69,6 +69,13 @@ value as `online`, so every existing install (written before this key
 existed) keeps working unchanged. `deviceOnly` means: this account has a
 `balsm.user_id` but no access/refresh token.
 
+Every ordinary sign-in (`SignInUseCase` — email code, password, magic link,
+Google, Apple) writes `balsm.account_mode = online` along with the tokens, so
+a device-only mode left on the phone can never make a server account's
+requests be refused locally or boot it to Unlock. Only `goOnline` leaves the
+mode alone: its caller flips it once the local data has been re-keyed or
+merged.
+
 ## Interceptor device-only guard
 
 `packages/core/lib/src/network/auth_interceptor.dart` (`AuthInterceptor`):
@@ -142,8 +149,11 @@ credential keys (`email`, `pw_hash`, `lockout`) and switches the mode to
 `online`, keeping `balsm.user_id` and `balsm.offline.pw_plain` until the
 go-online flow consumes it.
 
-`create()` clears any stale `balsm.offline.lockout` / `balsm.pending_merge`
-before writing its own keys (so a freshly created account never inherits a
+`create()` refuses (`StateError`) while a device-only account already exists
+(mode `deviceOnly` with a `balsm.user_id`) — a second create would overwrite
+the first account's password hash and id and orphan its data. The UI never
+offers it; the guard is a backstop. `create()` clears any stale
+`balsm.offline.lockout` / `balsm.pending_merge` before writing its own keys (so a freshly created account never inherits a
 previous account's lockout or merge flag), and `discardIncompleteCreate()` —
 meant to be called once at app bootstrap, before anything reads the mode —
 cleans up the orphaned offline-account keys left behind if `create()` crashed

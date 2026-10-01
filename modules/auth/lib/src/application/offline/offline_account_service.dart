@@ -57,6 +57,12 @@ class OfflineAccountService {
     if (password.length < minPasswordLength) {
       throw ArgumentError.value('<redacted>', 'password', 'must be at least $minPasswordLength characters');
     }
+    // One device-only account per phone: creating a second would overwrite the
+    // first's password hash and id and orphan its data. The UI never offers
+    // this; the guard makes sure nothing else can either.
+    if (await mode() == AccountMode.deviceOnly && ((await _s.readToken(kUserId)) ?? '').isNotEmpty) {
+      throw StateError('a device-only account already exists on this device');
+    }
     // A stale lockout/pending-merge from a previous device-only account must
     // never carry into a new one — otherwise a freshly created account could
     // start locked, or wrongly flagged for merge.
@@ -79,8 +85,7 @@ class OfflineAccountService {
 
   /// Cleans up a `create()` that crashed before it could write
   /// `balsm.account_mode` (the last write `create()` makes). Call this once,
-  /// at app bootstrap, *before* anything reads [mode] — a later task wires
-  /// that call in.
+  /// at app bootstrap, *before* anything reads [mode].
   ///
   /// `balsm.account_mode` absent means `create()` never finished:
   /// `markOnline()` always writes an explicit `'online'`, so a missing key
@@ -152,6 +157,8 @@ class OfflineAccountService {
 
   Future<bool> pendingMerge() async => await _s.readToken(kPendingMerge) == 'true';
 
+  /// Deletes every offline-account key, the account mode and `balsm.user_id`.
+  /// Rows and vault files are the caller's to delete first (they need the id).
   Future<void> wipe() async {
     for (final k in [kEmail, kHash, kPlain, kLockout, kPendingMerge, kAccountModeKey, kUserId]) {
       await _s.deleteToken(k);

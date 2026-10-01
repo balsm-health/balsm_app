@@ -159,10 +159,13 @@ class SignInUseCase {
     try {
       final deviceId = await _ensureDeviceId();
       final r = await _adapter.verifyOtpClaim(email, code, deviceId, _deviceLabel(), clientAccountId);
+      // The mode stays deviceOnly here: the caller flips it once local data
+      // is re-keyed or merged.
       await _persistTokens(
         accessToken: r.tokens.accessToken,
         refreshToken: r.tokens.refreshToken,
         userId: r.tokens.userId,
+        markOnline: false,
       );
       if (!r.tokens.isNewUser) return AppResult.success(GoOnlineExistingAccount(r.tokens.userId));
       if (r.adoptedClientId) return AppResult.success(const GoOnlineAdopted());
@@ -373,15 +376,23 @@ class SignInUseCase {
 
   String _deviceLabel() => 'Balsm Flutter App';
 
+  /// Stores the session. Every ordinary sign-in also writes
+  /// `balsm.account_mode = online`: a session with server tokens is an online
+  /// account, whatever a previous device-only account left behind — a stale
+  /// `deviceOnly` would make the interceptor refuse every request and boot
+  /// this account to the offline Unlock screen. Only [goOnline] passes
+  /// [markOnline] false (its caller flips the mode after moving local data).
   Future<void> _persistTokens({
     required String accessToken,
     required String refreshToken,
     required String userId,
+    bool markOnline = true,
   }) async {
     await Future.wait([
       _storage.writeToken(_kAccessToken, accessToken),
       _storage.writeToken(_kRefreshToken, refreshToken),
       _storage.writeToken(_kUserId, userId),
+      if (markOnline) _storage.writeToken(kAccountModeKey, AccountMode.online.wire),
     ]);
   }
 }

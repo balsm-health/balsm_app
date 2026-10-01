@@ -113,6 +113,20 @@ void main() {
     expect(storage.m, isEmpty);
   });
 
+  test('create refuses while a device-only account already exists', () async {
+    final id = await svc.create(email: 'a@b.co', password: 'correct-horse');
+    await expectLater(svc.create(email: 'c@d.co', password: 'other-horse'), throwsStateError);
+    // The first account is untouched.
+    expect(storage.m['balsm.user_id'], id);
+    expect(await svc.unlock('correct-horse'), isA<Unlocked>());
+  });
+
+  test('create works again after wipe', () async {
+    await svc.create(email: 'a@b.co', password: 'correct-horse');
+    await svc.wipe();
+    expect(await svc.create(email: 'c@d.co', password: 'other-horse'), isNotEmpty);
+  });
+
   test('stale lockout does not carry into a new create', () async {
     storage.m['balsm.offline.lockout'] = jsonEncode({
       'failures': 5,
