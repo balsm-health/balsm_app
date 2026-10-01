@@ -298,7 +298,28 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
             Locale('ar', 'AE'),
           ],
           locale: Locale(state.lang.value),
-          theme: ThemeData(scaffoldBackgroundColor: Colors.white, useMaterial3: true),
+          // Material 3 tints dialog surfaces from its baseline palette, so the
+          // date and time pickers came up lavender (#ECE6F0) in an app that is
+          // white-on-cream everywhere else. The pickers are built by Material,
+          // not by the kit, so they are themed here rather than at each call
+          // site. surfaceTint is cleared too: left on, M3 re-tints the surface
+          // by elevation and the white comes back grey-purple.
+          theme: ThemeData(
+            scaffoldBackgroundColor: Colors.white,
+            useMaterial3: true,
+            datePickerTheme: const DatePickerThemeData(
+              backgroundColor: T.surface,
+              headerBackgroundColor: T.surface,
+              headerForegroundColor: T.fg1,
+              surfaceTintColor: Colors.transparent,
+            ),
+            // TimePickerThemeData has no surfaceTintColor on this Flutter
+            // version; backgroundColor alone is opaque here.
+            timePickerTheme: const TimePickerThemeData(
+              backgroundColor: T.surface,
+              dialBackgroundColor: T.surfaceMuted,
+            ),
+          ),
           // Clamp Dynamic Type so large system text never breaks layouts.
           builder: (context, child) {
             final mq = MediaQuery.of(context);
