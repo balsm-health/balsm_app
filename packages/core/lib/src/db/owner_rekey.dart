@@ -143,18 +143,26 @@ Future<int> _deleteWhere(
       [...path, table],
     );
   }
-  // Delete guards (the append-only `dose_events` trigger) protect history
-  // from edits, not from the owner discarding everything they have on the
-  // device. Lift them for this one statement and put them back; inside the
-  // caller's transaction, so a failure restores them with the rows.
+  // The append-only dose-history guard (FR-019) protects history from edits.
+  // Approved by the product owner: discarding a device-only account deletes
+  // its dose history, so that one guard — and only that one, by name — is
+  // lifted for this statement and put back straight after, inside the
+  // caller's transaction (a failure restores it with the rows). Any other
+  // delete guard is a compliance rule nobody approved bypassing: throw.
   final guards = await db.customSelect(
     "SELECT name, sql FROM sqlite_master WHERE type = 'trigger' AND lower(tbl_name) = lower(?)",
     variables: [Variable.withString(table)],
   ).get();
-  final lifted = [
-    for (final g in guards)
-      if (_isDeleteGuard(g.read<String>('sql'))) (name: g.read<String>('name'), sql: g.read<String>('sql')),
-  ];
+  final lifted = <({String name, String sql})>[];
+  for (final g in guards) {
+    final sql = g.read<String>('sql');
+    if (!_isDeleteGuard(sql)) continue;
+    final name = g.read<String>('name');
+    if (!kDiscardLiftableTriggers.contains(name)) {
+      throw StateError('a delete guard blocks discarding this table');
+    }
+    lifted.add((name: name, sql: sql));
+  }
   for (final g in lifted) {
     await db.customStatement('DROP TRIGGER "${g.name}"');
   }
@@ -164,6 +172,11 @@ Future<int> _deleteWhere(
   }
   return changed;
 }
+
+/// Delete-guard triggers [discardOwner] may lift. Only the FR-019 dose-history
+/// guard, by explicit product-owner approval; adding to this list is a
+/// compliance decision, not a code one.
+const kDiscardLiftableTriggers = {'dose_events_no_delete'};
 
 bool _isDeleteGuard(String sql) {
   final s = sql.toUpperCase().replaceAll(RegExp(r'\s+'), ' ');

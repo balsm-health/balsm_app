@@ -401,11 +401,18 @@ Rows that depend on those through a foreign key (for example dose events under
 a medication, or files under a care provider) are deleted first, found by
 following `pragma_foreign_key_list` down, so a non-cascading foreign key never
 blocks the delete and nothing is left orphaned even with foreign keys off.
-The `dose_events` append-only trigger (FR-019) guards history against edits;
-a discard is the patient removing everything this phone holds for the
-offline account (twice confirmed), so the trigger is dropped for that one
-delete and re-created straight after, inside the same transaction. Rows owned
-by any other account are never touched. Idempotent.
+**FR-019 exception — approved by product owner: discarding a device-only
+account deletes its dose history.** The `dose_events` append-only trigger
+guards history against edits; for a discard (the patient removing everything
+this phone holds for the offline account, twice confirmed) the
+`dose_events_no_delete` trigger is dropped for that one delete and re-created
+straight after, inside the same transaction, so a failure restores it with
+the rows. Only triggers on the explicit allow-list
+`kDiscardLiftableTriggers = {'dose_events_no_delete'}` are lifted: any other
+delete-guard trigger (a `BEFORE DELETE … RAISE(ABORT …)`) on a table the
+discard reaches makes it throw and roll back, so a future compliance guard is
+never bypassed silently — extending the list is a compliance decision. Rows
+owned by any other account are never touched. Idempotent.
 
 ### Merging and deleting files
 
@@ -415,7 +422,11 @@ neither a file key nor a vault partition on this phone, this is
 two owners' files can't share a key, so each offline file is decrypted with
 the offline key and saved under the existing account with its own key, then
 the offline copy is deleted — one file at a time, so after a crash each file
-is readable under at least one owner and a re-run finishes the job. The
+is readable under at least one owner and a re-run finishes the job. A file
+that fails to decrypt (`StorageDecodeException` — corrupt, or its key is
+gone) is unreadable under any key: it is skipped and removed with the offline
+partition, so one bad file can't block the merge forever. Any other I/O error
+still fails the merge. Nothing is logged (no file names or paths). The
 offline partition is removed before the offline key. Stored paths
 (`<owner>/<name>.enc`) keep working: the store resolves a path by its file
 name inside the active owner's partition.
@@ -430,13 +441,26 @@ are no-ops there.
 (`app/lib/balsm_app/auth/go_online_controller.dart`) read the device's id
 from `balsm.offline.local_id` (never `balsm.user_id`, which `goOnline` has
 already overwritten with the existing account's id) and the existing account's
-id from `balsm.pending_merge_target`; if either is missing they return a
-`ValidationFailure` and touch nothing. Then:
+id from `balsm.pending_merge_target`, falling back to `balsm.user_id` (which
+`goOnline` set to that id before the target key was written); with neither
+they return a `ValidationFailure` and touch nothing.
+
+The choice is persisted as `balsm.pending_merge_choice` (`merge` | `discard`,
+`MergeChoice`) before the first destructive step. Once set, only that choice
+may run — the other returns a `ValidationFailure` — and `pendingChoice()`
+tells the screen which one it is. Without this, a merge whose rows committed
+but whose file step failed would still offer Remove, which would find no
+offline rows and delete the offline vault files the merged records point at.
+
+If `balsm.offline.local_id` is missing (a previous run got past clearing it),
+there is nothing left to move: the data step is skipped and the sign-in steps
+below simply complete, so a resume is never a dead end. Then:
 
 - **Merge** — `mergeOwner(db, from: localId, to: target)`, then
   `UserFileStore.mergeOwnerFiles(from: localId, to: target)`.
 - **Discard** — refuses (`StorageFailure`) if the device id equals the target,
-  so the signed-in account's own data can never be deleted; otherwise
+  so the signed-in account's own data can never be deleted (a merge with equal
+  ids just has nothing to move); otherwise
   `discardOwner(db, owner: localId)`, then
   `UserFileStore.deleteOwnerFiles(owner: localId)`.
 
@@ -445,17 +469,22 @@ changes; the screen offers a retry. After it succeeds, both: write
 `balsm.user_id = target` (already true, rewritten for safety),
 `clearPlainPassword()` — the existing account keeps its own password (D2);
 `SetPassword` is never called — `markOnline()`, publish
-`UserSignedIn(provider: 'email')` for the existing account, then
-`setPendingMerge(false)` and delete `balsm.pending_merge_target` and
-`balsm.offline.local_id`. Merge also sets `balsm.offline.disclosure_pending`
-before clearing the pending keys and runs the disclosure resync after, exactly
+`UserSignedIn(provider: 'email')` for the existing account, then delete
+`balsm.pending_merge_target`, `balsm.offline.local_id` and
+`balsm.pending_merge_choice`, and finally `setPendingMerge(false)` — the flag
+that routes boot to the merge screen is cleared last. Merge also sets
+`balsm.offline.disclosure_pending` before clearing the pending keys and runs
+the disclosure resync after, exactly
 as the go-online flow does (the launch retry picks up a failure). Discard
 does not resync: the existing account's own acceptance is on the server.
+Merged rows are not queued for upload (the offline outbox is dropped) — by
+design; they reach the server through the account's normal sync.
 
-Both are resumable: the pending keys are cleared last, so a crash anywhere
+Both are resumable: `balsm.pending_merge` is cleared last, so a crash anywhere
 before that boots back to the merge screen (`PatientAppState.load` routes a
-pending merge there), and running either choice again finishes — the data
-steps find nothing left under the device id. The offline email for the
+pending merge there), and running the recorded choice again finishes — the
+data steps find nothing left under the device id, or are skipped once the
+device id is gone. The offline email for the
 `UserSignedIn` event is read before `markOnline()` deletes it; on a resume past
 that point it is empty. Nothing is logged.
 
@@ -479,8 +508,11 @@ designed screen replaces this one.
   enters the app through the same disclosure gate as every sign-in
   (`enterAfterSignIn`).
 - On failure (a failed result or an unexpected exception) it stays put and
-  shows `offline.merge_failed` — never the exception's text — and both
-  choices stay available, so the patient can try again or choose the other.
+  shows `offline.merge_failed` — never the exception's text. If no choice
+  had started yet, both stay available; once one has started
+  (`pendingChoice()`, re-read on load and after every failure) only that
+  button is shown, so the patient can only finish what began. Finishing a
+  discard still asks for the confirmation.
 
 A restart while the merge is pending boots straight back to this screen
 (`PatientAppState.load` with `pendingMerge: true`).

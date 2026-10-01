@@ -149,6 +149,15 @@ void main2() {
       expect(await _rows(db, 'SELECT user_id FROM sync_outbox'), ['srv']);
     });
 
+    test('any delete guard other than the approved dose-history one makes it throw, changing nothing', () async {
+      final db = await _seedProfiles(targetHasProfile: false);
+      await db.customStatement(
+          "CREATE TRIGGER allergy_keep BEFORE DELETE ON allergy BEGIN SELECT RAISE(ABORT, 'kept'); END");
+      await expectLater(discardOwner(db, owner: 'off'), throwsStateError);
+      expect(await _rows(db, 'SELECT id FROM allergy ORDER BY id'), ['a1', 'a2']);
+      expect(await _rows(db, 'SELECT id FROM medications'), ['m1']);
+    });
+
     test('works without foreign keys enforced (no orphaned children)', () async {
       final db = await _seedProfiles(targetHasProfile: false);
       await db.customStatement('PRAGMA foreign_keys = OFF');

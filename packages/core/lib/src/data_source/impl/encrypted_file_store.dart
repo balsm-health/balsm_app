@@ -190,8 +190,9 @@ class EncryptedFileStore implements UserFileStore {
   /// ([rekeyOwnerFiles]). Otherwise every `<root>/<from>/*.enc` is decrypted
   /// with [from]'s key and saved under [to] with [to]'s key, then removed —
   /// one file at a time, so a crash leaves each file readable under at least
-  /// one owner and a re-run just finishes. [from]'s partition goes before its
-  /// key, so a partition is never left without the key that opens it.
+  /// one owner and a re-run just finishes. A file that can't be decrypted is
+  /// skipped and removed with the partition. [from]'s partition goes before
+  /// its key, so a partition is never left without the key that opens it.
   @override
   Future<void> mergeOwnerFiles({required String from, required String to}) async {
     _checkIds([from, to]);
@@ -209,7 +210,15 @@ class EncryptedFileStore implements UserFileStore {
         if (entry is! File) continue;
         final name = entry.uri.pathSegments.last;
         if (!name.endsWith('.enc')) continue;
-        final bytes = await read(name, scope: src);
+        Uint8List? bytes;
+        try {
+          bytes = await read(name, scope: src);
+        } on StorageDecodeException {
+          // Unreadable under any key (corrupt, or its key is gone): it can't
+          // be carried over, and must not block the rest. Dropped with the
+          // old partition. Any other I/O error still fails the merge.
+          bytes = null;
+        }
         if (bytes != null) await save(name.substring(0, name.length - 4), bytes, scope: dst);
         await entry.delete();
       }

@@ -153,6 +153,22 @@ void mergeAndDelete() {
       expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
     });
 
+    test('an undecryptable offline file is dropped; the rest still merge', () async {
+      await store.save('bad.pdf', a);
+      await store.save('good.pdf', b);
+      await store.save('s1.pdf', a, scope: const UserId.value('srv-1'));
+      // Corrupt one file: it can't be opened under any key.
+      await File('${root.path}/off-1/bad.pdf.enc').writeAsBytes(List.filled(40, 7));
+
+      await store.mergeOwnerFiles(from: 'off-1', to: 'srv-1');
+
+      active = const UserId.value('srv-1');
+      expect(await store.read('good.pdf.enc'), b);
+      expect(await store.exists('bad.pdf.enc'), isFalse);
+      expect(await Directory('${root.path}/off-1').exists(), isFalse);
+      expect(keychain.data.containsKey('balsm.file_key.off-1'), isFalse);
+    });
+
     test('nothing stored is a no-op', () async {
       await store.mergeOwnerFiles(from: 'off-1', to: 'srv-1');
       expect(keychain.data, isEmpty);
