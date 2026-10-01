@@ -659,3 +659,12 @@ designed screen replaces this one.
 A restart while the merge is pending comes back to this screen
 (`PatientAppState.load` with `pendingMerge: true`), through Unlock first while
 the device password still exists.
+
+## End-to-end test
+
+`app/integration_test/offline_account_test.dart` runs the real `bootstrap()`
+with the API layer faked, on an iOS simulator (command in the file header).
+It covers: create → relaunch → Unlock → go online with the id adopted; create
+→ Profile → "Remove this account from this phone" → Welcome, with no keychain
+key, file key or row left and no Unlock on relaunch; and create → go online
+to an existing account → Merge.

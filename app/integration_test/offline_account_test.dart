@@ -5,7 +5,10 @@
 //   1. no session → Device only → create → add a medication → relaunch →
 //      unlock → go online; the server ADOPTS the device's id → the medication
 //      is still listed and `balsm.user_id` is unchanged.
-//   2. no session → Device only → create → add a medication → go online; the
+//   2. no session → Device only → create → add a medication → Profile →
+//      "Remove this account from this phone" → Welcome; the keychain and the
+//      database hold nothing of it, and a relaunch does not ask to unlock.
+//   3. no session → Device only → create → add a medication → go online; the
 //      email already has an account (is_new_user: false) → merge screen →
 //      Merge → the medication is listed under the server's id.
 //
@@ -261,6 +264,43 @@ void main() {
     await tapWhenReady(tester, find.text('Meds'));
     await pumpUntil(tester, find.text(_medName));
     expect(find.text(_medName), findsWidgets);
+
+    await shutDown(tester);
+  });
+
+  testWidgets('device-only → Profile → remove from this phone → back to Welcome with nothing left', (tester) async {
+    final auth = _GoOnlineAuthApi(adopt: true);
+    await wipeDevice(tester);
+    await launch(tester, auth);
+
+    await createDeviceOnlyAccount(tester);
+    final offlineId = await storage.read(key: 'balsm.user_id');
+    await addMedication(tester);
+    expect(await medOwners(), [offlineId]);
+
+    await tapWhenReady(tester, find.text('Profile'));
+    await settle(tester);
+    // A device-only account has no Sign out: it is removed instead.
+    await tester.scrollUntilVisible(find.text('Remove this account from this phone'), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Sign out'), findsNothing);
+    await settle(tester, 2);
+    await tapWhenReady(tester, find.text('Remove this account from this phone'));
+    await pumpUntil(tester, find.text('Remove this account and its data?'));
+    await tapWhenReady(tester, find.text('Remove'));
+    await pumpUntil(tester, find.text('Get started'));
+
+    expect(await storage.read(key: 'balsm.user_id'), isNull);
+    expect(await storage.read(key: kAccountModeKey), isNull);
+    expect(await storage.read(key: 'balsm.offline.pw_hash'), isNull);
+    expect(await storage.read(key: 'balsm.file_key.$offlineId'), isNull);
+    expect(await medOwners(), isEmpty);
+
+    // A relaunch lands on Welcome, not Unlock.
+    await shutDown(tester);
+    await launch(tester, auth);
+    await pumpUntil(tester, find.text('Get started'));
+    expect(find.text('Unlock Balsm'), findsNothing);
 
     await shutDown(tester);
   });
