@@ -207,6 +207,21 @@ void main() {
     verifyNever(() => offline.clearPlainPassword());
   });
 
+  test('a throw while handing over the password still leaves the disclosure re-send flagged', () async {
+    await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
+    when(() => signIn.goOnline(
+            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
+        .thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
+    // A keychain error reading the plaintext back.
+    when(() => offline.pendingCredentials()).thenThrow(Exception('keychain'));
+
+    await expectLater(controller.verify(email: 'a@b.co', code: '123456'), throwsException);
+
+    verify(() => offline.markOnline()).called(1);
+    expect(storage.data['balsm.offline.disclosure_pending'], 'true',
+        reason: 'the launch-time retry must still re-send the disclosure acceptance');
+  });
+
   test('existing account: sets pending merge, no re-key, no sign-in event', () async {
     await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
     when(() => signIn.goOnline(

@@ -90,24 +90,23 @@ class GoOnlineController {
 
   Future<AppResult<GoOnlineOutcome>> verify({required String email, required String code}) async {
     lockedUntil = null;
-    // Step 1: the device's own id, pinned before goOnline overwrites
+    // The device's own id, pinned before goOnline overwrites
     // balsm.user_id with the server's id when it persists the session.
     final localId = await _localId();
     if (localId == null) {
       return AppResult.failure(const ValidationFailure('No device account'));
     }
 
-    // Step 2.
     final r = await _signIn.goOnline(email: email, code: code, clientAccountId: localId);
     if (r.isFailure) return AppResult.failure(r.error);
 
     final String finalId;
     switch (r.value) {
       case GoOnlineAdopted():
-        // Step 3: the server kept the device's id — nothing to re-key.
+        // The server kept the device's id — nothing to re-key.
         finalId = localId;
       case GoOnlineNewId(:final userId):
-        // Step 4: collision — move every local row, then the vault files and
+        // Collision — move every local row, then the vault files and
         // their key, to the server's id before anyone is told the account
         // changed. Both are idempotent, so a failure is reported (not thrown
         // into the sheet) and a retry re-runs both from the pinned local id.
@@ -121,7 +120,7 @@ class GoOnlineController {
         await _storage.writeToken(kLocalId, userId);
         finalId = userId;
       case GoOnlineExistingAccount(:final userId):
-        // Step 6: the merge-or-discard screen finishes this; the account is
+        // The merge-or-discard screen finishes this; the account is
         // NOT online yet, and nobody is told it signed in.
         await _offline.setPendingMerge(true);
         pendingTargetId = userId;
@@ -132,11 +131,12 @@ class GoOnlineController {
         return AppResult.failure(const UnauthorizedFailure('Account locked'));
     }
 
-    // Step 5.
     await _offline.markOnline();
+    // Flagged before anything below can throw, so the launch-time retry
+    // still re-sends the disclosure if the password hand-off fails.
+    await _storage.writeToken(kDisclosurePending, 'true');
     _bus.publish(UserSignedIn(userId: UserId.value(finalId), email: email, provider: 'email'));
     await finishPasswordIfPending();
-    await _storage.writeToken(kDisclosurePending, 'true');
     await _resyncDisclosure();
     await _storage.deleteToken(kLocalId);
     return AppResult.success(GoOnlineOutcome.online);

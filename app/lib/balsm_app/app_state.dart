@@ -115,6 +115,7 @@ class PatientAppState extends ChangeNotifier {
     required bool hasSession,
     AccountMode accountMode = AccountMode.online,
     bool pendingMerge = false,
+    bool hasOfflinePassword = false,
   }) async {
     final s = PatientAppState();
     s._prefs = prefs;
@@ -136,7 +137,10 @@ class PatientAppState extends ChangeNotifier {
       s.storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local;
       s.accountMode = accountMode;
       if (hasSession && pendingMerge) {
-        s.route = AppRoutes.mergeOrDiscard;
+        // The merge screen moves or deletes the device's data, so while the
+        // device password still guards it, Unlock comes first (Unlock then
+        // continues to the merge screen).
+        s.route = hasOfflinePassword ? AppRoutes.unlock : AppRoutes.mergeOrDiscard;
       } else if (hasSession && accountMode == AccountMode.deviceOnly) {
         s.route = AppRoutes.unlock;
       } else if (await prefs.signedIn() && hasSession) {

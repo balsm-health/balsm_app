@@ -20,6 +20,7 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/auth_fields.dart';
 import '../widgets/legal_sheet.dart';
+import 'remove_device_account.dart';
 import 'walkthrough_screen.dart';
 
 /// Routes the auth flow by `state.route`.
@@ -468,7 +469,7 @@ class _UnderEighteenScreen extends StatelessWidget {
 // before a session exists; sign-in uses the password path.
 
 /// Which credential path this screen is currently on: a normal server
-/// account, or a device-only account created entirely on-device (Task 9).
+/// account, or a device-only account created entirely on-device.
 enum _AuthMode { online, deviceOnly }
 
 class _PhoneScreen extends ConsumerStatefulWidget {
@@ -487,7 +488,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// code rather than sending one on its own.
   bool _offerCode = false;
 
-  /// Online (server account) vs device-only (Task 9): the segmented control
+  /// Online (server account) vs device-only: the segmented control
   /// at the top of this screen switches it.
   _AuthMode _mode = _AuthMode.online;
 
@@ -543,7 +544,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   }
 
   // D5: 8 characters minimum in both modes — the design said 6, but an
-  // offline password can never be server-side rate-limited, so the ruling
+  // offline password can never be server-side rate-limited, so the product owner
   // raised the floor for everyone, not just device-only.
   bool get ok {
     final emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(ctrl.text.trim());
@@ -620,8 +621,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// Device-only path: no network round-trip, no OTP. Creates the account
   /// entirely on-device, then runs the same disclosure gate everyone else
   /// goes through — while device-only, the disclosure API call is refused
-  /// locally by the interceptor and tolerated; acceptance is stored on-device
-  /// (Task 3).
+  /// locally by the interceptor and tolerated; acceptance is stored on-device.
   Future<void> _createOnDevice(PatientAppState s) async {
     if (_creating) return;
     setState(() {
@@ -674,7 +674,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     rightValue: _AuthMode.deviceOnly,
                     value: _mode,
                     // Ignored while a device-only create OR an online sign-in
-                    // is in flight (Ruling 10: controller carry) — the switch
+                    // is in flight — the switch
                     // must not move out from under either in-progress request.
                     onChanged: _creating || _submitting
                         ? (_) {}
@@ -836,8 +836,10 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 }
 
 // ── Unlock (device-only cold start) ──────────────────────────
-// [PatientAppState.load] boots a device-only account straight here (Task 8)
-// instead of the welcome screen. No DesignSync design exists for this screen
+// [PatientAppState.load] boots a device-only account straight here instead
+// of the welcome screen (and a pending merge too, before its merge screen).
+// "Forgot password? Start over" removes the account and its data after two
+// confirmations — the password can't be recovered. No DesignSync design exists for this screen
 // yet — it is built from _PhoneScreen's own pieces (cream background, the
 // password AuthInput with its show/hide eye, the device-only warning card) so it
 // at least looks native meanwhile; ask for a real design before release (see
@@ -924,7 +926,11 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
       switch (result) {
         case Unlocked():
           _pwCtrl.clear();
-          s.go(AppRoutes.app);
+          // A go-online that found an existing account is still waiting for
+          // its merge-or-discard choice: that screen, not the app.
+          final pendingMerge = await ref.read(offlineAccountServiceProvider).pendingMerge();
+          if (!mounted) return;
+          s.go(pendingMerge ? AppRoutes.mergeOrDiscard : AppRoutes.app);
         case WrongPassword():
           _pwCtrl.clear();
           setState(() => _error = s.strings.auth.unlock_wrong);
@@ -944,6 +950,25 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
     }
   }
 
+  /// "Forgot password? Start over": the password can't be recovered (spec
+  /// §1, out of scope), so the only way forward is to delete the account and
+  /// its data. Two explicit confirmations first.
+  Future<void> _startOver() async {
+    if (_busy) return;
+    final s = AppScope.of(context);
+    if (!await confirmRemoveDeviceAccount(context, s, forgotPassword: true) || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final ok = await removeDeviceAccount(ref, s);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (!ok) _error = s.strings.offline.merge_failed;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -960,7 +985,7 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.strings.auth.unlock_title, style: Typo.title(ar: s.rtl)),
+                Semantics(header: true, child: Text(s.strings.auth.unlock_title, style: Typo.title(ar: s.rtl))),
                 const SizedBox(height: 8),
                 Text(s.strings.auth.unlock_help, style: Typo.body(ar: s.rtl)),
                 const SizedBox(height: 24),
@@ -1020,6 +1045,15 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
                       ar: s.rtl,
                       onTap: ok ? _submit : null,
                     )),
+                const SizedBox(height: 4),
+                PButton(
+                  s.strings.auth.unlock_forgot,
+                  variant: BtnVariant.ghost,
+                  block: true,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: _busy ? null : _startOver,
+                ),
               ]),
             ),
           ]),

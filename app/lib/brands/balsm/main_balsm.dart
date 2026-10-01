@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geofence_block/geofence_block.dart';
 import 'package:profile/profile.dart';
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/auth/boot_session.dart';
 import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/prefs.dart';
@@ -88,60 +89,35 @@ Future<void> bootstrap({
   final db = await AppDatabase.open();
   // Map-pack downloads live here — see map_pack_download_controller.dart.
   final mapPacksDir = await getApplicationSupportDirectory();
-  // Clean up a create() that crashed before it could write balsm.account_mode
-  // — must run before anything below reads balsm.user_id / balsm.account_mode,
-  // otherwise an orphaned offline-account key could be mistaken for a real
-  // device-only account. The container isn't built yet, so this is
-  // constructed directly rather than read from Riverpod; it publishes nothing
-  // so a throwaway EventBus is fine.
-  await OfflineAccountService(
-    storage: SecureStorageWrapper(),
-    hasher: Argon2idOfflinePasswordHasher(),
-    eventBus: EventBus(),
-  ).discardIncompleteCreate();
-
-  // Current authenticated user id (opaque, non-PHI), if signed in. Read from
-  // the platform secure store before the container is built.
-  // The same store sign-in writes to — see SecureStorageWrapper.storage.
-  const secureStorage = SecureStorageWrapper.storage;
-  final userId = await secureStorage.read(key: 'balsm.user_id');
-
-  final accountMode = AccountMode.fromWire(await secureStorage.read(key: kAccountModeKey));
-  final pendingMerge = await secureStorage.read(key: 'balsm.pending_merge') == 'true';
-
-  // A session needs a REFRESH token to be revivable, not just an id — UNLESS
-  // the account is device-only, which has an id and no tokens by design. With
-  // an online id alone the shell opens signed-in and stays broken: every read
-  // resolves to nothing, and the interceptor cannot mint a new access token,
-  // so on a network the app cannot reach there is no rejection to fire
-  // SessionExpired and nothing ever routes the patient out. Partial state
-  // like this comes from a sign-out interrupted mid-way — the three keys are
-  // deleted one at a time.
-  final refreshToken = await secureStorage.read(key: 'balsm.refresh_token');
-  final hasId = userId != null && userId.isNotEmpty;
-  // A device-only account has an id and no tokens by design — that is not the
-  // interrupted-sign-out remnant this guard exists for.
-  final revivable =
-      hasId && (accountMode == AccountMode.deviceOnly || (refreshToken != null && refreshToken.isNotEmpty));
-  if (hasId && !revivable) {
-    // Unrecoverable remnant. Clear it so the next launch agrees with the
-    // keychain rather than repeating this.
-    await secureStorage.delete(key: 'balsm.user_id');
-    await secureStorage.delete(key: 'balsm.access_token');
-  }
   final keychain = SecureStorageWrapper();
-  UserId? containerUserId = revivable ? UserId.fromString(userId) : null;
-
-  // App-shell state loads BEFORE the container so Riverpod can own it from
-  // the first frame (patientAppStateProvider override below).
+  // App-shell prefs load before the session: the session check below reads
+  // them to tell a reinstall (prefs empty, keychain kept) from a normal start.
   final paPrefs = PatientAppPrefs(globalKV);
   await paPrefs.migrate();
+  // Current authenticated user id (opaque, non-PHI), if signed in, after the
+  // crash/reinstall repairs in resolveBootSession — which must run before
+  // anything else reads balsm.user_id / balsm.account_mode. The container
+  // isn't built yet, so the offline service is constructed directly; it
+  // publishes nothing here, so a throwaway EventBus is fine.
+  final boot = await resolveBootSession(
+    storage: keychain,
+    prefs: paPrefs,
+    offline: OfflineAccountService(
+      storage: keychain,
+      hasher: Argon2idOfflinePasswordHasher(),
+      eventBus: EventBus(),
+    ),
+  );
+  final accountMode = boot.accountMode;
+  UserId? containerUserId = boot.sessionUserId;
+
   // Route on the credentials, not just the prefs flag — see load()'s doc.
   final state = await PatientAppState.load(
     paPrefs,
     hasSession: containerUserId != null,
     accountMode: accountMode,
-    pendingMerge: pendingMerge,
+    pendingMerge: boot.pendingMerge,
+    hasOfflinePassword: boot.hasOfflinePassword,
   );
   final fileStore = await createUserFileStore(
     activeUser: () => containerUserId,
@@ -272,11 +248,12 @@ Future<void> bootstrap({
     analytics: analytics,
   ).start();
 
-  // Seed the in-session user id from the boot-time secure-storage value.
-  container.read(_sessionUserIdProvider.notifier).state = UserId.fromString(userId);
+  // Seed the in-session user id from the boot-time session.
+  container.read(_sessionUserIdProvider.notifier).state = containerUserId;
   // Bind telemetry to the restored session (opaque id only). Null when signed
-  // out, which resets the analytics identity — see the sign-out listener.
-  analytics.setUser(containerUserId?.value);
+  // out, which resets the analytics identity — see the sign-out listener —
+  // and null for a device-only account, whose id never leaves the phone.
+  analytics.setUser(telemetryUserId(accountMode, containerUserId));
 
   // Keep the in-session user id live: sign-in sets it, sign-out clears it, so
   // every PHI reader (profile/meds/emergency/backup) sees the current user
@@ -291,14 +268,21 @@ Future<void> bootstrap({
     }
     containerUserId = e.userId;
     container.read(_sessionUserIdProvider.notifier).state = e.userId;
-    // Opaque id only. Attributes this session's telemetry to the account that
-    // is actually signed in — without it every event stays on the device's
-    // anonymous id and cohort/retention reporting is meaningless.
-    analytics.setUser(e.userId.value);
     // Also on sign-IN, not just sign-out: a crash mid-session leaves rows
     // behind, and the next account to sign in would inherit them. Re-fetching
     // a summary on sign-in is correct anyway.
     unawaited(container.read(cacheStoreProvider).clearAll());
+    // Opaque id only. Attributes this session's telemetry to the account that
+    // is actually signed in — without it every event stays on the device's
+    // anonymous id and cohort/retention reporting is meaningless. A
+    // device-only account (created, or still not online) stays anonymous:
+    // the mode is read after the event because go-online flips it to online
+    // before announcing the sign-in.
+    analytics.setUser(null);
+    unawaited(telemetryUserIdAfterSignIn(keychain, e).then((id) {
+      // Skip if another account took over while the mode was read.
+      if (id != null && containerUserId == e.userId) analytics.setUser(id);
+    }).catchError((Object _) {}));
   });
   container.read(eventBusProvider).on<UserSignedOut>().listen((_) {
     containerUserId = null;

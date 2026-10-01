@@ -16,6 +16,7 @@ import 'personal_details.dart';
 import 'ecosystem_sheet.dart';
 import 'feedback_sheet.dart';
 import 'go_online_sheet.dart';
+import 'remove_device_account.dart';
 import 'care_team_screen.dart';
 import 'profile_subscreens.dart';
 import 'storage_sheet.dart';
@@ -224,23 +225,44 @@ class ProfileScreen extends ConsumerWidget {
               ),
           ]),
 
-          // Sign out
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: PButton(s.strings.profile.p_signout,
-                icon: LucideIcons.logOut,
-                variant: BtnVariant.secondary,
-                block: true,
-                ar: s.rtl,
-                color: T.danger, onTap: () async {
-              // Clears tokens + best-effort server sign-out + publishes
-              // UserSignedOut (the main listener clears currentUserId).
-              await ref.read(signOutUseCaseProvider).call();
-              // Account-scoped UI state must not leak to the next account.
-              s.resetForSignOut();
-              if (context.mounted) s.go(AppRoutes.welcome);
-            }),
-          ),
+          // A device-only account exists only on this phone: signing out would
+          // strand its data and leave it locked behind a password. It is
+          // removed instead (rows, files, keys) after a confirmation — and
+          // the server is never called.
+          if (s.accountMode == AccountMode.deviceOnly)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: PButton(s.strings.auth.remove_device_account,
+                  icon: LucideIcons.trash2,
+                  variant: BtnVariant.secondary,
+                  block: true,
+                  ar: s.rtl,
+                  color: T.danger, onTap: () async {
+                if (!await confirmRemoveDeviceAccount(context, s)) return;
+                if (!await removeDeviceAccount(ref, s) && context.mounted) {
+                  ScaffoldMessenger.maybeOf(context)
+                      ?.showSnackBar(SnackBar(content: Text(s.strings.offline.merge_failed)));
+                }
+              }),
+            )
+          else
+            // Sign out
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: PButton(s.strings.profile.p_signout,
+                  icon: LucideIcons.logOut,
+                  variant: BtnVariant.secondary,
+                  block: true,
+                  ar: s.rtl,
+                  color: T.danger, onTap: () async {
+                // Clears tokens + best-effort server sign-out + publishes
+                // UserSignedOut (the main listener clears currentUserId).
+                await ref.read(signOutUseCaseProvider).call();
+                // Account-scoped UI state must not leak to the next account.
+                s.resetForSignOut();
+                if (context.mounted) s.go(AppRoutes.welcome);
+              }),
+            ),
         ]));
   }
 }

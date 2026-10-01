@@ -121,7 +121,7 @@ server round-trip. Secure-storage keys, all written/read via
 - `balsm.offline.pw_hash` — the Argon2id PHC string (below).
 - `balsm.offline.pw_plain` — the plaintext password. Held only so the
   eventual go-online flow can set it as the real server password
-  (`SetPassword`, Task 11), which then calls `clearPlainPassword()`. Never
+  (`SetPassword`), which then calls `clearPlainPassword()`. Never
   logged; deleted as soon as it is no longer needed.
 - `balsm.offline.lockout` — JSON `{"failures": n, "until": <ISO-8601|null>}`,
   so a lockout survives an app restart.
@@ -153,8 +153,9 @@ go-online flow consumes it.
 (mode `deviceOnly` with a `balsm.user_id`) — a second create would overwrite
 the first account's password hash and id and orphan its data. The UI never
 offers it; the guard is a backstop. `create()` clears any stale
-`balsm.offline.lockout` / `balsm.pending_merge` before writing its own keys (so a freshly created account never inherits a
-previous account's lockout or merge flag), and `discardIncompleteCreate()` —
+`balsm.offline.lockout` / `balsm.pending_merge` before writing its own keys
+(so a freshly created account never inherits a previous account's lockout or
+merge flag), and `discardIncompleteCreate()` —
 meant to be called once at app bootstrap, before anything reads the mode —
 cleans up the orphaned offline-account keys left behind if `create()` crashed
 before it could write `balsm.account_mode`, without ever deleting
@@ -170,8 +171,8 @@ on the sign-in screen. Switching to "Device only":
   hides the "Forgot password?" link — a device-only account has no
   server-side record to recover a password from.
 - Shows an info card under the password field warning that the password can't
-  be recovered until the account goes online, and that losing the device
-  before then loses the data with it.
+  be recovered until the account goes online, and that the data is stored only
+  on this device, so losing the device loses the data with it.
 - Requires an 8-character password minimum in **both** modes (D5 — the
   earlier 6-character design floor was raised so device-only and online share
   one rule).
@@ -193,8 +194,9 @@ on the sign-in screen. Switching to "Device only":
 `app/lib/brands/balsm/main_balsm.dart` (`bootstrap()`) runs the incomplete-create
 cleanup first, before anything reads `balsm.user_id` or `balsm.account_mode`:
 it constructs `OfflineAccountService` directly (the provider container doesn't
-exist yet) and calls `discardIncompleteCreate()`, so a crashed `create()` never
-gets mistaken for a real device-only account on this launch.
+exist yet) and hands it to `resolveBootSession` (below), which calls
+`discardIncompleteCreate()` first, so a crashed `create()` never gets mistaken
+for a real device-only account on this launch.
 
 Only then does bootstrap read the account mode and decide whether the stored
 id is revivable. A `deviceOnly` account keeps its `balsm.user_id` with no
@@ -203,8 +205,46 @@ revivability guard exists for — and `PatientAppState.load(...)` routes it to
 `AppRoutes.unlock` (`app/lib/balsm_app/routes.dart`) so the shell asks for the
 on-device password before anything else. An unresolved `balsm.pending_merge`
 takes priority over that and resumes on `AppRoutes.mergeOrDiscard` instead,
-whatever the account mode. Neither case reaches the ordinary signed-in shell
-(`AppRoutes.app`) directly.
+whatever the account mode — except that while `balsm.offline.pw_hash` still
+exists (the merge hasn't marked the account online yet), Unlock comes first,
+since the merge screen moves or deletes the device's data. Neither case
+reaches the ordinary signed-in shell (`AppRoutes.app`) directly.
+
+### Startup repairs (`resolveBootSession`)
+
+`app/lib/balsm_app/auth/boot_session.dart` — `resolveBootSession(...)` is what
+bootstrap calls; it returns the session id, mode, pending-merge flag and
+whether the offline password hash exists, after these repairs:
+
+1. `discardIncompleteCreate()` (above).
+2. **Reinstall.** iOS keeps keychain items across an uninstall while the
+   app-shell prefs, the database and the vault files go with the app. If
+   `balsm.account_mode` is present but the `pa` prefs group has never had
+   `signedIn` or `walkthroughSeen` written (`PatientAppPrefs.isFreshInstall`),
+   the account belongs to an uninstalled copy whose data is gone. Its file
+   keys (`balsm.file_key.<id>` for `balsm.user_id` and
+   `balsm.offline.local_id`), the go-online flow keys, and every offline key
+   (`OfflineAccountService.wipe()`) are deleted, plus the session tokens if
+   the mode was `deviceOnly`. Without this a reinstall would boot to an Unlock
+   screen guarding nothing, with a password the patient may have forgotten.
+3. An online id without a refresh token is cleared (interrupted sign-out).
+4. **Go-online killed midway.** `goOnline` stores the server's
+   `balsm.user_id` before the controller has re-keyed (new id) or set the
+   pending merge (existing account). If the mode is still `deviceOnly` and
+   `balsm.offline.local_id` differs from `balsm.user_id`, the session uses the
+   local id, so the device's data stays visible. Nothing is rewritten: going
+   online again from Profile reuses the pinned local id and finishes the move.
+
+The boot session id seeds `currentUserIdProvider` and the file store.
+
+### Telemetry identity
+
+A device-only account's id never reaches Sentry or PostHog (spec §6).
+Bootstrap calls `analytics.setUser(telemetryUserId(mode, id))`, which is null
+while the mode is `deviceOnly`. On `UserSignedIn` the listener first clears
+the identity, then binds the id only if `telemetryUserIdAfterSignIn` says the
+account is online — `provider: 'device'` (a create) never is, and go-online
+flips the mode to online before it announces the sign-in.
 
 ## Unlock
 
@@ -219,9 +259,11 @@ provisional, and a real design should be requested before release.
   immediately rather than waiting for a failed attempt.
 - Submitting calls `OfflineAccountService.unlock(password)`, checked entirely
   on-device against the stored Argon2id hash:
-  - `Unlocked` → clears the field, then goes straight to `AppRoutes.app` (no
-    disclosure-gate replay — the device-only account already accepted
-    disclosure locally when it was created). The password is never left
+  - `Unlocked` → clears the field, then goes to `AppRoutes.mergeOrDiscard`
+    if a merge is still pending (`OfflineAccountService.pendingMerge()`),
+    otherwise straight to `AppRoutes.app` (no disclosure-gate replay — the
+    device-only account already accepted disclosure locally when it was
+    created). The password is never left
     sitting in the text controller after a successful unlock.
   - `WrongPassword` → shows a generic "wrong password" message and clears the
     field.
@@ -232,10 +274,45 @@ provisional, and a real design should be requested before release.
     field is cleared, and a generic retry message (`auth.unlock_failed`) is
     shown — never the exception's own text, so nothing from a storage error
     leaks onto the screen or into logs.
-- There is **no password-recovery path** on this screen (and none exists for
-  a device-only account at all, per `device_warning`): the password is the
-  only way in until the account goes online and a server-side reset becomes
-  possible.
+- There is **no password-recovery path** (and none exists for a device-only
+  account at all, per `device_warning`): the password is the only way in
+  until the account goes online and a server-side reset becomes possible.
+  What the screen does offer is **"Forgot password? Start over"**
+  (`auth.unlock_forgot`): two confirmations (first what losing the password
+  means — `auth.unlock_forgot_confirm_body` — then the same removal
+  confirmation as Profile), then the removal described under "Removing a
+  device-only account", then Welcome. Cancel at either step removes nothing.
+- The title is a semantic header.
+
+## Removing a device-only account
+
+A device-only account exists only on this phone, so Profile shows **"Remove
+this account from this phone"** (`auth.remove_device_account`) in place of
+Sign out. Signing out would strand the data, leave `deviceOnly` in the
+keychain, and lock the next account out. After one confirmation
+(`auth.remove_device_confirm_*`, in
+`app/lib/balsm_app/screens/remove_device_account.dart`),
+`DeviceAccountRemover.remove()` (`app/lib/balsm_app/auth/device_account_remover.dart`)
+deletes, in order:
+
+1. Every row the account owns — `discardOwner` on the pinned
+   `balsm.offline.local_id`, else `balsm.user_id` (so a half-finished
+   go-online never deletes the server account's rows already on the phone).
+   This lifts only the approved FR-019 dose-history guard, as Discard does.
+2. Its vault partition and file key (`UserFileStore.deleteOwnerFiles`).
+3. The go-online flow keys (`balsm.offline.local_id`,
+   `balsm.offline.disclosure_pending`, `balsm.pending_merge_target`,
+   `balsm.pending_merge_choice`) and any session tokens a half-finished
+   go-online stored.
+4. Every offline key, the mode and `balsm.user_id`
+   (`OfflineAccountService.wipe()`) — last, so a crash before it lands back on
+   Unlock and the removal can run again.
+
+It then publishes `UserSignedOut` (the same cache / permanent-QR / analytics
+sweep as a sign-out), and the screen resets the account-scoped app state,
+sets the mode to online and routes to Welcome. The server is never called.
+It refuses (`StateError`) for an online account. A failure shows
+`offline.merge_failed` and changes nothing visible.
 
 ## Going online
 
@@ -295,10 +372,12 @@ the current country. `verify(email:, code:)` runs, in order:
    device's id, and nothing else happens — a retry re-runs both. Only after
    both succeed is `balsm.offline.local_id` updated to the new id, so a crash
    after this point never re-keys from a stale id.
-5. For both: `OfflineAccountService.markOnline()`, then publishes
-   `UserSignedIn(provider: 'email')` with the final id, then
-   `finishPasswordIfPending()`, then sets `balsm.offline.disclosure_pending`
-   and runs `AcceptDisclosureUseCase.resync(...)` with the same disclosure
+5. For both: `OfflineAccountService.markOnline()`, then sets
+   `balsm.offline.disclosure_pending` (before anything that can throw, so the
+   launch retry still re-sends the disclosure if the password hand-off
+   fails), then publishes `UserSignedIn(provider: 'email')` with the final
+   id, then `finishPasswordIfPending()`, then runs
+   `AcceptDisclosureUseCase.resync(...)` with the same disclosure
    id/version the post-sign-in gate uses (`kDisclosureId` /
    `kDisclosureVersion` in `auth_flow.dart`); the flag is cleared only when
    resync returns `true`. Finally `balsm.offline.local_id` is deleted.
@@ -368,9 +447,14 @@ a keychain error can't become an unhandled zone error. Nothing is logged.
 
 ### Copy note
 
-`go_done_help` says the account "is now on Balsm" rather than the design's
-"your data is syncing": no cloud can receive data yet, so the design's line
-would be untrue. Flagged to design.
+No copy promises syncing or cloud safety: no cloud receives health data in
+this build, and a merge does not upload. `auth.device_help` says going online
+lets the patient verify their email (so the password can be recovered) and use
+sharing; `auth.device_warning` says the data is stored only on this device;
+`offline.go_help` and `offline.go_done_help` say the health data stays on this
+device; `offline.go_row_sub` names password recovery and sharing rather than
+Balsm Cloud. The design's "your data is syncing" line was not used. Flagged to
+design.
 
 ## Disclosure acceptance while device-only
 
@@ -535,7 +619,8 @@ the disclosure resync after, exactly
 as the go-online flow does (the launch retry picks up a failure). Discard
 does not resync: the existing account's own acceptance is on the server.
 Merged rows are not queued for upload (the offline outbox is dropped) — by
-design; they reach the server through the account's normal sync.
+design: the health data stays on this device, and the retired account's
+outbox must not overwrite the existing account's server profile.
 
 Both are resumable: `balsm.pending_merge` is cleared last, so a crash anywhere
 before that boots back to the merge screen (`PatientAppState.load` routes a
@@ -571,5 +656,6 @@ designed screen replaces this one.
   button is shown, so the patient can only finish what began. Finishing a
   discard still asks for the confirmation.
 
-A restart while the merge is pending boots straight back to this screen
-(`PatientAppState.load` with `pendingMerge: true`).
+A restart while the merge is pending comes back to this screen
+(`PatientAppState.load` with `pendingMerge: true`), through Unlock first while
+the device password still exists.

@@ -116,10 +116,10 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get mode_device => "Device only";
   String get device_title => "Account on this device";
   String get device_help =>
-      "No internet or verification code needed. Your data stays on this device only — when you go online later, we'll send a code to your email to verify and sync.";
+      "No internet or verification code needed. Your data stays on this device only. Going online later lets you verify your email, so your password can be recovered, and use sharing.";
   String get device_pw_label => "Password to lock the app";
   String get device_warning =>
-      "Your email isn't verified yet, so your password can't be recovered until you go online. If you lose this device before then, your data goes with it.";
+      "Your email isn't verified yet, so your password can't be recovered until you go online. Your data is stored only on this device: if you lose it, your data goes with it.";
   String get device_create => "Create account on device";
   String get device_create_failed =>
       "Couldn't create the account on this device. Try again.";
@@ -145,6 +145,14 @@ class AuthStrings implements i69n.I69nMessageBundle {
       "Too many attempts. Try again in ${secs}s.";
   String get unlock_btn => "Unlock";
   String get unlock_failed => "Couldn't unlock right now. Try again.";
+  String get remove_device_account => "Remove this account from this phone";
+  String get remove_device_confirm_title => "Remove this account and its data?";
+  String get remove_device_confirm_body =>
+      "This account only exists on this phone. Everything in it will be deleted and can't be recovered.";
+  String get remove_device_confirm_btn => "Remove";
+  String get unlock_forgot => "Forgot password? Start over";
+  String get unlock_forgot_confirm_body =>
+      "Without the password, the data on this phone can't be opened. Starting over deletes it permanently.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -258,6 +266,18 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return unlock_btn;
       case 'unlock_failed':
         return unlock_failed;
+      case 'remove_device_account':
+        return remove_device_account;
+      case 'remove_device_confirm_title':
+        return remove_device_confirm_title;
+      case 'remove_device_confirm_body':
+        return remove_device_confirm_body;
+      case 'remove_device_confirm_btn':
+        return remove_device_confirm_btn;
+      case 'unlock_forgot':
+        return unlock_forgot;
+      case 'unlock_forgot_confirm_body':
+        return unlock_forgot_confirm_body;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -3281,16 +3301,17 @@ class OfflineStrings implements i69n.I69nMessageBundle {
   const OfflineStrings(this._parent);
   String get go_title => "Go online";
   String get go_help =>
-      "We'll send a code to your email to verify it, then the data on this device starts syncing.";
+      "We'll send a code to your email to verify it. Your data stays on this device.";
   String get go_send => "Send code";
   String get go_code_help => "Enter the 6-digit code we sent to";
   String get go_verify => "Verify and go online";
   String get go_done_title => "You're online";
   String get go_done_help =>
-      "Email verified. Your account is now on Balsm, and you can choose where each type of data is stored.";
+      "Email verified. Your account is now on Balsm and your password can be recovered. Your health data stays on this device.";
   String get go_done => "Done";
   String get go_row => "Go online";
-  String get go_row_sub => "Verify your email to use Balsm Cloud and sharing";
+  String get go_row_sub =>
+      "Verify your email to recover your password and use sharing";
   String get go_cloud_pill => "Go online";
   String get go_failed => "Couldn't go online right now. Try again.";
   String get merge_title => "This email already has a Balsm account";

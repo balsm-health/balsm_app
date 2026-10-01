@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/auth/device_account_remover.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
@@ -21,6 +22,8 @@ class _MockDisclosureDao extends Mock implements DisclosureDao {}
 
 class _MockOfflineAccountService extends Mock implements OfflineAccountService {}
 
+class _MockRemover extends Mock implements DeviceAccountRemover {}
+
 /// One entry for everyone: email + password, and a code when that is refused.
 ///
 /// The screens must never say whether an address has an account. The server
@@ -32,6 +35,7 @@ void main() {
   late _MockSignInUseCase signIn;
   late _MockDisclosureDao disclosure;
   late _MockOfflineAccountService offline;
+  late _MockRemover remover;
 
   setUpAll(() => registerFallbackValue(const DisclosureId.value('consolidated')));
 
@@ -45,6 +49,8 @@ void main() {
     signIn = _MockSignInUseCase();
     disclosure = _MockDisclosureDao();
     offline = _MockOfflineAccountService();
+    remover = _MockRemover();
+    when(() => offline.pendingMerge()).thenAnswer((_) async => false);
     when(() => disclosure.watchAcceptance(any(), any())).thenAnswer((_) => Stream<DisclosureAcceptance?>.value(null));
   });
 
@@ -58,6 +64,7 @@ void main() {
         signInUseCaseProvider.overrideWithValue(signIn),
         disclosureDaoProvider.overrideWithValue(disclosure),
         offlineAccountServiceProvider.overrideWithValue(offline),
+        deviceAccountRemoverProvider.overrideWithValue(remover),
       ],
       child: MaterialApp(
         home: Material(
@@ -372,6 +379,75 @@ void main() {
 
       expect(state.route, AppRoutes.app);
       expect(pwCtrl.text, '', reason: 'the password must not linger in the controller after unlocking');
+    });
+
+    testWidgets('right password with a merge still pending goes to the merge screen', (tester) async {
+      when(() => offline.lockout()).thenAnswer((_) async => null);
+      when(() => offline.unlock('correct-horse')).thenAnswer((_) async => const Unlocked());
+      when(() => offline.pendingMerge()).thenAnswer((_) async => true);
+
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      await tester.enterText(find.byType(TextField), 'correct-horse');
+      await tester.pump();
+      await tester.tap(find.text('Unlock'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(state.route, AppRoutes.mergeOrDiscard);
+    });
+
+    testWidgets('the title is announced as a heading', (tester) async {
+      when(() => offline.lockout()).thenAnswer((_) async => null);
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      final handle = tester.ensureSemantics();
+      expect(tester.getSemantics(find.text('Unlock Balsm')), matchesSemantics(isHeader: true, label: 'Unlock Balsm'));
+      handle.dispose();
+    });
+
+    testWidgets('forgot password: two confirmations, then the account is removed and Welcome shows', (tester) async {
+      when(() => offline.lockout()).thenAnswer((_) async => null);
+      when(() => remover.remove()).thenAnswer((_) async {});
+      state.setAccountMode(AccountMode.deviceOnly);
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      final a = state.strings.auth;
+
+      await tester.tap(find.text(a.unlock_forgot));
+      await tester.pumpAndSettle();
+      expect(find.text(a.unlock_forgot_confirm_body), findsOneWidget);
+      verifyNever(() => remover.remove());
+
+      // First confirmation only leads to the second.
+      await tester.tap(find.text(a.remove_device_confirm_btn));
+      await tester.pumpAndSettle();
+      expect(find.text(a.remove_device_confirm_body), findsOneWidget);
+      verifyNever(() => remover.remove());
+
+      await tester.tap(find.text(a.remove_device_confirm_btn));
+      await tester.pumpAndSettle();
+      verify(() => remover.remove()).called(1);
+      expect(state.route, AppRoutes.welcome);
+      expect(state.accountMode, AccountMode.online);
+    });
+
+    testWidgets('forgot password: cancelling either step removes nothing', (tester) async {
+      when(() => offline.lockout()).thenAnswer((_) async => null);
+      await pumpAtRoute(tester, AppRoutes.unlock);
+      final a = state.strings.auth;
+
+      await tester.tap(find.text(a.unlock_forgot));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(state.strings.common.cancel));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(a.unlock_forgot));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(a.remove_device_confirm_btn));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(state.strings.common.cancel));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => remover.remove());
+      expect(state.route, AppRoutes.unlock);
     });
 
     testWidgets('an unlock failure shows a retry message, never the exception', (tester) async {

@@ -120,10 +120,10 @@ class AuthStrings_ar extends AuthStrings {
   String get mode_device => "على الجهاز فقط";
   String get device_title => "حساب على هذا الجهاز";
   String get device_help =>
-      "بدون إنترنت وبدون رمز تحقق. تبقى بياناتك على هذا الجهاز فقط، وعند الاتصال بالإنترنت لاحقًا نرسل رمزًا إلى بريدك للتحقق والمزامنة.";
+      "بدون إنترنت وبدون رمز تحقق. تبقى بياناتك على هذا الجهاز فقط. الاتصال بالإنترنت لاحقًا يتيح لك التحقق من بريدك لتتمكن من استعادة كلمة المرور، واستخدام المشاركة.";
   String get device_pw_label => "كلمة مرور لقفل التطبيق";
   String get device_warning =>
-      "بريدك غير مُتحقَّق منه بعد، لذا لا يمكن استعادة كلمة المرور حتى تتصل بالإنترنت. إن فقدت جهازك قبل ذلك، تُفقد بياناتك.";
+      "بريدك غير مُتحقَّق منه بعد، لذا لا يمكن استعادة كلمة المرور حتى تتصل بالإنترنت. بياناتك محفوظة على هذا الجهاز فقط: إن فقدته، تُفقد بياناتك معه.";
   String get device_create => "إنشاء الحساب على الجهاز";
   String get device_create_failed =>
       "تعذّر إنشاء الحساب على هذا الجهاز. حاول مرة أخرى.";
@@ -150,6 +150,14 @@ class AuthStrings_ar extends AuthStrings {
       "محاولات كثيرة. أعد المحاولة بعد $secs ث.";
   String get unlock_btn => "فتح";
   String get unlock_failed => "تعذّر فتح التطبيق الآن. حاول مرة أخرى.";
+  String get remove_device_account => "إزالة هذا الحساب من هذا الهاتف";
+  String get remove_device_confirm_title => "إزالة هذا الحساب وبياناته؟";
+  String get remove_device_confirm_body =>
+      "هذا الحساب موجود على هذا الهاتف فقط. سيُحذف كل ما فيه ولا يمكن استعادته.";
+  String get remove_device_confirm_btn => "إزالة";
+  String get unlock_forgot => "نسيت كلمة المرور؟ ابدأ من جديد";
+  String get unlock_forgot_confirm_body =>
+      "بدون كلمة المرور لا يمكن فتح البيانات الموجودة على هذا الهاتف. البدء من جديد يحذفها نهائيًا.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -263,6 +271,18 @@ class AuthStrings_ar extends AuthStrings {
         return unlock_btn;
       case 'unlock_failed':
         return unlock_failed;
+      case 'remove_device_account':
+        return remove_device_account;
+      case 'remove_device_confirm_title':
+        return remove_device_confirm_title;
+      case 'remove_device_confirm_body':
+        return remove_device_confirm_body;
+      case 'remove_device_confirm_btn':
+        return remove_device_confirm_btn;
+      case 'unlock_forgot':
+        return unlock_forgot;
+      case 'unlock_forgot_confirm_body':
+        return unlock_forgot_confirm_body;
       default:
         return super[key];
     }
@@ -3294,16 +3314,17 @@ class OfflineStrings_ar extends OfflineStrings {
   const OfflineStrings_ar(this._parent) : super(_parent);
   String get go_title => "الاتصال بالإنترنت";
   String get go_help =>
-      "نرسل رمزًا إلى بريدك للتحقق منه، ثم تبدأ مزامنة بياناتك الموجودة على هذا الجهاز.";
+      "نرسل رمزًا إلى بريدك للتحقق منه. تبقى بياناتك على هذا الجهاز.";
   String get go_send => "إرسال الرمز";
   String get go_code_help => "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
   String get go_verify => "تحقق واتصل";
   String get go_done_title => "أنت متصل الآن";
   String get go_done_help =>
-      "تم التحقق من بريدك. حسابك الآن على بلسم، ويمكنك اختيار مكان حفظ كل نوع من البيانات.";
+      "تم التحقق من بريدك. حسابك الآن على بلسم ويمكن استعادة كلمة المرور. تبقى بياناتك الصحية على هذا الجهاز.";
   String get go_done => "تم";
   String get go_row => "الاتصال بالإنترنت";
-  String get go_row_sub => "تحقّق من بريدك لاستخدام بلسم كلاود والمشاركة";
+  String get go_row_sub =>
+      "تحقّق من بريدك لاستعادة كلمة المرور واستخدام المشاركة";
   String get go_cloud_pill => "اتصل";
   String get go_failed => "تعذّر الاتصال الآن. حاول مرة أخرى.";
   String get merge_title => "هذا البريد لديه حساب في بلسم بالفعل";
