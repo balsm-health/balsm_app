@@ -18,6 +18,40 @@ applied via `PRAGMA key = "x'<hex>'"` in the drift `setup` callback, which
 then checks `PRAGMA cipher_version` and throws if empty — refusing to open an
 unencrypted (plain sqlite) database rather than silently storing plaintext.
 
+### Where SQLCipher comes from
+
+One mechanism on every platform: package:sqlite3's build hook, configured in
+`app/pubspec.yaml` as `hooks: user_defines: sqlite3: source: sqlcipher`. The
+hook downloads the prebuilt SQLCipher that sqlite3.dart publishes with each
+release (sha256-pinned in the package) and bundles it as a native asset
+(`DynamicLoadingBundled`):
+
+- **Android** — `lib/<abi>/libsqlcipher.so` in the APK (arm64-v8a,
+  armeabi-v7a, x86_64; OpenSSL statically linked, 16 KB-aligned LOAD
+  segments). The Dart runtime dlopens it from the native-assets manifest and
+  resolves `sqlite3_*` on that handle, so nothing has to publish symbols
+  globally (the reason `source: process` failed on Android).
+- **iOS** — `Runner.app/Frameworks/sqlcipher.framework` (separate device and
+  simulator builds).
+
+`sqlcipher_flutter_libs` and core's manual `DynamicLibrary.open` loader were
+removed: sqlite3 3.x makes them obsolete, and keeping them would ship a second
+SQLCipher copy (the CocoaPods `SQLCipher` pod on iOS, `net.zetetic` AAR on
+Android). Do not add `sqlite3_flutter_libs` / `sqlcipher_flutter_libs` back.
+
+**iOS history.** Before this, the config was `source: system` +
+`name_android: sqlcipher`. On iOS `system` resolves to Apple's plain
+`libsqlite3.dylib`, so the iOS database was never encrypted (`PRAGMA key` is a
+no-op on plain sqlite). Once the `cipher_version` guard landed, iOS refused to
+open the DB at all. No released build carries the v2 key, so there is no
+plaintext-with-key state to migrate.
+
+**After pulling this change, delete `app/build/ios` (or `flutter clean`) once.**
+An incremental build keeps the old pod's `SQLCipher.framework` in
+`Runner.app/Frameworks`; on a case-insensitive volume the new
+`sqlcipher.framework` lands inside it and dlopen fails with "Couldn't resolve
+native function 'sqlite3_initialize'".
+
 ## Account mode
 
 `packages/core/lib/src/auth_context/account_mode.dart` — `enum AccountMode {

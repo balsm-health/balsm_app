@@ -17,10 +17,6 @@ subprojects {
 }
 // Several third-party Flutter plugins pin compile SDK / Java levels that AGP 9
 // rejects:
-//  - sqlcipher_flutter_libs 0.5.x hardcodes `compileSdkVersion 28` and sets no
-//    Java level; AGP 9's default Java 11 source level needs compileSdk 30+.
-//    (EOL upstream, but core still relies on it for the SQLCipher native libs —
-//    see packages/core/pubspec.yaml.)
 //  - file_picker 8.x and others compile against 34/35, while
 //    flutter_plugin_android_lifecycle's AAR metadata demands 36+.
 // compileSdk only selects the android.jar a module compiles against (no runtime
