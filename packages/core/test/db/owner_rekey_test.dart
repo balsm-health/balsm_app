@@ -206,6 +206,56 @@ void main2() {
       expect((await db.customSelect('SELECT id FROM dose_events').get()).length, 2);
     });
 
+    test('mergeOwner keeps offline blood type/weight/height where the target has none', () async {
+      final db = await seedReal();
+      addTearDown(db.close);
+      await db.customStatement(
+          "UPDATE health_profile SET blood_type = 'O+', weight_kg = 70.5, height_cm = 180 WHERE id = 'p-off'");
+      // The target already knows its weight: that one must win.
+      await db.customStatement("UPDATE health_profile SET weight_kg = 82 WHERE id = 'p-srv'");
+
+      await mergeOwner(db, from: 'off', to: 'srv');
+
+      final row = (await db.customSelect('SELECT * FROM health_profile').get()).single;
+      expect(row.read<String>('id'), 'p-srv');
+      expect(row.read<String?>('blood_type'), 'O+');
+      expect(row.read<double?>('weight_kg'), 82);
+      expect(row.read<double?>('height_cm'), 180);
+    });
+
+    Future<void> addContact(AppDatabase db, String id, String profile, {required bool primary}) =>
+        db.customStatement('INSERT INTO emergency_contact (id, health_profile_id, name, phone, is_primary, created_at) '
+            "VALUES ('$id','$profile','n','1',${primary ? 1 : 0},'t')");
+
+    Future<List<String>> primaries(AppDatabase db) async =>
+        (await db.customSelect('SELECT id FROM emergency_contact WHERE is_primary = 1').get())
+            .map((r) => r.read<String>('id'))
+            .toList();
+
+    test('mergeOwner leaves one primary emergency contact when both profiles have one', () async {
+      final db = await seedReal();
+      addTearDown(db.close);
+      await addContact(db, 'c-off', 'p-off', primary: true);
+      await addContact(db, 'c-srv', 'p-srv', primary: true);
+
+      await mergeOwner(db, from: 'off', to: 'srv');
+
+      expect(await primaries(db), ['c-srv']);
+      final all = await db.customSelect('SELECT DISTINCT health_profile_id AS p FROM emergency_contact').get();
+      expect(all.map((r) => r.read<String>('p')), ['p-srv']);
+    });
+
+    test('mergeOwner keeps the offline primary contact when the target has none', () async {
+      final db = await seedReal();
+      addTearDown(db.close);
+      await addContact(db, 'c-off', 'p-off', primary: true);
+      await addContact(db, 'c-srv', 'p-srv', primary: false);
+
+      await mergeOwner(db, from: 'off', to: 'srv');
+
+      expect(await primaries(db), ['c-off']);
+    });
+
     test('discardOwner removes only the offline owner, grandchildren included', () async {
       final db = await seedReal();
       addTearDown(db.close);

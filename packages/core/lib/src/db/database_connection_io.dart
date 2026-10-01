@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import '../secure_storage/secure_storage_wrapper.dart';
+import 'db_file_guard_io.dart';
 import 'db_key.dart';
 
 /// Native (iOS/Android/desktop) executor — the real on-device SQLCipher store.
@@ -16,14 +17,22 @@ QueryExecutor openExecutor() => LazyDatabase(() async {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/balsm.db');
 
+      // The v1 key was never applied (spec D7); drop it if an old build left it.
+      if (await storage.read(key: kLegacyDbKeyStorageKey) != null) {
+        await storage.delete(key: kLegacyDbKeyStorageKey);
+      }
       var key = await storage.read(key: kDbKeyStorageKey);
       if (key == null) {
         // Pre-launch builds wrote an unencrypted balsm.db. It cannot be opened
-        // with a key, and there are no real users to migrate (spec D7).
-        if (file.existsSync()) file.deleteSync();
+        // with a key, and there are no real users to migrate (spec D7). Only
+        // a plaintext file is deleted; an encrypted one throws.
+        prepareDbFileForNewKey(file);
         key = generateDbKeyHex();
         await storage.write(key: kDbKeyStorageKey, value: key);
       }
+      // Spliced into the PRAGMA below, so it must be exactly the hex shape
+      // generateDbKeyHex writes.
+      if (!isValidDbKeyHex(key)) throw StateError('stored database key is malformed');
       final hexKey = key;
       return NativeDatabase(
         file,

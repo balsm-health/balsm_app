@@ -11,9 +11,17 @@ under secure-storage key `kDbKeyStorageKey` = `balsm.db.key.v2` (`.v2`: the v1
 key was never actually applied and wasn't random — not reused).
 
 `packages/core/lib/src/db/database_connection_io.dart` (`openExecutor`)
-applies it on open: reads `SecureStorageWrapper.storage` for the key; if
-absent, deletes any pre-launch plaintext `balsm.db` (no real users existed
-yet, so no migration — spec D7) and generates+stores a fresh one. The key is
+applies it on open: deletes the dead v1 key (`balsm.db.key`) if an old build
+left it, then reads `SecureStorageWrapper.storage` for the key. If absent, it
+deletes a pre-launch plaintext (or empty) `balsm.db` (no real users existed
+yet, so no migration — spec D7) and generates+stores a fresh one. "Plaintext"
+is checked, not assumed: `prepareDbFileForNewKey`
+(`packages/core/lib/src/db/db_file_guard_io.dart`) deletes the file only if it
+starts with the SQLite header `SQLite format 3\0`; any other file is an
+encrypted database whose key went missing, and opening **throws** a
+`StateError` rather than silently wiping it. The stored key must be exactly 64
+lowercase hex characters (`isValidDbKeyHex`) or opening throws — it is spliced
+into the PRAGMA. The key is
 applied via `PRAGMA key = "x'<hex>'"` in the drift `setup` callback, which
 then checks `PRAGMA cipher_version` and throws if empty — refusing to open an
 unencrypted (plain sqlite) database rather than silently storing plaintext.
@@ -416,8 +424,13 @@ transaction:
    existing account has used this phone before. If `to` already owns a
    `health_profile` row, every `health_profile_id` column (tables discovered
    by column, like `user_id`) that points at the offline profile is re-pointed
-   to the existing profile, and the offline profile row is deleted. The
-   existing profile's own head fields (blood type, height, weight) are kept.
+   to the existing profile, and the offline profile row is deleted. Before
+   the delete, any head field (`blood_type`, `weight_kg`, `height_cm`) the
+   existing profile has left NULL takes the offline profile's value
+   (`COALESCE`); fields the existing profile already has are kept. If the
+   existing profile already has a primary emergency contact, the offline
+   profile's contacts join with `is_primary = 0`, so there is never more than
+   one primary.
    If `to` has no profile, the offline profile simply moves over with the
    re-key.
 2. **Re-key.** Every `user_id` row moves from `from` to `to`, and the offline

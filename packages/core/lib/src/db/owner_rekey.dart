@@ -36,7 +36,9 @@ Future<int> rekeyOwner(
 /// `health_profile` has no UNIQUE(user_id), so a plain re-key could leave the
 /// merged account with two self profiles. When [to] already owns one, every
 /// `health_profile_id` column pointing at [from]'s profile is re-pointed to
-/// [to]'s, and [from]'s now-empty profile row is deleted. Then every
+/// [to]'s, and [from]'s now-empty profile row is deleted — after copying its
+/// blood type, weight and height into any of those [to] has left NULL, and
+/// demoting [from]'s primary emergency contact if [to] already has one. Then every
 /// `user_id` row moves, dropping [from]'s outbox rows. All in one
 /// transaction; a second run finds nothing owned by [from] and does nothing.
 Future<int> mergeOwner(GeneratedDatabase db, {required String from, required String to}) async {
@@ -56,8 +58,29 @@ Future<int> mergeOwner(GeneratedDatabase db, {required String from, required Str
           variables: [Variable.withString(from)],
         ).get();
         final children = await tablesWithColumn(db, 'health_profile_id');
+        final headCols = await _columnsOf(db, 'health_profile');
+        final hasPrimaryFlag = (await _columnsOf(db, 'emergency_contact')).contains('is_primary');
         for (final p in offline) {
           final pid = p.read<String>('id');
+          // The offline profile row is about to go: keep any head field the
+          // target has never filled in, so the merge doesn't drop it.
+          for (final c in _profileHeadFields) {
+            if (!headCols.contains(c)) continue;
+            changed += await db.customUpdate(
+                'UPDATE health_profile SET "$c" = COALESCE("$c", (SELECT "$c" FROM health_profile WHERE id = ?)) '
+                'WHERE id = ?',
+                variables: [Variable.withString(pid), Variable.withString(targetId)],
+                updateKind: UpdateKind.update);
+          }
+          // One primary emergency contact per profile: if the target already
+          // has one, the offline contacts join as non-primary.
+          if (hasPrimaryFlag) {
+            changed += await db.customUpdate(
+                'UPDATE emergency_contact SET is_primary = 0 WHERE health_profile_id = ? AND is_primary <> 0 '
+                'AND EXISTS (SELECT 1 FROM emergency_contact WHERE health_profile_id = ? AND is_primary <> 0)',
+                variables: [Variable.withString(pid), Variable.withString(targetId)],
+                updateKind: UpdateKind.update);
+          }
           for (final t in children) {
             changed += await db.customUpdate('UPDATE "$t" SET health_profile_id = ? WHERE health_profile_id = ?',
                 variables: [Variable.withString(targetId), Variable.withString(pid)], updateKind: UpdateKind.update);
@@ -69,6 +92,16 @@ Future<int> mergeOwner(GeneratedDatabase db, {required String from, required Str
     }
     return changed + await _rekeyRows(db, from: from, to: to, dropOutbox: true);
   });
+}
+
+/// `health_profile` columns that describe the person (not bookkeeping) and
+/// are kept from the offline profile on merge when the target's are NULL.
+const _profileHeadFields = ['blood_type', 'weight_kg', 'height_cm'];
+
+Future<Set<String>> _columnsOf(GeneratedDatabase db, String table) async {
+  final rows =
+      await db.customSelect('SELECT name FROM pragma_table_info(?)', variables: [Variable.withString(table)]).get();
+  return {for (final r in rows) r.read<String>('name')};
 }
 
 /// Deletes everything account [owner] has on this device: every `user_id`
