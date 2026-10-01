@@ -23,6 +23,10 @@ dependencies:
   # The app pubspec sets sqlite3 hooks `source: process` so Dart does not also
   # embed native-assets sqlite3.framework (device/sim mixup on iOS).
   sqlcipher_flutter_libs: ^0.5.4
+  # Needed directly (not just transitively via drift) for `open.overrideFor`
+  # in database_connection_io.dart, which registers the SQLCipher Android
+  # library with sqlite3's native-assets resolver.
+  sqlite3: any
   dio: ^5.8.0
   balsm_api:
     path: ../balsm_api
@@ -72,8 +76,6 @@ dev_dependencies:
   build_runner: ^2.4.13
   drift_dev: ^2.29.0
   mocktail: ^1.0.4
-
-  sqlite3: any
 flutter:
   assets:
     - assets/brand/
