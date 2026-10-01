@@ -990,7 +990,16 @@
     "go_row": "Go online",
     "go_row_sub": "Verify your email to use Balsm Cloud and sharing",
     "go_cloud_pill": "Go online",
-    "go_failed": "Couldn't go online right now. Try again."
+    "go_failed": "Couldn't go online right now. Try again.",
+    "merge_title": "This email already has a Balsm account",
+    "merge_help": "You're signed in to that account. Choose what to do with the data on this phone.",
+    "merge_btn": "Add this phone's data to my account",
+    "merge_note": "Your account keeps its current password. The password you set on this phone is no longer used.",
+    "discard_btn": "Remove this phone's data",
+    "discard_confirm_title": "Remove the data on this phone?",
+    "discard_confirm_body": "Everything you added while offline on this phone will be deleted. This can't be undone.",
+    "discard_confirm_btn": "Remove",
+    "merge_failed": "Couldn't finish. Try again."
   },
   "_i69n_import": "package:core/core.dart"
 }

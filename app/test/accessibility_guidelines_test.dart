@@ -155,6 +155,12 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('the merge-or-discard screen', (tester) async {
+    final handle = await pump(tester, const AuthRouter(), route: AppRoutes.mergeOrDiscard);
+    await expectAccessible(tester);
+    handle.dispose();
+  });
+
   testWidgets('the online/device-only segmented control is reachable by screen reader', (tester) async {
     // The tap-target-size guideline above only checks geometry — a node with
     // no SemanticsAction.tap at all would still pass it, silently. This test

@@ -3306,6 +3306,18 @@ class OfflineStrings_ar extends OfflineStrings {
   String get go_row_sub => "تحقّق من بريدك لاستخدام بلسم كلاود والمشاركة";
   String get go_cloud_pill => "اتصل";
   String get go_failed => "تعذّر الاتصال الآن. حاول مرة أخرى.";
+  String get merge_title => "هذا البريد لديه حساب في بلسم بالفعل";
+  String get merge_help =>
+      "تم تسجيل دخولك إلى ذلك الحساب. اختر ما تفعله بالبيانات الموجودة على هذا الهاتف.";
+  String get merge_btn => "أضِف بيانات هذا الهاتف إلى حسابي";
+  String get merge_note =>
+      "يحتفظ حسابك بكلمة مروره الحالية. لن تُستخدم كلمة المرور التي عيّنتها على هذا الهاتف.";
+  String get discard_btn => "احذف بيانات هذا الهاتف";
+  String get discard_confirm_title => "حذف البيانات الموجودة على هذا الهاتف؟";
+  String get discard_confirm_body =>
+      "سيُحذف كل ما أضفته دون اتصال على هذا الهاتف. لا يمكن التراجع عن ذلك.";
+  String get discard_confirm_btn => "احذف";
+  String get merge_failed => "تعذّر الإكمال. حاول مرة أخرى.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3337,6 +3349,24 @@ class OfflineStrings_ar extends OfflineStrings {
         return go_cloud_pill;
       case 'go_failed':
         return go_failed;
+      case 'merge_title':
+        return merge_title;
+      case 'merge_help':
+        return merge_help;
+      case 'merge_btn':
+        return merge_btn;
+      case 'merge_note':
+        return merge_note;
+      case 'discard_btn':
+        return discard_btn;
+      case 'discard_confirm_title':
+        return discard_confirm_title;
+      case 'discard_confirm_body':
+        return discard_confirm_body;
+      case 'discard_confirm_btn':
+        return discard_confirm_btn;
+      case 'merge_failed':
+        return merge_failed;
       default:
         return super[key];
     }

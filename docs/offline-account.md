@@ -458,3 +458,29 @@ pending merge there), and running either choice again finishes — the data
 steps find nothing left under the device id. The offline email for the
 `UserSignedIn` event is read before `markOnline()` deletes it; on a resume past
 that point it is empty. Nothing is logged.
+
+### Screen (provisional)
+
+`_MergeOrDiscardScreen` in `app/lib/balsm_app/screens/auth_flow.dart`;
+`AuthRouter` maps `AppRoutes.mergeOrDiscard` to it. **Provisional:** there is
+no DesignSync design for this screen yet (spec §3). Like Unlock, it is built
+from existing auth pieces — cream background, title and help text, the info
+card (here carrying the note that the existing account keeps its password),
+and a primary ("Add this phone's data to my account") and secondary ("Remove
+this phone's data") action. The copy in the `offline` string group
+(`merge_*`, `discard_*`) is provisional too. Release stays blocked until the
+designed screen replaces this one.
+
+- **Merge** runs `merge()` straight away.
+- **Remove** first opens a confirmation sheet (title, "can't be undone" body,
+  a danger "Remove" button and Cancel); only the explicit Remove runs
+  `discard()`. Cancel or dismissing the sheet does nothing.
+- On success the screen sets `PatientAppState.accountMode` to `online` and
+  enters the app through the same disclosure gate as every sign-in
+  (`enterAfterSignIn`).
+- On failure (a failed result or an unexpected exception) it stays put and
+  shows `offline.merge_failed` — never the exception's text — and both
+  choices stay available, so the patient can try again or choose the other.
+
+A restart while the merge is pending boots straight back to this screen
+(`PatientAppState.load` with `pendingMerge: true`).

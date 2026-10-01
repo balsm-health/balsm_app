@@ -3293,6 +3293,18 @@ class OfflineStrings implements i69n.I69nMessageBundle {
   String get go_row_sub => "Verify your email to use Balsm Cloud and sharing";
   String get go_cloud_pill => "Go online";
   String get go_failed => "Couldn't go online right now. Try again.";
+  String get merge_title => "This email already has a Balsm account";
+  String get merge_help =>
+      "You're signed in to that account. Choose what to do with the data on this phone.";
+  String get merge_btn => "Add this phone's data to my account";
+  String get merge_note =>
+      "Your account keeps its current password. The password you set on this phone is no longer used.";
+  String get discard_btn => "Remove this phone's data";
+  String get discard_confirm_title => "Remove the data on this phone?";
+  String get discard_confirm_body =>
+      "Everything you added while offline on this phone will be deleted. This can't be undone.";
+  String get discard_confirm_btn => "Remove";
+  String get merge_failed => "Couldn't finish. Try again.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3324,6 +3336,24 @@ class OfflineStrings implements i69n.I69nMessageBundle {
         return go_cloud_pill;
       case 'go_failed':
         return go_failed;
+      case 'merge_title':
+        return merge_title;
+      case 'merge_help':
+        return merge_help;
+      case 'merge_btn':
+        return merge_btn;
+      case 'merge_note':
+        return merge_note;
+      case 'discard_btn':
+        return discard_btn;
+      case 'discard_confirm_title':
+        return discard_confirm_title;
+      case 'discard_confirm_body':
+        return discard_confirm_body;
+      case 'discard_confirm_btn':
+        return discard_confirm_btn;
+      case 'merge_failed':
+        return merge_failed;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

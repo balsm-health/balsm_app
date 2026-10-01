@@ -11,6 +11,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
 import '../auth/auth_flow_controllers.dart';
+import '../auth/go_online_controller.dart';
 import '../dev/shake_to_dev_config.dart';
 import '../routes.dart';
 import '../assets.dart';
@@ -33,6 +34,7 @@ class AuthRouter extends StatelessWidget {
       AppRoutes.otp => const _OtpScreen(),
       AppRoutes.profileSetup => const _ProfileSetupScreen(),
       AppRoutes.unlock => const _UnlockScreen(),
+      AppRoutes.mergeOrDiscard => const _MergeOrDiscardScreen(),
       _ => const _WelcomeScreen(),
     };
   }
@@ -1023,6 +1025,182 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
           ]),
         ),
       ),
+    );
+  }
+}
+
+// ── Merge or discard (email already has an account) ──────────
+// PROVISIONAL — pending the DesignSync design (spec §3); release stays blocked
+// on it. Built from _UnlockScreen's pieces (cream background, title/help, the
+// info card, a primary + secondary action) so it looks native meanwhile; see
+// docs/offline-account.md, "Merge or discard".
+//
+// Reached from the go-online sheet, and at boot while `balsm.pending_merge`
+// is set (PatientAppState.load), so a choice interrupted by a crash comes back
+// here and is simply run again.
+class _MergeOrDiscardScreen extends ConsumerStatefulWidget {
+  const _MergeOrDiscardScreen();
+  @override
+  ConsumerState<_MergeOrDiscardScreen> createState() => _MergeOrDiscardScreenState();
+}
+
+class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _merge() => _run((c) => c.merge());
+
+  /// Destructive: a second, explicit confirmation before anything is deleted.
+  Future<void> _discard() async {
+    if (_busy) return;
+    final s = AppScope.of(context);
+    final ok = await showAppSheet<bool>(context, builder: (_) => _DiscardConfirmSheet(s: s));
+    if (ok != true || !mounted) return;
+    await _run((c) => c.discard());
+  }
+
+  Future<void> _run(Future<AppResult<void>> Function(GoOnlineController c) action) async {
+    if (_busy) return;
+    final s = AppScope.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    AppResult<void>? r;
+    try {
+      r = await action(ref.read(goOnlineControllerProvider));
+    } catch (_) {
+      // Never the exception's text; the choice can simply be made again.
+      r = null;
+    }
+    if (!mounted) return;
+    if (r != null && r.isSuccess) {
+      s.setAccountMode(AccountMode.online);
+      unawaited(HapticFeedback.lightImpact());
+      await enterAfterSignIn(context, ref, s);
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+    unawaited(HapticFeedback.heavyImpact());
+    setState(() {
+      _busy = false;
+      _error = s.strings.offline.merge_failed;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final st = s.strings.offline;
+    return Container(
+      color: T.cream50,
+      child: SafeArea(
+        child: ContentColumn(
+          maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
+          child: Column(children: [
+            const SizedBox(height: 28),
+            Expanded(
+                child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Semantics(header: true, child: Text(st.merge_title, style: Typo.title(ar: s.rtl))),
+                const SizedBox(height: 8),
+                Text(st.merge_help, style: Typo.body(ar: s.rtl)),
+                const SizedBox(height: 24),
+                _DeviceOnlyWarning(text: st.merge_note, ar: s.rtl),
+              ]),
+            )),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+              child: Column(children: [
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  ),
+                Opacity(
+                  opacity: _busy ? 0.4 : 1,
+                  child: Column(children: [
+                    PButton(
+                      st.merge_btn,
+                      variant: BtnVariant.primary,
+                      large: true,
+                      block: true,
+                      accent: s.accent,
+                      ar: s.rtl,
+                      onTap: _busy ? null : _merge,
+                    ),
+                    const SizedBox(height: 10),
+                    PButton(
+                      st.discard_btn,
+                      variant: BtnVariant.secondary,
+                      large: true,
+                      block: true,
+                      accent: s.accent,
+                      ar: s.rtl,
+                      onTap: _busy ? null : _discard,
+                    ),
+                  ]),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// The discard's second step. Pops `true` only on the explicit Remove.
+class _DiscardConfirmSheet extends StatelessWidget {
+  const _DiscardConfirmSheet({required this.s});
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) {
+    final st = s.strings.offline;
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        const SheetGrab(),
+        const SizedBox(height: 16),
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 24)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(st.discard_confirm_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(st.discard_confirm_body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
+            const SizedBox(height: 20),
+            PButton(
+              st.discard_confirm_btn,
+              variant: BtnVariant.danger,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, true),
+            ),
+            const SizedBox(height: 8),
+            PButton(
+              s.strings.common.cancel,
+              variant: BtnVariant.secondary,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, false),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 }
