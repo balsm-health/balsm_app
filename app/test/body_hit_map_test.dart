@@ -104,8 +104,8 @@ void main() {
   group('near misses', () {
     test('a point just off the artwork still finds it', () async {
       final map = await BodyHitMap.forAsset('assets/body/muscles_front.svg');
-      // Just outside the left arm, inside the forgiveness radius.
-      expect(map.regionsNear(const Offset(2, 200)), contains('l-forearm'));
+      // Just outside the left forearm, inside the forgiveness radius.
+      expect(map.regionsNear(const Offset(8, 170)), contains('l-forearm'));
     });
 
     test('a point nowhere near the body finds nothing', () async {
@@ -122,8 +122,8 @@ void main() {
 
     test('the radius is honoured', () async {
       final map = await BodyHitMap.forAsset('assets/body/muscles_front.svg');
-      expect(map.regionsNear(const Offset(2, 200), within: 0), isEmpty);
-      expect(map.regionsNear(const Offset(2, 200), within: 40), isNotEmpty);
+      expect(map.regionsNear(const Offset(8, 170), within: 0), isEmpty);
+      expect(map.regionsNear(const Offset(8, 170), within: 40), isNotEmpty);
     });
 
     test('a point inside the artwork is also near it', () async {
@@ -139,7 +139,7 @@ void main() {
       // organs_front draws the whole silhouette; only viscera and head extras
       // are on the organ catalog, so an arm tap must not resolve to a region.
       final map = await BodyHitMap.forAsset('assets/body/organs_front.svg');
-      final stack = map.regionsAt(const Offset(56, 196)).toList();
+      final stack = map.regionsAt(const Offset(48, 160)).toList();
       expect(stack, isNotEmpty, reason: 'the forearm is painted here');
       expect(
         stack.map((id) => BodyRegion.fromId(id, BodyTissue.organ)).nonNulls,
