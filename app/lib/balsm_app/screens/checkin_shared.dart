@@ -107,13 +107,26 @@ class MoodCell extends StatelessWidget {
               borderRadius: BorderRadius.circular(T.rLg),
               border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
             ),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
-              const SizedBox(height: 8),
-              Text(moodLabel(s, lv),
-                  style: Typo.meta(ar: s.rtl)
-                      .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
-            ]),
+            // The cell is a square sized by the row (pane width less gutters,
+            // over five) — ~56dp on a 360dp phone, while a 34dp face, an 8dp
+            // gap and a label line want more. Arabic makes it worse: the
+            // Arabic face has taller line metrics and the labels wrap, which
+            // is where the 76px overflow came from. scaleDown keeps the
+            // designed proportions whenever they fit and shrinks them as one
+            // unit when they do not; maxLines holds the label to the single
+            // line the design draws.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+                MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
+                const SizedBox(height: 8),
+                Text(moodLabel(s, lv),
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: Typo.meta(ar: s.rtl)
+                        .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
+              ]),
+            ),
           ),
         ),
       );
