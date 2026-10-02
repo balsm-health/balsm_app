@@ -34,3 +34,4 @@ from the existing project muscle atlas.
 
 - `tendons_front.svg`, `tendons_back.svg`: face/ear region ellipses made transparent (`#FFFFFF00`, as in the nerves layer); they were painted solid grey over the face. Tap areas unchanged.
 - `tendons_front.svg`, `tendons_back.svg`: region ellipses also set `stroke="none"`; they inherited the art group stroke and drew grey rings on the head and ears.
+- `muscles_front.svg`, `muscles_back.svg`, `nerves_back.svg`: grey (`#c5c1b4`) face/ear region ellipses made invisible (`fill="#FFFFFF00" stroke="none"`), same fix as the tendons layer.
