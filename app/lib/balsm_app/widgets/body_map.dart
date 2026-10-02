@@ -72,7 +72,12 @@ class BodyMap extends StatefulWidget {
 
 class _BodyMapState extends State<BodyMap> {
   BodyView view = BodyView.front;
-  BodyTissue tissue = BodyTissue.skin;
+
+  /// Free choice while nothing is selected. Once the selection locks the
+  /// layer (see [lockedBodyTissue]), this is kept in sync with it so a
+  /// later "Clear all" reopens the dropdown on the layer that was in use
+  /// instead of resetting to skin.
+  BodyTissue _tissue = BodyTissue.skin;
 
   /// Artwork tap targets for the asset on screen. Empty until it parses, and
   /// for any shape we could not map — [_catalogHit] covers both cases.
@@ -93,6 +98,13 @@ class _BodyMapState extends State<BodyMap> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final messages = selfReportMessagesOf(s.lang.value);
+    // One tissue per record: once ≥1 region is marked, the layer the
+    // selection is already on wins over whatever the dropdown last showed —
+    // the map can never display a layer other than the one in use.
+    final lockedTissue = lockedBodyTissue(widget.selected);
+    if (lockedTissue != null) _tissue = lockedTissue;
+    final tissue = _tissue;
+    final locked = lockedTissue != null;
     final regions = tissue.regions(view);
     final asset = _asset(tissue, view, widget.gender);
     _ensureHits(asset);
@@ -115,13 +127,22 @@ class _BodyMapState extends State<BodyMap> {
               child: SelectField<BodyTissue>(
                 dense: true,
                 value: tissue,
+                enabled: !locked,
                 semanticsLabel: c.body_layer,
                 items: [for (final t in BodyTissue.values) (t, t.label(messages))],
-                onChanged: (t) => setState(() => tissue = t),
+                onChanged: (t) => setState(() => _tissue = t),
               ),
             ),
         ],
       ),
+      if (locked) ...[
+        const SizedBox(height: 4),
+        Text(
+          c.body_layer_locked,
+          textAlign: TextAlign.center,
+          style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg4),
+        ),
+      ],
       const SizedBox(height: 8),
       ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 16),
@@ -177,8 +198,13 @@ class _BodyMapState extends State<BodyMap> {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (details) {
-                  final region = _hitRegion(details.localPosition, constraints.biggest, regions);
-                  if (region != null) widget.onToggle(PainSite(region));
+                  final region = _hitRegion(details.localPosition, constraints.biggest, regions, tissue);
+                  if (region == null) return;
+                  final site = PainSite(region);
+                  // One tissue per record: a tap that would add a different
+                  // tissue than the locked selection is dropped silently —
+                  // removing an already-marked site is always allowed.
+                  if (canToggleSite(widget.selected, site)) widget.onToggle(site);
                 },
                 child: SvgPicture.asset(
                   asset,
@@ -201,7 +227,7 @@ class _BodyMapState extends State<BodyMap> {
   /// Tries the artwork the user actually tapped, then forgives a near miss by
   /// reaching for the closest artwork, then — only while the asset is still
   /// parsing — falls back to catalog positions.
-  BodyRegion? _hitRegion(Offset local, Size size, List<BodyRegion> regions) {
+  BodyRegion? _hitRegion(Offset local, Size size, List<BodyRegion> regions, BodyTissue tissue) {
     if (size.width <= 0 || size.height <= 0) return null;
     final point = Offset(local.dx / size.width * 200, local.dy / size.height * 384);
 

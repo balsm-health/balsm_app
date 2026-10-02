@@ -207,4 +207,170 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  // One tissue per record: once >=1 region is marked, the layer dropdown
+  // locks to that tissue (approved behaviour rule). See
+  // modules/self_report/test/pain_site_tissue_lock_test.dart for the shared
+  // `canToggleSite` / `lockedBodyTissue` helper's own unit coverage — the
+  // rule itself lives there, this group covers the body map's wiring of it.
+  group('one tissue per record — layer lock', () {
+    const muscleChest = PainSite(Muscle.chest);
+    const muscleNeck = PainSite(Muscle.neck);
+    const lockedHint = 'Clear selection to change body type';
+
+    Widget harness({Set<PainSite> selected = const {}, ValueChanged<PainSite>? onToggle}) => MaterialApp(
+          home: AppScope(
+            state: PatientAppState(),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 362,
+                    child: SingleChildScrollView(
+                      child: BodyMap(selected: selected, onToggle: onToggle ?? (_) {}, gender: Gender.female),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    DropdownButton<BodyTissue> dropdown(WidgetTester tester) =>
+        tester.widget<DropdownButton<BodyTissue>>(find.byType(DropdownButton<BodyTissue>));
+
+    String plateAsset(WidgetTester tester) =>
+        (tester.widget<SvgPicture>(find.byType(SvgPicture)).bytesLoader as SvgAssetLoader).assetName;
+
+    testWidgets('dropdown is enabled with nothing selected', (tester) async {
+      await tester.pumpWidget(harness());
+      await tester.pump();
+      expect(dropdown(tester).onChanged, isNotNull);
+    });
+
+    testWidgets('dropdown is disabled once a region is selected', (tester) async {
+      await tester.pumpWidget(harness(selected: {muscleChest}));
+      await tester.pump();
+      expect(dropdown(tester).onChanged, isNull);
+    });
+
+    testWidgets('lock hint is absent when nothing is selected', (tester) async {
+      await tester.pumpWidget(harness());
+      await tester.pump();
+      expect(find.text(lockedHint), findsNothing);
+    });
+
+    testWidgets('lock hint is shown once a region is selected', (tester) async {
+      await tester.pumpWidget(harness(selected: {muscleChest}));
+      await tester.pump();
+      expect(find.text(lockedHint), findsOneWidget);
+    });
+
+    testWidgets('widget built with an existing muscle selection starts on muscles, locked', (tester) async {
+      await tester.pumpWidget(harness(selected: {muscleChest}));
+      await tester.pump();
+      expect(plateAsset(tester), 'assets/body/muscles_front.svg');
+      expect(dropdown(tester).value, BodyTissue.muscle);
+      expect(dropdown(tester).onChanged, isNull);
+    });
+
+    testWidgets('a legacy selection mixing tissues locks to the first site without crashing', (tester) async {
+      // Insertion order: muscle first, then a nerve site — lockedBodyTissue
+      // defers to the first.
+      final mixed = <PainSite>{muscleChest, const PainSite(Nerve.neck)};
+      await tester.pumpWidget(harness(selected: mixed));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(plateAsset(tester), 'assets/body/muscles_front.svg');
+      expect(dropdown(tester).onChanged, isNull);
+    });
+
+    testWidgets('Front/Back still switches while locked', (tester) async {
+      await tester.pumpWidget(harness(selected: {muscleChest}));
+      await tester.pump();
+      expect(plateAsset(tester), 'assets/body/muscles_front.svg');
+
+      await tester.tap(find.text('Back'));
+      await tester.pump();
+      expect(plateAsset(tester), 'assets/body/muscles_back.svg');
+      expect(dropdown(tester).onChanged, isNull, reason: 'still locked after switching views');
+    });
+
+    testWidgets('clearing the selection unlocks the dropdown', (tester) async {
+      await tester.pumpWidget(_ClearableHost(initial: {muscleChest}));
+      await tester.pump();
+      expect(dropdown(tester).onChanged, isNull);
+
+      // Only one site is selected, so the chip's own remove (x) button —
+      // not "Clear all" — is what takes the selection back to empty.
+      await tester.tap(find.byIcon(LucideIcons.x));
+      await tester.pump();
+
+      expect(dropdown(tester).onChanged, isNotNull);
+      expect(find.text(lockedHint), findsNothing);
+    });
+
+    testWidgets('a same-tissue tap is still forwarded while locked', (tester) async {
+      final calls = <PainSite>[];
+      await tester.pumpWidget(harness(selected: {muscleChest}, onToggle: calls.add));
+      await tester.pump();
+
+      // The plate's own tap target — not the Front/Back chips, which are
+      // GestureDetectors too.
+      final plateTap = find.ancestor(of: find.byType(SvgPicture), matching: find.byType(GestureDetector));
+      final gestureSize = tester.getSize(plateTap);
+      final local = Offset(
+        muscleNeck.region.cx / 200 * gestureSize.width,
+        muscleNeck.region.cy / 384 * gestureSize.height,
+      );
+      tester.widget<GestureDetector>(plateTap).onTapDown!(TapDownDetails(localPosition: local));
+      await tester.pump();
+
+      expect(calls, [muscleNeck]);
+    });
+  });
+}
+
+/// Hosts a real, stateful [BodyMap] so a tap that removes the last site can
+/// be observed rebuilding with an empty selection — the "Clear all"/last-
+/// chip-removed unlock path isn't reachable from a stateless harness.
+class _ClearableHost extends StatefulWidget {
+  const _ClearableHost({required this.initial});
+  final Set<PainSite> initial;
+
+  @override
+  State<_ClearableHost> createState() => _ClearableHostState();
+}
+
+class _ClearableHostState extends State<_ClearableHost> {
+  late final Set<PainSite> selected = {...widget.initial};
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: AppScope(
+        state: PatientAppState(),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 362,
+                child: SingleChildScrollView(
+                  child: BodyMap(
+                    selected: selected,
+                    onToggle: (site) => setState(() {
+                      selected.contains(site) ? selected.remove(site) : selected.add(site);
+                    }),
+                    gender: Gender.female,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

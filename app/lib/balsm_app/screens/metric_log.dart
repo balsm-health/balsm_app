@@ -904,6 +904,7 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
             s: s,
             selected: locations,
             onToggle: (site) => setState(() {
+                  if (!canToggleSite(locations, site)) return;
                   locations.contains(site) ? locations.remove(site) : locations.add(site);
                   emit();
                 })),
@@ -1028,6 +1029,7 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
               s: s,
               selected: locations,
               onToggle: (site) => setState(() {
+                    if (!canToggleSite(locations, site)) return;
                     locations.contains(site) ? locations.remove(site) : locations.add(site);
                     emit();
                   })),
@@ -1133,6 +1135,7 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
             s: s,
             selected: locations,
             onToggle: (site) => setState(() {
+              if (!canToggleSite(locations, site)) return;
               locations.contains(site) ? locations.remove(site) : locations.add(site);
               emit();
             }),

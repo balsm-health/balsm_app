@@ -242,6 +242,7 @@
     "body_view_back": "خلفي",
     "body_tap": "انقر لتحديد الموقع",
     "body_layer": "الطبقة",
+    "body_layer_locked": "امسح التحديد لتغيير نوع الجسم",
     "body_remove(String label)": "إزالة $label",
     "body_clear_all": "مسح الكل",
     "list_sep": "، ",

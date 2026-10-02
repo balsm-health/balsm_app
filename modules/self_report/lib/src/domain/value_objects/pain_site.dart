@@ -22,3 +22,25 @@ class PainSite {
   @override
   int get hashCode => region.hashCode;
 }
+
+/// The tissue a [PainSite] selection is locked to — the first marked site's
+/// tissue — or null while [sites] is empty and any layer may still be
+/// chosen.
+///
+/// A check-in holds regions of one tissue only (approved behaviour rule):
+/// once locked, every site in [sites] is expected to share it, but a legacy
+/// record that already mixed tissues still resolves predictably — it defers
+/// to the first site rather than throwing.
+BodyTissue? lockedBodyTissue(Set<PainSite> sites) => sites.isEmpty ? null : sites.first.tissue;
+
+/// Whether [site] may be toggled into/out of [sites] under the one-tissue
+/// rule. Removing an already-marked site is always allowed; marking a new
+/// one is allowed only while [sites] is empty or [site] shares
+/// [lockedBodyTissue]. Shared by the body map's tap/add path and the
+/// check-in screens that own the `Set<PainSite>` being built, so the rule
+/// lives in exactly one place.
+bool canToggleSite(Set<PainSite> sites, PainSite site) {
+  if (sites.contains(site)) return true;
+  final tissue = lockedBodyTissue(sites);
+  return tissue == null || site.tissue == tissue;
+}

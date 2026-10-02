@@ -732,6 +732,7 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_view_back => "خلفي";
   String get body_tap => "انقر لتحديد الموقع";
   String get body_layer => "الطبقة";
+  String get body_layer_locked => "امسح التحديد لتغيير نوع الجسم";
   String body_remove(String label) => "إزالة $label";
   String get body_clear_all => "مسح الكل";
   String get list_sep => "، ";
@@ -915,6 +916,8 @@ class CheckinStrings_ar extends CheckinStrings {
         return body_tap;
       case 'body_layer':
         return body_layer;
+      case 'body_layer_locked':
+        return body_layer_locked;
       case 'body_remove':
         return body_remove;
       case 'body_clear_all':
