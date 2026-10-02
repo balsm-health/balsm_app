@@ -16,6 +16,10 @@ Medium69 and Jmarchn:
 
 Changes: resized for the Balsm 200×384 body-map coordinate system, removed
 labels/backgrounds, and added transparent selectable region overlays.
+Flattened each file's nested `<svg>` into an equivalent `<g transform>` (and,
+in `nerves_front.svg`, inlined one gradient's `xlink:href`-referenced stops)
+so `flutter_svg` renders bones, joints and nerves instead of leaving them
+blank; no visual change.
 
 The remaining body-map layer artwork is original to this project or derived
 from the existing project muscle atlas.
