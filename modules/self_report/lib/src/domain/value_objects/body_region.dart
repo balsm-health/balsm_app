@@ -413,27 +413,27 @@ final class Joint extends BodyRegion {
   @override
   BodyTissue get tissue => BodyTissue.joint;
 
-  static const jaw = Joint._(BodyView.front, 100, 44, 'jaw');
-  static const neck = Joint._(BodyView.front, 100, 62, 'neck');
-  static const l_shoulder = Joint._(BodyView.front, 52, 89, 'l-shoulder');
-  static const r_shoulder = Joint._(BodyView.front, 148, 89, 'r-shoulder');
-  static const l_elbow = Joint._(BodyView.front, 56, 168, 'l-elbow');
-  static const r_elbow = Joint._(BodyView.front, 144, 168, 'r-elbow');
-  static const pelvis = Joint._(BodyView.front, 100, 197, 'pelvis');
-  static const l_hand = Joint._(BodyView.front, 58, 212, 'l-hand');
-  static const r_hand = Joint._(BodyView.front, 142, 212, 'r-hand');
-  static const l_knee = Joint._(BodyView.front, 80, 298, 'l-knee');
-  static const r_knee = Joint._(BodyView.front, 120, 298, 'r-knee');
-  static const l_foot = Joint._(BodyView.front, 80, 372, 'l-foot');
-  static const r_foot = Joint._(BodyView.front, 120, 372, 'r-foot');
-  static const bk_neck = Joint._(BodyView.back, 100, 62, 'bk-neck');
-  static const bk_l_shoulder = Joint._(BodyView.back, 52, 89, 'bk-l-shoulder');
-  static const bk_r_shoulder = Joint._(BodyView.back, 148, 89, 'bk-r-shoulder');
-  static const bk_upper = Joint._(BodyView.back, 100, 110, 'bk-upper');
-  static const bk_mid = Joint._(BodyView.back, 100, 140, 'bk-mid');
-  static const bk_lower = Joint._(BodyView.back, 100, 166, 'bk-lower');
-  static const bk_l_glute = Joint._(BodyView.back, 82, 206, 'bk-l-glute');
-  static const bk_r_glute = Joint._(BodyView.back, 118, 206, 'bk-r-glute');
+  static const jaw = Joint._(BodyView.front, 94, 50, 'jaw');
+  static const neck = Joint._(BodyView.front, 93, 64, 'neck');
+  static const l_shoulder = Joint._(BodyView.front, 58, 79, 'l-shoulder');
+  static const r_shoulder = Joint._(BodyView.front, 129, 79, 'r-shoulder');
+  static const l_elbow = Joint._(BodyView.front, 38, 139, 'l-elbow');
+  static const r_elbow = Joint._(BodyView.front, 143, 139, 'r-elbow');
+  static const pelvis = Joint._(BodyView.front, 93, 184, 'pelvis');
+  static const l_hand = Joint._(BodyView.front, 37, 194, 'l-hand');
+  static const r_hand = Joint._(BodyView.front, 161, 190, 'r-hand');
+  static const l_knee = Joint._(BodyView.front, 81, 269, 'l-knee');
+  static const r_knee = Joint._(BodyView.front, 104, 269, 'r-knee');
+  static const l_foot = Joint._(BodyView.front, 83, 351, 'l-foot');
+  static const r_foot = Joint._(BodyView.front, 101, 351, 'r-foot');
+  static const bk_neck = Joint._(BodyView.back, 100, 52, 'bk-neck');
+  static const bk_l_shoulder = Joint._(BodyView.back, 54, 78, 'bk-l-shoulder');
+  static const bk_r_shoulder = Joint._(BodyView.back, 145, 78, 'bk-r-shoulder');
+  static const bk_upper = Joint._(BodyView.back, 100, 83, 'bk-upper');
+  static const bk_mid = Joint._(BodyView.back, 99, 116, 'bk-mid');
+  static const bk_lower = Joint._(BodyView.back, 99, 150, 'bk-lower');
+  static const bk_l_glute = Joint._(BodyView.back, 74, 183, 'bk-l-glute');
+  static const bk_r_glute = Joint._(BodyView.back, 126, 185, 'bk-r-glute');
 
   static const values = <Joint>[
     jaw,
