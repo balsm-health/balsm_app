@@ -74,7 +74,7 @@ void main() {
     test('a point on the artwork reports its region', () async {
       final map = await BodyHitMap.forAsset('assets/body/muscles_front.svg');
       expect(map.regionsAt(const Offset(100, 106)).first, 'chest');
-      expect(map.regionsAt(const Offset(100, 20)).first, 'head');
+      expect(map.regionsAt(const Offset(100, 30)).first, 'head');
     });
 
     test('a point off the body reports nothing', () async {
@@ -86,18 +86,18 @@ void main() {
     test('overlapping shapes come back topmost first', () async {
       final map = await BodyHitMap.forAsset('assets/body/organs_front.svg');
       // The organ plate paints viscera over the body silhouette.
-      final stack = map.regionsAt(const Offset(102, 104)).toList();
+      final stack = map.regionsAt(const Offset(92, 108)).toList();
       expect(stack.first, 'heart');
       expect(stack, contains('chest'), reason: 'silhouette should sit underneath');
       expect(stack.indexOf('heart'), lessThan(stack.indexOf('chest')));
     });
 
     test('ellipse hit targets are honoured, not just paths', () async {
-      // `l-eye` is an invisible <ellipse cx=93.1 cy=28.1 rx=4.9 ry=2.9>.
+      // `head` is an invisible <ellipse cx=100 cy=30 rx=19 ry=22>.
       final map = await BodyHitMap.forAsset('assets/body/nerves_front.svg');
-      expect(map.regionsAt(const Offset(93.1, 28.1)).first, 'l-eye');
-      expect(map.regionsAt(const Offset(93.1 + 4.5, 28.1)), contains('l-eye')); // inside rx
-      expect(map.regionsAt(const Offset(93.1 + 5.5, 28.1)), isNot(contains('l-eye'))); // beyond rx
+      expect(map.regionsAt(const Offset(100, 30)), contains('head'));
+      expect(map.regionsAt(const Offset(100, 30 - 21)), contains('head')); // inside ry
+      expect(map.regionsAt(const Offset(100, 30 - 30)), isNot(contains('head'))); // beyond ry
     });
   });
 
@@ -151,7 +151,7 @@ void main() {
     test('viscera resolve on the organ layer', () async {
       final map = await BodyHitMap.forAsset('assets/body/organs_front.svg');
       final region =
-          map.regionsAt(const Offset(102, 104)).map((id) => BodyRegion.fromId(id, BodyTissue.organ)).nonNulls.first;
+          map.regionsAt(const Offset(92, 108)).map((id) => BodyRegion.fromId(id, BodyTissue.organ)).nonNulls.first;
       expect(region, Organ.heart);
     });
 
