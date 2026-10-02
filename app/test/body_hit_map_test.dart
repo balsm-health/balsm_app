@@ -169,4 +169,32 @@ void main() {
       );
     });
   });
+  group('bone back view arms', () {
+    const backArms = [
+      Bone.bk_l_upper_arm,
+      Bone.bk_r_upper_arm,
+      Bone.bk_l_elbow,
+      Bone.bk_r_elbow,
+      Bone.bk_l_forearm,
+      Bone.bk_r_forearm,
+      Bone.bk_l_hand,
+      Bone.bk_r_hand,
+    ];
+
+    test('each back-of-arm region is hit at its catalog point', () async {
+      final map = await BodyHitMap.forAsset('assets/body/bones_back.svg');
+      for (final r in backArms) {
+        final hits = map.regionsAt(Offset(r.cx, r.cy)).map((id) => BodyRegion.fromId(id, BodyTissue.bone)).nonNulls;
+        expect(hits.first, r, reason: '${r.id} not hit at its catalog point');
+      }
+    });
+
+    test('sides follow the back-view shoulder convention', () {
+      // bk-l-* sits on the image's left half on the back view (as bk-l-shoulder does).
+      expect(Bone.bk_l_shoulder.cx < 100, isTrue);
+      for (final r in backArms) {
+        expect(r.cx < 100, r.id.startsWith('bk-l-'), reason: r.id);
+      }
+    });
+  });
 }

@@ -346,6 +346,14 @@ final class Bone extends BodyRegion {
   static const bk_neck = Bone._(BodyView.back, 100, 49, 'bk-neck');
   static const bk_l_shoulder = Bone._(BodyView.back, 67, 78, 'bk-l-shoulder');
   static const bk_r_shoulder = Bone._(BodyView.back, 130, 78, 'bk-r-shoulder');
+  static const bk_l_upper_arm = Bone._(BodyView.back, 48, 102, 'bk-l-upper-arm');
+  static const bk_r_upper_arm = Bone._(BodyView.back, 149, 101, 'bk-r-upper-arm');
+  static const bk_l_elbow = Bone._(BodyView.back, 45, 139, 'bk-l-elbow');
+  static const bk_r_elbow = Bone._(BodyView.back, 151, 139, 'bk-r-elbow');
+  static const bk_l_forearm = Bone._(BodyView.back, 42, 172, 'bk-l-forearm');
+  static const bk_r_forearm = Bone._(BodyView.back, 152, 169, 'bk-r-forearm');
+  static const bk_l_hand = Bone._(BodyView.back, 40, 210, 'bk-l-hand');
+  static const bk_r_hand = Bone._(BodyView.back, 155, 210, 'bk-r-hand');
   static const bk_upper = Bone._(BodyView.back, 99, 82, 'bk-upper');
   static const bk_mid = Bone._(BodyView.back, 100, 112, 'bk-mid');
   static const bk_lower = Bone._(BodyView.back, 99, 157, 'bk-lower');
@@ -390,6 +398,14 @@ final class Bone extends BodyRegion {
     bk_neck,
     bk_l_shoulder,
     bk_r_shoulder,
+    bk_l_upper_arm,
+    bk_r_upper_arm,
+    bk_l_elbow,
+    bk_r_elbow,
+    bk_l_forearm,
+    bk_r_forearm,
+    bk_l_hand,
+    bk_r_hand,
     bk_upper,
     bk_mid,
     bk_lower,
