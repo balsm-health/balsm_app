@@ -69,3 +69,20 @@ derived from CC BY-SA material are themselves licensed CC BY-SA 4.0.
   outline. The front plate is mirrored to match the app's side convention, so
   the heart and stomach sit on the viewer's left like the catalog. The back
   plate shows faded lungs and the kidneys. Organ-shaped hit areas added.
+
+## Changes — anatomical selection regions
+
+- Every `region-*` hit/highlight shape was redrawn from the artwork itself
+  (region id sets unchanged). The shapes are traced outlines, not boxes:
+  - Skin, nerve and organ-plate body areas are partitioned along the figure's
+    own contour, with rounded patches for shoulders, elbows, knees and glutes,
+    a pectoral-shaped chest and an inguinal-V pelvis.
+  - Muscle and tendon regions follow the outlines of the muscle shapes they
+    contain (deltoid, pectorals, rectus abdominis, quadriceps, …).
+  - Bone regions follow the bones; joint regions cover the bone ends,
+    vertebrae and hip joints they name and keep their own paint.
+  - Viscera (heart, lungs, liver, stomach, intestines, bladder, kidneys) follow
+    the organ drawings.
+  - Head extras use anatomical outlines: elliptical eyes, ears, a U-shaped
+    jawline and a frontal + maxillary sinus shape.
+- The artwork paths themselves are unchanged.
