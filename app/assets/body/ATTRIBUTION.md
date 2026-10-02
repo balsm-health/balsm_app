@@ -23,3 +23,5 @@ blank; no visual change.
 
 The remaining body-map layer artwork is original to this project or derived
 from the existing project muscle atlas.
+
+- `nerves_front.svg`: removed 29 tiny nerve-root `<text>` labels (C1–S5). flutter_svg drew them as solid black blocks over the spinal cord; at body-map scale they carried no information. Artwork and region ids unchanged.
