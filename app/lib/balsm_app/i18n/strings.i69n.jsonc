@@ -245,6 +245,7 @@
     "body_layer_locked": "Clear selection to change body type",
     "body_remove(String label)": "Remove $label",
     "body_clear_all": "Clear all",
+    "body_marked": "Marked areas",
     "list_sep": ", ",
     "list_mid": " · ",
     "pain_n(String n)": "$n/10",

@@ -245,6 +245,7 @@
     "body_layer_locked": "امسح التحديد لتغيير نوع الجسم",
     "body_remove(String label)": "إزالة $label",
     "body_clear_all": "مسح الكل",
+    "body_marked": "المناطق المحددة",
     "list_sep": "، ",
     "list_mid": " · ",
     "pain_n(String n)": "$n/10",

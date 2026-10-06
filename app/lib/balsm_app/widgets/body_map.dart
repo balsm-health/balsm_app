@@ -1,4 +1,6 @@
+import 'package:account/account.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -16,6 +18,14 @@ String regionLabel(PatientAppState s, BodyRegion region) => region.labelForLang(
 /// Localized `"Chest · Muscle"` for a marked [PainSite].
 String siteLabel(PatientAppState s, PainSite site) =>
     site.label(selfReportMessagesOf(s.lang.value), mid: s.strings.checkin.list_mid);
+
+/// Signed-in profile's gender, for the skin layer's silhouette. Null while
+/// signed out or before the profile loads — callers fall back to
+/// [PatientAppState.gender].
+final currentProfileGenderProvider = FutureProvider.autoDispose<Gender?>((ref) async {
+  if (ref.watch(currentUserIdProvider) == null) return null;
+  return (await ref.watch(accountProfileUseCaseProvider).load())?.gender;
+});
 
 /// Recolors every path tagged `region-{BodyRegion.id}` / `region-{id}-{n}`.
 class _BodyRegionColorMapper extends ColorMapper {
@@ -348,6 +358,90 @@ class _ClearAllButton extends StatelessWidget {
                 fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg3, decoration: TextDecoration.underline)),
       ),
     );
+  }
+}
+
+/// Read-only body map for a saved record: one plate per view that holds a
+/// marked site, highlighted exactly as it was on the input [BodyMap], with the
+/// site labels underneath. No tissue/view controls and no tap targets.
+class BodyMapPreview extends ConsumerWidget {
+  const BodyMapPreview({super.key, required this.sites});
+  final Set<PainSite> sites;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    if (sites.isEmpty) return const SizedBox.shrink();
+    final gender = ref.watch(currentProfileGenderProvider).valueOrNull ?? s.gender;
+    final messages = selfReportMessagesOf(s.lang.value);
+    final c = s.strings.checkin;
+    // One tissue per record is enforced on input, but older records may mix
+    // layers — each tissue/view pair that holds a site gets its own plate.
+    final plates = <(BodyTissue, BodyView)>[
+      for (final tissue in BodyTissue.values)
+        for (final view in BodyView.values)
+          if (sites.any((site) => site.tissue == tissue && site.region.view == view)) (tissue, view),
+    ];
+    final multiTissue = plates.map((p) => p.$1).toSet().length > 1;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          for (final (tissue, view) in plates)
+            SizedBox(
+              width: 120,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                AspectRatio(
+                  aspectRatio: 200 / 384,
+                  child: SvgPicture.asset(
+                    _asset(tissue, view, gender),
+                    fit: BoxFit.contain,
+                    excludeFromSemantics: true,
+                    colorMapper: _BodyRegionColorMapper(
+                      {
+                        for (final site in sites)
+                          if (site.tissue == tissue) site.region,
+                      },
+                      s.accent.main.withValues(alpha: _selectionAlpha(tissue)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  [
+                    view == BodyView.front ? c.body_view_front : c.body_view_back,
+                    if (multiTissue) tissue.label(messages),
+                  ].join(c.list_mid),
+                  textAlign: TextAlign.center,
+                  style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg3),
+                ),
+              ]),
+            ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final site in sites)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: s.accent.bg,
+                borderRadius: BorderRadius.circular(T.rPill),
+                border: Border.all(color: s.accent.main, width: 1.5),
+              ),
+              child: Text(site.label(messages, mid: c.list_mid),
+                  style:
+                      Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: s.accent.d)),
+            ),
+        ],
+      ),
+    ]);
   }
 }
 

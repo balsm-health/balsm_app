@@ -64,6 +64,13 @@ the AI-governance PHI invariants are honored regardless.
 
 ---
 
+### Record detail preview (2026-10-06)
+`DayRecordsScreen` shows a saved check-in's marked sites on a read-only
+`BodyMapPreview`: one plate per view (front/back) that holds a site, coloured
+the same way as the input map, with the site labels underneath. No layer or
+view controls, no tap targets. Legacy records that mix tissues get one plate
+per tissue. The check-in's attached photo stays below it.
+
 ## Spec B — Care directory (non-PHI, real backend) — detailed after A
 
 ### .NET `Balsm.CareDirectory` bounded context

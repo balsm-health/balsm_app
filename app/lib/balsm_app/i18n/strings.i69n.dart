@@ -735,6 +735,7 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get body_layer_locked => "Clear selection to change body type";
   String body_remove(String label) => "Remove $label";
   String get body_clear_all => "Clear all";
+  String get body_marked => "Marked areas";
   String get list_sep => ", ";
   String get list_mid => " · ";
   String pain_n(String n) => "$n/10";
@@ -917,6 +918,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return body_remove;
       case 'body_clear_all':
         return body_clear_all;
+      case 'body_marked':
+        return body_marked;
       case 'list_sep':
         return list_sep;
       case 'list_mid':
