@@ -345,7 +345,6 @@ class _CloudAccountRow extends StatelessWidget {
 
   Widget _row(BuildContext context) {
     final st = s.strings.storage;
-    final cfg = storageCfg(target);
     final available = target.isAvailable;
     final goOnline = target == StorageTarget.balsmCloud && s.accountMode == AccountMode.deviceOnly;
     final row = Opacity(
@@ -360,7 +359,8 @@ class _CloudAccountRow extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rMd)),
-              child: Icon(cfg.icon, size: 18, color: T.fg3),
+              // Not connected, so the mark is muted — `muted={!on}` in the design.
+              child: StorageIcon(target, size: 20, muted: true),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -471,6 +471,7 @@ class _StoredInRow extends StatelessWidget {
     final st = s.strings.storage;
     final cfg = storageCfg(target);
     final switchable = onChanged != null;
+    final brand = StorageIcon.isBrand(target);
     final available = target.isAvailable || switchable;
     final row = Opacity(
       opacity: available ? 1 : 0.65,
@@ -485,11 +486,18 @@ class _StoredInRow extends StatelessWidget {
                 width: 36,
                 height: 36,
                 alignment: Alignment.center,
+                // A brand mark keeps its own colours, so when on it sits on
+                // white with a hairline; the device glyph fills with its hue.
                 decoration: BoxDecoration(
-                  color: on ? cfg.color : T.ink100,
+                  color: !on
+                      ? T.ink100
+                      : brand
+                          ? Colors.white
+                          : cfg.color,
                   borderRadius: BorderRadius.circular(T.rMd),
+                  border: brand && on ? Border.all(color: T.ink200) : null,
                 ),
-                child: Icon(cfg.icon, size: 18, color: on ? Colors.white : T.fg3),
+                child: StorageIcon(target, size: brand ? 20 : 18, color: on ? Colors.white : T.fg3, muted: !on),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -561,7 +569,7 @@ class LocIcons extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),
-                child: Icon(storageCfg(all[i]).icon, size: size * 0.55, color: storageCfg(all[i]).color),
+                child: StorageIcon(all[i], size: size * 0.55, color: storageCfg(all[i]).color),
               ),
             ),
         ],

@@ -2,9 +2,11 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/storage_sheet.dart';
 import 'package:app/balsm_app/storage_target.dart';
+import 'package:app/balsm_app/widgets/badges.dart';
 import 'package:app/balsm_app/widgets/data_loc_pill.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -108,6 +110,22 @@ void main() {
 
       expect(s.careCloudSync, isFalse);
       expect(find.text(st.store_care_cloud_off), findsOne);
+    });
+
+    testWidgets('clouds are drawn as their own marks, the device as a glyph', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Row(children: [
+          StorageIcon(StorageTarget.local, size: 20),
+          StorageIcon(StorageTarget.icloud, size: 20),
+          StorageIcon(StorageTarget.gdrive, size: 20),
+          StorageIcon(StorageTarget.balsmCloud, size: 20, muted: true),
+        ]),
+      ));
+      // `base.jsx` BRAND_ICONS: three vendor marks, never Lucide stand-ins.
+      expect(find.byType(SvgPicture), findsExactly(3));
+      expect(find.byType(Icon), findsOne);
+      // `muted` is grayscale + 55% opacity, as in the design.
+      expect(find.byType(ColorFiltered), findsOne);
     });
 
     testWidgets('no other category gets a switch', (tester) async {

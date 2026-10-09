@@ -372,7 +372,7 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
               padding: const EdgeInsets.only(bottom: 12),
               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
               child: Row(children: [
-                Icon(cfg.icon, size: 19, color: cfg.color),
+                StorageIcon(target, size: 19, color: cfg.color),
                 const SizedBox(width: 10),
                 Expanded(
                     child: Text(confirming ? st.store_delete_rec : st.store_manage,
@@ -411,7 +411,7 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
           border: Border.all(color: cfg.border),
         ),
         child: Row(children: [
-          Icon(cfg.icon, size: 16, color: cfg.color),
+          StorageIcon(target, size: 16, color: cfg.color),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(
