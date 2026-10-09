@@ -58,11 +58,16 @@ class ReleaseNoteItem {
 /// What changed in one release, in one language.
 @immutable
 class ReleaseNote {
-  const ReleaseNote({required this.version, this.date, this.items = const []});
+  const ReleaseNote({required this.version, this.date, this.hasTime = false, this.items = const []});
   final String version;
 
-  /// Release day, when the manifest gives one.
+  /// When the release went out, if the manifest says. A calendar day
+  /// (`2026-10-09`), or — when [hasTime] — an exact instant in UTC
+  /// (`2026-10-09T14:30:00Z`), to be shown in the reader's own time zone.
   final DateTime? date;
+
+  /// Whether [date] carries a time of day, not just a day.
+  final bool hasTime;
   final List<ReleaseNoteItem> items;
 
   bool get isEmpty => items.isEmpty;
@@ -142,7 +147,7 @@ int? compareVersions(String a, String b) {
 ///   "stores": { "ios": "https://apps.apple.com/…" },
 ///   "min":    { "ios": "1.2.0" },
 ///   "versions": {
-///     "1.4.0": { "force": false, "platforms": ["ios", "android"], "date": "2026-10-09",
+///     "1.4.0": { "force": false, "platforms": ["ios", "android"], "date": "2026-10-09T14:30:00Z",
 ///                "notes": { "en": [ { "title": "…", "body": "…" }, "A line with no body" ],
 ///                           "ar": [ { "title": "…" } ] } }
 ///   }
@@ -228,8 +233,9 @@ String? _platformValue(Object? map, String platform) {
 /// there. A language's value is a list; each entry is `{title, body}` or just
 /// a string (a title on its own). Anything else is skipped.
 ReleaseNote _noteFor(String version, Map<String, dynamic> release, String lang) {
-  final rawDate = release['date'];
-  final date = rawDate is String ? DateTime.tryParse(rawDate) : null;
+  final when = parseReleaseDate(release['date']);
+  final date = when?.date;
+  final hasTime = when?.hasTime ?? false;
   final notes = release['notes'];
   if (notes is Map<String, dynamic>) {
     for (final candidate in [notes[lang], notes['en'], ...notes.values]) {
@@ -246,10 +252,40 @@ ReleaseNote _noteFor(String version, Map<String, dynamic> release, String lang) 
           }
         }
       }
-      if (items.isNotEmpty) return ReleaseNote(version: version, date: date, items: items);
+      if (items.isNotEmpty) return ReleaseNote(version: version, date: date, hasTime: hasTime, items: items);
     }
   }
-  return ReleaseNote(version: version, date: date);
+  return ReleaseNote(version: version, date: date, hasTime: hasTime);
+}
+
+/// Reads a release's `date`: a day (`2026-10-09`) or a date and time
+/// (`2026-10-09T14:30:00Z`, `2026-10-09T17:30:00+03:00`).
+///
+/// A time is an instant, so it is normalised to UTC. One written without a
+/// zone is taken as UTC too — the manifest is read all over the world, and
+/// "local time" would mean a different moment on every phone.
+({DateTime date, bool hasTime})? parseReleaseDate(Object? raw) {
+  if (raw is! String) return null;
+  final parsed = DateTime.tryParse(raw.trim());
+  if (parsed == null) return null;
+  if (!RegExp(r'\d[T ]\d{1,2}:\d{2}').hasMatch(raw)) {
+    return (date: DateTime(parsed.year, parsed.month, parsed.day), hasTime: false);
+  }
+  final utc = parsed.isUtc
+      ? parsed
+      : DateTime.utc(parsed.year, parsed.month, parsed.day, parsed.hour, parsed.minute, parsed.second);
+  return (date: utc, hasTime: true);
+}
+
+/// A release's date as the sheet prints it: `09/10/2026`, or with its time in
+/// the reader's own zone, `09/10/2026 17:30`. Empty when there is no date.
+String formatReleaseDate(ReleaseNote note) {
+  final d = note.date;
+  if (d == null) return '';
+  String two(int n) => n.toString().padLeft(2, '0');
+  final at = note.hasTime ? d.toLocal() : d;
+  final day = '${two(at.day)}/${two(at.month)}/${at.year}';
+  return note.hasTime ? '$day ${two(at.hour)}:${two(at.minute)}' : day;
 }
 
 /// The manifest key for the running platform, or null where there is nothing

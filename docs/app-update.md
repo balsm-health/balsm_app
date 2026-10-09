@@ -37,7 +37,7 @@ the app treats as "nothing to do".
     "1.4.0": {
       "force": false,
       "platforms": ["ios", "android"],
-      "date": "2026-10-09",
+      "date": "2026-10-09T14:30:00Z",
       "notes": {
         "en": [
           { "title": "Smarter dose reminders", "body": "Snooze a dose and Balsm reminds you again, even offline." },
@@ -60,7 +60,10 @@ the app treats as "nothing to do".
 - `min` — optional per-platform floor. Anything below it is forced, whatever
   the release entries say. Use it to retire old builds in bulk.
 - `stores` — where "Update" goes. Must be `https://`.
-- `date` — release day (`YYYY-MM-DD`), shown beside "What's new". Optional.
+- `date` — when the release went out, shown beside "What's new". Optional.
+  A day (`2026-10-09`) or a date and time (`2026-10-09T14:30:00Z`,
+  `…T17:30:00+03:00`). A time is shown in the reader's own time zone in the
+  app and in UTC on the web page; written without a zone it is read as UTC.
 - `notes` — per language, falling back to `en`: a list where each entry is
   `{ "title": "…", "body": "…" }` (`body` optional) or just a string. Plain
   text only — there is no markup; a `\n` in a body is a line break.

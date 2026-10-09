@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import worker, { compareVersions, esc, noteFor, releasesFor } from './worker.js';
+import worker, { compareVersions, esc, formatDate, noteFor, releasesFor } from './worker.js';
 
 const ok = (name, cond, detail = '') => test(name, () => assert.ok(cond, String(detail)));
 
@@ -20,12 +20,19 @@ ok('language falls back to english', noteFor({ en: ['E'] }, 'ar')[0].title === '
 ok('an html string is not notes', noteFor({ en: '<p>x</p>' }, 'en').length === 0);
 ok('no notes', noteFor(undefined, 'en').length === 0 && noteFor([], 'en').length === 0);
 
+// release dates
+ok('a day prints as a day', formatDate('2026-10-09') === '09/10/2026');
+ok('a time prints in UTC and says so', formatDate('2026-10-09T14:30:00Z') === '09/10/2026 14:30 UTC');
+ok('an offset is converted to UTC', formatDate('2026-10-09T17:30:00+03:00') === '09/10/2026 14:30 UTC', formatDate('2026-10-09T17:30:00+03:00'));
+ok('no zone is read as UTC', formatDate('2026-10-09T14:30:00') === '09/10/2026 14:30 UTC' && formatDate('2026-10-09 14:30') === '09/10/2026 14:30 UTC', formatDate('2026-10-09 14:30'));
+ok('nonsense prints nothing', formatDate('soon') === '' && formatDate(7) === '' && formatDate(undefined) === '');
+
 // version logic
 ok('compare numeric', compareVersions('1.10.0', '1.9.3') > 0 && compareVersions('1.2', '1.2.0') === 0 && compareVersions('x', '1') === null);
 const manifest = { versions: {
   '1.2.0': { platforms: ['ios', 'android'], notes: { en: ['one-two'] } },
   '1.3.0': { force: true, platforms: ['ios'], date: '2026-09-01', notes: { en: [{ title: 'one-three', body: '<img src=x onerror=alert(1)><script>alert(1)</script>' }] } },
-  '1.4.0': { platforms: ['ios', 'android'], date: '2026-10-09', notes: { en: [{ title: 'Smarter <reminders>', body: 'Even <b>offline</b>.\nSecond line & more' }, { title: '' }], ar: [{ title: 'تذكيرات أذكى', body: 'حتى دون إنترنت.' }] } },
+  '1.4.0': { platforms: ['ios', 'android'], date: '2026-10-09T14:30:00Z', notes: { en: [{ title: 'Smarter <reminders>', body: 'Even <b>offline</b>.\nSecond line & more' }, { title: '' }], ar: [{ title: 'تذكيرات أذكى', body: 'حتى دون إنترنت.' }] } },
   'bad': { notes: { en: 'x' } },
 } };
 ok('releases newer than from', releasesFor(manifest, { from: '1.2.0', platform: 'ios' }).map(r => r.version).join() === '1.4.0,1.3.0');
@@ -44,7 +51,7 @@ ok('page lists 1.4.0 then 1.3.0, not 1.2.0', t.indexOf('v1.4.0') > 0 && t.indexO
 ok('title escaped', t.includes('Smarter &lt;reminders&gt;') && !t.includes('<reminders>'));
 ok('markup in notes is shown as text, never as markup', !/<script/i.test(t) && !/<img/i.test(t) && !/<b>/.test(t) && t.includes('Even &lt;b&gt;offline&lt;/b&gt;.') && t.includes('&lt;img src=x onerror=alert(1)&gt;'));
 ok('line breaks and ampersands in a body', t.includes('&lt;/b&gt;.<br>Second line &amp; more'));
-ok('required badge + date', t.includes('>Required<') && t.includes('09/10/2026'));
+ok('required badge + date', t.includes('>Required<') && t.includes('09/10/2026 14:30 UTC') && t.includes('01/09/2026'));
 ok('since line', t.includes('Everything since version 1.2.0.'));
 
 ({ r, t } = await get('/whats-new?brand=balsm&lang=ar&from=1.3.0'));

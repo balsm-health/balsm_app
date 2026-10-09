@@ -143,6 +143,55 @@ void main() {
     });
   });
 
+  group('release date', () {
+    test('a day stays a day', () {
+      final when = parseReleaseDate('2026-10-09')!;
+      expect(when.hasTime, isFalse);
+      expect(when.date, DateTime(2026, 10, 9));
+      expect(formatReleaseDate(ReleaseNote(version: '1.0.0', date: when.date)), '09/10/2026');
+    });
+
+    test('a date and time is one instant, whatever zone it was written in', () {
+      final utc = parseReleaseDate('2026-10-09T14:30:00Z')!;
+      final cairo = parseReleaseDate('2026-10-09T17:30:00+03:00')!;
+      expect(utc.hasTime, isTrue);
+      expect(utc.date, DateTime.utc(2026, 10, 9, 14, 30));
+      expect(cairo.date, utc.date);
+    });
+
+    test('a time with no zone is read as UTC, not as the phone\'s local time', () {
+      expect(parseReleaseDate('2026-10-09T14:30:00')!.date, DateTime.utc(2026, 10, 9, 14, 30));
+      expect(parseReleaseDate('2026-10-09 14:30')!.date, DateTime.utc(2026, 10, 9, 14, 30));
+    });
+
+    test('a time is shown in the reader\'s own zone', () {
+      final at = DateTime.utc(2026, 10, 9, 14, 30);
+      final local = at.toLocal();
+      String two(int n) => n.toString().padLeft(2, '0');
+      expect(
+        formatReleaseDate(ReleaseNote(version: '1.0.0', date: at, hasTime: true)),
+        '${two(local.day)}/${two(local.month)}/${local.year} ${two(local.hour)}:${two(local.minute)}',
+      );
+    });
+
+    test('nonsense is no date at all', () {
+      for (final raw in <Object?>[null, 7, '', 'soon', '2026-13-45T99:99']) {
+        expect(parseReleaseDate(raw)?.date.year, anyOf(isNull, isNot(2026)), reason: '$raw');
+      }
+      expect(formatReleaseDate(const ReleaseNote(version: '1.0.0')), '');
+    });
+
+    test('the manifest\'s date reaches the note, with or without a time', () {
+      const m = '{"versions": {"2.0.0": {"date": "2026-10-09T14:30:00Z", "notes": {"en": ["a"]}}, '
+          '"1.5.0": {"date": "2026-09-01", "notes": {"en": ["b"]}}}}';
+      final notes = eval('1.0.0', m: m).notes;
+      expect(notes.first.hasTime, isTrue);
+      expect(notes.first.date, DateTime.utc(2026, 10, 9, 14, 30));
+      expect(notes.last.hasTime, isFalse);
+      expect(notes.last.date, DateTime(2026, 9, 1));
+    });
+  });
+
   group('full release notes link', () {
     test('is narrowed to this build: brand, platform, language, installed version', () {
       final uri = Uri.parse(evaluateUpdate(

@@ -435,9 +435,6 @@ class _Notes extends StatelessWidget {
   final UpdateLook look;
   final List<ReleaseNote> notes;
 
-  static String _date(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
   @override
   Widget build(BuildContext context) {
     final ar = look.rtl;
@@ -458,7 +455,7 @@ class _Notes extends StatelessWidget {
                       style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg3)),
             ),
             if (notes[n].date != null)
-              Text(_date(notes[n].date!), textDirection: TextDirection.ltr, style: Typo.meta(ar: ar)),
+              Text(formatReleaseDate(notes[n]), textDirection: TextDirection.ltr, style: Typo.meta(ar: ar)),
           ]),
         ),
         for (var i = 0; i < notes[n].items.length; i++) _item(notes[n].items[i], first: i == 0, ar: ar),

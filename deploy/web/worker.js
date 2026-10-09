@@ -270,9 +270,23 @@ export function noteFor(notes, lang) {
   return [];
 }
 
-function formatDate(raw) {
-  const m = typeof raw === 'string' && /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+/**
+ * A release's `date` as the page prints it. A day (`2026-10-09`) prints as
+ * `09/10/2026`. A date and time prints with the time in UTC — a server cannot
+ * know the reader's zone, so it says which one it used. A time written without
+ * a zone is taken as UTC, as the app does.
+ */
+export function formatDate(raw) {
+  if (typeof raw !== 'string') return '';
+  const text = raw.trim();
+  const day = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  if (!day) return '';
+  if (!/\d[T ]\d{1,2}:\d{2}/.test(text)) return `${day[3]}/${day[2]}/${day[1]}`;
+  const zoned = /(Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`;
+  const at = new Date(zoned.replace(' ', 'T'));
+  if (Number.isNaN(at.getTime())) return `${day[3]}/${day[2]}/${day[1]}`;
+  const two = (n) => String(n).padStart(2, '0');
+  return `${two(at.getUTCDate())}/${two(at.getUTCMonth() + 1)}/${at.getUTCFullYear()} ${two(at.getUTCHours())}:${two(at.getUTCMinutes())} UTC`;
 }
 
 // ── Escaping ────────────────────────────────────────────────────────────────
