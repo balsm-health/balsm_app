@@ -86,6 +86,11 @@ final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async
   return ref.watch(accountProfileUseCaseProvider).load();
 });
 
+/// Connected accounts (Apple / Google) on Account details. Off until Apple ID
+/// and Google sign-in are configured — the rows could only ever show
+/// "disconnected" and a Connect button that links nothing.
+const _showConnectedAccounts = false;
+
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
   const PersonalDetailsScreen({super.key, required this.s});
   final PatientAppState s;
@@ -478,23 +483,24 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
                       ]),
                     ]),
-                    // Connected accounts — visual match of home.jsx. Connect is
-                    // shown disconnected until a real Apple/Google link API exists;
-                    // do not fake a connected session.
-                    _section(LucideIcons.link, s.strings.profile.conn_accounts),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(T.rLg),
-                          border: Border.all(color: T.border),
-                          boxShadow: T.shadowSm),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(children: [
-                        _connectedRow(apple: true, label: s.strings.profile.conn_apple, last: false),
-                        _connectedRow(apple: false, label: s.strings.profile.conn_google, last: true),
-                      ]),
-                    ),
+                    // Connected accounts — visual match of home.jsx. Hidden behind
+                    // [_showConnectedAccounts] until Apple/Google sign-in is set up.
+                    if (_showConnectedAccounts) ...[
+                      _section(LucideIcons.link, s.strings.profile.conn_accounts),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(T.rLg),
+                            border: Border.all(color: T.border),
+                            boxShadow: T.shadowSm),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(children: [
+                          _connectedRow(apple: true, label: s.strings.profile.conn_apple, last: false),
+                          _connectedRow(apple: false, label: s.strings.profile.conn_google, last: true),
+                        ]),
+                      ),
+                    ],
                     // Basic info — name (→ display_name), date of birth (PHI, 18+),
                     // gender. All persisted via PATCH /account/profile.
                     _section(LucideIcons.user, s.strings.profile.pd_basic_info),
