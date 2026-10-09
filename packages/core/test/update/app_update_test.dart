@@ -58,6 +58,42 @@ void main() {
       expect(info.latest, '1.4.0', reason: 'it is sent to the newest, not the forced one');
     });
 
+    group('forced on some platforms only', () {
+      const m = '''
+      {
+        "versions": {
+          "2.0.0": { "platforms": ["ios", "android", "macos"], "force": ["ios"] },
+          "2.1.0": { "platforms": ["ios", "android"], "force": ["android", "macos"] }
+        }
+      }''';
+
+      test('the named platform is forced, the others are only offered it', () {
+        expect(eval('1.9.0', platform: 'ios', m: m).status, UpdateStatus.required);
+        expect(eval('1.9.0', platform: 'macos', m: m).status, UpdateStatus.available);
+        expect(eval('1.9.0', platform: 'macos', m: m).latest, '2.0.0');
+      });
+
+      test('each release is judged on its own list', () {
+        // Android is forced by 2.1.0, not by 2.0.0.
+        expect(eval('1.9.0', platform: 'android', m: m).status, UpdateStatus.required);
+        expect(eval('2.0.0', platform: 'android', m: m).status, UpdateStatus.required);
+        // iOS already past its forced release: 2.1.0 is optional there.
+        expect(eval('2.0.0', platform: 'ios', m: m).status, UpdateStatus.available);
+      });
+
+      test('a platform is never forced to a release it does not have', () {
+        // 2.1.0 names macos in `force` but is not released on macos.
+        expect(eval('2.0.0', platform: 'macos', m: m).status, UpdateStatus.none);
+      });
+
+      test('an empty or malformed force forces nobody', () {
+        for (final force in ['[]', 'false', '"ios"', '1', '{"ios": true}', 'null']) {
+          final bad = '{"versions": {"2.0.0": {"force": $force}}}';
+          expect(eval('1.0.0', m: bad).status, UpdateStatus.available, reason: 'force: $force');
+        }
+      });
+    });
+
     test('a forced release behind the installed build no longer forces', () {
       expect(eval('1.3.0').status, UpdateStatus.available);
     });

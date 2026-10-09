@@ -154,9 +154,14 @@ int? compareVersions(String a, String b) {
 /// }
 /// ```
 ///
+/// `force` is `true` (every platform the release is on) or a list of the
+/// platforms it is forced on — `"force": ["ios"]` — for when one store has
+/// the build and the other is still in review.
+///
 /// An update is **required** when any newer release for this platform is
-/// forced — so a forced release cannot be skipped by a later optional one —
-/// or when [installed] is below `min`. Otherwise a newer release is optional.
+/// forced on it — so a forced release cannot be skipped by a later optional
+/// one — or when [installed] is below `min`. Otherwise a newer release is
+/// optional.
 ///
 /// Fails open on purpose: a manifest that is missing, malformed, or silent
 /// about this platform yields [AppUpdateInfo.none], and so does a build the
@@ -186,7 +191,7 @@ AppUpdateInfo evaluateUpdate({
         final platforms = v['platforms'];
         // No list means every platform.
         if (platforms is List && platforms.isNotEmpty && !platforms.contains(platform)) continue;
-        newer.add((version: e.key, force: v['force'] == true, note: _noteFor(e.key, v, lang)));
+        newer.add((version: e.key, force: _isForced(v['force'], platform), note: _noteFor(e.key, v, lang)));
       }
     }
     newer.sort((a, b) => compareVersions(b.version, a.version)!);
@@ -222,6 +227,11 @@ AppUpdateInfo evaluateUpdate({
     return AppUpdateInfo.none;
   }
 }
+
+/// Whether a release's `force` covers [platform]: `true` forces it wherever
+/// the release exists; a list forces it only on the platforms it names.
+/// Anything else — absent, `false`, a typo — forces nothing.
+bool _isForced(Object? force, String platform) => force == true || (force is List && force.contains(platform));
 
 String? _platformValue(Object? map, String platform) {
   if (map is! Map<String, dynamic>) return null;

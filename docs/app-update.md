@@ -55,8 +55,11 @@ the app treats as "nothing to do".
 - `versions` — one entry per release. Keep old entries: they are the history a
   patient several versions behind is shown.
 - `platforms` — where that release exists. Omit it (or leave it empty) for all.
-- `force` — this release must be installed. It stays in force for everyone
-  below it even after later, optional releases are added.
+- `force` — this release must be installed. `true` forces it on every
+  platform it is on; a list forces it only where named —
+  `"force": ["ios"]` — for when one store has the build and the other is
+  still in review. It stays in force for everyone below it even after later,
+  optional releases are added.
 - `min` — optional per-platform floor. Anything below it is forced, whatever
   the release entries say. Use it to retire old builds in bulk.
 - `stores` — where "Update" goes. Must be `https://`.
@@ -108,7 +111,11 @@ A manifest can send the link elsewhere with a top-level
    see `VERSION_SOURCE_BASE`) (a commit on GitHub is
    enough — no web build, no deploy). It is live within about five minutes.
 
-Set `"force": true` only when older builds are broken or unsafe. A forced
+Stores rarely approve on the same day. Either list a platform in `platforms`
+only once its store has the build, or list both and force just the one that
+is ready: `"force": ["ios"]` now, `"force": true` once Android is out too.
+
+Set `force` only when older builds are broken or unsafe. A forced
 update locks the patient out of the whole app — their records and emergency
 information included — until they update. Never force a version that is not
 yet downloadable on that platform; list only the platforms that have it.

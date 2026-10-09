@@ -206,7 +206,7 @@ export function renderNotes({ manifest, brand, lang, from, platform }) {
   } else if (!releases.length) {
     body = `<p class="empty">${esc(from ? t.upToDate : t.none)}</p>`;
   } else {
-    body = releases.map(({ version, release }) => renderRelease(version, release, lang, t)).join('\n');
+    body = releases.map(({ version, release }) => renderRelease(version, release, lang, t, platform)).join('\n');
   }
 
   return `<!doctype html>
@@ -230,7 +230,7 @@ ${body}
 </html>`;
 }
 
-function renderRelease(version, release, lang, t) {
+function renderRelease(version, release, lang, t, platform) {
   const date = formatDate(release.date);
   const rows = noteFor(release.notes, lang).map(
     (it) =>
@@ -241,11 +241,31 @@ function renderRelease(version, release, lang, t) {
   return `<section>
 <div class="release-head">
 <h2 dir="ltr">v${esc(version)}</h2>
-${release.force === true ? `<span class="badge">${esc(t.required)}</span>` : ''}
+${requiredBadge(release, platform, t)}
 ${date ? `<time dir="ltr">${esc(date)}</time>` : ''}
 </div>
 ${rows.length ? `<ul class="rows">${rows.join('')}</ul>` : ''}
 </section>`;
+}
+
+const PLATFORM_NAMES = { ios: 'iOS', android: 'Android', macos: 'macOS' };
+
+/**
+ * `force` is `true` (every platform the release is on) or a list of platforms
+ * (`["ios"]`). For one platform's page the badge is a plain "Required" when it
+ * applies there; for the page with no platform it names the ones it covers.
+ */
+export function requiredBadge(release, platform, t) {
+  const force = release.force;
+  const on = Array.isArray(release.platforms) && release.platforms.length ? release.platforms : null;
+  const listed = Array.isArray(force) ? force.filter((p) => PLATFORM_NAMES[p] && (!on || on.includes(p))) : null;
+  let label = '';
+  if (force === true || (listed && platform && listed.includes(platform))) {
+    label = t.required;
+  } else if (listed && !platform && listed.length) {
+    label = `${t.required} · ${listed.map((p) => PLATFORM_NAMES[p]).join(', ')}`;
+  }
+  return label ? `<span class="badge">${esc(label)}</span>` : '';
 }
 
 /**

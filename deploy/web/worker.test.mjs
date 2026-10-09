@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import worker, { compareVersions, esc, formatDate, noteFor, releasesFor } from './worker.js';
+import worker, { compareVersions, esc, formatDate, noteFor, releasesFor, requiredBadge } from './worker.js';
 
 const ok = (name, cond, detail = '') => test(name, () => assert.ok(cond, String(detail)));
 
@@ -26,6 +26,15 @@ ok('a time prints in UTC and says so', formatDate('2026-10-09T14:30:00Z') === '0
 ok('an offset is converted to UTC', formatDate('2026-10-09T17:30:00+03:00') === '09/10/2026 14:30 UTC', formatDate('2026-10-09T17:30:00+03:00'));
 ok('no zone is read as UTC', formatDate('2026-10-09T14:30:00') === '09/10/2026 14:30 UTC' && formatDate('2026-10-09 14:30') === '09/10/2026 14:30 UTC', formatDate('2026-10-09 14:30'));
 ok('nonsense prints nothing', formatDate('soon') === '' && formatDate(7) === '' && formatDate(undefined) === '');
+
+// forced on some platforms only
+const req = { required: 'Required' };
+const badge = (release, platform) => requiredBadge(release, platform, req).replace(/<[^>]+>/g, '');
+ok('force true is required everywhere', badge({ force: true }, 'ios') === 'Required' && badge({ force: true }, null) === 'Required');
+ok('force list: required on the named platform only', badge({ force: ['ios'] }, 'ios') === 'Required' && badge({ force: ['ios'] }, 'android') === '');
+ok('force list with no platform names them', badge({ force: ['ios', 'macos'] }, null) === 'Required · iOS, macOS', badge({ force: ['ios', 'macos'] }, null));
+ok('never required where the release does not exist', badge({ platforms: ['android'], force: ['ios'] }, null) === '' && badge({ platforms: ['android'], force: ['ios'] }, 'ios') === '');
+ok('malformed force is not required', badge({ force: 'ios' }, 'ios') === '' && badge({ force: [] }, null) === '' && badge({ force: ['<b>'] }, null) === '' && badge({}, 'ios') === '');
 
 // version logic
 ok('compare numeric', compareVersions('1.10.0', '1.9.3') > 0 && compareVersions('1.2', '1.2.0') === 0 && compareVersions('x', '1') === null);
