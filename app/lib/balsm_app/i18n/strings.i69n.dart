@@ -29,6 +29,7 @@ class Strings implements i69n.I69nMessageBundle {
   StorageStrings get storage => StorageStrings(this);
   MapPacksStrings get map_packs => MapPacksStrings(this);
   OfflineStrings get offline => OfflineStrings(this);
+  UpdateStrings get update => UpdateStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -76,6 +77,8 @@ class Strings implements i69n.I69nMessageBundle {
         return map_packs;
       case 'offline':
         return offline;
+      case 'update':
+        return update;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -3402,6 +3405,60 @@ class OfflineStrings implements i69n.I69nMessageBundle {
         return discard_confirm_btn;
       case 'merge_failed':
         return merge_failed;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class UpdateStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const UpdateStrings(this._parent);
+  String get upd_eyebrow_new => "New version";
+  String get upd_eyebrow_required => "Required update";
+  String upd_available_t(String app) => "A newer $app is available";
+  String get upd_available_b =>
+      "Your data stays on your device while you update.";
+  String upd_required_t(String app) => "Update $app to continue";
+  String get upd_required_b =>
+      "This version is needed to keep your records syncing securely.";
+  String get upd_current => "Current";
+  String get upd_new => "New";
+  String get upd_whats_new => "What’s new";
+  String get upd_now => "Update now";
+  String get upd_skip => "Skip this version";
+  String get upd_full_notes => "Full release notes";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'upd_eyebrow_new':
+        return upd_eyebrow_new;
+      case 'upd_eyebrow_required':
+        return upd_eyebrow_required;
+      case 'upd_available_t':
+        return upd_available_t;
+      case 'upd_available_b':
+        return upd_available_b;
+      case 'upd_required_t':
+        return upd_required_t;
+      case 'upd_required_b':
+        return upd_required_b;
+      case 'upd_current':
+        return upd_current;
+      case 'upd_new':
+        return upd_new;
+      case 'upd_whats_new':
+        return upd_whats_new;
+      case 'upd_now':
+        return upd_now;
+      case 'upd_skip':
+        return upd_skip;
+      case 'upd_full_notes':
+        return upd_full_notes;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

@@ -1013,5 +1013,19 @@
     "discard_confirm_btn": "احذف",
     "merge_failed": "تعذّر الإكمال. حاول مرة أخرى."
   },
+  "update": {
+    "upd_eyebrow_new": "تحديث جديد",
+    "upd_eyebrow_required": "تحديث مطلوب",
+    "upd_available_t(String app)": "نسخة أحدث من $app متاحة",
+    "upd_available_b": "بياناتك تبقى على جهازك أثناء التحديث.",
+    "upd_required_t(String app)": "حدّث $app للمتابعة",
+    "upd_required_b": "هذه النسخة لازمة لمواصلة مزامنة سجلاتك بأمان.",
+    "upd_current": "نسختك",
+    "upd_new": "الجديدة",
+    "upd_whats_new": "ما الجديد",
+    "upd_now": "تحديث الآن",
+    "upd_skip": "تخطّي هذه النسخة",
+    "upd_full_notes": "ملاحظات الإصدار كاملة"
+  },
   "_i69n_import": "package:core/core.dart"
 }

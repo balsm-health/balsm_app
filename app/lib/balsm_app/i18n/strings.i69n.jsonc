@@ -1015,5 +1015,19 @@
     "discard_confirm_btn": "Remove",
     "merge_failed": "Couldn't finish. Try again."
   },
+  "update": {
+    "upd_eyebrow_new": "New version",
+    "upd_eyebrow_required": "Required update",
+    "upd_available_t(String app)": "A newer $app is available",
+    "upd_available_b": "Your data stays on your device while you update.",
+    "upd_required_t(String app)": "Update $app to continue",
+    "upd_required_b": "This version is needed to keep your records syncing securely.",
+    "upd_current": "Current",
+    "upd_new": "New",
+    "upd_whats_new": "What’s new",
+    "upd_now": "Update now",
+    "upd_skip": "Skip this version",
+    "upd_full_notes": "Full release notes"
+  },
   "_i69n_import": "package:core/core.dart"
 }

@@ -1,0 +1,157 @@
+# App update check
+
+Every installed app asks one URL what it should be running — its own brand's:
+
+| Brand | Manifest |
+|---|---|
+| Balsm | `https://app.balsm.health/version/balsm.json` |
+| Balsm Pro | `https://app.balsm.health/version/balsm_pro.json` |
+
+```
+installed app ──▶ app.balsm.health/version/<brand>.json   (Worker: deploy/web/worker.js)
+                        │
+                        ├─▶ GitHub: balsm-health/balsm_app  main  app/web/version/<brand>.json   ← edit this to release
+                        └─▶ fallback: the copy bundled at the last web deploy
+```
+
+One file per brand, so a release — or a forced update — for one brand can
+never reach the other's installs. `<brand>` is the `AppBrand` name.
+
+The apps only know our domain. GitHub sits behind it (`VERSION_SOURCE_BASE` in
+`deploy/web/wrangler.jsonc`), so the source can move without touching a shipped
+build. If GitHub is unreachable or returns anything but a JSON object, the
+Worker serves the bundled copy; a brand with no file at all gets a 404, which
+the app treats as "nothing to do".
+
+## The manifest
+
+```json
+{
+  "stores": {
+    "ios": "https://apps.apple.com/app/id…",
+    "android": "https://play.google.com/store/apps/details?id=app.balsm.health",
+    "macos": "https://balsm.health/download"
+  },
+  "min": { "ios": "1.2.0" },
+  "versions": {
+    "1.4.0": {
+      "force": false,
+      "platforms": ["ios", "android"],
+      "date": "2026-10-09",
+      "notes": {
+        "en": [
+          { "icon": "bell-ring", "title": "Smarter dose reminders", "body": "Snooze a dose and Balsm reminds you again, even <b>offline</b>." },
+          { "icon": "wrench", "title": "Fixes and polish" }
+        ],
+        "ar": "<ul><li>تذكيرات أذكى للجرعات</li></ul>"
+      }
+    }
+  }
+}
+```
+
+- `versions` — one entry per release. Keep old entries: they are the history a
+  patient several versions behind is shown.
+- `platforms` — where that release exists. Omit it (or leave it empty) for all.
+- `force` — this release must be installed. It stays in force for everyone
+  below it even after later, optional releases are added.
+- `min` — optional per-platform floor. Anything below it is forced, whatever
+  the release entries say. Use it to retire old builds in bulk.
+- `stores` — where "Update" goes. Must be `https://`.
+- `date` — release day (`YYYY-MM-DD`), shown beside "What's new". Optional.
+- `notes` — per language, falling back to `en`. Either a list of rows
+  (`icon`, `title`, optional `body`) — the designed layout — or one HTML
+  string. A row's `body` may use inline HTML.
+
+| Installed build | What the patient sees |
+|---|---|
+| Newest for its platform | Nothing |
+| Behind, nothing newer is forced, at or above `min` | The update sheet, dismissible. Close (or the scrim) hides it until the next launch; "Skip this version" until a newer release. |
+| Behind a forced release, or below `min` | The same sheet as "Required update": no close, no skip, the scrim does not dismiss |
+
+The sheet is the design's `update.jsx`: mark, headline, Current → New, what's
+new, "Update now". The design's download bar and "Restart now" step are not
+built — a store app cannot replace itself, so "Update now" opens the store.
+
+The version compared is `version:` in `app/pubspec.yaml` without the build
+number (`0.1.0+7` is `0.1.0`).
+
+## Full release notes page
+
+`https://app.balsm.health/whats-new?brand=balsm&from=1.2.0&platform=ios&lang=ar`
+
+The Worker builds this from the same manifest: every release newer than
+`from` for that platform, newest first. Without `from` it lists them all, so
+the website can link to it too. The sheet's "Full release notes" link opens it
+in the browser, already filled in for that install.
+
+The sheet stays native on purpose — it has to work offline, forced updates
+included. The page is where richer notes show: it renders the same HTML plus
+`img` (https only), tables, `blockquote` and `hr`, which the sheet drops.
+
+It shares an origin with the web app, so it is locked down: the response's
+Content-Security-Policy allows no script at all, and note HTML is rebuilt from
+an allow-list (no attributes survive except an https `href` / `src` and `alt`).
+`node --test deploy/web/worker.test.mjs` covers both.
+
+A manifest can send the link elsewhere with a top-level
+`"more": "https://…"`; the same query parameters are appended.
+
+## Releasing
+
+1. Ship the build and wait until the store actually serves it.
+2. Add the release to that brand's `app/web/version/<brand>.json` on `main` (a commit on GitHub is
+   enough — no web build, no deploy). It is live within about five minutes.
+
+Set `"force": true` only when older builds are broken or unsafe. A forced
+update locks the patient out of the whole app — their records and emergency
+information included — until they update. Never force a version that is not
+yet downloadable on that platform; list only the platforms that have it.
+
+Protect `main`: whoever can change these files can block every installed app.
+
+## Release notes
+
+Row icons are Lucide names from a fixed list (`releaseNoteIcon` in
+`app/lib/update/update_gate.dart`): `cloud-upload`, `cloud`, `bell-ring`, `bell`, `map-pin`,
+`map`, `wrench`, `bug`, `shield-check`, `lock`, `zap`, `heart-pulse`,
+`activity`, `pill`, `users`, `qr-code`, `file-text`, `folder`, `calendar`,
+`languages`, `palette`, `search`, `smartphone`, `refresh-cw`, `star`. Anything
+else draws a sparkle.
+
+HTML — a whole note, or a row's `body` — is rendered natively, never in a web
+view. Supported: `p`, `h1`–`h6`, `ul`, `ol`,
+`li`, `br`, `b`/`strong`, `i`/`em`, `u`, `code`, and `a` with an `https://`
+link. Other tags keep their text; `script`, `style`, images, frames and forms
+are dropped entirely.
+
+## Behaviour worth knowing
+
+- Checked on launch and on every return to the foreground. Web is skipped.
+- Fails open: an unreachable or malformed manifest, a platform it does not
+  mention, or a build it does not list (dev builds) shows nothing.
+- The last good manifest is cached on the device, so a forced update still
+  holds offline.
+- `--dart-define=APP_VERSION_URL=…` points a build at a different manifest
+  (a brand on its own domain, or a test file).
+
+## Adding a brand
+
+1. Add `app/web/version/<brand>.json` (copy `balsm.json`). Nothing changes in
+   the Worker: it serves any `<brand>.json` it finds.
+2. In the brand's app shell, mount `UpdateGate` in `MaterialApp.builder` with
+   `brand: AppBrand.<brand>`, an `AppUpdatePrefs`, the app language, and an
+   `UpdateLook` — its accent, its mark, and an `UpdateCopy` filled from its
+   own strings (`AppBrand.nameIn(lang)` gives the product name). The patient
+   app's `_updateGate` in `app/lib/balsm_app/shell.dart` is the example.
+
+The gate depends on no shell's state, so nothing else is needed.
+
+## Code
+
+- `packages/core/lib/src/update/app_update.dart` — manifest rules, per-brand
+  URL, fetch + on-device cache. Brand- and UI-free.
+- `app/lib/update/` — the sheet and the release-note renderer, shared by
+  every brand's shell.
+- `deploy/web/` — the Worker (manifests and the release-notes page) and its
+  tests.

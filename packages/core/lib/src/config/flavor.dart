@@ -8,7 +8,17 @@ enum Flavor { dev, staging, prod }
 const String kDefaultPosthogHost = 'https://eu.i.posthog.com';
 
 /// Brand axis. `balsm` is the consumer app; `balsm_pro` the professional build.
-enum AppBrand { balsm, balsm_pro }
+enum AppBrand {
+  balsm,
+  balsm_pro;
+
+  /// The product name as users read it ("Update Balsm Pro to continue").
+  String get displayName => switch (this) { balsm => 'Balsm', balsm_pro => 'Balsm Pro' };
+
+  /// [displayName] in the UI language [lang] — the name is written in Arabic
+  /// script inside Arabic sentences.
+  String nameIn(String lang) => lang == 'ar' ? switch (this) { balsm => 'بلسم', balsm_pro => 'بلسم برو' } : displayName;
+}
 
 /// Runtime build configuration, resolved from two independent axes — the
 /// [brand] (Balsm / Balsm-Pro) and the [flavor] (dev / staging / prod) — so a
@@ -104,6 +114,10 @@ class FlavorConfig {
     return _current!;
   }
 
+  /// [current] without the assertion, for code that can run before (or in a
+  /// test without) [init] and has a sensible answer of its own.
+  static FlavorConfig? get currentOrNull => _current;
+
   bool get isPro => brand == AppBrand.balsm_pro;
 
   static AppBrand brandFromString(String? s) => s == 'balsm_pro' ? AppBrand.balsm_pro : AppBrand.balsm;
@@ -172,7 +186,7 @@ class FlavorConfig {
     const envGoogleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
     const envGoogleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID', defaultValue: '');
     final resolved = (servers != null && servers.isNotEmpty) ? servers : _parseServers(serversRaw);
-    final base = brand == AppBrand.balsm_pro ? 'Balsm Pro' : 'Balsm';
+    final base = brand.displayName;
     final envSuffix = switch (flavor) { Flavor.dev => ' Dev', Flavor.staging => ' Staging', Flavor.prod => '' };
     _current = FlavorConfig(
       brand: brand,

@@ -33,6 +33,7 @@ class Strings_ar extends Strings {
   StorageStrings_ar get storage => StorageStrings_ar(this);
   MapPacksStrings_ar get map_packs => MapPacksStrings_ar(this);
   OfflineStrings_ar get offline => OfflineStrings_ar(this);
+  UpdateStrings_ar get update => UpdateStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -80,6 +81,8 @@ class Strings_ar extends Strings {
         return map_packs;
       case 'offline':
         return offline;
+      case 'update':
+        return update;
       default:
         return super[key];
     }
@@ -3414,6 +3417,58 @@ class OfflineStrings_ar extends OfflineStrings {
         return discard_confirm_btn;
       case 'merge_failed':
         return merge_failed;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class UpdateStrings_ar extends UpdateStrings {
+  final Strings_ar _parent;
+  const UpdateStrings_ar(this._parent) : super(_parent);
+  String get upd_eyebrow_new => "تحديث جديد";
+  String get upd_eyebrow_required => "تحديث مطلوب";
+  String upd_available_t(String app) => "نسخة أحدث من $app متاحة";
+  String get upd_available_b => "بياناتك تبقى على جهازك أثناء التحديث.";
+  String upd_required_t(String app) => "حدّث $app للمتابعة";
+  String get upd_required_b => "هذه النسخة لازمة لمواصلة مزامنة سجلاتك بأمان.";
+  String get upd_current => "نسختك";
+  String get upd_new => "الجديدة";
+  String get upd_whats_new => "ما الجديد";
+  String get upd_now => "تحديث الآن";
+  String get upd_skip => "تخطّي هذه النسخة";
+  String get upd_full_notes => "ملاحظات الإصدار كاملة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'upd_eyebrow_new':
+        return upd_eyebrow_new;
+      case 'upd_eyebrow_required':
+        return upd_eyebrow_required;
+      case 'upd_available_t':
+        return upd_available_t;
+      case 'upd_available_b':
+        return upd_available_b;
+      case 'upd_required_t':
+        return upd_required_t;
+      case 'upd_required_b':
+        return upd_required_b;
+      case 'upd_current':
+        return upd_current;
+      case 'upd_new':
+        return upd_new;
+      case 'upd_whats_new':
+        return upd_whats_new;
+      case 'upd_now':
+        return upd_now;
+      case 'upd_skip':
+        return upd_skip;
+      case 'upd_full_notes':
+        return upd_full_notes;
       default:
         return super[key];
     }

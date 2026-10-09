@@ -65,6 +65,8 @@ dependencies:
   latlong2: ^0.9.1
   geolocator: ^13.0.1
   url_launcher: ^6.3.0
+  # Parses release-note HTML for the update prompt (rendered natively, never in a web view).
+  html: ^0.15.4
   image_picker: ^1.1.2
   file_picker: ^8.1.7
   path_provider: ^2.1.5

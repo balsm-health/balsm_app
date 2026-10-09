@@ -81,6 +81,7 @@ export 'src/telemetry/campaign_attribution.dart';
 export 'src/telemetry/console_analytics_logger.dart';
 export 'src/telemetry/dev_log_analytics_logger.dart';
 export 'src/telemetry/feedback_reporter.dart';
+export 'src/update/app_update.dart';
 export 'src/telemetry/multi_analytics_logger.dart';
 export 'src/telemetry/event_bus_forwarder.dart';
 export 'src/telemetry/analytics_route_observer.dart';

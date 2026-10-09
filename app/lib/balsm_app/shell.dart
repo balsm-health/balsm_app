@@ -41,6 +41,7 @@ import 'widgets/balsm_mark.dart';
 import 'deep_link_handler.dart';
 import 'deep_links.dart';
 import 'dev/shake_to_dev_config.dart';
+import '../update/update_gate.dart';
 import 'screens/care_team_screen.dart';
 
 /// Root of the patient app prototype. Watches the Riverpod-owned
@@ -147,6 +148,50 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
     if (lifecycle != AppLifecycleState.resumed) return;
     _syncCareTeam();
+  }
+
+  /// Where the update check keeps its cache. Null when no storage is bound —
+  /// a widget test pumping the shell bare — in which case no check runs.
+  late final AppUpdatePrefs? _updatePrefs = () {
+    try {
+      return AppUpdatePrefs(ref.read(globalKVDataSourceProvider));
+    } catch (_) {
+      return null;
+    }
+  }();
+
+  /// The app-update prompt, dressed for this shell: its brand's manifest and
+  /// name, the patient app's strings, accent and mark.
+  Widget _updateGate(PatientAppState state, Widget child) {
+    final brand = FlavorConfig.currentOrNull?.brand ?? AppBrand.balsm;
+    final name = brand.nameIn(state.lang.value);
+    final u = state.strings.update;
+    return UpdateGate(
+      brand: brand,
+      lang: state.lang.value,
+      prefs: _updatePrefs,
+      look: UpdateLook(
+        rtl: state.rtl,
+        accent: state.accent,
+        mark: const BalsmFlower(size: 52),
+        copy: UpdateCopy(
+          eyebrowNew: u.upd_eyebrow_new,
+          eyebrowRequired: u.upd_eyebrow_required,
+          availableTitle: u.upd_available_t(name),
+          availableBody: u.upd_available_b,
+          requiredTitle: u.upd_required_t(name),
+          requiredBody: u.upd_required_b,
+          current: u.upd_current,
+          newVersion: u.upd_new,
+          whatsNew: u.upd_whats_new,
+          updateNow: u.upd_now,
+          skip: u.upd_skip,
+          fullNotes: u.upd_full_notes,
+          close: state.strings.common.a11y_close,
+        ),
+      ),
+      child: child,
+    );
   }
 
   /// Fire-and-forget: the care-team screen reads from drift, so a failed sync
@@ -310,7 +355,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
               // Shake anywhere → Dev Config (read-only in prod).
               child: RepaintBoundary(
                 key: _captureKey,
-                child: ShakeToDevConfig(navigatorKey: _navKey, child: child!),
+                child: ShakeToDevConfig(navigatorKey: _navKey, child: _updateGate(state, child!)),
               ),
             );
           },

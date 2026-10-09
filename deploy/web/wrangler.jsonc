@@ -11,9 +11,21 @@
   "name": "balsm-app-web",
   "account_id": "11f27ce927c9ed271353738cc6f9d002",
   "compatibility_date": "2026-09-01",
+  // Only /version/<brand>.json and /whats-new run the Worker (the app-update
+  // manifests, one per brand, served from GitHub with the bundled copy as
+  // fallback, and the release-notes page built from them — see worker.js).
+  // Every other request goes straight to the static assets.
+  "main": "worker.js",
   "assets": {
     "directory": "../../app/build/web",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/version/*", "/whats-new"]
+  },
+  "vars": {
+    // Folder holding the release manifests' source of truth (<brand>.json).
+    // Empty serves the bundled copies only.
+    "VERSION_SOURCE_BASE": "https://raw.githubusercontent.com/balsm-health/balsm_app/main/app/web/version"
   },
   "routes": [{ "pattern": "app.balsm.health", "custom_domain": true }]
 }
