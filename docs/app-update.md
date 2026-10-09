@@ -10,7 +10,7 @@ Every installed app asks one URL what it should be running — its own brand's:
 ```
 installed app ──▶ app.balsm.health/version/<brand>.json   (Worker: deploy/web/worker.js)
                         │
-                        ├─▶ GitHub: balsm-health/balsm_app  main  app/web/version/<brand>.json   ← edit this to release
+                        ├─▶ GitHub: balsm-health/balsm_app  feature/mvp  app/web/version/<brand>.json   ← edit this to release
                         └─▶ fallback: the copy bundled at the last web deploy
 ```
 
@@ -100,7 +100,9 @@ A manifest can send the link elsewhere with a top-level
 ## Releasing
 
 1. Ship the build and wait until the store actually serves it.
-2. Add the release to that brand's `app/web/version/<brand>.json` on `main` (a commit on GitHub is
+2. Add the release to that brand's `app/web/version/<brand>.json` on the
+   source branch (`feature/mvp` today; `main` once mvp is merged there —
+   see `VERSION_SOURCE_BASE`) (a commit on GitHub is
    enough — no web build, no deploy). It is live within about five minutes.
 
 Set `"force": true` only when older builds are broken or unsafe. A forced
@@ -108,7 +110,7 @@ update locks the patient out of the whole app — their records and emergency
 information included — until they update. Never force a version that is not
 yet downloadable on that platform; list only the platforms that have it.
 
-Protect `main`: whoever can change these files can block every installed app.
+Protect the source branch: whoever can change these files can block every installed app.
 
 ## Release notes
 

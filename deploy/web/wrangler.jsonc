@@ -25,7 +25,11 @@
   "vars": {
     // Folder holding the release manifests' source of truth (<brand>.json).
     // Empty serves the bundled copies only.
-    "VERSION_SOURCE_BASE": "https://raw.githubusercontent.com/balsm-health/balsm_app/main/app/web/version"
+    //
+    // feature/mvp for now: the manifests are not on main yet (a 404 there
+    // would leave every edit waiting on a redeploy). Point this at main once
+    // feature/mvp is merged into it.
+    "VERSION_SOURCE_BASE": "https://raw.githubusercontent.com/balsm-health/balsm_app/feature/mvp/app/web/version"
   },
   "routes": [{ "pattern": "app.balsm.health", "custom_domain": true }]
 }
