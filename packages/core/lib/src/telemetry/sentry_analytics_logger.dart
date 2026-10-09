@@ -99,8 +99,12 @@ class SentryAnalyticsLogger implements AnalyticsLogger {
 class SentryFeedbackReporter implements FeedbackReporter {
   const SentryFeedbackReporter();
 
-  /// Sentry requires a message; a rating-only submission still says so.
-  static const ratingOnly = '(rating only)';
+  /// Sentry drops a feedback whose message is blank, so a submission without
+  /// a note sends a dash. The rating and topics are in the tags, not here.
+  ///
+  /// Sentry's spam filter archived the earlier `(rating only)` placeholder
+  /// within seconds; a dash relies on spam detection being off for the project.
+  static const ratingOnly = '-';
 
   /// The Sentry payload for [feedback]. [userId] is the opaque id telemetry
   /// already knows the patient by (null for a device-only or signed-out

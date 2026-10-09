@@ -19,5 +19,13 @@ void main() {
       expect(f.name, isNull);
       expect(f.message, SentryFeedbackReporter.ratingOnly);
     });
+
+    test('a rating without a note still has a non-blank message', () {
+      // Sentry discards feedback with an empty or whitespace-only message,
+      // and the rating/topic tags would go with it.
+      final f = SentryFeedbackReporter.build(const UserFeedback(rating: 3, topics: ['general', 'ease']));
+      expect(f.message, '-');
+      expect(f.message.trim(), isNotEmpty);
+    });
   });
 }
