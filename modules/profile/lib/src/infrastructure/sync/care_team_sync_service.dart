@@ -17,12 +17,14 @@ class CareTeamSyncService {
     required AppDatabase db,
     required SyncStatusNotifier status,
     required UserId? Function() activeUser,
+    Future<bool> Function()? enabled,
     void Function()? onChanged,
   })  : _api = api,
         _outbox = outbox,
         _db = db,
         _status = status,
         _activeUser = activeUser,
+        _enabled = enabled,
         _onChanged = onChanged;
 
   final CareTeamApi _api;
@@ -34,6 +36,14 @@ class CareTeamSyncService {
   /// this device, so draining unscoped would push one patient's PHI under the
   /// next patient's token.
   final UserId? Function() _activeUser;
+
+  /// The patient's choice to mirror the care team to Balsm Cloud. While it
+  /// answers false nothing is pushed or pulled; local writes keep queueing in
+  /// the outbox, so turning it back on sends everything that was held back.
+  /// Null means always on.
+  final Future<bool> Function()? _enabled;
+
+  Future<bool> _isEnabled() async => await _enabled?.call() ?? true;
 
   /// Called after a pull actually changed local rows. `customStatement` does not
   /// notify drift stream queries, so without this the merged rows stay invisible
@@ -51,6 +61,10 @@ class CareTeamSyncService {
   /// of the row it just changed.
   Future<void> sync(HealthProfileId profileId) async {
     if (_inFlight) return;
+    if (!await _isEnabled()) {
+      _status.set(SyncState.idle);
+      return;
+    }
     _inFlight = true;
     _status.set(SyncState.syncing);
     try {
@@ -67,6 +81,7 @@ class CareTeamSyncService {
 
   /// Pushes every queued change, oldest first.
   Future<void> drain() async {
+    if (!await _isEnabled()) return;
     try {
       await _drainInner();
     } catch (e) {
@@ -76,6 +91,7 @@ class CareTeamSyncService {
 
   /// Pulls rows changed since the stored cursor and merges them.
   Future<void> pull(HealthProfileId profileId) async {
+    if (!await _isEnabled()) return;
     try {
       await _pullInner(profileId);
     } catch (e) {

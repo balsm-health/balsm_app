@@ -11,9 +11,9 @@ import '../tokens.dart';
 /// it (`DataLocPill` in `storage.jsx`).
 ///
 /// It reports what is true rather than what is configured: [syncTargetsFor]
-/// returns only destinations that can actually hold a copy, which today is none
-/// of the clouds — so the pill reads "Device" and the sheet behind it explains
-/// why. See `storage_sheet.dart` for the gate.
+/// returns only destinations that can actually hold a copy. Today that is the
+/// device alone, except for the care team while its Balsm Cloud mirror is on.
+/// See `storage_sheet.dart` for the gate.
 class DataLocPill extends StatelessWidget {
   const DataLocPill({super.key, required this.category});
   final DataCategory category;
@@ -22,7 +22,7 @@ class DataLocPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final st = s.strings.storage;
-    final targets = syncTargetsFor(category);
+    final targets = syncTargetsFor(category, s);
     final label = switch (targets.length) {
       0 => st.store_device,
       1 => targets.first.label(st),

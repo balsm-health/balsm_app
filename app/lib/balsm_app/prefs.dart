@@ -51,6 +51,11 @@ class PatientAppPrefs extends ModulePreferences {
 
   Future<void> setFeedbackSentAt(DateTime v) => write('fbSentAt', v.toUtc().toIso8601String());
 
+  /// Whether the care team is mirrored to Balsm Cloud. On unless the patient
+  /// turned it off in Storage & sync.
+  Future<bool> careCloudSync() async => await read<bool>('careCloudSync') ?? true;
+  Future<void> setCareCloudSync(bool v) => write('careCloudSync', v);
+
   Future<String?> lastTimezone() => read<String>('lastTz');
   Future<void> setLastTimezone(String v) => write('lastTz', v);
 }

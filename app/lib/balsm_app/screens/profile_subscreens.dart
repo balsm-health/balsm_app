@@ -847,7 +847,7 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
           Text(desc, style: Typo.meta(ar: s.rtl)),
         ])),
         const SizedBox(width: 12),
-        _PSwitch(on: on, accent: s.accent.main, onTap: () => set(!on)),
+        PSwitch(on: on, accent: s.accent.main, onTap: () => set(!on)),
       ], last);
 
   Widget _action(IconData icon, String title, String desc,
@@ -872,30 +872,6 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
     if (onTap == null) return row;
     return Pressable(onTap: onTap, scale: 0.99, child: row);
   }
-}
-
-/// Pill toggle switch.
-class _PSwitch extends StatelessWidget {
-  const _PSwitch({required this.on, required this.accent, required this.onTap});
-  final bool on;
-  final Color accent;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 46,
-          height: 28,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(color: on ? accent : T.ink300, borderRadius: BorderRadius.circular(999)),
-          alignment: on ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
-          child: Container(
-              width: 22,
-              height: 22,
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: T.shadowXs)),
-        ),
-      );
 }
 
 // ── Emergency numbers ────────────────────────────────────────

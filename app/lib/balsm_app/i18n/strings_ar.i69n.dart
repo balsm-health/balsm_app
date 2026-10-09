@@ -3069,7 +3069,7 @@ class StorageStrings_ar extends StorageStrings {
   String get store_all_applies => "يُطبَق على كل الفئات";
   String get store_all_data_back => "كل البيانات";
   String get store_intro =>
-      "كل شيء محفوط على هذا الجهاز. مزامنة السحابة غير متاحة بعد — وعندما تتوفر، ستختار ما يذهب وإلى أين، فئة بفئة.";
+      "كل شيء محفوط على هذا الجهاز. يمكن مزامنة فريق رعايتك مع سحابة بلسم أيضاً؛ أما مزامنة بقية البيانات فغير متاحة بعد.";
   String get store_accounts => "حسابات السحابة";
   String get store_your_data => "بياناتك";
   String get store_stored_in => "أين تُحفز";
@@ -3104,6 +3104,11 @@ class StorageStrings_ar extends StorageStrings {
       "يتوفر التخزين على الجهاز فقط حالياً. آي كلاود وجوجل درايف وبلسم كلاود قادمون قريباً.";
   String get store_coming_soon => "قريباً";
   String get store_available_soon => "متوفر قريباً";
+  String get store_care_cloud_on =>
+      "مُفعلة — فريق رعايتك محفوظ في سحابة بلسم أيضاً";
+  String get store_care_cloud_off => "متوقفة — فريق رعايتك يبقى على هذا الجهاز";
+  String get store_care_cloud_note =>
+      "يُزامَن فريق رعايتك مع سحابة بلسم حتى لا تفقده إن ضاع هاتفك. عند إيقافها تبقى التغييرات الجديدة على هذا الجهاز، وما سبق حفظه في سحابة بلسم يبقى كما هو.";
   String get store_always_on => "دائمًا";
   String get store_no_backup => "لا نسخة احتياطية";
   String store_connecting(String target) => "جارٍ الربط بـ $target…";
@@ -3228,6 +3233,12 @@ class StorageStrings_ar extends StorageStrings {
         return store_coming_soon;
       case 'store_available_soon':
         return store_available_soon;
+      case 'store_care_cloud_on':
+        return store_care_cloud_on;
+      case 'store_care_cloud_off':
+        return store_care_cloud_off;
+      case 'store_care_cloud_note':
+        return store_care_cloud_note;
       case 'store_always_on':
         return store_always_on;
       case 'store_no_backup':

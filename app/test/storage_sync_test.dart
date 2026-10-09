@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/storage_sheet.dart';
 import 'package:app/balsm_app/storage_target.dart';
 import 'package:app/balsm_app/widgets/data_loc_pill.dart';
@@ -12,10 +13,14 @@ import 'package:material_ui/material_ui.dart';
 /// The design offers three connectable clouds. None of them can hold a byte in
 /// this build, so the screen must render the model without ever claiming a copy
 /// left the phone. These tests guard that gate — not the pixels.
+///
+/// The care team is the exception: it is mirrored to Balsm Cloud, and the
+/// patient can switch that off.
 void main() {
-  Future<PatientAppState> pumpSheet(WidgetTester tester, {bool ar = false}) async {
+  Future<PatientAppState> pumpSheet(WidgetTester tester, {bool ar = false, bool deviceOnly = false}) async {
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
+    if (deviceOnly) state.setAccountMode(AccountMode.deviceOnly);
     tester.view.physicalSize = const Size(390, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -50,14 +55,76 @@ void main() {
     });
 
     test('a category with no reachable cloud reports the device alone', () {
-      for (final c in DataCategory.values) {
-        expect(syncTargetsFor(c), isEmpty, reason: '${c.id} claims a cloud target');
+      final s = PatientAppState();
+      for (final c in DataCategory.values.where((c) => c != DataCategory.care)) {
+        expect(syncTargetsFor(c, s), isEmpty, reason: '${c.id} claims a cloud target');
       }
     });
 
     test('the summary never names a cloud while none is reachable', () {
-      final s = PatientAppState().strings.storage;
-      expect(locSummary(s, syncTargetsFor(DataCategory.records)), s.store_device_only_sum);
+      final s = PatientAppState();
+      final st = s.strings.storage;
+      expect(locSummary(st, syncTargetsFor(DataCategory.records, s)), st.store_device_only_sum);
+    });
+  });
+
+  group('care team cloud sync', () {
+    test('is on by default for an online account', () {
+      final s = PatientAppState();
+      expect(s.careCloudSync, isTrue);
+      expect(syncTargetsFor(DataCategory.care, s), [StorageTarget.balsmCloud]);
+    });
+
+    test('switched off, the care team is on the device alone', () async {
+      final s = PatientAppState();
+      await s.setCareCloudSync(false);
+      expect(syncTargetsFor(DataCategory.care, s), isEmpty);
+    });
+
+    test('a device-only account never claims the cloud', () {
+      final s = PatientAppState()..setAccountMode(AccountMode.deviceOnly);
+      expect(s.careCloudSync, isTrue, reason: 'the choice itself is untouched');
+      expect(syncTargetsFor(DataCategory.care, s), isEmpty);
+    });
+
+    testWidgets('the care editor carries a switch that turns it off', (tester) async {
+      final s = await pumpSheet(tester);
+      final st = s.strings.storage;
+
+      final care = find.text(DataCategory.care.label(st)).first;
+      await tester.ensureVisible(care);
+      await tester.pumpAndSettle();
+      await tester.tap(care);
+      await tester.pumpAndSettle();
+
+      expect(find.text(st.store_care_cloud_on), findsOne);
+      expect(find.text(st.store_care_cloud_note), findsOne);
+      // Rows leave the phone unencrypted-at-source, so the blob-backup
+      // promise must not sit next to this switch.
+      expect(find.text(st.store_encrypted_note), findsNothing);
+
+      await tester.tap(find.byType(PSwitch));
+      await tester.pumpAndSettle();
+
+      expect(s.careCloudSync, isFalse);
+      expect(find.text(st.store_care_cloud_off), findsOne);
+    });
+
+    testWidgets('no other category gets a switch', (tester) async {
+      final s = await pumpSheet(tester);
+      await tester.tap(find.text(DataCategory.records.label(s.strings.storage)).first);
+      await tester.pumpAndSettle();
+      expect(find.byType(PSwitch), findsNothing);
+    });
+
+    testWidgets('a device-only account gets no switch either', (tester) async {
+      final s = await pumpSheet(tester, deviceOnly: true);
+      final care = find.text(DataCategory.care.label(s.strings.storage)).first;
+      await tester.ensureVisible(care);
+      await tester.pumpAndSettle();
+      await tester.tap(care);
+      await tester.pumpAndSettle();
+      expect(find.byType(PSwitch), findsNothing);
     });
   });
 

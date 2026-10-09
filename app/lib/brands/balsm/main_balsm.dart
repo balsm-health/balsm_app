@@ -213,6 +213,9 @@ Future<void> bootstrap({
           // Its OWN status, not the Drive backup's — see careTeamSyncStatusProvider.
           status: ref.watch(careTeamSyncStatusProvider.notifier),
           activeUser: () => ref.read(currentUserIdProvider),
+          // The patient's switch in Storage & sync; read per run so a change
+          // takes effect on the next trigger.
+          enabled: PatientAppPrefs(globalKV).careCloudSync,
           // customStatement does not notify drift streams, so merged rows stay
           // invisible without this.
           onChanged: () => ref.invalidate(careTeamProvider),

@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:profile/profile.dart';
 
 import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
@@ -29,6 +30,11 @@ import 'go_online_sheet.dart';
 /// that tells a patient their health record reached a cloud it never left for
 /// is the one failure this screen cannot have. [StorageTargetAvailability]
 /// holds the gate; when an adapter lands, flipping it lights this screen up.
+///
+/// The one category that does leave the phone is the care team: it is mirrored
+/// row by row to Balsm Cloud by `CareTeamSyncService`, outside the blob backup
+/// above. Its editor carries a real switch (on by default) — see
+/// [careSyncsToCloud].
 void showStorageSync(BuildContext context) {
   final s = AppScope.of(context);
   showAppSheet<void>(
@@ -41,8 +47,14 @@ void showStorageSync(BuildContext context) {
 /// Where a category's data actually is. Device-only today; a list rather than a
 /// single target because the design's model is additive and the pill, the
 /// summary line and the stacked icons all read from it.
-List<StorageTarget> syncTargetsFor(DataCategory _) =>
-    StorageTarget.picker.where((t) => !t.isLocal && t.isAvailable).toList();
+List<StorageTarget> syncTargetsFor(DataCategory category, PatientAppState s) => [
+      ...StorageTarget.picker.where((t) => !t.isLocal && t.isAvailable),
+      if (category == DataCategory.care && careSyncsToCloud(s)) StorageTarget.balsmCloud,
+    ];
+
+/// Whether the care team is being mirrored to Balsm Cloud: the account has a
+/// server side at all, and the patient has not switched the mirror off.
+bool careSyncsToCloud(PatientAppState s) => s.accountMode == AccountMode.online && s.careCloudSync;
 
 /// "This device only" / "Device + iCloud" / "Device + 2 clouds".
 String locSummary(StorageStrings s, List<StorageTarget> targets) => switch (targets.length) {
@@ -164,7 +176,7 @@ class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
 /// is tickable while no cloud is available, so what remains is the honest part:
 /// the device row, the clouds greyed with why, and what will happen when they
 /// do arrive.
-class CategorySyncBody extends StatelessWidget {
+class CategorySyncBody extends ConsumerWidget {
   const CategorySyncBody({super.key, required this.s, required this.category, this.onBack});
   final PatientAppState s;
 
@@ -172,12 +184,29 @@ class CategorySyncBody extends StatelessWidget {
   final DataCategory? category;
   final VoidCallback? onBack;
 
+  /// Stores the choice, then — when it was switched on — syncs straight away
+  /// so everything held back while it was off goes up without waiting for the
+  /// next foreground.
+  Future<void> _setCareCloudSync(WidgetRef ref, bool on) async {
+    await s.setCareCloudSync(on);
+    if (!on) return;
+    final profileId = ref.read(currentProfileIdProvider);
+    if (profileId == null) return;
+    await ref.read(careTeamSyncServiceProvider).sync(profileId);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) =>
+      ListenableBuilder(listenable: s, builder: (context, _) => _body(ref));
+
+  Widget _body(WidgetRef ref) {
     final st = s.strings.storage;
     final ar = s.rtl;
     final all = category == null;
-    final targets = all ? const <StorageTarget>[] : syncTargetsFor(category!);
+    final targets = all ? const <StorageTarget>[] : syncTargetsFor(category!, s);
+    // The care team is the one category with a working cloud, and only for an
+    // account that has a server side.
+    final careSwitch = category == DataCategory.care && s.accountMode == AccountMode.online;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (onBack != null)
@@ -223,12 +252,26 @@ class CategorySyncBody extends StatelessWidget {
       _Grouped(children: [
         _StoredInRow(s: s, target: StorageTarget.local, on: true),
         for (final t in StorageTarget.picker.where((t) => !t.isLocal))
-          _StoredInRow(s: s, target: t, on: targets.contains(t)),
+          if (careSwitch && t == StorageTarget.balsmCloud)
+            _StoredInRow(
+              s: s,
+              target: t,
+              on: s.careCloudSync,
+              onChanged: (on) => _setCareCloudSync(ref, on),
+            )
+          else
+            _StoredInRow(s: s, target: t, on: targets.contains(t)),
       ]),
       const SizedBox(height: 14),
-      Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
-      const SizedBox(height: 10),
-      Text(st.store_encrypted_note, textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+      if (careSwitch)
+        // Not the blob-backup notes below: the care team syncs as rows, on
+        // its own switch, and is not encrypted on the phone first.
+        Text(st.store_care_cloud_note, style: Typo.meta(ar: ar).copyWith(height: 1.5))
+      else ...[
+        Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+        const SizedBox(height: 10),
+        Text(st.store_encrypted_note, textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+      ],
     ]);
   }
 }
@@ -371,9 +414,11 @@ class _CategoryRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(listenable: s, builder: (context, _) => _row());
+
+  Widget _row() {
     final st = s.strings.storage;
-    final targets = syncTargetsFor(category);
+    final targets = syncTargetsFor(category, s);
     return Semantics(
       button: true,
       label: '${category.label(st)}, ${locSummary(st, targets)}',
@@ -411,18 +456,23 @@ class _CategoryRow extends StatelessWidget {
 }
 
 /// A destination inside the editor: on, off, or not available at all.
+///
+/// With [onChanged] it is a live switch — the patient's own choice for a
+/// destination that really receives data.
 class _StoredInRow extends StatelessWidget {
-  const _StoredInRow({required this.s, required this.target, required this.on});
+  const _StoredInRow({required this.s, required this.target, required this.on, this.onChanged});
   final PatientAppState s;
   final StorageTarget target;
   final bool on;
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     final st = s.strings.storage;
     final cfg = storageCfg(target);
-    final available = target.isAvailable;
-    return Opacity(
+    final switchable = onChanged != null;
+    final available = target.isAvailable || switchable;
+    final row = Opacity(
       opacity: available ? 1 : 0.65,
       child: ColoredBox(
         color: on && !target.isLocal ? cfg.bg : Colors.white,
@@ -451,22 +501,34 @@ class _StoredInRow extends StatelessWidget {
                     child: Text(
                       target.isLocal
                           ? st.store_local_always
-                          : available
-                              ? st.store_not_connected
-                              : st.store_available_soon,
+                          : switchable
+                              ? (on ? st.store_care_cloud_on : st.store_care_cloud_off)
+                              : available
+                                  ? st.store_not_connected
+                                  : st.store_available_soon,
                       style: Typo.meta(ar: s.rtl),
                     ),
                   ),
                 ]),
               ),
               const SizedBox(width: 8),
-              // The device row is locked in the design too — it is the one
-              // copy that always exists.
-              Icon(target.isLocal ? LucideIcons.lock : LucideIcons.minus, size: 16, color: T.fg3),
+              if (switchable)
+                PSwitch(on: on, accent: s.accent.main, onTap: () => onChanged!(!on))
+              else
+                // The device row is locked in the design too — it is the one
+                // copy that always exists.
+                Icon(target.isLocal ? LucideIcons.lock : LucideIcons.minus, size: 16, color: T.fg3),
             ]),
           ),
         ),
       ),
+    );
+    if (!switchable) return row;
+    return Semantics(
+      toggled: on,
+      label: target.label(st),
+      onTap: () => onChanged!(!on),
+      child: row,
     );
   }
 }

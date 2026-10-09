@@ -43,6 +43,18 @@ class PatientAppState extends ChangeNotifier {
   /// Whether this account has server credentials (see core `AccountMode`).
   AccountMode accountMode = AccountMode.online;
 
+  /// The patient's choice to mirror the care team to Balsm Cloud (on by
+  /// default). Persisted in prefs, which is what the sync service reads.
+  bool careCloudSync = true;
+
+  /// Awaitable so a caller can start a sync only once the choice is stored.
+  Future<void> setCareCloudSync(bool v) async {
+    if (careCloudSync == v) return;
+    careCloudSync = v;
+    notifyListeners();
+    await _prefs?.setCareCloudSync(v);
+  }
+
   void setAccountMode(AccountMode m) {
     if (accountMode == m) return;
     accountMode = m;
@@ -136,6 +148,7 @@ class PatientAppState extends ChangeNotifier {
       final storedTarget = await prefs.storage();
       s.storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local;
       s.accountMode = accountMode;
+      s.careCloudSync = await prefs.careCloudSync();
       if (hasSession && pendingMerge) {
         // The merge screen moves or deletes the device's data, so while the
         // device password still guards it, Unlock comes first (Unlock then

@@ -3056,7 +3056,7 @@ class StorageStrings implements i69n.I69nMessageBundle {
   String get store_all_applies => "Applies to every category";
   String get store_all_data_back => "All data";
   String get store_intro =>
-      "Everything is kept on this device. Cloud sync is not available yet — when it is, you will choose what goes where, category by category.";
+      "Everything is kept on this device. Your care team can also sync to Balsm Cloud; cloud sync for the rest is not available yet.";
   String get store_accounts => "Cloud accounts";
   String get store_your_data => "Your data";
   String get store_stored_in => "Stored in";
@@ -3091,6 +3091,12 @@ class StorageStrings implements i69n.I69nMessageBundle {
       "Only local storage is available right now. iCloud, Google Drive, and Balsm Cloud are all coming later.";
   String get store_coming_soon => "Coming soon";
   String get store_available_soon => "Available soon";
+  String get store_care_cloud_on =>
+      "On — your care team is kept in Balsm Cloud too";
+  String get store_care_cloud_off =>
+      "Off — your care team stays on this device";
+  String get store_care_cloud_note =>
+      "Your care team syncs to Balsm Cloud so it survives a lost phone. Turn it off and new changes stay on this device; what is already in Balsm Cloud is kept.";
   String get store_always_on => "Always on";
   String get store_no_backup => "No backup";
   String store_connecting(String target) => "Connecting to $target…";
@@ -3215,6 +3221,12 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_coming_soon;
       case 'store_available_soon':
         return store_available_soon;
+      case 'store_care_cloud_on':
+        return store_care_cloud_on;
+      case 'store_care_cloud_off':
+        return store_care_cloud_off;
+      case 'store_care_cloud_note':
+        return store_care_cloud_note;
       case 'store_always_on':
         return store_always_on;
       case 'store_no_backup':

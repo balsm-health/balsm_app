@@ -811,6 +811,30 @@ class IconSquare extends StatelessWidget {
       );
 }
 
+/// Pill toggle switch.
+class PSwitch extends StatelessWidget {
+  const PSwitch({super.key, required this.on, required this.accent, required this.onTap});
+  final bool on;
+  final Color accent;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 46,
+          height: 28,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(color: on ? accent : T.ink300, borderRadius: BorderRadius.circular(999)),
+          alignment: on ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+          child: Container(
+              width: 22,
+              height: 22,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: T.shadowXs)),
+        ),
+      );
+}
+
 /// Directional chevron (flips in RTL).
 class Chevron extends StatelessWidget {
   const Chevron({super.key, this.rtl = false, this.size = 18, this.color});
