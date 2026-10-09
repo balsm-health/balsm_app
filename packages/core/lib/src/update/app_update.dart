@@ -46,33 +46,26 @@ enum UpdateStatus {
   required,
 }
 
-/// One line of a release's notes — `update.jsx`'s icon / title / description
-/// row. [body] may carry inline HTML (bold, links); it is rendered through the
-/// same allow-list as a free-form note.
+/// One line of a release's notes: a title and an optional sentence under it.
+/// Plain text — the manifest carries no markup.
 @immutable
 class ReleaseNoteItem {
-  const ReleaseNoteItem({required this.title, this.icon = '', this.body = ''});
-
-  /// A Lucide icon name (`bell-ring`). Unknown names fall back to a sparkle.
-  final String icon;
+  const ReleaseNoteItem({required this.title, this.body = ''});
   final String title;
   final String body;
 }
 
-/// What changed in one release, in one language. The manifest writes it either
-/// as a list of [items] (the designed rows) or as free-form [html]; a release
-/// may use either.
+/// What changed in one release, in one language.
 @immutable
 class ReleaseNote {
-  const ReleaseNote({required this.version, this.date, this.items = const [], this.html});
+  const ReleaseNote({required this.version, this.date, this.items = const []});
   final String version;
 
   /// Release day, when the manifest gives one.
   final DateTime? date;
   final List<ReleaseNoteItem> items;
-  final String? html;
 
-  bool get isEmpty => items.isEmpty && (html == null || html!.trim().isEmpty);
+  bool get isEmpty => items.isEmpty;
 }
 
 @immutable
@@ -150,8 +143,8 @@ int? compareVersions(String a, String b) {
 ///   "min":    { "ios": "1.2.0" },
 ///   "versions": {
 ///     "1.4.0": { "force": false, "platforms": ["ios", "android"], "date": "2026-10-09",
-///                "notes": { "en": [ { "icon": "bell-ring", "title": "…", "body": "…" } ],
-///                           "ar": "<ul><li>…</li></ul>" } }
+///                "notes": { "en": [ { "title": "…", "body": "…" }, "A line with no body" ],
+///                           "ar": [ { "title": "…" } ] } }
 ///   }
 /// }
 /// ```
@@ -232,28 +225,28 @@ String? _platformValue(Object? map, String platform) {
 }
 
 /// One release's notes in [lang], else English, else whatever language is
-/// there. A language's value is a list of rows or an HTML string.
+/// there. A language's value is a list; each entry is `{title, body}` or just
+/// a string (a title on its own). Anything else is skipped.
 ReleaseNote _noteFor(String version, Map<String, dynamic> release, String lang) {
   final rawDate = release['date'];
   final date = rawDate is String ? DateTime.tryParse(rawDate) : null;
   final notes = release['notes'];
   if (notes is Map<String, dynamic>) {
     for (final candidate in [notes[lang], notes['en'], ...notes.values]) {
-      if (candidate is String && candidate.trim().isNotEmpty) {
-        return ReleaseNote(version: version, date: date, html: candidate);
+      if (candidate is! List) continue;
+      final items = <ReleaseNoteItem>[];
+      for (final it in candidate) {
+        if (it is String && it.trim().isNotEmpty) {
+          items.add(ReleaseNoteItem(title: it.trim()));
+        } else if (it is Map<String, dynamic>) {
+          final title = it['title'];
+          final body = it['body'];
+          if (title is String && title.trim().isNotEmpty) {
+            items.add(ReleaseNoteItem(title: title.trim(), body: body is String ? body.trim() : ''));
+          }
+        }
       }
-      if (candidate is List) {
-        final items = <ReleaseNoteItem>[
-          for (final it in candidate)
-            if (it is Map<String, dynamic> && it['title'] is String && (it['title'] as String).trim().isNotEmpty)
-              ReleaseNoteItem(
-                title: (it['title'] as String).trim(),
-                icon: it['icon'] is String ? it['icon'] as String : '',
-                body: it['body'] is String ? it['body'] as String : '',
-              ),
-        ];
-        if (items.isNotEmpty) return ReleaseNote(version: version, date: date, items: items);
-      }
+      if (items.isNotEmpty) return ReleaseNote(version: version, date: date, items: items);
     }
   }
   return ReleaseNote(version: version, date: date);

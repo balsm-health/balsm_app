@@ -9,7 +9,6 @@ import 'package:core/core.dart';
 
 import '../balsm_app/kit.dart';
 import '../balsm_app/tokens.dart';
-import 'release_notes_html.dart';
 
 /// The words on the update sheet. A plain value so the sheet belongs to no
 /// brand's string bundle: each app shell fills it from its own, with its own
@@ -361,10 +360,9 @@ class _UpdateSheetState extends State<UpdateSheet> with SingleTickerProviderStat
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
                           _Notes(look: look, notes: info.notes),
-                          // The same notes as a web page, with whatever the
-                          // sheet cannot show (images, tables). Opens in the
-                          // browser, so it never stands between the user and
-                          // the update when there is no connection.
+                          // The whole release history as a web page. Opens
+                          // in the browser, so it never stands between the
+                          // user and the update when there is no connection.
                           if (info.notesUrl != null)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 12),
@@ -443,7 +441,6 @@ class _Notes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ar = look.rtl;
-    final accent = look.accent;
     final eyebrow = Typo.meta(ar: ar)
         .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 1.9, color: T.fg3);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
@@ -464,70 +461,25 @@ class _Notes extends StatelessWidget {
               Text(_date(notes[n].date!), textDirection: TextDirection.ltr, style: Typo.meta(ar: ar)),
           ]),
         ),
-        for (var i = 0; i < notes[n].items.length; i++) _item(notes[n].items[i], first: i == 0, ar: ar, accent: accent),
-        if (notes[n].html != null && notes[n].html!.trim().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: ReleaseNotesHtml(html: notes[n].html!, ar: ar, linkColor: accent.main),
-          ),
+        for (var i = 0; i < notes[n].items.length; i++) _item(notes[n].items[i], first: i == 0, ar: ar),
       ],
       const SizedBox(height: 12),
     ]);
   }
 
-  Widget _item(ReleaseNoteItem it, {required bool first, required bool ar, required Accent accent}) => Container(
+  /// A title and, under it, its sentence. Plain text; a line break in the
+  /// manifest is a line break here.
+  Widget _item(ReleaseNoteItem it, {required bool first, required bool ar}) => Container(
+        width: double.infinity,
         decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
         padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
-            child: Icon(releaseNoteIcon(it.icon), size: 17, color: accent.main),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Text(it.title, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              if (it.body.trim().isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: ReleaseNotesHtml(html: it.body, ar: ar, linkColor: accent.main, small: true),
-                ),
-            ]),
-          ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text(it.title, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+          if (it.body.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(it.body, style: Typo.bodySm(ar: ar).copyWith(fontSize: FS.xs, color: T.fg2, height: 1.5)),
+            ),
         ]),
       );
 }
-
-/// Lucide glyph for a manifest icon name. A closed list — the manifest is
-/// remote text, and an unknown name must still draw something sensible.
-IconData releaseNoteIcon(String name) => switch (name) {
-      'cloud-upload' => LucideIcons.cloudUpload,
-      'cloud' => LucideIcons.cloud,
-      'bell-ring' => LucideIcons.bellRing,
-      'bell' => LucideIcons.bell,
-      'map-pin' => LucideIcons.mapPin,
-      'map' => LucideIcons.map,
-      'wrench' => LucideIcons.wrench,
-      'bug' => LucideIcons.bug,
-      'shield-check' => LucideIcons.shieldCheck,
-      'lock' => LucideIcons.lock,
-      'zap' => LucideIcons.zap,
-      'heart-pulse' => LucideIcons.heartPulse,
-      'activity' => LucideIcons.activity,
-      'pill' => LucideIcons.pill,
-      'users' => LucideIcons.users,
-      'qr-code' => LucideIcons.qrCode,
-      'file-text' => LucideIcons.fileText,
-      'folder' => LucideIcons.folder,
-      'calendar' => LucideIcons.calendar,
-      'languages' => LucideIcons.languages,
-      'palette' => LucideIcons.palette,
-      'search' => LucideIcons.search,
-      'smartphone' => LucideIcons.smartphone,
-      'refresh-cw' => LucideIcons.refreshCw,
-      'star' => LucideIcons.star,
-      _ => LucideIcons.sparkles,
-    };

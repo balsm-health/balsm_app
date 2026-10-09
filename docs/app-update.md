@@ -40,10 +40,12 @@ the app treats as "nothing to do".
       "date": "2026-10-09",
       "notes": {
         "en": [
-          { "icon": "bell-ring", "title": "Smarter dose reminders", "body": "Snooze a dose and Balsm reminds you again, even <b>offline</b>." },
-          { "icon": "wrench", "title": "Fixes and polish" }
+          { "title": "Smarter dose reminders", "body": "Snooze a dose and Balsm reminds you again, even offline." },
+          "Fixes and polish"
         ],
-        "ar": "<ul><li>تذكيرات أذكى للجرعات</li></ul>"
+        "ar": [
+          { "title": "تذكيرات أذكى للجرعات" }
+        ]
       }
     }
   }
@@ -59,9 +61,9 @@ the app treats as "nothing to do".
   the release entries say. Use it to retire old builds in bulk.
 - `stores` — where "Update" goes. Must be `https://`.
 - `date` — release day (`YYYY-MM-DD`), shown beside "What's new". Optional.
-- `notes` — per language, falling back to `en`. Either a list of rows
-  (`icon`, `title`, optional `body`) — the designed layout — or one HTML
-  string. A row's `body` may use inline HTML.
+- `notes` — per language, falling back to `en`: a list where each entry is
+  `{ "title": "…", "body": "…" }` (`body` optional) or just a string. Plain
+  text only — there is no markup; a `\n` in a body is a line break.
 
 | Installed build | What the patient sees |
 |---|---|
@@ -86,13 +88,11 @@ the website can link to it too. The sheet's "Full release notes" link opens it
 in the browser, already filled in for that install.
 
 The sheet stays native on purpose — it has to work offline, forced updates
-included. The page is where richer notes show: it renders the same HTML plus
-`img` (https only), tables, `blockquote` and `hr`, which the sheet drops.
+included. The page shows the same notes, for the whole history.
 
-It shares an origin with the web app, so it is locked down: the response's
-Content-Security-Policy allows no script at all, and note HTML is rebuilt from
-an allow-list (no attributes survive except an https `href` / `src` and `alt`).
-`node --test deploy/web/worker.test.mjs` covers both.
+It shares an origin with the web app, so it is locked down: every value from
+the manifest is escaped, and the response's Content-Security-Policy allows no
+script at all. `node --test deploy/web/worker.test.mjs` covers both.
 
 A manifest can send the link elsewhere with a top-level
 `"more": "https://…"`; the same query parameters are appended.
@@ -111,21 +111,6 @@ information included — until they update. Never force a version that is not
 yet downloadable on that platform; list only the platforms that have it.
 
 Protect the source branch: whoever can change these files can block every installed app.
-
-## Release notes
-
-Row icons are Lucide names from a fixed list (`releaseNoteIcon` in
-`app/lib/update/update_gate.dart`): `cloud-upload`, `cloud`, `bell-ring`, `bell`, `map-pin`,
-`map`, `wrench`, `bug`, `shield-check`, `lock`, `zap`, `heart-pulse`,
-`activity`, `pill`, `users`, `qr-code`, `file-text`, `folder`, `calendar`,
-`languages`, `palette`, `search`, `smartphone`, `refresh-cw`, `star`. Anything
-else draws a sparkle.
-
-HTML — a whole note, or a row's `body` — is rendered natively, never in a web
-view. Supported: `p`, `h1`–`h6`, `ul`, `ol`,
-`li`, `br`, `b`/`strong`, `i`/`em`, `u`, `code`, and `a` with an `https://`
-link. Other tags keep their text; `script`, `style`, images, frames and forms
-are dropped entirely.
 
 ## Behaviour worth knowing
 
@@ -153,7 +138,6 @@ The gate depends on no shell's state, so nothing else is needed.
 
 - `packages/core/lib/src/update/app_update.dart` — manifest rules, per-brand
   URL, fetch + on-device cache. Brand- and UI-free.
-- `app/lib/update/` — the sheet and the release-note renderer, shared by
-  every brand's shell.
+- `app/lib/update/` — the sheet, shared by every brand's shell.
 - `deploy/web/` — the Worker (manifests and the release-notes page) and its
   tests.

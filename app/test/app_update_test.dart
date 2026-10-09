@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:app/balsm_app/app_state.dart';
-import 'package:app/update/release_notes_html.dart';
 import 'package:app/update/update_gate.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,65 +31,13 @@ UpdateCopy copyFor(PatientAppState s, AppBrand brand) {
 }
 
 void main() {
-  group('release notes HTML', () {
-    Future<void> pumpNotes(WidgetTester tester, String html) => tester.pumpWidget(MaterialApp(
-          home: Scaffold(body: ReleaseNotesHtml(html: html, ar: false, linkColor: Colors.blue)),
-        ));
-
-    String allText(WidgetTester tester) =>
-        tester.widgetList<Text>(find.byType(Text)).map((t) => t.textSpan?.toPlainText() ?? t.data ?? '').join('|');
-
-    testWidgets('renders paragraphs, lists and inline emphasis', (tester) async {
-      await pumpNotes(tester, '''
-        <h3>Highlights</h3>
-        <p>Faster <b>sync</b> and <a href="https://balsm.health/x">details</a>.</p>
-        <ul><li>First</li><li>Second</li></ul>
-        <ol><li>Alpha</li><li>Beta</li></ol>''');
-      final text = allText(tester);
-      expect(text, contains('Highlights'));
-      expect(text, contains('Faster sync and details.'));
-      expect(text, contains('•|First'));
-      expect(text, contains('1.|Alpha'));
-      expect(text, contains('2.|Beta'));
-    });
-
-    testWidgets('scripts, styles and images contribute nothing', (tester) async {
-      await pumpNotes(
-          tester,
-          '<p>Safe</p><script>alert(1)</script><style>p{color:red}</style>'
-          '<img src="https://evil.example/x.png" onerror="x()"><iframe src="https://evil.example"></iframe>');
-      final text = allText(tester);
-      expect(text, 'Safe');
-      expect(find.byType(Image), findsNothing);
-    });
-
-    testWidgets('only https links are tappable', (tester) async {
-      await pumpNotes(tester, '<p><a href="javascript:alert(1)">bad</a> <a href="https://balsm.health">good</a></p>');
-      final rich = tester.widget<Text>(find.byType(Text).first).textSpan! as TextSpan;
-      final spans = rich.children!.cast<TextSpan>();
-      expect(spans.firstWhere((s) => s.text == 'bad').recognizer, isNull);
-      expect(spans.firstWhere((s) => s.text == 'good').recognizer, isNotNull);
-    });
-
-    testWidgets('unknown tags keep their text', (tester) async {
-      await pumpNotes(tester, '<marquee>Still <span>readable</span></marquee>');
-      expect(allText(tester), 'Still readable');
-    });
-
-    testWidgets('empty or whitespace notes render nothing and do not throw', (tester) async {
-      await pumpNotes(tester, '  <p> </p>  ');
-      expect(tester.takeException(), isNull);
-      expect(find.byType(Text), findsNothing);
-    });
-  });
-
   group('UpdateGate', () {
     const notes = [
       ReleaseNote(version: '1.4.0', items: [
-        ReleaseNoteItem(icon: 'bell-ring', title: 'Smarter dose reminders', body: 'Even <b>offline</b>.'),
-        ReleaseNoteItem(icon: 'no-such-icon', title: 'Fixes and polish'),
+        ReleaseNoteItem(title: 'Smarter dose reminders', body: 'Even <b>offline</b>.'),
+        ReleaseNoteItem(title: 'Fixes and polish'),
       ]),
-      ReleaseNote(version: '1.3.0', html: '<p>Security fix</p>'),
+      ReleaseNote(version: '1.3.0', items: [ReleaseNoteItem(title: 'Security fix')]),
     ];
     const optional = AppUpdateInfo(
         status: UpdateStatus.available,
@@ -177,9 +124,11 @@ void main() {
       expect(find.text(copy.whatsNew.toUpperCase()), findsOne);
       expect(find.text('Smarter dose reminders'), findsOne);
       expect(find.text('Fixes and polish'), findsOne);
-      // The older release sits under its own version, with its HTML rendered.
+      // Bodies are plain text: markup in the manifest shows as written.
+      expect(find.text('Even <b>offline</b>.'), findsOne);
+      // The older release sits under its own version.
       expect(find.text('v1.3.0'), findsOne);
-      expect(find.byType(ReleaseNotesHtml), findsExactly(2));
+      expect(find.text('Security fix'), findsOne);
       expect(find.text(copy.fullNotes), findsOne);
     });
 
@@ -252,11 +201,6 @@ void main() {
     testWidgets('lays out in Arabic', (tester) async {
       await pump(tester, forced, ar: true);
       expect(tester.takeException(), isNull);
-    });
-
-    test('an unknown note icon still draws something', () {
-      expect(releaseNoteIcon('no-such-icon'), releaseNoteIcon(''));
-      expect(releaseNoteIcon('bell-ring'), isNot(releaseNoteIcon('')));
     });
   });
 

@@ -74,10 +74,11 @@ export default {
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'no-referrer',
         // This page shares an origin with the web app, and its body comes from
-        // a file. No script-src at all: whatever reaches the markup, nothing
-        // on this page can execute. The sanitizer below is the second layer.
+        // a file. Notes are plain text and every value is escaped on the way
+        // in; on top of that there is no script-src at all, so nothing on this
+        // page can execute whatever reaches the markup.
         'Content-Security-Policy':
-          "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
       },
     });
   },
@@ -231,39 +232,42 @@ ${body}
 
 function renderRelease(version, release, lang, t) {
   const date = formatDate(release.date);
-  const notes = noteFor(release.notes, lang);
-  let content = '';
-  if (Array.isArray(notes)) {
-    const rows = notes
-      .filter((it) => it && typeof it === 'object' && typeof it.title === 'string' && it.title.trim())
-      .map(
-        (it) =>
-          `<li><strong class="row-title">${esc(it.title.trim())}</strong>${
-            typeof it.body === 'string' && it.body.trim() ? `<div class="row-body">${sanitize(it.body)}</div>` : ''
-          }</li>`,
-      );
-    if (rows.length) content = `<ul class="rows">${rows.join('')}</ul>`;
-  } else if (typeof notes === 'string') {
-    content = `<div class="html">${sanitize(notes)}</div>`;
-  }
+  const rows = noteFor(release.notes, lang).map(
+    (it) =>
+      `<li><strong class="row-title">${esc(it.title)}</strong>${
+        it.body ? `<div class="row-body">${esc(it.body).replace(/\r?\n/g, '<br>')}</div>` : ''
+      }</li>`,
+  );
   return `<section>
 <div class="release-head">
 <h2 dir="ltr">v${esc(version)}</h2>
 ${release.force === true ? `<span class="badge">${esc(t.required)}</span>` : ''}
 ${date ? `<time dir="ltr">${esc(date)}</time>` : ''}
 </div>
-${content}
+${rows.length ? `<ul class="rows">${rows.join('')}</ul>` : ''}
 </section>`;
 }
 
-/** Notes in `lang`, else English, else whatever language is there. */
-function noteFor(notes, lang) {
-  if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return null;
+/**
+ * A release's notes in `lang`, else English, else whatever language is there,
+ * as [{title, body}]. Same shape rules as app_update.dart: a language's value
+ * is a list whose entries are {title, body} or a bare string.
+ */
+export function noteFor(notes, lang) {
+  if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return [];
   for (const candidate of [notes[lang], notes.en, ...Object.values(notes)]) {
-    if (typeof candidate === 'string' && candidate.trim()) return candidate;
-    if (Array.isArray(candidate) && candidate.length) return candidate;
+    if (!Array.isArray(candidate)) continue;
+    const items = [];
+    for (const it of candidate) {
+      if (typeof it === 'string' && it.trim()) {
+        items.push({ title: it.trim(), body: '' });
+      } else if (it && typeof it === 'object' && typeof it.title === 'string' && it.title.trim()) {
+        items.push({ title: it.title.trim(), body: typeof it.body === 'string' ? it.body.trim() : '' });
+      }
+    }
+    if (items.length) return items;
   }
-  return null;
+  return [];
 }
 
 function formatDate(raw) {
@@ -271,101 +275,20 @@ function formatDate(raw) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
 }
 
-// ── HTML safety ─────────────────────────────────────────────────────────────
+// ── Escaping ────────────────────────────────────────────────────────────────
 
-/** Escapes text, leaving entities that are already well formed. */
+/** Makes any text safe to place in markup or in a quoted attribute. */
 export function esc(text) {
   return String(text)
-    .replace(/&(?!(?:[a-zA-Z][a-zA-Z0-9]{1,31}|#[0-9]{1,7}|#x[0-9a-fA-F]{1,6});)/g, '&amp;')
+    .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
 
-const ALLOWED = new Set([
-  'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'br', 'hr', 'blockquote',
-  'b', 'strong', 'i', 'em', 'u', 'code', 'a', 'img',
-  'table', 'thead', 'tbody', 'tr', 'th', 'td',
-]);
-const VOID = new Set(['br', 'hr', 'img']);
-// Removed together with everything inside them.
-const DROPPED = new Set([
-  'script', 'style', 'head', 'title', 'iframe', 'object', 'embed', 'form', 'select',
-  'textarea', 'template', 'noscript', 'svg', 'math', 'video', 'audio',
-]);
-
-/**
- * Rebuilds release-note HTML from an allow-list: only the tags above survive,
- * with no attributes except an https `href` on links and an https `src` (and
- * `alt`) on images. Everything else is dropped or escaped — the output never
- * contains markup this function did not write itself.
- */
-export function sanitize(html) {
-  const token = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>|[^<]+|</g;
-  const open = [];
-  let out = '';
-  let dropping = null;
-  let depth = 0;
-  let m;
-  while ((m = token.exec(String(html))) !== null) {
-    const [raw, closing, rawName, attrs] = m;
-    const name = rawName ? rawName.toLowerCase() : null;
-
-    if (dropping) {
-      if (name === dropping) {
-        if (closing) depth--;
-        else if (!/\/\s*$/.test(attrs)) depth++;
-        if (depth === 0) dropping = null;
-      }
-      continue;
-    }
-    if (raw.startsWith('<!--')) continue;
-    if (!name) {
-      out += esc(raw);
-      continue;
-    }
-    if (DROPPED.has(name)) {
-      if (!closing && !/\/\s*$/.test(attrs)) {
-        dropping = name;
-        depth = 1;
-      }
-      continue;
-    }
-    if (!ALLOWED.has(name)) continue; // unknown tag: keep its text, lose the tag
-
-    if (closing) {
-      const at = open.lastIndexOf(name);
-      if (at === -1) continue;
-      while (open.length > at) out += `</${open.pop()}>`;
-      continue;
-    }
-    if (name === 'a') {
-      const href = attr(attrs, 'href');
-      // Only https leaves the page; any other scheme loses the link, not the text.
-      if (!/^https:\/\//i.test(href)) continue;
-      out += `<a href="${esc(href)}" rel="noopener noreferrer" target="_blank">`;
-      open.push(name);
-    } else if (name === 'img') {
-      const src = attr(attrs, 'src');
-      if (!/^https:\/\//i.test(src)) continue;
-      out += `<img src="${esc(src)}" alt="${esc(attr(attrs, 'alt'))}" loading="lazy">`;
-    } else {
-      out += `<${name}>`;
-      if (!VOID.has(name)) open.push(name);
-    }
-  }
-  while (open.length) out += `</${open.pop()}>`;
-  return out;
-}
-
-function attr(attrs, name) {
-  const m = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`, 'i').exec(attrs || '');
-  return m ? (m[1] ?? m[2] ?? m[3] ?? '').trim() : '';
-}
-
 const CSS = `
-:root{--ink:#14202B;--fg2:#3D4B5C;--fg3:#6B7A8C;--line:#E6EAEF;--wash:#F6F8FA;--accent:#724DD0;--accent-50:#F1ECFB;--amber:#8A6A10;--amber-50:#FBF3DC}
+:root{--ink:#14202B;--fg2:#3D4B5C;--fg3:#6B7A8C;--line:#E6EAEF;--wash:#F6F8FA;--amber:#8A6A10;--amber-50:#FBF3DC}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:#fff;color:var(--fg2);font:16px/1.55 "IBM Plex Sans","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -382,15 +305,5 @@ time{margin-inline-start:auto;color:var(--fg3);font-size:13px}
 .rows>li:first-child{border-top:0;padding-top:4px}
 .row-title{display:block;color:var(--ink);font-weight:600}
 .row-body{margin-top:2px;font-size:14px}
-.html>:first-child,.row-body>:first-child{margin-top:0}
-.html>:last-child,.row-body>:last-child{margin-bottom:0}
-a{color:var(--accent)}
-img{max-width:100%;height:auto;border-radius:12px}
-code{padding:1px 5px;border-radius:6px;background:var(--wash);font:14px "IBM Plex Mono",ui-monospace,Menlo,monospace}
-blockquote{margin:12px 0;padding:8px 14px;border-inline-start:3px solid var(--accent-50);color:var(--fg3)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:8px 10px;border:1px solid var(--line);text-align:start}
-th{background:var(--wash);color:var(--ink)}
-hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 .empty{margin-top:28px;padding:20px;border-radius:12px;background:var(--wash);color:var(--fg3);text-align:center}
 `;

@@ -8,11 +8,11 @@ void main() {
     "stores": { "ios": "https://apps.apple.com/app/id1", "android": "ftp://nope" },
     "min": { "ios": "1.0.0" },
     "versions": {
-      "1.2.0": { "force": false, "platforms": ["ios", "android"], "notes": { "en": "<p>one-two</p>", "ar": "<p>واحد</p>" } },
-      "1.3.0": { "force": true,  "platforms": ["ios"],            "notes": { "en": "<p>one-three</p>" } },
+      "1.2.0": { "force": false, "platforms": ["ios", "android"], "notes": { "en": ["one-two"], "ar": ["واحد"] } },
+      "1.3.0": { "force": true,  "platforms": ["ios"],            "notes": { "en": ["one-three"] } },
       "1.4.0": { "force": false, "platforms": ["ios", "android"], "date": "2026-10-09",
-                 "notes": { "en": [ { "icon": "bell-ring", "title": "Smarter reminders", "body": "Even <b>offline</b>." },
-                                    { "title": "" }, "junk", { "title": "Fixes" } ] } },
+                 "notes": { "en": [ { "title": "Smarter reminders", "body": " Even offline. " },
+                                    { "title": "" }, 7, { "body": "no title" }, "  Fixes  " ] } },
       "1.10.0": { "force": false, "platforms": ["macos"] }
     }
   }''';
@@ -80,20 +80,28 @@ void main() {
     test('notes cover every release the build is behind, newest first', () {
       final notes = eval('1.1.0').notes;
       expect(notes.map((n) => n.version), ['1.4.0', '1.3.0', '1.2.0']);
-      expect(notes[1].html, '<p>one-three</p>');
+      expect(notes[1].items.single.title, 'one-three');
     });
 
-    test('notes written as rows keep icon, title and body; bad rows are dropped', () {
+    test('a note is a title with an optional body, or just a string; bad entries are dropped', () {
       final note = eval('1.3.0').notes.single;
-      expect(note.html, isNull);
       expect(note.date, DateTime(2026, 10, 9));
       expect(note.items.map((i) => i.title), ['Smarter reminders', 'Fixes']);
-      expect(note.items.first.icon, 'bell-ring');
-      expect(note.items.first.body, 'Even <b>offline</b>.');
+      expect(note.items.first.body, 'Even offline.');
+      expect(note.items.last.body, isEmpty);
+    });
+
+    test('notes are plain text: markup is not interpreted, and HTML strings are not notes', () {
+      const m = '{"versions": {"2.0.0": {"notes": {"en": [{"title": "<b>Bold</b>", "body": "a &amp; b"}]}}, '
+          '"2.1.0": {"notes": {"en": "<p>old html form</p>"}}}}';
+      final notes = eval('1.0.0', m: m).notes;
+      expect(notes.single.version, '2.0.0', reason: 'a string where a list belongs is ignored');
+      expect(notes.single.items.single.title, '<b>Bold</b>');
+      expect(notes.single.items.single.body, 'a &amp; b');
     });
 
     test('a release with no usable notes contributes none', () {
-      const m = '{"versions": {"2.0.0": {"notes": {"en": []}}, "2.1.0": {"notes": {"en": "  "}}, "2.2.0": {}}}';
+      const m = '{"versions": {"2.0.0": {"notes": {"en": []}}, "2.1.0": {"notes": {"en": ["  "]}}, "2.2.0": {}}}';
       final info = eval('1.0.0', m: m);
       expect(info.status, UpdateStatus.available);
       expect(info.notes, isEmpty);
@@ -101,7 +109,7 @@ void main() {
 
     test('notes come in the asked language, falling back to English', () {
       final notes = eval('1.1.0', lang: 'ar').notes;
-      expect(notes.last.html, '<p>واحد</p>');
+      expect(notes.last.items.single.title, 'واحد');
       expect(notes.first.items.first.title, 'Smarter reminders', reason: '1.4.0 has no Arabic');
     });
 
