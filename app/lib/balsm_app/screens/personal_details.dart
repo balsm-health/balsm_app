@@ -86,15 +86,6 @@ final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async
   return ref.watch(accountProfileUseCaseProvider).load();
 });
 
-/// TTL choices offered before minting the emergency QR token (FR-017).
-/// `key` is an app i69n label key.
-const _emergencyTtlOptions = <({String key, int seconds})>[
-  (key: 'emergency.eqr_ttl_1h', seconds: 3600),
-  (key: 'emergency.eqr_ttl_6h', seconds: 21600),
-  (key: 'emergency.eqr_ttl_24h', seconds: 86400),
-  (key: 'emergency.eqr_ttl_7d', seconds: 604800),
-];
-
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
   const PersonalDetailsScreen({super.key, required this.s});
   final PatientAppState s;
@@ -998,9 +989,10 @@ class _RelationshipSheet extends StatelessWidget {
 /// and renders a rounded-dot QR of `{BASE_URL}/emergency/{jti}#k={key}` with the
 /// Balsm flower in its center. The decryption key lives ONLY in the URL fragment
 /// (`#k=`) — it is embedded in the QR / clipboard locally and is NEVER sent to
-/// the server (FR-013/FR-014). Before minting, the user picks a TTL (FR-017);
-/// an active token shows its expiry + a Revoke action. Slides up; in-sheet toast
-/// confirms copy/save/revoke.
+/// the server (FR-013/FR-014). The token is permanent and minted offline-first
+/// (the jti is generated on-device, the server sync is best-effort), so the
+/// code appears without a connection; an active token offers Revoke / Rotate.
+/// Slides up; in-sheet toast confirms copy/save/revoke.
 /// Opens the patient's shareable QR.
 ///
 /// `home.jsx` moved this out of Account details and onto the Profile tab, so
@@ -1047,7 +1039,6 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   // naturally; build() watches the provider, so they are always current.
   QrShareState get _qs => ref.read(qrShareControllerProvider);
   MintResult? get _mint => _qs.mint;
-  int get _ttlSeconds => _qs.ttlSeconds;
   bool get _minting => _qs.minting;
   bool get _revoking => _qs.revoking;
   bool get _rotating => _qs.rotating;
@@ -1422,10 +1413,10 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         ]),
       ),
       // `qrshare.jsx` adds a permanence note here ("this is your permanent code
-      // — it doesn't expire"). Deliberately not ported: the prototype withdrew
-      // expiring codes, this build still mints them, and a legacy token that
-      // reports `isPermanent` gets no reassurance rather than a promise the app
-      // cannot keep. Guarded by `test/qr_no_permanence_test.dart`.
+      // — it doesn't expire"). Deliberately not ported: the token has no expiry
+      // but can still be revoked or rotated, so the sheet gives no reassurance
+      // rather than a promise the app cannot keep. Guarded by
+      // `test/qr_no_permanence_test.dart`.
       const SizedBox(height: 16),
       if (expired)
         // Token lapsed → offer a fresh mint (returns to the affordance).
@@ -1514,20 +1505,14 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     ];
   }
 
-  /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
+  /// Pre-mint affordance: Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
         ..._identity(),
-        const SizedBox(height: 18),
-        Text(s.strings.emergency.eqr_valid_for.toUpperCase(),
-            style: Typo.meta(ar: ar)
-                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
-        const SizedBox(height: 8),
-        _ttlControl(),
         if (_error != null) ...[
           const SizedBox(height: 14),
           _errorBox(_error!),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _minting
             ? _busyButton(primary: true)
             : PButton(s.strings.emergency.eqr_generate,
@@ -1539,37 +1524,6 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                 ar: ar,
                 onTap: _mintToken),
       ];
-
-  /// Segmented TTL selector (mirrors the prototype's `.segmented` control).
-  Widget _ttlControl() => Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-            color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
-        child: Row(
-          spacing: 6,
-          children: _emergencyTtlOptions.map((opt) => Expanded(child: _ttlSeg(opt))).toList(),
-        ),
-      );
-
-  Widget _ttlSeg(({String key, int seconds}) opt) {
-    final active = _ttlSeconds == opt.seconds;
-    return GestureDetector(
-      onTap: () => ref.read(qrShareControllerProvider.notifier).setTtl(opt.seconds),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: Motion.base,
-        curve: Motion.easeOut,
-        height: 42,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-            color: active ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(7),
-            boxShadow: active ? T.shadowXs : null),
-        child: Text(s.t(opt.key),
-            style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: active ? s.accent.d : T.fg3)),
-      ),
-    );
-  }
 
   /// Disabled/empty state — signed out or no health data (never crashes).
   List<Widget> _disabledState({required bool signedOut}) => [

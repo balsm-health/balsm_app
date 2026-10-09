@@ -4,10 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// The shareable QR must never tell a patient their health code is permanent.
 ///
-/// It is the FR-017 emergency QR: it mints against a chosen TTL and can be
-/// revoked. A "does not expire" badge — or an ∞ in the TTL picker — is a claim
-/// about their own health data that the app cannot keep, which is also why
-/// `qrshare.jsx`'s permanence note was never ported.
+/// The token itself has no expiry, but it can be revoked or rotated. A "does
+/// not expire" badge is a claim about their own health data that the app
+/// cannot keep, which is also why `qrshare.jsx`'s permanence note was never
+/// ported.
 void main() {
   String bundle(String name) => File('lib/balsm_app/i18n/$name').readAsStringSync();
 
@@ -36,14 +36,13 @@ void main() {
     expect(s, isNot(contains("balsm.health/@\$handle")), reason: 'the URL belongs to the link row');
   });
 
-  test('every offered TTL is bounded', () {
+  test('the sheet offers no TTL picker', () {
     final s = File('lib/balsm_app/screens/personal_details.dart').readAsStringSync();
-    final block = RegExp(r'_emergencyTtlOptions = <[^>]*>\[(.*?)\];', dotAll: true).firstMatch(s);
-    expect(block, isNotNull, reason: 'the TTL option list moved');
-    final seconds = RegExp(r'seconds: (\d+)').allMatches(block!.group(1)!).map((m) => int.parse(m.group(1)!));
-    expect(seconds, isNotEmpty);
-    // 0 is the sentinel the mint API reads as "never expires".
-    expect(seconds, everyElement(greaterThan(0)), reason: 'an unbounded TTL is offered again');
+    // The token is minted permanent and offline-first; a bounded TTL needs
+    // the server at mint time, which is what made Generate fail offline.
+    expect(s, isNot(contains('_emergencyTtlOptions')), reason: 'the TTL picker came back');
+    final c = File('lib/balsm_app/qr/qr_share_controller.dart').readAsStringSync();
+    expect(c, contains('call(ttlSeconds: kPermanentQrTtlSeconds)'), reason: 'the sheet mints a server-bound TTL again');
   });
 
   test('the screen renders no permanence note, however it is worded', () {
