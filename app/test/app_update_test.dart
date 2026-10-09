@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:app/balsm_app/app_state.dart';
@@ -259,7 +260,7 @@ void main() {
     });
   });
 
-  test('every brand with a bundled manifest ships a valid one that blocks nobody', () {
+  test('every brand with a bundled manifest ships a valid one that locks nobody out', () {
     final files = Directory('web/version').listSync().whereType<File>().toList();
     expect(files.map((f) => f.uri.pathSegments.last), contains('balsm.json'));
     for (final f in files) {
@@ -272,15 +273,23 @@ void main() {
 }
 
 void _checkBundled(String m, String brand) {
-  AppUpdateInfo eval(String installed, {required String platform, required String m}) =>
+  AppUpdateInfo eval(String installed, String platform) =>
       evaluateUpdate(installed: installed, manifest: m, platform: platform);
-  {
-    for (final p in ['ios', 'android', 'macos']) {
-      expect(eval('0.1.0', platform: p, m: m).status, UpdateStatus.none, reason: '$brand/$p');
-      // An older build gets an offer with notes, proving the file parses.
-      final old = eval('0.0.9', platform: p, m: m);
-      expect(old.status, isNot(UpdateStatus.none), reason: '$brand/$p');
-      expect(old.url, startsWith('https://'));
-    }
+  final listed = ((jsonDecode(m) as Map<String, dynamic>)['versions'] as Map<String, dynamic>).keys.toList()
+    ..sort((a, b) => compareVersions(a, b)!);
+  // The version this checkout builds (`version: 0.1.0+1` in pubspec.yaml).
+  final building =
+      RegExp(r'^version:\s*([0-9.]+)', multiLine: true).firstMatch(File('pubspec.yaml').readAsStringSync())!.group(1)!;
+
+  for (final p in ['ios', 'android', 'macos']) {
+    // The newest listed release owes nothing.
+    expect(eval(listed.last, p).status, UpdateStatus.none, reason: '$brand/$p');
+    // The build in this checkout may be offered an update, never locked out:
+    // forcing it would block every tester and every fresh install.
+    expect(eval(building, p).status, isNot(UpdateStatus.required), reason: '$brand/$p forces $building');
+    // An older build gets an offer with a usable link, proving the file parses.
+    final old = eval('0.0.1', p);
+    expect(old.status, isNot(UpdateStatus.none), reason: '$brand/$p');
+    expect(old.url, startsWith('https://'));
   }
 }

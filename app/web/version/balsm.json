@@ -6,16 +6,83 @@
   },
   "min": {},
   "versions": {
+    "0.2.0": {
+      "force": false,
+      "platforms": [
+        "ios",
+        "android",
+        "macos"
+      ],
+      "date": "2026-10-10",
+      "notes": {
+        "en": [
+          {
+            "icon": "refresh-cw",
+            "title": "Update prompts",
+            "body": "Balsm now tells you when a newer version is ready, with what changed."
+          },
+          {
+            "icon": "users",
+            "title": "Your care team, your choice",
+            "body": "Choose whether your care team syncs to Balsm Cloud, in <b>Storage &amp; sync</b>."
+          },
+          {
+            "icon": "cloud",
+            "title": "Clearer storage screens",
+            "body": "iCloud, Google Drive and Balsm Cloud are shown with their own marks."
+          },
+          {
+            "icon": "wrench",
+            "title": "Fixes and polish",
+            "body": "Your profile QR can be generated without a connection."
+          }
+        ],
+        "ar": [
+          {
+            "icon": "refresh-cw",
+            "title": "تنبيهات التحديث",
+            "body": "يخبرك بلسم الآن عند توفر نسخة أحدث، مع ما تغيّر فيها."
+          },
+          {
+            "icon": "users",
+            "title": "فريق رعايتك، والقرار لك",
+            "body": "اختر هل يُزامَن فريق رعايتك مع سحابة بلسم، من <b>التخزين والمزامنة</b>."
+          },
+          {
+            "icon": "cloud",
+            "title": "شاشات تخزين أوضح",
+            "body": "تظهر آي كلاود وجوجل درايف وسحابة بلسم بشعاراتها."
+          },
+          {
+            "icon": "wrench",
+            "title": "إصلاحات وتحسينات",
+            "body": "يمكن إنشاء رمز QR لملفك دون اتصال."
+          }
+        ]
+      }
+    },
     "0.1.0": {
       "force": false,
-      "platforms": ["ios", "android", "macos"],
+      "platforms": [
+        "ios",
+        "android",
+        "macos"
+      ],
       "date": "2026-10-09",
       "notes": {
         "en": [
-          { "icon": "sparkles", "title": "First release of Balsm", "body": "Your health record, kept on your own device." }
+          {
+            "icon": "sparkles",
+            "title": "First release of Balsm",
+            "body": "Your health record, kept on your own device."
+          }
         ],
         "ar": [
-          { "icon": "sparkles", "title": "الإصدار الأول من بلسم", "body": "سجلّك الصحي، محفوظ على جهازك أنت." }
+          {
+            "icon": "sparkles",
+            "title": "الإصدار الأول من بلسم",
+            "body": "سجلّك الصحي، محفوظ على جهازك أنت."
+          }
         ]
       }
     }
