@@ -102,12 +102,28 @@ class SentryFeedbackReporter implements FeedbackReporter {
   /// Sentry requires a message; a rating-only submission still says so.
   static const ratingOnly = '(rating only)';
 
+  /// The Sentry payload for [feedback]. [userId] is the opaque id telemetry
+  /// already knows the patient by (null for a device-only or signed-out
+  /// account); it goes in `name` because that is the field Sentry's feedback
+  /// list shows — without it every entry reads "Anonymous User". Never a real
+  /// name, handle or email.
+  static SentryFeedback build(UserFeedback feedback, {String? userId}) {
+    final note = feedback.note?.trim();
+    return SentryFeedback(
+      message: note == null || note.isEmpty ? ratingOnly : note,
+      name: userId,
+    );
+  }
+
   @override
   Future<bool> send(UserFeedback feedback) async {
-    final note = feedback.note?.trim();
+    final payload = build(feedback);
     final id = await Sentry.captureFeedback(
-      SentryFeedback(message: note == null || note.isEmpty ? ratingOnly : note),
+      payload,
       withScope: (scope) {
+        // The scope's user is whatever [SentryAnalyticsLogger.setUser] put
+        // there, so the device-only rule is already applied.
+        payload.name = scope.user?.id;
         scope.setTag('feedback.rating', '${feedback.rating}');
         if (feedback.topics.isNotEmpty) scope.setTag('feedback.topics', feedback.topics.join(','));
       },
