@@ -50,6 +50,19 @@ extension StorageTargetAvailability on StorageTarget {
   bool get isAvailable => isLocal;
 }
 
+/// Whether this build mirrors the care team to Balsm Cloud at all.
+///
+/// Off: only a provider's text ever synced. Attached files and links stay on
+/// the device, so a second device showed a care team with its attachments
+/// missing. Until those can follow, nothing is sent or pulled, and the screens
+/// say "this device only" and offer no switch.
+///
+/// The patient's own choice (`careCloudSync`) and the queued changes are both
+/// kept, so turning this back on sends everything that was held back.
+///
+/// Not `const`, so the tests for the switch can still drive it.
+bool careCloudSyncAvailable = false;
+
 /// The kinds of data the storage screen accounts for, in the order
 /// `storage.jsx` lists them (`DATA_CATS`).
 ///

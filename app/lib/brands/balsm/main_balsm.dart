@@ -15,6 +15,7 @@ import 'package:app/balsm_app/auth/boot_session.dart';
 import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/prefs.dart';
+import 'package:app/balsm_app/storage_target.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/shell.dart';
 import 'package:app/balsm_app/vault/bind_file_store.dart';
@@ -221,9 +222,9 @@ Future<void> bootstrap({
           // Its OWN status, not the Drive backup's — see careTeamSyncStatusProvider.
           status: ref.watch(careTeamSyncStatusProvider.notifier),
           activeUser: () => ref.read(currentUserIdProvider),
-          // The patient's switch in Storage & sync; read per run so a change
-          // takes effect on the next trigger.
-          enabled: PatientAppPrefs(globalKV).careCloudSync,
+          // The build's gate, then the patient's switch in Storage & sync;
+          // read per run so a change takes effect on the next trigger.
+          enabled: () async => careCloudSyncAvailable && await PatientAppPrefs(globalKV).careCloudSync(),
           // customStatement does not notify drift streams, so merged rows stay
           // invisible without this.
           onChanged: () => ref.invalidate(careTeamProvider),

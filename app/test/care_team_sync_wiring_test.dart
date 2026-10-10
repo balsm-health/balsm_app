@@ -1,6 +1,7 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
+import 'package:app/balsm_app/storage_target.dart';
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
@@ -39,7 +40,9 @@ void main() {
     expect(() => container.read(careTeamSyncServiceProvider), throwsA(isA<UnimplementedError>()));
   });
 
-  testWidgets('pulling the care team list down triggers a sync', (tester) async {
+  /// Pumps the screen over a recording API, pulls the list down, and returns
+  /// how many times the network was reached.
+  Future<int> pullsAfterFling(WidgetTester tester) async {
     const profileId = HealthProfileId.value('hp-1');
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
@@ -71,6 +74,17 @@ void main() {
     await tester.fling(find.byType(ListView).first, const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
 
-    expect(api.pulls, greaterThan(0));
+    return api.pulls;
+  }
+
+  testWidgets('pulling the care team list down triggers a sync when the build mirrors it', (tester) async {
+    careCloudSyncAvailable = true;
+    addTearDown(() => careCloudSyncAvailable = false);
+    expect(await pullsAfterFling(tester), greaterThan(0));
+  });
+
+  testWidgets('with the mirror off, pulling the list down reaches no server', (tester) async {
+    expect(careCloudSyncAvailable, isFalse);
+    expect(await pullsAfterFling(tester), 0);
   });
 }

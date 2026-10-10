@@ -16,8 +16,9 @@ import 'package:material_ui/material_ui.dart';
 /// this build, so the screen must render the model without ever claiming a copy
 /// left the phone. These tests guard that gate — not the pixels.
 ///
-/// The care team is the exception: it is mirrored to Balsm Cloud, and the
-/// patient can switch that off.
+/// The care team is the exception: it can be mirrored to Balsm Cloud, and the
+/// patient can switch that off. The mirror is off in this build
+/// ([careCloudSyncAvailable]); the group below turns it on to keep it tested.
 void main() {
   Future<PatientAppState> pumpSheet(WidgetTester tester, {bool ar = false, bool deviceOnly = false}) async {
     final state = PatientAppState();
@@ -70,7 +71,38 @@ void main() {
     });
   });
 
-  group('care team cloud sync', () {
+  group('care team cloud sync, off in this build', () {
+    test('the build ships with the mirror off', () => expect(careCloudSyncAvailable, isFalse));
+
+    test('an online account that left the choice on still reports the device alone', () {
+      final s = PatientAppState();
+      expect(s.careCloudSync, isTrue, reason: 'the choice itself is untouched');
+      expect(careSyncsToCloud(s), isFalse);
+      expect(syncTargetsFor(DataCategory.care, s), isEmpty);
+      expect(
+          locSummary(s.strings.storage, syncTargetsFor(DataCategory.care, s)), s.strings.storage.store_device_only_sum);
+    });
+
+    testWidgets('the care editor offers no switch and makes no cloud claim', (tester) async {
+      final s = await pumpSheet(tester);
+      final st = s.strings.storage;
+
+      final care = find.text(DataCategory.care.label(st)).first;
+      await tester.ensureVisible(care);
+      await tester.pumpAndSettle();
+      await tester.tap(care);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PSwitch), findsNothing);
+      expect(find.text(st.store_care_cloud_on), findsNothing);
+      expect(find.text(st.store_care_cloud_note), findsNothing);
+    });
+  });
+
+  group('care team cloud sync, when the build mirrors it', () {
+    setUp(() => careCloudSyncAvailable = true);
+    tearDown(() => careCloudSyncAvailable = false);
+
     test('is on by default for an online account', () {
       final s = PatientAppState();
       expect(s.careCloudSync, isTrue);

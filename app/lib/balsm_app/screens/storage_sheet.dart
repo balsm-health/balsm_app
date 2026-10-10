@@ -34,7 +34,8 @@ import 'go_online_sheet.dart';
 /// The one category that does leave the phone is the care team: it is mirrored
 /// row by row to Balsm Cloud by `CareTeamSyncService`, outside the blob backup
 /// above. Its editor carries a real switch (on by default) — see
-/// [careSyncsToCloud].
+/// [careSyncsToCloud]. That mirror is switched off in this build
+/// ([careCloudSyncAvailable]), so today the care team is device-only too.
 void showStorageSync(BuildContext context) {
   final s = AppScope.of(context);
   showAppSheet<void>(
@@ -52,9 +53,11 @@ List<StorageTarget> syncTargetsFor(DataCategory category, PatientAppState s) => 
       if (category == DataCategory.care && careSyncsToCloud(s)) StorageTarget.balsmCloud,
     ];
 
-/// Whether the care team is being mirrored to Balsm Cloud: the account has a
-/// server side at all, and the patient has not switched the mirror off.
-bool careSyncsToCloud(PatientAppState s) => s.accountMode == AccountMode.online && s.careCloudSync;
+/// Whether the care team is being mirrored to Balsm Cloud: this build mirrors
+/// it, the account has a server side at all, and the patient has not switched
+/// the mirror off.
+bool careSyncsToCloud(PatientAppState s) =>
+    careCloudSyncAvailable && s.accountMode == AccountMode.online && s.careCloudSync;
 
 /// "This device only" / "Device + iCloud" / "Device + 2 clouds".
 String locSummary(StorageStrings s, List<StorageTarget> targets) => switch (targets.length) {
@@ -206,7 +209,7 @@ class CategorySyncBody extends ConsumerWidget {
     final targets = all ? const <StorageTarget>[] : syncTargetsFor(category!, s);
     // The care team is the one category with a working cloud, and only for an
     // account that has a server side.
-    final careSwitch = category == DataCategory.care && s.accountMode == AccountMode.online;
+    final careSwitch = careCloudSyncAvailable && category == DataCategory.care && s.accountMode == AccountMode.online;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (onBack != null)

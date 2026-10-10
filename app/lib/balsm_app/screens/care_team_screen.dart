@@ -217,12 +217,15 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
       floating: _CareFab(onTap: _import),
       // FR-509: sign-in and foreground are handled by the shell; this is the
       // explicit user refresh. The list itself keeps reading from drift, so the
-      // rows are already on screen — this only reconciles with the cloud.
-      onRefresh: () async {
-        final profileId = ref.read(currentProfileIdProvider);
-        if (profileId == null) return;
-        await ref.read(careTeamSyncServiceProvider).sync(profileId);
-      },
+      // rows are already on screen — this only reconciles with the cloud, so
+      // there is nothing to pull for while the mirror is off.
+      onRefresh: !careCloudSyncAvailable
+          ? null
+          : () async {
+              final profileId = ref.read(currentProfileIdProvider);
+              if (profileId == null) return;
+              await ref.read(careTeamSyncServiceProvider).sync(profileId);
+            },
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),
