@@ -391,3 +391,104 @@ jobs:
           generate_release_notes: true
           files: assets/**/*
           fail_on_unmatched_files: true
+
+  # app.balsm.health — the web app, the app-update manifests and the
+  # release-notes page (deploy/web/). Production tags only: alpha and beta
+  # build against staging and must not replace the live site.
+  #
+  # Runs after the GitHub Release, so the site moves with the release rather
+  # than ahead of a build that failed. Guarded on the Cloudflare token like
+  # the signing steps: absent, the job is skipped and the release still passes.
+  deploy-web:
+    name: Deploy web (app.balsm.health)
+    needs: [setup, github-release]
+    if: needs.setup.outputs.channel == 'production'
+    runs-on: ubuntu-latest
+    # A named environment, so required reviewers can be added in
+    # Repo → Settings → Environments without touching this file.
+    environment:
+      name: web-production
+      url: https://app.balsm.health
+    # Two production tags in a row: finish the first deploy, then run the next.
+    concurrency:
+      group: deploy-web-production
+      cancel-in-progress: false
+    env:
+      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - name: Skip notice
+        if: env.HAS_CLOUDFLARE != 'true'
+        run: echo "::notice::CLOUDFLARE_API_TOKEN is not set — web deploy skipped. See docs/ci-secrets.md."
+      - uses: actions/checkout@v4
+        if: env.HAS_CLOUDFLARE == 'true'
+      - uses: actions/setup-node@v4
+        if: env.HAS_CLOUDFLARE == 'true'
+        with:
+          node-version: '22'
+      # The Worker prints text from a file onto a page that shares an origin
+      # with the web app; its escaping and headers are tested, not assumed.
+      - name: Test the Worker
+        if: env.HAS_CLOUDFLARE == 'true'
+        run: node --test deploy/web/worker.test.mjs
+      - uses: subosito/flutter-action@v2
+        if: env.HAS_CLOUDFLARE == 'true'
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        if: env.HAS_CLOUDFLARE == 'true'
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Provision server list (env/shared.json)
+        if: env.HAS_CLOUDFLARE == 'true'
+        env:
+          SHARED_ENV_JSON: ${{ secrets.SHARED_ENV_JSON }}
+        run: |
+          if [ -n "$SHARED_ENV_JSON" ]; then
+            printf '%s' "$SHARED_ENV_JSON" > app/env/shared.json
+          else
+            cp app/env/shared.example.json app/env/shared.json
+          fi
+      # Its own build, not the `web` job's artifact: that one is built for
+      # https://balsm.health/apps/balsm (the CLI sets --base-href=/apps/balsm/
+      # for prod), and this site is served from the domain root. The later
+      # --base-href wins.
+      - name: Build web for the domain root
+        if: env.HAS_CLOUDFLARE == 'true'
+        run: |
+          ./bin/balsm web balsm prod \
+            --build-name=${{ needs.setup.outputs.build_name }} \
+            --build-number=${{ github.run_number }} \
+            --base-href=/
+      # A build with the wrong base path, or without the files iOS, Android and
+      # installed apps fetch, would take the site or deep links down. Refuse
+      # to deploy it.
+      - name: Check the build before it goes live
+        if: env.HAS_CLOUDFLARE == 'true'
+        run: |
+          set -e
+          cd app/build/web
+          grep -q '<base href="/">' index.html || { echo "::error::index.html is not built for the domain root"; exit 1; }
+          test -s main.dart.js
+          for f in .well-known/apple-app-site-association .well-known/assetlinks.json version/balsm.json; do
+            python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" || { echo "::error::$f is missing or not JSON"; exit 1; }
+          done
+      - name: Deploy
+        if: env.HAS_CLOUDFLARE == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx --yes wrangler@4 deploy -c deploy/web/wrangler.jsonc
+      # The deploy "succeeding" is not the site working. Ask it.
+      - name: Smoke-check the live site
+        if: env.HAS_CLOUDFLARE == 'true'
+        run: |
+          set -e
+          sleep 10
+          check() { # url, expected content-type prefix
+            got=$(curl -fsS -o /dev/null -w '%{content_type}' --retry 5 --retry-delay 5 "$1")
+            case "$got" in "$2"*) echo "ok   $1 ($got)";; *) echo "::error::$1 answered '$got', expected $2"; exit 1;; esac
+          }
+          check https://app.balsm.health/ text/html
+          check https://app.balsm.health/version/balsm.json application/json
+          check "https://app.balsm.health/whats-new?brand=balsm" text/html
+          curl -fsS --retry 5 --retry-delay 5 https://app.balsm.health/.well-known/apple-app-site-association | python3 -c "import json,sys; json.load(sys.stdin); print('ok   apple-app-site-association')"

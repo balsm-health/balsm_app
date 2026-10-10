@@ -25,6 +25,21 @@ work, but with placeholder servers, no Sentry DSN and no product analytics —
 both keys are empty in the template, which disables each SDK cleanly). CI builds
 always use the template.
 
+## Web deploy (app.balsm.health)
+
+| Secret | What | How to get |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | Lets `release.yml` deploy the `balsm-app-web` Worker | Cloudflare dashboard → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template, scoped to the Balsm account and the `balsm.health` zone |
+
+Optional. With it, a production tag (`v1.2.0`, no `-alpha`/`-beta`) builds the
+web app for the domain root and deploys it with the Worker and the update
+manifests, then smoke-checks the live site. Without it the `deploy-web` job
+is skipped and the release still passes; deploy by hand as in
+`docs/app-update.md`.
+
+The job runs in the `web-production` environment. Add required reviewers
+under **Repo → Settings → Environments** to make each deploy wait for approval.
+
 ## Android signing (release APK)
 
 | Secret | What |

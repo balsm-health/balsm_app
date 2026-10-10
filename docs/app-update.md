@@ -132,6 +132,24 @@ Protect the source branch: whoever can change these files can block every instal
 - `--dart-define=APP_VERSION_URL=…` points a build at a different manifest
   (a brand on its own domain, or a test file).
 
+## Deploying the Worker
+
+The Worker and the bundled manifests go out with the web app:
+
+- **On a production tag** (`v1.2.0`): `release.yml`'s `deploy-web` job builds
+  the web app, deploys, and checks the live site — if `CLOUDFLARE_API_TOKEN`
+  is set (`docs/ci-secrets.md`). Alpha and beta tags never deploy.
+- **By hand**, for a Worker change between releases:
+  ```bash
+  mkdir -p app/build/web/version && cp app/web/version/*.json app/build/web/version/
+  cd deploy/web && npx wrangler deploy -c wrangler.jsonc
+  ```
+  `app/build/web` must hold a build made for the domain root
+  (`balsm web balsm <env> --base-href=/`); the CLI's default prod build is
+  for `balsm.health/apps/balsm` and would break the site here.
+
+Nothing deploys on an ordinary push. Manifest edits do not need a deploy.
+
 ## Adding a brand
 
 1. Add `app/web/version/<brand>.json` (copy `balsm.json`). Nothing changes in
