@@ -164,6 +164,21 @@ int? compareVersions(String a, String b) {
 /// one — or when [installed] is below `min`. Otherwise a newer release is
 /// optional.
 ///
+/// **Rollback.** A release pulled from a store is marked `"withdrawn": true`
+/// (or a list of platforms, like `force`). A withdrawn release is not there:
+/// it is not offered, it forces nobody, and its notes are not shown. Someone
+/// who already installed it is left alone until a newer release is listed.
+///
+/// **Nobody is locked out without a way forward.** `min` only counts when the
+/// manifest lists a release for this platform that satisfies it; a floor
+/// above everything on offer (a typo, or the release that met it was
+/// withdrawn) is ignored rather than blocking the app with nothing to
+/// install.
+///
+/// **Compatibility.** Every shipped build reads this file for as long as it
+/// is installed, so the format only ever grows: unknown keys are ignored and
+/// a value of an unexpected type counts as absent. See `docs/app-update.md`.
+///
 /// Fails open on purpose: a manifest that is missing, malformed, or silent
 /// about this platform yields [AppUpdateInfo.none], and so does a build the
 /// manifest does not list. A typo in a JSON file, or a dev build, must never
@@ -192,16 +207,21 @@ AppUpdateInfo evaluateUpdate({
         final platforms = v['platforms'];
         // No list means every platform.
         if (platforms is List && platforms.isNotEmpty && !platforms.contains(platform)) continue;
-        newer.add((version: e.key, force: _isForced(v['force'], platform), note: _noteFor(e.key, v, lang)));
+        // Pulled from this platform's store: as if it were never listed.
+        if (_covers(v['withdrawn'], platform)) continue;
+        newer.add((version: e.key, force: _covers(v['force'], platform), note: _noteFor(e.key, v, lang)));
       }
     }
     newer.sort((a, b) => compareVersions(b.version, a.version)!);
 
+    // The floor only binds when something on offer clears it; otherwise it
+    // would block the app with nothing to install.
     final min = _platformValue(root['min'], platform);
     final belowMin = min == null ? null : compareVersions(installed, min);
-    final isBelowMin = belowMin != null && belowMin < 0;
+    final isBelowMin =
+        belowMin != null && belowMin < 0 && newer.any((r) => (compareVersions(r.version, min!) ?? -1) >= 0);
 
-    if (newer.isEmpty && !isBelowMin) return AppUpdateInfo.none;
+    if (newer.isEmpty) return AppUpdateInfo.none;
 
     final rawUrl = _platformValue(root['stores'], platform) ?? '';
     final shown = installed.trim().split(RegExp(r'[+\-]')).first;
@@ -210,7 +230,7 @@ AppUpdateInfo evaluateUpdate({
     return AppUpdateInfo(
       status: isBelowMin || newer.any((r) => r.force) ? UpdateStatus.required : UpdateStatus.available,
       installed: shown,
-      latest: newer.isEmpty ? min! : newer.first.version,
+      latest: newer.first.version,
       url: rawUrl.startsWith('https://') ? rawUrl : kAppDownloadUrl,
       notes: [
         for (final r in newer)
@@ -229,10 +249,11 @@ AppUpdateInfo evaluateUpdate({
   }
 }
 
-/// Whether a release's `force` covers [platform]: `true` forces it wherever
-/// the release exists; a list forces it only on the platforms it names.
-/// Anything else — absent, `false`, a typo — forces nothing.
-bool _isForced(Object? force, String platform) => force == true || (force is List && force.contains(platform));
+/// Whether a release's per-platform switch (`force`, `withdrawn`) covers
+/// [platform]: `true` covers every platform the release is on; a list covers
+/// only the platforms it names. Anything else — absent, `false`, a typo —
+/// covers nothing.
+bool _covers(Object? value, String platform) => value == true || (value is List && value.contains(platform));
 
 String? _platformValue(Object? map, String platform) {
   if (map is! Map<String, dynamic>) return null;

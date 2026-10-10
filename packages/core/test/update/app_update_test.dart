@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -106,11 +108,136 @@ void main() {
     });
 
     test('below the platform minimum is required even with nothing forced', () {
-      const m = '{"min": {"ios": "2.0.0"}, "versions": {}}';
+      const m = '{"min": {"ios": "2.0.0"}, "versions": {"2.0.0": {"platforms": ["ios"]}}}';
       final info = eval('1.9.0', m: m);
       expect(info.status, UpdateStatus.required);
       expect(info.latest, '2.0.0');
       expect(eval('1.9.0', m: m, platform: 'android').status, UpdateStatus.none);
+    });
+
+    group('nobody is locked out with nothing to install', () {
+      test('a minimum above everything on offer is ignored', () {
+        // A typo ("10.2.0" for "1.2.0"), or the floor was raised before the
+        // release reached the store.
+        expect(eval('1.9.0', m: '{"min": {"ios": "2.0.0"}, "versions": {}}').status, UpdateStatus.none);
+        const typo = '{"min": {"ios": "10.2.0"}, "versions": {"1.9.5": {}}}';
+        expect(eval('1.9.0', m: typo).status, UpdateStatus.available);
+      });
+
+      test('a minimum met only by another platform\'s release is ignored', () {
+        const m = '{"min": {"ios": "2.0.0"}, "versions": {"2.0.0": {"platforms": ["android"]}}}';
+        expect(eval('1.9.0', m: m).status, UpdateStatus.none);
+      });
+    });
+
+    group('rollback: a withdrawn release', () {
+      String m(Object withdrawn, {bool force = true, String min = ''}) => jsonEncode({
+            'min': {if (min.isNotEmpty) 'ios': min},
+            'versions': {
+              '1.0.0': {
+                'notes': {
+                  'en': ['one']
+                }
+              },
+              '1.1.0': {
+                'force': force,
+                'withdrawn': withdrawn,
+                'notes': {
+                  'en': ['pulled']
+                }
+              },
+            },
+          });
+
+      test('is not offered, forces nobody, and shows no notes', () {
+        final info = eval('1.0.0', m: m(true));
+        expect(info.status, UpdateStatus.none);
+        expect(info.notes, isEmpty);
+      });
+
+      test('can be withdrawn on one platform and stay forced on another', () {
+        expect(eval('1.0.0', m: m(['ios'])).status, UpdateStatus.none);
+        expect(eval('1.0.0', m: m(['ios']), platform: 'android').status, UpdateStatus.required);
+      });
+
+      test('does not hold up the minimum it used to satisfy', () {
+        expect(eval('1.0.0', m: m(true, min: '1.1.0')).status, UpdateStatus.none);
+      });
+
+      test('leaves whoever already installed it alone until a fix is listed', () {
+        expect(eval('1.1.0', m: m(true)).status, UpdateStatus.none);
+        final fixed = jsonEncode({
+          'versions': {
+            '1.1.0': {'withdrawn': true},
+            '1.1.1': {
+              'force': true,
+              'notes': {
+                'en': ['fix']
+              }
+            },
+          },
+        });
+        expect(eval('1.1.0', m: fixed).status, UpdateStatus.required);
+        // Those still on 1.0.0 skip straight to the fix.
+        expect(eval('1.0.0', m: fixed).latest, '1.1.1');
+        expect(eval('1.0.0', m: fixed).notes.map((n) => n.version), ['1.1.1']);
+      });
+
+      test('a release no longer in the file at all is treated the same', () {
+        expect(eval('1.0.0', m: '{"versions": {"1.0.0": {}}}').status, UpdateStatus.none);
+      });
+
+      test('anything but true or a list withdraws nothing', () {
+        for (final w in <Object>['ios', 1, false, <String>[]]) {
+          expect(eval('1.0.0', m: m(w)).status, UpdateStatus.required, reason: 'withdrawn: $w');
+        }
+      });
+    });
+
+    group('compatibility: a build keeps reading the file for as long as it is installed', () {
+      test('keys it does not know are ignored, at every level', () {
+        const future = '''
+        {
+          "schema": 9, "rollout": {"ios": 0.2}, "channels": ["beta"],
+          "stores": {"ios": "https://apps.apple.com/app/id1", "visionos": "https://example.com"},
+          "min": {"ios": "1.0.0", "visionos": "9.0.0"},
+          "versions": {
+            "1.5.0": {"force": false, "platforms": ["ios", "visionos"], "sha": "abc", "rollout": 0.5,
+                      "notes": {"en": [{"title": "T", "body": "B", "icon": "star", "link": "https://x"}], "fr": ["F"]}}
+          }
+        }''';
+        final info = eval('1.4.0', m: future);
+        expect(info.status, UpdateStatus.available);
+        expect(info.latest, '1.5.0');
+        expect(info.notes.single.items.single.title, 'T');
+      });
+
+      test('a known key with a value of a new type counts as absent, and never forces', () {
+        const future = '''
+        {
+          "stores": ["https://apps.apple.com"], "min": "2.0.0",
+          "versions": {
+            "1.5.0": {"force": {"ios": true}, "platforms": "ios", "date": 20261009, "notes": "<p>html</p>",
+                      "withdrawn": {"ios": true}}
+          }
+        }''';
+        final info = eval('1.4.0', m: future);
+        expect(info.status, UpdateStatus.available);
+        expect(info.url, kAppDownloadUrl);
+        expect(info.notes, isEmpty);
+      });
+
+      test('the first manifest ever shipped still reads the same', () {
+        const v1 = '{"stores": {"ios": "https://apps.apple.com/app/id1"}, "min": {}, '
+            '"versions": {"0.2.0": {"force": false, "platforms": ["ios"], "date": "2026-10-10T09:00:00Z", '
+            '"notes": {"en": [{"title": "Update prompts", "body": "b"}]}}, '
+            '"0.1.0": {"force": false, "platforms": ["ios"], "date": "2026-10-09", "notes": {"en": ["First"]}}}}';
+        final info = eval('0.1.0', m: v1);
+        expect(info.status, UpdateStatus.available);
+        expect(info.latest, '0.2.0');
+        expect(info.notes.single.items.single.body, 'b');
+        expect(info.notes.single.hasTime, isTrue);
+      });
     });
 
     test('notes cover every release the build is behind, newest first', () {

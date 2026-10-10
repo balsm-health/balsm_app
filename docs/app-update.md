@@ -77,7 +77,12 @@ the app treats as "nothing to do".
   still in review. It stays in force for everyone below it even after later,
   optional releases are added.
 - `min` — optional per-platform floor. Anything below it is forced, whatever
-  the release entries say. Use it to retire old builds in bulk.
+  the release entries say. Use it to retire old builds in bulk. It only binds
+  when the file lists a release for that platform that satisfies it — a floor
+  above everything on offer is ignored, so a typo cannot lock everyone out
+  with nothing to install.
+- `withdrawn` — this release was pulled. `true`, or a list of platforms like
+  `force`. See [Rolling back](#rolling-back).
 - `stores` — where "Update" goes. Must be `https://`.
 - `date` — when the release went out, shown beside "What's new". Optional.
   A day (`2026-10-09`) or a date and time (`2026-10-09T14:30:00Z`,
@@ -131,12 +136,59 @@ Stores rarely approve on the same day. Either list a platform in `platforms`
 only once its store has the build, or list both and force just the one that
 is ready: `"force": ["ios"]` now, `"force": true` once Android is out too.
 
+Someone several versions behind is forced if **any** release between theirs
+and the newest is forced on their platform — a later optional release does
+not cancel it.
+
 Set `force` only when older builds are broken or unsafe. A forced
 update locks the patient out of the whole app — their records and emergency
 information included — until they update. Never force a version that is not
 yet downloadable on that platform; list only the platforms that have it.
 
 Protect the source branch: whoever can change these files can block every installed app.
+
+## Rolling back
+
+A store build cannot be un-installed from someone's phone, so "rollback"
+means: stop sending people to a bad release, and lift any block it caused.
+
+| Situation | Edit | Effect |
+|---|---|---|
+| A release is broken, the store still has the previous one | `"withdrawn": true` on it (or `["ios"]`) | Nobody is offered it or forced to it; its notes disappear. People who already installed it see nothing. |
+| A forced release was a mistake | Set its `force` to `false`, or withdraw it | The block lifts on the next check. |
+| `min` was raised too far | Lower or remove it | Same. |
+| The whole edit was wrong | `git revert` the commit | The previous file is live again. |
+| People on the bad release need the fix | List the fix as a **new** version, forced if needed | They are taken to it; people below skip the bad one. |
+
+Keep a withdrawn entry in the file rather than deleting it: it records what
+happened, and deleting it has the same effect on the apps anyway.
+
+Always fix forward with a new version number. Re-using a withdrawn number
+does not reach people who installed or skipped the first build with it.
+
+How fast it lands: the Worker and its cache hold a manifest for up to five
+minutes each, and an app re-reads it on launch and on every return to the
+foreground. A blocked phone that is offline stays blocked until it is online
+once — the block is held from its last good copy on purpose.
+
+## Compatibility
+
+Every build ever shipped keeps reading this file, so the format only grows.
+
+- **Adding** a key, a platform, a language or a note field is always safe:
+  every build ignores what it does not know.
+- **Never** rename or remove a key, or change the type of its value. A build
+  treats a value of an unexpected type as absent — so `force` written in a
+  new shape forces nobody on old builds, silently.
+- A change that cannot be made by adding goes in a **new file**
+  (`/version/<brand>.v2.json`) read by new builds, while the old file keeps
+  being maintained for the builds that read it — until `min` in the old file
+  has retired them.
+- The same holds for `/whats-new` query parameters: shipped builds link to it.
+
+`packages/core/test/update/app_update_test.dart` pins this: unknown keys,
+values of new types, and the first manifest ever served must keep reading the
+same.
 
 ## Behaviour worth knowing
 

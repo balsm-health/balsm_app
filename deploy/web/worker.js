@@ -161,7 +161,7 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-/** Releases for `platform` newer than `from` (all of them without `from`), newest first. */
+/** Releases for `platform` newer than `from` (all of them without `from`), newest first; withdrawn ones left out. */
 export function releasesFor(manifest, { from, platform }) {
   const versions = manifest && typeof manifest.versions === 'object' && manifest.versions ? manifest.versions : {};
   const out = [];
@@ -170,6 +170,10 @@ export function releasesFor(manifest, { from, platform }) {
     if (from && compareVersions(from, version) >= 0) continue;
     const platforms = release.platforms;
     if (platform && Array.isArray(platforms) && platforms.length && !platforms.includes(platform)) continue;
+    // Pulled from the store: not listed. With no platform asked for, a release
+    // withdrawn on only some of its platforms is still shown.
+    const withdrawn = release.withdrawn;
+    if (withdrawn === true || (platform && Array.isArray(withdrawn) && withdrawn.includes(platform))) continue;
     out.push({ version, release });
   }
   return out.sort((a, b) => compareVersions(b.version, a.version));

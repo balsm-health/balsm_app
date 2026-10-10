@@ -6,53 +6,6 @@
   },
   "min": {},
   "versions": {
-    "0.2.0": {
-      "force": false,
-      "platforms": [
-        "ios",
-        "android",
-        "macos"
-      ],
-      "date": "2026-10-10T09:00:00Z",
-      "notes": {
-        "en": [
-          {
-            "title": "Update prompts",
-            "body": "Balsm now tells you when a newer version is ready, with what changed."
-          },
-          {
-            "title": "Your care team, your choice",
-            "body": "Choose whether your care team syncs to Balsm Cloud, in Storage & sync."
-          },
-          {
-            "title": "Clearer storage screens",
-            "body": "iCloud, Google Drive and Balsm Cloud are shown with their own marks."
-          },
-          {
-            "title": "Fixes and polish",
-            "body": "Your profile QR can be generated without a connection."
-          }
-        ],
-        "ar": [
-          {
-            "title": "تنبيهات التحديث",
-            "body": "يخبرك بلسم الآن عند توفر نسخة أحدث، مع ما تغيّر فيها."
-          },
-          {
-            "title": "فريق رعايتك، والقرار لك",
-            "body": "اختر هل يُزامَن فريق رعايتك مع سحابة بلسم، من التخزين والمزامنة."
-          },
-          {
-            "title": "شاشات تخزين أوضح",
-            "body": "تظهر آي كلاود وجوجل درايف وسحابة بلسم بشعاراتها."
-          },
-          {
-            "title": "إصلاحات وتحسينات",
-            "body": "يمكن إنشاء رمز QR لملفك دون اتصال."
-          }
-        ]
-      }
-    },
     "0.1.0": {
       "force": false,
       "platforms": [

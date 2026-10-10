@@ -47,6 +47,9 @@ const manifest = { versions: {
 ok('releases newer than from', releasesFor(manifest, { from: '1.2.0', platform: 'ios' }).map(r => r.version).join() === '1.4.0,1.3.0');
 ok('platform filter', releasesFor(manifest, { from: '1.2.0', platform: 'android' }).map(r => r.version).join() === '1.4.0');
 ok('no from = all', releasesFor(manifest, {}).map(r => r.version).join() === '1.4.0,1.3.0,1.2.0');
+const pulled = { versions: { '1.0.0': {}, '1.1.0': { withdrawn: true }, '1.2.0': { withdrawn: ['ios'] }, '1.3.0': { withdrawn: 'ios' } } };
+ok('a withdrawn release is not listed', releasesFor(pulled, { platform: 'ios' }).map(r => r.version).join() === '1.3.0,1.0.0', releasesFor(pulled, { platform: 'ios' }).map(r => r.version).join());
+ok('withdrawn on one platform is still listed on the others', releasesFor(pulled, { platform: 'android' }).map(r => r.version).join() === '1.3.0,1.2.0,1.0.0' && releasesFor(pulled, {}).map(r => r.version).join() === '1.3.0,1.2.0,1.0.0');
 
 // routes
 const env = { VERSION_SOURCE_BASE: 'https://raw.example/version', ASSETS: { fetch: async (r) => new Response('asset:' + new URL(r.url).pathname, { status: new URL(r.url).pathname.startsWith('/version/') ? 404 : 200 }) } };

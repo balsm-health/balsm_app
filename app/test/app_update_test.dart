@@ -168,6 +168,36 @@ void main() {
       expect(find.text('app').hitTestable(), findsNothing);
     });
 
+    testWidgets('a forced update that is rolled back lets the app go again', (tester) async {
+      // The device remembers "required" from the last manifest; the release
+      // has since been withdrawn. First on launch, then while the block is up.
+      var live = forced;
+      final state = PatientAppState();
+      await tester.pumpWidget(AppScope(
+        state: state,
+        child: MaterialApp(
+          builder: (context, child) => UpdateGate(
+            brand: AppBrand.balsm,
+            lang: state.lang.value,
+            look: UpdateLook(
+                rtl: false, accent: state.accent, copy: copyFor(state, AppBrand.balsm), mark: const SizedBox()),
+            cached: (_) async => forced,
+            check: (_) async => live,
+            child: child!,
+          ),
+          home: const Scaffold(body: Center(child: Text('app'))),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byType(UpdateSheet), findsOne);
+
+      live = AppUpdateInfo.none;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.byType(UpdateSheet), findsNothing);
+      expect(find.text('app').hitTestable(), findsOne);
+    });
+
     testWidgets('with no notes the sheet still stands', (tester) async {
       await pump(tester, const AppUpdateInfo(status: UpdateStatus.available, installed: '1.0.0', latest: '1.1.0'));
       expect(find.text(copy.whatsNew.toUpperCase()), findsNothing);
