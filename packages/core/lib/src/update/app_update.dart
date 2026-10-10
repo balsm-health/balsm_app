@@ -15,21 +15,22 @@ const _kVersionUrlOverride = String.fromEnvironment('APP_VERSION_URL');
 
 /// Where a brand's app reads its release manifest.
 ///
-/// Every brand has its own file — `…/version/balsm.json`,
-/// `…/version/balsm_pro.json` — so a release, or a forced update, for one
-/// brand can never reach the other's installs.
+/// Every brand has its own file on its own host —
+/// `app.balsm.health/version/balsm.json`,
+/// `pro.balsm.health/version/balsm_pro.json` — so a release, or a forced
+/// update, for one brand can never reach the other's installs.
 ///
 /// Always our own domain: the URL is baked into every shipped build, so it
 /// must stay re-pointable. The Worker behind it (`deploy/web/worker.js`)
 /// serves the copy on GitHub and falls back to the one bundled with the web
 /// app — see `docs/app-update.md`.
 String appVersionUrl(AppBrand brand) =>
-    _kVersionUrlOverride.isNotEmpty ? _kVersionUrlOverride : 'https://app.balsm.health/version/${brand.name}.json';
+    _kVersionUrlOverride.isNotEmpty ? _kVersionUrlOverride : '${brand.webOrigin}/version/${brand.name}.json';
 
-/// The release-notes page the Worker builds from a brand's manifest — the
-/// sheet's "Full release notes" link. A manifest may name another with a
-/// top-level `"more"`.
-const kReleaseNotesUrl = 'https://app.balsm.health/whats-new';
+/// The release-notes page the Worker builds from a brand's manifest, on that
+/// brand's own host — the sheet's "Full release notes" link. A manifest may
+/// name another with a top-level `"more"`.
+String releaseNotesUrl(AppBrand brand) => '${brand.webOrigin}/whats-new';
 
 /// Where "Update" goes when the manifest names no store link.
 const kAppDownloadUrl = 'https://balsm.health/download';
@@ -205,7 +206,7 @@ AppUpdateInfo evaluateUpdate({
     final rawUrl = _platformValue(root['stores'], platform) ?? '';
     final shown = installed.trim().split(RegExp(r'[+\-]')).first;
     final more = root['more'];
-    final notesBase = more is String && more.startsWith('https://') ? more : kReleaseNotesUrl;
+    final notesBase = more is String && more.startsWith('https://') ? more : releaseNotesUrl(brand);
     return AppUpdateInfo(
       status: isBelowMin || newer.any((r) => r.force) ? UpdateStatus.required : UpdateStatus.available,
       installed: shown,

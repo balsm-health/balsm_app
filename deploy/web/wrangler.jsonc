@@ -23,6 +23,8 @@
     "run_worker_first": ["/version/*", "/whats-new"]
   },
   "vars": {
+    // Whose release notes /whats-new shows when the link names no brand.
+    "DEFAULT_BRAND": "balsm",
     // Folder holding the release manifests' source of truth (<brand>.json).
     // Empty serves the bundled copies only.
     //

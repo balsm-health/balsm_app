@@ -15,6 +15,19 @@ enum AppBrand {
   /// The product name as users read it ("Update Balsm Pro to continue").
   String get displayName => switch (this) { balsm => 'Balsm', balsm_pro => 'Balsm Pro' };
 
+  /// The host this brand's web app is served from. One host per brand, never a
+  /// path under a shared one: browsers isolate storage, sessions and service
+  /// workers by host, and two apps holding different people's health data
+  /// must not share them. Every brand's host has the same layout — the app at
+  /// `/`, `/t/{id}`, `/.well-known/*`, `/version/{brand}.json`, `/whats-new`.
+  ///
+  /// `app.balsm.health` cannot move: printed permanent QR codes and the
+  /// shipped deep-link configuration point at it.
+  String get webHost => switch (this) { balsm => 'app.balsm.health', balsm_pro => 'pro.balsm.health' };
+
+  /// `https://` + [webHost], no trailing slash.
+  String get webOrigin => 'https://$webHost';
+
   /// [displayName] in the UI language [lang] — the name is written in Arabic
   /// script inside Arabic sentences.
   String nameIn(String lang) => lang == 'ar' ? switch (this) { balsm => 'بلسم', balsm_pro => 'بلسم برو' } : displayName;

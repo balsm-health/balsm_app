@@ -5,14 +5,30 @@ Every installed app asks one URL what it should be running — its own brand's:
 | Brand | Manifest |
 |---|---|
 | Balsm | `https://app.balsm.health/version/balsm.json` |
-| Balsm Pro | `https://app.balsm.health/version/balsm_pro.json` |
+| Balsm Pro | `https://pro.balsm.health/version/balsm_pro.json` |
 
 ```
-installed app ──▶ app.balsm.health/version/<brand>.json   (Worker: deploy/web/worker.js)
+installed app ──▶ <brand host>/version/<brand>.json   (Worker: deploy/web/worker.js)
                         │
                         ├─▶ GitHub: balsm-health/balsm_app  feature/mvp  app/web/version/<brand>.json   ← edit this to release
                         └─▶ fallback: the copy bundled at the last web deploy
 ```
+
+## Web hosts
+
+Each brand's web app has a host of its own (`AppBrand.webHost`), never a path
+under a shared one — browsers isolate storage, sessions and service workers by
+host, and two apps holding different people's health data must not share them.
+
+| Brand | Host | Deploy config |
+|---|---|---|
+| Balsm | `app.balsm.health` | `deploy/web/wrangler.jsonc` |
+| Balsm Pro | `pro.balsm.health` | `deploy/web/wrangler.balsm_pro.jsonc` |
+
+Every host has the same layout, served by the same Worker: the app at `/`,
+`/t/{id}` public links, `/.well-known/*`, `/version/{brand}.json`,
+`/whats-new`. `app.balsm.health` cannot move — printed permanent QR codes and
+shipped deep links point at it.
 
 One file per brand, so a release — or a forced update — for one brand can
 never reach the other's installs. `<brand>` is the `AppBrand` name.
@@ -152,9 +168,12 @@ Nothing deploys on an ordinary push. Manifest edits do not need a deploy.
 
 ## Adding a brand
 
-1. Add `app/web/version/<brand>.json` (copy `balsm.json`). Nothing changes in
+1. Give it a host in `AppBrand.webHost` and a deploy config
+   (`deploy/web/wrangler.<brand>.jsonc`, copy the Pro one: its own Worker
+   name, route and `DEFAULT_BRAND`).
+2. Add `app/web/version/<brand>.json` (copy `balsm.json`). Nothing changes in
    the Worker: it serves any `<brand>.json` it finds.
-2. In the brand's app shell, mount `UpdateGate` in `MaterialApp.builder` with
+3. In the brand's app shell, mount `UpdateGate` in `MaterialApp.builder` with
    `brand: AppBrand.<brand>`, an `AppUpdatePrefs`, the app language, and an
    `UpdateLook` — its accent, its mark, and an `UpdateCopy` filled from its
    own strings (`AppBrand.nameIn(lang)` gives the product name). The patient

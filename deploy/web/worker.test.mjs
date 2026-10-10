@@ -71,6 +71,13 @@ ok('up to date', r.status === 200 && t.includes('You are on the latest version.'
 ok('unknown brand 404 page', r.status === 404 && t.includes('Release notes are not available.') && t.includes('Balsm Pro'));
 ({ r, t } = await get('/whats-new?brand=%3Cscript%3E&from=%3Cb%3E&lang=xx&platform=%22%3E'));
 ok('hostile params ignored', r.status === 200 && !t.includes('since version') && !t.includes('%3C') && !/<script/i.test(t) && t.includes('lang="en"'));
+{
+  const pro = await worker.fetch(new Request('https://pro.balsm.health/whats-new'), { ...env, DEFAULT_BRAND: 'balsm_pro' });
+  const body = await pro.text();
+  ok('a brand host shows its own brand by default', body.includes('Balsm Pro'), body.slice(0, 200));
+  const bad = await worker.fetch(new Request('https://app.balsm.health/whats-new'), { ...env, DEFAULT_BRAND: '../x' });
+  ok('a malformed default brand falls back to balsm', (await bad.text()).includes('What’s new in Balsm<'));
+}
 ({ r, t } = await get('/version/balsm.json'));
 ok('manifest route still json', r.status === 200 && JSON.parse(t).versions['1.4.0']);
 ({ r, t } = await get('/index.html'));

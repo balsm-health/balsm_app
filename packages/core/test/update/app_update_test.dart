@@ -237,7 +237,7 @@ void main() {
         lang: 'ar',
         brand: AppBrand.balsm_pro,
       ).notesUrl!);
-      expect('${uri.scheme}://${uri.host}${uri.path}', kReleaseNotesUrl);
+      expect('${uri.scheme}://${uri.host}${uri.path}', 'https://pro.balsm.health/whats-new');
       expect(uri.queryParameters, {'brand': 'balsm_pro', 'from': '1.2.0', 'platform': 'ios', 'lang': 'ar'});
     });
 
@@ -247,8 +247,8 @@ void main() {
       expect(custom.host, 'pro.balsm.health');
       expect(custom.queryParameters['x'], '1');
       expect(custom.queryParameters['from'], '1.0.0');
-      expect(eval('1.0.0', m: '$base"javascript:alert(1)"}').notesUrl, startsWith(kReleaseNotesUrl));
-      expect(eval('1.0.0', m: '${base}7}').notesUrl, startsWith(kReleaseNotesUrl));
+      expect(eval('1.0.0', m: '$base"javascript:alert(1)"}').notesUrl, startsWith(releaseNotesUrl(AppBrand.balsm)));
+      expect(eval('1.0.0', m: '${base}7}').notesUrl, startsWith(releaseNotesUrl(AppBrand.balsm)));
     });
 
     test('nothing to update, nothing to link', () {
@@ -259,8 +259,23 @@ void main() {
   group('per brand', () {
     test('every brand reads its own manifest', () {
       expect(appVersionUrl(AppBrand.balsm), 'https://app.balsm.health/version/balsm.json');
-      expect(appVersionUrl(AppBrand.balsm_pro), 'https://app.balsm.health/version/balsm_pro.json');
+      expect(appVersionUrl(AppBrand.balsm_pro), 'https://pro.balsm.health/version/balsm_pro.json');
       expect({for (final b in AppBrand.values) appVersionUrl(b)}.length, AppBrand.values.length);
+    });
+
+    test('every brand is served from a host of its own', () {
+      // Storage, sessions and service workers are isolated by host, not path.
+      expect({for (final b in AppBrand.values) b.webHost}.length, AppBrand.values.length);
+      for (final b in AppBrand.values) {
+        expect(b.webHost, endsWith('.balsm.health'), reason: b.name);
+        expect(b.webHost, isNot(contains('/')), reason: b.name);
+        expect(b.webOrigin, 'https://${b.webHost}');
+      }
+    });
+
+    test('the patient app host never moves', () {
+      // Printed permanent QR codes and shipped deep links point at it.
+      expect(AppBrand.balsm.webHost, 'app.balsm.health');
     });
 
     test('a brand is named in the language of the sentence around it', () {

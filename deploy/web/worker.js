@@ -13,7 +13,11 @@
 //                           from the website. ?brand=&from=&platform=&lang=
 //                           lists the releases newer than `from`.
 //
-// A new brand needs no change here: add its file.
+// One deployment per brand, each on its own host (app.balsm.health,
+// pro.balsm.health, …) from this same file — see wrangler.jsonc and
+// wrangler.balsm_pro.jsonc. DEFAULT_BRAND says whose notes /whats-new shows
+// when the link names none. A new brand needs no change here: add its
+// manifest and its wrangler config.
 //
 // The apps only ever know this domain. GitHub is an implementation detail
 // behind it: VERSION_SOURCE_BASE can be re-pointed, or emptied, without
@@ -56,7 +60,9 @@ export default {
     }
 
     const q = url.searchParams;
-    const brand = BRAND.test(q.get('brand') || '') ? q.get('brand') : 'balsm';
+    // Each brand's host answers for its own brand unless asked for another.
+    const fallback = BRAND.test(env.DEFAULT_BRAND || '') ? env.DEFAULT_BRAND : 'balsm';
+    const brand = BRAND.test(q.get('brand') || '') ? q.get('brand') : fallback;
     const lang = q.get('lang') === 'ar' ? 'ar' : 'en';
     const body = await loadManifest(brand, request, env);
     const page = renderNotes({
