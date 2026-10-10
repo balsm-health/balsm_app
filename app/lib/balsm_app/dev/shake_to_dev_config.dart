@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,6 +72,11 @@ class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
   @override
   void initState() {
     super.initState();
+    // A browser has no shake gesture, and asking sensors_plus for one throws
+    // an uncaught MissingPluginException (it sets the sampling period over a
+    // channel that does not exist on web). Dev Config stays reachable there
+    // from the desktop menu.
+    if (kIsWeb) return;
     _sub = userAccelerometerEventStream().listen(_onEvent, onError: (_) {});
   }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fluster/fluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -421,16 +422,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       // use without a connection. Stacked above recenter, same horizontal
       // rail, so the two never collide as the selected-card offset shifts
       // recenter up.
-      PositionedDirectional(
-        bottom: (_selectedId != null ? 220 : 20) + 56,
-        end: 14,
-        child: RoundBtn(
-            icon: LucideIcons.download,
-            semanticLabel: s.strings.common.a11y_download,
-            bg: Colors.white,
-            fg: T.fg2,
-            onTap: () => showMapPacksSheet(context)),
-      ),
+      // Offline map packs are files on the device; a browser has nowhere to
+      // keep them (see bootstrap), so the button is not offered there.
+      if (!kIsWeb)
+        PositionedDirectional(
+          bottom: (_selectedId != null ? 220 : 20) + 56,
+          end: 14,
+          child: RoundBtn(
+              icon: LucideIcons.download,
+              semanticLabel: s.strings.common.a11y_download,
+              bg: Colors.white,
+              fg: T.fg2,
+              onTap: () => showMapPacksSheet(context)),
+        ),
       if (_selectedId != null) _selectedCard(s),
     ]);
   }

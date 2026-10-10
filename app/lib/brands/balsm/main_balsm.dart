@@ -88,7 +88,12 @@ Future<void> bootstrap({
   // On-device encrypted PHI database (opened once, injected as a value).
   final db = await AppDatabase.open();
   // Map-pack downloads live here — see map_pack_download_controller.dart.
-  final mapPacksDir = await getApplicationSupportDirectory();
+  //
+  // Not on web: path_provider has no web implementation, so the call throws
+  // MissingPluginException — and, awaited here, that stopped the whole app
+  // from starting in a browser. There is no file system to download a pack
+  // into there anyway; the map's download button is hidden to match.
+  final mapPacksDir = kIsWeb ? null : await getApplicationSupportDirectory();
   final keychain = SecureStorageWrapper();
   // App-shell prefs load before the session: the session check below reads
   // them to tell a reinstall (prefs empty, keychain kept) from a normal start.
@@ -155,7 +160,7 @@ Future<void> bootstrap({
     cacheStoreProvider.overrideWithValue(DriftCacheStore(db)),
     // Map-pack download state — its own two tables, see `_mapPacksSchema`.
     mapPackDownloadStoreProvider.overrideWithValue(DriftMapPackDownloadStore(db)),
-    mapPackSupportDirProvider.overrideWithValue(mapPacksDir),
+    if (mapPacksDir != null) mapPackSupportDirProvider.overrideWithValue(mapPacksDir),
     // Reactive: reads the in-session holder (seeded from storage below), so
     // sign-in/out updates every PHI reader without an app restart.
     currentUserIdProvider.overrideWith((ref) => ref.watch(_sessionUserIdProvider)),
