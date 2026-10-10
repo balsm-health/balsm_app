@@ -52,7 +52,9 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   bool _busyGoogle = false;
   String? _error;
 
-  /// Google sign-in ships on Android, web and macOS only. iOS deliberately
+  /// Google sign-in ships on Android and macOS only. Web is off until the
+  /// Google Identity Services button is wired: google_sign_in's `signIn()` on
+  /// web returns no ID token, so the Balsm token exchange cannot run. iOS deliberately
   /// has NO third-party sign-in: offering one there triggers App Review
   /// guideline 4.8 (Sign in with Apple becomes mandatory), and the Apple
   /// provider stays off until team ownership is settled (account ids are
@@ -61,7 +63,7 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   bool get _googleAvailable {
     if (!FlavorConfig.current.socialSignInEnabled) return false;
     if (FlavorConfig.current.googleServerClientId.isEmpty) return false;
-    if (kIsWeb) return true;
+    if (kIsWeb) return false;
     return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.macOS;
   }
 

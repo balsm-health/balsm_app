@@ -34,6 +34,7 @@ class Strings_ar extends Strings {
   MapPacksStrings_ar get map_packs => MapPacksStrings_ar(this);
   OfflineStrings_ar get offline => OfflineStrings_ar(this);
   UpdateStrings_ar get update => UpdateStrings_ar(this);
+  WebStrings_ar get web => WebStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -83,6 +84,8 @@ class Strings_ar extends Strings {
         return offline;
       case 'update':
         return update;
+      case 'web':
+        return web;
       default:
         return super[key];
     }
@@ -3469,6 +3472,32 @@ class UpdateStrings_ar extends UpdateStrings {
         return upd_skip;
       case 'upd_full_notes':
         return upd_full_notes;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class WebStrings_ar extends WebStrings {
+  final Strings_ar _parent;
+  const WebStrings_ar(this._parent) : super(_parent);
+  String other_tab_t(String app) => "$app مفتوح في تبويب آخر";
+  String get other_tab_b =>
+      "حفاظًا على بياناتك، يمكن فتحه في تبويب واحد فقط. أغلق التبويب الآخر ثم حاول مرة أخرى.";
+  String get other_tab_retry => "حاول مرة أخرى";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'other_tab_t':
+        return other_tab_t;
+      case 'other_tab_b':
+        return other_tab_b;
+      case 'other_tab_retry':
+        return other_tab_retry;
       default:
         return super[key];
     }

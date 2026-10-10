@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/value_objects/health_profile_id.dart';
 import '../domain/value_objects/user_id.dart';
-// Conditional executor: native (dart:ffi) on device, deferred-throw on web.
-import 'database_connection_web.dart' if (dart.library.ffi) 'database_connection_io.dart';
+// Conditional executor: SQLCipher (dart:ffi) on device, encrypted WASM SQLite on web.
+import 'database_connection_io.dart' if (dart.library.js_interop) 'database_connection_web.dart';
 
 part 'app_database.g.dart';
 

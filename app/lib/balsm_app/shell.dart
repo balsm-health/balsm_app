@@ -38,6 +38,7 @@ import 'screens/add_prescription_sheet.dart';
 import 'screens/report_flow.dart';
 import 'widgets/account_switcher.dart';
 import 'widgets/balsm_mark.dart';
+import 'widgets/other_tab_screen.dart';
 import 'deep_link_handler.dart';
 import 'deep_links.dart';
 import 'dev/shake_to_dev_config.dart';
@@ -104,6 +105,10 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   bool _publicDelete = false;
   bool _publicDeleteCancel = false;
 
+  /// Web only: another tab owns the on-device database, so this one shows
+  /// [OtherTabScreen] instead of an app that cannot read or write anything.
+  bool _otherTab = false;
+
   @override
   void initState() {
     super.initState();
@@ -121,6 +126,12 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
           _publicDeleteCancel = true;
         default:
           break;
+      }
+      // The public pages never touch the database, so they stay usable.
+      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel) {
+        claimDatabaseTab().then((owned) {
+          if (!owned && mounted) setState(() => _otherTab = true);
+        });
       }
     }
     LogBuffer.instance.install();
@@ -355,7 +366,9 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
               // Shake anywhere → Dev Config (read-only in prod).
               child: RepaintBoundary(
                 key: _captureKey,
-                child: ShakeToDevConfig(navigatorKey: _navKey, child: _updateGate(state, child!)),
+                child: _otherTab
+                    ? OtherTabScreen(state: state)
+                    : ShakeToDevConfig(navigatorKey: _navKey, child: _updateGate(state, child!)),
               ),
             );
           },

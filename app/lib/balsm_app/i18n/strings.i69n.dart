@@ -30,6 +30,7 @@ class Strings implements i69n.I69nMessageBundle {
   MapPacksStrings get map_packs => MapPacksStrings(this);
   OfflineStrings get offline => OfflineStrings(this);
   UpdateStrings get update => UpdateStrings(this);
+  WebStrings get web => WebStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -79,6 +80,8 @@ class Strings implements i69n.I69nMessageBundle {
         return offline;
       case 'update':
         return update;
+      case 'web':
+        return web;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -3459,6 +3462,32 @@ class UpdateStrings implements i69n.I69nMessageBundle {
         return upd_skip;
       case 'upd_full_notes':
         return upd_full_notes;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class WebStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const WebStrings(this._parent);
+  String other_tab_t(String app) => "$app is open in another tab";
+  String get other_tab_b =>
+      "To keep your data safe, it can be open in one tab at a time. Close the other tab, then try again.";
+  String get other_tab_retry => "Try again";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'other_tab_t':
+        return other_tab_t;
+      case 'other_tab_b':
+        return other_tab_b;
+      case 'other_tab_retry':
+        return other_tab_retry;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

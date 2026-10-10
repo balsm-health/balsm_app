@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
@@ -1187,7 +1189,12 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     try {
       final bytes = await _captureQrPng();
       if (bytes == null) return;
-      await Gal.putImageBytes(bytes, name: 'balsm-qr');
+      if (kIsWeb) {
+        // No photo library in a browser: hand the image over as a download.
+        await FilePicker.platform.saveFile(fileName: 'balsm-qr.png', bytes: bytes);
+      } else {
+        await Gal.putImageBytes(bytes, name: 'balsm-qr');
+      }
       _showToast(s.strings.emergency.eqr_saved_toast);
     } on GalException {
       // Permission denied or storage failure — nothing PHI-safe to add.

@@ -45,6 +45,8 @@ export 'src/data_source/data_source_providers.dart';
 export 'src/data_source/module_preferences.dart';
 export 'src/data_source/file_store.dart';
 export 'src/data_source/impl/encrypted_file_store.dart';
+export 'src/data_source/impl/web_file_store_stub.dart'
+    if (dart.library.js_interop) 'src/data_source/impl/web_encrypted_file_store.dart' show createWebFileStore;
 export 'src/data_source/impl/shared_prefs_kv_data_source.dart';
 // TARGETED re-export — only the two transport symbols that unmigrated
 // callers (geofence, disclosure, settings screen) and the PHI fuzz test
@@ -87,6 +89,9 @@ export 'src/telemetry/event_bus_forwarder.dart';
 export 'src/telemetry/analytics_route_observer.dart';
 export 'src/telemetry/providers.dart';
 export 'src/secure_storage/secure_storage_wrapper.dart';
+export 'src/web/tab_claim_stub.dart' if (dart.library.js_interop) 'src/web/tab_claim.dart';
+export 'src/secure_storage/web_secure_storage_stub.dart'
+    if (dart.library.js_interop) 'src/secure_storage/web_secure_storage.dart';
 export 'src/notifications/permission_state.dart';
 export 'src/notifications/permission_change_event.dart';
 export 'src/config/flavor.dart';

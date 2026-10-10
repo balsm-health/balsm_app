@@ -1029,5 +1029,10 @@
     "upd_skip": "Skip this version",
     "upd_full_notes": "Full release notes"
   },
+  "web": {
+    "other_tab_t(String app)": "$app is open in another tab",
+    "other_tab_b": "To keep your data safe, it can be open in one tab at a time. Close the other tab, then try again.",
+    "other_tab_retry": "Try again"
+  },
   "_i69n_import": "package:core/core.dart"
 }

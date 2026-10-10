@@ -47,6 +47,9 @@ Future<void> bootstrap({
   Future<void> Function(ProviderContainer container)? onContainerReady,
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Web: swap in the secret store whose key the browser will not hand out,
+  // before anything reads a token or the database key.
+  installWebSecureStorage();
   FlavorConfig.initFromEnvironment();
 
   // Telemetry: crash reporting + user-action analytics via the AnalyticsLogger
