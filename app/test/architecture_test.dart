@@ -128,6 +128,8 @@ void main() {
       '/packages/core/lib/src/crash/sentry_init.dart',
       // Reads Sentry's own client state for the Dev Config diagnostics screen.
       '/packages/core/lib/src/dev/dev_diagnostics.dart',
+      // PostHog as a feature-flag source, behind FeatureFlagSource.
+      '/packages/core/lib/src/flags/posthog_flag_source.dart',
     ];
 
     test('no vendor SDK is imported outside its adapter', () {

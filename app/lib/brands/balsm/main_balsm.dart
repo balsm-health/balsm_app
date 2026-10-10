@@ -14,6 +14,7 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/auth/boot_session.dart';
 import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:app/balsm_app/routes.dart';
+import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/storage_target.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
@@ -89,6 +90,28 @@ Future<void> bootstrap({
   );
   await initPostHog(analyticsEnabled: analyticsConsent.enabled, campaign: campaign);
 
+  // Feature flags. Sources are asked in order and the first that knows a flag
+  // wins: PostHog (remote, consent-gated), then this build's FEATURE_FLAGS
+  // define. Swapping or adding a tool is a line here and nowhere else.
+  // load() restores what the last launch learned, so the first frame already
+  // has real values; the refresh runs behind it and never blocks start-up.
+  final flags = FeatureFlags(
+    flags: AppFlags.all,
+    sources: [
+      PostHogFlagSource(
+        allowed: () => (FlavorConfig.current.posthogApiKey ?? '').isNotEmpty && analyticsConsent.enabled,
+      ),
+      StaticFlagSource.fromEnvironment(),
+    ],
+    store: globalKV,
+    allowOverrides: FlavorConfig.current.serverSwitchingEnabled,
+  );
+  await flags.load();
+  FeatureFlags.current = flags;
+  unawaited(flags.refresh());
+  // Opting in or out of analytics changes what PostHog may be asked.
+  analyticsConsent.addListener(() => unawaited(flags.refresh()));
+
   // On-device encrypted PHI database (opened once, injected as a value).
   final db = await AppDatabase.open();
   // Map-pack downloads live here — see map_pack_download_controller.dart.
@@ -128,6 +151,7 @@ Future<void> bootstrap({
     pendingMerge: boot.pendingMerge,
     hasOfflinePassword: boot.hasOfflinePassword,
   );
+  state.attachFlags(flags);
   final fileStore = await createUserFileStore(
     activeUser: () => containerUserId,
     keychain: keychain,
@@ -136,6 +160,7 @@ Future<void> bootstrap({
   final container = ProviderContainer(overrides: [
     // The app-shell state: one instance, owned by Riverpod (see app_state).
     patientAppStateProvider.overrideWith((ref) => state),
+    featureFlagsProvider.overrideWithValue(flags),
     // Fan out telemetry to a list of providers: Sentry (crash/diagnostics) and
     // PostHog (product analytics, consent-gated) always, plus a console sink
     // (scrubbed) added only in debug builds, and the Dev Config log buffer in
@@ -222,9 +247,9 @@ Future<void> bootstrap({
           // Its OWN status, not the Drive backup's — see careTeamSyncStatusProvider.
           status: ref.watch(careTeamSyncStatusProvider.notifier),
           activeUser: () => ref.read(currentUserIdProvider),
-          // The build's gate, then the patient's switch in Storage & sync;
-          // read per run so a change takes effect on the next trigger.
-          enabled: () async => careCloudSyncAvailable && await PatientAppPrefs(globalKV).careCloudSync(),
+          // The sync flags, then the patient's switch in Storage & sync; read
+          // per run so a change to either takes effect on the next trigger.
+          enabled: () async => cloudSyncOn(DataCategory.care, flags) && await PatientAppPrefs(globalKV).careCloudSync(),
           // customStatement does not notify drift streams, so merged rows stay
           // invisible without this.
           onChanged: () => ref.invalidate(careTeamProvider),

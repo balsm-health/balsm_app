@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/storage_sheet.dart';
 import 'package:app/balsm_app/storage_target.dart';
@@ -17,11 +18,15 @@ import 'package:material_ui/material_ui.dart';
 /// left the phone. These tests guard that gate — not the pixels.
 ///
 /// The care team is the exception: it can be mirrored to Balsm Cloud, and the
-/// patient can switch that off. The mirror is off in this build
-/// ([careCloudSyncAvailable]); the group below turns it on to keep it tested.
+/// patient can switch that off. The mirror sits behind feature flags that are
+/// off by default; the second group turns them on to keep the switch tested.
 void main() {
-  Future<PatientAppState> pumpSheet(WidgetTester tester, {bool ar = false, bool deviceOnly = false}) async {
-    final state = PatientAppState();
+  /// State with care-team sync flagged on, as a build that ships it would be.
+  PatientAppState synced() => PatientAppState()..attachFlags(_careSyncOn());
+
+  Future<PatientAppState> pumpSheet(WidgetTester tester,
+      {bool ar = false, bool deviceOnly = false, bool sync = false}) async {
+    final state = sync ? synced() : PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
     if (deviceOnly) state.setAccountMode(AccountMode.deviceOnly);
     tester.view.physicalSize = const Size(390, 900);
@@ -71,8 +76,32 @@ void main() {
     });
   });
 
-  group('care team cloud sync, off in this build', () {
-    test('the build ships with the mirror off', () => expect(careCloudSyncAvailable, isFalse));
+  group('care team cloud sync, flags at their defaults', () {
+    test('every sync flag ships off', () {
+      for (final f in AppFlags.all) {
+        expect(f.fallback, isFalse, reason: '${f.key} would sync on a device that never reached a flag source');
+      }
+    });
+
+    test('the type flag alone, or the master alone, syncs nothing', () async {
+      for (final only in [AppFlags.sync, AppFlags.syncFor(DataCategory.care)]) {
+        final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true);
+        await flags.setOverride(only, true);
+        expect(cloudSyncOn(DataCategory.care, flags), isFalse, reason: 'only ${only.key} is on');
+      }
+    });
+
+    test('a flag turned on for a type with no sync engine claims nothing', () async {
+      final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true);
+      for (final f in AppFlags.all) {
+        await flags.setOverride(f, true);
+      }
+      final s = PatientAppState()..attachFlags(flags);
+      for (final c in DataCategory.values.where((c) => c != DataCategory.care)) {
+        expect(cloudSyncOn(c, flags), isFalse, reason: c.id);
+        expect(syncTargetsFor(c, s), isEmpty, reason: '${c.id} claims a cloud target');
+      }
+    });
 
     test('an online account that left the choice on still reports the device alone', () {
       final s = PatientAppState();
@@ -99,30 +128,27 @@ void main() {
     });
   });
 
-  group('care team cloud sync, when the build mirrors it', () {
-    setUp(() => careCloudSyncAvailable = true);
-    tearDown(() => careCloudSyncAvailable = false);
-
+  group('care team cloud sync, flagged on', () {
     test('is on by default for an online account', () {
-      final s = PatientAppState();
+      final s = synced();
       expect(s.careCloudSync, isTrue);
       expect(syncTargetsFor(DataCategory.care, s), [StorageTarget.balsmCloud]);
     });
 
     test('switched off, the care team is on the device alone', () async {
-      final s = PatientAppState();
+      final s = synced();
       await s.setCareCloudSync(false);
       expect(syncTargetsFor(DataCategory.care, s), isEmpty);
     });
 
     test('a device-only account never claims the cloud', () {
-      final s = PatientAppState()..setAccountMode(AccountMode.deviceOnly);
+      final s = synced()..setAccountMode(AccountMode.deviceOnly);
       expect(s.careCloudSync, isTrue, reason: 'the choice itself is untouched');
       expect(syncTargetsFor(DataCategory.care, s), isEmpty);
     });
 
     testWidgets('the care editor carries a switch that turns it off', (tester) async {
-      final s = await pumpSheet(tester);
+      final s = await pumpSheet(tester, sync: true);
       final st = s.strings.storage;
 
       final care = find.text(DataCategory.care.label(st)).first;
@@ -280,3 +306,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 }
+
+/// Flags with care-team sync on: the master switch and the type's own.
+/// `setOverride` applies before its first await, so no pump is needed.
+FeatureFlags _careSyncOn() => FeatureFlags(flags: AppFlags.all, allowOverrides: true)
+  ..setOverride(AppFlags.sync, true)
+  ..setOverride(AppFlags.syncFor(DataCategory.care), true);

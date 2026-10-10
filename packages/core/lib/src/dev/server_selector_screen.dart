@@ -7,6 +7,7 @@ import '../config/flavor.dart';
 import '../config/server_preset.dart';
 import '../kit/_tokens.dart';
 import '../network/balsm_api_controller.dart';
+import '../flags/feature_flags.dart';
 import 'dev_config_store.dart';
 import 'dev_diagnostics.dart';
 import 'dev_log_buffer.dart';
@@ -306,6 +307,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         if (_addingCustom) _customForm() else _addCustomButton(),
         if (_pendingProd != null) _prodConfirm(_pendingProd!),
         _featureFlags(),
+        _appFlags(),
         _buildCard(cfg),
       ];
 
@@ -778,6 +780,80 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.fg1)),
                   const SizedBox(height: 1),
                   Text(f.desc, style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
+                ],
+              ),
+            ),
+            _DcToggle(on: on),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── App feature flags (the real ones: FeatureFlags) ────────────────────────
+  // Distinct from the dev toggles above, which only exist on this screen.
+  // These are the flags the shipped app reads; a tap forces one on this
+  // device, cycling on → off → back to whatever the sources say.
+  Widget _appFlags() {
+    final flags = FeatureFlags.current;
+    if (flags == null || flags.flags.isEmpty) return const SizedBox.shrink();
+    return ListenableBuilder(
+      listenable: flags,
+      builder: (context, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          _eyebrow('App feature flags'),
+          Container(
+            decoration: BoxDecoration(
+              color: BalsmColors.surface,
+              borderRadius: BorderRadius.circular(BalsmRadius.lg),
+              border: Border.all(color: BalsmColors.border),
+            ),
+            child: Column(
+              children: [
+                ...flags.flags.indexed.map((e) => _appFlagRow(flags, e.$2, first: e.$1 == 0)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _appFlagRow(FeatureFlags flags, FeatureFlag f, {required bool first}) {
+    final on = flags.isOn(f);
+    final forced = flags.overrideOf(f);
+    final from = switch (flags.originOf(f)) {
+      FlagOrigin.override => 'forced here',
+      FlagOrigin.source => 'from ${flags.sourceOf(f) ?? 'last launch'}',
+      FlagOrigin.fallback => 'default',
+    };
+    return GestureDetector(
+      onTap: () => flags.setOverride(
+          f,
+          switch (forced) {
+            null => true,
+            true => false,
+            false => null,
+          }),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        decoration: BoxDecoration(
+          color: forced != null ? BalsmColors.appAccent50 : Colors.transparent,
+          border: first ? null : const Border(top: BorderSide(color: BalsmColors.ink100)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(f.label,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.fg1)),
+                  const SizedBox(height: 1),
+                  Text('${f.key} · $from', style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
                 ],
               ),
             ),

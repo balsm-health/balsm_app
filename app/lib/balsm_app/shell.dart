@@ -158,7 +158,8 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
     if (lifecycle != AppLifecycleState.resumed) return;
-    _syncCareTeam();
+    // Flags first: a sync switched on or off remotely applies to this very run.
+    unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(_syncCareTeam));
   }
 
   /// Where the update check keeps its cache. Null when no storage is bound —
@@ -209,6 +210,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   /// costs the patient nothing visible — [CareTeamSyncService] records it on
   /// the sync-status provider and retries on the next trigger.
   void _syncCareTeam() {
+    if (!mounted) return;
     final profileId = ref.read(currentProfileIdProvider);
     if (profileId == null) return;
     unawaited(ref.read(careTeamSyncServiceProvider).sync(profileId));

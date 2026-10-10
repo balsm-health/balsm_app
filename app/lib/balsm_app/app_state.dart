@@ -43,6 +43,17 @@ class PatientAppState extends ChangeNotifier {
   /// Whether this account has server credentials (see core `AccountMode`).
   AccountMode accountMode = AccountMode.online;
 
+  /// Feature flags. Bare (every flag at its fallback) until [attachFlags].
+  FeatureFlags flags = FeatureFlags();
+
+  /// Binds the loaded flags, and rebuilds the app when one changes — a flag
+  /// flipped remotely takes effect on screen without a restart.
+  void attachFlags(FeatureFlags f) {
+    flags.removeListener(notifyListeners);
+    flags = f..addListener(notifyListeners);
+    notifyListeners();
+  }
+
   /// The patient's choice to mirror the care team to Balsm Cloud (on by
   /// default). Persisted in prefs, which is what the sync service reads.
   bool careCloudSync = true;

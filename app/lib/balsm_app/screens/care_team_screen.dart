@@ -20,6 +20,7 @@ import '../routes.dart';
 import '../tokens.dart';
 import 'care_import_sheet.dart';
 import 'profile_subscreens.dart';
+import '../flags.dart';
 import '../storage_target.dart';
 import '../widgets/data_loc_pill.dart';
 
@@ -218,8 +219,8 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
       // FR-509: sign-in and foreground are handled by the shell; this is the
       // explicit user refresh. The list itself keeps reading from drift, so the
       // rows are already on screen — this only reconciles with the cloud, so
-      // there is nothing to pull for while the mirror is off.
-      onRefresh: !careCloudSyncAvailable
+      // there is nothing to pull for while the sync flags are off.
+      onRefresh: !cloudSyncOn(DataCategory.care, s.flags)
           ? null
           : () async {
               final profileId = ref.read(currentProfileIdProvider);

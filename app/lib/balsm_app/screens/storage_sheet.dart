@@ -7,6 +7,7 @@ import 'package:profile/profile.dart';
 import '../app_state.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
+import '../flags.dart';
 import '../storage_target.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
@@ -34,8 +35,9 @@ import 'go_online_sheet.dart';
 /// The one category that does leave the phone is the care team: it is mirrored
 /// row by row to Balsm Cloud by `CareTeamSyncService`, outside the blob backup
 /// above. Its editor carries a real switch (on by default) — see
-/// [careSyncsToCloud]. That mirror is switched off in this build
-/// ([careCloudSyncAvailable]), so today the care team is device-only too.
+/// [careSyncsToCloud]. That mirror sits behind feature flags ([cloudSyncOn]),
+/// off by default, so until they are turned on the care team is device-only
+/// too.
 void showStorageSync(BuildContext context) {
   final s = AppScope.of(context);
   showAppSheet<void>(
@@ -53,11 +55,11 @@ List<StorageTarget> syncTargetsFor(DataCategory category, PatientAppState s) => 
       if (category == DataCategory.care && careSyncsToCloud(s)) StorageTarget.balsmCloud,
     ];
 
-/// Whether the care team is being mirrored to Balsm Cloud: this build mirrors
-/// it, the account has a server side at all, and the patient has not switched
+/// Whether the care team is being mirrored to Balsm Cloud: the sync flags are
+/// on, the account has a server side at all, and the patient has not switched
 /// the mirror off.
 bool careSyncsToCloud(PatientAppState s) =>
-    careCloudSyncAvailable && s.accountMode == AccountMode.online && s.careCloudSync;
+    cloudSyncOn(DataCategory.care, s.flags) && s.accountMode == AccountMode.online && s.careCloudSync;
 
 /// "This device only" / "Device + iCloud" / "Device + 2 clouds".
 String locSummary(StorageStrings s, List<StorageTarget> targets) => switch (targets.length) {
@@ -209,7 +211,8 @@ class CategorySyncBody extends ConsumerWidget {
     final targets = all ? const <StorageTarget>[] : syncTargetsFor(category!, s);
     // The care team is the one category with a working cloud, and only for an
     // account that has a server side.
-    final careSwitch = careCloudSyncAvailable && category == DataCategory.care && s.accountMode == AccountMode.online;
+    final careSwitch =
+        category == DataCategory.care && cloudSyncOn(DataCategory.care, s.flags) && s.accountMode == AccountMode.online;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (onBack != null)
