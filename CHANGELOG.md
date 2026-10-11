@@ -55,6 +55,9 @@ First release of the Balsm patient app.
   that had moved from `packages/` to `modules/`, so both jobs stopped at
   their first step and the build jobs behind them were skipped. The list now
   matches the repo and covers every module.
+- CI's iOS job built the app and then failed to find it: it looked under
+  `build/ios/iphoneos`, but the build is an archive. The release workflow's
+  unsigned fallback had the same wrong path.
 - The release workflow wrote the Android keystore one folder away from where
   Gradle looks for it, so a signed build would not have found it.
 

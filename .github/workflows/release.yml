@@ -180,7 +180,7 @@ jobs:
             --build-name=${{ needs.setup.outputs.build_name }} \
             --build-number=${{ github.run_number }}
           mkdir -p dist
-          (cd app/build/ios/iphoneos && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-ios-unsigned.zip" Runner.app)
+          (cd app/build/ios/archive/Runner.xcarchive/Products/Applications && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-ios-unsigned.zip" Runner.app)
       - uses: actions/upload-artifact@v4
         with:
           name: ios-build

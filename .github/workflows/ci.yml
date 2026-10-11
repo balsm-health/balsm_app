@@ -185,7 +185,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ios-prod-app
-          path: app/build/ios/iphoneos/Runner.app
+          # `balsm ios` archives (flutter build ipa --no-codesign), so the app
+          # is inside the archive, not under build/ios/iphoneos.
+          path: app/build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app
           if-no-files-found: error
 
   coverage:
