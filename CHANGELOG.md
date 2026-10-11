@@ -27,6 +27,8 @@ First release of the Balsm patient app.
 - A "Beta" ribbon (Arabic: "إطلاق تجريبي") over every screen, behind the
   `beta_banner` flag.
 - iOS privacy manifest, and the export-compliance declaration.
+- Web: a home-screen icon for iOS and iPadOS, and the icons are declared
+  maskable so Android launchers can shape them.
 - Production builds are checked before they start and refuse an unsigned app
   bundle, a non-https Production server or a placeholder define.
 - Building the production app bundle also produces the same build as an APK,

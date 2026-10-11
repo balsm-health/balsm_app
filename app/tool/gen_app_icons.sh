@@ -161,6 +161,13 @@ mkdir -p web/icons
 square 192 web/icons/Icon-192.png
 square 512 web/icons/Icon-512.png
 square 32  web/favicon.png
+# iOS and iPadOS "Add to Home Screen" ignore the manifest and take this file,
+# at 180px. Without it the home-screen icon is a screenshot of the page.
+square 180 web/icons/apple-touch-icon.png
+# No separate maskable set: the 192 and 512 are already full-bleed opaque
+# squares with the mark inside the central 80% (see the round-mask arithmetic
+# above), which is what "maskable" asks for. manifest.json lists them twice,
+# once per purpose.
 
 # Store listing art, so the uploaded icon comes from the mark like every other
 # size instead of being exported by hand and drifting. App Store reuses the iOS
@@ -208,4 +215,4 @@ magick "$TMP/logo.png" -trim +repage -filter Lanczos -resize x380 "$TMP/logo-fit
 magick -size 1024x500 "xc:$BG" "$TMP/logo-fit.png" -gravity center -composite \
        -alpha remove -alpha off $PNG "$STORE/play-feature-graphic-1024x500.png"
 
-echo "regenerated iOS(15+2) Android(5+5+5+2) macOS(7) web(3) store(2+3) from $SRC"
+echo "regenerated iOS(15+2) Android(5+5+5+2) macOS(7) web(4) store(2+3) from $SRC"

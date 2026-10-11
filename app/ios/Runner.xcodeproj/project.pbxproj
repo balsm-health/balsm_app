@@ -17,8 +17,8 @@
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
-		B5A1F0022E9A000000A1F002 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B5A1F0012E9A000000A1F001 /* PrivacyInfo.xcprivacy */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		B5A1F0022E9A000000A1F002 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B5A1F0012E9A000000A1F001 /* PrivacyInfo.xcprivacy */; };
 		CC0A61E4CF4D061A052E0013 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1E4B9A992AF97AF8CB84594C /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
@@ -83,7 +83,6 @@
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		97C146FB1CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		B5A1F0012E9A000000A1F001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9A5BFF5FEEE8616DE8320F93 /* Pods-RunnerTests.debug-staging.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-staging.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-staging.xcconfig"; sourceTree = "<group>"; };
@@ -91,6 +90,7 @@
 		B4B82577D728B77AB63B4808 /* en */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		B4CC720C036A98A44B9B19DE /* Pods-Runner.release-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release-dev.xcconfig"; sourceTree = "<group>"; };
 		B4D0B24727C081D14E80B550 /* Pods-Runner.profile-balsm.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile-balsm.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile-balsm.xcconfig"; sourceTree = "<group>"; };
+		B5A1F0012E9A000000A1F001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BBD7B8F64540AACD68E2D65A /* Pods-Runner.debug-dev.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-dev.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-dev.xcconfig"; sourceTree = "<group>"; };
 		C18AD3333967A10F350B84E9 /* Pods-RunnerTests.debug-balsm.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-balsm.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-balsm.xcconfig"; sourceTree = "<group>"; };
 		C5B5FD9920EA76EA1F90D17B /* Pods-RunnerTests.debug-prod.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-prod.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-prod.xcconfig"; sourceTree = "<group>"; };
@@ -341,21 +341,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		B5A1F0032E9A000000A1F003 /* Strip unsupported languages */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Strip unsupported languages";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# The app is Arabic and English only. Libraries bring resource bundles\n# translated into dozens of languages; drop those so the app never shows a\n# screen (image cropper, sign-in sheet) in a language it does not support.\n# Frameworks are left alone: they are already signed at this point.\nAPP=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\n[ -d \"$APP\" ] || exit 0\nfind \"$APP\" -path \"$APP/Frameworks\" -prune -o -type d -name '*.lproj' -print | while read -r dir; do\n  case \"$(basename \"$dir\" .lproj)\" in\n    en|en[-_]*|ar|ar[-_]*|Base) ;;\n    *) rm -rf \"$dir\" ;;\n  esac\ndone\n";
-		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -430,6 +415,21 @@
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
+		};
+		B5A1F0032E9A000000A1F003 /* Strip unsupported languages */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Strip unsupported languages";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The app is Arabic and English only. Libraries bring resource bundles\n# translated into dozens of languages; drop those so the app never shows a\n# screen (image cropper, sign-in sheet) in a language it does not support.\n# Frameworks are left alone: they are already signed at this point.\nAPP=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}\"\n[ -d \"$APP\" ] || exit 0\nfind \"$APP\" -path \"$APP/Frameworks\" -prune -o -type d -name '*.lproj' -print | while read -r dir; do\n  case \"$(basename \"$dir\" .lproj)\" in\n    en|en[-_]*|ar|ar[-_]*|Base) ;;\n    *) rm -rf \"$dir\" ;;\n  esac\ndone\n";
 		};
 		F61B63F1D49CFFFF66F967A5 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
