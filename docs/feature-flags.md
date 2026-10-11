@@ -51,6 +51,12 @@ is turned back on.
 Care-team sync covers a provider's text only. Attached files and links stay on
 the device.
 
+## Other flags
+
+| Key | Default | Controls |
+|---|---|---|
+| `beta_banner` | on | The amber corner ribbon marking the release as a beta ("Beta" / "إطلاق تجريبي"). Turn it off when the app is declared stable. For store screenshots, build with `FEATURE_FLAGS=beta_banner=false`. |
+
 ## Turning a flag on
 
 - **Everyone, remotely:** create a boolean flag with the same key in PostHog

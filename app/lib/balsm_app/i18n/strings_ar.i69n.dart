@@ -1119,6 +1119,7 @@ class CommonStrings_ar extends CommonStrings {
   String get rel_grandparent => "الجد/الجدة";
   String get rel_other => "أخرى";
   String get offline_banner => "لا يوجد اتصال — نعرض بيانات محفوظة";
+  String get beta_banner => "إطلاق تجريبي";
   String get offline_stale_places => "قد تكون هذه الأماكن غير محدّثة";
   String get offline_sessions => "يحتاج سجل الدخول إلى اتصال";
   String get offline_write => "لا يوجد اتصال. هذا يحتاج إلى إنترنت.";
@@ -1299,6 +1300,8 @@ class CommonStrings_ar extends CommonStrings {
         return rel_other;
       case 'offline_banner':
         return offline_banner;
+      case 'beta_banner':
+        return beta_banner;
       case 'offline_stale_places':
         return offline_stale_places;
       case 'offline_sessions':

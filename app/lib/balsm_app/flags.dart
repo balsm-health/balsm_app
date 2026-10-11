@@ -35,7 +35,16 @@ abstract final class AppFlags {
 
   static FeatureFlag syncFor(DataCategory category) => _syncTypes[category]!;
 
-  static final all = <FeatureFlag>[sync, ..._syncTypes.values];
+  /// The "Beta" ribbon across the corner of every screen. On until the app is
+  /// declared stable, then switched off remotely — no release needed.
+  static const betaBanner = FeatureFlag(
+    'beta_banner',
+    fallback: true,
+    label: 'Beta ribbon',
+    description: 'Corner ribbon marking this release as a beta.',
+  );
+
+  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner];
 }
 
 extension DataCategorySync on DataCategory {

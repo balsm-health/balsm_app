@@ -379,6 +379,8 @@
     "rel_grandparent": "الجد/الجدة",
     "rel_other": "أخرى",
     "offline_banner": "لا يوجد اتصال — نعرض بيانات محفوظة",
+    // Corner ribbon over the whole app while the release is a beta.
+    "beta_banner": "إطلاق تجريبي",
     "offline_stale_places": "قد تكون هذه الأماكن غير محدّثة",
     "offline_sessions": "يحتاج سجل الدخول إلى اتصال",
     "offline_write": "لا يوجد اتصال. هذا يحتاج إلى إنترنت.",

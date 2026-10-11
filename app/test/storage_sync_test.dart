@@ -78,7 +78,8 @@ void main() {
 
   group('care team cloud sync, flags at their defaults', () {
     test('every sync flag ships off', () {
-      for (final f in AppFlags.all) {
+      final syncFlags = [AppFlags.sync, for (final c in DataCategory.values) AppFlags.syncFor(c)];
+      for (final f in syncFlags) {
         expect(f.fallback, isFalse, reason: '${f.key} would sync on a device that never reached a flag source');
       }
     });

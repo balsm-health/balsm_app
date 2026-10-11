@@ -18,6 +18,7 @@ import 'dev/log_buffer.dart';
 import 'assets.dart';
 import 'kit.dart';
 import 'offline_banner.dart';
+import 'widgets/beta_banner.dart';
 import 'responsive.dart';
 import 'tokens.dart';
 import 'screens/home_screen.dart';
@@ -366,11 +367,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                 textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3),
               ),
               // Shake anywhere → Dev Config (read-only in prod).
-              child: RepaintBoundary(
-                key: _captureKey,
-                child: _otherTab
-                    ? OtherTabScreen(state: state)
-                    : ShakeToDevConfig(navigatorKey: _navKey, child: _updateGate(state, child!)),
+              child: BetaBanner(
+                state: state,
+                child: RepaintBoundary(
+                  key: _captureKey,
+                  child: _otherTab
+                      ? OtherTabScreen(state: state)
+                      : ShakeToDevConfig(navigatorKey: _navKey, child: _updateGate(state, child!)),
+                ),
               ),
             );
           },

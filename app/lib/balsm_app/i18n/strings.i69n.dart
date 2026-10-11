@@ -1116,6 +1116,7 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get rel_grandparent => "Grandparent";
   String get rel_other => "Other";
   String get offline_banner => "You're offline — showing saved data";
+  String get beta_banner => "Beta";
   String get offline_stale_places => "These places may be out of date";
   String get offline_sessions => "Sign-in activity needs a connection";
   String get offline_write => "You're offline. This needs a connection.";
@@ -1296,6 +1297,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return rel_other;
       case 'offline_banner':
         return offline_banner;
+      case 'beta_banner':
+        return beta_banner;
       case 'offline_stale_places':
         return offline_stale_places;
       case 'offline_sessions':

@@ -379,6 +379,8 @@
     "rel_grandparent": "Grandparent",
     "rel_other": "Other",
     "offline_banner": "You're offline — showing saved data",
+    // Corner ribbon over the whole app while the release is a beta.
+    "beta_banner": "Beta",
     "offline_stale_places": "These places may be out of date",
     "offline_sessions": "Sign-in activity needs a connection",
     "offline_write": "You're offline. This needs a connection.",
