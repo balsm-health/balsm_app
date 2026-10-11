@@ -41,6 +41,8 @@ First release of the Balsm patient app.
 - Social sign-in is off in the env template, which had it on with placeholder
   Google client ids.
 - The iOS local-network prompt no longer mentions a development server.
+- The splash screen shows the mark alone; the caption under it is gone (a
+  screen reader still announces it).
 - The app is Arabic and English only, everywhere. The language picker no
   longer lists French, Urdu, Persian and Turkish as unselectable "beta" rows,
   and the store builds no longer carry the dozens of other languages that

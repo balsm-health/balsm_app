@@ -920,14 +920,13 @@ class _RailItem extends StatelessWidget {
 }
 
 /// Branded boot splash (`SplashScreen` in auth.jsx): mark wash
-/// backdrop, mark spinner, then fade over `--dur-slow`.
+/// backdrop and the mark spinner, with no text, then fade over `--dur-slow`.
 class _BootSplash extends StatelessWidget {
   const _BootSplash({required this.state, required this.visible});
   final PatientAppState state;
   final bool visible;
   @override
   Widget build(BuildContext context) {
-    final ar = state.rtl;
     return IgnorePointer(
       ignoring: !visible,
       child: AnimatedOpacity(
@@ -962,13 +961,14 @@ class _BootSplash extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const MarkSpinner(size: 96),
-              const SizedBox(height: 28),
-              Text(state.strings.boot.boot_preparing,
-                  textAlign: TextAlign.center,
-                  style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
-            ]),
+            // The mark alone, no caption. A screen reader still hears what is
+            // happening: the label that used to be drawn is now spoken.
+            child: Center(
+              child: Semantics(
+                label: state.strings.boot.boot_preparing,
+                child: const MarkSpinner(size: 96),
+              ),
+            ),
           ),
         ]),
       ),
