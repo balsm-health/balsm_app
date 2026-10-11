@@ -25,6 +25,48 @@ host, and two apps holding different people's health data must not share them.
 | Balsm | `app.balsm.health` | `deploy/web/wrangler.jsonc` |
 | Balsm Pro | `pro.balsm.health` | `deploy/web/wrangler.balsm_pro.jsonc` |
 
+### Other environments: the host suffix
+
+One setting names an environment's hosts: `HOST_SUFFIX` in
+`app/env/<brand>/<env>.json`. Every host is the production name with
+`-<suffix>` appended to its first label. No suffix means production.
+
+```json
+{ "APP": "balsm", "FLAVOR": "staging", "HOST_SUFFIX": "stg" }
+```
+
+| What | No suffix (production) | `stg` |
+|---|---|---|
+| Patient web app | `app.balsm.health` | `app-stg.balsm.health` |
+| Balsm Pro web app | `pro.balsm.health` | `pro-stg.balsm.health` |
+| Portal | `portal.balsm.health` | `portal-stg.balsm.health` |
+| API | `api.balsm.health` | `api-stg.balsm.health` |
+
+The website is the one exception — its production host has no label to append
+to, so staging is `stg.balsm.health`.
+
+What reads it:
+
+- **The app** (`envHost` in `packages/core/lib/src/config/env_hosts.dart`):
+  `AppBrand.webHost`, so the update manifest and release notes come from the
+  environment's own host, and the API host a staging or production build boots
+  against when `ENVS` in `app/env/shared.json` has no entry for it. An entry
+  there still wins.
+- **The web deploy** (`deploy/web/deploy.sh <env>`): builds that environment
+  and deploys it to a Worker and host carrying the suffix
+  (`balsm-app-web-stg` on `app-stg.balsm.health`), from a config generated out
+  of `wrangler.jsonc`. It refuses a non-production build that has no suffix,
+  which would otherwise land on the production host.
+- **The API** has the same setting in its staging pipeline (`HOST_SUFFIX` in
+  the API repo's `deploy-staging.yml`), from which it derives its own host and
+  the web origin it accepts browser calls from.
+
+A new environment is one new `app/env/<brand>/<env>.json` with its suffix; no
+host is written anywhere else.
+
+Installed apps do not open `app-stg.balsm.health` links: deep links are
+verified against `app.balsm.health` alone (`docs/deep-links.md`).
+
 Every host has the same layout, served by the same Worker: the app at `/`,
 `/t/{id}` public links, `/.well-known/*`, `/version/{brand}.json`,
 `/whats-new`. `app.balsm.health` cannot move — printed permanent QR codes and
@@ -213,7 +255,7 @@ The Worker and the bundled manifests go out with the web app:
 - **By hand**, for a Worker change between releases:
   ```bash
   mkdir -p app/build/web/version && cp app/web/version/*.json app/build/web/version/
-  cd deploy/web && npx wrangler deploy -c wrangler.jsonc
+  deploy/web/deploy.sh prod        # or: staging
   ```
   `app/build/web` must hold a build made for the domain root
   (`balsm web balsm <env> --base-href=/`); the CLI's default prod build is
