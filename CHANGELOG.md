@@ -49,6 +49,12 @@ First release of the Balsm patient app.
   bundled libraries brought with them, which the stores would have listed as
   supported.
 
+### Removed
+
+- Android no longer asks for the two exact-alarm permissions. Nothing in the
+  app schedules an alarm, and Google Play restricts one of them to alarm and
+  calendar apps.
+
 ### Fixed
 
 - The update manifest listed a 0.2.0 that was never built, so every install
