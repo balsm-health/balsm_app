@@ -29,6 +29,8 @@ First release of the Balsm patient app.
 - iOS privacy manifest, and the export-compliance declaration.
 - Production builds are checked before they start and refuse an unsigned app
   bundle, a non-https Production server or a placeholder define.
+- Building the production app bundle also produces the same build as an APK,
+  for installing on a phone directly.
 
 ### Changed
 

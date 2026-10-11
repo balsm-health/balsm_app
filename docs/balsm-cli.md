@@ -49,6 +49,7 @@ from a picker.
 | `--device=<id>` | skip the device picker |
 | `--obfuscate=on\|off` | hide Dart names in the binary; on by default for `staging` and `prod`, off for `dev`, never for web |
 | `--allow-insecure` | build `prod` even though a release check failed (see below) |
+| `--no-apk` | with `aab … prod`, skip the APK that is built alongside (see below) |
 
 Anything after `--` passes through to `flutter` untouched.
 
@@ -65,6 +66,26 @@ Anything after `--` passes through to `flutter` untouched.
   just built is findable without digging through `build/`.
 - **`install`** — pushes a previously collected artifact to a device:
   `balsm install balsm dev --artifact=ipa` (installable: `apk`, `ipa`).
+
+## A production bundle comes with an APK
+
+`balsm aab balsm prod` produces two files:
+
+```
+output/<brand>/android/<brand>-<version>-prod.aab   upload to Play
+output/<brand>/android/<brand>-<version>-prod.apk   install on a phone
+```
+
+An app bundle cannot be installed; it is what Play takes. The APK is the same
+build — same code, same flags, same signing key — for handing to a phone
+directly. `--no-apk` skips it.
+
+The APK is signed with the **upload** key. Play re-signs what it distributes
+with its own app-signing key, so a phone that installed the APK cannot later
+update to the Play version: Android refuses the mismatched signature, and the
+app has to be uninstalled first. Uninstalling deletes the health data, which
+lives only on the device and is not backed up. Use the APK for testers and
+demos, not for patients who will move to the store version.
 
 ## Obfuscated builds and their symbols
 

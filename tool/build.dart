@@ -20,6 +20,8 @@
 //                                             prod, off for dev and for web)
 //             --allow-insecure                build prod even though a
 //                                             release check failed
+//             --no-apk                        with `aab ... prod`, skip the
+//                                             APK that is built alongside
 //
 // Every build collects its artifact into
 //   output/<brand>/<platform>/<brand>-<version>-<env>[.<ext>]
@@ -175,7 +177,7 @@ Future<void> main(List<String> argv) async {
         '  env     : dev | staging | prod (default: dev)\n'
         '  artifact: ${_artifacts.keys.join(' | ')}\n'
         '  options : --artifact=<key> --export=${_exports.join('|')} '
-        '--servers=<name> --device=<id> --obfuscate=on|off --allow-insecure');
+        '--servers=<name> --device=<id> --obfuscate=on|off --allow-insecure --no-apk');
   }
 
   var action = args.removeAt(0);
@@ -263,6 +265,11 @@ Future<void> main(List<String> argv) async {
   // Release checks: things that make a production build unsafe to hand out
   // and that nothing else would catch before it reached a store.
   final allowInsecure = args.remove('--allow-insecure');
+  // A production app bundle is for Play only: a phone cannot install one. So
+  // every prod `aab` also produces the same build as an APK, to hand to a
+  // phone directly. Same code, same flags, same signing key.
+  final noApk = args.remove('--no-apk');
+  final alsoApk = artifactKey == 'aab' && env == 'prod' && !noApk;
   if (artifact != null && env == 'prod') {
     final problems = _releaseProblems(
       artifactKey: artifactKey,
@@ -353,11 +360,32 @@ Future<void> main(List<String> argv) async {
     mode: ProcessStartMode.inheritStdio,
     runInShell: true,
   );
-  final code = await proc.exitCode;
+  var code = await proc.exitCode;
   // run/test/integration produce no artifact to collect.
   if (code == 0 && artifact != null) {
     _collect(artifact, brandKey, env, appDir);
     if (obfuscate) _collectSymbols(artifact, brandKey, env, appDir, symbolsDir);
+  }
+
+  if (code == 0 && alsoApk) {
+    // The bundle's arguments with the sub-command swapped, so the two can
+    // never be built differently. Flutter reuses the compiled Dart from the
+    // bundle build, so this adds packaging time only, and the symbols already
+    // collected read this APK's crashes too.
+    final apk = _artifacts['apk']!;
+    final apkArgs = [
+      for (final a in flutterArgs) a == artifact!.build.single ? apk.build.single : a,
+    ];
+    stderr.writeln('\$ (cd app && flutter ${apkArgs.join(' ')})');
+    final apkProc = await Process.start(
+      flutter,
+      apkArgs,
+      workingDirectory: appDir,
+      mode: ProcessStartMode.inheritStdio,
+      runInShell: true,
+    );
+    code = await apkProc.exitCode;
+    if (code == 0) _collect(apk, brandKey, env, appDir);
   }
   exit(code);
 }
