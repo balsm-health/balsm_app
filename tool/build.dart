@@ -474,6 +474,18 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
     (artifactKey == 'aab' ? blockers : warnings).add(why);
   }
 
+  // A placeholder left in the iOS Info.plist reaches the store: App Store
+  // Connect rejected an upload over one in a URL scheme (error 90158).
+  if (platform == 'ios') {
+    final plist = File('$appDir/ios/Runner/Info.plist');
+    // Comments are dropped first: only a value that ships counts.
+    final shipped =
+        plist.existsSync() ? plist.readAsStringSync().replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '') : '';
+    if (shipped.contains('REPLACE_ME')) {
+      blockers.add('app/ios/Runner/Info.plist still contains a REPLACE_ME placeholder');
+    }
+  }
+
   if (platform != 'web' && !obfuscate) {
     warnings.add('not obfuscated (--obfuscate=off): Dart class and method names are readable in the binary');
   }

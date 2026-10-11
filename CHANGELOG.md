@@ -60,6 +60,15 @@ First release of the Balsm patient app.
 - CI's iOS job built the app and then failed to find it: it looked under
   `build/ios/iphoneos`, but the build is an archive. The release workflow's
   unsigned fallback had the same wrong path.
+- App Store Connect rejected the iOS upload: the Info.plist registered a
+  Google sign-in URL scheme that was still a `REPLACE_ME` placeholder. iOS
+  offers no Google sign-in, so the entry is gone, and a production iOS build
+  now refuses to start while such a placeholder is in the Info.plist.
+- App Store Connect also asked for two permission texts the Info.plist did
+  not have: for contacts (the care-team import uses the system contact
+  picker) and for "always" location (the app only asks while in use, but the
+  location library can ask for more). All iOS permission texts now have
+  Arabic versions.
 - The release workflow wrote the Android keystore one folder away from where
   Gradle looks for it, so a signed build would not have found it.
 

@@ -1,3 +1,12 @@
 /* App display name — home screen, Settings, notifications. */
 CFBundleDisplayName = "بلسم";
 CFBundleName = "بلسم";
+
+/* Permission prompts. Keep in step with the English text in Info.plist. */
+NSCameraUsageDescription = "يستخدم بلسم الكاميرا لتتمكن من تصوير وصفة طبية أو سجل صحي.";
+NSPhotoLibraryUsageDescription = "يستخدم بلسم مكتبة الصور لتتمكن من إرفاق وصفة طبية أو سجل صحي.";
+NSPhotoLibraryAddUsageDescription = "لا يحفظ بلسم صوراً في مكتبتك.";
+NSLocationWhenInUseUsageDescription = "يستخدم بلسم موقعك لعرض العيادات والصيدليات والمستشفيات القريبة منك.";
+NSLocationAlwaysAndWhenInUseUsageDescription = "يستخدم بلسم موقعك أثناء استخدامك للتطبيق فقط، لعرض العيادات والصيدليات والمستشفيات القريبة منك.";
+NSContactsUsageDescription = "يتيح لك بلسم اختيار طبيب أو صيدلية من جهات اتصالك لإضافتها إلى فريق رعايتك. لا تُستخدم إلا جهة الاتصال التي تختارها.";
+NSLocalNetworkUsageDescription = "يستخدم بلسم شبكتك المحلية فقط للوصول إلى خادم بلسم مُعدّ عليها.";

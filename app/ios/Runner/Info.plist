@@ -33,6 +33,14 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Balsm uses your location to show nearby clinics, pharmacies, and hospitals.</string>
+	<!-- The app only ever asks for location while it is in use. Apple requires
+	     this key as well because the location library can ask for "always";
+	     the text says what the app actually does. -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Balsm uses your location only while you are using the app, to show nearby clinics, pharmacies, and hospitals.</string>
+	<!-- Care team: the patient picks one contact in the system picker. -->
+	<key>NSContactsUsageDescription</key>
+	<string>Balsm lets you pick a doctor or pharmacy from your contacts to add to your care team. Only the contact you choose is used.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Balsm uses the camera so you can photograph a prescription or health record.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -121,20 +129,14 @@
 			</array>
 		</dict>
 		<!--
-			Google sign-in redirect. The scheme is the iOS OAuth client id with its
-			dot-separated parts reversed, i.e. the REVERSED_CLIENT_ID from the Google
-			Cloud console. Must match GOOGLE_IOS_CLIENT_ID in app/env/shared.json.
+			No Google sign-in redirect scheme here. Sign in with Google is not
+			offered on iOS (auth_flow.dart, _googleAvailable), and the entry that
+			used to sit here held a REPLACE_ME placeholder, which App Store Connect
+			rejects: an underscore is not allowed in a URL scheme (error 90158).
+			If Google sign-in ever ships on iOS, add the REVERSED_CLIENT_ID of the
+			real iOS OAuth client as a second URL type; docs/social-sign-in-setup.md
+			has the block.
 		-->
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>health.balsm.auth.google</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.REPLACE_ME</string>
-			</array>
-		</dict>
 	</array>
 </dict>
 </plist>
