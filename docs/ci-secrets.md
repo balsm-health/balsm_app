@@ -57,8 +57,10 @@ keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 \
 base64 -i upload-keystore.jks | pbcopy   # → ANDROID_KEYSTORE_BASE64
 ```
 
-CI decodes it to `app/android/keystore.jks` and writes `app/android/key.properties`;
-`build.gradle.kts` picks it up automatically. Neither file is committed
+CI decodes it to `app/android/keystore.jks` and writes `app/android/key.properties`
+with `storeFile=../keystore.jks`; `build.gradle.kts` picks it up automatically.
+The `../` matters: Gradle resolves `storeFile` from `app/android/app/`, one
+folder below where the keystore is written. Neither file is committed
 (`.gitignore`).
 
 ## iOS signing (IPA)

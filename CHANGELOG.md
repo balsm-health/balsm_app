@@ -46,6 +46,12 @@ First release of the Balsm patient app.
   installs with nothing to move to.
 - The account-deletion link required by Google Play pointed at a host that
   does not resolve.
+- CI analyzed and measured nothing: its package list still named folders
+  that had moved from `packages/` to `modules/`, so both jobs stopped at
+  their first step and the build jobs behind them were skipped. The list now
+  matches the repo and covers every module.
+- The release workflow wrote the Android keystore one folder away from where
+  Gradle looks for it, so a signed build would not have found it.
 
 ### Security
 

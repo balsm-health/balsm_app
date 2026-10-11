@@ -8,14 +8,20 @@ on:
 
 env:
   FLUTTER_VERSION: '3.47.4'
-  # All packages in dependency-safe order. core first (everything depends on it);
-  # app last (aggregates the tree). balsm_boundary_lint excluded — its analyzer
-  # ^6.11 pin needs the `_macros` SDK pkg absent in Dart 3.11.
+  # Every package the pipeline analyzes, in dependency-safe order: core first
+  # (everything depends on it), then the API client, then the bounded contexts
+  # under modules/, and app last (it aggregates the tree).
+  # balsm_boundary_lint is excluded — its analyzer ^6.11 pin needs the
+  # `_macros` SDK pkg absent in Dart 3.11.
+  # Keep this in step with the folders: a path that does not exist fails the
+  # job at `pub get`, and a module missing from the list is never analyzed.
   PKGS: >-
-    packages/core packages/balsm_api packages/geofence_block packages/auth
-    packages/disclosure packages/profile packages/account packages/home
-    packages/emergency_card packages/medications packages/deletion
-    packages/sessions app
+    packages/core packages/balsm_api
+    modules/geofence_block modules/auth modules/disclosure modules/profile
+    modules/account modules/emergency_card modules/medications
+    modules/prescriptions modules/records modules/self_report
+    modules/deletion modules/sessions
+    app
 
 jobs:
   hygiene:
@@ -68,7 +74,7 @@ jobs:
         run: dart run build_runner build
       - name: Analyze (all packages — fails on errors only)
         # Warnings/infos are surfaced in logs but non-blocking; the gate is
-        # zero analyzer ERRORS (verified across all 12 packages).
+        # zero analyzer ERRORS, across every package in PKGS.
         run: |
           set -e
           for p in $PKGS; do
@@ -208,7 +214,9 @@ jobs:
           set -e
           mkdir -p coverage
           : > coverage/lcov.info
-          for p in packages/core app; do
+          for p in $PKGS; do
+            # balsm_api is pure Dart and is measured by the next step.
+            [ "$p" = packages/balsm_api ] && continue
             if [ -d "$p/test" ]; then
               echo "::group::coverage $p"
               (cd "$p" && flutter test --coverage --exclude-tags e2e) || true
