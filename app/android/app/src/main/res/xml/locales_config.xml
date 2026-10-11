@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The languages the app has, for Android 13+'s per-app language setting.
+     Keep in step with LanguageCode.supported and localeFilters in
+     build.gradle.kts. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+  <locale android:name="ar"/>
+  <locale android:name="en"/>
+</locale-config>

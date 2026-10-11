@@ -23,6 +23,13 @@ android {
     // Flutter's NDK (28.2.13676358 for 3.47) — every plugin requires it.
     ndkVersion = flutter.ndkVersion
 
+    // The app is Arabic and English only. Libraries ship strings in eighty-odd
+    // languages; without this they are all packaged, and Play lists every one
+    // of them as a language the app supports.
+    androidResources {
+        localeFilters += listOf("en", "ar")
+    }
+
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17

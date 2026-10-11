@@ -152,8 +152,10 @@ per commit.
 | Breaking: data that cannot be read by the previous version, a removed feature, a raised minimum OS | MAJOR, the rest back to 0 | `0.2.0` → `1.0.0` |
 | Docs, tests, CI, tooling, refactor with no change in behaviour | nothing | |
 
-- **Compare with the last released version**, which is the newest entry in
-  `app/web/version/<brand>.json`. If the pubspec is already ahead of it by at
+- **Compare with the last released version**, which is the newest *dated*
+  section of `CHANGELOG.md` (a section still marked `Unreleased` has not
+  shipped; before the first release there is none, and the version stays as
+  it is). If the pubspec is already ahead of it by at
   least what your change needs, leave it: a fix landing on an unreleased
   `0.2.0` stays `0.2.0`. If your change needs more (a feature landing on an
   unreleased `0.1.1`), raise it to that.
