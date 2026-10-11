@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/routes.dart';
 import 'package:core/core.dart' show FamilyLinkStatus, Gender;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,6 +11,9 @@ void main() {
     s.setGender(Gender.female);
     s.setAuthContact(method: AuthMethod.email, email: 'old@example.com');
     s.setAuthPassword('transient');
+    s.socialGivenName = 'Old';
+    s.socialFamilyName = 'Account';
+    s.tab = AppTab.profile;
 
     s.resetForSignOut();
 
@@ -19,6 +23,9 @@ void main() {
     expect(s.gender, Gender.other);
     expect(s.authEmail, isEmpty);
     expect(s.authPassword, isNull);
+    expect(s.socialGivenName, isNull, reason: 'it would prefill the next sign-up');
+    expect(s.socialFamilyName, isNull);
+    expect(s.tab, AppTab.home);
   });
 
   test('device preferences survive the sign-out sweep', () {

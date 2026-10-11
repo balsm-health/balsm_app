@@ -62,6 +62,11 @@ First release of the Balsm patient app.
 - CI's iOS job built the app and then failed to find it: it looked under
   `build/ios/iphoneos`, but the build is an archive. The release workflow's
   unsigned fallback had the same wrong path.
+- After signing out and registering a different account on the same device,
+  Home, Profile and the account switcher still showed the previous person's
+  name and handle until the app was restarted. The account summary was
+  fetched once and kept; it now follows whoever is signed in. Sign-out also
+  clears a name left over from social sign-in and returns to the Home tab.
 - App Store Connect rejected the iOS upload: the Info.plist registered a
   Google sign-in URL scheme that was still a `REPLACE_ME` placeholder. iOS
   offers no Google sign-in, so the entry is gone, and a production iOS build

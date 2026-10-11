@@ -290,6 +290,11 @@ class PatientAppState extends ChangeNotifier {
     gender = Gender.other;
     authEmail = '';
     authPassword = null;
+    // The name a social provider handed over prefills the next sign-up's
+    // profile form, and the tab would reopen wherever the last person left it.
+    socialGivenName = null;
+    socialFamilyName = null;
+    tab = AppTab.home;
     notifyListeners();
   }
 

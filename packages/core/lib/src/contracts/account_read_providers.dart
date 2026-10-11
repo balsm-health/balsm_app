@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../auth_context/current_user.dart';
 import 'account_summary.dart';
 import 'read_account_repository.dart';
 
@@ -16,9 +17,17 @@ final readAccountRepositoryProvider = Provider<ReadAccountRepository>(
 
 /// `GET /account/self` → [AccountSummary] (null when the account is missing).
 /// Depends only on the core port, so consumers stay decoupled from account.
-final accountSummaryProvider = FutureProvider<AccountSummary?>(
-  (ref) => ref.watch(readAccountRepositoryProvider).getAccount('self'),
-);
+///
+/// Follows the session. The provider outlives the signed-in screens, so
+/// without watching the current user it kept the summary it first fetched:
+/// sign out, register someone else, and Home, Profile and the account switcher
+/// still showed the previous person. Watching the user id makes every account
+/// change start from nothing and fetch again; with nobody signed in there is
+/// no account to show and no request to make.
+final accountSummaryProvider = FutureProvider<AccountSummary?>((ref) async {
+  if (ref.watch(currentUserIdProvider) == null) return null;
+  return ref.watch(readAccountRepositoryProvider).getAccount('self');
+});
 
 /// Drops the retained summary AND rebuilds the provider.
 ///
