@@ -114,3 +114,22 @@ vendored `*/skills/**` trees, which are installed third-party content.
 - Providers holding decrypted PHI are `autoDispose` so plaintext leaves
   memory with the last listener (see `vaultBlobProvider`).
 
+## 8. Feature Flags
+
+- **A feature that may need turning off without a release goes behind a
+  flag**: anything that sends patient data off the device, anything rolled out
+  gradually, anything marked beta. See `docs/feature-flags.md`.
+- **Declare it once** as a `const FeatureFlag` in
+  `app/lib/balsm_app/flags.dart`, add it to `AppFlags.all`, and read it with
+  `flags.isOn(AppFlags.yours)`. Never test a flag by its string key.
+- **Keys** are lowercase letters, digits and underscores (`sync_care`), the
+  set every flag tool accepts.
+- **The fallback is the safe value** for a device that has never been online
+  and for a patient who opted out of analytics. Anything that moves data off
+  the device falls back to off.
+- **No vendor SDK outside its adapter.** A flag tool is a
+  `FeatureFlagSource` in `packages/core/lib/src/flags/`, registered in the
+  bootstrap; `app/test/architecture_test.dart` enforces it.
+- **A flag does not replace the patient's own setting.** Where both exist
+  (care-team sync), the feature runs only with the flag on and the patient's
+  switch on.

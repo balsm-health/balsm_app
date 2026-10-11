@@ -8,6 +8,9 @@
   (dated; the design history of the app)
 - [`superpowers/plans/`](superpowers/plans/) — implementation plans built from
   those specs
+- [feature-flags.md](feature-flags.md) — switching features on and off without
+  a release: the flags that exist, how a value is resolved, adding a flag,
+  adding a flag tool (PostHog today)
 - [ci-secrets.md](ci-secrets.md) — what CI needs and where it lives
 - [google-drive-backup-setup.md](google-drive-backup-setup.md) — OAuth setup
   for the encrypted Drive backup

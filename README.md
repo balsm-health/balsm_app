@@ -129,5 +129,7 @@ descriptors; see `previews/preview_harness.dart`.) Every preview is also pumped 
 - CI: `.github/workflows/` (`ci.yml` checks, `build-apks.yml`, `release.yml`).
   Pipelines run only for `main` / `develop` / `release/**` and PRs targeting
   them — work branches get CI through their PR, not on every push.
+- Feature flags: `docs/feature-flags.md` — the flags that exist (cloud sync per
+  data type, the beta ribbon), how to turn one on, how to add one
 - CI secrets runbook: `docs/ci-secrets.md` · backup setup: `docs/google-drive-backup-setup.md`
 - Org-wide rules: `../Balsm-Core/agents/rules/` (AGENTS.md, CODING_STANDARDS.md)

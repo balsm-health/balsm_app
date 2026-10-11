@@ -109,11 +109,34 @@ Raw-SQL DAO convention for new tables; new tables never join
 `SnapshotService._tables` without an explicit ruling (backup scope is a
 decision, not a default).
 
+## Feature flags
+
+A feature that should be switchable without a release sits behind a flag.
+
+- **One interface.** Code asks `FeatureFlags.isOn(flag)` (core,
+  `src/flags/`) and never learns which tool served the value.
+- **Tools are adapters.** Each is a `FeatureFlagSource`. PostHog and a
+  build-time `FEATURE_FLAGS` define are wired; the list lives in the app
+  bootstrap (`main_balsm.dart`) and nowhere else.
+- **Resolution.** Dev Config override (dev and staging only) → sources in
+  order → the fallback written next to the flag. Source answers are kept on
+  the device, so reads are synchronous and work offline.
+- **The catalog.** Every flag the app reads is declared in
+  `app/lib/balsm_app/flags.dart` (`AppFlags`).
+- **Sync is flagged per data type**, all off by default. A flag never makes a
+  screen claim a cloud copy for a type that has no sync engine.
+- **PostHog flags follow analytics consent**, because asking for them sends
+  the device's analytics id. Opted-out patients and the web build get the
+  fallbacks.
+
+Details and how-tos: [feature-flags.md](feature-flags.md).
+
 ## Where to read next
 
 - Feature designs: [`superpowers/specs/`](superpowers/specs/) — the approved
   design history, one dated file per feature
 - Execution plans: [`superpowers/plans/`](superpowers/plans/)
+- Feature flags: [feature-flags.md](feature-flags.md)
 - CI secrets: [ci-secrets.md](ci-secrets.md) · Drive backup:
   [google-drive-backup-setup.md](google-drive-backup-setup.md)
 - Server-side counterpart: `../Balsm-API-DotNet/docs/` (C4 diagrams, OpenAPI,
