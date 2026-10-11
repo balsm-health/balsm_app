@@ -15,6 +15,13 @@ read once at startup by `FlavorConfig.resolve` (`packages/core/lib/src/config/fl
 URLs a given machine points at, including private tunnels. Every developer
 keeps their own.
 
+## Host suffix
+
+`<brand>/<env>.json` may carry `HOST_SUFFIX` — `"stg"` in `staging.json`. It is
+appended to every host the build uses (`app-stg.balsm.health`,
+`api-stg.balsm.health`); a file without it builds for the production hosts.
+See "Other environments: the host suffix" in `docs/app-update.md`.
+
 ## First run
 
 ```bash

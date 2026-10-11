@@ -97,6 +97,7 @@ export 'src/secure_storage/web_secure_storage_stub.dart'
     if (dart.library.js_interop) 'src/secure_storage/web_secure_storage.dart';
 export 'src/notifications/permission_state.dart';
 export 'src/notifications/permission_change_event.dart';
+export 'src/config/env_hosts.dart';
 export 'src/config/flavor.dart';
 export 'src/config/server_preset.dart';
 export 'src/config/active_server.dart';

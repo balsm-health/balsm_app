@@ -1,4 +1,5 @@
 // ignore_for_file: constant_identifier_names
+import 'env_hosts.dart';
 import 'server_preset.dart';
 
 /// Environment axis (a.k.a. build env).
@@ -23,7 +24,11 @@ enum AppBrand {
   ///
   /// `app.balsm.health` cannot move: printed permanent QR codes and the
   /// shipped deep-link configuration point at it.
-  String get webHost => switch (this) { balsm => 'app.balsm.health', balsm_pro => 'pro.balsm.health' };
+  ///
+  /// That is the production host. A build for another environment gets the
+  /// same name with its suffix appended (`app-stg.balsm.health`) — see
+  /// [envHost].
+  String get webHost => envHost(switch (this) { balsm => 'app', balsm_pro => 'pro' });
 
   /// `https://` + [webHost], no trailing slash.
   String get webOrigin => 'https://$webHost';
@@ -48,7 +53,9 @@ class FlavorConfig {
 
   /// Boot target when no preset was saved (or switching is disabled).
   /// Matches the [flavor] label in [servers] (`Local` / `Staging` /
-  /// `Production`); falls back to the first entry if the label is missing.
+  /// `Production`). With no such entry, a staging or production build boots
+  /// against its environment's API host ([envHost]) rather than whatever
+  /// happens to be listed first; a dev build falls back to the first entry.
   ServerPreset get defaultServer {
     final want = switch (flavor) {
       Flavor.prod => 'production',
@@ -57,6 +64,12 @@ class FlavorConfig {
     };
     for (final s in servers) {
       if (s.label.toLowerCase() == want) return s;
+    }
+    if (flavor != Flavor.dev) {
+      return ServerPreset(
+        label: flavor == Flavor.prod ? 'Production' : 'Staging',
+        apiBaseUrl: 'https://${envHost('api')}',
+      );
     }
     return servers.first;
   }

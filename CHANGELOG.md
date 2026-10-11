@@ -27,6 +27,10 @@ First release of the Balsm patient app.
 - A "Beta" ribbon (Arabic: "إطلاق تجريبي") over every screen, behind the
   `beta_banner` flag.
 - iOS privacy manifest, and the export-compliance declaration.
+- One build setting, `HOST_SUFFIX`, names an environment's hosts: `stg` gives
+  `app-stg.balsm.health` and `api-stg.balsm.health`, none gives the production
+  names. `deploy/web/deploy.sh <env>` builds and deploys the web app to the
+  matching host.
 - Web: a home-screen icon for iOS and iPadOS, and the icons are declared
   maskable so Android launchers can shape them.
 - Production builds are checked before they start and refuse an unsigned app
