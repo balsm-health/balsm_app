@@ -78,6 +78,11 @@ First release of the Balsm patient app.
 
 - Staging and production builds are obfuscated; the files that undo it are
   kept beside the build and never shipped (`docs/balsm-cli.md`).
+- A production build can no longer be made readable by accident: turning
+  obfuscation off, or passing flutter a flag that undoes the protection
+  (source maps, no shrinking, a debug build), stops the build, and a finished
+  build is checked before it is collected. R8 is stated in the Android build
+  instead of inherited, and web builds are told not to write source maps.
 - Android: backup and device-to-device transfer of app data are off.
 - Android: no plain HTTP, and only the system's certificate authorities are
   trusted, stated in the manifest rather than left to defaults.

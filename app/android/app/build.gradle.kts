@@ -82,6 +82,13 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // R8: rename and shrink the Java/Kotlin side, and drop unused
+            // resources. Flutter turns these on for release builds by default;
+            // stated here so a change of default, or a `--no-shrink` passed by
+            // hand, cannot ship readable class names. The build tool also
+            // refuses a production build that R8 did not run on.
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 

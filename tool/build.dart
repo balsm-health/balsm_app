@@ -19,7 +19,8 @@
 //                                             (default: on for staging and
 //                                             prod, off for dev and for web)
 //             --allow-insecure                build prod even though a
-//                                             release check failed
+//                                             release check failed (before
+//                                             or after the build)
 //             --no-apk                        with `aab ... prod`, skip the
 //                                             APK that is built alongside
 //
@@ -277,6 +278,7 @@ Future<void> main(List<String> argv) async {
       appDir: appDirEarly,
       serversFile: serversFile,
       obfuscate: obfuscate,
+      passthrough: args,
     );
     for (final w in problems.warnings) {
       stderr.writeln('build: warning — $w');
@@ -335,6 +337,9 @@ Future<void> main(List<String> argv) async {
           ...defines,
           if (artifact.platform == 'ios') ...exportOptions,
           if (obfuscate) ...['--obfuscate', '--split-debug-info=$symbolsDir'],
+          // Stated rather than left to the default: a source map hands back the
+          // names and structure that minifying removed.
+          if (artifact.platform == 'web' && env != 'dev') '--no-source-maps',
           if (artifact.platform == 'web' && env == 'prod') ...[
             // Hosted at https://balsm.health/apps/balsm — asset URLs must be
             // prefixed or flutter.js 404s under the site's locale router.
@@ -361,6 +366,15 @@ Future<void> main(List<String> argv) async {
     runInShell: true,
   );
   var code = await proc.exitCode;
+  // A production build that came out unprotected is a failed build: nothing is
+  // collected, so it cannot be picked up from output/ and shipped.
+  if (code == 0 && artifact != null && env == 'prod' && !allowInsecure) {
+    final exposed = _exposed(artifact, appDir, obfuscate: obfuscate, symbolsDir: symbolsDir);
+    if (exposed.isNotEmpty) {
+      _fail('built, but not safe to release:\n${exposed.map((e) => '  - $e').join('\n')}\n'
+          'nothing was collected. Pass --allow-insecure to keep it anyway.');
+    }
+  }
   // run/test/integration produce no artifact to collect.
   if (code == 0 && artifact != null) {
     _collect(artifact, brandKey, env, appDir);
@@ -461,9 +475,32 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
   required String appDir,
   required File serversFile,
   required bool obfuscate,
+  required List<String> passthrough,
 }) {
   final blockers = <String>[];
   final warnings = <String>[];
+
+  // Flags handed straight to flutter that would undo the protection this tool
+  // adds. Everything after the brand and env reaches flutter untouched, so
+  // without this a production build could be weakened without it showing.
+  const weakening = {
+    '--no-obfuscate': 'turns obfuscation off',
+    '--source-maps': 'ships a map from the minified web code back to its source',
+    '--debug': 'is a debug build',
+    '--profile': 'is a profile build',
+    '--no-shrink': 'turns off R8, leaving Java/Kotlin names readable',
+    '--no-minify': 'leaves the web code unminified',
+    '--dump-info': 'writes a description of the compiled web code next to it',
+  };
+  for (final a in passthrough) {
+    final flag = a.split('=').first;
+    final why = weakening[flag];
+    if (why != null) blockers.add('$flag $why');
+    // -O0 … -O2 keep names and checks that -O4, the release default, removes.
+    if (RegExp(r'^-O[0-2]$').hasMatch(a) || RegExp(r'^--dart2js-optimization=O[0-2]$').hasMatch(a)) {
+      blockers.add('$a compiles the web code with less optimisation than a release uses');
+    }
+  }
 
   // An app bundle exists only to go to Play, and Play needs it signed with the
   // upload key. Without key.properties Gradle signs with the debug key, which
@@ -487,7 +524,7 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
   }
 
   if (platform != 'web' && !obfuscate) {
-    warnings.add('not obfuscated (--obfuscate=off): Dart class and method names are readable in the binary');
+    blockers.add('not obfuscated (--obfuscate=off): Dart class and method names are readable in the binary');
   }
 
   Map<String, dynamic> defines;
@@ -523,6 +560,42 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
     warnings.add('no SENTRY_DSN: crashes from this build will not be reported');
   }
   return (blockers: blockers, warnings: warnings);
+}
+
+/// What a finished production build still gives away, checked on what was
+/// actually written rather than on the flags that were passed.
+List<String> _exposed(Artifact artifact, String appDir, {required bool obfuscate, required String symbolsDir}) {
+  final found = <String>[];
+  final out = Directory('$appDir/${artifact.dir}');
+
+  // Obfuscation writes its debug info to symbolsDir. None there means the
+  // flag did not take effect, whatever was asked for.
+  if (obfuscate) {
+    final symbols = Directory('$appDir/$symbolsDir');
+    final any = symbols.existsSync() && symbols.listSync().any((e) => e.path.endsWith('.symbols'));
+    if (!any) found.add('obfuscation produced no debug info under $symbolsDir, so it did not run');
+  }
+
+  // R8 writes mapping.txt when, and only when, it renamed the Java/Kotlin side.
+  if (artifact.platform == 'android' &&
+      _newestNamed(Directory('$appDir/build/app/outputs/mapping'), 'mapping.txt') == null) {
+    found.add('no R8 mapping.txt: the Java/Kotlin code was not renamed or shrunk');
+  }
+
+  // Files that undo the protection must never sit inside what gets deployed.
+  // Web is the case that matters: build/web is served as it is.
+  if (artifact.platform == 'web' && out.existsSync()) {
+    for (final f in out.listSync(recursive: true, followLinks: false).whereType<File>()) {
+      // canvaskit/ is Flutter's rendering engine, the same public files in
+      // every Flutter web app. Its .symbols describe the engine, not this app.
+      if (f.uri.pathSegments.contains('canvaskit')) continue;
+      final name = f.uri.pathSegments.last;
+      if (name.endsWith('.map') || name.endsWith('.symbols') || name.endsWith('.info.json')) {
+        found.add('${_rel(f.path, appDir)} would be served with the site');
+      }
+    }
+  }
+  return found;
 }
 
 /// Keeps what is needed to read crash reports from an obfuscated build, in

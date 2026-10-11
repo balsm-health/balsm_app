@@ -131,12 +131,45 @@ it ignored.
 | Check | Result |
 |---|---|
 | `aab` with no `app/android/key.properties` (would be signed with the debug key) | stops |
+| `--obfuscate=off` on a phone or desktop build | stops |
+| A flag passed through to flutter that undoes the protection: `--no-obfuscate`, `--source-maps`, `--no-shrink`, `--no-minify`, `--dump-info`, `--debug`, `--profile`, or a web optimisation level below the release default | stops |
 | No server named `Production` in `ENVS`, or it is not `https://` | stops |
 | A define still set to a `REPLACE_ME` placeholder (sign-in ids only count when `SOCIAL_SIGN_IN_ENABLED` is true) | stops |
+| `app/ios/Runner/Info.plist` ships a `REPLACE_ME` value | stops |
 | The server-list file is not valid JSON | stops |
 | `apk` with no `key.properties` | warning |
-| `--obfuscate=off` | warning |
 | No `SENTRY_DSN` | warning |
+
+After the build, the result itself is checked, and nothing is collected into
+`output/` if it fails:
+
+| Check on the finished build | Why |
+|---|---|
+| Obfuscation wrote its debug info | proves the Dart names were actually replaced |
+| Android: R8 wrote `mapping.txt` | proves the Java/Kotlin side was renamed and shrunk |
+| Web: no `.map`, `.symbols` or `.info.json` in the output (Flutter's own `canvaskit/` engine files aside) | `build/web` is served as it is, and those files hand back what minifying removed |
+
+### What this does and does not protect
+
+Every build goes through this tool: melos, the VS Code tasks and all three CI
+workflows call `bin/balsm`, and nothing calls `flutter build` directly. So the
+protections cannot be skipped by using a different entry point.
+
+- **Phone and desktop apps:** Dart names obfuscated, native libraries
+  stripped of debug information, Java/Kotlin renamed by R8.
+- **Web:** minified, no source maps. A web app is delivered as JavaScript, so
+  it can always be read; minifying makes that slow, not impossible. Nothing
+  that must stay private belongs in the web build.
+- **Not hidden anywhere:** text in the app (messages, URLs, the Sentry DSN and
+  PostHog key). Obfuscation renames code; it does not encrypt strings. No
+  secret may be compiled into a build.
+- **Not done by the build:** detecting a rooted or jailbroken phone, a
+  debugger, or a modified copy of the app. Those are app features, not build
+  settings.
+
+The Android app bundle carries R8's map and the native symbol tables in its
+metadata. Play uses them to make crash reports readable and does not deliver
+them to phones. The APK carries neither.
 
 Also built into every Android build, in the manifest rather than the tool:
 no plain HTTP, only Android's own certificate authorities trusted
