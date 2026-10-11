@@ -47,6 +47,8 @@ from a picker.
 | `--export=adhoc\|appstore\|none` | iOS signing profile (overrides the artifact's default) |
 | `--servers=shared\|shared.tunnel` | which server list (`app/env/<name>.json`) gets compiled in; `shared.tunnel` adds devtunnel/LAN presets |
 | `--device=<id>` | skip the device picker |
+| `--obfuscate=on\|off` | hide Dart names in the binary; on by default for `staging` and `prod`, off for `dev`, never for web |
+| `--allow-insecure` | build `prod` even though a release check failed (see below) |
 
 Anything after `--` passes through to `flutter` untouched.
 
@@ -63,6 +65,62 @@ Anything after `--` passes through to `flutter` untouched.
   just built is findable without digging through `build/`.
 - **`install`** — pushes a previously collected artifact to a device:
   `balsm install balsm dev --artifact=ipa` (installable: `apk`, `ipa`).
+
+## Obfuscated builds and their symbols
+
+Staging and prod builds of the phone and desktop apps are obfuscated: class,
+method and field names in the compiled Dart are replaced with meaningless
+ones, so the binary gives away far less about how the app works. Android
+release builds also have their Java/Kotlin side renamed and shrunk by R8,
+which Flutter does by default.
+
+Obfuscation hides names. It does not encrypt the app, and it does not protect
+anything stored in it: no secret belongs in a build, obfuscated or not.
+
+An obfuscated build also writes the files that undo it:
+
+```
+output/<brand>/symbols/<brand>-<version>-<env>-<platform>/
+  dart/                  split debug info, one file per CPU architecture
+  android-mapping.txt    R8's map (Android only)
+```
+
+- **Keep them, per build.** A crash from an obfuscated build is unreadable
+  without the set that was written by that exact build. Store each release's
+  folder somewhere durable; `output/` is git-ignored and local.
+- **Never ship or commit them.** They turn the obfuscation back into names.
+- **Reading a stack trace:**
+  `flutter symbolize -i <stack.txt> -d output/…/dart/app.android-arm64.symbols`
+- **Sentry** shows obfuscated Dart frames until these files are uploaded to it
+  (`sentry-cli debug-files upload`). That upload is not wired yet, and CI
+  builds do not keep their symbols, so a build made in CI has no way to have
+  its crashes read. Build releases locally, or wire the upload first.
+- Error *types* sent to product analytics (`error.runtimeType`) are obfuscated
+  names in these builds.
+
+`--obfuscate=off` builds a staging or prod artifact without it, for chasing a
+crash that only happens in release.
+
+## Release checks on production builds
+
+A `prod` build is checked before it starts. Something certainly wrong for a
+store release stops the build; `--allow-insecure` builds anyway and says what
+it ignored.
+
+| Check | Result |
+|---|---|
+| `aab` with no `app/android/key.properties` (would be signed with the debug key) | stops |
+| No server named `Production` in `ENVS`, or it is not `https://` | stops |
+| A define still set to a `REPLACE_ME` placeholder (sign-in ids only count when `SOCIAL_SIGN_IN_ENABLED` is true) | stops |
+| The server-list file is not valid JSON | stops |
+| `apk` with no `key.properties` | warning |
+| `--obfuscate=off` | warning |
+| No `SENTRY_DSN` | warning |
+
+Also built into every Android build, in the manifest rather than the tool:
+no plain HTTP, only Android's own certificate authorities trusted
+(`res/xml/network_security_config.xml`), and no backup or device-to-device
+transfer of app data (`res/xml/data_extraction_rules.xml`).
 
 ## Requirements
 

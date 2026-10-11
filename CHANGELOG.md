@@ -1,0 +1,56 @@
+# Changelog
+
+Every change to the app is recorded here, newest release first.
+
+The top section is the release being built: its heading is the `version:` in
+`app/pubspec.yaml`, marked `Unreleased` until a store serves it, then dated.
+How to raise the version and what to write is in `CODING_STANDARDS.md` §9.
+
+Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
+**Security**, one line each, written so someone who was not there understands
+what changed and why it matters.
+
+## [0.1.0] - Unreleased
+
+First release of the Balsm patient app.
+
+### Added
+
+- The web build is the full signed-in app. Each browser is its own device,
+  with an encrypted database and file store, open in one tab at a time.
+- Update check: a release can be withdrawn, and a forced update lifts by
+  itself once the release behind it is rolled back.
+- Feature flags behind one interface, served by PostHog or a build-time
+  define, with a Dev Config section to force one on a device
+  (`docs/feature-flags.md`).
+- A flag per data type for cloud sync, all off by default.
+- A "Beta" ribbon (Arabic: "إطلاق تجريبي") over every screen, behind the
+  `beta_banner` flag.
+- iOS privacy manifest, and the export-compliance declaration.
+- Production builds are checked before they start and refuse an unsigned app
+  bundle, a non-https Production server or a placeholder define.
+
+### Changed
+
+- Care-team sync to Balsm Cloud is off. Only a provider's text ever synced;
+  attached files and links stayed on the device.
+- Social sign-in is off in the env template, which had it on with placeholder
+  Google client ids.
+- The iOS local-network prompt no longer mentions a development server.
+
+### Fixed
+
+- The update manifest listed a 0.2.0 that was never built, so every install
+  was offered an update that did not exist.
+- A minimum version above every release on offer no longer blocks all
+  installs with nothing to move to.
+- The account-deletion link required by Google Play pointed at a host that
+  does not resolve.
+
+### Security
+
+- Staging and production builds are obfuscated; the files that undo it are
+  kept beside the build and never shipped (`docs/balsm-cli.md`).
+- Android: backup and device-to-device transfer of app data are off.
+- Android: no plain HTTP, and only the system's certificate authorities are
+  trusted, stated in the manifest rather than left to defaults.

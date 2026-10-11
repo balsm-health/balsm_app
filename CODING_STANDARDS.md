@@ -133,3 +133,54 @@ vendored `*/skills/**` trees, which are installed third-party content.
 - **A flag does not replace the patient's own setting.** Where both exist
   (care-team sync), the feature runs only with the flag on and the patient's
   switch on.
+
+## 9. Versioning and the Changelog
+
+These apply to every change, whoever or whatever writes it. An AI agent does
+both steps itself, in the same change, without being asked.
+
+### The version
+
+`version:` in `app/pubspec.yaml` is `MAJOR.MINOR.PATCH+BUILD`. It names the
+**next release**, so it moves when a change makes that release bigger, not once
+per commit.
+
+| The change | Raise | Example |
+|---|---|---|
+| Bug fix, hotfix, security fix, copy or visual correction | PATCH | `0.1.0` → `0.1.1` |
+| New feature, or new behaviour a patient can notice | MINOR, PATCH back to 0 | `0.1.1` → `0.2.0` |
+| Breaking: data that cannot be read by the previous version, a removed feature, a raised minimum OS | MAJOR, the rest back to 0 | `0.2.0` → `1.0.0` |
+| Docs, tests, CI, tooling, refactor with no change in behaviour | nothing | |
+
+- **Compare with the last released version**, which is the newest entry in
+  `app/web/version/<brand>.json`. If the pubspec is already ahead of it by at
+  least what your change needs, leave it: a fix landing on an unreleased
+  `0.2.0` stays `0.2.0`. If your change needs more (a feature landing on an
+  unreleased `0.1.1`), raise it to that.
+- **`+BUILD` goes up by one every time the version name changes**, and never
+  goes down or resets. Stores reject a build number they have already seen.
+- A hotfix is a PATCH raise on the released line.
+- When a pull request conflicts on the version line, take the higher version
+  and apply the rule again.
+
+### The changelog
+
+- **Every change adds one line to `CHANGELOG.md`**, in the same change, under
+  the top section, in the group that fits: **Added**, **Changed**, **Fixed**,
+  **Removed** or **Security**. That includes changes that raise no version,
+  when they affect how the app is built, released or secured.
+- Not recorded: a pure refactor, a test-only or comment-only change, a typo.
+- **The top section's heading is the pubspec version**, as
+  `## [0.2.0] - Unreleased`. When a change raises the version, rename that
+  heading; the lines already under it stay, because they ship in that release
+  too.
+- Write for someone who was not there: what changed and why it matters, not
+  how. No "fixed bug", no ticket number on its own, no file list.
+- **Never add a version to `app/web/version/<brand>.json` in a code change.**
+  That file is live and lists released versions only; an entry there is
+  offered to every installed app at once. It is edited at release time
+  (`docs/app-update.md`, "Releasing"), which is also when the section here
+  gets its date and a new `Unreleased` section is opened.
+
+`app/test/changelog_test.dart` fails when the top section is not for the
+version being built.

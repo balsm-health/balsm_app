@@ -15,10 +15,18 @@
 //             --export=adhoc|appstore|none    ipa signing profile
 //             --servers=shared|shared.tunnel  which server list to compile in
 //             --device=<id>                   skip the device picker
+//             --obfuscate=on|off              hide Dart names in the binary
+//                                             (default: on for staging and
+//                                             prod, off for dev and for web)
+//             --allow-insecure                build prod even though a
+//                                             release check failed
 //
 // Every build collects its artifact into
 //   output/<brand>/<platform>/<brand>-<version>-<env>[.<ext>]
 // so the thing you just built is findable without digging through build/.
+// An obfuscated build also collects what is needed to read its crash reports
+// into output/<brand>/symbols/<brand>-<version>-<env>-<platform>/. Keep that
+// folder; never ship it.
 //
 // Examples:
 //   dart run tool/build.dart run balsm dev -d <device-id>
@@ -167,7 +175,7 @@ Future<void> main(List<String> argv) async {
         '  env     : dev | staging | prod (default: dev)\n'
         '  artifact: ${_artifacts.keys.join(' | ')}\n'
         '  options : --artifact=<key> --export=${_exports.join('|')} '
-        '--servers=<name> --device=<id>');
+        '--servers=<name> --device=<id> --obfuscate=on|off --allow-insecure');
   }
 
   var action = args.removeAt(0);
@@ -223,6 +231,22 @@ Future<void> main(List<String> argv) async {
     _fail("unknown export '$export' (${_exports.join(' | ')})");
   }
 
+  // Obfuscation: class, method and field names in the compiled Dart are
+  // replaced with meaningless ones, so the binary gives away far less about
+  // how the app works. On for anything that leaves the building (staging,
+  // prod); off for dev, where a readable stack trace matters more. Never on
+  // web: `flutter build web` has no such flag — dart2js minifies by itself.
+  final obfuscateOpt = _takeOption(args, 'obfuscate');
+  if (obfuscateOpt != null && obfuscateOpt != 'on' && obfuscateOpt != 'off') {
+    _fail("unknown --obfuscate '$obfuscateOpt' (on | off)");
+  }
+  final obfuscate =
+      artifact != null && artifact.platform != 'web' && (obfuscateOpt ?? (env == 'dev' ? 'off' : 'on')) == 'on';
+  // Where flutter writes the files that turn an obfuscated stack trace back
+  // into names. App-relative, one folder per platform and env so two builds
+  // never mix.
+  final symbolsDir = 'build/symbols/${artifact?.platform}-$env';
+
   // Which server list gets compiled in. `shared.tunnel` adds the devtunnel and
   // LAN presets for testing against a machine on the desk.
   final servers = _takeOption(args, 'servers') ?? 'shared';
@@ -235,6 +259,30 @@ Future<void> main(List<String> argv) async {
   }
 
   final appDirEarly = Platform.script.resolve('../app').toFilePath();
+
+  // Release checks: things that make a production build unsafe to hand out
+  // and that nothing else would catch before it reached a store.
+  final allowInsecure = args.remove('--allow-insecure');
+  if (artifact != null && env == 'prod') {
+    final problems = _releaseProblems(
+      artifactKey: artifactKey,
+      platform: artifact.platform,
+      appDir: appDirEarly,
+      serversFile: serversFile,
+      obfuscate: obfuscate,
+    );
+    for (final w in problems.warnings) {
+      stderr.writeln('build: warning — $w');
+    }
+    if (problems.blockers.isNotEmpty) {
+      final list = problems.blockers.map((b) => '  - $b').join('\n');
+      if (!allowInsecure) {
+        _fail('this production build is not safe to release:\n$list\n'
+            'fix the above, or pass --allow-insecure to build anyway.');
+      }
+      stderr.writeln('build: --allow-insecure — building despite:\n$list');
+    }
+  }
   if (artifact != null && !Directory('$appDirEarly/${artifact.needs}').existsSync()) {
     _fail('no app/${artifact.needs} — this project has not been scaffolded for '
         '${artifact.platform}.\n'
@@ -279,6 +327,7 @@ Future<void> main(List<String> argv) async {
           target,
           ...defines,
           if (artifact.platform == 'ios') ...exportOptions,
+          if (obfuscate) ...['--obfuscate', '--split-debug-info=$symbolsDir'],
           if (artifact.platform == 'web' && env == 'prod') ...[
             // Hosted at https://balsm.health/apps/balsm — asset URLs must be
             // prefixed or flutter.js 404s under the site's locale router.
@@ -306,7 +355,10 @@ Future<void> main(List<String> argv) async {
   );
   final code = await proc.exitCode;
   // run/test/integration produce no artifact to collect.
-  if (code == 0 && artifact != null) _collect(artifact, brandKey, env, appDir);
+  if (code == 0 && artifact != null) {
+    _collect(artifact, brandKey, env, appDir);
+    if (obfuscate) _collectSymbols(artifact, brandKey, env, appDir, symbolsDir);
+  }
   exit(code);
 }
 
@@ -367,6 +419,113 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
     (found as File).copySync(dest);
   }
   stderr.writeln('build: collected → ${_rel(dest, root.path)}');
+}
+
+/// What is wrong with a production build before it is made.
+///
+/// A blocker stops the build (unless `--allow-insecure`); a warning is printed
+/// and the build goes on. Blockers are kept to things that are certainly
+/// wrong for a store release, so the check never becomes something people
+/// learn to bypass.
+({List<String> blockers, List<String> warnings}) _releaseProblems({
+  required String artifactKey,
+  required String platform,
+  required String appDir,
+  required File serversFile,
+  required bool obfuscate,
+}) {
+  final blockers = <String>[];
+  final warnings = <String>[];
+
+  // An app bundle exists only to go to Play, and Play needs it signed with the
+  // upload key. Without key.properties Gradle signs with the debug key, which
+  // anyone has.
+  final signed = File('$appDir/android/key.properties').existsSync();
+  if (platform == 'android' && !signed) {
+    const why = 'no app/android/key.properties, so this would be signed with the debug key';
+    (artifactKey == 'aab' ? blockers : warnings).add(why);
+  }
+
+  if (platform != 'web' && !obfuscate) {
+    warnings.add('not obfuscated (--obfuscate=off): Dart class and method names are readable in the binary');
+  }
+
+  Map<String, dynamic> defines;
+  try {
+    defines = jsonDecode(serversFile.readAsStringSync()) as Map<String, dynamic>;
+  } catch (_) {
+    blockers.add('${serversFile.uri.pathSegments.last} is not valid JSON');
+    return (blockers: blockers, warnings: warnings);
+  }
+
+  // The API a prod build talks to by default is the entry named Production.
+  final servers = defines['ENVS'];
+  final production = servers is List
+      ? servers.whereType<Map>().where((s) => '${s['name']}'.toLowerCase() == 'production').firstOrNull
+      : null;
+  final url = '${production?['url'] ?? ''}';
+  if (production == null) {
+    blockers.add('no "Production" server in ENVS; a prod build would fall back to the first one listed');
+  } else if (!url.startsWith('https://')) {
+    blockers.add('the Production server is not https ($url)');
+  }
+
+  for (final e in defines.entries) {
+    final v = e.value;
+    if (v is! String || !v.contains('REPLACE_ME')) continue;
+    // Placeholder sign-in ids only matter when the buttons are shown.
+    final social = e.key.startsWith('GOOGLE_') || e.key.startsWith('APPLE_');
+    if (social && defines['SOCIAL_SIGN_IN_ENABLED'] != true) continue;
+    blockers.add('${e.key} is still the REPLACE_ME placeholder');
+  }
+
+  if ('${defines['SENTRY_DSN'] ?? ''}'.isEmpty) {
+    warnings.add('no SENTRY_DSN: crashes from this build will not be reported');
+  }
+  return (blockers: blockers, warnings: warnings);
+}
+
+/// Keeps what is needed to read crash reports from an obfuscated build, in
+/// `output/<brand>/symbols/<brand>-<version>-<env>-<platform>/`:
+///
+///  * `dart/` — the split debug info; `flutter symbolize` and Sentry use it to
+///    turn an obfuscated Dart stack trace back into names;
+///  * `android-mapping.txt` — the same for the Java/Kotlin side, which R8
+///    renames on every Android release build.
+///
+/// These files undo the obfuscation, so they stay with whoever builds: they
+/// are never uploaded with the app and `output/` is git-ignored. Without the
+/// set that matches a build, that build's crashes cannot be read.
+void _collectSymbols(Artifact artifact, String brand, String env, String appDir, String symbolsDir) {
+  final root = Directory.fromUri(Platform.script.resolve('..'));
+  final dest = Directory('${root.path}/output/$brand/symbols/$brand-${_appVersion(appDir)}-$env-${artifact.platform}');
+  final src = Directory('$appDir/$symbolsDir');
+  if (!src.existsSync() || src.listSync().isEmpty) {
+    stderr.writeln('build: warning — obfuscated, but no debug info under $symbolsDir; '
+        'crash reports from this build will not be readable');
+    return;
+  }
+  if (dest.existsSync()) dest.deleteSync(recursive: true);
+  dest.createSync(recursive: true);
+  _copyDirDart(src, Directory('${dest.path}/dart'));
+  if (artifact.platform == 'android') {
+    final mapping = _newestNamed(Directory('$appDir/build/app/outputs/mapping'), 'mapping.txt');
+    mapping?.copySync('${dest.path}/android-mapping.txt');
+  }
+  stderr.writeln('build: symbols   → ${_rel(dest.path, root.path)}  (keep, never ship)');
+}
+
+/// Newest file called [name] anywhere under [dir].
+File? _newestNamed(Directory dir, String name) {
+  if (!dir.existsSync()) return null;
+  final hits = dir
+      .listSync(recursive: true, followLinks: false)
+      .whereType<File>()
+      .where((f) => f.uri.pathSegments.last == name)
+      .toList();
+  if (hits.isEmpty) return null;
+  hits.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+  return hits.first;
 }
 
 /// The `version:` line from app/pubspec.yaml, e.g. `0.1.0+1`.
