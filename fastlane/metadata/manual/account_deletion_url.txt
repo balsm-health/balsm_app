@@ -1,1 +1,1 @@
-https://apps.balsm.health/delete-account
+https://app.balsm.health/delete-account

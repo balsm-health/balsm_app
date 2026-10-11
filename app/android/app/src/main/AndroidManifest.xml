@@ -9,7 +9,9 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
-  <application android:label="@string/app_name" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">
+  <!-- Backup is off: health data stays on this phone. See
+       res/xml/data_extraction_rules.xml for why a backup would be unusable too. -->
+  <application android:label="@string/app_name" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules">
     <activity android:name=".MainActivity" android:theme="@style/LaunchTheme" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
       <!-- App Links: https://${BASE_URL}/<path> opens the app instead of the

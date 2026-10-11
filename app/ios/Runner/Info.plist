@@ -50,7 +50,13 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Balsm connects to a Balsm development API server on your local network.</string>
+	<string>Balsm uses your local network only to reach a Balsm server that is set up on it.</string>
+	<!-- Export compliance. The app encrypts with standard, published algorithms
+	     only (TLS, AES-GCM, ChaCha20 via SQLCipher, Argon2) and nothing
+	     proprietary, which is the exempt case, so App Store Connect does not ask
+	     on every upload. Revisit if a non-standard cipher is ever added. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- PostHog starts from Dart (core's initPostHog), never automatically:
 	     automatic init would begin collecting before the patient's analytics
 	     consent has been read off disk, and before the PHI scrub is installed. -->
