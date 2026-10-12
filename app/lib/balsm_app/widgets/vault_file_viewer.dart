@@ -26,6 +26,11 @@ VaultFileKind vaultFileKind(String path, Uint8List bytes) {
   return VaultFileKind.image;
 }
 
+/// How wide, in pixels, the full-screen viewer decodes an image: twice what
+/// the screen can show, so there is detail left to zoom into.
+int vaultViewerCacheWidth(double logicalWidth, double devicePixelRatio) =>
+    (logicalWidth * devicePixelRatio * 2).round();
+
 /// Full-screen viewer for encrypted vault attachments (records, prescriptions).
 ///
 /// Decrypts through [vaultBlobProvider] (autoDispose — plaintext leaves memory
@@ -86,7 +91,7 @@ class _VaultFileViewerState extends ConsumerState<VaultFileViewer> {
             loading: () => const Center(child: MarkSpinner(size: 44)),
             // The reason is not something to render over PHI — keep it generic.
             error: (_, __) => _CantOpen(s: s),
-            data: (bytes) => bytes == null ? _CantOpen(s: s) : _content(bytes),
+            data: (bytes) => bytes == null ? _CantOpen(s: s) : _content(context, bytes),
           ),
         ),
         Positioned(
@@ -164,7 +169,7 @@ class _VaultFileViewerState extends ConsumerState<VaultFileViewer> {
     );
   }
 
-  Widget _content(Uint8List bytes) {
+  Widget _content(BuildContext context, Uint8List bytes) {
     switch (vaultFileKind(path, bytes)) {
       case VaultFileKind.pdf:
         return PdfViewer.data(
@@ -178,7 +183,16 @@ class _VaultFileViewerState extends ConsumerState<VaultFileViewer> {
           minScale: 1,
           maxScale: 4,
           child: Center(
-            child: Image.memory(bytes, fit: BoxFit.contain, width: double.infinity),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.contain,
+              width: double.infinity,
+              // Decode for the screen, not for the sensor: a full camera frame
+              // is ~48 MB decoded. Twice the screen's own pixel width leaves
+              // detail to zoom into; a smaller image is never scaled up.
+              cacheWidth:
+                  vaultViewerCacheWidth(MediaQuery.sizeOf(context).width, MediaQuery.devicePixelRatioOf(context)),
+            ),
           ),
         );
     }

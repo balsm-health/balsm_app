@@ -26,9 +26,20 @@ class PickedAttach {
   bool get isImage => kind == 'image' && bytes != null;
 }
 
+/// The longest side, in pixels, a picked photo is kept at.
+///
+/// A phone camera gives ~12 MP (4032 px): several megabytes on disk and about
+/// 48 MB once decoded, for a prescription that is read at a fraction of that.
+/// 2560 px keeps small print legible at the viewer's full zoom and cuts both
+/// to well under half. The picker scales the photo down before it reaches us
+/// and never scales one up.
+const double kPickedImageMaxSide = 2560;
+
 Future<PickedAttach?> pickImageAttach({required bool camera}) async {
   final file = await ImagePicker().pickImage(
     source: camera ? ImageSource.camera : ImageSource.gallery,
+    maxWidth: kPickedImageMaxSide,
+    maxHeight: kPickedImageMaxSide,
     imageQuality: 85,
   );
   if (file == null) return null;

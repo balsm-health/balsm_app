@@ -45,6 +45,11 @@ First release of the Balsm patient app.
 - Social sign-in is off in the env template, which had it on with placeholder
   Google client ids.
 - The iOS local-network prompt no longer mentions a development server.
+- Photos are kept and shown at the size they are used. A photo taken or picked
+  as an attachment is scaled down to 2560 px on its long side, and the
+  full-screen viewer decodes to twice the screen's width rather than the whole
+  camera frame, which took about 48 MB of memory per photo. Photos already
+  saved are not changed.
 - The splash screen shows the mark alone; the caption under it is gone (a
   screen reader still announces it).
 - The app is Arabic and English only, everywhere. The language picker no
