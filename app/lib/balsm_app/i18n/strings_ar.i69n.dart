@@ -1,0 +1,3508 @@
+// ignore_for_file: unused_element, unused_field, camel_case_types, annotate_overrides, prefer_single_quotes
+// GENERATED FILE, do not edit!
+// dart format off
+import 'package:i69n/i69n.dart' as i69n;
+import 'strings.i69n.dart';
+import 'package:core/core.dart';
+
+String get _languageCode => 'ar';
+String get _localeName => 'ar';
+
+String _select(Object? value, Map<String, String> cases) =>
+    i69n.select(value, cases);
+
+class Strings_ar extends Strings {
+  const Strings_ar();
+  AuthStrings_ar get auth => AuthStrings_ar(this);
+  BootStrings_ar get boot => BootStrings_ar(this);
+  CareStrings_ar get care => CareStrings_ar(this);
+  CheckinStrings_ar get checkin => CheckinStrings_ar(this);
+  CommonStrings_ar get common => CommonStrings_ar(this);
+  EmergencyStrings_ar get emergency => EmergencyStrings_ar(this);
+  HomeStrings_ar get home => HomeStrings_ar(this);
+  MedsStrings_ar get meds => MedsStrings_ar(this);
+  NavStrings_ar get nav => NavStrings_ar(this);
+  OnboardingStrings_ar get onboarding => OnboardingStrings_ar(this);
+  WalkthroughStrings_ar get walkthrough => WalkthroughStrings_ar(this);
+  PrivacyStrings_ar get privacy => PrivacyStrings_ar(this);
+  ProfileStrings_ar get profile => ProfileStrings_ar(this);
+  EcosystemStrings_ar get ecosystem => EcosystemStrings_ar(this);
+  FeedbackStrings_ar get feedback => FeedbackStrings_ar(this);
+  RecordsStrings_ar get records => RecordsStrings_ar(this);
+  SettingsStrings_ar get settings => SettingsStrings_ar(this);
+  StorageStrings_ar get storage => StorageStrings_ar(this);
+  MapPacksStrings_ar get map_packs => MapPacksStrings_ar(this);
+  OfflineStrings_ar get offline => OfflineStrings_ar(this);
+  UpdateStrings_ar get update => UpdateStrings_ar(this);
+  WebStrings_ar get web => WebStrings_ar(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'auth':
+        return auth;
+      case 'boot':
+        return boot;
+      case 'care':
+        return care;
+      case 'checkin':
+        return checkin;
+      case 'common':
+        return common;
+      case 'emergency':
+        return emergency;
+      case 'home':
+        return home;
+      case 'meds':
+        return meds;
+      case 'nav':
+        return nav;
+      case 'onboarding':
+        return onboarding;
+      case 'walkthrough':
+        return walkthrough;
+      case 'privacy':
+        return privacy;
+      case 'profile':
+        return profile;
+      case 'ecosystem':
+        return ecosystem;
+      case 'feedback':
+        return feedback;
+      case 'records':
+        return records;
+      case 'settings':
+        return settings;
+      case 'storage':
+        return storage;
+      case 'map_packs':
+        return map_packs;
+      case 'offline':
+        return offline;
+      case 'update':
+        return update;
+      case 'web':
+        return web;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class AuthStrings_ar extends AuthStrings {
+  final Strings_ar _parent;
+  const AuthStrings_ar(this._parent) : super(_parent);
+  String get un_label => "المعرّف";
+  String get un_ph => "مثال: layla_hassan";
+  String get un_avail => "متاح";
+  String get un_taken => "مأخوذ بالفعل";
+  String get un_checking => "جارٍ التحقق…";
+  String get un_invalid => "أحرف وأرقام و_ فقط (3–20 حرفاً)";
+  String get ph_terms_pre => "بالمتابعة فإنك توافق على";
+  String get ph_terms_link => "شروط بلسم";
+  String get ph_terms_and => "و";
+  String get ph_priv_link => "سياسة الخصوصية";
+  String get legal_terms_t => "شروط الاستخدام";
+  String get legal_priv_t => "سياسة الخصوصية";
+  String get legal_updated => "إصدار الإشعار";
+  String get otp_title => "أدخل رمز التحقق";
+  String get otp_resend => "إعادة إرسال الرمز";
+  String get otp_in => "إعادة الإرسال خلال";
+  String get verify => "تأكيد";
+  String get pw_label => "كلمة المرور";
+  String get pw_ph => "أدخل كلمة المرور";
+  String get forgot_pw => "نسيت كلمة المرور؟";
+  String get pw_continue => "متابعة";
+  String get pw_signin => "تسجيل الدخول";
+  String get pw_signup => "إنشاء حساب";
+  String get pw_signing_in => "جارٍ تسجيل الدخول…";
+  String get otp_verifying => "جارٍ التحقق…";
+  String get pw_invalid_creds => "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+  String get pw_min_hint => "8 أحرف على الأقل";
+  String get mode_online => "متصل";
+  String get mode_device => "على الجهاز فقط";
+  String get device_title => "حساب على هذا الجهاز";
+  String get device_help =>
+      "بدون إنترنت وبدون رمز تحقق. تبقى بياناتك على هذا الجهاز فقط. الاتصال بالإنترنت لاحقًا يتيح لك التحقق من بريدك لتتمكن من استعادة كلمة المرور، واستخدام المشاركة.";
+  String get device_pw_label => "كلمة مرور لقفل التطبيق";
+  String get device_warning =>
+      "بريدك غير مُتحقَّق منه بعد، لذا لا يمكن استعادة كلمة المرور حتى تتصل بالإنترنت. بياناتك محفوظة على هذا الجهاز فقط: إن فقدته، تُفقد بياناتك معه.";
+  String get device_create => "إنشاء الحساب على الجهاز";
+  String get device_create_failed =>
+      "تعذّر إنشاء الحساب على هذا الجهاز. حاول مرة أخرى.";
+  String get fp_title => "إعادة تعيين كلمة المرور";
+  String get fp_help =>
+      "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
+  String get fp_send => "إرسال رمز إعادة التعيين";
+  String get fp_code_label => "رمز إعادة التعيين";
+  String get fp_new_pw => "كلمة المرور الجديدة";
+  String get fp_reset => "إعادة تعيين كلمة المرور";
+  String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
+  String get fp_done => "تم";
+  String get fp_success =>
+      "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
+  String get social_failed => "تعذّر تسجيل الدخول. حاول مرة أخرى.";
+  String get social_unavailable =>
+      "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.";
+  String auth_locked_retry(String secs) =>
+      "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
+  String get unlock_title => "افتح بلسم";
+  String get unlock_help => "أدخل كلمة المرور التي عيّنتها على هذا الجهاز.";
+  String get unlock_wrong => "كلمة مرور غير صحيحة.";
+  String unlock_locked(String secs) =>
+      "محاولات كثيرة. أعد المحاولة بعد $secs ث.";
+  String get unlock_btn => "فتح";
+  String get unlock_failed => "تعذّر فتح التطبيق الآن. حاول مرة أخرى.";
+  String get remove_device_account => "إزالة هذا الحساب من هذا الهاتف";
+  String get remove_device_confirm_title => "إزالة هذا الحساب وبياناته؟";
+  String get remove_device_confirm_body =>
+      "هذا الحساب موجود على هذا الهاتف فقط. سيُحذف كل ما فيه ولا يمكن استعادته.";
+  String get remove_device_confirm_btn => "إزالة";
+  String get unlock_forgot => "نسيت كلمة المرور؟ ابدأ من جديد";
+  String get unlock_forgot_confirm_body =>
+      "بدون كلمة المرور لا يمكن فتح البيانات الموجودة على هذا الهاتف. البدء من جديد يحذفها نهائيًا.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'un_label':
+        return un_label;
+      case 'un_ph':
+        return un_ph;
+      case 'un_avail':
+        return un_avail;
+      case 'un_taken':
+        return un_taken;
+      case 'un_checking':
+        return un_checking;
+      case 'un_invalid':
+        return un_invalid;
+      case 'ph_terms_pre':
+        return ph_terms_pre;
+      case 'ph_terms_link':
+        return ph_terms_link;
+      case 'ph_terms_and':
+        return ph_terms_and;
+      case 'ph_priv_link':
+        return ph_priv_link;
+      case 'legal_terms_t':
+        return legal_terms_t;
+      case 'legal_priv_t':
+        return legal_priv_t;
+      case 'legal_updated':
+        return legal_updated;
+      case 'otp_title':
+        return otp_title;
+      case 'otp_resend':
+        return otp_resend;
+      case 'otp_in':
+        return otp_in;
+      case 'verify':
+        return verify;
+      case 'pw_label':
+        return pw_label;
+      case 'pw_ph':
+        return pw_ph;
+      case 'forgot_pw':
+        return forgot_pw;
+      case 'pw_continue':
+        return pw_continue;
+      case 'pw_signin':
+        return pw_signin;
+      case 'pw_signup':
+        return pw_signup;
+      case 'pw_signing_in':
+        return pw_signing_in;
+      case 'otp_verifying':
+        return otp_verifying;
+      case 'pw_invalid_creds':
+        return pw_invalid_creds;
+      case 'pw_min_hint':
+        return pw_min_hint;
+      case 'mode_online':
+        return mode_online;
+      case 'mode_device':
+        return mode_device;
+      case 'device_title':
+        return device_title;
+      case 'device_help':
+        return device_help;
+      case 'device_pw_label':
+        return device_pw_label;
+      case 'device_warning':
+        return device_warning;
+      case 'device_create':
+        return device_create;
+      case 'device_create_failed':
+        return device_create_failed;
+      case 'fp_title':
+        return fp_title;
+      case 'fp_help':
+        return fp_help;
+      case 'fp_send':
+        return fp_send;
+      case 'fp_code_label':
+        return fp_code_label;
+      case 'fp_new_pw':
+        return fp_new_pw;
+      case 'fp_reset':
+        return fp_reset;
+      case 'fp_sent_help':
+        return fp_sent_help;
+      case 'fp_done':
+        return fp_done;
+      case 'fp_success':
+        return fp_success;
+      case 'social_failed':
+        return social_failed;
+      case 'social_unavailable':
+        return social_unavailable;
+      case 'auth_locked_retry':
+        return auth_locked_retry;
+      case 'unlock_title':
+        return unlock_title;
+      case 'unlock_help':
+        return unlock_help;
+      case 'unlock_wrong':
+        return unlock_wrong;
+      case 'unlock_locked':
+        return unlock_locked;
+      case 'unlock_btn':
+        return unlock_btn;
+      case 'unlock_failed':
+        return unlock_failed;
+      case 'remove_device_account':
+        return remove_device_account;
+      case 'remove_device_confirm_title':
+        return remove_device_confirm_title;
+      case 'remove_device_confirm_body':
+        return remove_device_confirm_body;
+      case 'remove_device_confirm_btn':
+        return remove_device_confirm_btn;
+      case 'unlock_forgot':
+        return unlock_forgot;
+      case 'unlock_forgot_confirm_body':
+        return unlock_forgot_confirm_body;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class BootStrings_ar extends BootStrings {
+  final Strings_ar _parent;
+  const BootStrings_ar(this._parent) : super(_parent);
+  String get boot_preparing => "نُجهّز سجلّك الصحي";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'boot_preparing':
+        return boot_preparing;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class CareStrings_ar extends CareStrings {
+  final Strings_ar _parent;
+  const CareStrings_ar(this._parent) : super(_parent);
+  String get map_sub => "مكان بالقرب منك";
+  String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
+  String get to_home => "العودة للرئيسية";
+  String get care_intro =>
+      "الأشخاص والأماكن التي ترعاك — أطباء وتمريض وصيدليات ومقدّمو رعاية وغيرهم.";
+  String get care_find => "ابحث عن رعاية قريبة";
+  String get follow_up => "متابعة";
+  String get check_up => "فحص دوري";
+  String get map_nearby => "رعاية قريبة";
+  String get map_search_ph => "ابحث عن عيادة أو صيدلية…";
+  String get map_all => "الكل";
+  String get map_distance => "بُعد";
+  String get map_call => "اتصال";
+  String get map_directions => "اتجاهات";
+  String get map_list => "قائمة";
+  String get map_map => "خريطة";
+  String get map_found => "مكان بالقرب منك";
+  String get map_no_results => "لا توجد أماكن";
+  String get map_no_res_h => "جرّب بحثًا أو تصنيفًا آخر.";
+  String get map_search_area => "ابحث في هذه المنطقة";
+  String get map_zoomed_out => "قرّب لعرض الأماكن";
+  String get map_zoomed_out_h => "يتم البحث في الدليل حول المنطقة التي تعرضها.";
+  String map_n_types(String n) => "$n أنواع";
+  String get map_clear => "مسح البحث";
+  String get care_empty => "لا يوجد فريق رعاية بعد";
+  String get care_add_help =>
+      "أضف الأطباء والصيدليات ومقدّمي الرعاية الذين تتعامل معهم. كل ما تضيفه يبقى على هذا الجهاز.";
+  String get care_search_ph => "ابحث بالاسم أو التخصص أو العيادة";
+  String get care_all => "الكل";
+  String get care_no_match => "لا توجد نتائج";
+  String get care_no_match_h => "جرّب اسمًا آخر، أو أضف مقدّم الرعاية بنفسك.";
+  String get care_import => "من جهات الاتصال";
+  String get care_import_title => "مراجعة جهات الاتصال";
+  String get care_import_note =>
+      "راجع النوع لكل جهة اتصال، ثم أضفها. تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت هذا الهاتف.";
+  String get care_import_pick => "الاختيار من جهات الاتصال";
+  String get care_import_more => "اختيار المزيد من جهات الاتصال";
+  String get care_import_empty => "لم تختر جهات اتصال بعد.";
+  String get care_import_empty_h => "افتح جهات اتصال هاتفك لاختيار من يرعاك.";
+  String get care_import_search => "ابحث في جهات الاتصال";
+  String care_import_count(String n) => "جهات الاتصال · $n";
+  String get care_import_select_all => "تحديد الكل";
+  String get care_import_clear => "إلغاء التحديد";
+  String get care_import_no_match => "لا توجد جهات اتصال مطابقة.";
+  String get care_import_on_team => "في فريقك";
+  String get care_import_fab => "أضف من جهات الاتصال";
+  String care_import_banner(String n) =>
+      "أُضيف $n إلى فريق الرعاية. اضغط تعديل لإضافة التخصص والعنوان.";
+  String get care_import_manual => "ليس في جهات الاتصال؟ أضف يدويًا";
+  String get care_import_none => "اختر جهات اتصال";
+  String get care_import_unavailable =>
+      "جهات اتصال هاتفك غير متاحة هنا. يمكنك إضافة مقدّم رعاية يدويًا.";
+  String care_import_cta(String n) => "إضافة $n إلى فريق الرعاية";
+  String care_import_done(String n) => "تمت إضافة $n إلى فريق الرعاية";
+  String care_import_skipped(String n) => "$n موجودون بالفعل في فريقك";
+  String get care_add => "أضف مقدّم رعاية";
+  String get care_call => "اتصال";
+  String get care_remove => "حذف";
+  String get care_t_doctor => "طبيب";
+  String get care_t_nurse => "تمريض";
+  String get care_t_carer => "مقدّم رعاية";
+  String get care_t_pharmacy => "صيدلية";
+  String get care_t_lab => "مختبر";
+  String get care_t_physio => "علاج طبيعي";
+  String get care_t_clinic => "عيادة";
+  String get care_t_other => "أخرى";
+  String get care_add_title => "إضافة مقدّم رعاية";
+  String get care_add_note => "الاسم فقط مطلوب. ما تضيفه يبقى على جهازك.";
+  String get care_f_type => "نوع مقدّم الرعاية";
+  String get care_f_name => "الاسم";
+  String get care_ph_name_person => "د. سارة كمال";
+  String get care_ph_name_place => "صيدلية الشفاء";
+  String get care_f_specialty => "التخصص";
+  String get care_f_services => "الخدمات";
+  String get care_ph_specialty => "باطنة";
+  String get care_ph_services => "توصيل، قياس ضغط";
+  String get care_s_contact => "التواصل";
+  String get care_f_phone => "رقم الهاتف";
+  String get care_f_phone2 => "رقم آخر (اختياري)";
+  String get care_ph_phone2 => "هاتف العيادة";
+  String get care_f_email => "البريد الإلكتروني";
+  String get care_s_clinic => "العيادة";
+  String get care_s_location => "الموقع";
+  String get care_f_clinic => "العيادة أو المستشفى";
+  String get care_f_branch => "الفرع أو المجموعة";
+  String get care_ph_clinic => "مركز بلسم الطبي";
+  String get care_f_address => "العنوان";
+  String get care_ph_address => "١٢ شارع ٩، المعادي، القاهرة";
+  String get care_f_notes => "ملاحظات";
+  String get care_ph_notes => "مواعيد العمل، كيف وصلت إليه…";
+  String get care_save => "حفظ";
+  String get care_saved => "أُضيف إلى فريق الرعاية";
+  String get care_removed => "أُزيل من فريق الرعاية";
+  String get care_save_failed => "تعذّر الحفظ. حاول مرة أخرى.";
+  String get care_edit_title => "تعديل مقدّم الرعاية";
+  String get care_save_changes => "حفظ التغييرات";
+  String get care_edit => "تعديل";
+  String get care_f_map => "رابط الموقع (اختياري)";
+  String get care_ph_map => "https://maps.app.goo.gl/…";
+  String get care_map_help => "من الخريطة: مشاركة ← نسخ الرابط.";
+  String get care_map_bad =>
+      "يبدو أن هذا ليس رابطًا. انسخ الرابط من خرائط Google أو Apple.";
+  String get care_paste => "لصق";
+  String get care_directions => "الاتجاهات";
+  String get care_delete => "حذف من فريق الرعاية";
+  String care_delete_q(String name) => "حذف $name من فريق رعايتك؟";
+  String get care_delete_h => "سيتم حذف بياناته وملفاته المرفقة من جهازك.";
+  String get care_keep => "تراجع";
+  String get care_attach_file => "إرفاق ملف";
+  String get care_manage_files => "إدارة الملفات";
+  String get care_files_done => "تم";
+  String get care_files => "ملفات";
+  String get care_files_head => "بطاقة العمل والملفات";
+  String get care_attach => "إرفاق";
+  String get care_attach_empty => "أرفق بطاقة العمل أو صورة";
+  String get care_attach_empty_h => "صور، فيديو أو PDF";
+  String get care_link_opens => "افتح الرابط على";
+  String get care_link_remove => "إزالة الرابط إلى";
+  String get care_attach_add => "إضافة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'map_sub':
+        return map_sub;
+      case 'to_doctor':
+        return to_doctor;
+      case 'to_home':
+        return to_home;
+      case 'care_intro':
+        return care_intro;
+      case 'care_find':
+        return care_find;
+      case 'follow_up':
+        return follow_up;
+      case 'check_up':
+        return check_up;
+      case 'map_nearby':
+        return map_nearby;
+      case 'map_search_ph':
+        return map_search_ph;
+      case 'map_all':
+        return map_all;
+      case 'map_distance':
+        return map_distance;
+      case 'map_call':
+        return map_call;
+      case 'map_directions':
+        return map_directions;
+      case 'map_list':
+        return map_list;
+      case 'map_map':
+        return map_map;
+      case 'map_found':
+        return map_found;
+      case 'map_no_results':
+        return map_no_results;
+      case 'map_no_res_h':
+        return map_no_res_h;
+      case 'map_search_area':
+        return map_search_area;
+      case 'map_zoomed_out':
+        return map_zoomed_out;
+      case 'map_zoomed_out_h':
+        return map_zoomed_out_h;
+      case 'map_n_types':
+        return map_n_types;
+      case 'map_clear':
+        return map_clear;
+      case 'care_empty':
+        return care_empty;
+      case 'care_add_help':
+        return care_add_help;
+      case 'care_search_ph':
+        return care_search_ph;
+      case 'care_all':
+        return care_all;
+      case 'care_no_match':
+        return care_no_match;
+      case 'care_no_match_h':
+        return care_no_match_h;
+      case 'care_import':
+        return care_import;
+      case 'care_import_title':
+        return care_import_title;
+      case 'care_import_note':
+        return care_import_note;
+      case 'care_import_pick':
+        return care_import_pick;
+      case 'care_import_more':
+        return care_import_more;
+      case 'care_import_empty':
+        return care_import_empty;
+      case 'care_import_empty_h':
+        return care_import_empty_h;
+      case 'care_import_search':
+        return care_import_search;
+      case 'care_import_count':
+        return care_import_count;
+      case 'care_import_select_all':
+        return care_import_select_all;
+      case 'care_import_clear':
+        return care_import_clear;
+      case 'care_import_no_match':
+        return care_import_no_match;
+      case 'care_import_on_team':
+        return care_import_on_team;
+      case 'care_import_fab':
+        return care_import_fab;
+      case 'care_import_banner':
+        return care_import_banner;
+      case 'care_import_manual':
+        return care_import_manual;
+      case 'care_import_none':
+        return care_import_none;
+      case 'care_import_unavailable':
+        return care_import_unavailable;
+      case 'care_import_cta':
+        return care_import_cta;
+      case 'care_import_done':
+        return care_import_done;
+      case 'care_import_skipped':
+        return care_import_skipped;
+      case 'care_add':
+        return care_add;
+      case 'care_call':
+        return care_call;
+      case 'care_remove':
+        return care_remove;
+      case 'care_t_doctor':
+        return care_t_doctor;
+      case 'care_t_nurse':
+        return care_t_nurse;
+      case 'care_t_carer':
+        return care_t_carer;
+      case 'care_t_pharmacy':
+        return care_t_pharmacy;
+      case 'care_t_lab':
+        return care_t_lab;
+      case 'care_t_physio':
+        return care_t_physio;
+      case 'care_t_clinic':
+        return care_t_clinic;
+      case 'care_t_other':
+        return care_t_other;
+      case 'care_add_title':
+        return care_add_title;
+      case 'care_add_note':
+        return care_add_note;
+      case 'care_f_type':
+        return care_f_type;
+      case 'care_f_name':
+        return care_f_name;
+      case 'care_ph_name_person':
+        return care_ph_name_person;
+      case 'care_ph_name_place':
+        return care_ph_name_place;
+      case 'care_f_specialty':
+        return care_f_specialty;
+      case 'care_f_services':
+        return care_f_services;
+      case 'care_ph_specialty':
+        return care_ph_specialty;
+      case 'care_ph_services':
+        return care_ph_services;
+      case 'care_s_contact':
+        return care_s_contact;
+      case 'care_f_phone':
+        return care_f_phone;
+      case 'care_f_phone2':
+        return care_f_phone2;
+      case 'care_ph_phone2':
+        return care_ph_phone2;
+      case 'care_f_email':
+        return care_f_email;
+      case 'care_s_clinic':
+        return care_s_clinic;
+      case 'care_s_location':
+        return care_s_location;
+      case 'care_f_clinic':
+        return care_f_clinic;
+      case 'care_f_branch':
+        return care_f_branch;
+      case 'care_ph_clinic':
+        return care_ph_clinic;
+      case 'care_f_address':
+        return care_f_address;
+      case 'care_ph_address':
+        return care_ph_address;
+      case 'care_f_notes':
+        return care_f_notes;
+      case 'care_ph_notes':
+        return care_ph_notes;
+      case 'care_save':
+        return care_save;
+      case 'care_saved':
+        return care_saved;
+      case 'care_removed':
+        return care_removed;
+      case 'care_save_failed':
+        return care_save_failed;
+      case 'care_edit_title':
+        return care_edit_title;
+      case 'care_save_changes':
+        return care_save_changes;
+      case 'care_edit':
+        return care_edit;
+      case 'care_f_map':
+        return care_f_map;
+      case 'care_ph_map':
+        return care_ph_map;
+      case 'care_map_help':
+        return care_map_help;
+      case 'care_map_bad':
+        return care_map_bad;
+      case 'care_paste':
+        return care_paste;
+      case 'care_directions':
+        return care_directions;
+      case 'care_delete':
+        return care_delete;
+      case 'care_delete_q':
+        return care_delete_q;
+      case 'care_delete_h':
+        return care_delete_h;
+      case 'care_keep':
+        return care_keep;
+      case 'care_attach_file':
+        return care_attach_file;
+      case 'care_manage_files':
+        return care_manage_files;
+      case 'care_files_done':
+        return care_files_done;
+      case 'care_files':
+        return care_files;
+      case 'care_files_head':
+        return care_files_head;
+      case 'care_attach':
+        return care_attach;
+      case 'care_attach_empty':
+        return care_attach_empty;
+      case 'care_attach_empty_h':
+        return care_attach_empty_h;
+      case 'care_link_opens':
+        return care_link_opens;
+      case 'care_link_remove':
+        return care_link_remove;
+      case 'care_attach_add':
+        return care_attach_add;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class CheckinStrings_ar extends CheckinStrings {
+  final Strings_ar _parent;
+  const CheckinStrings_ar(this._parent) : super(_parent);
+  String get latest => "آخر القياسات";
+  String get unit_bp => "ملم زئبق";
+  String get unit_glu => "مجم/دل";
+  String get unit_kg => "كجم";
+  String get bp_normal => "ضمن المعدل";
+  String get bp_high => "أعلى قليلاً";
+  String get q_mood_h => "اختاري الوجه الأقرب لحالتك.";
+  String get mood_1 => "متعبة";
+  String get mood_2 => "ضعيفة";
+  String get mood_3 => "عادية";
+  String get mood_4 => "جيدة";
+  String get mood_5 => "ممتازة";
+  String get q_bp_t => "كم ضغط دمك؟";
+  String get q_bp_h => "اضغطي على الرقم ثم استخدمي لوحة الأرقام.";
+  String get sys => "الانقباضي";
+  String get dia => "الانبساطي";
+  String get q_glu_t => "وكم نسبة السكر؟";
+  String get q_glu_h => "أدخلي القراءة من جهاز قياس السكر.";
+  String get glu_fast => "صائمة";
+  String get glu_meal => "بعد الأكل";
+  String get glu_random => "عشوائي";
+  String get q_med_t => "هل أخذتِ أدويتك؟";
+  String get q_med_h => "اضغطي على كل دواء أخذتِه اليوم.";
+  String get q_sym_t => "هل لديك ألم أو أعراض؟";
+  String get pain_0 => "لا ألم";
+  String get pain_mild => "خفيف";
+  String get pain_mod => "متوسط";
+  String get pain_sev => "شديد";
+  String get pain_worst => "الأسوأ";
+  String get note_lbl => "أي شيء آخر؟ (اختياري)";
+  String get note_ph => "اكتبي ملاحظة لطبيبك…";
+  String get s_none => "لا شيء";
+  String get view_trends => "عرض الرسوم";
+  String get trends => "الرسوم البيانية";
+  String get range_w => "أسبوع";
+  String get range_m => "شهر";
+  String get range_3m => "3 أشهر";
+  String get trend_all_metrics => "الكل";
+  String trend_n_metrics(String n) => "$n من المقاييس";
+  String get avg => "متوسط";
+  String get no_checkins => "لا توجد متابعات بعد";
+  String get no_readings => "لا توجد قراءات في هذه الفترة";
+  String get symptoms => "الأعراض";
+  String symptoms_n(String n) => "$n أعراض";
+  String get ql_title => "دعنا نطمئن عليك";
+  String get ql_search => "بحث";
+  String get ql_no_results => "لا توجد نتائج";
+  String get ql_vitals => "العلامات الحيوية";
+  String get ql_wellbeing => "الحالة العامة";
+  String get ql_add_records => "أضف إلى السجلات";
+  String get full_checkin => "المتابعة الكاملة";
+  String get ql_full_sub => "المزاج · ضغط الدم · السكر · الأدوية";
+  String get quick_log_or => "أو سجّل قراءة واحدة";
+  String get ql_save => "حفظ";
+  String get ql_saved => "تم الحفظ";
+  String get body_location => "أين يؤلمك؟";
+  String get body_view_front => "أمامي";
+  String get body_view_back => "خلفي";
+  String get body_tap => "انقر لتحديد الموقع";
+  String get body_layer => "الطبقة";
+  String get body_layer_locked => "امسح التحديد لتغيير نوع الجسم";
+  String body_remove(String label) => "إزالة $label";
+  String get body_clear_all => "مسح الكل";
+  String get body_marked => "المناطق المحددة";
+  String get list_sep => "، ";
+  String get list_mid => " · ";
+  String pain_n(String n) => "$n/10";
+  String pain_n_where(String n, String where) => "$n/10 · $where";
+  String labeled_where(String label, String where) => "$label · $where";
+  String reading_unit(String n, String unit) => "$n $unit";
+  String reading_unit_ctx(String n, String unit, String ctx) =>
+      "$n $unit · $ctx";
+  String bp_pair(String sys, String dia) => "$sys/$dia";
+  String get cond_icd10_hint => "رمز ICD-10 (اختياري)";
+  String get cond_onset_hint => "سنة البدء";
+  String get q_vitals_t => "مؤشراتك الحيوية";
+  String get q_vitals_h => "أدخل أي قياسات أخذتها اليوم — كلها اختيارية.";
+  String get unit_spo2 => "%";
+  String get sym_headache => "صداع";
+  String get sym_dizzy => "دوخة";
+  String get sym_fatigue => "إرهاق";
+  String get sym_blurred_vision => "تشوش الرؤية";
+  String get sym_swelling => "تورّم";
+  String get sym_chest_tightness => "ضيق بالصدر";
+  String get sym_nausea => "غثيان";
+  String get sym_thirst => "عطش زائد";
+  String q_mood_t(Gender gender) =>
+      "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
+  String q_sym_h(Gender gender) => "حرّك${_select(gender, {
+            'female': 'ي'
+          })} المؤشر لمستوى الألم، ثم ${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} ما تشعر${_select(gender, {'female': 'ين'})} به.";
+  String get sd_color => "اللون";
+  String get sd_quantity => "الكمية";
+  String get sd_ml => "مل";
+  String get sd_blood => "دم";
+  String get sd_u_pale => "شاحب";
+  String get sd_u_yellow => "أصفر";
+  String get sd_u_dark => "داكن";
+  String get sd_u_red => "أحمر/وردي";
+  String get sd_u_brown => "بني";
+  String get sym_tingling => "تنميل أو خدر";
+  String get sym_itching => "حكة";
+  String get sym_vomiting => "قيء";
+  String get sym_urine => "البول";
+  String get sym_stool => "البراز";
+  String get st_mood => "المزاج";
+  String get st_bp => "الضغط";
+  String get st_glucose => "السكر";
+  String get st_heart_rate => "النبض";
+  String get st_temperature => "الحرارة";
+  String get st_weight => "الوزن";
+  String get st_spo2 => "الأكسجين";
+  String get st_pain => "الألم";
+  String get st_symptoms => "الأعراض";
+  String get st_meds => "الأدوية";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'latest':
+        return latest;
+      case 'unit_bp':
+        return unit_bp;
+      case 'unit_glu':
+        return unit_glu;
+      case 'unit_kg':
+        return unit_kg;
+      case 'bp_normal':
+        return bp_normal;
+      case 'bp_high':
+        return bp_high;
+      case 'q_mood_h':
+        return q_mood_h;
+      case 'mood_1':
+        return mood_1;
+      case 'mood_2':
+        return mood_2;
+      case 'mood_3':
+        return mood_3;
+      case 'mood_4':
+        return mood_4;
+      case 'mood_5':
+        return mood_5;
+      case 'q_bp_t':
+        return q_bp_t;
+      case 'q_bp_h':
+        return q_bp_h;
+      case 'sys':
+        return sys;
+      case 'dia':
+        return dia;
+      case 'q_glu_t':
+        return q_glu_t;
+      case 'q_glu_h':
+        return q_glu_h;
+      case 'glu_fast':
+        return glu_fast;
+      case 'glu_meal':
+        return glu_meal;
+      case 'glu_random':
+        return glu_random;
+      case 'q_med_t':
+        return q_med_t;
+      case 'q_med_h':
+        return q_med_h;
+      case 'q_sym_t':
+        return q_sym_t;
+      case 'pain_0':
+        return pain_0;
+      case 'pain_mild':
+        return pain_mild;
+      case 'pain_mod':
+        return pain_mod;
+      case 'pain_sev':
+        return pain_sev;
+      case 'pain_worst':
+        return pain_worst;
+      case 'note_lbl':
+        return note_lbl;
+      case 'note_ph':
+        return note_ph;
+      case 's_none':
+        return s_none;
+      case 'view_trends':
+        return view_trends;
+      case 'trends':
+        return trends;
+      case 'range_w':
+        return range_w;
+      case 'range_m':
+        return range_m;
+      case 'range_3m':
+        return range_3m;
+      case 'trend_all_metrics':
+        return trend_all_metrics;
+      case 'trend_n_metrics':
+        return trend_n_metrics;
+      case 'avg':
+        return avg;
+      case 'no_checkins':
+        return no_checkins;
+      case 'no_readings':
+        return no_readings;
+      case 'symptoms':
+        return symptoms;
+      case 'symptoms_n':
+        return symptoms_n;
+      case 'ql_title':
+        return ql_title;
+      case 'ql_search':
+        return ql_search;
+      case 'ql_no_results':
+        return ql_no_results;
+      case 'ql_vitals':
+        return ql_vitals;
+      case 'ql_wellbeing':
+        return ql_wellbeing;
+      case 'ql_add_records':
+        return ql_add_records;
+      case 'full_checkin':
+        return full_checkin;
+      case 'ql_full_sub':
+        return ql_full_sub;
+      case 'quick_log_or':
+        return quick_log_or;
+      case 'ql_save':
+        return ql_save;
+      case 'ql_saved':
+        return ql_saved;
+      case 'body_location':
+        return body_location;
+      case 'body_view_front':
+        return body_view_front;
+      case 'body_view_back':
+        return body_view_back;
+      case 'body_tap':
+        return body_tap;
+      case 'body_layer':
+        return body_layer;
+      case 'body_layer_locked':
+        return body_layer_locked;
+      case 'body_remove':
+        return body_remove;
+      case 'body_clear_all':
+        return body_clear_all;
+      case 'body_marked':
+        return body_marked;
+      case 'list_sep':
+        return list_sep;
+      case 'list_mid':
+        return list_mid;
+      case 'pain_n':
+        return pain_n;
+      case 'pain_n_where':
+        return pain_n_where;
+      case 'labeled_where':
+        return labeled_where;
+      case 'reading_unit':
+        return reading_unit;
+      case 'reading_unit_ctx':
+        return reading_unit_ctx;
+      case 'bp_pair':
+        return bp_pair;
+      case 'cond_icd10_hint':
+        return cond_icd10_hint;
+      case 'cond_onset_hint':
+        return cond_onset_hint;
+      case 'q_vitals_t':
+        return q_vitals_t;
+      case 'q_vitals_h':
+        return q_vitals_h;
+      case 'unit_spo2':
+        return unit_spo2;
+      case 'sym_headache':
+        return sym_headache;
+      case 'sym_dizzy':
+        return sym_dizzy;
+      case 'sym_fatigue':
+        return sym_fatigue;
+      case 'sym_blurred_vision':
+        return sym_blurred_vision;
+      case 'sym_swelling':
+        return sym_swelling;
+      case 'sym_chest_tightness':
+        return sym_chest_tightness;
+      case 'sym_nausea':
+        return sym_nausea;
+      case 'sym_thirst':
+        return sym_thirst;
+      case 'q_mood_t':
+        return q_mood_t;
+      case 'q_sym_h':
+        return q_sym_h;
+      case 'sd_color':
+        return sd_color;
+      case 'sd_quantity':
+        return sd_quantity;
+      case 'sd_ml':
+        return sd_ml;
+      case 'sd_blood':
+        return sd_blood;
+      case 'sd_u_pale':
+        return sd_u_pale;
+      case 'sd_u_yellow':
+        return sd_u_yellow;
+      case 'sd_u_dark':
+        return sd_u_dark;
+      case 'sd_u_red':
+        return sd_u_red;
+      case 'sd_u_brown':
+        return sd_u_brown;
+      case 'sym_tingling':
+        return sym_tingling;
+      case 'sym_itching':
+        return sym_itching;
+      case 'sym_vomiting':
+        return sym_vomiting;
+      case 'sym_urine':
+        return sym_urine;
+      case 'sym_stool':
+        return sym_stool;
+      case 'st_mood':
+        return st_mood;
+      case 'st_bp':
+        return st_bp;
+      case 'st_glucose':
+        return st_glucose;
+      case 'st_heart_rate':
+        return st_heart_rate;
+      case 'st_temperature':
+        return st_temperature;
+      case 'st_weight':
+        return st_weight;
+      case 'st_spo2':
+        return st_spo2;
+      case 'st_pain':
+        return st_pain;
+      case 'st_symptoms':
+        return st_symptoms;
+      case 'st_meds':
+        return st_meds;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class CommonStrings_ar extends CommonStrings {
+  final Strings_ar _parent;
+  const CommonStrings_ar(this._parent) : super(_parent);
+  String get continue_ => "متابعة";
+  String get today_lbl => "متابعة اليوم";
+  String get done_lbl => "انتهيتِ لليوم";
+  String get done_q => "اكتملت المتابعة";
+  String get recent => "آخر التقارير";
+  String get see_all => "عرض الكل";
+  String get step_of => "من";
+  String get back => "رجوع";
+  String get finish => "إنهاء المتابعة";
+  String get saved_t => "تم حفظ المتابعة";
+  String get saved_local => "حُفظ محلياً — ستتم المزامنة عند الاتصال.";
+  String get profile => "الملف الشخصي";
+  String get your_accounts => "حساباتك";
+  String get pages => "صفحات";
+  String get a11y_show_pw => "إظهار كلمة المرور";
+  String get a11y_hide_pw => "إخفاء كلمة المرور";
+  String get a11y_code_field => "رمز التحقق";
+  String a11y_code_progress(String n) => "أُدخل $n من 6 أرقام";
+  String get a11y_error => "خطأ";
+  String get ph_country => "اختر الدولة";
+  String get ph_country_search => "ابحث بالاسم أو الرمز";
+  String get ph_no_match => "لا توجد نتائج";
+  String ph_country_of(String dial) => "رمز الدولة، الحالي $dial";
+  String get a11y_close => "إغلاق";
+  String get a11y_back => "رجوع";
+  String get a11y_next => "التالي";
+  String get a11y_delete => "حذف";
+  String get a11y_add => "إضافة";
+  String get a11y_locate => "تحديد موقعي";
+  String get a11y_download => "تنزيل";
+  String get a11y_qr => "رمز QR";
+  String get a11y_edit => "تعديل";
+  String get a11y_notifications => "الإشعارات";
+  String get cancel => "إلغاء";
+  String get acc_active => "الحساب النشط";
+  String get acc_not_signed_in => "لم يتم تسجيل الدخول";
+  String get loading => "جارٍ التحميل";
+  String get today => "اليوم";
+  String get date => "التاريخ";
+  String get time => "الوقت";
+  String get details => "التفاصيل";
+  String get select_date => "اختر تاريخاً";
+  String get roadmap => "قريباً";
+  String get member_name => "الاسم";
+  String get member_name_ph => "اسم فرد الأسرة";
+  String get relation => "صلة القرابة";
+  String get select_relation => "اختر صلة القرابة";
+  String get fam_scan_qr => "امسح رمز QR الخاص بهم";
+  String get fam_scan_qr_sub => "اربط حسابًا موجودًا على بلسم في ثوانٍ.";
+  String get fam_manual => "الإدخال يدويًا";
+  String get fam_manual_sub => "لمن لا يملك حسابًا بعد.";
+  String get fam_scan_title => "مسح رمز QR";
+  String get fam_confirm_title => "تأكيد الإضافة";
+  String get fam_point_camera => "وجّه الكاميرا إلى رمز بلسم الخاص بهم";
+  String get fam_code_found => "تم التعرّف على الرمز";
+  String get fam_code_hint => "يجد كل فرد رمزه في الملف الشخصي ← رمز المشاركة.";
+  String get fam_manual_instead => "الإدخال يدويًا بدلاً من ذلك";
+  String get fam_scan_instead => "مسح رمز QR بدلاً من ذلك";
+  String get fam_scan_other => "مسح رمز آخر";
+  String get fam_approval_note =>
+      "سيرى الطلب في تطبيقه ويوافق عليه مرة واحدة — لن تظهر أي بيانات صحية قبل موافقته.";
+  String get fam_send_request => "إرسال طلب الربط";
+  String get fam_pending => "بانتظار الموافقة";
+  String get fam_cancel_request => "إلغاء";
+  String get fam_link_requests => "طلبات الربط";
+  String get fam_decline => "رفض";
+  String get fam_approve => "موافقة";
+  String get fam_self_add => "لا يمكنك إضافة نفسك — هذا رمزك أنت";
+  String get fam_self_add_manual => "هذا اسمك أنت — أفراد الأسرة أشخاص آخرون";
+  String get fam_scan_invalid => "هذا ليس رمز ملف بلسم";
+  String get fam_scan_failed => "تعذّرت قراءة الرمز — حاول مجددًا";
+  String get rel_default => "فرد من الأسرة";
+  String get member_dob => "تاريخ الميلاد";
+  String get member_dob_ph => "يوم / شهر / سنة";
+  String get yrs => "سنة";
+  String get add_member_cta => "إضافة";
+  String get rel_spouse => "الزوج/الزوجة";
+  String get rel_son => "الابن";
+  String get rel_daughter => "الابنة";
+  String get rel_father => "الأب";
+  String get rel_mother => "الأم";
+  String get rel_sibling => "الأخ/الأخت";
+  String get rel_grandparent => "الجد/الجدة";
+  String get rel_other => "أخرى";
+  String get offline_banner => "لا يوجد اتصال — نعرض بيانات محفوظة";
+  String get beta_banner => "إطلاق تجريبي";
+  String get offline_stale_places => "قد تكون هذه الأماكن غير محدّثة";
+  String get offline_sessions => "يحتاج سجل الدخول إلى اتصال";
+  String get offline_write => "لا يوجد اتصال. هذا يحتاج إلى إنترنت.";
+  String get undo => "تراجع";
+  String get offline_badge => "دون اتصال";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'continue_':
+        return continue_;
+      case 'today_lbl':
+        return today_lbl;
+      case 'done_lbl':
+        return done_lbl;
+      case 'done_q':
+        return done_q;
+      case 'recent':
+        return recent;
+      case 'see_all':
+        return see_all;
+      case 'step_of':
+        return step_of;
+      case 'back':
+        return back;
+      case 'finish':
+        return finish;
+      case 'saved_t':
+        return saved_t;
+      case 'saved_local':
+        return saved_local;
+      case 'profile':
+        return profile;
+      case 'your_accounts':
+        return your_accounts;
+      case 'pages':
+        return pages;
+      case 'a11y_show_pw':
+        return a11y_show_pw;
+      case 'a11y_hide_pw':
+        return a11y_hide_pw;
+      case 'a11y_code_field':
+        return a11y_code_field;
+      case 'a11y_code_progress':
+        return a11y_code_progress;
+      case 'a11y_error':
+        return a11y_error;
+      case 'ph_country':
+        return ph_country;
+      case 'ph_country_search':
+        return ph_country_search;
+      case 'ph_no_match':
+        return ph_no_match;
+      case 'ph_country_of':
+        return ph_country_of;
+      case 'a11y_close':
+        return a11y_close;
+      case 'a11y_back':
+        return a11y_back;
+      case 'a11y_next':
+        return a11y_next;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'a11y_add':
+        return a11y_add;
+      case 'a11y_locate':
+        return a11y_locate;
+      case 'a11y_download':
+        return a11y_download;
+      case 'a11y_qr':
+        return a11y_qr;
+      case 'a11y_edit':
+        return a11y_edit;
+      case 'a11y_notifications':
+        return a11y_notifications;
+      case 'cancel':
+        return cancel;
+      case 'acc_active':
+        return acc_active;
+      case 'acc_not_signed_in':
+        return acc_not_signed_in;
+      case 'loading':
+        return loading;
+      case 'today':
+        return today;
+      case 'date':
+        return date;
+      case 'time':
+        return time;
+      case 'details':
+        return details;
+      case 'select_date':
+        return select_date;
+      case 'roadmap':
+        return roadmap;
+      case 'member_name':
+        return member_name;
+      case 'member_name_ph':
+        return member_name_ph;
+      case 'relation':
+        return relation;
+      case 'select_relation':
+        return select_relation;
+      case 'fam_scan_qr':
+        return fam_scan_qr;
+      case 'fam_scan_qr_sub':
+        return fam_scan_qr_sub;
+      case 'fam_manual':
+        return fam_manual;
+      case 'fam_manual_sub':
+        return fam_manual_sub;
+      case 'fam_scan_title':
+        return fam_scan_title;
+      case 'fam_confirm_title':
+        return fam_confirm_title;
+      case 'fam_point_camera':
+        return fam_point_camera;
+      case 'fam_code_found':
+        return fam_code_found;
+      case 'fam_code_hint':
+        return fam_code_hint;
+      case 'fam_manual_instead':
+        return fam_manual_instead;
+      case 'fam_scan_instead':
+        return fam_scan_instead;
+      case 'fam_scan_other':
+        return fam_scan_other;
+      case 'fam_approval_note':
+        return fam_approval_note;
+      case 'fam_send_request':
+        return fam_send_request;
+      case 'fam_pending':
+        return fam_pending;
+      case 'fam_cancel_request':
+        return fam_cancel_request;
+      case 'fam_link_requests':
+        return fam_link_requests;
+      case 'fam_decline':
+        return fam_decline;
+      case 'fam_approve':
+        return fam_approve;
+      case 'fam_self_add':
+        return fam_self_add;
+      case 'fam_self_add_manual':
+        return fam_self_add_manual;
+      case 'fam_scan_invalid':
+        return fam_scan_invalid;
+      case 'fam_scan_failed':
+        return fam_scan_failed;
+      case 'rel_default':
+        return rel_default;
+      case 'member_dob':
+        return member_dob;
+      case 'member_dob_ph':
+        return member_dob_ph;
+      case 'yrs':
+        return yrs;
+      case 'add_member_cta':
+        return add_member_cta;
+      case 'rel_spouse':
+        return rel_spouse;
+      case 'rel_son':
+        return rel_son;
+      case 'rel_daughter':
+        return rel_daughter;
+      case 'rel_father':
+        return rel_father;
+      case 'rel_mother':
+        return rel_mother;
+      case 'rel_sibling':
+        return rel_sibling;
+      case 'rel_grandparent':
+        return rel_grandparent;
+      case 'rel_other':
+        return rel_other;
+      case 'offline_banner':
+        return offline_banner;
+      case 'beta_banner':
+        return beta_banner;
+      case 'offline_stale_places':
+        return offline_stale_places;
+      case 'offline_sessions':
+        return offline_sessions;
+      case 'offline_write':
+        return offline_write;
+      case 'undo':
+        return undo;
+      case 'offline_badge':
+        return offline_badge;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class EmergencyStrings_ar extends EmergencyStrings {
+  final Strings_ar _parent;
+  const EmergencyStrings_ar(this._parent) : super(_parent);
+  String get em_label => "البريد الإلكتروني";
+  String get em_ph => "you@example.com";
+  String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
+  String get em_eg => "مصر";
+  String get em_intro =>
+      "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
+  String get em_tap_call => "اضغط للاتصال";
+  String get em_ambulance => "إسعاف";
+  String get em_police => "شرطة";
+  String get em_fire => "الإطفاء والإنقاذ";
+  String get em_tourist => "شرطة السياحة";
+  String get emergency => "الطوارئ";
+  String get em_one_title => "تسجيل الدخول أو إنشاء حساب";
+  String get em_one_help =>
+      "أدخل بريدك وكلمة مرور. جديد هنا؟ سنرسل رمزاً إلى بريدك لتأكيده.";
+  String em_send_code_q(String email) =>
+      "تعذّر ذلك. نرسل رمزاً إلى $email للمتابعة؟";
+  String get em_send_code => "أرسل لي رمزاً";
+  String get em_otp_neutral_h =>
+      "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
+  String get em_adopt_title => "نستخدم كلمة المرور هذه من الآن؟";
+  String get em_adopt_help =>
+      "سجّلت الدخول برمز. احفظ كلمة المرور التي كتبتها لتعمل في المرة القادمة.";
+  String get em_adopt_yes => "احفظ كلمة المرور";
+  String get em_adopt_no => "أبقِ الحالية";
+  String get em_adopt_saved => "تم تحديث كلمة المرور.";
+  String get em_adopt_failed =>
+      "تعذّر حفظ كلمة المرور. يمكنك ضبطها من الإعدادات.";
+  String get em_pw_set_failed =>
+      "حسابك جاهز، لكن لم تُحفظ كلمة المرور. اضبطها من الإعدادات.";
+  String get em_pw_title => "أهلاً بعودتك";
+  String get em_pw_help => "أدخل كلمة المرور لتسجيل الدخول.";
+  String get em_pw_signup_title => "أنشئ حسابك";
+  String get em_pw_signup_help => "اختر كلمة مرور للبدء.";
+  String get eqr_title => "رمز الطوارئ";
+  String get eqr_ttl_1h => "ساعة";
+  String get eqr_ttl_6h => "٦ س";
+  String get eqr_ttl_24h => "٢٤ س";
+  String get eqr_ttl_7d => "٧ أيام";
+  String get eqr_help_empty =>
+      "هذا الرمز هو هويّتك في بلسم — للطوارئ والحجوزات، ولكي يضيفك أحد أفراد أسرتك إلى حسابه. أضف فصيلة الدم أو الحساسيات أو جهة اتصال طوارئ لتضمينها في البطاقة.";
+  String get eqr_help_active =>
+      "اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.";
+  String get eqr_help_signin =>
+      "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
+  String get eqr_help_incomplete =>
+      "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
+  String get eqr_help_create =>
+      "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
+  String get eqr_expired => "منتهي";
+  String eqr_expires_in(String t) => "ينتهي خلال $t";
+  String get eqr_copy => "نسخ";
+  String get eqr_share => "مشاركة";
+  String get eqr_save => "حفظ";
+  String get eqr_save_failed => "تعذّر الحفظ في الاستوديو";
+  String get eqr_saved_toast => "تم حفظ الصورة";
+  String get eqr_link_copied => "تم نسخ الرابط";
+  String get eqr_revoke => "إلغاء الرمز";
+  String get eqr_revoked_toast => "تم إلغاء الرمز";
+  String get eqr_rotate => "استبدال الرمز";
+  String get eqr_rotate_confirm =>
+      "هل تريد استبدال هذا الرمز؟ ستتوقف النسخ المطبوعة أو المشاركة عن العمل فورًا.";
+  String get eqr_rotate_yes => "استبدال";
+  String get eqr_rotated_toast => "الرمز الجديد جاهز";
+  String get eqr_rotate_failed => "تعذّر استبدال الرمز — تحقق من الاتصال";
+  String get eqr_scan_history => "سجلّ المسح";
+  String get eqr_scans_empty => "لا عمليات مسح بعد";
+  String get eqr_scan_client_web => "متصفح ويب";
+  String get eqr_scan_client_app => "تطبيق بلسم";
+  String get eqr_scan_client_unknown => "جهاز غير معروف";
+  String get eqr_generate => "إنشاء رمز QR";
+  String get eqr_generate_new => "إنشاء رمز جديد";
+  String get eqr_valid_for => "مدة الصلاحية";
+  String get eqr_signin_required => "يلزم تسجيل الدخول";
+  String get eqr_no_data => "لا توجد بيانات صحية بعد";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'em_label':
+        return em_label;
+      case 'em_ph':
+        return em_ph;
+      case 'em_otp_h':
+        return em_otp_h;
+      case 'em_eg':
+        return em_eg;
+      case 'em_intro':
+        return em_intro;
+      case 'em_tap_call':
+        return em_tap_call;
+      case 'em_ambulance':
+        return em_ambulance;
+      case 'em_police':
+        return em_police;
+      case 'em_fire':
+        return em_fire;
+      case 'em_tourist':
+        return em_tourist;
+      case 'emergency':
+        return emergency;
+      case 'em_one_title':
+        return em_one_title;
+      case 'em_one_help':
+        return em_one_help;
+      case 'em_send_code_q':
+        return em_send_code_q;
+      case 'em_send_code':
+        return em_send_code;
+      case 'em_otp_neutral_h':
+        return em_otp_neutral_h;
+      case 'em_adopt_title':
+        return em_adopt_title;
+      case 'em_adopt_help':
+        return em_adopt_help;
+      case 'em_adopt_yes':
+        return em_adopt_yes;
+      case 'em_adopt_no':
+        return em_adopt_no;
+      case 'em_adopt_saved':
+        return em_adopt_saved;
+      case 'em_adopt_failed':
+        return em_adopt_failed;
+      case 'em_pw_set_failed':
+        return em_pw_set_failed;
+      case 'em_pw_title':
+        return em_pw_title;
+      case 'em_pw_help':
+        return em_pw_help;
+      case 'em_pw_signup_title':
+        return em_pw_signup_title;
+      case 'em_pw_signup_help':
+        return em_pw_signup_help;
+      case 'eqr_title':
+        return eqr_title;
+      case 'eqr_ttl_1h':
+        return eqr_ttl_1h;
+      case 'eqr_ttl_6h':
+        return eqr_ttl_6h;
+      case 'eqr_ttl_24h':
+        return eqr_ttl_24h;
+      case 'eqr_ttl_7d':
+        return eqr_ttl_7d;
+      case 'eqr_help_empty':
+        return eqr_help_empty;
+      case 'eqr_help_active':
+        return eqr_help_active;
+      case 'eqr_help_signin':
+        return eqr_help_signin;
+      case 'eqr_help_incomplete':
+        return eqr_help_incomplete;
+      case 'eqr_help_create':
+        return eqr_help_create;
+      case 'eqr_expired':
+        return eqr_expired;
+      case 'eqr_expires_in':
+        return eqr_expires_in;
+      case 'eqr_copy':
+        return eqr_copy;
+      case 'eqr_share':
+        return eqr_share;
+      case 'eqr_save':
+        return eqr_save;
+      case 'eqr_save_failed':
+        return eqr_save_failed;
+      case 'eqr_saved_toast':
+        return eqr_saved_toast;
+      case 'eqr_link_copied':
+        return eqr_link_copied;
+      case 'eqr_revoke':
+        return eqr_revoke;
+      case 'eqr_revoked_toast':
+        return eqr_revoked_toast;
+      case 'eqr_rotate':
+        return eqr_rotate;
+      case 'eqr_rotate_confirm':
+        return eqr_rotate_confirm;
+      case 'eqr_rotate_yes':
+        return eqr_rotate_yes;
+      case 'eqr_rotated_toast':
+        return eqr_rotated_toast;
+      case 'eqr_rotate_failed':
+        return eqr_rotate_failed;
+      case 'eqr_scan_history':
+        return eqr_scan_history;
+      case 'eqr_scans_empty':
+        return eqr_scans_empty;
+      case 'eqr_scan_client_web':
+        return eqr_scan_client_web;
+      case 'eqr_scan_client_app':
+        return eqr_scan_client_app;
+      case 'eqr_scan_client_unknown':
+        return eqr_scan_client_unknown;
+      case 'eqr_generate':
+        return eqr_generate;
+      case 'eqr_generate_new':
+        return eqr_generate_new;
+      case 'eqr_valid_for':
+        return eqr_valid_for;
+      case 'eqr_signin_required':
+        return eqr_signin_required;
+      case 'eqr_no_data':
+        return eqr_no_data;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class HomeStrings_ar extends HomeStrings {
+  final Strings_ar _parent;
+  const HomeStrings_ar(this._parent) : super(_parent);
+  String get nudge_handle => "احجز معرّفك";
+  String get nudge_handle_sub => "ابدأ الإعداد";
+  String get nudge_ec => "أضف بطاقة الطوارئ";
+  String get nudge_ec_sub => "كن مستعداً";
+  String get nudge_med => "أضف دواءً";
+  String get nudge_med_sub => "واظب على المتابعة";
+  String get greet => "صباح الخير";
+  String get hero_time => "حوالي دقيقتين";
+  String get streak => "يوم متتالٍ";
+  String streak_help(Gender gender, int checked) => "${_select(gender, {
+            'male': 'تابعت',
+            'female': 'تابعتِ',
+            'other': 'تابعت'
+          })} ${checked} من آخر 7 أيام";
+  String get on_track => "ملتزمة";
+  String get away_banner => "أنت خارج بلدك";
+  String hero_q(Gender gender) => "${_select(gender, {
+            'male': 'كيف تشعر اليوم؟',
+            'female': 'كيف تشعرين اليوم؟',
+            'other': 'كيف تشعر اليوم؟'
+          })}";
+  String hero_cta(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ المتابعة',
+            'female': 'ابدئي المتابعة',
+            'other': 'ابدأ المتابعة'
+          })}";
+  String get hero_disclaimer => "تقييمك الخاص — لا يعتمد على قياس طبي";
+  String get care_team_sub => "أطباء وصيدليات ومقدّمو رعاية";
+  String get care_team_n => "مقدّم رعاية يتابع حالتك";
+  String viewing_member(String name) => "$name محدد";
+  String get viewing_own_data =>
+      "سجلّه غير متاح على هذا الجهاز بعد — ما تراه هو سجلّك أنت.";
+  String get viewing_switch_back => "العودة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'nudge_handle':
+        return nudge_handle;
+      case 'nudge_handle_sub':
+        return nudge_handle_sub;
+      case 'nudge_ec':
+        return nudge_ec;
+      case 'nudge_ec_sub':
+        return nudge_ec_sub;
+      case 'nudge_med':
+        return nudge_med;
+      case 'nudge_med_sub':
+        return nudge_med_sub;
+      case 'greet':
+        return greet;
+      case 'hero_time':
+        return hero_time;
+      case 'streak':
+        return streak;
+      case 'streak_help':
+        return streak_help;
+      case 'on_track':
+        return on_track;
+      case 'away_banner':
+        return away_banner;
+      case 'hero_q':
+        return hero_q;
+      case 'hero_cta':
+        return hero_cta;
+      case 'hero_disclaimer':
+        return hero_disclaimer;
+      case 'care_team_sub':
+        return care_team_sub;
+      case 'care_team_n':
+        return care_team_n;
+      case 'viewing_member':
+        return viewing_member;
+      case 'viewing_own_data':
+        return viewing_own_data;
+      case 'viewing_switch_back':
+        return viewing_switch_back;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class MedsStrings_ar extends MedsStrings {
+  final Strings_ar _parent;
+  const MedsStrings_ar(this._parent) : super(_parent);
+  String get meds_today => "أدوية اليوم";
+  String get taken => "مأخوذ";
+  String get due => "مستحق";
+  String get take => "أخذ";
+  String get skip_q => "لم أقِس هذا اليوم";
+  String get skipped => "لم يُؤخذ";
+  String get mark_skip => "لم آخذه";
+  String get meds_taken => "مأخوذة";
+  String get medications => "الأدوية";
+  String get morning => "الصباح";
+  String get evening => "المساء";
+  String get adherence => "الالتزام";
+  String get regimen => "نظامك اليومي";
+  String get last_7d => "آخر ٧ أيام";
+  String get rx_manage => "الوصفات والملفات";
+  String get rx_empty => "لا توجد وصفات بعد";
+  String get rx_empty_h => "أضف وصفة للاحتفاظ بنسخك في مكان واحد.";
+  String get rx_active => "فعّالة";
+  String get rx_expired => "منتهية";
+  String get rx_valid_until => "صالحة حتى";
+  String get rx_issued => "تاريخ الإصدار";
+  String get rx_med_one => "دواء واحد";
+  String rx_meds_n(String n) => "$n أدوية";
+  String get rx_show => "أظهر للصيدلاني";
+  String get rx_scan => "امسح للصرف";
+  String get rx_add => "إضافة روشتة";
+  String get rx_name => "الاسم";
+  String get rx_name_ph => "مثال: روشتة د. سارة";
+  String get rx_doctor_name => "اسم الطبيب";
+  String get rx_doctor_name_ph => "اختياري";
+  String get rx_date => "تاريخ الإصدار";
+  String get rx_expiry => "تاريخ الانتهاء";
+  String get rx_added => "تمت إضافة الروشتة";
+  String get rx_upload => "رفع ملف";
+  String get rx_manual => "كتابتها يدوياً";
+  String get rx_or_paste_url => "أو أضف رابطاً";
+  String get rx_url_ph => "https://…";
+  String get rx_med_name_ph => "اسم الدواء";
+  String get rx_med_dose_ph => "الجرعة (مثال: 500 ملجم)";
+  String get rx_med_desc_ph => "ملاحظات (اختياري)";
+  String get rx_frequency => "التكرار";
+  String get freq_once => "مرة واحدة";
+  String get freq_per_day => "مرات في اليوم";
+  String get freq_every_x => "كل فترة";
+  String get freq_other => "أخرى";
+  String get freq_every => "كل";
+  String get unit_hours => "ساعات";
+  String get unit_days => "أيام";
+  String get freq_other_ph => "اكتب التكرار";
+  String freq_n_per_day(String n) => "$n×/يوم";
+  String get rx_duration => "المدة";
+  String get dur_days => "لعدد من الأيام";
+  String get dur_weeks => "لعدد من الأسابيع";
+  String get dur_months => "لعدد من الأشهر";
+  String get unit_weeks => "أسابيع";
+  String get unit_months => "أشهر";
+  String get dur_until_empty => "حتى انتهاء العلبة";
+  String get dur_ongoing => "مستمر";
+  String get dur_other => "أخرى";
+  String get dur_other_ph => "اكتب المدة";
+  String get rx_add_med => "إضافة دواء آخر";
+  String get rx_self_added => "أضفتها أنت";
+  String get rx_self_note => "أضفتها أنت — غير موثقة من صيدلية.";
+  String get rx_my_prescriptions => "روشتاتي";
+  String get rx_take_photo => "التقاط صورة";
+  String get rx_from_gallery => "الصور";
+  String get rx_from_files => "اختيار ملف";
+  String get rx_prescribed_by => "بواسطة";
+  String get rx_default_title => "روشتة";
+  String get dose_skipped => "تم التخطي";
+  String get dose_snoozed => "مؤجل";
+  String get dose_missed => "فائت";
+  String get med_scheduled => "الموعد";
+  String get med_snooze15 => "تأجيل 15 دقيقة";
+  String get med_skip => "تخطّي";
+  String get tz_changed => "تغيّرت المنطقة الزمنية";
+  String get tz_keep => "الإبقاء كما هي";
+  String get med_add_title => "إضافة دواء";
+  String get med_field_name => "الاسم";
+  String get med_ph_name => "اسم الدواء";
+  String get med_field_dose => "الجرعة (اختياري)";
+  String get med_ph_dose => "مثال: 500 ملجم";
+  String get med_reminder_time => "وقت التذكير اليومي";
+  String get med_add_btn => "إضافة الدواء";
+  String get med_time_morning => "صباحاً";
+  String get med_time_midday => "ظهراً";
+  String get med_time_evening => "مساءً";
+  String get med_time_night => "ليلاً";
+  String get med_self_note =>
+      "لأدوية بدون روشتة، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
+  String get med_when => "موعد الجرعة";
+  String get med_dose_times => "مواعيد الجرعات";
+  String get med_first_dose => "الجرعة الأولى";
+  String get med_added => "تمت إضافة الدواء";
+  String get dur_period => "لفترة محددة";
+  String get dur_count => "العدد";
+  String get meds_signin_help => "سجّل الدخول لعرض أدويتك.";
+  String get meds_empty_help => "لا توجد أدوية بعد. أضف دواءً للبدء.";
+  String get meds_none_today => "لا جرعات مجدولة اليوم.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'meds_today':
+        return meds_today;
+      case 'taken':
+        return taken;
+      case 'due':
+        return due;
+      case 'take':
+        return take;
+      case 'skip_q':
+        return skip_q;
+      case 'skipped':
+        return skipped;
+      case 'mark_skip':
+        return mark_skip;
+      case 'meds_taken':
+        return meds_taken;
+      case 'medications':
+        return medications;
+      case 'morning':
+        return morning;
+      case 'evening':
+        return evening;
+      case 'adherence':
+        return adherence;
+      case 'regimen':
+        return regimen;
+      case 'last_7d':
+        return last_7d;
+      case 'rx_manage':
+        return rx_manage;
+      case 'rx_empty':
+        return rx_empty;
+      case 'rx_empty_h':
+        return rx_empty_h;
+      case 'rx_active':
+        return rx_active;
+      case 'rx_expired':
+        return rx_expired;
+      case 'rx_valid_until':
+        return rx_valid_until;
+      case 'rx_issued':
+        return rx_issued;
+      case 'rx_med_one':
+        return rx_med_one;
+      case 'rx_meds_n':
+        return rx_meds_n;
+      case 'rx_show':
+        return rx_show;
+      case 'rx_scan':
+        return rx_scan;
+      case 'rx_add':
+        return rx_add;
+      case 'rx_name':
+        return rx_name;
+      case 'rx_name_ph':
+        return rx_name_ph;
+      case 'rx_doctor_name':
+        return rx_doctor_name;
+      case 'rx_doctor_name_ph':
+        return rx_doctor_name_ph;
+      case 'rx_date':
+        return rx_date;
+      case 'rx_expiry':
+        return rx_expiry;
+      case 'rx_added':
+        return rx_added;
+      case 'rx_upload':
+        return rx_upload;
+      case 'rx_manual':
+        return rx_manual;
+      case 'rx_or_paste_url':
+        return rx_or_paste_url;
+      case 'rx_url_ph':
+        return rx_url_ph;
+      case 'rx_med_name_ph':
+        return rx_med_name_ph;
+      case 'rx_med_dose_ph':
+        return rx_med_dose_ph;
+      case 'rx_med_desc_ph':
+        return rx_med_desc_ph;
+      case 'rx_frequency':
+        return rx_frequency;
+      case 'freq_once':
+        return freq_once;
+      case 'freq_per_day':
+        return freq_per_day;
+      case 'freq_every_x':
+        return freq_every_x;
+      case 'freq_other':
+        return freq_other;
+      case 'freq_every':
+        return freq_every;
+      case 'unit_hours':
+        return unit_hours;
+      case 'unit_days':
+        return unit_days;
+      case 'freq_other_ph':
+        return freq_other_ph;
+      case 'freq_n_per_day':
+        return freq_n_per_day;
+      case 'rx_duration':
+        return rx_duration;
+      case 'dur_days':
+        return dur_days;
+      case 'dur_weeks':
+        return dur_weeks;
+      case 'dur_months':
+        return dur_months;
+      case 'unit_weeks':
+        return unit_weeks;
+      case 'unit_months':
+        return unit_months;
+      case 'dur_until_empty':
+        return dur_until_empty;
+      case 'dur_ongoing':
+        return dur_ongoing;
+      case 'dur_other':
+        return dur_other;
+      case 'dur_other_ph':
+        return dur_other_ph;
+      case 'rx_add_med':
+        return rx_add_med;
+      case 'rx_self_added':
+        return rx_self_added;
+      case 'rx_self_note':
+        return rx_self_note;
+      case 'rx_my_prescriptions':
+        return rx_my_prescriptions;
+      case 'rx_take_photo':
+        return rx_take_photo;
+      case 'rx_from_gallery':
+        return rx_from_gallery;
+      case 'rx_from_files':
+        return rx_from_files;
+      case 'rx_prescribed_by':
+        return rx_prescribed_by;
+      case 'rx_default_title':
+        return rx_default_title;
+      case 'dose_skipped':
+        return dose_skipped;
+      case 'dose_snoozed':
+        return dose_snoozed;
+      case 'dose_missed':
+        return dose_missed;
+      case 'med_scheduled':
+        return med_scheduled;
+      case 'med_snooze15':
+        return med_snooze15;
+      case 'med_skip':
+        return med_skip;
+      case 'tz_changed':
+        return tz_changed;
+      case 'tz_keep':
+        return tz_keep;
+      case 'med_add_title':
+        return med_add_title;
+      case 'med_field_name':
+        return med_field_name;
+      case 'med_ph_name':
+        return med_ph_name;
+      case 'med_field_dose':
+        return med_field_dose;
+      case 'med_ph_dose':
+        return med_ph_dose;
+      case 'med_reminder_time':
+        return med_reminder_time;
+      case 'med_add_btn':
+        return med_add_btn;
+      case 'med_time_morning':
+        return med_time_morning;
+      case 'med_time_midday':
+        return med_time_midday;
+      case 'med_time_evening':
+        return med_time_evening;
+      case 'med_time_night':
+        return med_time_night;
+      case 'med_self_note':
+        return med_self_note;
+      case 'med_when':
+        return med_when;
+      case 'med_dose_times':
+        return med_dose_times;
+      case 'med_first_dose':
+        return med_first_dose;
+      case 'med_added':
+        return med_added;
+      case 'dur_period':
+        return dur_period;
+      case 'dur_count':
+        return dur_count;
+      case 'meds_signin_help':
+        return meds_signin_help;
+      case 'meds_empty_help':
+        return meds_empty_help;
+      case 'meds_none_today':
+        return meds_none_today;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class NavStrings_ar extends NavStrings {
+  final Strings_ar _parent;
+  const NavStrings_ar(this._parent) : super(_parent);
+  String get tab_home => "الرئيسية";
+  String get tab_map => "قريب منك";
+  String get tab_meds => "الأدوية";
+  String get tab_profile => "الملف";
+  String get menu_actions => "إجراءات";
+  String get menu_go => "انتقال";
+  String get menu_checkin => "تسجيل حالة جديد";
+  String get menu_quicklog => "تسجيل سريع";
+  String get menu_emergency => "الطوارئ";
+  String get menu_screenshot => "حفظ لقطة الشاشة…";
+  String get menu_logs => "السجلّات";
+  String get menu_devconfig => "إعدادات المطوّر";
+  String get menu_prescriptions => "الوصفات";
+  String get menu_records => "السجلات الصحية";
+  String get menu_trends => "المؤشرات";
+  String get gov_sessions => "الأجهزة والجلسات";
+  String get gov_status => "حالة الخدمة";
+  String get gov_delete => "حذف الحساب";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'tab_home':
+        return tab_home;
+      case 'tab_map':
+        return tab_map;
+      case 'tab_meds':
+        return tab_meds;
+      case 'tab_profile':
+        return tab_profile;
+      case 'menu_actions':
+        return menu_actions;
+      case 'menu_go':
+        return menu_go;
+      case 'menu_checkin':
+        return menu_checkin;
+      case 'menu_quicklog':
+        return menu_quicklog;
+      case 'menu_emergency':
+        return menu_emergency;
+      case 'menu_screenshot':
+        return menu_screenshot;
+      case 'menu_logs':
+        return menu_logs;
+      case 'menu_devconfig':
+        return menu_devconfig;
+      case 'menu_prescriptions':
+        return menu_prescriptions;
+      case 'menu_records':
+        return menu_records;
+      case 'menu_trends':
+        return menu_trends;
+      case 'gov_sessions':
+        return gov_sessions;
+      case 'gov_status':
+        return gov_status;
+      case 'gov_delete':
+        return gov_delete;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class OnboardingStrings_ar extends OnboardingStrings {
+  final Strings_ar _parent;
+  const OnboardingStrings_ar(this._parent) : super(_parent);
+  String get w_title => "صحتك، دائماً قريبة.";
+  String get w_sub =>
+      "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
+  String get w_have => "لديّ حساب بالفعل";
+  String get w_signin => "تسجيل الدخول";
+  String get w_or => "أو";
+  String get w_apple => "المتابعة مع Apple";
+  String get w_google => "المتابعة مع Google";
+  String get lang_to_en => "التبديل إلى الإنجليزية";
+  String get lang_to_ar => "التبديل إلى العربية";
+  String get pf_title => "عرّفنا بنفسك";
+  String get pf_help => "هذا يساعد فريق الرعاية على قراءة تقاريرك بدقة.";
+  String get pf_fname => "الاسم الأول";
+  String get pf_lname => "اسم العائلة";
+  String get pf_fname_ph => "مثال: ليلى";
+  String get pf_lname_ph => "مثال: حسن";
+  String get pf_dob => "تاريخ الميلاد";
+  String get pf_gender => "النوع";
+  String get pf_female => "أنثى";
+  String get pf_male => "ذكر";
+  String get pf_create => "إنشاء ملفّي";
+  String get pf_creating => "جارٍ إنشاء حسابك…";
+  String get pf_secure => "تبقى بياناتك على هذا الجهاز.";
+  String get dob_title => "تاريخ الميلاد";
+  String get dob_confirm => "تأكيد";
+  String get age_gate_body =>
+      "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
+  String w_start(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ الآن',
+            'female': 'ابدئي الآن',
+            'other': 'ابدأ الآن'
+          })}";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'w_title':
+        return w_title;
+      case 'w_sub':
+        return w_sub;
+      case 'w_have':
+        return w_have;
+      case 'w_signin':
+        return w_signin;
+      case 'w_or':
+        return w_or;
+      case 'w_apple':
+        return w_apple;
+      case 'w_google':
+        return w_google;
+      case 'lang_to_en':
+        return lang_to_en;
+      case 'lang_to_ar':
+        return lang_to_ar;
+      case 'pf_title':
+        return pf_title;
+      case 'pf_help':
+        return pf_help;
+      case 'pf_fname':
+        return pf_fname;
+      case 'pf_lname':
+        return pf_lname;
+      case 'pf_fname_ph':
+        return pf_fname_ph;
+      case 'pf_lname_ph':
+        return pf_lname_ph;
+      case 'pf_dob':
+        return pf_dob;
+      case 'pf_gender':
+        return pf_gender;
+      case 'pf_female':
+        return pf_female;
+      case 'pf_male':
+        return pf_male;
+      case 'pf_create':
+        return pf_create;
+      case 'pf_creating':
+        return pf_creating;
+      case 'pf_secure':
+        return pf_secure;
+      case 'dob_title':
+        return dob_title;
+      case 'dob_confirm':
+        return dob_confirm;
+      case 'age_gate_body':
+        return age_gate_body;
+      case 'w_start':
+        return w_start;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class WalkthroughStrings_ar extends WalkthroughStrings {
+  final Strings_ar _parent;
+  const WalkthroughStrings_ar(this._parent) : super(_parent);
+  String get wt_eyebrow_1 => "مفتوح · عربي · موثوق";
+  String get wt_title_1 => "رعاية صحية تخصّنا أخيراً.";
+  String get wt_body_1 =>
+      "بلسم أول وأكبر منصة صحية مفتوحة المصدر بُنيت في مصر والعالم العربي — بالعربية أولاً، ويملكها من يستخدمها.";
+  String get wt_eyebrow_2 => "يوم مع بلسم";
+  String get wt_title_2 => "من قياس هذا الصباح إلى الصيدلية الليلة.";
+  String get wt_body_2 =>
+      "سجلّ واحد، وتسجيل يومي، وخريطة رعاية واحدة — جرّبها في الأسفل، تماماً كما تظهر في التطبيق.";
+  String get wt_eyebrow_3 => "ملكك دائماً";
+  String get wt_title_3 => "بياناتك تبقى ملكك.";
+  String get wt_body_3 =>
+      "محفوظة على هاتفك بالتصميم، وتعمل دون إنترنت. أنت تختار ما تشاركه — ومع من.";
+  String get wt_skip => "تخطّي";
+  String get wt_next => "التالي";
+  String get wt_start => "ابدأ الآن";
+  String get wt_demo_record => "السجلّ";
+  String get wt_demo_checkin => "التسجيل";
+  String get wt_demo_nearby => "قريب منك";
+  String get wt_demo_rec1_t => "تحليل دم شامل";
+  String get wt_demo_rec1_d => "قبل يومين";
+  String get wt_demo_rec2_t => "تحويل قلب";
+  String get wt_demo_rec2_d => "قبل أسبوعين";
+  String get wt_demo_mood_low => "منخفض";
+  String get wt_demo_mood_okay => "عادي";
+  String get wt_demo_mood_good => "جيد";
+  String get wt_demo_mood_great => "ممتاز";
+  String get wt_demo_pin1 => "صيدلية زهران";
+  String get wt_demo_pin2 => "عيادة نور";
+  String get wt_demo_pin3 => "معمل المدينة";
+  String get wt_analytics_note =>
+      "نجمع أيضًا بيانات استخدام مجهولة لتحسين بلسم — لا تشمل سجلاتك الصحية أبدًا. يمكنك إيقافها في أي وقت من الملف الشخصي ← الخصوصية والبيانات.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'wt_eyebrow_1':
+        return wt_eyebrow_1;
+      case 'wt_title_1':
+        return wt_title_1;
+      case 'wt_body_1':
+        return wt_body_1;
+      case 'wt_eyebrow_2':
+        return wt_eyebrow_2;
+      case 'wt_title_2':
+        return wt_title_2;
+      case 'wt_body_2':
+        return wt_body_2;
+      case 'wt_eyebrow_3':
+        return wt_eyebrow_3;
+      case 'wt_title_3':
+        return wt_title_3;
+      case 'wt_body_3':
+        return wt_body_3;
+      case 'wt_skip':
+        return wt_skip;
+      case 'wt_next':
+        return wt_next;
+      case 'wt_start':
+        return wt_start;
+      case 'wt_demo_record':
+        return wt_demo_record;
+      case 'wt_demo_checkin':
+        return wt_demo_checkin;
+      case 'wt_demo_nearby':
+        return wt_demo_nearby;
+      case 'wt_demo_rec1_t':
+        return wt_demo_rec1_t;
+      case 'wt_demo_rec1_d':
+        return wt_demo_rec1_d;
+      case 'wt_demo_rec2_t':
+        return wt_demo_rec2_t;
+      case 'wt_demo_rec2_d':
+        return wt_demo_rec2_d;
+      case 'wt_demo_mood_low':
+        return wt_demo_mood_low;
+      case 'wt_demo_mood_okay':
+        return wt_demo_mood_okay;
+      case 'wt_demo_mood_good':
+        return wt_demo_mood_good;
+      case 'wt_demo_mood_great':
+        return wt_demo_mood_great;
+      case 'wt_demo_pin1':
+        return wt_demo_pin1;
+      case 'wt_demo_pin2':
+        return wt_demo_pin2;
+      case 'wt_demo_pin3':
+        return wt_demo_pin3;
+      case 'wt_analytics_note':
+        return wt_analytics_note;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class PrivacyStrings_ar extends PrivacyStrings {
+  final Strings_ar _parent;
+  const PrivacyStrings_ar(this._parent) : super(_parent);
+  String get pv_sharing => "مشاركة البيانات";
+  String get pv_share_team => "مشاركة التقارير مع فريق الرعاية";
+  String get pv_share_team_h => "يرى أطباؤك قراءاتك اليومية";
+  String get pv_analytics => "تحليلات مجهولة";
+  String get pv_analytics_h => "ساعدنا على تحسين التطبيق";
+  String get pv_research => "المساهمة في الأبحاث";
+  String get pv_research_h => "بيانات مجهولة للأبحاث الطبية";
+  String get pv_security => "الأمان";
+  String get pv_bio => "قفل بالبصمة / الوجه";
+  String get pv_bio_h => "افتح التطبيق ببصمتك";
+  String get pv_pin => "طلب رمز PIN عند الفتح";
+  String get pv_pin_h => "طبقة حماية إضافية";
+  String get pv_yourdata => "بياناتك";
+  String get pv_export => "تصدير بياناتي";
+  String get pv_export_h => "ملف PDF أو CSV";
+  String get pv_download => "تحميل السجلات الصحية";
+  String get pv_download_h => "جميع التحاليل والأشعة";
+  String get pv_connected => "التطبيقات المتصلة";
+  String get pv_connected_h => "إدارة الوصول للطرف الثالث";
+  String get pv_danger => "منطقة الخطر";
+  String get pv_delete => "حذف حسابي";
+  String get pv_delete_h => "حذف دائم لكل بياناتك";
+  String get pv_encrypted => "بياناتك مشفّرة ومحمية";
+  String get pv_title => "خصوصيتك وبياناتك";
+  String get pv_collect => "ما الذي نجمعه";
+  String get pv_protect => "كيف نحميها";
+  String get pv_rights => "حقوقك";
+  String get pv_authority => "الجهة الرقابية";
+  String get pv_sharing2 => "المشاركة";
+  String get pv_deletion => "الحذف";
+  String get pv_saving => "جارٍ الحفظ…";
+  String get pv_agree => "أوافق وأتابع";
+  String get pv_intro_body =>
+      "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
+  String get pv_collect_body =>
+      "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
+  String get pv_protect_body =>
+      "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
+  String get pv_rights_body =>
+      "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
+  String pv_authority_body(String authority) =>
+      "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
+  String get pv_sharing_body =>
+      "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
+  String get pv_deletion_body =>
+      "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
+  String get pv_scroll_hint => "مرّر للأسفل للمتابعة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'pv_sharing':
+        return pv_sharing;
+      case 'pv_share_team':
+        return pv_share_team;
+      case 'pv_share_team_h':
+        return pv_share_team_h;
+      case 'pv_analytics':
+        return pv_analytics;
+      case 'pv_analytics_h':
+        return pv_analytics_h;
+      case 'pv_research':
+        return pv_research;
+      case 'pv_research_h':
+        return pv_research_h;
+      case 'pv_security':
+        return pv_security;
+      case 'pv_bio':
+        return pv_bio;
+      case 'pv_bio_h':
+        return pv_bio_h;
+      case 'pv_pin':
+        return pv_pin;
+      case 'pv_pin_h':
+        return pv_pin_h;
+      case 'pv_yourdata':
+        return pv_yourdata;
+      case 'pv_export':
+        return pv_export;
+      case 'pv_export_h':
+        return pv_export_h;
+      case 'pv_download':
+        return pv_download;
+      case 'pv_download_h':
+        return pv_download_h;
+      case 'pv_connected':
+        return pv_connected;
+      case 'pv_connected_h':
+        return pv_connected_h;
+      case 'pv_danger':
+        return pv_danger;
+      case 'pv_delete':
+        return pv_delete;
+      case 'pv_delete_h':
+        return pv_delete_h;
+      case 'pv_encrypted':
+        return pv_encrypted;
+      case 'pv_title':
+        return pv_title;
+      case 'pv_collect':
+        return pv_collect;
+      case 'pv_protect':
+        return pv_protect;
+      case 'pv_rights':
+        return pv_rights;
+      case 'pv_authority':
+        return pv_authority;
+      case 'pv_sharing2':
+        return pv_sharing2;
+      case 'pv_deletion':
+        return pv_deletion;
+      case 'pv_saving':
+        return pv_saving;
+      case 'pv_agree':
+        return pv_agree;
+      case 'pv_intro_body':
+        return pv_intro_body;
+      case 'pv_collect_body':
+        return pv_collect_body;
+      case 'pv_protect_body':
+        return pv_protect_body;
+      case 'pv_rights_body':
+        return pv_rights_body;
+      case 'pv_authority_body':
+        return pv_authority_body;
+      case 'pv_sharing_body':
+        return pv_sharing_body;
+      case 'pv_deletion_body':
+        return pv_deletion_body;
+      case 'pv_scroll_hint':
+        return pv_scroll_hint;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class ProfileStrings_ar extends ProfileStrings {
+  final Strings_ar _parent;
+  const ProfileStrings_ar(this._parent) : super(_parent);
+  String get m_bp => "ضغط الدم";
+  String get m_glucose => "سكر الدم";
+  String get m_mood => "الحالة";
+  String get m_pain => "الألم";
+  String get m_weight => "الوزن";
+  String get m_o2 => "الأكسجين";
+  String get pc_title => "أكمل ملفك الشخصي";
+  String get pc_help => "أضف اسمك وتاريخ ميلادك وبياناتك";
+  String pc_missing(String fields) => "الناقص: $fields";
+  String get pc_f_name => "الاسم";
+  String get pc_f_dob => "تاريخ الميلاد";
+  String get pc_f_gender => "النوع";
+  String get pc_f_blood => "فصيلة الدم";
+  String get p_personal => "تفاصيل الحساب";
+  String get pd_account => "الحساب";
+  String get pd_handle_hint => "معرّفك الفريد على بلسم";
+  String get pd_share_qr => "رمز الطوارئ";
+  String get pd_share_qr_h => "أظهر رمزاً مشفراً للطاقم";
+  String get pd_nationality => "الجنسية";
+  String get pd_blood => "فصيلة الدم";
+  String get pd_weight => "الوزن";
+  String get pd_height => "الطول";
+  String get pd_phone => "رقم الهاتف";
+  String get pd_nid => "الرقم القومي";
+  String get pd_emergency => "جهة اتصال الطوارئ";
+  String get pd_em_name => "الاسم";
+  String get pd_em_rel => "صلة القرابة";
+  String get pd_em_phone => "الهاتف";
+  String get pd_save => "حفظ التغييرات";
+  String get pd_saved => "تم الحفظ";
+  String get pd_saving => "جارٍ الحفظ…";
+  String get pd_number_invalid => "أدخل رقماً صالحاً";
+  String get hc_title => "تغيير اسم المستخدم؟";
+  String get hc_body =>
+      "يتوقف رابطك القديم عن العمل فوراً. كل من يحتفظ به — طبيب أو أحد أفراد العائلة — سيحتاج إلى الرابط الجديد.";
+  String get hc_from => "من";
+  String get hc_to => "إلى";
+  String get hc_confirm => "تغيير اسم المستخدم";
+  String get hc_cancel => "الإبقاء على الاسم الحالي";
+  String get conn_accounts => "الحسابات المرتبطة";
+  String get conn_apple => "Apple ID";
+  String get conn_google => "حساب Google";
+  String get conn_connect => "ربط";
+  String get p_cond => "الملف الطبي";
+  String get p_care => "فريق الرعاية";
+  String get p_notif => "التذكيرات";
+  String get p_lang => "اللغة";
+  String get p_privacy => "الخصوصية والبيانات";
+  String get p_help => "المساعدة والدعم";
+  String get acct_load_failed => "تعذّر تحميل حسابك.";
+  String get acct_retry => "إعادة المحاولة";
+  String get p_signout => "تسجيل الخروج";
+  String get p_emergency => "الطوارئ";
+  String get pd_kg => "كجم";
+  String get pd_cm => "سم";
+  String get pd_conditions => "الحالات المزمنة";
+  String get pd_allergies => "الحساسية";
+  String get pd_measurements => "القياسات";
+  String get pd_add_cond => "أضف حالة…";
+  String get pd_add_alg => "أضف حساسية…";
+  String get bmi_label => "كتلة الجسم";
+  String get bmi_under => "نقص وزن";
+  String get bmi_normal => "صحي";
+  String get bmi_over => "زيادة وزن";
+  String get bmi_obese => "سمنة";
+  String get p_country => "الدولة";
+  String get pd_primary => "أساسي";
+  String get pd_basic_info => "المعلومات الأساسية";
+  String get pd_contact_section => "معلومات الاتصال";
+  String get pd_add_contact => "إضافة جهة اتصال";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'm_bp':
+        return m_bp;
+      case 'm_glucose':
+        return m_glucose;
+      case 'm_mood':
+        return m_mood;
+      case 'm_pain':
+        return m_pain;
+      case 'm_weight':
+        return m_weight;
+      case 'm_o2':
+        return m_o2;
+      case 'pc_title':
+        return pc_title;
+      case 'pc_help':
+        return pc_help;
+      case 'pc_missing':
+        return pc_missing;
+      case 'pc_f_name':
+        return pc_f_name;
+      case 'pc_f_dob':
+        return pc_f_dob;
+      case 'pc_f_gender':
+        return pc_f_gender;
+      case 'pc_f_blood':
+        return pc_f_blood;
+      case 'p_personal':
+        return p_personal;
+      case 'pd_account':
+        return pd_account;
+      case 'pd_handle_hint':
+        return pd_handle_hint;
+      case 'pd_share_qr':
+        return pd_share_qr;
+      case 'pd_share_qr_h':
+        return pd_share_qr_h;
+      case 'pd_nationality':
+        return pd_nationality;
+      case 'pd_blood':
+        return pd_blood;
+      case 'pd_weight':
+        return pd_weight;
+      case 'pd_height':
+        return pd_height;
+      case 'pd_phone':
+        return pd_phone;
+      case 'pd_nid':
+        return pd_nid;
+      case 'pd_emergency':
+        return pd_emergency;
+      case 'pd_em_name':
+        return pd_em_name;
+      case 'pd_em_rel':
+        return pd_em_rel;
+      case 'pd_em_phone':
+        return pd_em_phone;
+      case 'pd_save':
+        return pd_save;
+      case 'pd_saved':
+        return pd_saved;
+      case 'pd_saving':
+        return pd_saving;
+      case 'pd_number_invalid':
+        return pd_number_invalid;
+      case 'hc_title':
+        return hc_title;
+      case 'hc_body':
+        return hc_body;
+      case 'hc_from':
+        return hc_from;
+      case 'hc_to':
+        return hc_to;
+      case 'hc_confirm':
+        return hc_confirm;
+      case 'hc_cancel':
+        return hc_cancel;
+      case 'conn_accounts':
+        return conn_accounts;
+      case 'conn_apple':
+        return conn_apple;
+      case 'conn_google':
+        return conn_google;
+      case 'conn_connect':
+        return conn_connect;
+      case 'p_cond':
+        return p_cond;
+      case 'p_care':
+        return p_care;
+      case 'p_notif':
+        return p_notif;
+      case 'p_lang':
+        return p_lang;
+      case 'p_privacy':
+        return p_privacy;
+      case 'p_help':
+        return p_help;
+      case 'acct_load_failed':
+        return acct_load_failed;
+      case 'acct_retry':
+        return acct_retry;
+      case 'p_signout':
+        return p_signout;
+      case 'p_emergency':
+        return p_emergency;
+      case 'pd_kg':
+        return pd_kg;
+      case 'pd_cm':
+        return pd_cm;
+      case 'pd_conditions':
+        return pd_conditions;
+      case 'pd_allergies':
+        return pd_allergies;
+      case 'pd_measurements':
+        return pd_measurements;
+      case 'pd_add_cond':
+        return pd_add_cond;
+      case 'pd_add_alg':
+        return pd_add_alg;
+      case 'bmi_label':
+        return bmi_label;
+      case 'bmi_under':
+        return bmi_under;
+      case 'bmi_normal':
+        return bmi_normal;
+      case 'bmi_over':
+        return bmi_over;
+      case 'bmi_obese':
+        return bmi_obese;
+      case 'p_country':
+        return p_country;
+      case 'pd_primary':
+        return pd_primary;
+      case 'pd_basic_info':
+        return pd_basic_info;
+      case 'pd_contact_section':
+        return pd_contact_section;
+      case 'pd_add_contact':
+        return pd_add_contact;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class EcosystemStrings_ar extends EcosystemStrings {
+  final Strings_ar _parent;
+  const EcosystemStrings_ar(this._parent) : super(_parent);
+  String get eco_row => "عن بلسم والمجتمع";
+  String get eco_title => "منظومة بلسم";
+  String get eco_hero => "بلسم أكبر من هذا التطبيق";
+  String get eco_sub =>
+      "نظام صحي مملوك للمجتمع في العالم العربي. شيفرة مفتوحة، وبياناتك ملكك، ولا وسيط بينك وبين رعايتك.";
+  String get eco_p1h => "هذا التطبيق — لك";
+  String get eco_p1b => "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك.";
+  String get eco_p2h => "بَلسَم برو — للصيدليات والعيادات";
+  String get eco_p2b =>
+      "الصرف والمخزون والزيارات على النظام المفتوح نفسه — يعمل بلا إنترنت، وهو على خارطة الطريق.";
+  String get eco_help_t => "ساعد بلسم على الانتشار";
+  String get eco_help_sub =>
+      "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
+  String get eco_tagline => "مفتوح · عربي · موثوق";
+  String get eco_a1h => "أخبر شخصاً تثق به";
+  String get eco_a1b =>
+      "العائلة والجيران هم طريق انتشار بلسم — توصية واحدة في كل مرة.";
+  String get eco_a2h => "شارك ملاحظاتك";
+  String get eco_a2b =>
+      "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
+  String get eco_a3h => "اسأل صيدليتك أو عيادتك";
+  String get eco_a3b =>
+      "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بلسم في زيارتك القادمة — فهو مجاني وملك لهم.";
+  String get eco_a4h => "ساهم في المشروع";
+  String get eco_a4b =>
+      "مطوّرون ومترجمون وأطباء — الشيفرة وخارطة الطريق مفتوحتان للجميع.";
+  String get eco_share_text =>
+      "أستخدم بلسم لمتابعة صحتي — مجاني، ومفتوح، وبياناتك على جهازك. حمّله من هنا:";
+  String get eco_link_copied => "تم نسخ الرابط";
+  String get eco_follow_t => "تابع بلسم";
+  String get eco_follow_sub => "أخبار المشروع، الكود المفتوح، وطرق دعمه.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eco_row':
+        return eco_row;
+      case 'eco_title':
+        return eco_title;
+      case 'eco_hero':
+        return eco_hero;
+      case 'eco_sub':
+        return eco_sub;
+      case 'eco_p1h':
+        return eco_p1h;
+      case 'eco_p1b':
+        return eco_p1b;
+      case 'eco_p2h':
+        return eco_p2h;
+      case 'eco_p2b':
+        return eco_p2b;
+      case 'eco_help_t':
+        return eco_help_t;
+      case 'eco_help_sub':
+        return eco_help_sub;
+      case 'eco_tagline':
+        return eco_tagline;
+      case 'eco_a1h':
+        return eco_a1h;
+      case 'eco_a1b':
+        return eco_a1b;
+      case 'eco_a2h':
+        return eco_a2h;
+      case 'eco_a2b':
+        return eco_a2b;
+      case 'eco_a3h':
+        return eco_a3h;
+      case 'eco_a3b':
+        return eco_a3b;
+      case 'eco_a4h':
+        return eco_a4h;
+      case 'eco_a4b':
+        return eco_a4b;
+      case 'eco_share_text':
+        return eco_share_text;
+      case 'eco_link_copied':
+        return eco_link_copied;
+      case 'eco_follow_t':
+        return eco_follow_t;
+      case 'eco_follow_sub':
+        return eco_follow_sub;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class FeedbackStrings_ar extends FeedbackStrings {
+  final Strings_ar _parent;
+  const FeedbackStrings_ar(this._parent) : super(_parent);
+  String get fb_row => "التقييم والملاحظات";
+  String get fb_title => "كيف تجد بلسم؟";
+  String get fb_rate_q => "اضغط على زهرة للتقييم";
+  String get fb_r1 => "يحتاج تحسيناً";
+  String get fb_r2 => "يمكن أن يكون أفضل";
+  String get fb_r3 => "مقبول";
+  String get fb_r4 => "جيد";
+  String get fb_r5 => "ممتاز";
+  String get fb_last => "آخر مشاركة";
+  String get fb_about => "ما موضوع ملاحظتك؟";
+  String get fb_note_lbl => "أخبرنا المزيد";
+  String get fb_optional => "اختياري";
+  String get fb_ph => "ما الذي أعجبك؟ وما الذي لم يعجبك؟";
+  String get fb_privacy =>
+      "تُرسل إلى فريق بلسم، وليس إلى متجر التطبيقات. من فضلك لا تكتب تفاصيل صحية — بياناتك الصحية تبقى على جهازك.";
+  String get fb_failed => "تعذّر إرسال ملاحظتك. حاول مرة أخرى.";
+  String get fb_send => "إرسال الملاحظات";
+  String get fb_thanks => "وصلتنا. شكراً لك.";
+  String get fb_thanks_sub =>
+      "فريق بلسم يقرأ كل ملاحظة، وملاحظتك تساعد بلسم على خدمة الجميع بشكل أفضل.";
+  String get fb_done => "تم";
+  String get fb_t_general => "عام";
+  String get fb_t_ease => "سهولة الاستخدام";
+  String get fb_t_records => "السجلات";
+  String get fb_t_meds => "الأدوية";
+  String get fb_t_arabic => "العربية واللغة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'fb_row':
+        return fb_row;
+      case 'fb_title':
+        return fb_title;
+      case 'fb_rate_q':
+        return fb_rate_q;
+      case 'fb_r1':
+        return fb_r1;
+      case 'fb_r2':
+        return fb_r2;
+      case 'fb_r3':
+        return fb_r3;
+      case 'fb_r4':
+        return fb_r4;
+      case 'fb_r5':
+        return fb_r5;
+      case 'fb_last':
+        return fb_last;
+      case 'fb_about':
+        return fb_about;
+      case 'fb_note_lbl':
+        return fb_note_lbl;
+      case 'fb_optional':
+        return fb_optional;
+      case 'fb_ph':
+        return fb_ph;
+      case 'fb_privacy':
+        return fb_privacy;
+      case 'fb_failed':
+        return fb_failed;
+      case 'fb_send':
+        return fb_send;
+      case 'fb_thanks':
+        return fb_thanks;
+      case 'fb_thanks_sub':
+        return fb_thanks_sub;
+      case 'fb_done':
+        return fb_done;
+      case 'fb_t_general':
+        return fb_t_general;
+      case 'fb_t_ease':
+        return fb_t_ease;
+      case 'fb_t_records':
+        return fb_t_records;
+      case 'fb_t_meds':
+        return fb_t_meds;
+      case 'fb_t_arabic':
+        return fb_t_arabic;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class RecordsStrings_ar extends RecordsStrings {
+  final Strings_ar _parent;
+  const RecordsStrings_ar(this._parent) : super(_parent);
+  String get rec_documents => "مستند";
+  String get reports => "التقارير السابقة";
+  String get rec_search_ph => "ابحث في السجلات والوسوم والنتائج…";
+  String get rec_tags => "الوسوم";
+  String get rec_tags_ph => "أضف وسماً واضغط Enter";
+  String get rec_no_results => "لا سجلات مطابقة";
+  String get rec_no_results_h => "لا سجلات تطابق";
+  String get rec_no_results_h2 => "لا شيء في هذه الفئة بعد.";
+  String get rec_clear_filters => "مسح عوامل التصفية";
+  String get prescriptions => "الوصفات الطبية";
+  String get records => "السجلات الصحية";
+  String get all_records => "الكل";
+  String get rec_lab => "تحاليل";
+  String get rec_scan => "أشعة";
+  String get rec_report => "تقارير";
+  String get rec_lab_one => "تحليل";
+  String get rec_scan_one => "أشعة";
+  String get rec_report_one => "تقرير";
+  String get rec_self => "رفعتَه بنفسك";
+  String get rec_empty => "لا توجد سجلات بعد";
+  String get rec_source => "المصدر";
+  String get rec_view => "عرض المستند";
+  String get rec_preview => "معاينة المستند";
+  String get rec_preview_failed => "تعذّر فتح هذا الملف";
+  String get rec_share => "مشاركة مع الطبيب";
+  String get rec_empty_h =>
+      "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
+  String get rec_pick_type => "ما الذي تضيفه؟";
+  String get rec_title => "العنوان";
+  String get rec_title_ph => "مثال: تحليل السكر التراكمي";
+  String get rec_attach => "إرفاق ملف أو صورة";
+  String get rec_attach_h => "ملف PDF أو صورة لتقرير ورقي أو صورة أشعة.";
+  String get rec_take_photo => "التقاط صورة";
+  String get rec_from_files => "اختيار ملف";
+  String get rec_added => "تمت إضافة السجل";
+  String get rec_added_h => "محفوظ على جهازك. ملكك بالتصميم.";
+  String get tag_diabetes => "السكري";
+  String get tag_cholesterol => "الكولسترول";
+  String get tag_kidney => "الكلى";
+  String get tag_thyroid => "الغدة";
+  String get tag_chest => "الصدر";
+  String get tag_abdomen => "البطن";
+  String get tag_bone => "العظام";
+  String get tag_follow_up => "متابعة";
+  String get tag_cardiology => "القلب";
+  String get tag_surgery => "جراحة";
+  String get tag_referral => "تحويل";
+  String get att_section => "المرفقات";
+  String get att_add => "إضافة ملف";
+  String get att_source_title => "إضافة ملف";
+  String get att_src_files => "الملفات";
+  String get att_src_files_h => "ملف PDF أو صورة محفوظة على هذا الجهاز";
+  String get att_src_gallery => "الصور";
+  String get att_src_gallery_h => "اختر من مكتبة الصور";
+  String get att_src_paste => "لصق";
+  String get att_src_paste_h => "صورة أو رابط نسخته";
+  String get att_src_url => "رابط";
+  String get att_src_url_h => "اكتب أو الصق عنوان ويب";
+  String get att_url_title => "إضافة رابط";
+  String get att_url_hint => "https://…";
+  String get att_url_bad => "لا يبدو أن هذا عنوان ويب.";
+  String get att_url_note =>
+      "ÙØ­ÙØ¸ Ø¨ÙØ³Ù Ø§ÙØ¹ÙÙØ§Ù ÙÙØ· — ÙØ§ ÙÙÙØ²ÙÙ Ø´ÙØ¡Ø ÙÙÙÙØªØ­ ÙÙ Ø§ÙÙØªØµÙØ­.";
+  String get att_paste_empty => "لا يوجد ما يُلصق.";
+  String get att_one_file => "ملف واحد";
+  String att_n_files(String n) => "$n ملفات";
+  String rec_n_selected(String n) => "$n محدد";
+  String rec_delete_n_title(String n) => "حذف $n من السجلات؟";
+  String get rec_delete_n_body =>
+      "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.";
+  String get rec_delete_confirm => "حذف";
+  String get rec_delete_1_title => "حذف هذا السجل؟";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'rec_documents':
+        return rec_documents;
+      case 'reports':
+        return reports;
+      case 'rec_search_ph':
+        return rec_search_ph;
+      case 'rec_tags':
+        return rec_tags;
+      case 'rec_tags_ph':
+        return rec_tags_ph;
+      case 'rec_no_results':
+        return rec_no_results;
+      case 'rec_no_results_h':
+        return rec_no_results_h;
+      case 'rec_no_results_h2':
+        return rec_no_results_h2;
+      case 'rec_clear_filters':
+        return rec_clear_filters;
+      case 'prescriptions':
+        return prescriptions;
+      case 'records':
+        return records;
+      case 'all_records':
+        return all_records;
+      case 'rec_lab':
+        return rec_lab;
+      case 'rec_scan':
+        return rec_scan;
+      case 'rec_report':
+        return rec_report;
+      case 'rec_lab_one':
+        return rec_lab_one;
+      case 'rec_scan_one':
+        return rec_scan_one;
+      case 'rec_report_one':
+        return rec_report_one;
+      case 'rec_self':
+        return rec_self;
+      case 'rec_empty':
+        return rec_empty;
+      case 'rec_source':
+        return rec_source;
+      case 'rec_view':
+        return rec_view;
+      case 'rec_preview':
+        return rec_preview;
+      case 'rec_preview_failed':
+        return rec_preview_failed;
+      case 'rec_share':
+        return rec_share;
+      case 'rec_empty_h':
+        return rec_empty_h;
+      case 'rec_pick_type':
+        return rec_pick_type;
+      case 'rec_title':
+        return rec_title;
+      case 'rec_title_ph':
+        return rec_title_ph;
+      case 'rec_attach':
+        return rec_attach;
+      case 'rec_attach_h':
+        return rec_attach_h;
+      case 'rec_take_photo':
+        return rec_take_photo;
+      case 'rec_from_files':
+        return rec_from_files;
+      case 'rec_added':
+        return rec_added;
+      case 'rec_added_h':
+        return rec_added_h;
+      case 'tag_diabetes':
+        return tag_diabetes;
+      case 'tag_cholesterol':
+        return tag_cholesterol;
+      case 'tag_kidney':
+        return tag_kidney;
+      case 'tag_thyroid':
+        return tag_thyroid;
+      case 'tag_chest':
+        return tag_chest;
+      case 'tag_abdomen':
+        return tag_abdomen;
+      case 'tag_bone':
+        return tag_bone;
+      case 'tag_follow_up':
+        return tag_follow_up;
+      case 'tag_cardiology':
+        return tag_cardiology;
+      case 'tag_surgery':
+        return tag_surgery;
+      case 'tag_referral':
+        return tag_referral;
+      case 'att_section':
+        return att_section;
+      case 'att_add':
+        return att_add;
+      case 'att_source_title':
+        return att_source_title;
+      case 'att_src_files':
+        return att_src_files;
+      case 'att_src_files_h':
+        return att_src_files_h;
+      case 'att_src_gallery':
+        return att_src_gallery;
+      case 'att_src_gallery_h':
+        return att_src_gallery_h;
+      case 'att_src_paste':
+        return att_src_paste;
+      case 'att_src_paste_h':
+        return att_src_paste_h;
+      case 'att_src_url':
+        return att_src_url;
+      case 'att_src_url_h':
+        return att_src_url_h;
+      case 'att_url_title':
+        return att_url_title;
+      case 'att_url_hint':
+        return att_url_hint;
+      case 'att_url_bad':
+        return att_url_bad;
+      case 'att_url_note':
+        return att_url_note;
+      case 'att_paste_empty':
+        return att_paste_empty;
+      case 'att_one_file':
+        return att_one_file;
+      case 'att_n_files':
+        return att_n_files;
+      case 'rec_n_selected':
+        return rec_n_selected;
+      case 'rec_delete_n_title':
+        return rec_delete_n_title;
+      case 'rec_delete_n_body':
+        return rec_delete_n_body;
+      case 'rec_delete_confirm':
+        return rec_delete_confirm;
+      case 'rec_delete_1_title':
+        return rec_delete_1_title;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class SettingsStrings_ar extends SettingsStrings {
+  final Strings_ar _parent;
+  const SettingsStrings_ar(this._parent) : super(_parent);
+  String get trust_private => "خصوصية افتراضية";
+  String get trust_offline => "يعمل دون إنترنت";
+  String get trust_device => "ملكك دائماً";
+  String get add_photo => "إضافة صورة";
+  String get add_member => "إضافة فرد من الأسرة";
+  String get choose_lang => "اختر اللغة";
+  String get choose_country => "أين أنت الآن؟";
+  String get travel_help =>
+      "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
+  String get lang_full => "دعم كامل";
+  String get lang_beta => "تجريبي";
+  String get home_country => "بلدك";
+  String get add_record => "إضافة سجل";
+  String get add_calendar => "أضف للتقويم";
+  String get na_not_available => "غير متاح بعد";
+  String get na_notify_me => "أبلغني عند التوفر";
+  String get na_status_support => "حالة الخدمة والدعم";
+  String get cal_months =>
+      "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
+  String get cal_months_short =>
+      "ينا|فبر|مار|أبر|ماي|يون|يول|أغس|سبت|أكت|نوف|ديس";
+  String get cal_weekdays => "أحد|إثن|ثلا|أرب|خمي|جمع|سبت";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'trust_private':
+        return trust_private;
+      case 'trust_offline':
+        return trust_offline;
+      case 'trust_device':
+        return trust_device;
+      case 'add_photo':
+        return add_photo;
+      case 'add_member':
+        return add_member;
+      case 'choose_lang':
+        return choose_lang;
+      case 'choose_country':
+        return choose_country;
+      case 'travel_help':
+        return travel_help;
+      case 'lang_full':
+        return lang_full;
+      case 'lang_beta':
+        return lang_beta;
+      case 'home_country':
+        return home_country;
+      case 'add_record':
+        return add_record;
+      case 'add_calendar':
+        return add_calendar;
+      case 'na_not_available':
+        return na_not_available;
+      case 'na_notify_me':
+        return na_notify_me;
+      case 'na_status_support':
+        return na_status_support;
+      case 'cal_months':
+        return cal_months;
+      case 'cal_months_short':
+        return cal_months_short;
+      case 'cal_weekdays':
+        return cal_weekdays;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class StorageStrings_ar extends StorageStrings {
+  final Strings_ar _parent;
+  const StorageStrings_ar(this._parent) : super(_parent);
+  String get store_delete_rec => "حذف السجل";
+  String get store_delete_rec_h =>
+      "سيُحذف السجل ومرفقه نهائياً من هذا الجهاز. لا يمكن التراجع عن ذلك.";
+  String get store_deleted_rec => "تم حذف السجل";
+  String get store_manage => "إدارة التخزين";
+  String get storage => "التخزين والمزامنة";
+  String get cat_records => "السجلات الطبية";
+  String get cat_rx => "الوصفات";
+  String get cat_meds => "الأدوية";
+  String get cat_checkins => "المتابعة اليومية";
+  String get cat_symptoms => "الأعراض";
+  String get cat_vitals => "المؤشرات الحيوية";
+  String get cat_medical => "الحالات والحساسية";
+  String get cat_care => "فريق الرعاية";
+  String get cat_appts => "المواعيد";
+  String get store_all_data => "كل بياناتك";
+  String get store_all_applies => "يُطبَق على كل الفئات";
+  String get store_all_data_back => "كل البيانات";
+  String get store_intro =>
+      "كل شيء محفوط على هذا الجهاز. يمكن مزامنة فريق رعايتك مع سحابة بلسم أيضاً؛ أما مزامنة بقية البيانات فغير متاحة بعد.";
+  String get store_accounts => "حسابات السحابة";
+  String get store_your_data => "بياناتك";
+  String get store_stored_in => "أين تُحفز";
+  String get store_connect => "ربط";
+  String get store_disconnect => "فصل";
+  String get store_not_connected => "غير مربوط";
+  String get store_local_always => "نسخة دائمة، تعمل دون إنترنت";
+  String get store_device => "الجهاز";
+  String get store_device_only_sum => "على هذا الجهاز فقط";
+  String store_device_plus(String target) => "الجهاز و$target";
+  String store_device_plus_n(String n) => "الجهاز و$n سحابات";
+  String store_places(String n) => "$n أماكن";
+  String get store_where => "مكان الحفظ";
+  String get store_loc_label => "مكان الحفظ";
+  String get store_encrypted_note =>
+      "أي شيء يغادر هذا الهاتف يُشفَر هنا أولاً، وأنت من يختار مكانه.";
+  String get store_whole_journal =>
+      "عند وصول مزامنة السحابة، سينسخ بلسم سجلك كملف مشفر واحد — فتكون السحابة مُفعلة أو لا لكل شيء، لا لكل فئة.";
+  String get store_not_synced => "لم تتم المزامنة بعد";
+  String get store_local => "على هذا الجهاز";
+  String get store_icloud => "آي كلاود";
+  String get store_gdrive => "جوجل درايف";
+  String get store_balsm_cloud => "سحابة بلسم";
+  String get store_local_only => "محلي فقط";
+  String get store_backed => "محفوظ احتياطياً";
+  String get store_step_prepare => "جارٍ التحضير…";
+  String get store_step_checkins => "نقل المتابعات…";
+  String get store_step_records => "نقل السجلات…";
+  String get store_step_rx => "نقل الوصفات…";
+  String get store_step_verify => "التحقق والإنهاء…";
+  String get store_choose_help =>
+      "يتوفر التخزين على الجهاز فقط حالياً. آي كلاود وجوجل درايف وبلسم كلاود قادمون قريباً.";
+  String get store_coming_soon => "قريباً";
+  String get store_available_soon => "متوفر قريباً";
+  String get store_care_cloud_on =>
+      "مُفعلة — فريق رعايتك محفوظ في سحابة بلسم أيضاً";
+  String get store_care_cloud_off => "متوقفة — فريق رعايتك يبقى على هذا الجهاز";
+  String get store_care_cloud_note =>
+      "يُزامَن فريق رعايتك مع سحابة بلسم حتى لا تفقده إن ضاع هاتفك. عند إيقافها تبقى التغييرات الجديدة على هذا الجهاز، وما سبق حفظه في سحابة بلسم يبقى كما هو.";
+  String get store_always_on => "دائمًا";
+  String get store_no_backup => "لا نسخة احتياطية";
+  String store_connecting(String target) => "جارٍ الربط بـ $target…";
+  String get store_auto_start => "سيبدأ النسخ الاحتياطي تلقائياً.";
+  String get store_migrating => "جارٍ النقل";
+  String get store_removed_done => "تم إيقاف النسخ الاحتياطي";
+  String get store_synced_done => "تمت المزامنة بنجاح";
+  String get store_device_only => "محفوظ على هذا الجهاز فقط";
+  String store_synced_with(String target) => "مزامن مع $target";
+  String get store_done => "تم";
+  String get store_remove_q => "إيقاف النسخ الاحتياطي؟";
+  String store_remove_help(String target) =>
+      "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
+  String get store_remove_cta => "إيقاف النسخ الاحتياطي";
+  String store_synced(String when) => "محفوظ · تمت المزامنة $when";
+  String get store_sync_now => "الآن";
+  String store_sync_m(String n) => "قبل $n د";
+  String store_sync_h(String n) => "قبل $n س";
+  String store_sync_d(String n) => "قبل $n ي";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'store_delete_rec':
+        return store_delete_rec;
+      case 'store_delete_rec_h':
+        return store_delete_rec_h;
+      case 'store_deleted_rec':
+        return store_deleted_rec;
+      case 'store_manage':
+        return store_manage;
+      case 'storage':
+        return storage;
+      case 'cat_records':
+        return cat_records;
+      case 'cat_rx':
+        return cat_rx;
+      case 'cat_meds':
+        return cat_meds;
+      case 'cat_checkins':
+        return cat_checkins;
+      case 'cat_symptoms':
+        return cat_symptoms;
+      case 'cat_vitals':
+        return cat_vitals;
+      case 'cat_medical':
+        return cat_medical;
+      case 'cat_care':
+        return cat_care;
+      case 'cat_appts':
+        return cat_appts;
+      case 'store_all_data':
+        return store_all_data;
+      case 'store_all_applies':
+        return store_all_applies;
+      case 'store_all_data_back':
+        return store_all_data_back;
+      case 'store_intro':
+        return store_intro;
+      case 'store_accounts':
+        return store_accounts;
+      case 'store_your_data':
+        return store_your_data;
+      case 'store_stored_in':
+        return store_stored_in;
+      case 'store_connect':
+        return store_connect;
+      case 'store_disconnect':
+        return store_disconnect;
+      case 'store_not_connected':
+        return store_not_connected;
+      case 'store_local_always':
+        return store_local_always;
+      case 'store_device':
+        return store_device;
+      case 'store_device_only_sum':
+        return store_device_only_sum;
+      case 'store_device_plus':
+        return store_device_plus;
+      case 'store_device_plus_n':
+        return store_device_plus_n;
+      case 'store_places':
+        return store_places;
+      case 'store_where':
+        return store_where;
+      case 'store_loc_label':
+        return store_loc_label;
+      case 'store_encrypted_note':
+        return store_encrypted_note;
+      case 'store_whole_journal':
+        return store_whole_journal;
+      case 'store_not_synced':
+        return store_not_synced;
+      case 'store_local':
+        return store_local;
+      case 'store_icloud':
+        return store_icloud;
+      case 'store_gdrive':
+        return store_gdrive;
+      case 'store_balsm_cloud':
+        return store_balsm_cloud;
+      case 'store_local_only':
+        return store_local_only;
+      case 'store_backed':
+        return store_backed;
+      case 'store_step_prepare':
+        return store_step_prepare;
+      case 'store_step_checkins':
+        return store_step_checkins;
+      case 'store_step_records':
+        return store_step_records;
+      case 'store_step_rx':
+        return store_step_rx;
+      case 'store_step_verify':
+        return store_step_verify;
+      case 'store_choose_help':
+        return store_choose_help;
+      case 'store_coming_soon':
+        return store_coming_soon;
+      case 'store_available_soon':
+        return store_available_soon;
+      case 'store_care_cloud_on':
+        return store_care_cloud_on;
+      case 'store_care_cloud_off':
+        return store_care_cloud_off;
+      case 'store_care_cloud_note':
+        return store_care_cloud_note;
+      case 'store_always_on':
+        return store_always_on;
+      case 'store_no_backup':
+        return store_no_backup;
+      case 'store_connecting':
+        return store_connecting;
+      case 'store_auto_start':
+        return store_auto_start;
+      case 'store_migrating':
+        return store_migrating;
+      case 'store_removed_done':
+        return store_removed_done;
+      case 'store_synced_done':
+        return store_synced_done;
+      case 'store_device_only':
+        return store_device_only;
+      case 'store_synced_with':
+        return store_synced_with;
+      case 'store_done':
+        return store_done;
+      case 'store_remove_q':
+        return store_remove_q;
+      case 'store_remove_help':
+        return store_remove_help;
+      case 'store_remove_cta':
+        return store_remove_cta;
+      case 'store_synced':
+        return store_synced;
+      case 'store_sync_now':
+        return store_sync_now;
+      case 'store_sync_m':
+        return store_sync_m;
+      case 'store_sync_h':
+        return store_sync_h;
+      case 'store_sync_d':
+        return store_sync_d;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class MapPacksStrings_ar extends MapPacksStrings {
+  final Strings_ar _parent;
+  const MapPacksStrings_ar(this._parent) : super(_parent);
+  String get title => "الخرائط دون اتصال";
+  String get subtitle =>
+      "نزّل محافظة لاستخدام الخريطة والأماكن القريبة بدون اتصال بالإنترنت.";
+  String get not_downloaded => "غير مُنزّلة";
+  String get downloaded => "تم التنزيل";
+  String get update_available => "يتوفر تحديث";
+  String get failed => "فشل التنزيل";
+  String get download => "تنزيل";
+  String get update => "تحديث";
+  String get retry => "إعادة المحاولة";
+  String get delete => "حذف";
+  String get cancel => "إلغاء";
+  String get offline_notice =>
+      "تعذّر التحقق من وجود تحديثات — يظهر ما تم تنزيله بالفعل.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'not_downloaded':
+        return not_downloaded;
+      case 'downloaded':
+        return downloaded;
+      case 'update_available':
+        return update_available;
+      case 'failed':
+        return failed;
+      case 'download':
+        return download;
+      case 'update':
+        return update;
+      case 'retry':
+        return retry;
+      case 'delete':
+        return delete;
+      case 'cancel':
+        return cancel;
+      case 'offline_notice':
+        return offline_notice;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class OfflineStrings_ar extends OfflineStrings {
+  final Strings_ar _parent;
+  const OfflineStrings_ar(this._parent) : super(_parent);
+  String get go_title => "الاتصال بالإنترنت";
+  String get go_help =>
+      "نرسل رمزًا إلى بريدك للتحقق منه. تبقى بياناتك على هذا الجهاز.";
+  String get go_send => "إرسال الرمز";
+  String get go_code_help => "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
+  String get go_verify => "تحقق واتصل";
+  String get go_done_title => "أنت متصل الآن";
+  String get go_done_help =>
+      "تم التحقق من بريدك. حسابك الآن على بلسم ويمكن استعادة كلمة المرور. تبقى بياناتك الصحية على هذا الجهاز.";
+  String get go_done => "تم";
+  String get go_row => "الاتصال بالإنترنت";
+  String get go_row_sub =>
+      "تحقّق من بريدك لاستعادة كلمة المرور واستخدام المشاركة";
+  String get go_cloud_pill => "اتصل";
+  String get go_failed => "تعذّر الاتصال الآن. حاول مرة أخرى.";
+  String get merge_title => "هذا البريد لديه حساب في بلسم بالفعل";
+  String get merge_help =>
+      "تم تسجيل دخولك إلى ذلك الحساب. اختر ما تفعله بالبيانات الموجودة على هذا الهاتف.";
+  String get merge_btn => "أضِف بيانات هذا الهاتف إلى حسابي";
+  String get merge_note =>
+      "يحتفظ حسابك بكلمة مروره الحالية. لن تُستخدم كلمة المرور التي عيّنتها على هذا الهاتف.";
+  String get discard_btn => "احذف بيانات هذا الهاتف";
+  String get discard_confirm_title => "حذف البيانات الموجودة على هذا الهاتف؟";
+  String get discard_confirm_body =>
+      "سيُحذف كل ما أضفته دون اتصال على هذا الهاتف. لا يمكن التراجع عن ذلك.";
+  String get discard_confirm_btn => "احذف";
+  String get merge_failed => "تعذّر الإكمال. حاول مرة أخرى.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'go_title':
+        return go_title;
+      case 'go_help':
+        return go_help;
+      case 'go_send':
+        return go_send;
+      case 'go_code_help':
+        return go_code_help;
+      case 'go_verify':
+        return go_verify;
+      case 'go_done_title':
+        return go_done_title;
+      case 'go_done_help':
+        return go_done_help;
+      case 'go_done':
+        return go_done;
+      case 'go_row':
+        return go_row;
+      case 'go_row_sub':
+        return go_row_sub;
+      case 'go_cloud_pill':
+        return go_cloud_pill;
+      case 'go_failed':
+        return go_failed;
+      case 'merge_title':
+        return merge_title;
+      case 'merge_help':
+        return merge_help;
+      case 'merge_btn':
+        return merge_btn;
+      case 'merge_note':
+        return merge_note;
+      case 'discard_btn':
+        return discard_btn;
+      case 'discard_confirm_title':
+        return discard_confirm_title;
+      case 'discard_confirm_body':
+        return discard_confirm_body;
+      case 'discard_confirm_btn':
+        return discard_confirm_btn;
+      case 'merge_failed':
+        return merge_failed;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class UpdateStrings_ar extends UpdateStrings {
+  final Strings_ar _parent;
+  const UpdateStrings_ar(this._parent) : super(_parent);
+  String get upd_eyebrow_new => "تحديث جديد";
+  String get upd_eyebrow_required => "تحديث مطلوب";
+  String upd_available_t(String app) => "نسخة أحدث من $app متاحة";
+  String get upd_available_b => "بياناتك تبقى على جهازك أثناء التحديث.";
+  String upd_required_t(String app) => "حدّث $app للمتابعة";
+  String get upd_required_b => "هذه النسخة لازمة لمواصلة مزامنة سجلاتك بأمان.";
+  String get upd_current => "نسختك";
+  String get upd_new => "الجديدة";
+  String get upd_whats_new => "ما الجديد";
+  String get upd_now => "تحديث الآن";
+  String get upd_skip => "تخطّي هذه النسخة";
+  String get upd_full_notes => "ملاحظات الإصدار كاملة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'upd_eyebrow_new':
+        return upd_eyebrow_new;
+      case 'upd_eyebrow_required':
+        return upd_eyebrow_required;
+      case 'upd_available_t':
+        return upd_available_t;
+      case 'upd_available_b':
+        return upd_available_b;
+      case 'upd_required_t':
+        return upd_required_t;
+      case 'upd_required_b':
+        return upd_required_b;
+      case 'upd_current':
+        return upd_current;
+      case 'upd_new':
+        return upd_new;
+      case 'upd_whats_new':
+        return upd_whats_new;
+      case 'upd_now':
+        return upd_now;
+      case 'upd_skip':
+        return upd_skip;
+      case 'upd_full_notes':
+        return upd_full_notes;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class WebStrings_ar extends WebStrings {
+  final Strings_ar _parent;
+  const WebStrings_ar(this._parent) : super(_parent);
+  String other_tab_t(String app) => "$app مفتوح في تبويب آخر";
+  String get other_tab_b =>
+      "حفاظًا على بياناتك، يمكن فتحه في تبويب واحد فقط. أغلق التبويب الآخر ثم حاول مرة أخرى.";
+  String get other_tab_retry => "حاول مرة أخرى";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'other_tab_t':
+        return other_tab_t;
+      case 'other_tab_b':
+        return other_tab_b;
+      case 'other_tab_retry':
+        return other_tab_retry;
+      default:
+        return super[key];
+    }
+  }
+}

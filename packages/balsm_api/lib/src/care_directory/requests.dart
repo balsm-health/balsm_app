@@ -1,0 +1,82 @@
+/// Query for `GET /care/entities` — nearby health places around a point.
+/// [lat]/[lng] are required (the user's position); the rest narrow results.
+class NearbyCareQuery {
+  const NearbyCareQuery({
+    required this.lat,
+    required this.lng,
+    this.radiusKm,
+    this.type,
+    this.query,
+    this.limit,
+  });
+
+  final double lat;
+  final double lng;
+
+  /// Search radius in km (server default applies when null).
+  final double? radiusKm;
+
+  /// Entity type filter: hospital | clinic | pharmacy | lab | scan | store.
+  final String? type;
+
+  /// Free-text name/address search.
+  final String? query;
+
+  /// Cap on returned places, nearest first (server default and ceiling apply).
+  /// The directory matches thousands of places within a city radius, so an
+  /// uncapped response is megabytes of JSON per pan.
+  final int? limit;
+
+  Map<String, dynamic> toQueryParameters() => {
+        'lat': lat,
+        'lng': lng,
+        if (radiusKm != null) 'radius_km': radiusKm,
+        if (type != null) 'type': type,
+        if (query != null && query!.trim().isNotEmpty) 'q': query!.trim(),
+        if (limit != null) 'limit': limit,
+      };
+}
+
+/// Query for `GET /care/pins` — map pins around a point.
+///
+/// Same narrowing as [NearbyCareQuery]; only the response shape differs.
+class CarePinsQuery {
+  const CarePinsQuery({
+    required this.lat,
+    required this.lng,
+    this.radiusKm,
+    this.type,
+    this.query,
+    this.limit,
+  });
+
+  final double lat;
+  final double lng;
+  final double? radiusKm;
+  final String? type;
+  final String? query;
+
+  /// Cap on returned pins, nearest first (server default 1500, ceiling 3000).
+  final int? limit;
+
+  Map<String, dynamic> toQueryParameters() => {
+        'lat': lat,
+        'lng': lng,
+        if (radiusKm != null) 'radius_km': radiusKm,
+        if (type != null) 'type': type,
+        if (query != null && query!.trim().isNotEmpty) 'q': query!.trim(),
+        if (limit != null) 'limit': limit,
+      };
+}
+
+/// Query for `GET /care/packs` — which language `MapPackResponse.name`
+/// comes back in.
+class MapPacksQuery {
+  const MapPacksQuery({required this.lang});
+
+  /// "en" or "ar". The server defaults to "en" for anything else, but the
+  /// app always sends its current display language explicitly.
+  final String lang;
+
+  Map<String, dynamic> toQueryParameters() => {'lang': lang};
+}

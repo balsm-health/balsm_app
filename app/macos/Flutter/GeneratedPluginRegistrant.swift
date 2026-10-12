@@ -1,0 +1,54 @@
+//
+//  Generated file. Do not edit.
+//
+
+import FlutterMacOS
+import Foundation
+
+import app_links
+import connectivity_plus
+import file_picker
+import file_selector_macos
+import flutter_contacts
+import flutter_local_notifications
+import flutter_secure_storage_macos
+import gal
+import geolocator_apple
+import google_sign_in_ios
+import mobile_scanner
+import package_info_plus
+import pasteboard
+import path_provider_foundation
+import patrol
+import pdfium_flutter
+import posthog_flutter
+import sentry_flutter
+import share_plus
+import shared_preferences_foundation
+import sign_in_with_apple
+import url_launcher_macos
+
+func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+  AppLinksMacosPlugin.register(with: registry.registrar(forPlugin: "AppLinksMacosPlugin"))
+  ConnectivityPlusPlugin.register(with: registry.registrar(forPlugin: "ConnectivityPlusPlugin"))
+  FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
+  FileSelectorPlugin.register(with: registry.registrar(forPlugin: "FileSelectorPlugin"))
+  FlutterContactsPlugin.register(with: registry.registrar(forPlugin: "FlutterContactsPlugin"))
+  FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
+  FlutterSecureStoragePlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStoragePlugin"))
+  GalPlugin.register(with: registry.registrar(forPlugin: "GalPlugin"))
+  GeolocatorPlugin.register(with: registry.registrar(forPlugin: "GeolocatorPlugin"))
+  FLTGoogleSignInPlugin.register(with: registry.registrar(forPlugin: "FLTGoogleSignInPlugin"))
+  MobileScannerPlugin.register(with: registry.registrar(forPlugin: "MobileScannerPlugin"))
+  FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
+  PasteboardPlugin.register(with: registry.registrar(forPlugin: "PasteboardPlugin"))
+  PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
+  PatrolPlugin.register(with: registry.registrar(forPlugin: "PatrolPlugin"))
+  PDFiumFlutterPlugin.register(with: registry.registrar(forPlugin: "PDFiumFlutterPlugin"))
+  PosthogFlutterPlugin.register(with: registry.registrar(forPlugin: "PosthogFlutterPlugin"))
+  SentryFlutterPlugin.register(with: registry.registrar(forPlugin: "SentryFlutterPlugin"))
+  SharePlusMacosPlugin.register(with: registry.registrar(forPlugin: "SharePlusMacosPlugin"))
+  SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
+  SignInWithApplePlugin.register(with: registry.registrar(forPlugin: "SignInWithApplePlugin"))
+  UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
+}

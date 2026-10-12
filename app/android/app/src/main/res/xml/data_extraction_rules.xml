@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nothing leaves the phone by backup or device-to-device transfer.
+     The patient's data is on-device only, and the database is encrypted with a
+     key held in this device's keystore, which is never backed up: a restored
+     copy could not be opened anyway. Android 12+ reads this file; older
+     versions read allowBackup / fullBackupContent on <application>. -->
+<data-extraction-rules>
+  <cloud-backup>
+    <exclude domain="root"/>
+    <exclude domain="file"/>
+    <exclude domain="database"/>
+    <exclude domain="sharedpref"/>
+    <exclude domain="external"/>
+  </cloud-backup>
+  <device-transfer>
+    <exclude domain="root"/>
+    <exclude domain="file"/>
+    <exclude domain="database"/>
+    <exclude domain="sharedpref"/>
+    <exclude domain="external"/>
+  </device-transfer>
+</data-extraction-rules>

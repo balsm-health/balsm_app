@@ -1,0 +1,77 @@
+import 'package:balsm_api/balsm_api.dart';
+import 'package:test/test.dart';
+
+import '../helpers/fake_http_adapter.dart';
+
+void main() {
+  test('getSelf parses snake_case payload', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse(
+        '{"data": {"user_id": "u1", "handle": "hoss", "first_name": "Hossam", "last_name": "Eldin", '
+        '"display_name": "Hossam Eldin", "country_code": "EG", "preferred_language": "ar", "deletion_state": "ACTIVE"}}'));
+    final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
+    expect(adapter.requests.single.path, '/account/self');
+    expect(res!.id, 'u1');
+    expect(res.firstName, 'Hossam');
+    expect(res.lastName, 'Eldin');
+    expect(res.displayName, 'Hossam Eldin');
+    expect(res.deletionState, 'ACTIVE');
+  });
+
+  test('updateProfile PATCHes first_name/last_name and omits nulls', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"updated": true}}'));
+    await DioAccountApi(net: fakeNet(adapter))
+        .updateProfile(const UpdateProfileRequest(firstName: 'Hossam', lastName: 'Eldin', gender: 'male'));
+    final req = adapter.requests.single;
+    expect(req.method, 'PATCH');
+    expect(req.path, '/account/profile');
+    expect(req.data, {'first_name': 'Hossam', 'last_name': 'Eldin', 'gender': 'male'});
+  });
+
+  test('getSelf returns null on 404', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{}', status: 404));
+    final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
+    expect(res, isNull);
+  });
+
+  test('getSelf deletionState defaults to ACTIVE', () async {
+    final adapter = FakeHttpAdapter(
+        (_) => jsonResponse('{"data": {"user_id": "u1", "country_code": "EG", "preferred_language": "en"}}'));
+    final res = await DioAccountApi(net: fakeNet(adapter)).getSelf();
+    expect(res!.deletionState, 'ACTIVE');
+  });
+
+  test('claimHandle posts handle and echoes claimed handle', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"handle": "hoss"}}'));
+    final res = await DioAccountApi(net: fakeNet(adapter)).claimHandle(const ClaimHandleRequest(handle: 'hoss'));
+    expect(adapter.requests.single.path, '/account/handle/claim');
+    expect(adapter.requests.single.data, {'handle': 'hoss'});
+    expect(res.handle, 'hoss');
+  });
+
+  test('changeLanguage/changeCountry PATCH snake_case bodies', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": null}'));
+    final api = DioAccountApi(net: fakeNet(adapter));
+    await api.changeLanguage(const ChangeLanguageRequest(preferredLanguage: 'ar'));
+    await api.changeCountry(const ChangeCountryRequest(countryCode: 'EG'));
+    expect(adapter.requests[0].method, 'PATCH');
+    expect(adapter.requests[0].path, '/account/language');
+    expect(adapter.requests[0].data, {'language': 'ar'});
+    expect(adapter.requests[1].method, 'PATCH');
+    expect(adapter.requests[1].path, '/account/country');
+    expect(adapter.requests[1].data, {'country_code': 'EG'});
+  });
+
+  test('checkHandleAvailability POSTs handle to /handle/check', () async {
+    final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"available": true}}'));
+    final api = DioAccountApi(net: fakeNet(adapter));
+    final res = await api.checkHandleAvailability('hoss');
+    expect(adapter.requests.single.method, 'POST');
+    expect(adapter.requests.single.path, '/account/handle/check');
+    expect(adapter.requests.single.data, {'handle': 'hoss'});
+    expect(res.available, isTrue);
+
+    final adapter2 = FakeHttpAdapter((_) => jsonResponse('{"data": {}}'));
+    final res2 = await DioAccountApi(net: fakeNet(adapter2)).checkHandleAvailability('x');
+    expect(res2.available, isFalse);
+  });
+}

@@ -1,0 +1,21 @@
+name: prescriptions
+description: Balsm prescriptions (Personal Health bounded context)
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+    path: ../../packages/core
+  drift: ^2.29.0
+  flutter_riverpod: ^2.6.1
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  custom_lint: ^0.8.0
+  balsm_boundary_lint:
+    path: ../../packages/balsm_boundary_lint
+  golden_toolkit: ^0.15.0
+  flutter_test:
+    sdk: flutter

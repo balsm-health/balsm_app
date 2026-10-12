@@ -1,0 +1,206 @@
+/// PHI constraint (all auth DTOs): never log or stringify these — they
+/// carry emails, device identifiers, and tokens.
+
+/// Why an OTP email is requested.
+///
+/// [continueFlow] is the merged entry: the code that follows a failed
+/// email+password attempt, for an address that may or may not have an account.
+/// The server sends it either way and never says which — that is the point.
+/// [reset] keeps its own path for forgot-password, where the server stays
+/// silent for an address it does not know.
+enum OtpPurpose {
+  continueFlow,
+  reset,
+
+  /// Proving it is them before deleting their account. The server words the
+  /// email accordingly, and sends nothing for an address with no account.
+  deleteAccount;
+
+  /// The spelling the server expects. `continue` is a Dart keyword, so the
+  /// enum value cannot simply be named after it.
+  String get wireName => switch (this) {
+        continueFlow => 'continue',
+        reset => 'reset',
+        deleteAccount => 'delete',
+      };
+}
+
+class RequestOtpRequest {
+  const RequestOtpRequest({
+    required this.email,
+    required this.countryCode,
+    required this.purpose,
+    this.language,
+  });
+  final String email;
+  final String countryCode;
+  final OtpPurpose purpose;
+
+  /// The app's language (`ar`, `en`), which the email is written in. Omitted
+  /// when unknown; the server then falls back to English.
+  final String? language;
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'country_code': countryCode,
+        'purpose': purpose.wireName,
+        if (language != null) 'language': language,
+      };
+}
+
+class VerifyOtpRequest {
+  const VerifyOtpRequest({
+    required this.email,
+    required this.code,
+    required this.deviceId,
+    required this.deviceLabel,
+    this.clientAccountId,
+  });
+  final String email;
+  final String code;
+  final String deviceId;
+  final String deviceLabel;
+
+  /// Offline-created account id the server may adopt (new emails only).
+  final String? clientAccountId;
+
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'code': code,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+        if (clientAccountId != null) 'client_account_id': clientAccountId,
+      };
+}
+
+/// POST /auth/otp/verify-link — the magic sign-in link's single-use token
+/// (extracted from the `balsm://auth/link?t=` deep link). No email: the token
+/// alone identifies the challenge server-side.
+class VerifyLinkRequest {
+  const VerifyLinkRequest({
+    required this.token,
+    required this.deviceId,
+    required this.deviceLabel,
+  });
+  final String token;
+  final String deviceId;
+  final String deviceLabel;
+  Map<String, dynamic> toJson() => {
+        'token': token,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+      };
+}
+
+/// POST /auth/google — the Google ID token obtained natively.
+///
+/// [countryCode] is the jurisdiction the account is being created under; the
+/// server geofences on it and stamps it on a first-time account, so it is
+/// required on every call (not only sign-up).
+class GoogleSignInRequest {
+  const GoogleSignInRequest({
+    required this.idToken,
+    required this.deviceId,
+    required this.deviceLabel,
+    required this.countryCode,
+  });
+  final String idToken;
+  final String deviceId;
+  final String deviceLabel;
+  final String countryCode;
+  Map<String, dynamic> toJson() => {
+        'id_token': idToken,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+        'country_code': countryCode,
+      };
+}
+
+/// POST /auth/apple — the Apple ID token plus its authorization code.
+///
+/// The server only validates the ID token today; [authorizationCode] is sent so
+/// it can be exchanged for an Apple refresh token when account deletion ships
+/// (Apple requires token revocation on delete).
+class AppleSignInRequest {
+  const AppleSignInRequest({
+    required this.idToken,
+    required this.authorizationCode,
+    required this.deviceId,
+    required this.deviceLabel,
+    required this.countryCode,
+  });
+  final String idToken;
+  final String authorizationCode;
+  final String deviceId;
+  final String deviceLabel;
+  final String countryCode;
+  Map<String, dynamic> toJson() => {
+        'id_token': idToken,
+        'authorization_code': authorizationCode,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+        'country_code': countryCode,
+      };
+}
+
+class RefreshTokenRequest {
+  const RefreshTokenRequest({required this.refreshToken, required this.deviceId});
+  final String refreshToken;
+  final String deviceId;
+  Map<String, dynamic> toJson() => {'refresh_token': refreshToken, 'device_id': deviceId};
+}
+
+class RecoveryClaimRequest {
+  const RecoveryClaimRequest({
+    required this.recoveryToken,
+    required this.newEmail,
+    required this.deviceId,
+    required this.deviceLabel,
+  });
+  final String recoveryToken;
+  final String newEmail;
+  final String deviceId;
+  final String deviceLabel;
+  Map<String, dynamic> toJson() => {
+        'recovery_token': recoveryToken,
+        'new_email': newEmail,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+      };
+}
+
+class PasswordSignInRequest {
+  const PasswordSignInRequest({
+    required this.email,
+    required this.password,
+    required this.deviceId,
+    required this.deviceLabel,
+  });
+  final String email;
+  final String password;
+  final String deviceId;
+  final String deviceLabel;
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'password': password,
+        'device_id': deviceId,
+        'device_label': deviceLabel,
+      };
+}
+
+class SetPasswordRequest {
+  const SetPasswordRequest({required this.password});
+  final String password;
+  Map<String, dynamic> toJson() => {'password': password};
+}
+
+class ResetPasswordRequest {
+  const ResetPasswordRequest({
+    required this.email,
+    required this.code,
+    required this.newPassword,
+  });
+  final String email;
+  final String code;
+  final String newPassword;
+  Map<String, dynamic> toJson() => {'email': email, 'code': code, 'new_password': newPassword};
+}

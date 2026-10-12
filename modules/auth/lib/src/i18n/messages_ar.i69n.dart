@@ -1,0 +1,211 @@
+// ignore_for_file: unused_element, unused_field, camel_case_types, annotate_overrides, prefer_single_quotes
+// GENERATED FILE, do not edit!
+// dart format off
+import 'package:i69n/i69n.dart' as i69n;
+import 'messages.i69n.dart';
+
+String get _languageCode => 'ar';
+String get _localeName => 'ar';
+
+class Messages_ar extends Messages {
+  const Messages_ar();
+  CountryMessages_ar get country => CountryMessages_ar(this);
+  EmailMessages_ar get email => EmailMessages_ar(this);
+  OtpMessages_ar get otp => OtpMessages_ar(this);
+  SocialMessages_ar get social => SocialMessages_ar(this);
+  LockoutMessages_ar get lockout => LockoutMessages_ar(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'country':
+        return country;
+      case 'email':
+        return email;
+      case 'otp':
+        return otp;
+      case 'social':
+        return social;
+      case 'lockout':
+        return lockout;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class CountryMessages_ar extends CountryMessages {
+  final Messages_ar _parent;
+  const CountryMessages_ar(this._parent) : super(_parent);
+  String get title => "اختر دولتك";
+  String get search => "ابحث عن الدول";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'search':
+        return search;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class EmailMessages_ar extends EmailMessages {
+  final Messages_ar _parent;
+  const EmailMessages_ar(this._parent) : super(_parent);
+  String get title => "أدخل بريدك الإلكتروني";
+  String get label => "البريد الإلكتروني";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'label':
+        return label;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class OtpMessages_ar extends OtpMessages {
+  final Messages_ar _parent;
+  const OtpMessages_ar(this._parent) : super(_parent);
+  String get title => "أدخل رمز التحقق";
+  String get subtitle => "أرسلنا رمزًا إلى بريدك الإلكتروني";
+  ErrorOtpMessages_ar get error => ErrorOtpMessages_ar(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'error':
+        return error;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class ErrorOtpMessages_ar extends ErrorOtpMessages {
+  final OtpMessages_ar _parent;
+  const ErrorOtpMessages_ar(this._parent) : super(_parent);
+  String get invalid => "رمز غير صحيح. حاول مرة أخرى.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'invalid':
+        return invalid;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class SocialMessages_ar extends SocialMessages {
+  final Messages_ar _parent;
+  const SocialMessages_ar(this._parent) : super(_parent);
+  String get title => "تابع باستخدام";
+  String get subtitle => "استخدم حساب Google أو Apple لتسجيل الدخول بأمان.";
+  String get google => "المتابعة باستخدام Google";
+  String get apple => "المتابعة باستخدام Apple";
+  ErrorSocialMessages_ar get error => ErrorSocialMessages_ar(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'google':
+        return google;
+      case 'apple':
+        return apple;
+      case 'error':
+        return error;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class ErrorSocialMessages_ar extends ErrorSocialMessages {
+  final SocialMessages_ar _parent;
+  const ErrorSocialMessages_ar(this._parent) : super(_parent);
+  String get google => "تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى.";
+  String get googleToken => "تعذّر الحصول على رمز تسجيل الدخول من Google. حاول مرة أخرى.";
+  String get apple => "تعذّر تسجيل الدخول عبر Apple. حاول مرة أخرى.";
+  String get appleToken => "تعذّر الحصول على رمز تسجيل الدخول من Apple. حاول مرة أخرى.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'google':
+        return google;
+      case 'googleToken':
+        return googleToken;
+      case 'apple':
+        return apple;
+      case 'appleToken':
+        return appleToken;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class LockoutMessages_ar extends LockoutMessages {
+  final Messages_ar _parent;
+  const LockoutMessages_ar(this._parent) : super(_parent);
+  String get title => "محاولات كثيرة جدًا";
+  String get body => "تم قفل حسابك مؤقتًا. حاول مرة أخرى لاحقًا.";
+  String get retry => "حاول مرة أخرى";
+  String get needHelp => "تحتاج مساعدة؟";
+  String contactSupport(String email) => "راسل $email";
+  String get serviceStatus => "تحقق من حالة الخدمة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'body':
+        return body;
+      case 'retry':
+        return retry;
+      case 'needHelp':
+        return needHelp;
+      case 'contactSupport':
+        return contactSupport;
+      case 'serviceStatus':
+        return serviceStatus;
+      default:
+        return super[key];
+    }
+  }
+}

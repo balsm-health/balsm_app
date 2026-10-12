@@ -1,0 +1,142 @@
+/* ============================================================
+   Balsm Design System — Window-class layer  (Tier 5)
+   Spec: RESPONSIVE.md. Specimens: preview/responsive-*.html
+
+   Four WINDOW CLASSES drive shell, containment, panes, overlays,
+   modality and density. They are the canonical layout thresholds;
+   the older --bp-* tokens (375/480/768/1024/1280/1536) stay as
+   legacy container-query / utility thresholds (adaptive.css,
+   .container/.grid/.card-grid) and are NOT redefined here.
+
+     compact   <  600   ref 390×844
+     medium    600–1023 ref 834×1194
+     expanded  1024–1439 ref 1280×800
+     wide      ≥ 1440   ref 1440×900 · 1920×1080
+     short     height ≤ 700 — orthogonal modifier (1280×600, 800×600)
+     minimum   800×600 — below it the window scrolls, never clips.
+
+   Every rule holds continuously between thresholds. Media queries
+   use raw px (custom properties are illegal in @media); the tokens
+   exist for JS / Flutter consumption, same convention as --bp-*.
+   Everything here uses logical properties → mirrors under dir=rtl.
+   ============================================================ */
+
+:root {
+  --wc-compact-max:  599;  /* @kind other */
+  --wc-medium-min:   600;  /* @kind other */
+  --wc-medium-max:   1023; /* @kind other */
+  --wc-expanded-min: 1024; /* @kind other */
+  --wc-expanded-max: 1439; /* @kind other */
+  --wc-wide-min:     1440; /* @kind other */
+  --wc-short-max:    700;  /* @kind other */ /* px height — "short" modifier */
+  --wc-min-w:        800;  /* @kind other */ /* minimum supported window */
+  --wc-min-h:        600;  /* @kind other */
+
+  /* Shell — only --shell-sidebar-w maps to a shipped component
+     (ProSidebar `width` default). Bottom bar + rail are SPEC-ONLY
+     placements; no component exists yet (RESPONSIVE.md → Gaps). */
+  --shell-sidebar-w:   240px; /* @kind spacing */
+  --shell-rail-w:      72px;  /* @kind spacing */ /* GAP: spec only */
+  --shell-bottombar-h: 64px;  /* @kind spacing */ /* GAP: spec only */
+  --shell-topbar-h:    56px;  /* @kind spacing */ /* matches the 56px pane-top used across component cards */
+
+  /* Containment — single column reuses --container-md (768) because
+     .fluid-body caps reading measure at 68ch ≈ 612–650px at --fs-md 18px;
+     768 − 2×--gutter-lg (48) = 672 holds it exactly. 840 rejected. */
+  --content-max:      var(--container-md);
+  --content-max-grid: var(--container-xl);
+
+  /* Panes — list width per class; detail is the flexible pane.
+     Medium reuses --pane-aside (adaptive.css, 18rem). */
+  --pane-list-md:   var(--pane-aside, 18rem); /* @kind spacing */ /* 288 */
+  --pane-list-lg:   20rem; /* @kind spacing */ /* 320 */
+  --pane-list-xl:   22rem; /* @kind spacing */ /* 352 */
+  --pane-inspector: 22rem; /* @kind spacing */ /* 352 — wide only */
+  --pane-list-min:  var(--pane-aside, 18rem);
+
+  /* Overlays — Modal sizes are canonical in components.css (380/460/
+     640/860). Side sheet is SPEC-ONLY (no component). */
+  --sheet-side-w: 400px; /* @kind spacing */ /* GAP: spec only */
+
+  /* Density in effect — resolved below from class + pointer; override
+     with [data-density] on any ancestor. Consumers read --row-h. */
+  --row-h: var(--row-h-comfortable);
+}
+
+/* ── App root: the 800×600 promise ─────────────────────────────
+   Never overflow:hidden on the root; below the minimum the window
+   scrolls in both axes. 320 is the smallest phone we still lay out. */
+.wc-app { min-width: 320px; min-height: 100vh; overflow: auto; display: flex; flex-direction: column; }
+
+/* ── Shell placement (Layer 1) ─────────────────────────────────
+   compact: nav row along the bottom · medium+: nav column at inline-start.
+   The nav slot only positions; the component inside is ProSidebar at
+   expanded/wide. Rail and bottom bar slots stay empty until built. */
+.wc-shell { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; min-height: 100vh; }
+.wc-shell__nav  { grid-row: 2; grid-column: 1; min-width: 0; }
+.wc-shell__main { grid-row: 1; grid-column: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+@media (min-width: 600px) {
+  .wc-shell { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .wc-shell__nav  { grid-row: 1; grid-column: 1; }
+  .wc-shell__main { grid-row: 1; grid-column: 2; }
+}
+.wc-topbar { height: var(--shell-topbar-h); flex: none; display: flex; align-items: center; gap: var(--space-3); padding-inline: var(--gutter); background: var(--balsm-surface); border-bottom: 1px solid var(--balsm-border); }
+@media (max-height: 700px) { .wc-topbar { height: 48px; } } /* short: reclaim 8px; nav region inside ProSidebar already scrolls */
+
+/* ── Content containment (Layer 2) ────────────────────────────── */
+.wc-canvas  { flex: 1; min-height: 0; overflow: auto; background: var(--balsm-cream-50); }
+.wc-content { width: 100%; max-width: var(--content-max); margin-inline: auto; padding-inline: var(--gutter); padding-block: var(--space-6); box-sizing: border-box; }
+@media (min-width: 1024px) { .wc-content { padding-block: var(--space-8); } }
+
+.wc-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(4, minmax(0, 1fr)); padding-inline: var(--gutter); box-sizing: border-box; }
+@media (min-width: 600px)  { .wc-grid { grid-template-columns: repeat(8,  minmax(0, 1fr)); gap: var(--space-6); } }
+@media (min-width: 1024px) { .wc-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-8); max-width: var(--content-max-grid); margin-inline: auto; } }
+
+/* ── Panes (Layer 3) ───────────────────────────────────────────
+   Mark children with data-pane="list|detail|inspector". */
+.wc-panes { display: grid; grid-template-columns: minmax(0, 1fr); flex: 1; min-height: 0; }
+.wc-panes > [data-pane] { min-width: 0; min-height: 0; overflow: auto; }
+.wc-panes > [data-pane="detail"], .wc-panes > [data-pane="inspector"] { display: none; }
+.wc-panes > [data-pane="list"] { border-inline-end: 1px solid var(--balsm-border); }
+@media (min-width: 600px) {
+  .wc-panes { grid-template-columns: var(--pane-list-md) minmax(0, 1fr); }
+  .wc-panes > [data-pane="detail"] { display: block; }
+  .wc-panes[data-focus="detail"] > [data-pane="list"] { display: block; }
+}
+@media (min-width: 1024px) { .wc-panes { grid-template-columns: var(--pane-list-lg) minmax(0, 1fr); } }
+@media (min-width: 1440px) {
+  .wc-panes { grid-template-columns: var(--pane-list-xl) minmax(0, 1fr); }
+  .wc-panes--3 { grid-template-columns: var(--pane-list-xl) minmax(0, 1fr) var(--pane-inspector); }
+  .wc-panes--3 > [data-pane="inspector"] { display: block; border-inline-start: 1px solid var(--balsm-border); }
+}
+/* compact with a detail open: detail replaces the list (pushed route) */
+@media (max-width: 599px) {
+  .wc-panes[data-focus="detail"] > [data-pane="list"]   { display: none; }
+  .wc-panes[data-focus="detail"] > [data-pane="detail"] { display: block; }
+}
+
+/* ── Input modality (Layer 5) ──────────────────────────────────
+   Touch vs pointer is detected, never assumed from width. */
+.wc-chrome { user-select: none; }              /* nav, toolbars, pane headers */
+.wc-prose  { user-select: text; }              /* records, notes, tables */
+@media (hover: hover) and (pointer: fine) { .wc-scroll { scrollbar-gutter: stable; } }
+@media (pointer: coarse) { .wc-scroll { scrollbar-width: none; } .wc-scroll::-webkit-scrollbar { display: none; } }
+
+/* ── Density (Layer 6) ─────────────────────────────────────────
+   compact → comfortable · medium → comfortable on touch, default on
+   pointer · expanded/wide → default. [data-density] overrides, floored
+   at default on coarse pointers (32px rows fail the 44/48 target). */
+@media (min-width: 600px) and (pointer: fine) { :root { --row-h: var(--row-h-default); } }
+@media (min-width: 1024px)                    { :root { --row-h: var(--row-h-default); } }
+[data-density="compact"]     { --row-h: var(--row-h-compact); }
+[data-density="default"]     { --row-h: var(--row-h-default); }
+[data-density="comfortable"] { --row-h: var(--row-h-comfortable); }
+@media (pointer: coarse) { [data-density="compact"] { --row-h: var(--row-h-default); } }
+
+/* ── Class-scoped visibility ───────────────────────────────────── */
+.wc-only-compact, .wc-only-medium, .wc-only-expanded, .wc-only-wide, .wc-only-short { display: none; }
+@media (max-width: 599px)                          { .wc-only-compact  { display: revert; } }
+@media (min-width: 600px) and (max-width: 1023px)  { .wc-only-medium   { display: revert; } }
+@media (min-width: 1024px) and (max-width: 1439px) { .wc-only-expanded { display: revert; } }
+@media (min-width: 1440px)                         { .wc-only-wide     { display: revert; } }
+@media (max-height: 700px)                         { .wc-only-short    { display: revert; } }

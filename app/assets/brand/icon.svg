@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18.24 11.42 712.52 683.39" width="712.52" height="683.39" role="img" aria-labelledby="balsm-title balsm-desc">
+<title id="balsm-title">بلسم · Balsm</title>
+<desc id="balsm-desc">Five identical ribbons joined in a symmetric ring, representing five figures with linked arms in care and solidarity.</desc>
+<!-- BALSM MARK. Five identical ribbons joined in a ring, each with a round head, read
+     as five figures with linked arms. Everything needed to understand, edit or reuse this
+     mark is written here; no other file has to be opened to work on it.
+
+     STRUCTURE. #ribbon is one closed path (14 cubics) and #head one circle. Every arm is a
+     <use> of those two, turned by rotate(72k 374.5 383) for k = 0..4, so the five-fold
+     symmetry is structural: there is nothing to keep in step by hand, and a silhouette
+     turned 72, 144, 216 or 288 degrees about (374.5 383) lands on itself exactly. The mark
+     is chiral, so it has no mirror symmetry, by design. Inside the one path the seam is
+     symmetric too: the trailing wedge is written as the exact rotation of the leading cap
+     and they agree to 5e-7, the limit of the 6-decimal coordinates. The path closes exactly
+     and the ink box is centred on x = 374.5 to within 1e-4. The ids are short and plain:
+     ribbon, head, ring, heads, the gradients, and balsm-title / balsm-desc, which the root's
+     aria-labelledby names for screen readers. Inline the mark at most once per document,
+     and prefix its ids if it must sit beside another inline SVG that defines the same
+     names, or its fills will resolve to the wrong gradients.
+
+     FRAME. The viewBox IS the ink box: 18.24 11.42, 712.52 wide x 683.39 high, aspect
+     1.0426, rounded outward to 0.01. No padding on any side; the five heads set all four
+     edges. The ring turns about (374.5 383), which is 29.88 BELOW the centre of that box,
+     because the top head alone sets the top edge while the two lower heads sit closer to
+     the horizontal. The circle enclosing the whole mark about the turning centre has
+     radius 371.570.
+
+     Rules for placing it in a frame. Centre the ink box, and the padding is equal on each
+     axis. A head-up five-fold mark is always wider than tall, so in a SQUARE frame each
+     vertical margin exceeds each horizontal one by (712.52 - 683.39) / 2 = 14.57 units;
+     only turning the mark 9.00 degrees equalises all four, and that tilts the heads. Do not
+     centre on the turning centre instead: it buys a squarer look and costs the top head its
+     clearance. Under a CIRCULAR mask the enclosing circle must fit, which holds while the
+     mark's width is at most 0.887 of the frame, so pad circular exports.
+
+     JOINS AND SEAMS. Where two arms abut, the outline crosses from one copy to the next at
+     two points:
+       outer join, at (251.822 129.569) = rotate(72) of (577.618 188.012): the outer edges
+         meet tangent-continuous here, so the ring reads as one unbroken band;
+       inner join, at (240.141 220.338) = rotate(72) of (487.682 204.952): the corner of
+         the star-shaped void, where one arm's inner edge passes under the next. This corner
+         is deliberate: the two edges meet at 66 degrees.
+     The 14 cubics run: 1 leading cap (the seam), 5 inner edge, 1 trailing wedge (the same
+     seam, rotated), 7 outer edge. Every junction between edge cubics is exactly G1, the
+     outer join included. Nothing is stroked and nothing is clipped.
+
+     SEAM CURVE. The cap was traced from the raster master this mark comes from, then
+     refitted as a single cubic with a convex control polygon, so its curvature is
+     single-signed: the trace had an inflection about 30 units before the inner join, a
+     slight hook. Its end tangents are the trace's. At the outer join it leaves the outer
+     edge at a shallow 17.15-degree wedge tip; at the inner join it is tangent to the inner
+     edge AND matches its curvature, so the wedge tapers out without a break.
+
+     HEADS. One circle, r 58.65, centre 312.92 from the turning centre. The raster master
+     measures r 60.8 at centre 310.2 in these same units, so this is very close to it. What
+     the placement buys is the gap between a head and the shoulder below it: 22.88 units
+     here against the master's 23.15. An earlier version had the head 3.57 units further in,
+     closing that gap to 19.58, which read crowded. Note the trade: move a head OUT to open
+     the gap, do not shrink it, because at a given gap a smaller head reads as a dot rather
+     than a figure. #head-axis is centred on the circle and travels with it; at 126.358 long
+     against the 117.30 diameter, the head spans the middle 0.036 to 0.964 of that ramp, so
+     neither end of the head's shading reaches its stop colours.
+
+     COLOUR. Five hues, clockwise from the top: aqua, blue, emerald, violet, mint. The five
+     gradient-<hue> fills inherit one #ribbon-axis, which is in userSpaceOnUse on the
+     unrotated frame; the rotate lives on each <use>, so the paint turns with its arm and
+     all five get the identical ramp. They share one OKLab lightness profile: deep at the
+     leading seam, light at the trailing seam, clockwise, the same depth on every arm,
+     smoothed so the largest slope jump is 0.12. The profile's zero sits at offset 0.435 and
+     that stop is the hue's base value; the ramp runs 600 -> base -> light. Each head-<hue>
+     is one shared lightness step either side of its arm's base value, along #head-axis.
+     Every fill is written as the gradient url followed by the hue's base value, the SVG
+     paint-fallback form, so if the gradient cannot be resolved (defs stripped by a
+     sanitiser, an id clash) the shape renders in its flat brand hue rather than black.
+
+     EDITING. This file is the source for both the geometry and the colour, and copies of
+     both are generated from it into other assets and components. So:
+       - Change a hex HERE and regenerate; never edit a generated copy, or it silently
+         drifts, which is what happened before 2026-09.
+       - Keep the stop at offset 0.435 equal to the hue token of the same name in the
+         design system, since that stop is what generated copies read.
+       - If the geometry moves, recompute the viewBox as the new ink box and every figure
+         quoted above, because consumers hard-code this box to lay the mark out.
+       - Keep the wedge an exact rotation of the cap, or the seams stop coinciding and the
+         ring shows a hairline where two arms meet. -->
+<defs>
+<path id="ribbon" d="M251.822 129.569C225.217 146.988 232.086 191.44 240.141 220.338C252.798 209.967 271.894 209.174 287.05 213.373C300.471 217.091 312.46 224.481 324.756 230.808C337.68 237.458 351.179 243.121 365.484 246.059C394.382 251.995 424.073 245.073 449.488 230.795C463.111 223.142 474.771541 213.521675 487.681541 204.951675C512.67604 188.360942 552.829767 168.091711 577.617617 188.011803C557.996617 158.992803 527.883 136.68 493.532 128.783C479.521 125.562 464.884 124.891 450.776 127.98C434.357 131.575 421.266 140.456 406.004 146.658C395.45 150.947 384.177 153.332 372.75 152.747C359.914 152.09 347.874 147.808 336.387 142.279C327.657 138.077 319.135 133.397 309.972 130.166C291.124 123.52 270.874 124.083 251.822 129.569Z"/>
+<circle id="head" cx="374.5" cy="70.08" r="58.65"/>
+<linearGradient id="ribbon-axis" gradientUnits="userSpaceOnUse" x1="236.232" y1="170.556" x2="557.445" y2="187.401"/>
+<linearGradient id="gradient-aqua" gradientUnits="userSpaceOnUse" x1="236.232" y1="170.556" x2="557.445" y2="187.401"><stop offset="0" stop-color="#018985"/><stop offset="0.062" stop-color="#03938F"/><stop offset="0.125" stop-color="#049E99"/><stop offset="0.188" stop-color="#04A7A2"/><stop offset="0.25" stop-color="#04ADA8"/><stop offset="0.312" stop-color="#05B2AD"/><stop offset="0.375" stop-color="#03B7B1"/><stop offset="0.435" stop-color="#02BBB5"/><stop offset="0.5" stop-color="#02C0B9"/><stop offset="0.562" stop-color="#04C4BE"/><stop offset="0.625" stop-color="#04C8C1"/><stop offset="0.688" stop-color="#02CCC5"/><stop offset="0.75" stop-color="#01CFC8"/><stop offset="0.812" stop-color="#03D3CC"/><stop offset="0.875" stop-color="#03D5CE"/><stop offset="0.938" stop-color="#06D6CF"/><stop offset="1" stop-color="#02D4CD"/></linearGradient>
+<linearGradient id="gradient-blue" gradientUnits="userSpaceOnUse" x1="236.232" y1="170.556" x2="557.445" y2="187.401"><stop offset="0" stop-color="#005AB3"/><stop offset="0.062" stop-color="#0563C1"/><stop offset="0.125" stop-color="#0B6CD0"/><stop offset="0.188" stop-color="#1073DD"/><stop offset="0.25" stop-color="#1278E8"/><stop offset="0.312" stop-color="#127CF0"/><stop offset="0.375" stop-color="#1280F8"/><stop offset="0.435" stop-color="#1283FF"/><stop offset="0.5" stop-color="#1F88FF"/><stop offset="0.562" stop-color="#298DFF"/><stop offset="0.625" stop-color="#3191FF"/><stop offset="0.688" stop-color="#3996FF"/><stop offset="0.75" stop-color="#3F9AFF"/><stop offset="0.812" stop-color="#459DFF"/><stop offset="0.875" stop-color="#4AA0FF"/><stop offset="0.938" stop-color="#4AA0FF"/><stop offset="1" stop-color="#479EFF"/></linearGradient>
+<linearGradient id="gradient-emerald" gradientUnits="userSpaceOnUse" x1="236.232" y1="170.556" x2="557.445" y2="187.401"><stop offset="0" stop-color="#009178"/><stop offset="0.062" stop-color="#029B80"/><stop offset="0.125" stop-color="#01A689"/><stop offset="0.188" stop-color="#01AF91"/><stop offset="0.25" stop-color="#02B696"/><stop offset="0.312" stop-color="#03BB9B"/><stop offset="0.375" stop-color="#01C09F"/><stop offset="0.435" stop-color="#01C4A2"/><stop offset="0.5" stop-color="#01C9A6"/><stop offset="0.562" stop-color="#03CDAA"/><stop offset="0.625" stop-color="#04D1AD"/><stop offset="0.688" stop-color="#02D5B0"/><stop offset="0.75" stop-color="#02D9B3"/><stop offset="0.812" stop-color="#04DCB6"/><stop offset="0.875" stop-color="#05DFB9"/><stop offset="0.938" stop-color="#07DFB9"/><stop offset="1" stop-color="#03DDB7"/></linearGradient>
+<linearGradient id="gradient-violet" gradientUnits="userSpaceOnUse" x1="236.232" y1="170.556" x2="557.445" y2="187.401"><stop offset="0" stop-color="#4A2299"/><stop offset="0.062" stop-color="#512CA2"/><stop offset="0.125" stop-color="#5A37AD"/><stop offset="0.188" stop-color="#613EB7"/><stop offset="0.25" stop-color="#6643BF"/><stop offset="0.312" stop-color="#6B47C5"/><stop offset="0.375" stop-color="#6E4ACB"/><stop offset="0.435" stop-color="#724DD0"/><stop offset="0.5" stop-color="#7652D2"/><stop offset="0.562" stop-color="#7957D3"/><stop offset="0.625" stop-color="#7C5CD5"/><stop offset="0.688" stop-color="#8060D5"/><stop offset="0.75" stop-color="#8464D6"/><stop offset="0.812" stop-color="#8668D8"/><stop offset="0.875" stop-color="#886AD8"/><stop offset="0.938" stop-color="#896BD9"/><stop offset="1" stop-color="#8769D8"/></linearGradient>
+<linearGradient id="gradient-mint" gradientUnits="userSpaceOnUse" x1="236.232" y1="170.556" x2="557.445" y2="187.401"><stop offset="0" stop-color="#12A84C"/><stop offset="0.062" stop-color="#26B155"/><stop offset="0.125" stop-color="#35BB5F"/><stop offset="0.188" stop-color="#40C468"/><stop offset="0.25" stop-color="#47CA6F"/><stop offset="0.312" stop-color="#4CCF75"/><stop offset="0.375" stop-color="#51D37B"/><stop offset="0.435" stop-color="#55D77F"/><stop offset="0.5" stop-color="#62DA88"/><stop offset="0.562" stop-color="#6CDC90"/><stop offset="0.625" stop-color="#74DF97"/><stop offset="0.688" stop-color="#7AE29B"/><stop offset="0.75" stop-color="#7EE6A0"/><stop offset="0.812" stop-color="#81E9A2"/><stop offset="0.875" stop-color="#83EBA4"/><stop offset="0.938" stop-color="#84ECA5"/><stop offset="1" stop-color="#82EAA3"/></linearGradient>
+<linearGradient id="head-axis" gradientUnits="userSpaceOnUse" x1="351.036" y1="11.420" x2="397.964" y2="128.740"/>
+<linearGradient id="head-aqua" gradientUnits="userSpaceOnUse" x1="351.036" y1="11.420" x2="397.964" y2="128.740"><stop offset="0" stop-color="#00CFC9"/><stop offset="1" stop-color="#19B0AB"/></linearGradient>
+<linearGradient id="head-blue" gradientUnits="userSpaceOnUse" x1="351.036" y1="11.420" x2="397.964" y2="128.740"><stop offset="0" stop-color="#3D98FF"/><stop offset="1" stop-color="#0076F6"/></linearGradient>
+<linearGradient id="head-emerald" gradientUnits="userSpaceOnUse" x1="351.036" y1="11.420" x2="397.964" y2="128.740"><stop offset="0" stop-color="#00D9B3"/><stop offset="1" stop-color="#19B899"/></linearGradient>
+<linearGradient id="head-violet" gradientUnits="userSpaceOnUse" x1="351.036" y1="11.420" x2="397.964" y2="128.740"><stop offset="0" stop-color="#8463D6"/><stop offset="1" stop-color="#673FCC"/></linearGradient>
+<linearGradient id="head-mint" gradientUnits="userSpaceOnUse" x1="351.036" y1="11.420" x2="397.964" y2="128.740"><stop offset="0" stop-color="#75E598"/><stop offset="1" stop-color="#3CCC6C"/></linearGradient>
+</defs>
+<g id="ring">
+<use href="#ribbon" fill="url(#gradient-aqua)"/>
+<use href="#ribbon" transform="rotate(72 374.5 383)" fill="url(#gradient-blue)"/>
+<use href="#ribbon" transform="rotate(144 374.5 383)" fill="url(#gradient-emerald)"/>
+<use href="#ribbon" transform="rotate(216 374.5 383)" fill="url(#gradient-violet)"/>
+<use href="#ribbon" transform="rotate(288 374.5 383)" fill="url(#gradient-mint)"/>
+</g>
+<g id="heads">
+<use href="#head" fill="url(#head-aqua)"/>
+<use href="#head" transform="rotate(72 374.5 383)" fill="url(#head-blue)"/>
+<use href="#head" transform="rotate(144 374.5 383)" fill="url(#head-emerald)"/>
+<use href="#head" transform="rotate(216 374.5 383)" fill="url(#head-violet)"/>
+<use href="#head" transform="rotate(288 374.5 383)" fill="url(#head-mint)"/>
+</g>
+</svg>

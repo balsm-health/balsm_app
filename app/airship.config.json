@@ -1,0 +1,5 @@
+{
+  "target": 3000,
+  "agent": "claude",
+  "mode": "canvas"
+}

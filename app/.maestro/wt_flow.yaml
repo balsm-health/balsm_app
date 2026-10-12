@@ -1,0 +1,10 @@
+appId: app.balsm.health
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Skip"
+- takeScreenshot: wt-m-slide1
+- tapOn: "Next"
+- takeScreenshot: wt-m-slide2
+- tapOn: "Next"
+- takeScreenshot: wt-m-slide3

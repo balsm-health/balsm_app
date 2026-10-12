@@ -1,0 +1,956 @@
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:collection/collection.dart';
+import 'package:core/core.dart';
+import 'package:profile/profile.dart';
+import '../app_state.dart';
+import '../kit.dart';
+import '../responsive.dart';
+import '../tokens.dart';
+import '../shell.dart';
+import '../storage_target.dart';
+import '../widgets/data_loc_pill.dart';
+
+/// Profile sub-screens ported from `home.jsx`: Medical profile, Care team,
+/// Privacy & data, Emergency numbers. Each opens as a pushed full-screen route
+/// (mirrors `openPersonalDetails`) and width-caps its content for tablet/desktop.
+
+/// Pushes a profile sub-screen as a full-screen route, inside the app's
+/// directionality and the tablet/desktop [AdaptiveFrame].
+void pushSubScreen(BuildContext context, Widget Function(PatientAppState s) build) {
+  final s = AppScope.of(context);
+  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
+    builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: build(s))),
+  ));
+}
+
+void openMedicalProfile(BuildContext context) => pushSubScreen(context, (s) => MedicalProfileScreen(s: s));
+void openPrivacyData(BuildContext context, {VoidCallback? onDeleteAccount}) =>
+    pushSubScreen(context, (s) => PrivacyDataScreen(s: s, onDeleteAccount: onDeleteAccount));
+void openEmergency(BuildContext context) => pushSubScreen(context, (s) => EmergencyScreen(s: s));
+
+/// Shared scaffold: status-bar spacer + back app bar + width-capped scroll
+/// body. Public so `care_team_screen.dart` can wear the same chrome.
+class SubScreen extends StatelessWidget {
+  const SubScreen({
+    super.key,
+    required this.s,
+    required this.title,
+    required this.children,
+    this.trailing,
+    this.maxWidth = 640,
+    this.floating,
+    this.onRefresh,
+  });
+  final PatientAppState s;
+  final String title;
+  final List<Widget> children;
+  final Widget? trailing;
+  final double maxWidth;
+
+  /// A floating action pinned over the list, laid out like `.rec-fab`: 20 from
+  /// the trailing edge, 24 above the home indicator. Leave null for the
+  /// sub-screens that have no primary add.
+  final Widget? floating;
+
+  /// Pull-to-refresh handler. Null (the default) means no indicator at all, so
+  /// every sub-screen that has nothing to refresh is untouched.
+  final Future<void> Function()? onRefresh;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(children: [
+          Column(children: [
+            const PadTop(),
+            AppBarRow(
+              leading: RoundBtn(
+                  icon: backArrow(context),
+                  semanticLabel: s.strings.common.a11y_back,
+                  onTap: () => Navigator.pop(context)),
+              children: [
+                Expanded(child: Text(title, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
+                if (trailing != null) trailing!,
+              ],
+            ),
+            Expanded(
+              child: ContentColumn(
+                maxWidth: maxWidth,
+                child: _maybeRefreshable(
+                  ListView(
+                    // A refreshable list must always be draggable, even when it
+                    // is short enough not to scroll, or the gesture never starts.
+                    physics: onRefresh == null ? null : const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                    children: children,
+                  ),
+                ),
+              ),
+            ),
+          ]),
+          if (floating != null)
+            PositionedDirectional(
+              end: 20,
+              bottom:
+                  (windowClassOf(context) == BalsmWindowClass.compact ? MediaQuery.paddingOf(context).bottom : 0) + 24,
+              child: floating!,
+            ),
+        ]),
+      );
+
+  Widget _maybeRefreshable(Widget list) =>
+      onRefresh == null ? list : RefreshIndicator(onRefresh: onRefresh!, child: list);
+}
+
+class _SectionHead extends StatelessWidget {
+  const _SectionHead(this.icon, this.title, {required this.s});
+  final IconData icon;
+  final String title;
+  final PatientAppState s;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(0, 18, 0, 10),
+        child: Row(children: [
+          Icon(icon, size: 16, color: s.accent.main),
+          const SizedBox(width: 8),
+          Text(title, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+        ]),
+      );
+}
+
+// ── Medical profile ──────────────────────────────────────────
+
+/// Reads the current user's on-device [HealthProfile] (SQLCipher-backed PHI).
+/// Re-runs when the signed-in user changes; emits `null` when signed out.
+/// Writes go through the profile use-cases, which invalidate this provider.
+///
+/// Shared with the profile tab, which shows the patient their own chronic
+/// conditions as chips (home.jsx `profile-head`).
+final healthProfileProvider = FutureProvider.autoDispose<HealthProfile?>((ref) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return null;
+  return ref.watch(profileDataSourceProvider).getProfile(userId);
+});
+
+class MedicalProfileScreen extends ConsumerStatefulWidget {
+  const MedicalProfileScreen({super.key, required this.s});
+  final PatientAppState s;
+  @override
+  ConsumerState<MedicalProfileScreen> createState() => _MedicalProfileScreenState();
+}
+
+class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
+  PatientAppState get s => widget.s;
+  final algInput = TextEditingController();
+  // Measurements persist on-device with the health profile (SQLCipher).
+  // Empty until the patient enters them — never pre-fill sample PHI.
+  final weight = TextEditingController();
+  final height = TextEditingController();
+  bool saving = false, saved = false;
+  bool _measurementsSeeded = false;
+
+  @override
+  void dispose() {
+    algInput.dispose();
+    weight.dispose();
+    height.dispose();
+    super.dispose();
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  // ── Real PHI writes (on-device only; nothing sent to the cloud) ──────────
+
+  /// Toggle blood type via UpdateHealthProfileUseCase. Tapping the currently
+  /// selected type clears it (back to unknown).
+  Future<void> _setBloodType(BloodType bt) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final current = ref.read(healthProfileProvider).valueOrNull?.bloodType;
+    final toClear = current == bt;
+    final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
+          userId: userId,
+          bloodType: toClear ? null : bt,
+          clearBloodType: toClear,
+        );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  /// Add an allergy. The prototype chip captures a name only, so severity
+  /// defaults to 'mild' (real model requires a severity).
+  Future<void> _addAllergy(String name) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref.read(addAllergyUseCaseProvider).execute(
+          userId: userId,
+          name: name,
+          severity: 'mild',
+        );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  Future<void> _removeAllergy(AllergyId id) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref.read(removeAllergyUseCaseProvider).execute(userId: userId, allergyId: id);
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  /// G7: add a chronic condition with optional ICD-10 code + onset year.
+  Future<void> _addCondition(String name, String? icd10Code, int? onsetYear) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref.read(addChronicConditionUseCaseProvider).execute(
+          userId: userId,
+          name: name,
+          icd10Code: icd10Code,
+          onsetYear: onsetYear,
+        );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  Future<void> _removeCondition(ChronicConditionId id) async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final result = await ref.read(removeChronicConditionUseCaseProvider).execute(userId: userId, conditionId: id);
+    if (!mounted) return;
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  void _seedMeasurements(HealthProfile? profile) {
+    if (_measurementsSeeded || profile == null) return;
+    _measurementsSeeded = true;
+    if (profile.weightKg != null) weight.text = _fmtMeasure(profile.weightKg!);
+    if (profile.heightCm != null) height.text = _fmtMeasure(profile.heightCm!);
+  }
+
+  String _fmtMeasure(double v) => v == v.roundToDouble() ? '${v.round()}' : '$v';
+
+  Future<void> _save() async {
+    if (saving) return;
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    final wText = weight.text.trim();
+    final hText = height.text.trim();
+    final w = wText.isEmpty ? null : double.tryParse(wText);
+    final h = hText.isEmpty ? null : double.tryParse(hText);
+    if (wText.isNotEmpty && w == null) {
+      _snack(s.strings.profile.pd_number_invalid);
+      return;
+    }
+    if (hText.isNotEmpty && h == null) {
+      _snack(s.strings.profile.pd_number_invalid);
+      return;
+    }
+    setState(() => saving = true);
+    final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
+          userId: userId,
+          weightKg: w,
+          clearWeight: wText.isEmpty,
+          heightCm: h,
+          clearHeight: hText.isEmpty,
+        );
+    if (!mounted) return;
+    setState(() => saving = false);
+    if (result.isSuccess) {
+      ref.invalidate(healthProfileProvider);
+      setState(() => saved = true);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => saved = false);
+      });
+    } else {
+      _snack(result.error.message);
+    }
+  }
+
+  /// Gauge scale — the visible span of the bar, not a clinical boundary.
+  static const _gaugeMin = 15.0;
+  static const _gaugeMax = 35.0;
+
+  /// Presentation for the live BMI of whatever is currently typed.
+  ///
+  /// The number and its category come from [Bmi] in the profile domain; this
+  /// only chooses a colour, a copy key and where the needle sits.
+  ({String value, double pct, Color color, Color bg, String key})? get _bmi {
+    final bmi = Bmi.fromMeasurements(
+      weightKg: double.tryParse(weight.text),
+      heightCm: double.tryParse(height.text),
+    );
+    if (bmi == null) return null;
+    final (key, color, bg) = switch (bmi.category) {
+      BmiCategory.underweight => ('profile.bmi_under', T.hueBlue, T.hueBlue50),
+      BmiCategory.normal => ('profile.bmi_normal', T.hueMint600, T.hueMint50),
+      BmiCategory.overweight => ('profile.bmi_over', const Color(0xFFD97A20), const Color(0xFFFBF0E2)),
+      BmiCategory.obese => ('profile.bmi_obese', T.danger, const Color(0xFFFBEBE7)),
+    };
+    final pct = ((bmi.value - _gaugeMin) / (_gaugeMax - _gaugeMin) * 100).clamp(2.0, 98.0);
+    return (value: bmi.value.toStringAsFixed(1), pct: pct, color: color, bg: bg, key: key);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bmi = _bmi;
+    // Real on-device PHI. `null` while loading or when signed out (empty state).
+    final profile = ref.watch(healthProfileProvider).valueOrNull;
+    _seedMeasurements(profile);
+    final allergyList = profile?.allergies ?? const <Allergy>[];
+    final conditionList = profile?.conditions ?? const <ChronicCondition>[];
+    final selectedBlood = profile?.bloodType;
+    return SubScreen(
+      s: s,
+      title: s.strings.profile.p_cond,
+      maxWidth: 560,
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        const DataLocPill(category: DataCategory.medical),
+        if (saved) ...[
+          const SizedBox(width: 8),
+          Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
+        ],
+      ]),
+      children: [
+        _SectionHead(LucideIcons.clipboardList, s.strings.profile.pd_conditions, s: s),
+        _ConditionEditor(
+            s: s,
+            conditions: conditionList,
+            bg: s.accent.bg,
+            fg: s.accent.d,
+            onAdd: _addCondition,
+            onRemove: _removeCondition),
+        _SectionHead(LucideIcons.alertOctagon, s.strings.profile.pd_allergies, s: s),
+        _ChipEditor(
+            s: s,
+            labels: allergyList.map((a) => a.name).toList(),
+            ctrl: algInput,
+            hint: s.strings.profile.pd_add_alg,
+            bg: const Color(0xFFFBEBE7),
+            fg: T.danger,
+            onAdd: _addAllergy,
+            onRemoveAt: (i) => _removeAllergy(allergyList[i].id)),
+        _SectionHead(LucideIcons.droplet, s.strings.profile.pd_blood, s: s),
+        PCard(
+          padding: const EdgeInsets.all(12),
+          child: _BloodTypeGrid(
+            selected: selectedBlood,
+            accentBg: s.accent.bg,
+            accent: s.accent.main,
+            accentFg: s.accent.d,
+            onSelect: _setBloodType,
+          ),
+        ),
+        _SectionHead(LucideIcons.ruler, s.strings.profile.pd_measurements, s: s),
+        PCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              Row(children: [
+                Expanded(child: _numField('${s.strings.profile.pd_weight} (${s.strings.profile.pd_kg})', weight)),
+                const SizedBox(width: 12),
+                Expanded(child: _numField('${s.strings.profile.pd_height} (${s.strings.profile.pd_cm})', height)),
+              ]),
+              if (bmi != null) ...[
+                const Padding(padding: EdgeInsets.symmetric(vertical: 14), child: Divider(height: 1, color: T.ink100)),
+                Row(children: [
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.strings.profile.bmi_label.toUpperCase(),
+                        style: Typo.meta(ar: s.rtl)
+                            .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
+                    Text(bmi.value, style: Typo.display().copyWith(fontSize: FS.xl2)),
+                  ]),
+                  const SizedBox(width: 14),
+                  Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(color: bmi.bg, borderRadius: BorderRadius.circular(T.rPill)),
+                        child: Text(s.t(bmi.key),
+                            style: Typo.meta(ar: s.rtl)
+                                .copyWith(fontSize: 11, fontWeight: FontWeight.w700, color: bmi.color))),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(
+                        builder: (context, c) => Stack(clipBehavior: Clip.none, children: [
+                              Container(
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(99),
+                                    gradient: const LinearGradient(
+                                        colors: [T.hueBlue, T.hueMint, Color(0xFFD97A20), T.danger],
+                                        stops: [0, 0.33, 0.66, 1]),
+                                  )),
+                              Positioned(
+                                left: (c.maxWidth * bmi.pct / 100) - 6,
+                                top: -3,
+                                child: Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: T.fg1, width: 2.5))),
+                              ),
+                            ])),
+                  ])),
+                ]),
+              ],
+            ])),
+        const SizedBox(height: 22),
+        PButton(saving ? s.strings.profile.pd_saving : (saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save),
+            icon: saved ? LucideIcons.check : LucideIcons.save,
+            variant: BtnVariant.primary,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: saving ? null : _save),
+      ],
+    );
+  }
+
+  Widget _numField(String label, TextEditingController c) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label.toUpperCase(),
+            style: Typo.meta(ar: s.rtl)
+                .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: T.fg3)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: c,
+          textDirection: TextDirection.ltr,
+          keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
+          style: Typo.num(size: FS.lg),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+          ),
+        ),
+      ]);
+}
+
+/// Compact 4×2 blood-type picker. ABO codes stay LTR so the grid does not
+/// mirror in Arabic.
+class _BloodTypeGrid extends StatelessWidget {
+  const _BloodTypeGrid({
+    required this.selected,
+    required this.accentBg,
+    required this.accent,
+    required this.accentFg,
+    required this.onSelect,
+  });
+
+  final BloodType? selected;
+  final Color accentBg;
+  final Color accent;
+  final Color accentFg;
+  final ValueChanged<BloodType> onSelect;
+
+  static const _cols = 4;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = BloodType.values.slices(_cols).toList();
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Table(
+        children: rows.indexed
+            .map((r) => TableRow(
+                  // Table requires every row to hold the same number of cells,
+                  // so a list that does not divide by _cols is padded with
+                  // blanks rather than throwing.
+                  children: List.generate(_cols, (c) {
+                    final bt = c < r.$2.length ? r.$2[c] : null;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        left: c == 0 ? 0 : 4,
+                        right: c == _cols - 1 ? 0 : 4,
+                        bottom: r.$1 == rows.length - 1 ? 0 : 8,
+                      ),
+                      child: bt == null ? const SizedBox.shrink() : _cell(bt),
+                    );
+                  }),
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _cell(BloodType bt) {
+    final on = selected == bt;
+    return Pressable(
+      onTap: () => onSelect(bt),
+      scale: 0.96,
+      child: AnimatedContainer(
+        duration: Motion.base,
+        curve: Motion.easeOut,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: on ? accentBg : Colors.white,
+          borderRadius: BorderRadius.circular(T.rMd),
+          border: Border.all(color: on ? accent : T.border, width: 1.5),
+        ),
+        child: Text(
+          bt.label,
+          style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: on ? accentFg : T.fg2),
+        ),
+      ),
+    );
+  }
+}
+
+/// Chip list + single-line add field. Backed by real data: [labels] render the
+/// current items, [onAdd] persists a new one, and [onRemoveAt] (when provided)
+/// deletes item `i`. No local list mutation.
+class _ChipEditor extends StatelessWidget {
+  const _ChipEditor(
+      {required this.s,
+      required this.labels,
+      required this.ctrl,
+      required this.hint,
+      required this.bg,
+      required this.fg,
+      required this.onAdd,
+      this.onRemoveAt});
+  final PatientAppState s;
+  final List<String> labels;
+  final TextEditingController ctrl;
+  final String hint;
+  final Color bg, fg;
+  final void Function(String value) onAdd;
+  final void Function(int index)? onRemoveAt;
+  void _add() {
+    final v = ctrl.text.trim();
+    if (v.isEmpty) return;
+    ctrl.clear();
+    onAdd(v);
+  }
+
+  @override
+  Widget build(BuildContext context) => PCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (labels.isNotEmpty)
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: labels.indexed
+                      .map((e) => Container(
+                            padding: onRemoveAt == null
+                                ? const EdgeInsetsDirectional.only(start: 11, end: 11, top: 6, bottom: 6)
+                                : const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
+                            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rPill)),
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text(e.$2,
+                                  style: Typo.body(ar: s.rtl)
+                                      .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
+                              if (onRemoveAt != null) ...[
+                                const SizedBox(width: 4),
+                                GestureDetector(
+                                  onTap: () => onRemoveAt!(e.$1),
+                                  child: Icon(LucideIcons.x, size: 13, color: fg),
+                                ),
+                              ],
+                            ]),
+                          ))
+                      .toList())),
+        Row(children: [
+          Expanded(
+              child: TextField(
+            controller: ctrl,
+            textDirection: s.dir,
+            onSubmitted: (_) => _add(),
+            style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
+              isDense: true,
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(T.rMd),
+                  borderSide: const BorderSide(color: T.border, width: 1.5)),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+            ),
+          )),
+          const SizedBox(width: 8),
+          Pressable(
+            onTap: _add,
+            scale: 0.94,
+            child: Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(T.rMd),
+                    border: Border.all(color: T.borderStrong)),
+                child: const Icon(LucideIcons.plus, size: 18, color: T.fg1)),
+          ),
+        ]),
+      ]));
+}
+
+/// Chronic-condition editor (G7). Renders existing conditions as chips showing
+/// name + optional ICD-10 code + onset year, with × to remove (on-device only).
+class _ConditionEditor extends StatefulWidget {
+  const _ConditionEditor({
+    required this.s,
+    required this.conditions,
+    required this.bg,
+    required this.fg,
+    required this.onAdd,
+    required this.onRemove,
+  });
+  final PatientAppState s;
+  final List<ChronicCondition> conditions;
+  final Color bg, fg;
+  final Future<void> Function(String name, String? icd10Code, int? onsetYear) onAdd;
+  final Future<void> Function(ChronicConditionId id) onRemove;
+  @override
+  State<_ConditionEditor> createState() => _ConditionEditorState();
+}
+
+class _ConditionEditorState extends State<_ConditionEditor> {
+  final _name = TextEditingController();
+  final _icd10 = TextEditingController();
+  final _year = TextEditingController();
+
+  PatientAppState get s => widget.s;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _icd10.dispose();
+    _year.dispose();
+    super.dispose();
+  }
+
+  void _add() {
+    final name = _name.text.trim();
+    if (name.isEmpty) return;
+    final icd10 = _icd10.text.trim();
+    final year = int.tryParse(_year.text.trim());
+    widget.onAdd(name, icd10.isEmpty ? null : icd10, year);
+    _name.clear();
+    _icd10.clear();
+    _year.clear();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) => PCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (widget.conditions.isNotEmpty)
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(spacing: 8, runSpacing: 8, children: widget.conditions.map(_chip).toList())),
+        _field(_name, s.strings.profile.pd_add_cond, s.dir),
+        const SizedBox(height: 8),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: _field(_icd10, s.strings.checkin.cond_icd10_hint, TextDirection.ltr)),
+          const SizedBox(width: 8),
+          SizedBox(width: 92, child: _field(_year, s.strings.checkin.cond_onset_hint, TextDirection.ltr, number: true)),
+          const SizedBox(width: 8),
+          Pressable(
+            onTap: _add,
+            scale: 0.94,
+            child: Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(T.rMd),
+                    border: Border.all(color: T.borderStrong)),
+                child: const Icon(LucideIcons.plus, size: 18, color: T.fg1)),
+          ),
+        ]),
+      ]));
+
+  Widget _chip(ChronicCondition c) {
+    final meta = [
+      if (c.icd10Code != null && c.icd10Code!.isNotEmpty) c.icd10Code!,
+      if (c.onsetYear != null) c.onsetYear!.toString(),
+    ].join(' · ');
+    return Container(
+      padding: const EdgeInsetsDirectional.only(start: 11, end: 6, top: 4, bottom: 4),
+      decoration: BoxDecoration(color: widget.bg, borderRadius: BorderRadius.circular(T.rPill)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(c.name,
+            style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: widget.fg)),
+        if (meta.isNotEmpty) ...[
+          const SizedBox(width: 6),
+          Text(meta,
+              textDirection: TextDirection.ltr,
+              style: Typo.num(size: FS.xs2, weight: FontWeight.w700, color: widget.fg)),
+        ],
+        const SizedBox(width: 4),
+        GestureDetector(
+          onTap: () => widget.onRemove(c.id),
+          child: Icon(LucideIcons.x, size: 13, color: widget.fg),
+        ),
+      ]),
+    );
+  }
+
+  Widget _field(TextEditingController c, String hint, TextDirection dir, {bool number = false}) => TextField(
+        controller: c,
+        textDirection: dir,
+        onSubmitted: (_) => _add(),
+        keyboardType: number ? TextInputType.number : TextInputType.text,
+        style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+        ),
+      );
+}
+
+// ── Privacy & data ───────────────────────────────────────────
+class PrivacyDataScreen extends ConsumerStatefulWidget {
+  const PrivacyDataScreen({super.key, required this.s, this.onDeleteAccount});
+  final PatientAppState s;
+  final VoidCallback? onDeleteAccount;
+  @override
+  ConsumerState<PrivacyDataScreen> createState() => _PrivacyDataScreenState();
+}
+
+class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
+  PatientAppState get s => widget.s;
+  bool shareTeam = true, research = false, bioLock = true, pin = false;
+
+  /// Product-analytics consent — the one toggle on this screen that is real.
+  /// Persisted device-wide and pushed straight to whichever analytics backends
+  /// the composition root registered, so switching it off stops collection now,
+  /// not on the next launch. Which vendor that is, is not this screen's
+  /// business. The rest are still design placeholders.
+  void _setAnalytics(bool enabled) {
+    final consent = ref.read(analyticsConsentProvider);
+    // Order matters on the way OUT: consent lands first, so the event below is
+    // already gated and a patient who just opted out sends nothing.
+    consent.set(enabled);
+    ref.read(analyticsLoggerProvider).logEvent('analytics_consent_changed', props: {'enabled': enabled});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final analytics = ref.watch(analyticsConsentProvider).enabled;
+    return SubScreen(
+      s: s,
+      title: s.strings.profile.p_privacy,
+      children: [
+        _SectionHead(LucideIcons.share2, s.strings.privacy.pv_sharing, s: s),
+        _listCard([
+          _toggle(s.strings.privacy.pv_share_team, s.strings.privacy.pv_share_team_h, shareTeam,
+              (v) => setState(() => shareTeam = v)),
+          _toggle(s.strings.privacy.pv_analytics, s.strings.privacy.pv_analytics_h, analytics, _setAnalytics),
+          _toggle(s.strings.privacy.pv_research, s.strings.privacy.pv_research_h, research,
+              (v) => setState(() => research = v),
+              last: true),
+        ]),
+        _SectionHead(LucideIcons.lock, s.strings.privacy.pv_security, s: s),
+        _listCard([
+          _action(
+            LucideIcons.mail,
+            s.strings.emergency.em_label,
+            s.authEmail.isEmpty ? '—' : s.authEmail,
+            ltrDesc: true,
+          ),
+          _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
+          _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v),
+              last: true),
+        ]),
+        _SectionHead(LucideIcons.database, s.strings.privacy.pv_yourdata, s: s),
+        _listCard([
+          _action(LucideIcons.download, s.strings.privacy.pv_export, s.strings.privacy.pv_export_h),
+          _action(LucideIcons.folderHeart, s.strings.privacy.pv_download, s.strings.privacy.pv_download_h),
+          _action(LucideIcons.appWindow, s.strings.privacy.pv_connected, s.strings.privacy.pv_connected_h, last: true),
+        ]),
+        _SectionHead(LucideIcons.alertTriangle, s.strings.privacy.pv_danger, s: s),
+        _listCard([
+          _action(LucideIcons.trash2, s.strings.privacy.pv_delete, s.strings.privacy.pv_delete_h,
+              danger: true, last: true, onTap: widget.onDeleteAccount),
+        ]),
+        Padding(
+          padding: const EdgeInsets.only(top: 18),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),
+            const SizedBox(width: 6),
+            Text(s.strings.privacy.pv_encrypted, style: Typo.meta(ar: s.rtl)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  Widget _listCard(List<Widget> rows) => PCard(
+        padding: EdgeInsets.zero,
+        child: ClipRRect(borderRadius: BorderRadius.circular(T.rLg), child: Column(children: rows)),
+      );
+
+  Widget _row(List<Widget> children, bool last) => Container(
+        decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink100))),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(children: children),
+      );
+
+  Widget _toggle(String title, String desc, bool on, ValueChanged<bool> set, {bool last = false}) => _row([
+        Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+          const SizedBox(height: 2),
+          Text(desc, style: Typo.meta(ar: s.rtl)),
+        ])),
+        const SizedBox(width: 12),
+        PSwitch(on: on, accent: s.accent.main, onTap: () => set(!on)),
+      ], last);
+
+  Widget _action(IconData icon, String title, String desc,
+      {bool danger = false, bool last = false, bool ltrDesc = false, VoidCallback? onTap}) {
+    final row = _row([
+      Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: danger ? T.dangerBg : T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+          child: Icon(icon, size: 18, color: danger ? T.danger : T.fg2)),
+      const SizedBox(width: 14),
+      Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title,
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: danger ? T.danger : T.fg1)),
+        const SizedBox(height: 2),
+        Text(desc, textDirection: ltrDesc ? TextDirection.ltr : null, style: Typo.meta(ar: s.rtl)),
+      ])),
+      if (onTap != null) Chevron(rtl: s.rtl),
+    ], last);
+    if (onTap == null) return row;
+    return Pressable(onTap: onTap, scale: 0.99, child: row);
+  }
+}
+
+// ── Emergency numbers ────────────────────────────────────────
+class EmergencyScreen extends StatelessWidget {
+  const EmergencyScreen({super.key, required this.s});
+  final PatientAppState s;
+
+  static const _contacts = [
+    ('emergency.em_ambulance', LucideIcons.heartPulse, '123', T.danger, T.dangerBg),
+    ('emergency.em_police', LucideIcons.shield, '122', T.hueBlue, T.hueBlue50),
+    ('emergency.em_fire', LucideIcons.flame, '180', Color(0xFFD97A20), Color(0xFFFBF0E2)),
+    ('emergency.em_tourist', LucideIcons.compass, '126', T.hueViolet, T.hueViolet50),
+  ];
+
+  @override
+  Widget build(BuildContext context) => SubScreen(
+        s: s,
+        title: s.strings.profile.p_emergency,
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(LucideIcons.mapPin, size: 12, color: T.fg3),
+          const SizedBox(width: 4),
+          Text(s.strings.emergency.em_eg, style: Typo.meta(ar: s.rtl)),
+        ]),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 2, 0, 16),
+            child: Text(s.strings.emergency.em_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+          ),
+          // `.emergency-grid` — two thumb-sized call targets per row on a
+          // phone, `repeat(4, minmax(0, 1fr))` once the window reaches the
+          // medium class and the four contacts fit on one line.
+          LayoutBuilder(builder: (context, c) {
+            const gap = 12.0;
+            final columns = windowClassOf(context) == BalsmWindowClass.compact ? 2 : 4;
+            final tileW = (c.maxWidth - gap * (columns - 1)) / columns;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final ct in _contacts) SizedBox(width: tileW, child: _tile(ct)),
+              ],
+            );
+          }),
+          Padding(
+            padding: const EdgeInsets.only(top: 18),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(LucideIcons.phoneCall, size: 15, color: T.fg3),
+              const SizedBox(width: 6),
+              Text(s.strings.emergency.em_tap_call, style: Typo.meta(ar: s.rtl)),
+            ]),
+          ),
+        ],
+      );
+
+  // `.emergency-tile:active { transform: scale(0.98) }` — tap-to-call tile.
+  Widget _tile((String, IconData, String, Color, Color) ct) => Pressable(
+      onTap: () => launchUrl(Uri(scheme: 'tel', path: ct.$3)),
+      scale: 0.98,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(T.rLg),
+            border: Border.all(color: T.border),
+            boxShadow: T.shadowSm),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: ct.$5, borderRadius: BorderRadius.circular(T.rMd)),
+              child: Icon(ct.$2, size: 23, color: ct.$4)),
+          const SizedBox(height: 12),
+          Text(s.t(ct.$1), style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+          const SizedBox(height: 2),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text(ct.$3, style: Typo.num(size: FS.xl2, weight: FontWeight.w600)),
+            Icon(LucideIcons.phone, size: 13, color: ct.$4),
+          ]),
+        ]),
+      ));
+}

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Balsm CLI — the committed entry point for tool/build.dart, the single source
+# of truth for build/run/test/install wiring. Used by VS Code tasks, CI
+# pipelines, and shell aliases so they all invoke the same thing:
+#
+#   bin/balsm run balsm dev            run on the default device
+#   bin/balsm apk balsm prod           build an artifact
+#   bin/balsm install balsm dev        push a collected build to a device
+#   bin/balsm gen                      build_runner across all packages
+#   bin/balsm -h                       full usage
+#
+# Uses fvm when the machine has it (local dev); falls back to whatever `dart`
+# is on PATH (CI runners set one up via subosito/flutter-action).
+set -e
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+if [ -f .fvmrc ] && command -v fvm >/dev/null 2>&1; then
+  exec fvm dart run tool/build.dart "$@"
+fi
+exec dart run tool/build.dart "$@"

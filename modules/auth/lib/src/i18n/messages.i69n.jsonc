@@ -1,0 +1,39 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "country": {
+    "title": "Select your country",
+    "search": "Search countries"
+  },
+  "email": {
+    "title": "Enter your email",
+    "label": "Email address"
+  },
+  "otp": {
+    "title": "Enter verification code",
+    "subtitle": "We sent a code to your email",
+    "error": {
+      "invalid": "Invalid code. Please try again."
+    }
+  },
+  "social": {
+    "title": "Continue with",
+    "subtitle": "Use your Google or Apple account to sign in securely.",
+    "google": "Continue with Google",
+    "apple": "Continue with Apple",
+    "error": {
+      "google": "Google sign-in failed. Please try again.",
+      "googleToken": "Could not get a Google sign-in token. Please try again.",
+      "apple": "Apple sign-in failed. Please try again.",
+      "appleToken": "Could not get an Apple sign-in token. Please try again."
+    }
+  },
+  "lockout": {
+    "title": "Too many attempts",
+    "body": "Your account is temporarily locked. Please try again later.",
+    "retry": "Try again",
+    "needHelp": "Need help?",
+    "contactSupport(String email)": "Email $email",
+    "serviceStatus": "Check service status"
+  }
+}

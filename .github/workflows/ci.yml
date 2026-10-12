@@ -1,0 +1,252 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'release/**']
+  pull_request:
+    branches: [main, develop, 'release/**']
+
+env:
+  FLUTTER_VERSION: '3.47.4'
+  # Every package the pipeline analyzes, in dependency-safe order: core first
+  # (everything depends on it), then the API client, then the bounded contexts
+  # under modules/, and app last (it aggregates the tree).
+  # balsm_boundary_lint is excluded — its analyzer ^6.11 pin needs the
+  # `_macros` SDK pkg absent in Dart 3.11.
+  # Keep this in step with the folders: a path that does not exist fails the
+  # job at `pub get`, and a module missing from the list is never analyzed.
+  PKGS: >-
+    packages/core packages/balsm_api
+    modules/geofence_block modules/auth modules/disclosure modules/profile
+    modules/account modules/emergency_card modules/medications
+    modules/prescriptions modules/records modules/self_report
+    modules/deletion modules/sessions
+    app
+
+jobs:
+  hygiene:
+    name: No machine-specific paths
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # A checkout location is one developer's accident, not a fact about the
+      # repo: an absolute path into somebody's checkout is wrong for every
+      # other clone and for this runner, and it leaks the author's directory
+      # layout. The pattern below uses character classes so this file does not
+      # match itself and need an exemption. .githooks/pre-commit catches these before they are
+      # committed; this is the backstop for --no-verify and for clones that
+      # never ran `git config core.hooksPath .githooks`.
+      #
+      # The unix home dirs must be followed by a name segment, so prose such as
+      # "medications/home/profile" does not match. Vendored third-party skills
+      # are exempt — they are not ours to rewrite.
+      - name: Reject absolute machine paths in tracked files
+        run: |
+          if git grep -nIE '/Vol[u]mes/|[A-Za-z]:\\Us[e]rs\\|(^|[^A-Za-z0-9_.-])/(Us[e]rs|ho[m]e)/[A-Za-z_][A-Za-z0-9_-]*/|~/D[e]v/' \
+               -- . ':(exclude).agents/skills/**' ':(exclude).claude/skills/**' \
+                    ':(exclude).cursor/skills/**' \
+             | grep -vF 'machine-path-ok'; then
+            echo ""
+            echo "::error::Machine-specific absolute path in a tracked file (see matches above)."
+            echo "Use a repo-relative path, \"\$(git rev-parse --show-toplevel)\", or ../<sibling-repo>."
+            exit 1
+          fi
+          echo "No machine-specific paths found."
+
+  analyze:
+    name: Analyze (all packages)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: pub get (all packages)
+        run: |
+          set -e
+          for p in $PKGS; do
+            echo "::group::pub get $p"; (cd "$p" && flutter pub get); echo "::endgroup::"
+          done
+      - name: Generate drift code (core)
+        working-directory: packages/core
+        run: dart run build_runner build
+      - name: Analyze (all packages — fails on errors only)
+        # Warnings/infos are surfaced in logs but non-blocking; the gate is
+        # zero analyzer ERRORS, across every package in PKGS.
+        run: |
+          set -e
+          for p in $PKGS; do
+            echo "::group::analyze $p"; (cd "$p" && flutter analyze --no-fatal-warnings --no-fatal-infos); echo "::endgroup::"
+          done
+
+  test:
+    name: Tests (PHI-leak + i18n)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: pub get core + app
+        run: |
+          (cd packages/core && flutter pub get)
+          (cd app && flutter pub get)
+      - name: Generate drift code (core)
+        working-directory: packages/core
+        run: dart run build_runner build
+      - name: PHI-leak fuzz tests
+        working-directory: app
+        run: flutter test ../test/phi_leak_fuzz_test --exclude-tags e2e
+      - name: Translation completeness
+        working-directory: app
+        run: flutter test ../test/i18n --exclude-tags e2e
+
+  build-web:
+    name: Build web
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Validate public-route assets (.well-known)
+        run: |
+          python3 -c "import json; json.load(open('app/web/.well-known/apple-app-site-association')); print('AASA OK')"
+          python3 -c "import json; json.load(open('app/web/.well-known/assetlinks.json')); print('assetlinks OK')"
+          python3 -c "import json; json.load(open('app/web/.well-known/emergency-keys.json')); print('emergency-keys OK')"
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      # app/env/shared.json is git-ignored (per-developer server list); the CLI
+      # refuses to build without one. The tracked template works as-is.
+      - name: Provision server list (env/shared.json)
+        run: cp app/env/shared.example.json app/env/shared.json
+      - name: Build web (release, prod)
+        run: ./bin/balsm web balsm prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-prod
+          path: app/build/web
+          if-no-files-found: error
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Provision server list (env/shared.json)
+        run: cp app/env/shared.example.json app/env/shared.json
+      # NDK is pinned in app/android/app/build.gradle.kts; AGP installs it on the
+      # runner if missing. Release uses the debug signing fallback until a prod
+      # keystore is wired (see SIGNING below).
+      - name: Build APK (release, balsm · prod)
+        run: ./bin/balsm apk balsm prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-prod-apk
+          path: app/build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
+
+  build-ios:
+    name: Build iOS (no codesign)
+    runs-on: macos-latest
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Generate drift code (core)
+        run: (cd packages/core && flutter pub get && dart run build_runner build)
+      - name: Provision server list (env/shared.json)
+        run: cp app/env/shared.example.json app/env/shared.json
+      - name: Build iOS (release, no codesign, balsm · prod)
+        run: ./bin/balsm ios balsm prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-prod-app
+          # `balsm ios` archives (flutter build ipa --no-codesign), so the app
+          # is inside the archive, not under build/ios/iphoneos.
+          path: app/build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app
+          if-no-files-found: error
+
+  coverage:
+    name: Coverage → Codecov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: pub get (all packages)
+        run: |
+          set -e
+          for p in $PKGS; do
+            echo "::group::pub get $p"; (cd "$p" && flutter pub get); echo "::endgroup::"
+          done
+      - name: Generate drift code (core)
+        working-directory: packages/core
+        run: dart run build_runner build
+      - name: Flutter package + app coverage
+        # Loop packages that actually have tests; rewrite each lcov SF: path to
+        # be repo-root-relative and concatenate into one report.
+        run: |
+          set -e
+          mkdir -p coverage
+          : > coverage/lcov.info
+          for p in $PKGS; do
+            # balsm_api is pure Dart and is measured by the next step.
+            [ "$p" = packages/balsm_api ] && continue
+            if [ -d "$p/test" ]; then
+              echo "::group::coverage $p"
+              (cd "$p" && flutter test --coverage --exclude-tags e2e) || true
+              if [ -f "$p/coverage/lcov.info" ]; then
+                sed "s|^SF:|SF:$p/|" "$p/coverage/lcov.info" >> coverage/lcov.info
+              fi
+              echo "::endgroup::"
+            fi
+          done
+      - name: Dart package coverage (balsm_api)
+        working-directory: packages/balsm_api
+        run: |
+          set -e
+          dart pub global activate coverage
+          dart test --coverage=coverage
+          dart pub global run coverage:format_coverage \
+            --lcov --in=coverage --out=coverage/lcov.info \
+            --packages=.dart_tool/package_config.json --report-on=lib
+      - name: Merge balsm_api coverage
+        run: |
+          sed "s|^SF:|SF:packages/balsm_api/|" \
+            packages/balsm_api/coverage/lcov.info >> coverage/lcov.info
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+# SIGNING is scaffolded in release.yml (guarded on secrets) and
+# app/android/app/build.gradle.kts (key.properties). See docs/ci-secrets.md.

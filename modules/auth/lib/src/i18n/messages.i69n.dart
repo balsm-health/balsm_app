@@ -1,0 +1,210 @@
+// ignore_for_file: unused_element, unused_field, camel_case_types, annotate_overrides, prefer_single_quotes
+// GENERATED FILE, do not edit!
+// dart format off
+import 'package:i69n/i69n.dart' as i69n;
+
+String get _languageCode => 'en';
+String get _localeName => 'en';
+
+class Messages implements i69n.I69nMessageBundle {
+  const Messages();
+  CountryMessages get country => CountryMessages(this);
+  EmailMessages get email => EmailMessages(this);
+  OtpMessages get otp => OtpMessages(this);
+  SocialMessages get social => SocialMessages(this);
+  LockoutMessages get lockout => LockoutMessages(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'country':
+        return country;
+      case 'email':
+        return email;
+      case 'otp':
+        return otp;
+      case 'social':
+        return social;
+      case 'lockout':
+        return lockout;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class CountryMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const CountryMessages(this._parent);
+  String get title => "Select your country";
+  String get search => "Search countries";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'search':
+        return search;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class EmailMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const EmailMessages(this._parent);
+  String get title => "Enter your email";
+  String get label => "Email address";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'label':
+        return label;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class OtpMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const OtpMessages(this._parent);
+  String get title => "Enter verification code";
+  String get subtitle => "We sent a code to your email";
+  ErrorOtpMessages get error => ErrorOtpMessages(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'error':
+        return error;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class ErrorOtpMessages implements i69n.I69nMessageBundle {
+  final OtpMessages _parent;
+  const ErrorOtpMessages(this._parent);
+  String get invalid => "Invalid code. Please try again.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'invalid':
+        return invalid;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class SocialMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const SocialMessages(this._parent);
+  String get title => "Continue with";
+  String get subtitle => "Use your Google or Apple account to sign in securely.";
+  String get google => "Continue with Google";
+  String get apple => "Continue with Apple";
+  ErrorSocialMessages get error => ErrorSocialMessages(this);
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'subtitle':
+        return subtitle;
+      case 'google':
+        return google;
+      case 'apple':
+        return apple;
+      case 'error':
+        return error;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class ErrorSocialMessages implements i69n.I69nMessageBundle {
+  final SocialMessages _parent;
+  const ErrorSocialMessages(this._parent);
+  String get google => "Google sign-in failed. Please try again.";
+  String get googleToken => "Could not get a Google sign-in token. Please try again.";
+  String get apple => "Apple sign-in failed. Please try again.";
+  String get appleToken => "Could not get an Apple sign-in token. Please try again.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'google':
+        return google;
+      case 'googleToken':
+        return googleToken;
+      case 'apple':
+        return apple;
+      case 'appleToken':
+        return appleToken;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class LockoutMessages implements i69n.I69nMessageBundle {
+  final Messages _parent;
+  const LockoutMessages(this._parent);
+  String get title => "Too many attempts";
+  String get body => "Your account is temporarily locked. Please try again later.";
+  String get retry => "Try again";
+  String get needHelp => "Need help?";
+  String contactSupport(String email) => "Email $email";
+  String get serviceStatus => "Check service status";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'body':
+        return body;
+      case 'retry':
+        return retry;
+      case 'needHelp':
+        return needHelp;
+      case 'contactSupport':
+        return contactSupport;
+      case 'serviceStatus':
+        return serviceStatus;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "ar",
+  "list": {
+    "empty": "لا توجد أدوية بعد"
+  },
+  "add": "إضافة دواء",
+  "today": {
+    "title": "أدوية اليوم"
+  },
+  "outcome": {
+    "taken": "تم التناول",
+    "skipped": "تم التخطي",
+    "snoozed": "مؤجل",
+    "missed": "فائت"
+  },
+  "notification": {
+    "body": "حان وقت مراجعة أدويتك"
+  }
+}

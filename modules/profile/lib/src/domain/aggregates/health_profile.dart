@@ -1,0 +1,155 @@
+import 'package:core/core.dart';
+
+import '../value_objects/allergy_severity.dart';
+import '../value_objects/ids.dart';
+
+/// Main PHI aggregate for the profile bounded context.
+/// PHI is stored ON-DEVICE ONLY via drift/SQLCipher — never sent to the cloud.
+class HealthProfile {
+  const HealthProfile({
+    required this.id,
+    required this.userId,
+    required this.bloodType,
+    this.weightKg,
+    this.heightCm,
+    required this.allergies,
+    required this.conditions,
+    required this.emergencyContacts,
+    required this.updatedAt,
+  });
+
+  final HealthProfileId id;
+
+  /// Cloud reference (non-PHI). Used to associate the on-device record
+  /// with the authenticated Supabase user — never transmitted with PHI.
+  final UserId userId;
+
+  /// Nullable ABO/Rh blood type. One of:
+  /// 'A+'|'A-'|'B+'|'B-'|'AB+'|'AB-'|'O+'|'O-' or null (unknown).
+  final BloodType? bloodType;
+
+  /// Optional body weight in kilograms. On-device PHI only.
+  final double? weightKg;
+
+  /// Optional height in centimetres. On-device PHI only.
+  final double? heightCm;
+
+  /// Up to 50 allergies (validation enforced in use-cases).
+  final List<Allergy> allergies;
+
+  final List<ChronicCondition> conditions;
+
+  /// Up to 3 emergency contacts (validation enforced in use-cases).
+  final List<EmergencyContact> emergencyContacts;
+
+  final DateTime updatedAt;
+
+  /// Returns true when at least one PHI field is populated.
+  bool get hasMinimalInfo => bloodType != null || weightKg != null || heightCm != null || allergies.isNotEmpty;
+
+  HealthProfile copyWith({
+    HealthProfileId? id,
+    UserId? userId,
+    BloodType? bloodType,
+    bool clearBloodType = false,
+    double? weightKg,
+    bool clearWeight = false,
+    double? heightCm,
+    bool clearHeight = false,
+    List<Allergy>? allergies,
+    List<ChronicCondition>? conditions,
+    List<EmergencyContact>? emergencyContacts,
+    DateTime? updatedAt,
+  }) {
+    return HealthProfile(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      bloodType: clearBloodType ? null : (bloodType ?? this.bloodType),
+      weightKg: clearWeight ? null : (weightKg ?? this.weightKg),
+      heightCm: clearHeight ? null : (heightCm ?? this.heightCm),
+      allergies: allergies ?? this.allergies,
+      conditions: conditions ?? this.conditions,
+      emergencyContacts: emergencyContacts ?? this.emergencyContacts,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+/// Allergy value within HealthProfile.
+class Allergy {
+  const Allergy({
+    required this.id,
+    required this.healthProfileId,
+    required this.name,
+    required this.severity,
+    required this.isControlledSubstance,
+    required this.createdAt,
+  });
+
+  final AllergyId id;
+  final HealthProfileId healthProfileId;
+
+  /// Free text, max 100 chars.
+  final String name;
+
+  /// One of 'mild' | 'moderate' | 'severe'.
+  final String severity;
+
+  final bool isControlledSubstance;
+  final DateTime createdAt;
+}
+
+/// Chronic condition value within HealthProfile.
+class ChronicCondition {
+  const ChronicCondition({
+    required this.id,
+    required this.healthProfileId,
+    required this.name,
+    this.icd10Code,
+    this.onsetYear,
+    required this.createdAt,
+  });
+
+  final ChronicConditionId id;
+  final HealthProfileId healthProfileId;
+  final String name;
+
+  /// Optional ICD-10 diagnosis code (e.g. 'E11.9'). Null when uncoded.
+  final String? icd10Code;
+
+  /// Optional year of onset (e.g. 2018). Null when unknown.
+  final int? onsetYear;
+
+  final DateTime createdAt;
+}
+
+/// Emergency contact value within HealthProfile.
+class EmergencyContact {
+  const EmergencyContact({
+    required this.id,
+    required this.healthProfileId,
+    required this.name,
+    required this.phone,
+    required this.relation,
+    required this.isPrimary,
+    required this.createdAt,
+  });
+
+  final EmergencyContactId id;
+  final HealthProfileId healthProfileId;
+  final String name;
+
+  /// Phone stored in Western Arabic digits (FR-213 normalization applied on input).
+  final String phone;
+
+  final String? relation;
+  final bool isPrimary;
+  final DateTime createdAt;
+}
+
+// Blood types are the core [BloodType] enum (null means unknown/not set).
+
+/// Valid allergy severity levels, in escalating order.
+///
+/// Derived from [AllergySeverity] so the list and the enum cannot drift apart.
+List<String> get kAllergySeverities => AllergySeverity.wireValues;

@@ -1,0 +1,158 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Flutter: code generation",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/balsm",
+      "args": [
+        "gen"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: code generation (watch)",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/balsm",
+      "args": [
+        "gen",
+        "--watch"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: widget tests (app only)",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/balsm",
+      "args": [
+        "test"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: all UI tests",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/ui_test.sh",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dart: format",
+      "type": "shell",
+      "command": "fvm",
+      "args": [
+        "dart",
+        "format",
+        "."
+      ],
+      "group": "none",
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: all tests",
+      "detail": "Every Dart test in the repo: each workspace package, then the root suites.",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/all_tests.sh",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run (device)",
+      "detail": "balsm run \u2014 picks brand and env, then flutter run with the right flavor/target/defines.",
+      "type": "shell",
+      "command": "${workspaceFolder}/bin/balsm run ${input:brand} ${input:env}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "play",
+        "color": "terminal.ansiGreen"
+      }
+    },
+    {
+      "label": "Build",
+      "detail": "Pick brand, artifact and flavor. Collects to output/<brand>/<platform>/.",
+      "type": "shell",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "command": "${workspaceFolder}/bin/balsm build ${input:brand} ${input:env} --artifact=${input:artifact}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "tools",
+        "color": "terminal.ansiGreen"
+      }
+    },
+    {
+      "label": "Build & install to device",
+      "detail": "Builds, then pushes to a connected device. Asks which device when more than one is attached.",
+      "type": "shell",
+      "group": "build",
+      "dependsOn": [
+        "Build"
+      ],
+      "dependsOrder": "sequence",
+      "command": "${workspaceFolder}/bin/balsm install ${input:brand} ${input:env} --artifact=${input:artifact}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "rocket",
+        "color": "terminal.ansiBlue"
+      }
+    },
+    {
+      "label": "Install to device (last build)",
+      "detail": "Pushes the already-collected artifact. No rebuild. Asks which device when more than one is attached.",
+      "type": "shell",
+      "group": "build",
+      "command": "${workspaceFolder}/bin/balsm install ${input:brand} ${input:env} --artifact=${input:artifact}",
+      "problemMatcher": [],
+      "icon": {
+        "id": "arrow-down",
+        "color": "terminal.ansiBlue"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "brand",
+      "description": "Which app (brand) \u2014 see tool/build_config.dart",
+      "type": "pickString",
+      "options": [
+        "balsm"
+      ],
+      "default": "balsm"
+    },
+    {
+      "id": "artifact",
+      "description": "What to build \u2014 ipa installs ad-hoc; ipa-archive is unsigned for the Xcode Organizer",
+      "type": "pickString",
+      "options": [
+        "apk",
+        "aab",
+        "ipa",
+        "ipa-appstore",
+        "ipa-archive",
+        "web",
+        "macos",
+        "windows",
+        "linux"
+      ],
+      "default": "ipa"
+    },
+    {
+      "id": "env",
+      "description": "Which flavor / environment config (env/<brand>/*.json)",
+      "type": "pickString",
+      "options": [
+        "dev",
+        "staging",
+        "prod"
+      ],
+      "default": "dev"
+    }
+  ]
+}

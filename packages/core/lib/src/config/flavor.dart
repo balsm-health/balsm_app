@@ -1,0 +1,232 @@
+// ignore_for_file: constant_identifier_names
+import 'env_hosts.dart';
+import 'server_preset.dart';
+
+/// Environment axis (a.k.a. build env).
+enum Flavor { dev, staging, prod }
+
+/// PostHog EU Cloud. See [FlavorConfig.posthogHost].
+const String kDefaultPosthogHost = 'https://eu.i.posthog.com';
+
+/// Brand axis. `balsm` is the consumer app; `balsm_pro` the professional build.
+enum AppBrand {
+  balsm,
+  balsm_pro;
+
+  /// The product name as users read it ("Update Balsm Pro to continue").
+  String get displayName => switch (this) { balsm => 'Balsm', balsm_pro => 'Balsm Pro' };
+
+  /// The host this brand's web app is served from. One host per brand, never a
+  /// path under a shared one: browsers isolate storage, sessions and service
+  /// workers by host, and two apps holding different people's health data
+  /// must not share them. Every brand's host has the same layout — the app at
+  /// `/`, `/t/{id}`, `/.well-known/*`, `/version/{brand}.json`, `/whats-new`.
+  ///
+  /// `app.balsm.health` cannot move: printed permanent QR codes and the
+  /// shipped deep-link configuration point at it.
+  ///
+  /// That is the production host. A build for another environment gets the
+  /// same name with its suffix appended (`app-stg.balsm.health`) — see
+  /// [envHost].
+  String get webHost => envHost(switch (this) { balsm => 'app', balsm_pro => 'pro' });
+
+  /// `https://` + [webHost], no trailing slash.
+  String get webOrigin => 'https://$webHost';
+
+  /// [displayName] in the UI language [lang] — the name is written in Arabic
+  /// script inside Arabic sentences.
+  String nameIn(String lang) => lang == 'ar' ? switch (this) { balsm => 'بلسم', balsm_pro => 'بلسم برو' } : displayName;
+}
+
+/// Runtime build configuration, resolved from two independent axes — the
+/// [brand] (Balsm / Balsm-Pro) and the [flavor] (dev / staging / prod) — so a
+/// single entrypoint serves every combination via `--dart-define`s instead of
+/// one `main_<x>.dart` per permutation.
+class FlavorConfig {
+  final AppBrand brand;
+  final Flavor flavor;
+
+  /// The switchable API servers, sourced from the shared `ENVS` define
+  /// (`env/shared.json`). The dev server selector lets the user switch between
+  /// them.
+  final List<ServerPreset> servers;
+
+  /// Boot target when no preset was saved (or switching is disabled).
+  /// Matches the [flavor] label in [servers] (`Local` / `Staging` /
+  /// `Production`). With no such entry, a staging or production build boots
+  /// against its environment's API host ([envHost]) rather than whatever
+  /// happens to be listed first; a dev build falls back to the first entry.
+  ServerPreset get defaultServer {
+    final want = switch (flavor) {
+      Flavor.prod => 'production',
+      Flavor.staging => 'staging',
+      Flavor.dev => 'local',
+    };
+    for (final s in servers) {
+      if (s.label.toLowerCase() == want) return s;
+    }
+    if (flavor != Flavor.dev) {
+      return ServerPreset(
+        label: flavor == Flavor.prod ? 'Production' : 'Staging',
+        apiBaseUrl: 'https://${envHost('api')}',
+      );
+    }
+    return servers.first;
+  }
+
+  final String? sentryDsn;
+
+  /// PostHog project token for product analytics. Not a secret — a project
+  /// token is write-only ingest credential and ships in the client bundle, same
+  /// as [sentryDsn]. Null/empty disables product analytics entirely
+  /// (`initPostHog` becomes a no-op).
+  final String? posthogApiKey;
+
+  /// PostHog ingestion host. EU Cloud by default: patient behavioural data for a
+  /// MENA health app stays in the EU rather than crossing to US Cloud. Point it
+  /// at a self-hosted instance by setting `POSTHOG_HOST`.
+  final String posthogHost;
+
+  final String appName;
+  final String appNameSuffix;
+
+  /// Whether the Dev Config screen may REPOINT the API server (dev + staging).
+  /// The screen itself is reachable in every flavor (shake gesture) — in prod it
+  /// renders read-only diagnostics with switching disabled.
+  final bool serverSwitchingEnabled;
+
+  /// Whether Apple/Google sign-in is offered at all.
+  ///
+  /// Off by default. The full flow is implemented on both client and API, but
+  /// an Apple account's identifier is scoped to the developer team that owns
+  /// the app — transferring the app to another team changes it, and every user
+  /// signed in that way needs a migration through Apple to keep their account.
+  /// Until app ownership is settled, not accruing those users is cheaper than
+  /// migrating them. Flip `SOCIAL_SIGN_IN_ENABLED` to re-enable; see
+  /// `docs/social-sign-in-setup.md`.
+  final bool socialSignInEnabled;
+
+  /// Google OAuth **web** client id, passed to `GoogleSignIn` as its
+  /// `serverClientId`. Two reasons it must be set: Android returns a null
+  /// `idToken` without it, and it pins the token's `aud` to one value on every
+  /// platform so the API can validate against a single configured audience.
+  ///
+  /// Not a secret — an OAuth client id is public by design. Empty disables the
+  /// Google button.
+  final String googleServerClientId;
+
+  /// Google OAuth **iOS** client id. Only consumed on iOS, where the SDK needs
+  /// the platform client alongside the server one. Empty elsewhere.
+  final String googleIosClientId;
+
+  const FlavorConfig({
+    required this.brand,
+    required this.flavor,
+    required this.servers,
+    this.sentryDsn,
+    this.posthogApiKey,
+    this.posthogHost = kDefaultPosthogHost,
+    required this.appName,
+    required this.appNameSuffix,
+    required this.serverSwitchingEnabled,
+    this.socialSignInEnabled = false,
+    this.googleServerClientId = '',
+    this.googleIosClientId = '',
+  });
+
+  static FlavorConfig? _current;
+  static FlavorConfig get current {
+    assert(_current != null, 'FlavorConfig.init() must be called before accessing current');
+    return _current!;
+  }
+
+  /// [current] without the assertion, for code that can run before (or in a
+  /// test without) [init] and has a sensible answer of its own.
+  static FlavorConfig? get currentOrNull => _current;
+
+  bool get isPro => brand == AppBrand.balsm_pro;
+
+  static AppBrand brandFromString(String? s) => s == 'balsm_pro' ? AppBrand.balsm_pro : AppBrand.balsm;
+  static Flavor flavorFromString(String? s) => switch (s) {
+        'prod' => Flavor.prod,
+        'staging' || 'stg' => Flavor.staging,
+        _ => Flavor.dev,
+      };
+
+  /// Parse the `ENVS` define into the switchable server list.
+  ///
+  /// `ENVS` lives in the shared `env/shared.json` as a plain JSON array, e.g.
+  /// `[{ "name": "Local", "url": "http://localhost:5000" }]`. Because
+  /// `--dart-define-from-file` stringifies non-primitive values with Dart's
+  /// `toString()` (not JSON), the value reaches us looking like
+  /// `[{name: Local, url: http://localhost:5000}, ...]` — unquoted, comma-space
+  /// separated. We pull each `{...}` object out and split its `key: value`
+  /// pairs. This relies on names/urls containing no `, ` or `: ` (true for
+  /// urls, which use `://` / `:port` without spaces). Falls back to a single
+  /// `Local` preset when the define is empty or unparseable.
+  static List<ServerPreset> _parseServers(String raw) {
+    final servers = <ServerPreset>[];
+    for (final obj in RegExp(r'\{([^}]*)\}').allMatches(raw)) {
+      final fields = <String, String>{};
+      for (final pair in obj.group(1)!.split(', ')) {
+        final sep = pair.indexOf(': ');
+        if (sep < 0) continue;
+        fields[pair.substring(0, sep).trim()] = pair.substring(sep + 2).trim();
+      }
+      final url = fields['url'];
+      if (url == null || url.isEmpty) continue;
+      servers.add(ServerPreset(label: fields['name'] ?? url, apiBaseUrl: url));
+    }
+    if (servers.isEmpty) {
+      servers.add(const ServerPreset(label: 'Local', apiBaseUrl: 'http://localhost:5000'));
+    }
+    return servers;
+  }
+
+  /// Resolve from `--dart-define`s (`APP`, `FLAVOR`/`ENV`, `ENVS`,
+  /// `SENTRY_DSN`, `POSTHOG_API_KEY`, `POSTHOG_HOST`). This is the single source
+  /// of truth — call once at startup.
+  static void initFromEnvironment() {
+    const app = String.fromEnvironment('APP', defaultValue: 'balsm');
+    const flavorStr = String.fromEnvironment(
+      'FLAVOR',
+      defaultValue: String.fromEnvironment('ENV', defaultValue: 'dev'),
+    );
+    init(brand: brandFromString(app), flavor: flavorFromString(flavorStr));
+  }
+
+  /// Explicit init (used by [initFromEnvironment] and tests).
+  static void init({
+    required AppBrand brand,
+    required Flavor flavor,
+    List<ServerPreset>? servers,
+    bool? socialSignInEnabled,
+    String? googleServerClientId,
+    String? googleIosClientId,
+  }) {
+    const serversRaw = String.fromEnvironment('ENVS', defaultValue: '');
+    const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
+    const posthogApiKey = String.fromEnvironment('POSTHOG_API_KEY', defaultValue: '');
+    const posthogHost = String.fromEnvironment('POSTHOG_HOST', defaultValue: kDefaultPosthogHost);
+    const envSocialSignInEnabled = bool.fromEnvironment('SOCIAL_SIGN_IN_ENABLED');
+    const envGoogleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
+    const envGoogleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID', defaultValue: '');
+    final resolved = (servers != null && servers.isNotEmpty) ? servers : _parseServers(serversRaw);
+    final base = brand.displayName;
+    final envSuffix = switch (flavor) { Flavor.dev => ' Dev', Flavor.staging => ' Staging', Flavor.prod => '' };
+    _current = FlavorConfig(
+      brand: brand,
+      flavor: flavor,
+      servers: resolved,
+      sentryDsn: sentryDsn.isEmpty ? null : sentryDsn,
+      posthogApiKey: posthogApiKey.isEmpty ? null : posthogApiKey,
+      posthogHost: posthogHost.isEmpty ? kDefaultPosthogHost : posthogHost,
+      appName: '$base$envSuffix',
+      appNameSuffix: envSuffix,
+      serverSwitchingEnabled: flavor == Flavor.dev || flavor == Flavor.staging,
+      socialSignInEnabled: socialSignInEnabled ?? envSocialSignInEnabled,
+      googleServerClientId: googleServerClientId ?? envGoogleServerClientId,
+      googleIosClientId: googleIosClientId ?? envGoogleIosClientId,
+    );
+  }
+}

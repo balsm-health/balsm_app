@@ -1,0 +1,105 @@
+{
+  "_i69n": "nothrow",
+  "_i69n_language": "en",
+  "common": {
+    "continue_": "Continue",
+    "back": "Back",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "next": "Next",
+    "done": "Done",
+    "retry": "Retry",
+    "save": "Save",
+    "delete": "Delete"
+  },
+  "error": {
+    "unknown": "Something went wrong. Please try again."
+  },
+  "notfound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist."
+  },
+  "country": {
+    "eg": {
+      "name": "Egypt",
+      "demonym": "Egyptian"
+    },
+    "sa": {
+      "name": "Saudi Arabia",
+      "demonym": "Saudi"
+    },
+    "ae": {
+      "name": "United Arab Emirates",
+      "demonym": "Emirati"
+    },
+    "qa": {
+      "name": "Qatar",
+      "demonym": "Qatari"
+    },
+    "kw": {
+      "name": "Kuwait",
+      "demonym": "Kuwaiti"
+    },
+    "bh": {
+      "name": "Bahrain",
+      "demonym": "Bahraini"
+    },
+    "om": {
+      "name": "Oman",
+      "demonym": "Omani"
+    },
+    "jo": {
+      "name": "Jordan",
+      "demonym": "Jordanian"
+    },
+    "lb": {
+      "name": "Lebanon",
+      "demonym": "Lebanese"
+    },
+    "ma": {
+      "name": "Morocco",
+      "demonym": "Moroccan"
+    },
+    "us": {
+      "name": "United States",
+      "demonym": "American"
+    },
+    "gb": {
+      "name": "United Kingdom",
+      "demonym": "British"
+    }
+  },
+  "language": {
+    "ar": {
+      "name": "Arabic"
+    },
+    "en": {
+      "name": "English"
+    },
+    "fr": {
+      "name": "French"
+    },
+    "ur": {
+      "name": "Urdu"
+    },
+    "fa": {
+      "name": "Persian"
+    },
+    "tr": {
+      "name": "Turkish"
+    }
+  },
+  "relation": {
+    "spouse": "Spouse",
+    "partner": "Partner",
+    "parent": "Parent",
+    "child": "Child",
+    "sibling": "Sibling",
+    "grandparent": "Grandparent",
+    "relative": "Relative",
+    "friend": "Friend",
+    "guardian": "Guardian",
+    "caregiver": "Caregiver",
+    "other": "Other"
+  }
+}

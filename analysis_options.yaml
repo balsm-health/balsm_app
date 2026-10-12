@@ -1,0 +1,6 @@
+# Repo-wide formatter config. `dart format` resolves page_width from the
+# nearest analysis_options.yaml (no upward merge), so per-package files also
+# set the same width — this root covers loose dirs (test/, tool/, packages
+# without their own options).
+formatter:
+  page_width: 120

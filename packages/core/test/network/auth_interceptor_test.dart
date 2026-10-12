@@ -1,0 +1,337 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:balsm_api/balsm_api.dart';
+import 'package:core/core.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+/// Canned-response adapter: routes by path + Authorization header, records
+/// every request for assertion. Mirrors balsm_api's test helper.
+class _FakeAdapter implements HttpClientAdapter {
+  _FakeAdapter(this.handler);
+  final ResponseBody Function(RequestOptions o) handler;
+  final List<RequestOptions> requests = [];
+
+  @override
+  Future<ResponseBody> fetch(RequestOptions o, Stream<Uint8List>? _, Future<void>? __) async {
+    requests.add(o);
+    return handler(o);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+ResponseBody _json(String body, {int status = 200}) => ResponseBody.fromString(
+      body,
+      status,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
+
+class _MockStorage extends Mock implements FlutterSecureStorage {}
+
+/// Minimal unsigned JWT whose `exp` is [d] from now — enough for the
+/// interceptor's proactive expiry check (it never verifies the signature).
+String jwtExpiringIn(Duration d) {
+  final exp = DateTime.now().toUtc().add(d).millisecondsSinceEpoch ~/ 1000;
+  String seg(Map<String, dynamic> m) => base64Url.encode(utf8.encode(jsonEncode(m))).replaceAll('=', '');
+  return '${seg({'alg': 'HS256'})}.${seg({'exp': exp})}.sig';
+}
+
+void main() {
+  setUpAll(() => FlavorConfig.init(brand: AppBrand.balsm, flavor: Flavor.dev));
+
+  /// A [FlutterSecureStorage] mock backed by [seed] so writes/deletes during
+  /// refresh are visible to the replayed request's `onRequest`.
+  _MockStorage storageWith(Map<String, String> seed) {
+    final store = Map<String, String>.of(seed);
+    final s = _MockStorage();
+    when(() => s.read(key: any(named: 'key'))).thenAnswer((i) async => store[i.namedArguments[#key] as String]);
+    when(() => s.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((i) async {
+      final k = i.namedArguments[#key] as String;
+      final v = i.namedArguments[#value] as String?;
+      if (v == null) {
+        store.remove(k);
+      } else {
+        store[k] = v;
+      }
+    });
+    when(() => s.delete(key: any(named: 'key')))
+        .thenAnswer((i) async => store.remove(i.namedArguments[#key] as String));
+    return s;
+  }
+
+  ({BalsmApiController controller, EventBus bus, _FakeAdapter adapter}) harness(
+    FlutterSecureStorage storage,
+    ResponseBody Function(RequestOptions o) handler,
+  ) {
+    final bus = EventBus();
+    final controller = BalsmApiController.create(storage: storage, bus: bus);
+    final adapter = _FakeAdapter(handler);
+    controller.client.dio.httpClientAdapter = adapter;
+    return (controller: controller, bus: bus, adapter: adapter);
+  }
+
+  test('attaches the stored bearer token to an authenticated request', () async {
+    final h = harness(
+      storageWith({'balsm.access_token': 'AT1'}),
+      (o) => _json('{"data":{}}'),
+    );
+
+    await h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self);
+
+    expect(h.adapter.requests.single.headers['Authorization'], 'Bearer AT1');
+  });
+
+  test('401 → refreshes, persists the rotated pair, and replays with the new token', () async {
+    final storage = storageWith({
+      'balsm.access_token': 'ATold',
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    final h = harness(storage, (o) {
+      if (o.path == ApiRoutes.auth_refresh) {
+        return _json('{"data":{"access_token":"ATnew","refresh_token":"RT2"}}');
+      }
+      // Protected endpoint: 401 for the stale token, 200 once refreshed.
+      return o.headers['Authorization'] == 'Bearer ATnew'
+          ? _json('{"data":{"ok":true}}')
+          : _json('{"error":"unauthorized"}', status: 401);
+    });
+
+    final res = await h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self);
+
+    expect(res.statusCode, 200);
+    // Rotated pair persisted.
+    verify(() => storage.write(key: 'balsm.access_token', value: 'ATnew')).called(1);
+    verify(() => storage.write(key: 'balsm.refresh_token', value: 'RT2')).called(1);
+    // Refresh was actually hit, and the replay carried the new token.
+    expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isTrue);
+    expect(h.adapter.requests.last.headers['Authorization'], 'Bearer ATnew');
+  });
+
+  test('refresh failure clears tokens and publishes SessionExpired', () async {
+    final storage = storageWith({
+      'balsm.access_token': 'ATold',
+      'balsm.refresh_token': 'RTbad',
+      'balsm.device_id': 'DEV1',
+    });
+    final h = harness(storage, (o) {
+      if (o.path == ApiRoutes.auth_refresh) {
+        return _json('{"error":"invalid_grant"}', status: 401);
+      }
+      return _json('{"error":"unauthorized"}', status: 401);
+    });
+
+    final expired = expectLater(h.bus.on<SessionExpired>(), emits(isA<SessionExpired>()));
+
+    await expectLater(
+      h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self),
+      throwsA(isA<DioException>()),
+    );
+    await expired;
+    verify(() => storage.delete(key: 'balsm.access_token')).called(1);
+    verify(() => storage.delete(key: 'balsm.refresh_token')).called(1);
+  });
+
+  test('proactively refreshes a near-expiry access token BEFORE sending (no 401)', () async {
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(seconds: 5)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    // Protected endpoint always 200 — proactive means the 401 path is never used.
+    final h = harness(storage, (o) {
+      if (o.path == ApiRoutes.auth_refresh) {
+        return _json('{"data":{"access_token":"ATnew","refresh_token":"RT2"}}');
+      }
+      return _json('{"data":{"ok":true}}');
+    });
+
+    final res = await h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self);
+
+    expect(res.statusCode, 200);
+    // Refresh fired FIRST (before the protected call), and the protected call
+    // carried the freshly-minted token — no 401 round-trip.
+    expect(h.adapter.requests.first.path, ApiRoutes.auth_refresh);
+    final protectedReq = h.adapter.requests.firstWhere((r) => r.path == ApiRoutes.account_self);
+    expect(protectedReq.headers['Authorization'], 'Bearer ATnew');
+    verify(() => storage.write(key: 'balsm.access_token', value: 'ATnew')).called(1);
+  });
+
+  test('does NOT refresh an access token that is far from expiry', () async {
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(hours: 1)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    final h = harness(storage, (o) => _json('{"data":{}}'));
+
+    await h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self);
+
+    // No proactive refresh; the still-valid token was attached as-is.
+    expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse);
+    expect(h.adapter.requests.single.path, ApiRoutes.account_self);
+  });
+
+  test('bootstrap endpoints carry no token and are not refresh-retried', () async {
+    final storage = storageWith({
+      'balsm.access_token': 'AT1',
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    final h = harness(
+      storage,
+      (o) => _json('{"error":"bad_code"}', status: 401),
+    );
+
+    await expectLater(
+      h.controller.client.dio.post<Map<String, dynamic>>(ApiRoutes.auth_otp_verify),
+      throwsA(isA<DioException>()),
+    );
+
+    // No Authorization header on the bootstrap request, and no refresh attempt.
+    expect(h.adapter.requests.single.headers.containsKey('Authorization'), isFalse);
+    expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse);
+  });
+
+  test('a network failure during refresh must NOT destroy the session', () async {
+    // The keychain entry is what routes the app to the shell on next launch.
+    // Wiping it because the server was briefly unreachable signs the patient out
+    // for good — they land on the welcome screen after a hot restart and have to
+    // re-enter credentials because their connection dropped.
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(seconds: -5)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+      'balsm.user_id': 'U1',
+    });
+    final h = harness(
+      storage,
+      (o) => throw DioException(requestOptions: o, type: DioExceptionType.connectionError),
+    );
+
+    await expectLater(
+      h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(await storage.read(key: 'balsm.refresh_token'), 'RT1', reason: 'credentials survive a blip');
+    expect(await storage.read(key: 'balsm.user_id'), 'U1', reason: 'the id that routes to the shell survives');
+  });
+
+  test('a REJECTED refresh does end the session', () async {
+    // 401 from /auth/refresh means the token is genuinely spent — that is the
+    // one case where clearing is right.
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(seconds: -5)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+      'balsm.user_id': 'U1',
+    });
+    final h = harness(storage, (o) => _json('{"title":"Unauthorized"}', status: 401));
+
+    await expectLater(
+      h.controller.client.dio.get<Map<String, dynamic>>(ApiRoutes.account_self),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(await storage.read(key: 'balsm.refresh_token'), isNull);
+    expect(await storage.read(key: 'balsm.user_id'), isNull);
+  });
+
+  for (final path in [ApiRoutes.auth_password_sign_in, ApiRoutes.auth_password_reset]) {
+    test('$path issues tokens — it must not carry or refresh one', () async {
+      // A stale bearer left over from a previous session must not ride along on
+      // a sign-in, and a 401 here means WRONG PASSWORD — refreshing and
+      // replaying it would resend the credentials and can sign the user out
+      // in the middle of signing in.
+      final storage = storageWith({
+        'balsm.access_token': 'STALE',
+        'balsm.refresh_token': 'RT1',
+        'balsm.device_id': 'DEV1',
+      });
+      final h = harness(storage, (o) => _json('{"title":"Unauthorized"}', status: 401));
+
+      await expectLater(
+        h.controller.client.dio.post<Map<String, dynamic>>(path),
+        throwsA(isA<DioException>()),
+      );
+
+      expect(h.adapter.requests.single.path, path);
+      expect(h.adapter.requests.single.headers.containsKey('Authorization'), isFalse,
+          reason: 'a token-issuing endpoint never consumes a token');
+      expect(h.adapter.requests.any((r) => r.path == ApiRoutes.auth_refresh), isFalse,
+          reason: '401 here is a credential failure, not an expired access token');
+    });
+  }
+
+  test('setting a password DOES carry the token — it is an authorized call', () async {
+    // The guard must not overreach: POST /auth/password is [Authorize] and
+    // changes the signed-in user's password.
+    final storage = storageWith({
+      'balsm.access_token': jwtExpiringIn(const Duration(hours: 1)),
+      'balsm.refresh_token': 'RT1',
+      'balsm.device_id': 'DEV1',
+    });
+    final h = harness(storage, (o) => _json('{"data":{"password_set":true}}'));
+
+    await h.controller.client.dio.post<Map<String, dynamic>>(ApiRoutes.auth_password);
+
+    expect(h.adapter.requests.single.headers['Authorization'], isNotNull);
+  });
+
+  group('device-only account', () {
+    test('an authenticated request is refused locally, never sent', () async {
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly', 'balsm.user_id': 'u1'});
+      final events = <AppEvent>[];
+      final h = harness(storage, (o) => _json('{}'));
+      h.bus.on<SessionExpired>().listen(events.add);
+
+      await expectLater(
+        h.controller.client.dio.get<void>(ApiRoutes.account_self),
+        throwsA(isA<DioException>().having((e) => e.error, 'error', isA<DeviceOnlyAccountException>())),
+      );
+      expect(h.adapter.requests, isEmpty);
+      await Future<void>.delayed(Duration.zero);
+      expect(events, isEmpty);
+      expect(await storage.read(key: 'balsm.user_id'), 'u1');
+    });
+
+    test('bootstrap (OTP) requests still go out', () async {
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly'});
+      final h = harness(storage, (o) => _json('{"data":{}}'));
+
+      await h.controller.client.dio.post<void>(ApiRoutes.auth_otp_request, data: const {});
+      expect(h.adapter.requests, hasLength(1));
+    });
+
+    test('surfaces to ApiException.fromDioException as offline, not cancelled', () async {
+      // Callers never see the raw DioException — NetworkManager funnels every
+      // failure through ApiException.fromDioException first. `cancel` is
+      // special-cased there to a silently-ignored `cancelled` code before it
+      // even looks at `.error`, which would swallow this refusal instead of
+      // treating it like being offline (per account_mode.dart's doc).
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly'});
+      final h = harness(storage, (o) => _json('{}'));
+
+      DioException? caught;
+      try {
+        await h.controller.client.dio.get<void>(ApiRoutes.account_self);
+      } on DioException catch (e) {
+        caught = e;
+      }
+
+      expect(caught, isNotNull);
+      expect(caught!.error, isA<DeviceOnlyAccountException>());
+      final apiException = ApiException.fromDioException(caught);
+      expect(apiException.isOffline, isTrue);
+      expect(apiException.isCancelled, isFalse);
+    });
+  });
+}

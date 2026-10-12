@@ -1,0 +1,6 @@
+# Live end-to-end tests hit a real Balsm API and are tagged `e2e`. They are
+# opt-in via the E2E_BASE_URL env var (see test/e2e/api_e2e_test.dart) and skip
+# otherwise. To exclude them entirely in CI: `dart test --exclude-tags e2e`.
+tags:
+  e2e:
+    skip: false

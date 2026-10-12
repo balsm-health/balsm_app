@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Debug-only: JIT + the VM-service server flutter attach relies on. -->
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+	<!-- The app is an API client (auth, care directory, emergency QR sync).
+	     Without this the sandbox silently blocks every outgoing request in
+	     release builds. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Nearby-care map. -->
+	<key>com.apple.security.personal-information.location</key>
+	<true/>
+	<!-- QR scanner (add family member) reads the camera. -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
+	<!-- file_picker / image attach: user-chosen files only. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+</dict>
+</plist>

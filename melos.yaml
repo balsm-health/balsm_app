@@ -1,0 +1,51 @@
+name: balsm_app
+
+# Flutter SDK is pinned via fvm (.fvmrc); melos runs every package against the
+# fvm-managed SDK so `melos exec -- flutter …` never falls back to PATH.
+sdkPath: .fvm/flutter_sdk
+
+packages:
+  - packages/*
+  - modules/*
+  - app
+
+scripts:
+  # Code generation (i69n bundles, drift, json/freezed). Delegates to the balsm
+  # CLI (bin/balsm → tool/build.dart), which runs build_runner in every package
+  # that depends on it and skips the rest — same command works from CI / VS Code.
+  gen:
+    run: bin/balsm gen
+  # Same, but rebuilds on change — leave running while editing .i69n.json etc.
+  gen:watch:
+    run: bin/balsm gen --watch
+  analyze:
+    run: melos exec --concurrency=6 -- "flutter analyze --no-fatal-infos"
+  # DDD boundary rules (balsm_boundary_lint via custom_lint). Runs per package;
+  # surfaces module→module imports, barrel-leak, aggregate-leak, etc.
+  boundaries:
+    run: melos exec --concurrency=4 --ignore=app -- "dart run custom_lint"
+  test:
+    run: melos exec --concurrency=4 -- "flutter test"
+  e2e:
+    run: melos exec --scope=app -- "flutter test integration_test"
+  # run/build wiring lives in the balsm CLI (bin/balsm → tool/build.dart,
+  # single typed source of truth, shared with VS Code tasks + CI).
+  # Args: <action> <brand> <env>.
+  run:dev:
+    run: bin/balsm run balsm dev
+  run:patient:
+    run: bin/balsm run balsm dev
+  run:staging:
+    run: bin/balsm run balsm staging
+  run:prod:
+    run: bin/balsm run balsm prod
+  build:android:dev:
+    run: bin/balsm apk balsm dev
+  build:android:staging:
+    run: bin/balsm apk balsm staging
+  build:android:prod:
+    run: bin/balsm apk balsm prod
+  build:web:dev:
+    run: bin/balsm web balsm dev
+  build:web:prod:
+    run: bin/balsm web balsm prod

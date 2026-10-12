@@ -1,0 +1,5 @@
+{
+  "APP": "balsm",
+  "FLAVOR": "staging",
+  "HOST_SUFFIX": "stg"
+}

@@ -1,0 +1,540 @@
+import 'package:core/core.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:records/records.dart';
+import '../app_state.dart';
+import '../kit.dart';
+import '../responsive.dart';
+import '../tokens.dart';
+import '../widgets/badges.dart';
+import 'records_detail.dart';
+
+/// Rows written by `persistPhotoRecord` before the `check-in` source existed:
+/// self-sourced scans titled with the add-photo button label (en/ar). Matching
+/// on those two literals is safe — a user-titled document goes through the
+/// add-record sheet, which never produces this combination.
+bool _isLegacyCheckInPhoto(RecordDocument r) =>
+    r.source.isSelf && r.type == RecordType.scan && (r.title == 'Add a photo' || r.title == 'إضافة صورة');
+
+/// Live vault contents for the signed-in user, newest first. Empty when signed
+/// out rather than throwing — the screen is reachable before a profile exists.
+///
+/// Check-in photos live in the same vault but belong to their check-in, not
+/// the document library — they are filtered out here (and from the home-screen
+/// count, which watches this provider).
+final recordListProvider = StreamProvider.autoDispose<List<RecordDocument>>((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(const []);
+  return ref
+      .watch(recordsDataSourceProvider)
+      .watchAll()
+      .map((rows) => rows.where((r) => !r.source.isCheckIn && !_isLegacyCheckInPhoto(r)).toList());
+});
+
+/// Per-type chrome — `RECORD_TYPES` in the design.
+({IconData icon, Color fg, Color bg}) recordTypeStyle(RecordType type) => switch (type) {
+      RecordType.lab => (icon: LucideIcons.flaskConical, fg: T.hueMint600, bg: T.hueMint50),
+      RecordType.scan => (icon: LucideIcons.scanLine, fg: T.hueBlue, bg: T.hueBlue50),
+      RecordType.report => (icon: LucideIcons.fileText, fg: T.hueViolet, bg: T.hueViolet50),
+    };
+
+String recordTypeLabel(PatientAppState s, RecordType type) => switch (type) {
+      RecordType.lab => s.strings.records.rec_lab,
+      RecordType.scan => s.strings.records.rec_scan,
+      RecordType.report => s.strings.records.rec_report,
+    };
+
+String recordTypeLabelOne(PatientAppState s, RecordType type) => switch (type) {
+      RecordType.lab => s.strings.records.rec_lab_one,
+      RecordType.scan => s.strings.records.rec_scan_one,
+      RecordType.report => s.strings.records.rec_report_one,
+    };
+
+/// Health-records vault — searchable list of on-device document metadata.
+///
+/// PHI, on-device only: the drift source is user-partitioned and the document
+/// bytes never leave the app documents directory.
+class RecordsScreen extends ConsumerStatefulWidget {
+  const RecordsScreen({super.key, this.onBack});
+  final VoidCallback? onBack;
+
+  @override
+  ConsumerState<RecordsScreen> createState() => _RecordsScreenState();
+}
+
+class _RecordsScreenState extends ConsumerState<RecordsScreen> {
+  /// null = "All"; otherwise the single type being shown.
+  RecordType? _filter;
+  final _query = TextEditingController();
+
+  /// `UX Enhancement Screens.html` — "Records · bulk select". Null means the
+  /// normal browsing list; a (possibly empty) set means selection mode.
+  Set<String>? _selected;
+
+  bool get _selecting => _selected != null;
+
+  void _enterSelection(RecordDocument first) => setState(() => _selected = {first.id.value});
+
+  void _exitSelection() => setState(() => _selected = null);
+
+  void _toggle(RecordDocument r) => setState(() {
+        final sel = _selected;
+        if (sel == null) return;
+        if (!sel.remove(r.id.value)) sel.add(r.id.value);
+      });
+
+  /// Deletes every selected record and its encrypted blob, through the records
+  /// module's own use case so the blob-before-row ordering still holds.
+  Future<void> _deleteSelected(List<RecordDocument> shown) async {
+    final sel = _selected;
+    final userId = ref.read(currentUserIdProvider);
+    if (sel == null || sel.isEmpty || userId == null) return;
+    final doomed = shown.where((r) => sel.contains(r.id.value)).toList();
+    final confirmed = await _confirmDelete(doomed.length);
+    if (!confirmed) return;
+    final deleteRecord = ref.read(deleteRecordDocumentUseCaseProvider);
+    for (final r in doomed) {
+      await deleteRecord.call(r, scope: userId);
+    }
+    ref.invalidate(recordListProvider);
+    if (mounted) _exitSelection();
+  }
+
+  /// Deleting PHI in bulk is irreversible, so it asks first — the design's
+  /// destructive affordance sits in a selection bar where a mis-tap is easy.
+  Future<bool> _confirmDelete(int count) async {
+    final s = AppScope.of(context);
+    final r = s.strings.records;
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(
+              // One record reads badly through a plural template.
+              count == 1 ? r.rec_delete_1_title : r.rec_delete_n_title('$count'),
+              style: Typo.subhead(ar: s.rtl),
+            ),
+            content: Text(r.rec_delete_n_body, style: Typo.body(ar: s.rtl)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(s.strings.common.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(r.rec_delete_confirm, style: const TextStyle(color: T.danger)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  /// Title, result note, and tags are all searchable — the design matches on
+  /// every visible field, not just the title.
+  bool _matches(RecordDocument r, String q) {
+    if (q.isEmpty) return true;
+    final hay = [r.title, r.resultNote ?? '', ...r.tags].join(' ').toLowerCase();
+    return hay.contains(q);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final async = ref.watch(recordListProvider);
+    final q = _query.text.trim().toLowerCase();
+    final all = async.valueOrNull ?? const <RecordDocument>[];
+    final shown = all.where((r) => (_filter == null || r.type == _filter) && _matches(r, q)).toList();
+    final filtering = q.isNotEmpty || _filter != null;
+
+    return Stack(children: [
+      ContentColumn(
+        maxWidth: 720,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const PadTop(),
+          if (_selecting)
+            // The design tints the whole bar and swaps the title for a count.
+            Container(
+              color: s.accent.bg,
+              child: AppBarRow(children: [
+                RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: s.strings.common.a11y_close,
+                    ghost: true,
+                    onTap: _exitSelection),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    s.strings.records.rec_n_selected('${_selected!.length}'),
+                    style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.lg, color: s.accent.d),
+                  ),
+                ),
+                Opacity(
+                  opacity: _selected!.isEmpty ? 0.4 : 1,
+                  child: RoundBtn(
+                    icon: LucideIcons.trash2,
+                    semanticLabel: s.strings.common.a11y_delete,
+                    ghost: true,
+                    fg: T.danger,
+                    onTap: _selected!.isEmpty ? null : () => _deleteSelected(shown),
+                  ),
+                ),
+              ]),
+            )
+          else
+            AppBarRow(children: [
+              if (widget.onBack != null) ...[
+                RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: widget.onBack),
+                const SizedBox(width: 12),
+              ],
+              Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
+            ]),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: _SearchField(controller: _query, onChanged: () => setState(() {})),
+          ),
+          _FilterChips(selected: _filter, onSelect: (f) => setState(() => _filter = f)),
+          // The chip rail is a fixed 36 with no vertical padding of its own, so
+          // without this the first record sits flush against it. Matches the
+          // 12 under the search field above.
+          const SizedBox(height: 12),
+          Expanded(
+            child: async.isLoading
+                ? const _LoadingList()
+                : shown.isEmpty
+                    ? _EmptyState(
+                        filtering: filtering,
+                        query: _query.text,
+                        onClear: () => setState(() {
+                          _query.clear();
+                          _filter = null;
+                        }),
+                        onAdd: () => _openAdd(context),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: shown.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) => _RecordCard(
+                          record: shown[i],
+                          selected: _selecting ? _selected!.contains(shown[i].id.value) : null,
+                          // Long-press is how selection starts, the way every
+                          // list on the platform does it; a tap then toggles.
+                          onTap: () => _selecting ? _toggle(shown[i]) : _openDetail(context, shown[i]),
+                          onLongPress: _selecting ? null : () => _enterSelection(shown[i]),
+                        ),
+                      ),
+          ),
+        ]),
+      ),
+      // `.rec-fab` — only once the vault has something in it; the empty state
+      // carries its own primary call to action.
+      if (!async.isLoading && all.isNotEmpty)
+        PositionedDirectional(
+          end: 20,
+          // `bottom: calc(env(safe-area-inset-bottom) + 24px)`, and a flat 24
+          // from the medium class up, where the design drops the phone chrome
+          // allowance (`.rec-fab { bottom: 24px }`).
+          bottom: (windowClassOf(context) == BalsmWindowClass.compact ? MediaQuery.paddingOf(context).bottom : 0) + 24,
+          child: _RecordFab(onTap: () => _openAdd(context)),
+        ),
+    ]);
+  }
+
+  void _openDetail(BuildContext context, RecordDocument record) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => RecordDetailScreen(record: record)));
+  }
+
+  void _openAdd(BuildContext context) => showAddRecord(context);
+}
+
+/// `.b-input` with a leading search glyph and a clear affordance.
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.onChanged});
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return TextField(
+      controller: controller,
+      onChanged: (_) => onChanged(),
+      style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
+      decoration: InputDecoration(
+        hintText: s.strings.records.rec_search_ph,
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+        filled: true,
+        fillColor: Colors.white,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+        prefixIcon: const Icon(LucideIcons.search, size: 17, color: T.fg4),
+        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    controller.clear();
+                    onChanged();
+                  },
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle),
+                    child: const Icon(LucideIcons.x, size: 15, color: T.fg2),
+                  ),
+                ),
+              ),
+        suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+        border: _border(T.border),
+        enabledBorder: _border(T.border),
+        focusedBorder: _border(s.accent.main),
+      ),
+    );
+  }
+
+  OutlineInputBorder _border(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(T.rMd),
+        borderSide: BorderSide(color: c, width: 1.5),
+      );
+}
+
+/// All / Lab / Scan / Report — a horizontally scrolling chip rail.
+class _FilterChips extends StatelessWidget {
+  const _FilterChips({required this.selected, required this.onSelect});
+  final RecordType? selected;
+  final ValueChanged<RecordType?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final entries = <(RecordType?, String)>[
+      (null, s.strings.records.all_records),
+      for (final t in RecordType.values) (t, recordTypeLabel(s, t)),
+    ];
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+        itemCount: entries.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final (type, label) = entries[i];
+          final on = selected == type;
+          return GestureDetector(
+            onTap: () => onSelect(type),
+            child: Container(
+              height: 36,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: on ? s.accent.bg : Colors.white,
+                borderRadius: BorderRadius.circular(T.rPill),
+                border: Border.all(color: on ? s.accent.main : T.border, width: 1.5),
+              ),
+              child: Text(label,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: on ? s.accent.d : T.fg2)),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RecordCard extends StatelessWidget {
+  const _RecordCard({required this.record, required this.onTap, this.selected, this.onLongPress});
+  final RecordDocument record;
+  final VoidCallback onTap;
+
+  /// null = not in selection mode; true/false = the checkbox state.
+  final bool? selected;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final style = recordTypeStyle(record.type);
+    final source = record.source.isSelf ? s.strings.records.rec_self : record.source.value;
+    final isSelected = selected ?? false;
+    return PCard(
+      padding: const EdgeInsets.all(14),
+      onTap: onTap,
+      onLongPress: onLongPress,
+      border: isSelected ? s.accent.main : null,
+      child: Row(children: [
+        if (selected != null) ...[
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isSelected ? s.accent.main : Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: isSelected ? s.accent.main : T.ink300, width: 2),
+            ),
+            child: isSelected ? const Icon(LucideIcons.check, size: 12, color: Colors.white) : null,
+          ),
+          const SizedBox(width: 12),
+        ],
+        Container(
+          width: 46,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: style.bg, borderRadius: BorderRadius.circular(T.rMd)),
+          child: Icon(style.icon, size: 22, color: style.fg),
+        ),
+        const SizedBox(width: 13),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(record.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            const SizedBox(height: 2),
+            Text('${formatRecordDate(record.takenAt, s)} · $source',
+                maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        StorageBadge(storage: s.storageProvider),
+        if (selected == null) ...[
+          const SizedBox(width: 6),
+          Chevron(rtl: s.rtl),
+        ],
+      ]),
+    );
+  }
+}
+
+/// Skeleton rows while the vault loads — `DSSkeleton` in the design.
+class _LoadingList extends StatelessWidget {
+  const _LoadingList();
+
+  @override
+  Widget build(BuildContext context) => ListView.separated(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        itemCount: 5,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, i) => PCard(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            const Shimmer(width: 46, height: 46, radius: T.rMd),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Shimmer(height: 13, width: 180.0 - i * 16),
+                const SizedBox(height: 6),
+                const Shimmer(height: 11, width: 110),
+              ]),
+            ),
+          ]),
+        ),
+      );
+}
+
+/// Two distinct empty states: nothing in the vault at all, versus nothing
+/// matching the current search/filter. They offer different actions.
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.filtering,
+    required this.query,
+    required this.onClear,
+    required this.onAdd,
+  });
+  final bool filtering;
+  final String query;
+  final VoidCallback onClear;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final r = s.strings.records;
+    return SingleChildScrollView(
+      child: PCard(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 36),
+        child: Column(children: [
+          Icon(filtering ? LucideIcons.searchX : LucideIcons.folderOpen, size: 36, color: T.fg4),
+          const SizedBox(height: 14),
+          Text(filtering ? r.rec_no_results : r.rec_empty,
+              textAlign: TextAlign.center,
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+          const SizedBox(height: 8),
+          Text(
+            filtering ? (query.isNotEmpty ? '${r.rec_no_results_h} "$query"' : r.rec_no_results_h2) : r.rec_empty_h,
+            textAlign: TextAlign.center,
+            style: Typo.meta(ar: s.rtl),
+          ),
+          const SizedBox(height: 16),
+          if (filtering)
+            PButton(r.rec_clear_filters,
+                icon: LucideIcons.rotateCcw,
+                variant: BtnVariant.soft,
+                size: BtnSize.sm,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: onClear)
+          else
+            PButton(s.strings.settings.add_record, icon: LucideIcons.plus, accent: s.accent, ar: s.rtl, onTap: onAdd),
+        ]),
+      ),
+    );
+  }
+}
+
+/// `.rec-fab` — 56pt floating add button over the list.
+class _RecordFab extends StatelessWidget {
+  const _RecordFab({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Pressable(
+      onTap: onTap,
+      scale: 0.93,
+      child: Container(
+        width: 56,
+        height: 56,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle, boxShadow: s.accent.boxShadow),
+        child: const Icon(LucideIcons.plus, size: 24, color: Colors.white),
+      ),
+    );
+  }
+}
+
+/// Localized record date. Falls back to the ISO day so the list never shows a
+/// blank where a date belongs.
+String formatRecordDate(DateTime d, PatientAppState s) {
+  final months = s.rtl
+      ? const [
+          'يناير',
+          'فبراير',
+          'مارس',
+          'أبريل',
+          'مايو',
+          'يونيو',
+          'يوليو',
+          'أغسطس',
+          'سبتمبر',
+          'أكتوبر',
+          'نوفمبر',
+          'ديسمبر'
+        ]
+      : const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final day = d.day.toString().padLeft(2, '0');
+  return '$day ${months[d.month - 1]} ${d.year}';
+}

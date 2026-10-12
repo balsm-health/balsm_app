@@ -1,0 +1,33 @@
+{
+  "stores": {
+    "ios": "https://balsm.health/download",
+    "android": "https://balsm.health/download",
+    "macos": "https://balsm.health/download"
+  },
+  "min": {},
+  "versions": {
+    "0.1.0": {
+      "force": false,
+      "platforms": [
+        "ios",
+        "android",
+        "macos"
+      ],
+      "date": "2026-10-09",
+      "notes": {
+        "en": [
+          {
+            "title": "First release of Balsm",
+            "body": "Your health record, kept on your own device."
+          }
+        ],
+        "ar": [
+          {
+            "title": "الإصدار الأول من بلسم",
+            "body": "سجلّك الصحي، محفوظ على جهازك أنت."
+          }
+        ]
+      }
+    }
+  }
+}

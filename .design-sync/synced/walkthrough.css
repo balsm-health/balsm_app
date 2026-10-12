@@ -1,0 +1,327 @@
+/* walkthrough.css — first-run walkthrough (shell + 3 treatments) and the
+   side-by-side comparison harness. Depends on colors_and_type.css + app.css. */
+
+/* ============================================================
+   Shell — fills the iOS frame; chrome floats over a moving stage
+   ============================================================ */
+.wt {
+  position: absolute; inset: 0; overflow: hidden;
+  font-family: var(--font-body); color: var(--fg1);
+  -webkit-font-smoothing: antialiased;
+}
+[dir="rtl"] .wt { font-family: var(--font-arabic); }
+
+.wt-stage { position: absolute; inset: 0; z-index: 1; }
+.wt-slide {
+  position: absolute; inset: 0;
+  animation: wtSlideIn 0.44s var(--ease-out) both;
+}
+.wt-slide[data-dir="1"]  { --wt-from:  26px; }
+.wt-slide[data-dir="-1"] { --wt-from: -26px; }
+@keyframes wtSlideIn {
+  from { opacity: 0; transform: translateX(var(--wt-from, 20px)); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* top + bottom chrome */
+.wt-top {
+  position: absolute; top: 0; inset-inline: 0; z-index: 12;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 52px 20px 0; gap: 12px;
+}
+.wt-logo { height: 26px; width: auto; }
+.wt-skip {
+  border: none; background: transparent; cursor: pointer;
+  font-family: inherit; font-weight: 600; font-size: var(--pt-sm);
+  padding: 8px 8px; min-height: 40px; border-radius: var(--radius-pill);
+}
+.wt-skip:active { opacity: 0.6; }
+
+.wt-bottom {
+  position: absolute; inset-inline: 0; bottom: 0; z-index: 12;
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 0 24px calc(env(safe-area-inset-bottom, 0px) + 30px);
+}
+.wt-next { margin: 0; }
+
+/* dots */
+.wt-dots { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.wt-dot {
+  width: 7px; height: 7px; border-radius: 999px; border: none; padding: 0;
+  cursor: pointer; background: var(--dot-off, var(--balsm-ink-200));
+  transition: width 0.3s var(--ease-out), background 0.3s var(--ease-out);
+}
+.wt-dot.on { width: 22px; background: var(--dot, var(--app-accent)); }
+
+/* white CTA used by the watercolor treatment */
+.wt-next-white {
+  background: #fff; border: none;
+  box-shadow: 0 10px 26px rgba(10,16,16,0.30), 0 2px 6px rgba(10,16,16,0.16);
+}
+.wt-next-white:active { background: #f3f2ee; }
+
+.wt-eyebrow { margin: 0; color: var(--app-accent); }
+[dir="rtl"] .wt-eyebrow { font-family: var(--font-arabic); letter-spacing: 0; }
+
+/* shared body copy */
+.wt-body { font-size: var(--pt-md); line-height: 1.55; color: var(--fg2); margin: 0; text-wrap: pretty; }
+
+/* ============================================================
+   A · Petal — calm, centered, five-petal aura
+   ============================================================ */
+.wt-petal {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 34px; text-align: center; padding: 104px 30px 176px;
+}
+.wt-petal-stage { position: relative; width: 208px; height: 208px; display: grid; place-items: center; }
+.wt-aura {
+  position: absolute; inset: -16px; border-radius: 50%;
+  filter: blur(22px); transform: scale(0.96);
+  animation: wtBreathe 5.4s ease-in-out infinite;
+}
+.wt-petal-tile {
+  position: relative; z-index: 1; width: 132px; height: 132px; border-radius: 50%;
+  background: #fff; display: grid; place-items: center;
+  box-shadow: 0 16px 36px rgba(20,32,43,0.10), 0 3px 8px rgba(20,32,43,0.06);
+}
+.wt-petal-copy { display: flex; flex-direction: column; align-items: center; gap: 13px; max-width: 332px; }
+.wt-title {
+  font-family: var(--font-display); font-weight: 800; font-size: var(--pt-2xl);
+  line-height: 1.16; letter-spacing: -0.02em; color: var(--fg1); margin: 0; text-wrap: balance;
+}
+[dir="rtl"] .wt-title { font-family: var(--font-arabic); }
+
+/* ============================================================
+   B · Watercolor — immersive full-bleed brand backdrop
+   ============================================================ */
+.wt-water { position: absolute; inset: 0; overflow: hidden; }
+.wt-water-parallax { position: absolute; inset: 0; }
+.wt-water-bg {
+  position: absolute; inset: -3%; background-size: cover; background-position: center;
+  transform: scale(1.02); animation: wtKen 8.5s ease-out both;
+}
+.wt-water-scrim { position: absolute; inset: 0; }
+.wt-water-demo-wrap { position: absolute; inset-inline: 30px; bottom: 430px; z-index: 2; }
+.wt-water-copy { position: absolute; inset-inline: 0; bottom: 0; padding: 0 30px 190px; }
+[dir="rtl"] .wt-water-copy { text-align: right; }
+.wt-water-eyebrow {
+  font-family: var(--font-body); font-weight: 700; font-size: var(--pt-2xs);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(255,255,255,0.92); margin-bottom: 13px;
+  text-shadow: 0 1px 10px rgba(0,0,0,0.28);
+}
+[dir="rtl"] .wt-water-eyebrow { letter-spacing: 0; font-family: var(--font-arabic); }
+.wt-water-title {
+  font-family: var(--font-display); font-weight: 800; font-size: var(--pt-3xl);
+  line-height: 1.12; letter-spacing: -0.02em; color: #fff; margin: 0 0 14px;
+  text-wrap: balance; text-shadow: 0 2px 22px rgba(0,0,0,0.30);
+}
+[dir="rtl"] .wt-water-title { font-family: var(--font-arabic); }
+.wt-water-body {
+  font-size: var(--pt-md); line-height: 1.55; color: rgba(255,255,255,0.92);
+  margin: 0; max-width: 344px; text-wrap: pretty; text-shadow: 0 1px 14px rgba(0,0,0,0.28);
+}
+[dir="rtl"] .wt-water-body { margin-inline-start: auto; }
+
+/* ============================================================
+   C · Editorial — structured white, progress bar, product hints
+   ============================================================ */
+.wt-edit { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 24px; padding: 100px 26px 150px; }
+.wt-edit-prog { display: flex; align-items: center; gap: 6px; flex: 1; }
+.wt-seg { flex: 1; height: 4px; border-radius: 99px; background: var(--balsm-ink-100); transition: background 0.32s var(--ease-out); }
+.wt-seg.on { background: var(--app-accent); }
+.wt-edit-hero {
+  flex: 1; min-height: 0; border-radius: var(--radius-2xl);
+  background: var(--app-accent-50); position: relative; overflow: hidden; display: grid; place-items: center;
+}
+.wt-edit-copy { display: flex; flex-direction: column; gap: 10px; }
+[dir="rtl"] .wt-edit-copy { text-align: right; }
+.wt-edit-title {
+  font-family: var(--font-display); font-weight: 800; font-size: var(--pt-2xl);
+  line-height: 1.16; letter-spacing: -0.02em; color: var(--fg1); margin: 0; text-wrap: balance;
+}
+[dir="rtl"] .wt-edit-title { font-family: var(--font-arabic); }
+.wt-edit-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+
+/* editorial hero art — aura-filled square, same visual language as Petal */
+.wt-edit-mock {
+  position: relative; width: 220px; height: 220px; border-radius: var(--radius-2xl);
+  display: grid; place-items: center; filter: drop-shadow(0 12px 26px rgba(20,32,43,0.10));
+}
+.wt-mock-row {
+  display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 12px;
+  padding: 12px 14px; box-shadow: 0 3px 10px rgba(20,32,43,0.07); margin-bottom: 10px;
+}
+.wt-mock-row:last-child { margin-bottom: 0; }
+.wt-mock-ico { width: 32px; height: 32px; border-radius: 8px; background: var(--app-accent-50); display: grid; place-items: center; flex-shrink: 0; }
+.wt-mock-bar { height: 8px; border-radius: 99px; background: var(--balsm-ink-100); }
+.wt-edit-chart { width: 78%; background: #fff; border-radius: 16px; padding: 22px 18px; box-shadow: 0 4px 14px rgba(20,32,43,0.08); }
+.wt-edit-map { position: relative; width: 100%; height: 100%; }
+.wt-map-pin { position: absolute; transform: translate(-50%, -50%); }
+.wt-map-pin.lead { filter: drop-shadow(0 5px 7px rgba(0,0,0,0.14)); animation: wtBob 2.6s ease-in-out infinite; }
+.wt-shield-ring { position: relative; z-index: 1; width: 96px; height: 96px; border-radius: 50%; border: 2px solid var(--app-accent); animation: wtPulse 2.8s var(--ease-out) infinite; }
+
+/* ============================================================
+   End / hand-off card
+   ============================================================ */
+.wt-end {
+  position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; padding: 30px;
+  background: rgba(250,250,247,0.84); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+  animation: wtFade 0.32s var(--ease-out) both;
+}
+.wt-end-card {
+  background: #fff; border-radius: var(--radius-2xl); padding: 34px 26px; text-align: center;
+  box-shadow: 0 28px 64px rgba(20,32,43,0.18); max-width: 322px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.wt-end-mark { width: 62px; height: 62px; }
+.wt-end-title { font-family: var(--font-display); font-weight: 800; font-size: var(--pt-2xl); color: var(--fg1); }
+[dir="rtl"] .wt-end-title { font-family: var(--font-arabic); }
+.wt-end-body { font-size: var(--pt-sm); line-height: 1.5; color: var(--fg3); margin: 0 0 6px; text-wrap: pretty; }
+
+.wt-flash { position: absolute; inset: 0; z-index: 20; background: #fff; pointer-events: none; animation: wtFlash 0.24s ease-out both; }
+
+/* ============================================================
+   Motion keyframes
+   ============================================================ */
+@keyframes wtBreathe { 0%, 100% { transform: scale(0.96); } 50% { transform: scale(1.04); } }
+@keyframes wtKen     { from { transform: scale(1.02); } to { transform: scale(1.09); } }
+@keyframes wtBob     { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -64%); } }
+@keyframes wtPulse   { 0% { transform: scale(0.72); opacity: 0.55; } 100% { transform: scale(1.5); opacity: 0; } }
+@keyframes wtFade    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes wtFlash   { 0% { opacity: 0; } 100% { opacity: 0.5; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wt-slide, .wt-aura, .wt-water-bg, .wt-map-pin.lead, .wt-shield-ring, .wt-end, .wt-flash, .wt-demo-panel { animation: none !important; }
+  .wt-water-bg { transform: none; }
+}
+
+/* ============================================================
+   Interactive "day with Balsm" demo — shared across treatments
+   ============================================================ */
+.wt-demo {
+  background: #fff; border-radius: var(--radius-xl);
+  box-shadow: 0 16px 36px rgba(20,32,43,0.12), 0 3px 8px rgba(20,32,43,0.06);
+  padding: 12px; display: flex; flex-direction: column; gap: 10px; width: 100%;
+}
+.wt-petal-demo-wrap { width: 100%; max-width: 332px; }
+.wt-demo-tabs { display: flex; gap: 4px; background: var(--balsm-cream-100); border-radius: var(--radius-lg); padding: 4px; }
+.wt-demo-tab {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  border: none; background: transparent; cursor: pointer; height: 32px;
+  border-radius: calc(var(--radius-lg) - 3px); font-family: var(--font-body); font-weight: 600;
+  font-size: 11.5px; color: var(--fg3); transition: all 0.2s var(--ease-out);
+}
+[dir="rtl"] .wt-demo-tab { font-family: var(--font-arabic); }
+.wt-demo-tab.on { background: #fff; color: var(--app-accent); box-shadow: 0 1px 4px rgba(20,32,43,0.12); }
+.wt-demo-panel { min-height: 108px; animation: wtDemoIn 0.28s var(--ease-out) both; }
+@keyframes wtDemoIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.wt-demo-list { display: flex; flex-direction: column; gap: 8px; }
+.wt-demo-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-md); background: var(--balsm-cream-100); }
+.wt-demo-ico { width: 28px; height: 28px; border-radius: 8px; background: var(--app-accent-50); color: var(--app-accent); display: grid; place-items: center; flex-shrink: 0; }
+.wt-demo-rt { display: block; font-weight: 600; font-size: 12.5px; color: var(--fg1); }
+.wt-demo-rd { display: block; font-size: 11px; color: var(--fg4); margin-top: 1px; }
+
+.wt-demo-checkin { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px; }
+.wt-demo-chart { color: var(--app-accent); }
+.wt-demo-chart polyline { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.wt-demo-moods { display: flex; gap: 8px; justify-content: center; }
+.wt-demo-mood {
+  width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--balsm-ink-100);
+  background: #fff; cursor: pointer; color: var(--fg4); display: grid; place-items: center;
+  transition: all 0.2s var(--ease-out);
+}
+.wt-demo-mood.on { border-color: var(--app-accent); color: var(--app-accent); background: var(--app-accent-50); transform: scale(1.08); }
+
+.wt-demo-map { position: relative; width: 100%; height: 108px; background: var(--balsm-cream-100); border-radius: var(--radius-md); overflow: hidden; }
+.wt-demo-pin {
+  position: absolute; transform: translate(-50%, -100%); border: none; background: transparent;
+  cursor: pointer; color: var(--fg4); padding: 4px; transition: color 0.2s var(--ease-out);
+}
+.wt-demo-pin.on { color: var(--app-accent); }
+.wt-demo-pin-label {
+  position: absolute; bottom: 8px; inset-inline: 8px; text-align: center;
+  font-size: 11px; font-weight: 600; color: var(--fg2); background: rgba(255,255,255,0.9);
+  border-radius: var(--radius-pill); padding: 4px 8px;
+}
+
+/* ============================================================
+   Comparison harness (wt-compare.jsx)
+   ============================================================ */
+.wtc {
+  min-height: 100%;
+  background: #E9E7DF;
+  background-image: radial-gradient(120% 80% at 50% 0%, #F1EFE7 0%, #E4E2D8 100%);
+  display: flex; flex-direction: column;
+}
+.wtc-bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 26px; background: rgba(255,255,255,0.86);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(20,32,43,0.08);
+}
+.wtc-brand { display: flex; align-items: center; gap: 11px; }
+.wtc-brand img { height: 30px; width: auto; }
+.wtc-brand-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--fg1); letter-spacing: -0.01em; }
+.wtc-brand-name .dot { font-weight: 600; font-size: 14px; color: var(--fg3); }
+.wtc-title { font-size: 13px; color: var(--fg3); font-weight: 500; }
+.wtc-spacer { flex: 1; }
+
+/* language segmented toggle */
+.wtc-seg { display: inline-flex; background: var(--balsm-ink-100); border-radius: var(--radius-pill); padding: 4px; gap: 4px; }
+.wtc-seg button {
+  border: none; background: transparent; cursor: pointer; height: 34px; padding: 0 16px;
+  border-radius: var(--radius-pill); font-weight: 600; font-size: 13px; color: var(--fg2);
+  font-family: var(--font-body); transition: all 0.2s var(--ease-out);
+}
+.wtc-seg button.on { background: #fff; color: var(--fg1); box-shadow: 0 1px 4px rgba(20,32,43,0.12); }
+.wtc-seg button.ar { font-family: var(--font-arabic); }
+
+.wtc-hint {
+  text-align: center; font-size: 13px; color: var(--fg3);
+  padding: 18px 24px 2px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.wtc-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; }
+.wtc-row {
+  display: flex; gap: 30px; justify-content: center; align-items: flex-start;
+  padding: 22px 32px 44px; min-width: min-content;
+}
+.wtc-col { display: flex; flex-direction: column; align-items: center; gap: 14px; flex-shrink: 0; }
+.wtc-cap { display: flex; align-items: baseline; gap: 8px; }
+.wtc-cap .k { font-family: var(--font-mono); font-weight: 600; font-size: 12px; color: var(--app-accent, var(--petal-blue)); }
+.wtc-cap .n { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--fg1); }
+.wtc-cap .t { font-size: 12px; color: var(--fg3); }
+[dir="rtl"] .wtc-cap .n { font-family: var(--font-arabic); }
+
+.wtc-frame-wrap { position: relative; }
+.wtc-scaler { transform-origin: top left; }
+.wtc-expand {
+  position: absolute; top: 8px; inset-inline-end: 8px; z-index: 5;
+  width: 34px; height: 34px; border-radius: var(--radius-pill); cursor: pointer;
+  background: rgba(255,255,255,0.9); border: 1px solid rgba(20,32,43,0.1);
+  display: grid; place-items: center; color: var(--fg2);
+  box-shadow: 0 2px 8px rgba(20,32,43,0.12); opacity: 0; transition: opacity 0.18s;
+}
+.wtc-frame-wrap:hover .wtc-expand { opacity: 1; }
+
+/* focus overlay */
+.wtc-focus {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+  background: rgba(28,28,24,0.62); backdrop-filter: blur(4px); animation: wtFade 0.24s var(--ease-out) both;
+}
+.wtc-focus-inner { position: relative; }
+.wtc-close {
+  position: absolute; top: -6px; inset-inline-end: -6px; transform: translate(40%, -40%);
+  width: 40px; height: 40px; border-radius: var(--radius-pill); cursor: pointer;
+  background: #fff; border: none; display: grid; place-items: center; color: var(--fg1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3); z-index: 2;
+}
+.wtc-focus-cap {
+  position: absolute; top: -44px; inset-inline-start: 0;
+  display: flex; align-items: baseline; gap: 8px; color: #fff;
+}
+.wtc-focus-cap .k { font-family: var(--font-mono); font-weight: 600; font-size: 13px; opacity: 0.8; }
+.wtc-focus-cap .n { font-family: var(--font-display); font-weight: 700; font-size: 17px; }

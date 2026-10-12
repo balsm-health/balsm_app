@@ -1,0 +1,1540 @@
+import 'dart:math' as math;
+import 'package:material_ui/material_ui.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:core/core.dart';
+import 'tokens.dart';
+
+/// Ambient accent — the Flutter analogue of the CSS custom property
+/// `--app-accent`.
+///
+/// The kit is deliberately decoupled from `PatientAppState` (it takes `ar`
+/// explicitly rather than reading a scope), but accent behaves like an
+/// inherited cascade value in the design: `.row-head a`, spinners, progress
+/// fills and the default button tint all resolve `var(--app-accent)` rather
+/// than naming a hue. An [InheritedWidget] is the direct equivalent, so those
+/// widgets follow the app accent without every call site threading it through.
+///
+/// Falls back to [Accent.blue] when no scope is present (bare kit usage/tests).
+class AccentScope extends InheritedWidget {
+  const AccentScope({super.key, required this.accent, required super.child});
+
+  final Accent accent;
+
+  static Accent of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AccentScope>()?.accent ?? Accent.blue;
+
+  @override
+  bool updateShouldNotify(AccentScope oldWidget) => oldWidget.accent != accent;
+}
+
+// ── Font scale (app.css --pt-* at scale 1) ───────────────────
+class FS {
+  FS._();
+  static const xs2 = 11.0;
+  static const xs = 12.0;
+  static const sm = 13.0;
+  static const base = 15.0;
+  static const md = 16.0;
+  static const lg = 18.0;
+  static const xl = 21.0;
+  static const xl2 = 26.0;
+  static const xl3 = 32.0;
+  static const xl4 = 40.0;
+}
+
+/// Typography helpers. `ar` switches the family to IBM Plex Sans Arabic.
+///
+/// Families are **bundled** (`assets/fonts/`, declared in pubspec), not fetched
+/// at runtime. The design system self-hosts for the same reason its README
+/// gives: "offline-default is value #1 … nothing in the type stack touches the
+/// network at runtime". Loading these from Google would mean a signal-less
+/// device falls back to system glyphs, and every cold start reports the user
+/// to a third party — both at odds with what this product claims to be.
+class Typo {
+  Typo._();
+
+  /// Design `--font-display` / `--font-arabic`.
+  static const _familyDisplay = 'Montserrat';
+
+  /// Design `--font-body`.
+  static const _familyBody = 'IBM Plex Sans';
+
+  /// Design `--font-arabic` — one family for both roles in Arabic.
+  static const _familyArabic = 'IBM Plex Sans Arabic';
+
+  /// Design `--font-mono` — numerics, IDs, batch codes.
+  static const _familyMono = 'IBM Plex Mono';
+
+  static TextStyle _display(bool ar) => TextStyle(fontFamily: ar ? _familyArabic : _familyDisplay);
+  static TextStyle _body(bool ar) => TextStyle(fontFamily: ar ? _familyArabic : _familyBody);
+  static TextStyle mono() => const TextStyle(fontFamily: _familyMono);
+
+  static TextStyle display({bool ar = false}) => _display(ar)
+      .copyWith(fontWeight: FontWeight.w800, fontSize: FS.xl3, height: 1.1, letterSpacing: -0.64, color: T.fg1);
+  static TextStyle title({bool ar = false}) => _display(ar)
+      .copyWith(fontWeight: FontWeight.w700, fontSize: FS.xl2, height: 1.18, letterSpacing: -0.4, color: T.fg1);
+  static TextStyle heading({bool ar = false}) => _display(ar)
+      .copyWith(fontWeight: FontWeight.w700, fontSize: FS.xl, height: 1.25, letterSpacing: -0.21, color: T.fg1);
+  static TextStyle subhead({bool ar = false}) =>
+      _display(ar).copyWith(fontWeight: FontWeight.w600, fontSize: FS.lg, height: 1.3, color: T.fg1);
+  static TextStyle body({bool ar = false}) => _body(ar).copyWith(fontSize: FS.md, height: 1.55, color: T.fg2);
+  static TextStyle bodySm({bool ar = false}) => _body(ar).copyWith(fontSize: FS.sm, height: 1.5, color: T.fg2);
+  static TextStyle meta({bool ar = false}) => _body(ar).copyWith(fontSize: FS.xs, height: 1.4, color: T.fg3);
+  static TextStyle eyebrow(Color color, {bool ar = false}) =>
+      _body(ar).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 1.76, color: color);
+  static TextStyle num({double size = FS.md, FontWeight weight = FontWeight.w600, Color color = T.fg1}) =>
+      mono().copyWith(fontSize: size, fontWeight: weight, color: color);
+}
+
+/// A dashed rounded outline (`border: 1px dashed`). Flutter has no dashed
+/// border, so the stroke is walked along the rounded rect by hand.
+class DashedBorder extends StatelessWidget {
+  const DashedBorder({
+    super.key,
+    required this.child,
+    this.color = T.border,
+    this.radius = T.rMd,
+    this.strokeWidth = 1,
+    this.dash = 5,
+    this.gap = 4,
+  });
+
+  final Widget child;
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+  final double dash;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        painter: _DashedBorderPainter(color: color, radius: radius, strokeWidth: strokeWidth, dash: dash, gap: gap),
+        child: child,
+      );
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+    required this.dash,
+    required this.gap,
+  });
+
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+  final double dash;
+  final double gap;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Offset.zero & size,
+        Radius.circular(radius),
+      ));
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(metric.extractPath(d, math.min(d + dash, metric.length)), paint);
+        d += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) =>
+      old.color != color ||
+      old.radius != radius ||
+      old.strokeWidth != strokeWidth ||
+      old.dash != dash ||
+      old.gap != gap;
+}
+
+/// Lucide icon shorthand.
+class LIcon extends StatelessWidget {
+  const LIcon(this.icon, {super.key, this.size = 20, this.color, this.stroke = 1.9});
+  final IconData icon;
+  final double size;
+  final Color? color;
+  final double stroke; // visual hint only
+  @override
+  Widget build(BuildContext context) => Icon(icon, size: size, color: color ?? T.fg2);
+}
+
+// ── Window class (app.css `@container app (…)`) ──────────────
+/// The design hangs every container query off `.app-body`, which spans the
+/// whole app, so the class comes from the window — not from whatever pane a
+/// widget happens to sit in. (A screen inside the rail is narrower than the
+/// window, and the design still treats it by the window's class.)
+BalsmWindowClass windowClassOf(BuildContext context) => BalsmWindowClass.of(MediaQuery.sizeOf(context).width);
+
+/// `@container app (max-height: 700px)` — the "short" modifier, orthogonal to
+/// the width class: a landscape phone and a 1280×600 desktop window are both
+/// short, and both want their vertical chrome back.
+bool isShortWindow(BuildContext context) => BalsmWindow.isShort(MediaQuery.sizeOf(context).height);
+
+// ── Status-bar / home-indicator spacers ──────────────────────
+/// Clears the status bar / dynamic island.
+///
+/// `.pad-top` is 64px on a phone, drops to 20 once the nav is a rail
+/// (`@container app (min-width: 600px)` — "phone chrome allowances go away")
+/// and to 12 in a short window. Those are the design's *allowances*, measured
+/// in a browser frame that has no status bar; a real device still reports a
+/// top inset that must be cleared, so away from compact the spacer is the
+/// larger of the two rather than a flat number.
+class PadTop extends StatelessWidget {
+  const PadTop({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    final compact = windowClassOf(context) == BalsmWindowClass.compact;
+    // Short wins over the width class: it is the later rule in app.css.
+    final allowance = isShortWindow(context) ? 12.0 : (compact ? 24.0 : 20.0);
+    // Compact keeps a 6px breath under the island; a rail-width window sits
+    // tight to the inset, which is what the 20px allowance is asking for.
+    final height = compact ? (top > 0 ? top + 6 : allowance) : math.max(top, allowance);
+    return SizedBox(height: height.clamp(allowance, 80).toDouble());
+  }
+}
+
+// ── App bar row (.appbar) ────────────────────────────────────
+class AppBarRow extends StatelessWidget {
+  const AppBarRow({super.key, this.leading, required this.children});
+  final Widget? leading;
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => Padding(
+        // `@container app (max-height: 700px) { .appbar { padding-bottom: 6px } }`
+        padding: EdgeInsets.fromLTRB(20, 6, 20, isShortWindow(context) ? 6 : 12),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          if (leading != null) ...[leading!, const SizedBox(width: 12)],
+          ...children,
+        ]),
+      );
+}
+
+/// 44px round icon button (.round-btn). Background darkens on press
+/// (`:active { background: ink100 }`) over `--dur-base`.
+class RoundBtn extends StatefulWidget {
+  const RoundBtn({
+    super.key,
+    required this.icon,
+    required this.semanticLabel,
+    this.onTap,
+    this.bg,
+    this.fg,
+    this.ghost = false,
+    this.iconSize = 21,
+  });
+  final IconData icon;
+
+  /// What a screen reader announces. Required, not optional: this control is a
+  /// glyph in a circle and there is nothing else for it to read. Every call
+  /// site is forced to answer, which is the point.
+  final String semanticLabel;
+  final VoidCallback? onTap;
+  final Color? bg;
+  final Color? fg;
+  final bool ghost;
+  final double iconSize;
+  @override
+  State<RoundBtn> createState() => _RoundBtnState();
+}
+
+class _RoundBtnState extends State<RoundBtn> {
+  bool _down = false;
+  void _set(bool v) {
+    if (widget.onTap != null && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rest = widget.ghost ? Colors.transparent : (widget.bg ?? T.ink50);
+    return Semantics(
+      button: true,
+      enabled: widget.onTap != null,
+      label: widget.semanticLabel,
+      // The circle stays 44 — the design's size — inside a 48 target, the
+      // smallest Android's guideline accepts and roughly a fingertip. Nothing
+      // painted changes; the control stops being hard to hit.
+      child: MinTapTarget(
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onTapDown: (_) => _set(true),
+          onTapUp: (_) => _set(false),
+          onTapCancel: () => _set(false),
+          child: AnimatedContainer(
+            duration: Motion.base,
+            curve: Motion.easeOut,
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: _down ? T.ink100 : rest,
+              shape: BoxShape.circle,
+              border: widget.ghost ? null : Border.all(color: T.border),
+            ),
+            child: Icon(widget.icon, size: widget.iconSize, color: widget.fg ?? T.ink700),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Smallest touch target the platform guidelines accept — Android asks 48,
+/// iOS 44, so 48 satisfies both. Hit area only: whatever is painted inside
+/// keeps the size the design gave it.
+const double kMinTapTarget = 48;
+
+/// Grows [child]'s touch target to [kMinTapTarget] without resizing [child].
+class MinTapTarget extends StatelessWidget {
+  const MinTapTarget({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
+        // No size factors: those make Center shrink-wrap the child, which
+        // hands back the very size the minimum was meant to raise.
+        child: Center(child: child),
+      );
+}
+
+/// Back-navigation arrow that points the correct way for the ambient text
+/// direction — left in LTR, right in RTL (Arabic). Lucide glyphs don't
+/// auto-mirror, so the "back" vs "forward" direction is picked explicitly.
+IconData backArrow(BuildContext context) =>
+    Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowRight : LucideIcons.arrowLeft;
+
+/// Forward/progression arrow — the mirror of [backArrow]. Points right in LTR,
+/// left in RTL (Arabic), so it follows reading order in both directions.
+IconData forwardArrow(BuildContext context) =>
+    Directionality.of(context) == TextDirection.rtl ? LucideIcons.arrowLeft : LucideIcons.arrowRight;
+
+/// Colored initials avatar (.avatar).
+class Avatar extends StatelessWidget {
+  const Avatar(
+      {super.key,
+      required this.initials,
+      required this.color,
+      this.size = 44,
+      this.fontSize,
+      this.ar = false,
+      this.child});
+  final String initials;
+  final Color color;
+  final double size;
+
+  /// Initials size. The design sets this per use rather than by ratio — 16 at
+  /// 44px (`.avatar`), 32 at 84px (`.profile-head .avatar`) — so the 0.36
+  /// fallback only approximates. Pass it explicitly to match a spec exactly.
+  final double? fontSize;
+  final bool ar;
+  final Widget? child;
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: child ??
+            Text(initials,
+                style: Typo._display(ar)
+                    .copyWith(fontWeight: FontWeight.w700, fontSize: fontSize ?? size * 0.36, color: Colors.white)),
+      );
+}
+
+/// White rounded card (.card).
+class PCard extends StatelessWidget {
+  const PCard({
+    super.key,
+    required this.child,
+    this.margin,
+    this.padding,
+    this.flat = false,
+    this.onTap,
+    this.onLongPress,
+    this.border,
+  });
+  final Widget child;
+  final EdgeInsetsGeometry? margin;
+  final EdgeInsetsGeometry? padding;
+  final bool flat;
+  final VoidCallback? onTap;
+
+  /// Long-press handler — how a selectable list enters selection mode.
+  final VoidCallback? onLongPress;
+
+  /// Overrides the hairline, e.g. a selected row ringed in the accent.
+  final Color? border;
+  @override
+  Widget build(BuildContext context) {
+    final card = Container(
+      margin: margin,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(T.rLg),
+        border: Border.all(color: border ?? T.border, width: border == null ? 1 : 1.5),
+        boxShadow: flat ? null : T.shadowSm,
+      ),
+      child: child,
+    );
+    if (onTap == null && onLongPress == null) return card;
+    // Gentle press feedback on tappable cards.
+    return Pressable(onTap: onTap, onLongPress: onLongPress, scale: 0.99, child: card);
+  }
+}
+
+/// Clinical status variants — DS `.b-badge--*`. [violet] is the DS
+/// `--controlled` flag (Schedule II/III); [brand] is solid accent with no dot.
+enum PillKind { success, info, warn, danger, violet, expiring, emerald, neutral, brand, outline }
+
+/// Status pill (.b-badge) with leading dot.
+class Pill extends StatelessWidget {
+  const Pill(this.label,
+      {super.key,
+      this.kind = PillKind.neutral,
+      this.dot = true,
+      this.ar = false,
+      this.padding,
+      this.small = false,
+      this.icon});
+  final String label;
+  final PillKind kind;
+  final bool dot;
+  final bool ar;
+  final EdgeInsetsGeometry? padding;
+
+  /// `.b-badge--sm` — tighter padding and 11px text for dense rows.
+  final bool small;
+
+  /// Optional glyph before the label, in place of the state dot — the DS
+  /// badge takes either, never both.
+  final IconData? icon;
+
+  ({Color bg, Color fg, Color dot, Color? border}) get _c => switch (kind) {
+        PillKind.success => (bg: T.hueMint50, fg: const Color(0xFF1F6A36), dot: T.hueMint, border: null),
+        PillKind.info => (bg: T.hueBlue50, fg: const Color(0xFF08407A), dot: T.hueBlue, border: null),
+        PillKind.warn => (bg: T.warningBg, fg: const Color(0xFF7A5A0F), dot: T.warning, border: null),
+        PillKind.danger => (bg: T.dangerBg, fg: const Color(0xFF7A2A20), dot: T.danger, border: null),
+        PillKind.violet => (bg: T.hueViolet50, fg: const Color(0xFF3D2872), dot: T.hueViolet, border: null),
+        PillKind.expiring => (bg: T.expiringBg, fg: const Color(0xFF7A4310), dot: T.expiring, border: null),
+        PillKind.emerald => (bg: T.hueEmerald50, fg: const Color(0xFF015A47), dot: T.hueEmerald, border: null),
+        PillKind.neutral => (bg: T.ink100, fg: T.ink700, dot: T.ink500, border: null),
+        PillKind.brand => (bg: T.hueBlue, fg: Colors.white, dot: Colors.white, border: null),
+        PillKind.outline => (bg: T.surface, fg: T.ink700, dot: T.ink500, border: T.border),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _c;
+    // The DS defines no dot for `--brand`; it reads as a solid tag, not a
+    // state. An icon replaces the dot rather than joining it.
+    final showDot = dot && icon == null && kind != PillKind.brand;
+    return Container(
+      padding: padding ??
+          (small
+              ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+              : const EdgeInsets.symmetric(horizontal: 11, vertical: 4)),
+      decoration: BoxDecoration(
+        color: c.bg,
+        borderRadius: BorderRadius.circular(T.rPill),
+        border: c.border == null ? null : Border.all(color: c.border!),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (showDot) ...[
+          Container(width: 7, height: 7, decoration: BoxDecoration(color: c.dot, shape: BoxShape.circle)),
+          SizedBox(width: small ? 4 : 6),
+        ],
+        if (icon != null) ...[
+          Icon(icon, size: small ? 11 : 12, color: c.fg),
+          SizedBox(width: small ? 4 : 5),
+        ],
+        // See PButton: a status label that cannot shrink overflows its parent
+        // rather than the pill simply getting narrower.
+        Flexible(
+          child: Text(label,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  Typo._body(ar).copyWith(fontSize: small ? FS.xs2 : FS.xs, fontWeight: FontWeight.w600, color: c.fg)),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Filter chip (`.b-chip`). Active fills the session accent; inactive is an
+/// outlined pill. At least one chip in a set should stay on — the caller
+/// enforces that.
+class BChip extends StatelessWidget {
+  const BChip(
+    this.label, {
+    super.key,
+    required this.active,
+    required this.onTap,
+    required this.accent,
+    this.ar = false,
+  });
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final Color accent;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Pressable(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: Motion.fast,
+        curve: Motion.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? accent : Colors.white,
+          borderRadius: BorderRadius.circular(T.rPill),
+          border: Border.all(color: active ? accent : T.border, width: 1.5),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (active) ...[
+            const Icon(LucideIcons.check, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+          ],
+          // See PButton: filter chips sit in constrained rows and clusters.
+          Flexible(
+            child: Text(label,
+                overflow: TextOverflow.ellipsis,
+                style: Typo._body(ar)
+                    .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: active ? Colors.white : T.fg2)),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+enum BtnVariant { primary, secondary, ghost, soft, danger, link }
+
+/// Touch-density sizes — app.css retunes the DS `--btn-h-*` for a thumb-first
+/// surface (DS is 30/38/46; the app is 40/52/56).
+enum BtnSize { sm, md, lg }
+
+/// Button (.b-btn) with variants + sizes.
+class PButton extends StatelessWidget {
+  const PButton(this.label,
+      {super.key,
+      this.icon,
+      this.onTap,
+      this.variant = BtnVariant.primary,
+      this.large = false,
+      this.size,
+      this.block = false,
+      this.accent,
+      this.ar = false,
+      this.color,
+      this.gradient = false});
+  final String label;
+  final IconData? icon;
+  final VoidCallback? onTap;
+  final BtnVariant variant;
+
+  /// Shorthand for `size: BtnSize.lg`, kept for existing call sites.
+  final bool large;
+
+  /// Explicit size; wins over [large].
+  final BtnSize? size;
+  final bool block;
+  final Accent? accent;
+  final bool ar;
+  final Color? color; // text-color override
+  /// Horizontal accent wash on primary (welcome CTA in the live Claude Design).
+  final bool gradient;
+
+  BtnSize get _size => size ?? (large ? BtnSize.lg : BtnSize.md);
+
+  double get _height => switch (_size) { BtnSize.sm => 40, BtnSize.md => 52, BtnSize.lg => 56 };
+  double get _padX => switch (_size) { BtnSize.sm => 14, BtnSize.md => 20, BtnSize.lg => 24 };
+  double get _fontSize => switch (_size) { BtnSize.sm => FS.sm, BtnSize.md => FS.md, BtnSize.lg => FS.lg };
+  double get _radius => switch (_size) { BtnSize.sm => T.rSm, BtnSize.md => T.rMd, BtnSize.lg => T.rLg };
+  double get _gap => switch (_size) { BtnSize.sm => 6, BtnSize.md => 9, BtnSize.lg => 10 };
+
+  @override
+  Widget build(BuildContext context) {
+    final a = accent ?? AccentScope.of(context);
+    // `.b-btn:disabled { opacity: .4; pointer-events: none }`
+    final enabled = onTap != null;
+    Color bg, fg;
+    Border? border;
+    List<BoxShadow>? shadow;
+    switch (variant) {
+      case BtnVariant.primary:
+        bg = a.main;
+        // Measured against the fill rather than assumed: white on the mint and
+        // sun accents is 2.28:1 and 1.93:1, which is not readable.
+        fg = T.onFill(a.main);
+        shadow = a.boxShadow;
+        break;
+      case BtnVariant.secondary:
+        bg = Colors.white;
+        fg = color ?? T.fg1;
+        border = Border.all(color: T.border);
+        break;
+      case BtnVariant.ghost:
+        bg = Colors.transparent;
+        fg = color ?? a.main;
+        break;
+      case BtnVariant.soft:
+        bg = a.bg;
+        fg = a.d;
+        break;
+      case BtnVariant.danger:
+        bg = T.danger;
+        fg = T.onFill(T.danger);
+        break;
+      case BtnVariant.link:
+        bg = Colors.transparent;
+        fg = color ?? a.main;
+        break;
+    }
+
+    // `.b-btn-link` is text, not a slab: auto height, underlined, 2px inset.
+    if (variant == BtnVariant.link) {
+      return Opacity(
+        opacity: enabled ? 1 : 0.4,
+        child: Pressable(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(label,
+                style: Typo._body(ar).copyWith(
+                  fontSize: _fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: fg,
+                  decoration: TextDecoration.underline,
+                  decorationColor: fg,
+                )),
+          ),
+        ),
+      );
+    }
+
+    final useGrad = gradient && variant == BtnVariant.primary;
+    final child = Container(
+      height: _height,
+      width: block ? double.infinity : null,
+      padding: EdgeInsets.symmetric(horizontal: _padX),
+      decoration: BoxDecoration(
+        color: useGrad ? null : bg,
+        gradient: useGrad
+            ? LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                // Live Claude Design: lighter wash on the left, accent on the right.
+                colors: [Color.lerp(a.main, Colors.white, 0.28)!, a.main],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(_radius),
+        border: border,
+        // A shadow under a faded button reads as an enabled control.
+        boxShadow: enabled ? shadow : null,
+      ),
+      child: Row(
+        mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[Icon(icon, size: 20, color: fg), SizedBox(width: _gap)],
+          // Flexible, not a bare Text: inside an Expanded, a `block` button or
+          // a narrow screen the row is width-constrained, and an unyielding
+          // label overflows sideways instead of ellipsizing. Arabic runs longer
+          // than English for the same string, so it hits this first.
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: Typo._body(ar).copyWith(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
+            ),
+          ),
+        ],
+      ),
+    );
+    // .b-btn:active { transform: scale(0.98) } — press feedback.
+    //
+    // Semantics wrap every button in the app, since Pressable underneath is a
+    // bare GestureDetector and announces nothing on its own. The label is
+    // already on screen, so the children are excluded to stop a screen reader
+    // reading it twice.
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      excludeSemantics: true,
+      child: MinTapTarget(
+        child: Opacity(opacity: enabled ? 1 : 0.4, child: Pressable(onTap: onTap, child: child)),
+      ),
+    );
+  }
+}
+
+/// Section header row (.row-head): bold title + optional trailing action.
+class RowHead extends StatelessWidget {
+  const RowHead(this.title, {super.key, this.action, this.onAction, this.ar = false, this.margin})
+      : leadingIcon = null,
+        fontSize = FS.lg;
+  const RowHead.icon(this.title, {super.key, required IconData icon, this.ar = false})
+      : action = null,
+        onAction = null,
+        leadingIcon = icon,
+        fontSize = FS.md,
+        margin = const EdgeInsets.fromLTRB(20, 18, 20, 10);
+  final String title;
+  final String? action;
+  final VoidCallback? onAction;
+  final bool ar;
+  final EdgeInsetsGeometry? margin;
+  final IconData? leadingIcon;
+  final double fontSize;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: margin ?? const EdgeInsets.fromLTRB(20, 24, 20, 12),
+        child: Row(
+            // `.row-head { align-items: baseline }` — the 13px action sits on the
+            // same baseline as the 18px title. The icon variant has no text to
+            // align against, so it centers instead.
+            crossAxisAlignment: leadingIcon == null ? CrossAxisAlignment.baseline : CrossAxisAlignment.center,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(leadingIcon, size: 18, color: T.fg3),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                  child: Text(title,
+                      style:
+                          Typo._display(ar).copyWith(fontWeight: FontWeight.w700, fontSize: fontSize, color: T.fg1))),
+              if (action != null)
+                GestureDetector(
+                  onTap: onAction,
+                  child: Text(action!,
+                      style: Typo._body(ar)
+                          .copyWith(fontSize: FS.sm, fontWeight: FontWeight.w600, color: AccentScope.of(context).main)),
+                ),
+            ]),
+      );
+}
+
+/// Circular progress ring (streak / adherence).
+class RingProgress extends StatelessWidget {
+  const RingProgress(
+      {super.key, required this.progress, required this.color, this.label, this.size = 56, this.labelStyle});
+  final double progress; // 0..1
+  final Color color;
+  final String? label;
+  final double size;
+  final TextStyle? labelStyle;
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(alignment: Alignment.center, children: [
+        // Animate the arc sweep from 0 → progress (`.b-progress-ring__fill`
+        // stroke-dashoffset transition over --dur-slow ease-out).
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
+          duration: reduce ? Duration.zero : Motion.slow,
+          curve: Motion.easeOut,
+          builder: (_, v, __) => CustomPaint(size: Size(size, size), painter: _RingPainter(v, color)),
+        ),
+        if (label != null)
+          // `.ring .rtxt` — display family, weight 800, 16px. (The DS's own
+          // `.b-progress-ring__center` is mono; the app's streak ring is not.)
+          Text(label!,
+              style: labelStyle ??
+                  Typo._display(false).copyWith(fontWeight: FontWeight.w800, fontSize: FS.md, color: T.fg1)),
+      ]),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter(this.progress, this.color);
+  final double progress;
+  final Color color;
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 6.0;
+    final c = size.center(Offset.zero);
+    final r = (size.width - stroke) / 2;
+    final track = Paint()
+      ..color = T.ink100
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    final arc = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(c, r, track);
+    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2, 2 * math.pi * progress, false, arc);
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.progress != progress || old.color != color;
+}
+
+/// Small leading icon square used in shortcut/list rows.
+class IconSquare extends StatelessWidget {
+  const IconSquare(this.icon,
+      {super.key, required this.bg, required this.fg, this.size = 38, this.iconSize = 19, this.radius = T.rMd});
+  final IconData icon;
+  final Color bg;
+  final Color fg;
+  final double size;
+  final double iconSize;
+  final double radius;
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(radius)),
+        child: Icon(icon, size: iconSize, color: fg),
+      );
+}
+
+/// Pill toggle switch.
+class PSwitch extends StatelessWidget {
+  const PSwitch({super.key, required this.on, required this.accent, required this.onTap});
+  final bool on;
+  final Color accent;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 46,
+          height: 28,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(color: on ? accent : T.ink300, borderRadius: BorderRadius.circular(999)),
+          alignment: on ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
+          child: Container(
+              width: 22,
+              height: 22,
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: T.shadowXs)),
+        ),
+      );
+}
+
+/// Directional chevron (flips in RTL).
+class Chevron extends StatelessWidget {
+  const Chevron({super.key, this.rtl = false, this.size = 18, this.color});
+  final bool rtl;
+  final double size;
+  final Color? color;
+  @override
+  Widget build(BuildContext context) => Transform.flip(
+        flipX: rtl,
+        child: Icon(LucideIcons.chevronRight, size: size, color: color ?? T.fg4),
+      );
+}
+
+// ════════════════════════════════════════════════════════════════
+//  Motion primitives — ported from app.css / ds-loaders.css.
+//  Every one honors MediaQuery.disableAnimations (prefers-reduced-motion).
+// ════════════════════════════════════════════════════════════════
+
+/// Press-to-scale feedback wrapper. Matches `.btn:active { transform:
+/// scale(0.98) }` with `transform var(--dur-fast) var(--ease-out)`.
+/// Pass a smaller [scale] for FABs (0.93) / keypad (0.97).
+class Pressable extends StatefulWidget {
+  const Pressable({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.scale = 0.98,
+    this.behavior = HitTestBehavior.opaque,
+  });
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final double scale;
+  final HitTestBehavior behavior;
+
+  @override
+  State<Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<Pressable> {
+  bool _down = false;
+  void _set(bool v) {
+    if ((widget.onTap ?? widget.onLongPress) != null && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final target = (_down && !reduce) ? widget.scale : 1.0;
+    return GestureDetector(
+      behavior: widget.behavior,
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      onTapDown: (_) => _set(true),
+      onTapUp: (_) => _set(false),
+      onTapCancel: () => _set(false),
+      child: AnimatedScale(
+        scale: target,
+        duration: Motion.fast,
+        curve: Motion.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Tap row that flashes a background tint while held (`.list-row:active`,
+/// `.history-row:active` → `background: ink50`) over `--dur-base`. Use for
+/// list/history rows that change background rather than scale on press.
+class PressHighlight extends StatefulWidget {
+  const PressHighlight({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.radius = 0,
+    this.color,
+    this.border,
+    this.behavior = HitTestBehavior.opaque,
+  });
+  final Widget child;
+  final VoidCallback? onTap;
+  final double radius;
+  final Color? color;
+
+  /// Outline kept through the press, for tiles that read as cards.
+  final BoxBorder? border;
+  final HitTestBehavior behavior;
+  @override
+  State<PressHighlight> createState() => _PressHighlightState();
+}
+
+class _PressHighlightState extends State<PressHighlight> {
+  bool _down = false;
+  void _set(bool v) {
+    if (widget.onTap != null && _down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return GestureDetector(
+      behavior: widget.behavior,
+      onTap: widget.onTap,
+      onTapDown: (_) => _set(true),
+      onTapUp: (_) => _set(false),
+      onTapCancel: () => _set(false),
+      child: AnimatedContainer(
+        duration: reduce ? Duration.zero : Motion.base,
+        curve: Motion.easeOut,
+        decoration: BoxDecoration(
+          color: _down ? (widget.color ?? T.ink50) : Colors.transparent,
+          border: widget.border,
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Entrance motion — `.fade-in` (`@keyframes fadeIn`): rises 7px → 0 over
+/// `--dur-slow`. Transform-only (content is never hidden if throttled), with
+/// an optional [delay] for staggering list/grid items (~40ms each).
+class RiseIn extends StatefulWidget {
+  const RiseIn({super.key, required this.child, this.delay = Duration.zero, this.dy = 7});
+  final Widget child;
+  final Duration delay;
+  final double dy;
+  @override
+  State<RiseIn> createState() => _RiseInState();
+}
+
+class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: Motion.slow);
+  late final Animation<double> _a = CurvedAnimation(parent: _c, curve: Motion.easeOut);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.delay == Duration.zero) {
+      _c.forward();
+    } else {
+      Future.delayed(widget.delay, () {
+        if (mounted) _c.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) return widget.child;
+    return AnimatedBuilder(
+      animation: _a,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, widget.dy * (1 - _a.value)),
+        child: Opacity(opacity: _a.value, child: child),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// Linear progress bar (`.b-progress__track` + `__fill`): 8px pill track
+/// (`--balsm-ink-100`), fill whose width animates over `--dur-slow` ease-out.
+/// [value] is 0..1. Set [indeterminate] for the unknown-duration loader — a
+/// 42%-wide segment slides through the track (`b-prog-slide 1.5s ease-in-out`).
+class LinearProgress extends StatefulWidget {
+  const LinearProgress({
+    super.key,
+    this.value = 0,
+    this.indeterminate = false,
+    this.color,
+    this.height = 7,
+    this.track,
+  });
+  final double value;
+  final bool indeterminate;
+  final Color? color;
+  final double height;
+  final Color? track;
+  @override
+  State<LinearProgress> createState() => _LinearProgressState();
+}
+
+class _LinearProgressState extends State<LinearProgress> with SingleTickerProviderStateMixin {
+  AnimationController? _c;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (widget.indeterminate && !reduce) {
+      _c ??= AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final fill = widget.color ?? AccentScope.of(context).main;
+    final pill = BorderRadius.circular(T.rPill);
+
+    Widget fillWidget;
+    if (widget.indeterminate && _c != null) {
+      // 42%-wide segment travels off-left → off-right over the first 60% of the
+      // cycle, then holds (matches the `b-prog-slide` keyframe hold).
+      fillWidget = AnimatedBuilder(
+        animation: _c!,
+        builder: (_, __) => LayoutBuilder(
+          builder: (_, c) {
+            final w = c.maxWidth;
+            final e = Motion.easeInOut.transform((_c!.value / 0.6).clamp(0.0, 1.0));
+            return Stack(children: [
+              PositionedDirectional(
+                start: (-0.42 + 1.42 * e) * w,
+                top: 0,
+                bottom: 0,
+                width: 0.42 * w,
+                child: DecoratedBox(decoration: BoxDecoration(color: fill, borderRadius: pill)),
+              ),
+            ]);
+          },
+        ),
+      );
+    } else {
+      fillWidget = Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: widget.value.clamp(0.0, 1.0)),
+          duration: reduce ? Duration.zero : Motion.slow,
+          curve: Motion.easeOut,
+          builder: (_, v, __) => FractionallySizedBox(
+            widthFactor: widget.indeterminate ? 1 : v, // reduced-motion indeterminate = full bar
+            child: DecoratedBox(decoration: BoxDecoration(color: fill, borderRadius: pill)),
+          ),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: pill,
+      child: Container(
+        height: widget.height,
+        color: widget.track ?? T.ink100,
+        child: fillWidget,
+      ),
+    );
+  }
+}
+
+/// Shimmering skeleton placeholder (`.b-skeleton` — `b-shimmer 1.5s
+/// ease-in-out infinite`). Sized by the caller.
+class Shimmer extends StatefulWidget {
+  const Shimmer({super.key, this.width, this.height = 12, this.radius = T.rXs, this.circle = false});
+  final double? width;
+  final double height;
+  final double radius;
+  final bool circle;
+  @override
+  State<Shimmer> createState() => _ShimmerState();
+}
+
+class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final shape = BoxDecoration(
+      borderRadius: widget.circle ? null : BorderRadius.circular(widget.radius),
+      shape: widget.circle ? BoxShape.circle : BoxShape.rectangle,
+    );
+    if (reduce) {
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: shape.copyWith(color: T.ink200),
+      );
+    }
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        // 280% background swept by b-shimmer 180% → -180% on an ease-in-out clock.
+        final e = Motion.easeInOut.transform(_c.value);
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: shape.copyWith(
+            gradient: LinearGradient(
+              begin: Alignment(-1 - 2 * (1 - e), 0),
+              end: Alignment(1 + 2 * e, 0),
+              colors: const [T.ink200, T.ink100, T.ink200],
+              stops: const [0.25, 0.37, 0.63],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Ring spinner (`.b-ring-spinner`): a single-hue conic comet — a transparent
+/// tail sweeping to a solid head — rotating at `b-spin 0.85s linear infinite`.
+/// The inline workhorse loader. Pass [color] for the hue variants (accent /
+/// success / violet / ink map to a brand hue/ink color). Keeps spinning under
+/// reduced motion — a loading indicator that freezes reads as hung.
+class Spinner extends StatefulWidget {
+  const Spinner({super.key, this.size = 28, this.color, this.stroke = 3});
+  final double size;
+  final Color? color;
+  final double stroke;
+  @override
+  State<Spinner> createState() => _SpinnerState();
+}
+
+class _SpinnerState extends State<Spinner> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 850))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color ?? AccentScope.of(context).main;
+    return RepaintBoundary(
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (_, __) => Transform.rotate(
+            angle: _c.value * 2 * math.pi,
+            child: CustomPaint(painter: _RingSpinnerPainter(color, widget.stroke)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingSpinnerPainter extends CustomPainter {
+  _RingSpinnerPainter(this.color, this.stroke);
+  final Color color;
+  final double stroke;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final r = (size.shortestSide - stroke) / 2;
+    // conic-gradient(from 90deg, transparent, color) — transparent tail → solid
+    // head. Flutter's SweepGradient starts at +x (= CSS `from 90deg`), so the
+    // seam sits at the 3-o'clock position; rotation makes its origin moot.
+    final shader = SweepGradient(
+      colors: [color.withValues(alpha: 0), color],
+      stops: const [0, 1],
+    ).createShader(Offset.zero & size);
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()
+        ..shader = shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingSpinnerPainter old) => old.color != color || old.stroke != stroke;
+}
+
+/// Full-surface loading overlay (`.b-overlay`): fades in over `--dur-base`,
+/// centers a [Spinner] + optional message above a cream/scrim backdrop.
+class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({super.key, this.message, this.scrim = false, this.ar = false});
+  final String? message;
+  final bool scrim;
+  final bool ar;
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final inner = Column(mainAxisSize: MainAxisSize.min, children: [
+      Spinner(color: scrim ? Colors.white : AccentScope.of(context).main),
+      if (message != null) ...[
+        const SizedBox(height: 18),
+        Text(message!,
+            textAlign: TextAlign.center,
+            style: Typo.subhead(ar: ar).copyWith(color: scrim ? Colors.white : T.fg1, fontSize: 17)),
+      ],
+    ]);
+    final body = Container(
+      color: scrim ? const Color(0x8C14202B) : T.cream50,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: inner,
+    );
+    if (reduce) return body;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Motion.base,
+      curve: Motion.easeOut,
+      builder: (_, v, child) => Opacity(opacity: v, child: child),
+      child: body,
+    );
+  }
+}
+
+/// Top navigation loading bar (`.b-toploader--indeterminate`): a glowing accent
+/// segment slides left→right while [loading], fading out when it clears.
+/// Sits flush to the top of the screen surface (shown on tab change).
+class TopLoadingBar extends StatefulWidget {
+  const TopLoadingBar({super.key, required this.loading, this.color, this.height = 3});
+  final bool loading;
+  final Color? color;
+  final double height;
+  @override
+  State<TopLoadingBar> createState() => _TopLoadingBarState();
+}
+
+class _TopLoadingBarState extends State<TopLoadingBar> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1150))
+    ..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final color = widget.color ?? AccentScope.of(context).main;
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        opacity: widget.loading ? 1 : 0,
+        duration: Motion.slow,
+        curve: Motion.easeOut,
+        child: SizedBox(
+          height: widget.height,
+          width: double.infinity,
+          child: (widget.loading && !reduce)
+              ? LayoutBuilder(builder: (_, c) {
+                  final barW = c.maxWidth * 0.32;
+                  return AnimatedBuilder(
+                    animation: _c,
+                    builder: (_, __) => Stack(children: [
+                      PositionedDirectional(
+                        start: (-0.34 + 1.34 * _c.value) * c.maxWidth,
+                        top: 0,
+                        bottom: 0,
+                        width: barW,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: const BorderRadiusDirectional.horizontal(end: Radius.circular(T.rPill)),
+                            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)],
+                          ),
+                        ),
+                      ),
+                    ]),
+                  );
+                })
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// `.b-check` — the design system's checkbox / radio.
+///
+/// Box is 18×18 (radius 5, or a circle for [radio]) with a 1.5px `ink300`
+/// outline; checked fills with `--balsm-primary`, which app.jsx rebinds to the
+/// accent hue ("so DS components follow it"), so pass the session [accent].
+class BCheck extends StatelessWidget {
+  const BCheck({
+    super.key,
+    required this.label,
+    required this.checked,
+    required this.onTap,
+    required this.accent,
+    this.icon,
+    this.radio = false,
+    this.ar = false,
+  });
+  final String label;
+  final bool checked;
+  final VoidCallback onTap;
+  final Accent accent;
+
+  /// Optional glyph shown before the label (15px, per `SymptomPicker`).
+  final IconData? icon;
+  final bool radio;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 130),
+              curve: Motion.easeOut,
+              width: 18,
+              height: 18,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: checked ? accent.main : Colors.white,
+                shape: radio ? BoxShape.circle : BoxShape.rectangle,
+                borderRadius: radio ? null : BorderRadius.circular(5),
+                border: Border.all(color: checked ? accent.main : T.ink300, width: 1.5),
+              ),
+              child: radio
+                  ? AnimatedScale(
+                      scale: checked ? 1 : 0,
+                      duration: const Duration(milliseconds: 130),
+                      curve: Motion.easeOut,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      ),
+                    )
+                  : AnimatedOpacity(
+                      opacity: checked ? 1 : 0,
+                      duration: const Duration(milliseconds: 110),
+                      child: const Icon(LucideIcons.check, size: 12, color: Colors.white),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 9),
+          if (icon != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icon, size: 15, color: T.fg1),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: Text(label, style: Typo.body(ar: ar).copyWith(fontSize: 14, height: 1.45, color: T.fg1)),
+          ),
+        ]),
+      );
+}
+
+/// Bottom padding for a sheet's scrolling body.
+///
+/// The design's sheet footers clear the home indicator explicitly
+/// (`calc(env(safe-area-inset-bottom, 0px) + 24px)` in app.css); a flat pad
+/// leaves the last control — usually the primary CTA — sitting under the
+/// indicator, where iOS eats the touch. [base] keeps each sheet's own spacing
+/// (the design's `.flow-foot` is 38px) and the inset is added on top.
+/// `viewInsets` lifts the body clear of the keyboard when one is open.
+double sheetBottomInset(BuildContext context, {double base = 38}) {
+  // Aspect-scoped reads: a sheet that took the whole MediaQueryData rebuilt on
+  // every rotation, brightness and text-scale change too.
+  final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+  if (SheetPresentation.isDialog(context)) {
+    // A centred dialog has nothing over the home indicator, so the safe-area
+    // term would only add dead space. The design drops the phone allowance
+    // with it: `.flow-foot { padding-bottom: 20px }` at medium and up.
+    return keyboard + math.min(base, 20);
+  }
+  return keyboard + MediaQuery.paddingOf(context).bottom + base;
+}
+
+// ── App sheet (app.css `.app-sheet`) ─────────────────────────
+
+/// Sheet width at medium and up: `.app-sheet` (Modal md, 460) or
+/// `.app-sheet--lg` (Modal lg, 640) for the forms that need the room —
+/// quick log, add record, add prescription.
+enum SheetSize { md, lg }
+
+/// How the enclosing app sheet is presented. A compact window gets the bottom
+/// sheet; medium and up get a centred dialog, where the design hides the drag
+/// pill (`.app-sheet .sheet-grab { display: none }`). Bodies never branch on
+/// this themselves — [SheetGrab] reads it.
+class SheetPresentation extends InheritedWidget {
+  const SheetPresentation({super.key, required this.dialog, required super.child});
+
+  final bool dialog;
+
+  static bool isDialog(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SheetPresentation>()?.dialog ?? false;
+
+  @override
+  bool updateShouldNotify(SheetPresentation oldWidget) => oldWidget.dialog != dialog;
+}
+
+/// `.sheet-grab` — the 38×4 drag pill at the top of a bottom sheet. Draws
+/// nothing when the sheet is a dialog, so no body has to know which one it is.
+class SheetGrab extends StatelessWidget {
+  const SheetGrab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (SheetPresentation.isDialog(context)) return const SizedBox.shrink();
+    return Container(
+      width: 38,
+      height: 4,
+      decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(T.rPill)),
+    );
+  }
+}
+
+/// `.app-sheet` — the design's one overlay primitive, in both placements.
+///
+/// Compact (< 600): a bottom sheet capped at 520 wide, as every sheet was
+/// already shown. Medium and up (`@container app (min-width: 600px)`): a
+/// centred dialog `min(460px, 100% − 48px)` wide — 640 for [SheetSize.lg] —
+/// at most `100% − 48px` tall, radius-xl on every corner, the same scrim. The
+/// window class comes from the window rather than a container because a sheet
+/// always overlays the whole app body.
+///
+/// [builder] gets the route's own context, so `Navigator.pop` inside the body
+/// closes either presentation.
+Future<R?> showAppSheet<R>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  SheetSize size = SheetSize.md,
+  Color barrierColor = const Color(0x5C14202B),
+  bool isDismissible = true,
+  bool enableDrag = true,
+  bool useRootNavigator = false,
+  TextDirection? textDirection,
+}) {
+  final dir = textDirection ?? Directionality.maybeOf(context) ?? TextDirection.ltr;
+  final dialog = MediaQuery.sizeOf(context).width >= BalsmWindow.mediumMin;
+  Widget present(Widget child) => Directionality(
+        textDirection: dir,
+        child: SheetPresentation(dialog: dialog, child: child),
+      );
+  if (!dialog) {
+    return showModalBottomSheet<R>(
+      context: context,
+      useRootNavigator: useRootNavigator,
+      isScrollControlled: true,
+      isDismissible: isDismissible,
+      enableDrag: enableDrag,
+      backgroundColor: Colors.transparent,
+      barrierColor: barrierColor,
+      builder: (ctx) => present(
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: builder(ctx)),
+        ),
+      ),
+    );
+  }
+  final maxWidth = size == SheetSize.lg ? BalsmWindow.modalMaxWLg : BalsmWindow.modalMaxWMd;
+  return showDialog<R>(
+    context: context,
+    useRootNavigator: useRootNavigator,
+    barrierDismissible: isDismissible,
+    barrierColor: barrierColor,
+    builder: (ctx) {
+      final window = MediaQuery.sizeOf(ctx);
+      return present(
+        Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: math.min(maxWidth, window.width - 48),
+              maxHeight: window.height - 48,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(T.rXl),
+              // The bottom-sheet route supplies a Material; the dialog route
+              // does not, and Text without one loses its default style.
+              child: Material(color: Colors.transparent, child: builder(ctx)),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
