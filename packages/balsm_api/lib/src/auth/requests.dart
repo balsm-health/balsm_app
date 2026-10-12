@@ -10,11 +10,19 @@
 /// silent for an address it does not know.
 enum OtpPurpose {
   continueFlow,
-  reset;
+  reset,
+
+  /// Proving it is them before deleting their account. The server words the
+  /// email accordingly, and sends nothing for an address with no account.
+  deleteAccount;
 
   /// The spelling the server expects. `continue` is a Dart keyword, so the
   /// enum value cannot simply be named after it.
-  String get wireName => this == continueFlow ? 'continue' : name;
+  String get wireName => switch (this) {
+        continueFlow => 'continue',
+        reset => 'reset',
+        deleteAccount => 'delete',
+      };
 }
 
 class RequestOtpRequest {
@@ -22,11 +30,21 @@ class RequestOtpRequest {
     required this.email,
     required this.countryCode,
     required this.purpose,
+    this.language,
   });
   final String email;
   final String countryCode;
   final OtpPurpose purpose;
-  Map<String, dynamic> toJson() => {'email': email, 'country_code': countryCode, 'purpose': purpose.wireName};
+
+  /// The app's language (`ar`, `en`), which the email is written in. Omitted
+  /// when unknown; the server then falls back to English.
+  final String? language;
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'country_code': countryCode,
+        'purpose': purpose.wireName,
+        if (language != null) 'language': language,
+      };
 }
 
 class VerifyOtpRequest {

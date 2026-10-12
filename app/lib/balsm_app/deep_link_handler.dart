@@ -171,8 +171,8 @@ class _DeepLinkHandlerState extends ConsumerState<DeepLinkHandler> {
     }
 
     switch (target) {
-      case MagicLinkTarget(:final token):
-        await _redeemMagicLink(uri, kind, token);
+      case MagicLinkTarget(:final token, :final purpose):
+        await _redeemMagicLink(uri, kind, token, purpose);
       case EmergencyCardTarget(:final tokenId, :final key):
         _logOpen(uri, kind, 'ok');
         pushSubScreen(context, (_) => PublicEmergencyResolveScreen(tokenId: tokenId, keyOverride: key));
@@ -226,7 +226,11 @@ class _DeepLinkHandlerState extends ConsumerState<DeepLinkHandler> {
 
   /// Exchanges the single-use token for a session. [token] is null when the
   /// link arrived truncated (some mail clients cut long query strings).
-  Future<void> _redeemMagicLink(Uri uri, String kind, String? token) async {
+  ///
+  /// Where it lands depends on what the link was sent for: a deletion link
+  /// opens the deletion screen on its confirmation step, since redeeming the
+  /// link is the proof that screen asks for. Everything else enters the app.
+  Future<void> _redeemMagicLink(Uri uri, String kind, String? token, MagicLinkPurpose purpose) async {
     if (token == null) {
       _logOpen(uri, kind, 'malformed');
       return;
@@ -244,7 +248,11 @@ class _DeepLinkHandlerState extends ConsumerState<DeepLinkHandler> {
     result.fold(
       (_) {
         _logOpen(uri, kind, 'ok');
-        unawaited(enterAfterSignIn(context, ref, s));
+        if (purpose == MagicLinkPurpose.deleteAccount) {
+          pushSubScreen(context, (_) => const PublicDeleteScreen(alreadyVerified: true));
+        } else {
+          unawaited(enterAfterSignIn(context, ref, s));
+        }
       },
       (failure) {
         // A single-use token that was already spent, or expired — the most

@@ -214,6 +214,7 @@ Future<void> bootstrap({
       (ref) => _AccountProfileIdentityReader(ref, PatientAppPrefs(globalKV)),
     ),
     // Account country-change consults the geofence denied-countries repo.
+    apiLanguageProvider.overrideWithValue(() => state.lang.value),
     reauthPortProvider.overrideWith((ref) => _AuthReauthPort(ref)),
     deniedCountriesPortProvider.overrideWith(
       (ref) => _GeofenceDeniedCountriesPort(
@@ -508,7 +509,7 @@ class _AuthReauthPort implements ReauthPort {
       return AppResult.failure(const ValidationFailure('Use your account email.'));
     }
     final country = _ref.read(patientAppStateProvider).country.value;
-    return _ref.read(signInUseCaseProvider).requestEmailOtp(identifier, country);
+    return _ref.read(signInUseCaseProvider).requestDeletionOtp(identifier, country);
   }
 
   @override

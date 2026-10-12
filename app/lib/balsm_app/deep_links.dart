@@ -78,12 +78,31 @@ final class DeleteAccountCancelTarget extends DeepLinkTarget {
   bool get requiresSession => false;
 }
 
-/// The emailed magic sign-in link: `/auth/link?t={token}` or
-/// `balsm://auth/link?t={token}`. [token] is null when the link is truncated.
+/// What the emailed link was sent for. The API adds `p=` to the link for
+/// anything other than a plain sign-in.
+enum MagicLinkPurpose {
+  signIn,
+  resetPassword,
+  deleteAccount;
+
+  /// Anything unrecognised is a sign-in: the link still signs the person in,
+  /// and a newer server naming a purpose this build has not heard of must not
+  /// break that.
+  static MagicLinkPurpose fromWire(String? p) => switch (p) {
+        'reset' => resetPassword,
+        'delete' => deleteAccount,
+        _ => signIn,
+      };
+}
+
+/// The emailed magic link: `/auth/link?t={token}` or
+/// `balsm://auth/link?t={token}`, with `&p={purpose}` when it was sent for
+/// something other than signing in. [token] is null when the link is truncated.
 final class MagicLinkTarget extends DeepLinkTarget {
-  const MagicLinkTarget({required this.token});
+  const MagicLinkTarget({required this.token, this.purpose = MagicLinkPurpose.signIn});
 
   final String? token;
+  final MagicLinkPurpose purpose;
 
   @override
   String get kind => 'auth_magic_link';
@@ -188,7 +207,10 @@ DeepLinkTarget? parseDeepLink(Uri uri) {
       return const DeleteAccountCancelTarget();
     case 'auth/link':
       final token = uri.queryParameters['t'];
-      return MagicLinkTarget(token: token == null || token.isEmpty ? null : token);
+      return MagicLinkTarget(
+        token: token == null || token.isEmpty ? null : token,
+        purpose: MagicLinkPurpose.fromWire(uri.queryParameters['p']),
+      );
   }
 
   if (path == AppTab.map.id) return MapTarget(types: _mapTypes(uri));

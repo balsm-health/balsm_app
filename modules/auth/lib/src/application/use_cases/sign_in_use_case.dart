@@ -99,6 +99,20 @@ class SignInUseCase {
     }
   }
 
+  /// The code that proves it is them before their account is deleted. Its
+  /// email says a deletion was asked for, and its link opens the deletion
+  /// screen. An unknown email returns success with no email sent.
+  Future<AppResult<void>> requestDeletionOtp(String email, String countryCode) async {
+    try {
+      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.deleteAccount);
+      return AppResult.success(null);
+    } on AuthException catch (e) {
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
   /// Step 1 of forgot-password: request a reset code for an existing user.
   /// Email-OTP login was removed, so this is reset-only; the code is submitted
   /// to `resetPassword`. An unknown email returns success with no email sent.

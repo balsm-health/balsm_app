@@ -45,6 +45,10 @@ First release of the Balsm patient app.
 - Social sign-in is off in the env template, which had it on with placeholder
   Google client ids.
 - The iOS local-network prompt no longer mentions a development server.
+- The code email is asked for in the app's language and by purpose. Deleting
+  an account now requests its own code, whose email says a deletion was asked
+  for instead of looking like a sign-in, and whose link opens the deletion
+  screen on its confirmation step.
 - Photos are kept and shown at the size they are used. A photo taken or picked
   as an attachment is scaled down to 2560 px on its long side, and the
   full-screen viewer decodes to twice the screen's width rather than the whole

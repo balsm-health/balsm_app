@@ -14,7 +14,14 @@ import '../widgets/reauth_form.dart';
 /// 3-channel [ReauthForm]. Stages: reauth -> preconfirm -> done. Works on web
 /// and mobile.
 class PublicDeleteScreen extends ConsumerStatefulWidget {
-  const PublicDeleteScreen({super.key});
+  const PublicDeleteScreen({super.key, this.alreadyVerified = false});
+
+  /// True when the person arrived through the emailed deletion link, which the
+  /// caller has already redeemed for a session: that is the same proof the
+  /// code gives, so the screen opens on the confirmation step. It skips a
+  /// form, not a check — the deletion request itself still needs that session,
+  /// and the server refuses it without one.
+  final bool alreadyVerified;
 
   @override
   ConsumerState<PublicDeleteScreen> createState() => _PublicDeleteScreenState();
@@ -23,7 +30,7 @@ class PublicDeleteScreen extends ConsumerStatefulWidget {
 enum _Stage { reauth, preconfirm, done }
 
 class _PublicDeleteScreenState extends ConsumerState<PublicDeleteScreen> {
-  _Stage _stage = _Stage.reauth;
+  late _Stage _stage = widget.alreadyVerified ? _Stage.preconfirm : _Stage.reauth;
   bool _submitting = false;
   String? _error;
   DateTime? _graceUntil;

@@ -49,6 +49,17 @@ void main() {
       }
     });
 
+    test('the link says what it was sent for, and is a sign-in when it does not', () {
+      MagicLinkPurpose purposeOf(String url) => (parse(url) as MagicLinkTarget).purpose;
+
+      expect(purposeOf('balsm://auth/link?t=tok_123'), MagicLinkPurpose.signIn);
+      expect(purposeOf('balsm://auth/link?t=tok_123&p=delete'), MagicLinkPurpose.deleteAccount);
+      expect(purposeOf('https://app.balsm.health/auth/link?t=tok_123&p=reset'), MagicLinkPurpose.resetPassword);
+      // A purpose this build has not heard of must still sign the person in.
+      expect(purposeOf('balsm://auth/link?t=tok_123&p=something-new'), MagicLinkPurpose.signIn);
+      expect((parse('balsm://auth/link?t=tok_123&p=delete') as MagicLinkTarget).token, 'tok_123');
+    });
+
     test('a truncated link routes with no token, so it can be reported as malformed', () {
       expect((parse('balsm://auth/link') as MagicLinkTarget).token, isNull);
       expect((parse('balsm://auth/link?t=') as MagicLinkTarget).token, isNull);

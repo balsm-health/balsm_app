@@ -25,4 +25,27 @@ void main() {
 
     expect(json['purpose'], 'reset');
   });
+
+  test('a deletion code is asked for by name, so its email says so', () {
+    final json = const RequestOtpRequest(
+      email: 'patient@example.test',
+      countryCode: 'EG',
+      purpose: OtpPurpose.deleteAccount,
+    ).toJson();
+
+    expect(json['purpose'], 'delete');
+  });
+
+  test('the app language travels with the request, and is left out when unknown', () {
+    const base = RequestOtpRequest(email: 'patient@example.test', countryCode: 'EG', purpose: OtpPurpose.reset);
+    expect(base.toJson().containsKey('language'), isFalse);
+
+    final json = const RequestOtpRequest(
+      email: 'patient@example.test',
+      countryCode: 'EG',
+      purpose: OtpPurpose.reset,
+      language: 'ar',
+    ).toJson();
+    expect(json['language'], 'ar');
+  });
 }
