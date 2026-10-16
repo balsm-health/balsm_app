@@ -91,6 +91,7 @@ jobs:
   android:
     name: Android APK (${{ needs.setup.outputs.channel }})
     needs: setup
+    if: false # TEMPORARY: passed; skipped while Linux/Windows are fixed
     runs-on: ubuntu-latest
     env:
       HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
@@ -155,6 +156,7 @@ jobs:
   ios:
     name: iOS IPA (${{ needs.setup.outputs.channel }})
     needs: setup
+    if: false # TEMPORARY: passed; skipped while Linux/Windows are fixed
     runs-on: macos-latest
     env:
       HAS_IOS_SIGNING: ${{ secrets.APPLE_CERT_P12 != '' && secrets.APPLE_PROVISIONING_PROFILE != '' }}
@@ -242,6 +244,7 @@ jobs:
   macos:
     name: macOS
     needs: setup
+    if: false # TEMPORARY: passed; skipped while Linux/Windows are fixed
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -374,6 +377,7 @@ jobs:
   web:
     name: Web
     needs: setup
+    if: false # TEMPORARY: passed; skipped while Linux/Windows are fixed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -418,6 +422,8 @@ jobs:
   github-release:
     name: GitHub Release
     needs: [setup, android, ios, macos, windows, linux, web]
+    # TEMPORARY: run despite the skipped jobs above, but never after a failure.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
