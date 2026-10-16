@@ -10,12 +10,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Answers with a fixed status, or throws a chosen transport failure.
 class _StubAdapter implements HttpClientAdapter {
-  _StubAdapter.status(this.statusCode)
+  _StubAdapter.status(this.statusCode,
+      {this.body = const {
+        'data': {'status': 'Healthy'}
+      }})
       : error = null,
         cause = null;
-  _StubAdapter.failure(this.error, {this.cause}) : statusCode = 0;
+  _StubAdapter.failure(this.error, {this.cause})
+      : statusCode = 0,
+        body = null;
 
   final int statusCode;
+  final Object? body;
   final DioExceptionType? error;
   final Object? cause;
   RequestOptions? lastRequest;
@@ -27,12 +33,10 @@ class _StubAdapter implements HttpClientAdapter {
       throw DioException(requestOptions: options, type: error!, error: cause);
     }
     return ResponseBody.fromString(
-      jsonEncode({
-        'data': {'status': 'Healthy'}
-      }),
+      body is String ? body! as String : jsonEncode(body),
       statusCode,
       headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType]
+        Headers.contentTypeHeader: [body is String ? 'text/html' : Headers.jsonContentType]
       },
     );
   }
@@ -53,6 +57,44 @@ void main() {
       expect(healthy.statusCode, 200);
       expect(healthy.isOk, isTrue);
       expect(healthy.elapsed, greaterThanOrEqualTo(Duration.zero));
+    });
+
+    test('carries every field of the health body, and the deployed version', () async {
+      final adapter = _StubAdapter.status(200, body: {
+        'status': 'Healthy',
+        'ready': true,
+        'version': '0.1.1.0',
+        'uptime_seconds': 42,
+        'not_ready_reason': null,
+      });
+
+      final result = await ServerHealthProbe(adapter: adapter).check('http://x') as ServerHealthy;
+
+      expect(result.version, '0.1.1.0');
+      expect(result.details, {
+        'status': 'Healthy',
+        'ready': true,
+        'version': '0.1.1.0',
+        'uptime_seconds': 42,
+        'not_ready_reason': null,
+      });
+    });
+
+    test('unwraps a body nested under data', () async {
+      final result = await ServerHealthProbe(adapter: _StubAdapter.status(200)).check('http://x') as ServerHealthy;
+
+      expect(result.details, {'status': 'Healthy'});
+      expect(result.version, isNull);
+    });
+
+    test('a body that is not a JSON object gives no details', () async {
+      // A proxy error page, not the API.
+      final adapter = _StubAdapter.status(502, body: '<html>Bad Gateway</html>');
+
+      final result = await ServerHealthProbe(adapter: adapter).check('http://x') as ServerHealthy;
+
+      expect(result.details, isEmpty);
+      expect(result.version, isNull);
     });
 
     test('probes the anonymous readiness route', () async {

@@ -95,3 +95,14 @@ git tag v1.2.0-alpha && git push origin v1.2.0-alpha   # alpha  (staging backend
 git tag v1.2.0-beta  && git push origin v1.2.0-beta    # beta   (staging backend)
 git tag v1.2.0       && git push origin v1.2.0         # production (prod backend)
 ```
+
+Branch pushes release too, as pre-releases on the Releases page, with no
+Firebase upload and no web deploy. The version comes from `app/pubspec.yaml`
+and the release makes its own tag at the commit it built:
+
+```
+git push origin main            # → v0.1.0-main.<run>  (prod backend)
+git push origin release/1.0     # → v0.1.0-rc.<run>    (staging backend)
+```
+
+A newer push to the same branch cancels the build still running for it.

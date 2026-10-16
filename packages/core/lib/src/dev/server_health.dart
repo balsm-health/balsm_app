@@ -11,13 +11,24 @@ sealed class ServerHealthResult {
 /// The server answered. [statusCode] is what it returned — 200 means healthy,
 /// anything else means something is listening but unwell, which is worth telling
 /// the developer apart from silence.
+///
+/// [details] is every field of the health body as the server sent it (status,
+/// readiness, deployed version, uptime…), so the row can show what is running
+/// without the probe having to know the shape.
 final class ServerHealthy extends ServerHealthResult {
-  const ServerHealthy({required this.statusCode, required this.elapsed});
+  const ServerHealthy({required this.statusCode, required this.elapsed, this.details = const {}});
 
   final int statusCode;
   final Duration elapsed;
+  final Map<String, Object?> details;
 
   bool get isOk => statusCode == 200;
+
+  /// The deployed backend version, when the server reports one.
+  String? get version => switch (details['version']) {
+        final String v when v.isNotEmpty => v,
+        _ => null,
+      };
 }
 
 /// No usable answer: timeout, DNS failure, refused connection, TLS error.
@@ -62,6 +73,7 @@ class ServerHealthProbe {
       return ServerHealthy(
         statusCode: res.statusCode ?? 0,
         elapsed: DateTime.now().difference(started),
+        details: _details(res.data),
       );
     } on DioException catch (e) {
       return ServerUnreachable(_describe(e));
@@ -70,6 +82,16 @@ class ServerHealthProbe {
     } finally {
       dio.close(force: true);
     }
+  }
+
+  // `/api/v1/health` answers with a flat object; the module health routes wrap
+  // theirs in `data`. Either way the fields come out flat, and a body that is
+  // not a JSON object (an HTML error page from a proxy) gives none.
+  static Map<String, Object?> _details(Object? body) {
+    if (body is! Map) return const {};
+    final inner = body['data'];
+    final fields = inner is Map ? inner : body;
+    return {for (final e in fields.entries) '${e.key}': e.value};
   }
 
   // Short, developer-readable, and never the raw exception — a dio message can

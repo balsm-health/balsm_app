@@ -25,6 +25,15 @@ Future<void> initSentry() async {
     // carries get the same scrub as everything else.
     options.beforeSendFeedback = (event, hint) => _scrub(event);
   });
+
+  // `brand` and `flavor` as tags, the names product analytics uses for the
+  // same build fields, so both portals filter builds alike. `environment`
+  // above already carries the flavor, but says nothing about the brand.
+  final config = FlavorConfig.current;
+  await Sentry.configureScope((scope) async {
+    await scope.setTag('brand', config.brand.name);
+    await scope.setTag('flavor', config.flavor.name);
+  });
 }
 
 /// Scrub an outbound event's breadcrumb `data` maps, plus the two URL-bearing
