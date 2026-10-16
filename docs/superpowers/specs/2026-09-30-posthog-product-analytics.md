@@ -114,7 +114,9 @@ event came from.
 
 The app value comes from `postHogBuildProperties(FlavorConfig)` — a pure function
 so the mapping is unit-testable; `initPostHog` registers each entry after
-`setup()`.
+`setup()`. `initSentry` sets the same two fields as Sentry scope tags, so crash reports
+filter on `flavor` and `brand` by the same names (Sentry's `environment` also
+carries the flavor).
 
 ### Campaign attribution
 

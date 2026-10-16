@@ -26,6 +26,8 @@ First release of the Balsm patient app.
 - A flag per data type for cloud sync, all off by default.
 - Dev Config's "Check connection" shows the backend's deployed version
   next to the result, and every field of its health response under it.
+- Crash reports carry `flavor` and `brand` tags, the same fields product
+  analytics already sends, so both portals filter builds the same way.
 - A "Beta" ribbon (Arabic: "إطلاق تجريبي") over every screen, behind the
   `beta_banner` flag.
 - iOS privacy manifest, and the export-compliance declaration.
