@@ -39,6 +39,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   // Connection check (design: Backend section, above the preset list).
   _HealthState _health = _HealthState.idle;
   String _healthMsg = '';
+  Map<String, Object?> _healthDetails = const {};
 
   final _store = DevConfigStore.instance;
   final _buffer = DevLogBuffer.instance;
@@ -1329,12 +1330,36 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: BalsmColors.border),
         ),
-        child: Row(children: [
-          _healthButton(),
-          const SizedBox(width: 8),
-          Expanded(child: _healthStatus()),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            _healthButton(),
+            const SizedBox(width: 8),
+            Expanded(child: _healthStatus()),
+          ]),
+          if (_healthDetails.isNotEmpty) _healthDetailsList(),
         ]),
       );
+
+  // Every field the server put in its health body, in the order it sent them —
+  // the deployed version, readiness and the reason when it is not ready. Values
+  // are selectable so a version or timestamp can be pasted into a bug report.
+  Widget _healthDetailsList() {
+    const key = TextStyle(fontFamily: _kMono, fontSize: 11, color: BalsmColors.fg4);
+    const value = TextStyle(fontFamily: _kMono, fontSize: 11, color: BalsmColors.fg2);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        for (final e in _healthDetails.entries)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(width: 120, child: Text(e.key, style: key)),
+              Expanded(child: SelectableText(e.value == null ? '—' : '${e.value}', style: value)),
+            ]),
+          ),
+      ]),
+    );
+  }
 
   Widget _healthButton() {
     final checking = _health == _HealthState.checking;
@@ -1400,6 +1425,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     setState(() {
       _health = _HealthState.checking;
       _healthMsg = '';
+      _healthDetails = const {};
     });
 
     final target = _currentBaseUrl;
@@ -1410,9 +1436,14 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       switch (result) {
         // A server that answers non-200 is reachable but unwell — worth telling
         // apart from silence, so the status code is shown either way.
-        case ServerHealthy(:final statusCode, :final elapsed, :final isOk):
+        case ServerHealthy(:final statusCode, :final elapsed, :final isOk, :final version, :final details):
           _health = isOk ? _HealthState.ok : _HealthState.fail;
-          _healthMsg = '$statusCode ${isOk ? 'OK' : 'Unhealthy'} · ${elapsed.inMilliseconds}ms';
+          _healthMsg = [
+            '$statusCode ${isOk ? 'OK' : 'Unhealthy'}',
+            if (version != null) 'v$version',
+            '${elapsed.inMilliseconds}ms',
+          ].join(' · ');
+          _healthDetails = details;
         case ServerUnreachable(:final reason):
           _health = _HealthState.fail;
           _healthMsg = reason;
@@ -1444,6 +1475,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       // one — "200 OK" next to a backend nobody has actually reached yet.
       _health = _HealthState.idle;
       _healthMsg = '';
+      _healthDetails = const {};
     });
     try {
       await widget.controller.reconfigure(preset);

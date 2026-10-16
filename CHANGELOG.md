@@ -24,6 +24,8 @@ First release of the Balsm patient app.
   define, with a Dev Config section to force one on a device
   (`docs/feature-flags.md`).
 - A flag per data type for cloud sync, all off by default.
+- Dev Config's "Check connection" shows the backend's deployed version
+  next to the result, and every field of its health response under it.
 - A "Beta" ribbon (Arabic: "إطلاق تجريبي") over every screen, behind the
   `beta_banner` flag.
 - iOS privacy manifest, and the export-compliance declaration.
