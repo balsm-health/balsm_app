@@ -18,8 +18,7 @@ name: Release
 # step and still upload an unsigned artifact. See docs/ci-secrets.md.
 on:
   push:
-    # TEMPORARY: feature/mvp is here to try the branch release before main.
-    branches: [main, 'release/**', feature/mvp]
+    branches: [main, 'release/**']
     # The tags branch pushes create are made with GITHUB_TOKEN, which starts no
     # workflow; the exclusions keep it that way if a person pushes one by hand.
     tags: ['v*', '!v*-main.*', '!v*-rc.*']
