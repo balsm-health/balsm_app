@@ -69,10 +69,20 @@ void main() {
       expect(out['medication'], '[redacted]');
     });
 
-    test(r'$-prefixed SDK properties pass through untouched', () {
-      final out = scrubPostHogProperties({r'$screen_name': '/meds', r'$app_version': '1.2.0'});
-      expect(out[r'$screen_name'], '/meds');
-      expect(out[r'$app_version'], '1.2.0');
+    test(r'$screen_name passes through as a route; an id in it is masked', () {
+      expect(scrubPostHogProperties({r'$screen_name': '/medications'})[r'$screen_name'], '/medications');
+      final masked = scrubPostHogProperties({r'$screen_name': '/medications/3f2a9c1e-77b0-4d2b-9e0a-5c1d2e3f4a5b'});
+      expect(masked[r'$screen_name'], isNot(contains('3f2a9c1e')));
+    });
+
+    test(r'every other $ key is dropped — $set would write onto the person', () {
+      final out = scrubPostHogProperties({
+        r'$set': {'email': 'patient@example.com', 'dob': '1990-01-01'},
+        r'$set_once': {'condition': 'diabetes'},
+        r'$app_version': '1.2.0',
+        'count': 1,
+      });
+      expect(out, {'count': 1});
     });
 
     test('null values are dropped, not redacted to null', () {
@@ -120,21 +130,19 @@ void main() {
       expect(client.captures.single.props, {'log_message': 'retry exhausted', 'level': 'warning'});
     });
 
-    test('logError carries the exception TYPE, never its message text', () async {
+    test('logError carries the exception TYPE, never its text or the caller message', () async {
       final client = _FakePostHogClient();
       PostHogAnalyticsLogger(client: client).logError(
         FormatException('patient dob 1990-01-01 is invalid'),
-        message: 'mint failed',
+        // What FlutterError.onError passes: the failing widget, key included.
+        message: "building QuickLogRow-[<'pain_migraine_true'>]",
         fatal: true,
       );
       await pumpEventQueue();
 
       final props = client.captures.single.props!;
       expect(client.captures.single.event, kPostHogErrorEvent);
-      expect(props['type'], 'FormatException');
-      expect(props['level'], 'fatal');
-      expect(props['log_message'], 'mint failed');
-      expect(props.values.join(' '), isNot(contains('1990-01-01')));
+      expect(props, {'type': 'FormatException', 'level': 'fatal'});
     });
 
     test('setUser identifies with the opaque id; null resets', () async {

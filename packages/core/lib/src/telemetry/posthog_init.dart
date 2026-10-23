@@ -59,9 +59,15 @@ Future<void> initPostHog({
     // going through PostHogAnalyticsLogger still cannot carry PHI. Natively
     // captured events (lifecycle, `$rageclick`) do not run these callbacks —
     // they carry SDK-generated `$` properties only and no app data at all.
+    // Super properties (registered below) are merged natively after this runs.
     ..beforeSend = [
       (event) {
         event.properties = scrubPostHogProperties(event.properties);
+        // Person properties are never set from the app. They are attached to
+        // the identified patient and outlive the event, so they are dropped
+        // whole rather than scrubbed key by key.
+        event.userProperties = null;
+        event.userPropertiesSetOnce = null;
         return event;
       },
     ];
