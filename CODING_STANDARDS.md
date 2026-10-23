@@ -86,7 +86,7 @@ vendored `*/skills/**` trees, which are installed third-party content.
 Analyze, tests, coverage and the web, Android and iOS builds run only when a
 push changes something they depend on since the last green CI run on the pull
 request. The **Build needed?** job decides (`.github/scripts/ci-needs-build.sh`).
-A push of docs, `*.md`, editor or agent config, another workflow, or only a
+A push of docs, `*.md`, editor or agent config, another workflow file, or only a
 pubspec `version:` line skips them, and the pull request keeps its last green status.
 
 ## 6. Flutter Performance
