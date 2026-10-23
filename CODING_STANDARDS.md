@@ -81,6 +81,14 @@ need exemptions, and exemptions are what let 146 bad paths hide in
 `.claude/agents/**` on the first pass. The only exclusions left are the
 vendored `*/skills/**` trees, which are installed third-party content.
 
+### What CI rebuilds on a pull request
+
+Analyze, tests, coverage and the web, Android and iOS builds run only when a
+push changes something they depend on since the last green CI run on the pull
+request; the **Build needed?** job decides (`.github/scripts/ci-needs-build.sh`).
+A push of docs, `*.md`, editor or agent config, another workflow, or only a
+pubspec `version:` line skips them and the pull request keeps its green status.
+
 ## 6. Flutter Performance
 
 - `const` constructors wherever possible
