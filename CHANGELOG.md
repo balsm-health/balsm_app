@@ -74,6 +74,8 @@ First release of the Balsm patient app.
 
 ### Fixed
 
+- Opening Account details no longer throws "setState() called during build":
+  the loaded gender now reaches the app state after the first frame.
 - The update manifest listed a 0.2.0 that was never built, so every install
   was offered an update that did not exist.
 - A minimum version above every release on offer no longer blocks all
