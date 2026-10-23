@@ -74,10 +74,14 @@ jobs:
             3. Set `version:` in app/pubspec.yaml to the BASE version raised by
                that type, with the base build number + 1. Always compute from
                the base, never from the PR's current value.
-            4. Rename the top heading of CHANGELOG.md to `## [<new name>] - Unreleased`.
-               If the PR added no line under that section, add one in the right
-               group (Added / Changed / Fixed / Removed / Security), written as
-               §9 asks: what changed and why it matters to a patient.
+            4. In CHANGELOG.md, open a NEW section `## [<new name>] - Unreleased`
+               directly above the base branch's top section. Never rename or
+               edit the existing sections' headings. Move the lines this PR
+               added (compare CHANGELOG.md with the base) out of the older
+               sections into the new one, under the same group headings
+               (Added / Changed / Fixed / Removed / Security, only those used).
+               If the PR added no line, write one, as §9 asks: what changed and
+               why it matters to a patient.
             5. Run `bash .github/scripts/check-version-bump.sh ${{ github.event.pull_request.base.sha }}`
                and make sure it passes.
             6. Commit only app/pubspec.yaml and CHANGELOG.md, with the message

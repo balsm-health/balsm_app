@@ -44,6 +44,8 @@ First release of the Balsm patient app.
 
 ### Changed
 
+- Each app version now keeps its own changelog section, newest first, so the
+  changelog lists every version built instead of folding them into one.
 - Every pull request that changes the shipped app now raises the app version
   above the branch it merges into. Claude raises it on the pull request when
   the author has not, and a CI check blocks one that still does not, so each
