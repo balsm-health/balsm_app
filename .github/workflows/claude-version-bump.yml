@@ -50,7 +50,9 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Commits through GitHub's API, so they are signed and pass the
-          # signed-commits rule on main.
+          # signed-commits rule on main. The commit tool this adds
+          # (mcp__github_file_ops__commit_files) must also be in --allowedTools
+          # below: with an explicit prompt the action does not allow it itself.
           use_commit_signing: true
           prompt: |
             REPO: ${{ github.repository }}
@@ -83,4 +85,4 @@ jobs:
             7. Post one short PR comment: old → new version and the one-line
                reason for the type you chose.
           claude_args: |
-            --allowedTools "Read,Edit,Bash(git diff:*),Bash(git show:*),Bash(git log:*),Bash(git status:*),Bash(bash .github/scripts/check-version-bump.sh:*),Bash(gh pr comment:*),Bash(gh pr view:*)"
+            --allowedTools "Read,Edit,mcp__github_file_ops__commit_files,Bash(git diff:*),Bash(git show:*),Bash(git log:*),Bash(git status:*),Bash(bash .github/scripts/check-version-bump.sh:*),Bash(gh pr comment:*),Bash(gh pr view:*)"

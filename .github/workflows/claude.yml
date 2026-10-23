@@ -35,6 +35,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Commit through GitHub's API so Claude's commits are signed: main
+          # requires signed commits, and an unsigned one blocks the PR.
+          use_commit_signing: true
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
