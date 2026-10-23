@@ -45,8 +45,9 @@ First release of the Balsm patient app.
 ### Changed
 
 - Every pull request that changes the shipped app now raises the app version
-  above the branch it merges into, and a CI check blocks one that does not, so
-  each merged build is identifiable by its version alone.
+  above the branch it merges into. Claude raises it on the pull request when
+  the author has not, and a CI check blocks one that still does not, so each
+  merged build is identifiable by its version alone.
 - Care-team sync to Balsm Cloud is off. Only a provider's text ever synced;
   attached files and links stayed on the device.
 - Social sign-in is off in the env template, which had it on with placeholder

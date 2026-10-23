@@ -27,7 +27,8 @@ Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm
   `CODING_STANDARDS.md` §9 (fix → patch, feature → minor, breaking → major,
   build number +1; packages carry no version), renames the top `CHANGELOG.md`
   heading to match, and adds a line under it. CI's **Version raised** check
-  enforces the raise. Never add a version to the live
+  enforces the raise, and the Claude version-bump workflow commits it to the
+  pull request when it is missing. Never add a version to the live
   `app/web/version/<brand>.json` outside a release.
 - A feature that may need switching off without a release goes behind a flag
   (`CODING_STANDARDS.md` §8, `docs/feature-flags.md`).

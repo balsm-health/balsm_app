@@ -4,6 +4,7 @@ name: Version bump
 # app/pubspec.yaml above the base branch (CODING_STANDARDS.md §9). Runs in the
 # merge queue too: two PRs that both raised 0.1.0+9 → 0.1.1+10 each pass on
 # their own, and only the queue sees the second one landing on top of the first.
+# claude-version-bump.yml raises it for the author; this is the gate.
 
 on:
   pull_request:
@@ -20,43 +21,6 @@ jobs:
           fetch-depth: 0
 
       - name: Compare app version with the base branch
+        run: bash .github/scripts/check-version-bump.sh "$BASE_SHA"
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-        run: |
-          # What ships: everything under app/, packages/ and modules/ except
-          # tests and docs. A change outside these (CI, docs, tooling) needs
-          # no version.
-          changed=$(git diff --name-only "$BASE_SHA"...HEAD -- app packages modules \
-            ':(exclude)**/test/**' ':(exclude)**/integration_test/**' ':(exclude)**/*.md')
-          if [ -z "$changed" ]; then
-            echo "No shipped code changed; no version needed."
-            exit 0
-          fi
-
-          read_version() { sed -n 's/^version: *\([0-9][0-9.]*+[0-9][0-9]*\).*/\1/p'; }
-          base=$(git show "$BASE_SHA:app/pubspec.yaml" | read_version)
-          head=$(read_version < app/pubspec.yaml)
-          [ -n "$base" ] && [ -n "$head" ] || { echo "::error::Cannot read version: base='$base' head='$head'"; exit 1; }
-          echo "Base $base → this change $head"
-
-          base_name=${base%+*}; base_build=${base#*+}
-          head_name=${head%+*}; head_build=${head#*+}
-
-          fail=0
-          # The name must rise: fix → PATCH, feature → MINOR, breaking → MAJOR.
-          if [ "$head_name" = "$base_name" ] || \
-             [ "$(printf '%s\n%s\n' "$base_name" "$head_name" | sort -V | tail -1)" != "$head_name" ]; then
-            echo "::error file=app/pubspec.yaml::Version name $head_name must be above $base_name (fix → PATCH, feature → MINOR, breaking → MAJOR)."
-            fail=1
-          fi
-          # Stores reject a build number they have already seen.
-          if [ "$head_build" -le "$base_build" ]; then
-            echo "::error file=app/pubspec.yaml::Build number +$head_build must be above +$base_build."
-            fail=1
-          fi
-          if [ "$fail" = 1 ]; then
-            echo "Changed shipped files:"; echo "$changed" | head -20
-            echo "If another PR raised the version first, merge the base branch and raise it again."
-            exit 1
-          fi
-          echo "Version raised."

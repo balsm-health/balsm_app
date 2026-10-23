@@ -166,6 +166,12 @@ base branch it merges into, released or not. What ships is everything under
 - The **Version raised** check (`.github/workflows/version-bump.yml`) fails a
   pull request, or a merge-queue entry, whose shipped code changed while the
   name or build number did not rise above the base branch.
+- You rarely raise it by hand: on every push to a pull request,
+  `.github/workflows/claude-version-bump.yml` runs the same check and, when
+  the raise is missing, has Claude pick the type from the diff, raise the
+  version and the changelog heading, and commit them (signed) to the branch.
+  Pull from the branch before your next push. Pull requests from forks are
+  skipped and raise it by hand.
 
 ### The changelog
 
