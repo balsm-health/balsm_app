@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main, develop, 'release/**']
 
-# A new push to a pull request supersedes the run still going for the last one.
+# A new push to a pull request cancels the run still going for the last one.
 # Pushes to main/develop/release keep every run.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
