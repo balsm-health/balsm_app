@@ -10,17 +10,12 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.1.2] - Unreleased
+## [0.1.1] - Unreleased
 
 ### Changed
 
 - Pull request CI re-runs analyze, tests and coverage only for Dart changes;
   a change to native Android, iOS or web platform code alone just rebuilds.
-
-## [0.1.1] - Unreleased
-
-### Changed
-
 - Pull request CI skips analyze, tests and the web, Android and iOS builds when
   nothing they depend on changed since the last green run, such as a docs,
   changelog or version-only push, and cancels a run a newer push replaced.
