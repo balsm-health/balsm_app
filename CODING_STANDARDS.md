@@ -141,29 +141,31 @@ both steps itself, in the same change, without being asked.
 
 ### The version
 
-`version:` in `app/pubspec.yaml` is `MAJOR.MINOR.PATCH+BUILD`. It names the
-**next release**, so it moves when a change makes that release bigger, not once
-per commit.
+`version:` in `app/pubspec.yaml` is `MAJOR.MINOR.PATCH+BUILD`, and it is the
+only version in the repo: the packages under `packages/` and `modules/` ship
+inside the app, never on their own, so they carry none.
+
+**Every pull request that changes what ships raises it**, compared with the
+base branch it merges into, released or not. What ships is everything under
+`app/`, `packages/` and `modules/` except tests and docs.
 
 | The change | Raise | Example |
 |---|---|---|
-| Bug fix, hotfix, security fix, copy or visual correction | PATCH | `0.1.0` → `0.1.1` |
+| Bug fix, hotfix, security fix, copy or visual correction, refactor, dependency bump | PATCH | `0.1.0` → `0.1.1` |
 | New feature, or new behaviour a patient can notice | MINOR, PATCH back to 0 | `0.1.1` → `0.2.0` |
 | Breaking: data that cannot be read by the previous version, a removed feature, a raised minimum OS | MAJOR, the rest back to 0 | `0.2.0` → `1.0.0` |
-| Docs, tests, CI, tooling, refactor with no change in behaviour | nothing | |
+| Only docs, tests, CI or tooling | nothing | |
 
-- **Compare with the last released version**, which is the newest *dated*
-  section of `CHANGELOG.md` (a section still marked `Unreleased` has not
-  shipped; before the first release there is none, and the version stays as
-  it is). If the pubspec is already ahead of it by at
-  least what your change needs, leave it: a fix landing on an unreleased
-  `0.2.0` stays `0.2.0`. If your change needs more (a feature landing on an
-  unreleased `0.1.1`), raise it to that.
-- **`+BUILD` goes up by one every time the version name changes**, and never
-  goes down or resets. Stores reject a build number they have already seen.
+- **`+BUILD` goes up by one with every raise**, and never goes down or resets.
+  Stores reject a build number they have already seen.
+- A pull request raises once, by its largest change: a fix and a feature
+  together is one MINOR raise.
 - A hotfix is a PATCH raise on the released line.
-- When a pull request conflicts on the version line, take the higher version
-  and apply the rule again.
+- When another pull request raised the version first, merge the base branch,
+  take its version and raise again from there.
+- The **Version raised** check (`.github/workflows/version-bump.yml`) fails a
+  pull request, or a merge-queue entry, whose shipped code changed while the
+  name or build number did not rise above the base branch.
 
 ### The changelog
 
