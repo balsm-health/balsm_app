@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 
 import '../../domain/entities/care_provider.dart';
 import '../../domain/value_objects/ids.dart';
+import '../../domain/value_objects/care_provider_file.dart';
 
 /// Persistence port for the patient's care team.
 ///
@@ -21,22 +22,31 @@ import '../../domain/value_objects/ids.dart';
 /// into every profile read would cost every caller a join it does not use.
 abstract class CareProvidersDataSource extends ProfileDataSource<CareProviderId, CareProvider>
     implements WatchableScopedDataSource<CareProviderId, CareProvider, HealthProfileId> {
-  /// Vault-relative paths of the files attached to [providerId], oldest first.
+  /// What is attached to [providerId], oldest first — vault files and links
+  /// in one list, each carrying its own [CareFileKind].
   ///
-  /// Attachments are a SET of paths, not keyed records — there is no id to
+  /// Attachments are a SET of locators, not keyed records — there is no id to
   /// address one by, and `put(path, path)` would be a key/value pair in name
   /// only. So they keep a narrow surface here rather than a forced
   /// [ScopedDataSource]; the verbs still follow the base contract so the two
   /// read alike at a call site.
-  Future<List<String>> findFiles(CareProviderId providerId);
+  Future<List<CareProviderFile>> findFiles(CareProviderId providerId);
 
-  /// Emits [providerId]'s file paths and again on every change.
-  Stream<List<String>> watchFiles(CareProviderId providerId);
+  /// Emits [providerId]'s attachments and again on every change.
+  Stream<List<CareProviderFile>> watchFiles(CareProviderId providerId);
 
   /// Attaches the vault file at [path]. Idempotent — attaching the same path
   /// twice leaves one row.
   Future<void> putFile(CareProviderId providerId, String path);
 
-  /// Detaches [path]. The bytes in the user file store are not touched.
-  Future<void> deleteFile(CareProviderId providerId, String path);
+  /// Attaches [url] as a link. Nothing is fetched; the URL is stored as typed
+  /// and opened externally on tap. Idempotent, like [putFile].
+  ///
+  /// Callers must screen [url] with [isStorableLink] first — the data source
+  /// stores what it is given.
+  Future<void> putLink(CareProviderId providerId, String url);
+
+  /// Detaches [locator] — a vault path or a URL. Bytes in the user file store
+  /// are not touched.
+  Future<void> deleteFile(CareProviderId providerId, String locator);
 }

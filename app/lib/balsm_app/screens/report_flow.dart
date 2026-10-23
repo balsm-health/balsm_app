@@ -288,7 +288,11 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
             child: Row(children: [
-              RoundBtn(icon: step == 0 ? LucideIcons.x : backArrow(context), ghost: true, onTap: back),
+              RoundBtn(
+                  icon: step == 0 ? LucideIcons.x : backArrow(context),
+                  semanticLabel: step == 0 ? s.strings.common.a11y_close : s.strings.common.a11y_back,
+                  ghost: true,
+                  onTap: back),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(s.strings.checkin.full_checkin,

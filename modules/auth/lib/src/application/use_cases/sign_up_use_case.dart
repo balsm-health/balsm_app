@@ -39,7 +39,7 @@ class SignUpUseCase {
     String countryCode,
   ) async {
     try {
-      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.register);
+      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.continueFlow);
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));

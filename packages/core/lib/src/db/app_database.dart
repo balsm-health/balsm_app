@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/value_objects/health_profile_id.dart';
 import '../domain/value_objects/user_id.dart';
-// Conditional executor: native (dart:ffi) on device, deferred-throw on web.
-import 'database_connection_web.dart' if (dart.library.ffi) 'database_connection_io.dart';
+// Conditional executor: SQLCipher (dart:ffi) on device, encrypted WASM SQLite on web.
+import 'database_connection_io.dart' if (dart.library.js_interop) 'database_connection_web.dart';
 
 part 'app_database.g.dart';
 
@@ -53,8 +53,12 @@ class AppDatabase extends _$AppDatabase {
           await _ensureColumn('prescription', 'attachment_kind', 'TEXT');
           await _ensureColumn('check_in_symptom', 'urine_color', 'TEXT');
           await _ensureColumn('check_in_symptom', 'urine_ml', 'INTEGER');
+          await _ensureColumn('medications', 'notes', 'TEXT');
           await _ensureColumn('check_in_symptom', 'blood', 'INTEGER NOT NULL DEFAULT 0');
           await _ensureColumn('care_provider', 'map_url', 'TEXT');
+          // Pre-existing attachment rows are all vault files, which is exactly
+          // what the default backfills.
+          await _ensureColumn('care_provider_file', 'kind', "TEXT NOT NULL DEFAULT 'file'");
           // Cloud-sync bookkeeping (FR-507/FR-508). Nullable so pre-existing rows
           // migrate without a backfill; the sync service treats a null updated_at
           // as created_at.
@@ -272,13 +276,22 @@ const _phiSchema = <String>[
   )''',
   'CREATE INDEX IF NOT EXISTS idx_care_provider_profile ON care_provider(health_profile_id)',
   // A provider's business card and files (attachments.jsx AttachmentGallery).
-  // `path` is vault-relative — the bytes live encrypted in the user file store,
-  // never in the database and never in plaintext on disk.
+  //
+  // `path` is the locator and `kind` says how to read it:
+  //   'file' — vault-relative; the bytes live encrypted in the user file store,
+  //            never in the database and never in plaintext on disk.
+  //   'link' — an absolute http(s) URL the patient pasted. Nothing is fetched;
+  //            it is opened externally on tap.
+  //
+  // One column rather than a second nullable `url`: `path` is NOT NULL and
+  // SQLite cannot drop that, so a link row would have had to carry a dummy
+  // path. A discriminator keeps every row honest about what it holds.
   '''
   CREATE TABLE IF NOT EXISTS care_provider_file (
     id TEXT PRIMARY KEY,
     care_provider_id TEXT NOT NULL REFERENCES care_provider(id) ON DELETE CASCADE,
     path TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'file',
     created_at INTEGER NOT NULL
   )''',
   'CREATE INDEX IF NOT EXISTS idx_care_provider_file_provider ON care_provider_file(care_provider_id)',
@@ -324,7 +337,8 @@ const _phiSchema = <String>[
     schedule_config TEXT NOT NULL,
     start_date TEXT NOT NULL,
     end_date TEXT,
-    is_controlled INTEGER NOT NULL DEFAULT 0
+    is_controlled INTEGER NOT NULL DEFAULT 0,
+    notes TEXT
   )''',
   '''
   CREATE TABLE IF NOT EXISTS dose_events (

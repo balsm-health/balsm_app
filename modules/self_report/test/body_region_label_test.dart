@@ -96,4 +96,26 @@ void main() {
     expect(site.region.id, 'liver');
     expect(site.tissue, BodyTissue.organ);
   });
+
+  test('back-of-arm bones are selectable on the bone back view, with labels', () {
+    const backArms = [
+      Bone.bk_l_upper_arm,
+      Bone.bk_r_upper_arm,
+      Bone.bk_l_elbow,
+      Bone.bk_r_elbow,
+      Bone.bk_l_forearm,
+      Bone.bk_r_forearm,
+      Bone.bk_l_hand,
+      Bone.bk_r_hand,
+    ];
+    final back = BodyTissue.bone.regions(BodyView.back);
+    for (final r in backArms) {
+      expect(back, contains(r));
+      expect(r.view, BodyView.back);
+      expect(r.label(const Messages()), isNotEmpty);
+      expect(r.label(const Messages_ar()), isNotEmpty);
+    }
+    expect(Bone.bk_l_upper_arm.label(const Messages()), Bone.l_upper_arm.label(const Messages()));
+    expect(Bone.bk_r_hand.label(const Messages_ar()), Bone.r_hand.label(const Messages_ar()));
+  });
 }

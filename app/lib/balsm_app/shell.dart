@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:core/core.dart';
+import 'package:deletion/deletion.dart';
 import 'package:profile/profile.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,7 @@ import 'dev/log_buffer.dart';
 import 'assets.dart';
 import 'kit.dart';
 import 'offline_banner.dart';
+import 'widgets/beta_banner.dart';
 import 'responsive.dart';
 import 'tokens.dart';
 import 'screens/home_screen.dart';
@@ -37,8 +39,11 @@ import 'screens/add_prescription_sheet.dart';
 import 'screens/report_flow.dart';
 import 'widgets/account_switcher.dart';
 import 'widgets/balsm_mark.dart';
+import 'widgets/other_tab_screen.dart';
 import 'deep_link_handler.dart';
+import 'deep_links.dart';
 import 'dev/shake_to_dev_config.dart';
+import '../update/update_gate.dart';
 import 'screens/care_team_screen.dart';
 
 /// Root of the patient app prototype. Watches the Riverpod-owned
@@ -77,7 +82,8 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   final _navKey = GlobalKey<NavigatorState>();
 
   /// Rasterisation root for the desktop menu's Save-screenshot action.
-  final _captureKey = GlobalKey();
+  // Shared with Dev Config, which screenshots the app for bug reports.
+  final _captureKey = appCaptureKey;
 
   void _menuOpen(void Function(BuildContext) opener) {
     final ctx = _navKey.currentContext;
@@ -94,13 +100,39 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   /// stays in the URL fragment, read by the resolve screen itself.
   String? _publicResolveJti;
 
+  /// Web only: `/delete-account` and `/delete-account-cancel` render the
+  /// session-less deletion screens. Google Play requires the deletion route to
+  /// work for someone who no longer has the app, so it must not eject to auth.
+  bool _publicDelete = false;
+  bool _publicDeleteCancel = false;
+
+  /// Web only: another tab owns the on-device database, so this one shows
+  /// [OtherTabScreen] instead of an app that cannot read or write anything.
+  bool _otherTab = false;
+
   @override
   void initState() {
     super.initState();
     if (kIsWeb) {
-      final segs = Uri.base.pathSegments.where((p) => p.isNotEmpty).toList();
-      if (segs.length == 2 && (segs[0] == PublicQrPaths.token || segs[0] == PublicQrPaths.legacyEmergency)) {
-        _publicResolveJti = segs[1];
+      // Same route table as the mobile deep-link handler (deep_links.dart), so a
+      // path means the same thing in a browser and in the app. Only the public
+      // pages replace the shell here — a web visitor to one has no app behind
+      // it to return to. Everything else is left to the mobile-style handler.
+      switch (parseDeepLink(Uri.base)) {
+        case EmergencyCardTarget(:final tokenId):
+          _publicResolveJti = tokenId;
+        case DeleteAccountTarget():
+          _publicDelete = true;
+        case DeleteAccountCancelTarget():
+          _publicDeleteCancel = true;
+        default:
+          break;
+      }
+      // The public pages never touch the database, so they stay usable.
+      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel) {
+        claimDatabaseTab().then((owned) {
+          if (!owned && mounted) setState(() => _otherTab = true);
+        });
       }
     }
     LogBuffer.instance.install();
@@ -127,13 +159,59 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
     if (lifecycle != AppLifecycleState.resumed) return;
-    _syncCareTeam();
+    // Flags first: a sync switched on or off remotely applies to this very run.
+    unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(_syncCareTeam));
+  }
+
+  /// Where the update check keeps its cache. Null when no storage is bound —
+  /// a widget test pumping the shell bare — in which case no check runs.
+  late final AppUpdatePrefs? _updatePrefs = () {
+    try {
+      return AppUpdatePrefs(ref.read(globalKVDataSourceProvider));
+    } catch (_) {
+      return null;
+    }
+  }();
+
+  /// The app-update prompt, dressed for this shell: its brand's manifest and
+  /// name, the patient app's strings, accent and mark.
+  Widget _updateGate(PatientAppState state, Widget child) {
+    final brand = FlavorConfig.currentOrNull?.brand ?? AppBrand.balsm;
+    final name = brand.nameIn(state.lang.value);
+    final u = state.strings.update;
+    return UpdateGate(
+      brand: brand,
+      lang: state.lang.value,
+      prefs: _updatePrefs,
+      look: UpdateLook(
+        rtl: state.rtl,
+        accent: state.accent,
+        mark: const BalsmFlower(size: 52),
+        copy: UpdateCopy(
+          eyebrowNew: u.upd_eyebrow_new,
+          eyebrowRequired: u.upd_eyebrow_required,
+          availableTitle: u.upd_available_t(name),
+          availableBody: u.upd_available_b,
+          requiredTitle: u.upd_required_t(name),
+          requiredBody: u.upd_required_b,
+          current: u.upd_current,
+          newVersion: u.upd_new,
+          whatsNew: u.upd_whats_new,
+          updateNow: u.upd_now,
+          skip: u.upd_skip,
+          fullNotes: u.upd_full_notes,
+          close: state.strings.common.a11y_close,
+        ),
+      ),
+      child: child,
+    );
   }
 
   /// Fire-and-forget: the care-team screen reads from drift, so a failed sync
   /// costs the patient nothing visible — [CareTeamSyncService] records it on
   /// the sync-status provider and retries on the next trigger.
   void _syncCareTeam() {
+    if (!mounted) return;
     final profileId = ref.read(currentProfileIdProvider);
     if (profileId == null) return;
     unawaited(ref.read(careTeamSyncServiceProvider).sync(profileId));
@@ -179,9 +257,11 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       // its own CachedValue — so drop that cache too. Harmless elsewhere.
       final account = ref.read(accountApiProvider);
       if (account is FakeAccountApi) account.language = code;
-      final uid = ref.read(currentUserIdProvider);
-      if (uid != null) await ref.read(readAccountRepositoryProvider).refresh(uid.value);
-      ref.invalidate(accountSummaryProvider);
+      // `refreshAccountSummary` and not a hand-rolled refresh: the summary is
+      // cached under the literal key 'self', not under the user id, so
+      // refreshing by id invalidated a different row and the UI kept serving
+      // the previous locale's name.
+      await refreshAccountSummary(ref);
       // Let the rebuild settle (RTL flips the whole tree) before the capture.
       await Future<void>.delayed(const Duration(milliseconds: 420));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'lang': code}));
@@ -287,9 +367,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                 textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3),
               ),
               // Shake anywhere → Dev Config (read-only in prod).
-              child: RepaintBoundary(
-                key: _captureKey,
-                child: ShakeToDevConfig(navigatorKey: _navKey, child: child!),
+              child: BetaBanner(
+                state: state,
+                child: RepaintBoundary(
+                  key: _captureKey,
+                  child: _otherTab
+                      ? OtherTabScreen(state: state)
+                      : ShakeToDevConfig(navigatorKey: _navKey, child: _updateGate(state, child!)),
+                ),
               ),
             );
           },
@@ -319,10 +404,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                       // whole — app.css `.app-body > .screen:not(.app-shell)`.
                       _publicResolveJti != null
                           ? AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
-                          : state.route == AppRoutes.app
-                              ? const _MainApp()
-                              : const AdaptiveFrame(child: AuthRouter()),
-                      if (_publicResolveJti == null)
+                          : _publicDelete
+                              ? const AdaptiveFrame(child: PublicDeleteScreen())
+                              : _publicDeleteCancel
+                                  ? const AdaptiveFrame(child: PublicDeleteCancelledScreen())
+                                  : state.route == AppRoutes.app
+                                      ? const _MainApp()
+                                      : const AdaptiveFrame(child: AuthRouter()),
+                      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
                         Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
                     ]),
                   ),
@@ -421,7 +510,7 @@ class _MainAppState extends State<_MainApp> {
     // resolves to the "coming next" placeholder rather than crashing.
     final screen = switch (s.tab) {
       AppTab.home => const HomeScreen(),
-      AppTab.map => const MapScreen(),
+      AppTab.map => MapScreen(filterRequest: s.mapFilterRequest),
       AppTab.meds => const MedsScreen(),
       AppTab.records => RecordsScreen(onBack: () => s.setTab(AppTab.home)),
       AppTab.trends => const TrendsScreen(),
@@ -831,14 +920,13 @@ class _RailItem extends StatelessWidget {
 }
 
 /// Branded boot splash (`SplashScreen` in auth.jsx): mark wash
-/// backdrop, mark spinner, then fade over `--dur-slow`.
+/// backdrop and the mark spinner, with no text, then fade over `--dur-slow`.
 class _BootSplash extends StatelessWidget {
   const _BootSplash({required this.state, required this.visible});
   final PatientAppState state;
   final bool visible;
   @override
   Widget build(BuildContext context) {
-    final ar = state.rtl;
     return IgnorePointer(
       ignoring: !visible,
       child: AnimatedOpacity(
@@ -873,13 +961,14 @@ class _BootSplash extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const MarkSpinner(size: 96),
-              const SizedBox(height: 28),
-              Text(state.strings.boot.boot_preparing,
-                  textAlign: TextAlign.center,
-                  style: Typo.subhead(ar: ar).copyWith(fontSize: 17, fontWeight: FontWeight.w700)),
-            ]),
+            // The mark alone, no caption. A screen reader still hears what is
+            // happening: the label that used to be drawn is now spoken.
+            child: Center(
+              child: Semantics(
+                label: state.strings.boot.boot_preparing,
+                child: const MarkSpinner(size: 96),
+              ),
+            ),
           ),
         ]),
       ),

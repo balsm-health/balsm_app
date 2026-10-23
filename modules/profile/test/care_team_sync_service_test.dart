@@ -95,12 +95,13 @@ void main() {
 
   tearDown(() => db.close());
 
-  CareTeamSyncService service(FakeCareTeamApi api) => CareTeamSyncService(
+  CareTeamSyncService service(FakeCareTeamApi api, {Future<bool> Function()? enabled}) => CareTeamSyncService(
         api: api,
         outbox: outbox,
         db: db,
         status: status,
         activeUser: () => user,
+        enabled: enabled,
         onChanged: () => merged++,
       );
 
@@ -358,6 +359,43 @@ void main() {
       await service(api).sync(profileId);
 
       expect(api.upserted, hasLength(1));
+    });
+  });
+
+  group('switched off by the patient', () {
+    test('pushes and pulls nothing, and keeps the queue for later', () async {
+      final id = CareProviderId.uuid();
+      await providers.put(id, provider(id));
+      final api = FakeCareTeamApi(pullRows: [row(id: '00000000-0000-4000-8000-0000000000c1')]);
+      final off = service(api, enabled: () async => false);
+
+      await off.sync(profileId);
+      await off.drain();
+      await off.pull(profileId);
+
+      expect(api.upserted, isEmpty);
+      expect(api.pullCursors, isEmpty, reason: 'a pull would bring the cloud copy back down');
+      expect(merged, 0);
+      expect(await outbox.pendingCount(), 1);
+      expect(status.state.state, SyncState.idle);
+    });
+
+    test('switching back on sends what was held back', () async {
+      final id = CareProviderId.uuid();
+      await providers.put(id, provider(id));
+      final api = FakeCareTeamApi();
+      var on = false;
+      final svc = service(api, enabled: () async => on);
+
+      await svc.sync(profileId);
+      expect(api.upserted, isEmpty);
+
+      on = true;
+      await svc.sync(profileId);
+
+      expect(api.upserted.single.id, id.value);
+      expect(await outbox.pendingCount(), 0);
+      expect(status.state.state, SyncState.synced);
     });
   });
 

@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Repo is standalone at `~/Dev/Balsm/db_benchmark`; it is NOT a dependency of `balsm_app`.
+- Repo is standalone at `../db_benchmark`; it is NOT a dependency of `balsm_app`.
 - Fixed record shape everywhere: `id` (text PK), `indexedInt` (int, indexed), `text` (string), `value` (double), `flag` (bool), `createdAt` (int epoch ms).
 - Row counts (from the SQLite/PowerSync suite): single-insert 1,000; bulk-insert 25,000; readAll/queryIndexed/updateAll/deleteAll operate over a 25,000-row baseline.
 - Deterministic data: seeded `Random(42)`; identical dataset per engine per iteration.
@@ -19,7 +19,7 @@
 - Cells that do not run carry a reason string (`N/A (encryption unsupported)`, `skipped (platform)`) — never a blank or a zero.
 - `queryIndexed` = `WHERE indexedInt > threshold` for SQL engines; documented Dart-side filter for KV engines (Hive, sembast).
 - Commit after every task. Conventional Commits. No push unless asked.
-- Project root is the ABSOLUTE path `/Volumes/Dev/Balsm/db_benchmark` (the plan's earlier `~/Dev/Balsm` was wrong — that dir does not exist).
+- Project root is `../db_benchmark`, a sibling of this repo inside the workspace (an earlier draft of this plan pointed at a path that does not exist).
 
 ---
 
@@ -42,7 +42,7 @@ Also correct from Task 1: `hive_ce_generator` is `^1.0.0` (resolves 1.9.3); `^2.
 ### Task 1: Scaffold project + dependencies
 
 **Files:**
-- Create: `~/Dev/Balsm/db_benchmark/` (Flutter app)
+- Create: `../db_benchmark/` (Flutter app)
 - Modify: `pubspec.yaml`
 - Create: `lib/main.dart` (temporary placeholder, replaced in Task 14)
 
@@ -52,7 +52,7 @@ Also correct from Task 1: `hive_ce_generator` is `^1.0.0` (resolves 1.9.3); `^2.
 - [ ] **Step 1: Create the project**
 
 ```bash
-cd ~/Dev/Balsm
+cd "$(git rev-parse --show-toplevel)/.."   # workspace root
 flutter create --org com.balsm --platforms=android,ios,web,macos,linux,windows db_benchmark
 cd db_benchmark
 git init

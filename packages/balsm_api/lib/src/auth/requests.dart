@@ -1,20 +1,50 @@
 /// PHI constraint (all auth DTOs): never log or stringify these — they
 /// carry emails, device identifiers, and tokens.
 
-/// Why an OTP email is requested. The server sends an email only for these two
-/// flows — email-OTP login was removed to conserve email quota.
-enum OtpPurpose { register, reset }
+/// Why an OTP email is requested.
+///
+/// [continueFlow] is the merged entry: the code that follows a failed
+/// email+password attempt, for an address that may or may not have an account.
+/// The server sends it either way and never says which — that is the point.
+/// [reset] keeps its own path for forgot-password, where the server stays
+/// silent for an address it does not know.
+enum OtpPurpose {
+  continueFlow,
+  reset,
+
+  /// Proving it is them before deleting their account. The server words the
+  /// email accordingly, and sends nothing for an address with no account.
+  deleteAccount;
+
+  /// The spelling the server expects. `continue` is a Dart keyword, so the
+  /// enum value cannot simply be named after it.
+  String get wireName => switch (this) {
+        continueFlow => 'continue',
+        reset => 'reset',
+        deleteAccount => 'delete',
+      };
+}
 
 class RequestOtpRequest {
   const RequestOtpRequest({
     required this.email,
     required this.countryCode,
     required this.purpose,
+    this.language,
   });
   final String email;
   final String countryCode;
   final OtpPurpose purpose;
-  Map<String, dynamic> toJson() => {'email': email, 'country_code': countryCode, 'purpose': purpose.name};
+
+  /// The app's language (`ar`, `en`), which the email is written in. Omitted
+  /// when unknown; the server then falls back to English.
+  final String? language;
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'country_code': countryCode,
+        'purpose': purpose.wireName,
+        if (language != null) 'language': language,
+      };
 }
 
 class VerifyOtpRequest {
@@ -23,16 +53,22 @@ class VerifyOtpRequest {
     required this.code,
     required this.deviceId,
     required this.deviceLabel,
+    this.clientAccountId,
   });
   final String email;
   final String code;
   final String deviceId;
   final String deviceLabel;
+
+  /// Offline-created account id the server may adopt (new emails only).
+  final String? clientAccountId;
+
   Map<String, dynamic> toJson() => {
         'email': email,
         'code': code,
         'device_id': deviceId,
         'device_label': deviceLabel,
+        if (clientAccountId != null) 'client_account_id': clientAccountId,
       };
 }
 

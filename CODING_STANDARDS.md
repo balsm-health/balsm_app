@@ -48,6 +48,47 @@
 - tests per package (`fvm flutter test` in `packages/core` etc.); analyze before committing
 - **code generation**: `dart run tool/build.dart gen` (also `melos run gen`, or the "Flutter: code generation" VS Code task) — runs `build_runner` across every package that depends on it (i69n bundles, drift, json/freezed) and skips the rest; add `--watch` for continuous rebuilds. Regenerate after editing any `*.i69n.json`, drift table, or annotated model.
 
+### No machine-specific paths
+
+Nothing committed may contain an absolute path into somebody's checkout — one
+that starts at a mount point, a user home (`$HOME`, or the Windows equivalent),
+or a hard-coded workspace root. A checkout location is one developer's
+accident, not a fact about the repo: the path is wrong in every other clone and
+on CI, and it publishes the author's directory layout. This applies to docs and
+plans as much as to code and scripts — a runbook nobody else can paste is not a
+runbook.
+
+Write instead:
+
+| Instead of | Use |
+|---|---|
+| `cd <abs-path-to-this-repo>` | `cd "$(git rev-parse --show-toplevel)"`, or document commands as run from the repo root |
+| `<abs-path-to-this-repo>/app/lib/...` | `app/lib/...` (repo-relative) |
+| `<abs-path-to-workspace>/Balsm-Core` | `../Balsm-Core` (sibling repo in the workspace) |
+| `<abs-path-to-workspace>` | "the workspace root", the parent of this repo |
+
+Sometimes an absolute path **is** the subject: a test asserting that a path is
+redacted, a mounted installer volume after `hdiutil attach`, an illustrative
+CLI transcript. Put `machine-path-ok` on that line and both checks skip it. Use
+it for those cases only — not to land a real checkout path.
+
+Enforced twice: `.githooks/pre-commit` scans added lines and blocks the commit
+(enable once per clone with `git config core.hooksPath .githooks`), and the
+`hygiene` CI job greps the whole tracked tree, which is what catches a
+`--no-verify` or a clone that never enabled the hook. Both write their patterns
+with character classes so neither file matches itself — otherwise they would
+need exemptions, and exemptions are what let 146 bad paths hide in
+`.claude/agents/**` on the first pass. The only exclusions left are the
+vendored `*/skills/**` trees, which are installed third-party content.
+
+### What CI rebuilds on a pull request
+
+Analyze, tests, coverage and the web, Android and iOS builds run only when a
+push changes something they depend on since the last green CI run on the pull
+request. The **Build needed?** job decides (`.github/scripts/ci-needs-build.sh`).
+A push of docs, `*.md`, editor or agent config, another workflow file, or only a
+pubspec `version:` line skips them, and the pull request keeps its last green status.
+
 ## 6. Flutter Performance
 
 - `const` constructors wherever possible
@@ -81,3 +122,87 @@
 - Providers holding decrypted PHI are `autoDispose` so plaintext leaves
   memory with the last listener (see `vaultBlobProvider`).
 
+## 8. Feature Flags
+
+- **A feature that may need turning off without a release goes behind a
+  flag**: anything that sends patient data off the device, anything rolled out
+  gradually, anything marked beta. See `docs/feature-flags.md`.
+- **Declare it once** as a `const FeatureFlag` in
+  `app/lib/balsm_app/flags.dart`, add it to `AppFlags.all`, and read it with
+  `flags.isOn(AppFlags.yours)`. Never test a flag by its string key.
+- **Keys** are lowercase letters, digits and underscores (`sync_care`), the
+  set every flag tool accepts.
+- **The fallback is the safe value** for a device that has never been online
+  and for a patient who opted out of analytics. Anything that moves data off
+  the device falls back to off.
+- **No vendor SDK outside its adapter.** A flag tool is a
+  `FeatureFlagSource` in `packages/core/lib/src/flags/`, registered in the
+  bootstrap; `app/test/architecture_test.dart` enforces it.
+- **A flag does not replace the patient's own setting.** Where both exist
+  (care-team sync), the feature runs only with the flag on and the patient's
+  switch on.
+
+## 9. Versioning and the Changelog
+
+These apply to every change, whoever or whatever writes it. An AI agent does
+both steps itself, in the same change, without being asked.
+
+### The version
+
+`version:` in `app/pubspec.yaml` is `MAJOR.MINOR.PATCH+BUILD`, and it is the
+only version in the repo: the packages under `packages/` and `modules/` ship
+inside the app, never on their own, so they carry none.
+
+**Every pull request that changes what ships raises it**, compared with the
+base branch it merges into, released or not. What ships is everything under
+`app/`, `packages/` and `modules/` except tests and docs.
+
+| The change | Raise | Example |
+|---|---|---|
+| Bug fix, hotfix, security fix, copy or visual correction, refactor, dependency bump | PATCH | `0.1.0` → `0.1.1` |
+| New feature, or new behaviour a patient can notice | MINOR, PATCH back to 0 | `0.1.1` → `0.2.0` |
+| Breaking: data that cannot be read by the previous version, a removed feature, a raised minimum OS | MAJOR, the rest back to 0 | `0.2.0` → `1.0.0` |
+| Only docs, tests, CI or tooling | nothing | |
+
+- **`+BUILD` goes up by one with every raise**, and never goes down or resets.
+  Stores reject a build number they have already seen.
+- A pull request raises once, by its largest change: a fix and a feature
+  together is one MINOR raise.
+- A hotfix is a PATCH raise on the released line.
+- When another pull request raised the version first, merge the base branch,
+  take its version and raise again from there.
+- The **Version raised** check (`.github/workflows/version-bump.yml`) fails a
+  pull request, or a merge-queue entry, whose shipped code changed while the
+  name or build number did not rise above the base branch.
+- You rarely raise it by hand: on every push to a pull request,
+  `.github/workflows/claude-version-bump.yml` runs the same check and, when
+  the raise is missing, has Claude pick the type from the diff, raise the
+  version, open its changelog section, and commit them (signed) to the branch.
+  Pull from the branch before your next push. Pull requests from forks are
+  skipped and raise it by hand.
+
+### The changelog
+
+- **Every version has its own section**, newest first. A change that raises
+  the version opens a new `## [0.2.0] - Unreleased` section above the others
+  and puts its lines there; the sections below are never renamed or merged
+  into it, so the changelog lists every version that was ever built.
+- **Every change adds one line to `CHANGELOG.md`**, in the same change, under
+  the top section, in the group that fits: **Added**, **Changed**, **Fixed**,
+  **Removed** or **Security** (only the groups a section uses). That includes
+  changes that raise no version, when they affect how the app is built,
+  released or secured.
+- Not recorded: a pure refactor, a test-only or comment-only change, a typo.
+- **The top section's heading is the pubspec version.**
+- Write for someone who was not there: what changed and why it matters, not
+  how. No "fixed bug", no ticket number on its own, no file list.
+- **Never add a version to `app/web/version/<brand>.json` in a code change.**
+  That file is live and lists released versions only; an entry there is
+  offered to every installed app at once. It is edited at release time
+  (`docs/app-update.md`, "Releasing"). That is also when the released
+  version's section, and every `Unreleased` section below it, gets the
+  release date: they all ship in that build.
+
+`app/test/changelog_test.dart` fails when the top section is not for the
+version being built, a version is listed twice or out of order, a section is
+empty, or an `Unreleased` section sits below a released one.

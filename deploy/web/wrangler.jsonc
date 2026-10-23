@@ -1,0 +1,37 @@
+// Patient web app + deep-link verification files on app.balsm.health.
+//
+//   balsm web balsm <env>                       # builds app/build/web
+//   npx wrangler deploy -c deploy/web/wrangler.jsonc
+//
+// A Worker with static assets, not Pages: a Worker custom domain creates its own
+// DNS record and certificate. app/web/_headers serves the AASA as JSON, and
+// app/web/.well-known/ must stay reachable without a redirect or bot challenge,
+// or iOS Universal Links / Android App Links stop verifying (docs/deep-links.md).
+{
+  "name": "balsm-app-web",
+  "account_id": "11f27ce927c9ed271353738cc6f9d002",
+  "compatibility_date": "2026-09-01",
+  // Only /version/<brand>.json and /whats-new run the Worker (the app-update
+  // manifests, one per brand, served from GitHub with the bundled copy as
+  // fallback, and the release-notes page built from them — see worker.js).
+  // Every other request goes straight to the static assets.
+  "main": "worker.js",
+  "assets": {
+    "directory": "../../app/build/web",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/version/*", "/whats-new"]
+  },
+  "vars": {
+    // Whose release notes /whats-new shows when the link names no brand.
+    "DEFAULT_BRAND": "balsm",
+    // Folder holding the release manifests' source of truth (<brand>.json).
+    // Empty serves the bundled copies only.
+    //
+    // feature/mvp for now: the manifests are not on main yet (a 404 there
+    // would leave every edit waiting on a redeploy). Point this at main once
+    // feature/mvp is merged into it.
+    "VERSION_SOURCE_BASE": "https://raw.githubusercontent.com/balsm-health/balsm_app/feature/mvp/app/web/version"
+  },
+  "routes": [{ "pattern": "app.balsm.health", "custom_domain": true }]
+}

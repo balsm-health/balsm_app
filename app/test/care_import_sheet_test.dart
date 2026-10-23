@@ -2,7 +2,9 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/care_import_sheet.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
@@ -45,8 +47,10 @@ void main() {
     WidgetTester tester, {
     required ContactPicker picker,
     List<CareProvider> team = const [],
+    bool ar = false,
   }) async {
     final state = PatientAppState();
+    if (ar) state.setLang(LanguageCode.ar);
     await tester.pumpWidget(ProviderScope(
       overrides: [
         contactPickerProvider.overrideWithValue(picker),
@@ -129,5 +133,110 @@ void main() {
     expect(find.text(s.strings.care.care_import_unavailable), findsOne);
     expect(find.text(s.strings.care.care_import_pick), findsNothing);
     expect(find.text(s.strings.care.care_import_manual), findsOne);
+  });
+
+  testWidgets('the count eyebrow says how many rows are listed', (tester) async {
+    final s = await pump(tester,
+        picker: _FakePicker([
+          [contact('Dr. Sara Kamal', phone: '+201002345678'), contact('El Ezaby', phone: '+20219600')]
+        ]));
+
+    expect(find.text(s.strings.care.care_import_count('2').toUpperCase()), findsOne);
+  });
+
+  testWidgets('select all ticks every free row, and clear drops them again', (tester) async {
+    final s = await pump(tester,
+        picker: _FakePicker([
+          [contact('Dr. Sara Kamal', phone: '+201002345678'), contact('El Ezaby', phone: '+20219600')]
+        ]));
+
+    // Everything arrives ticked, so the control offers the inverse.
+    expect(find.text(s.strings.care.care_import_clear), findsOne);
+
+    await tester.tap(find.text(s.strings.care.care_import_clear));
+    await tester.pumpAndSettle();
+    expect(find.text(s.strings.care.care_import_none), findsOne);
+    expect(find.text(s.strings.care.care_import_select_all), findsOne);
+
+    await tester.tap(find.text(s.strings.care.care_import_select_all));
+    await tester.pumpAndSettle();
+    expect(find.text(s.strings.care.care_import_cta('2')), findsOne);
+  });
+
+  testWidgets('a row already on the team is not swept up by select all', (tester) async {
+    final s = await pump(
+      tester,
+      picker: _FakePicker([
+        [contact('Dr. Sara Kamal', phone: '01002345678'), contact('El Ezaby', phone: '+20219600')]
+      ]),
+      team: [onTeam('Dr. Sara Kamal', '+201002345678')],
+    );
+
+    // One of the two is already there; importing it again would duplicate it,
+    // so only the free row counts even though both arrived ticked.
+    expect(find.text(s.strings.care.care_import_cta('1')), findsOne);
+
+    await tester.tap(find.text(s.strings.care.care_import_clear));
+    await tester.pumpAndSettle();
+    expect(find.text(s.strings.care.care_import_none), findsOne);
+
+    await tester.tap(find.text(s.strings.care.care_import_select_all));
+    await tester.pumpAndSettle();
+    expect(find.text(s.strings.care.care_import_cta('1')), findsOne);
+  });
+
+  testWidgets('search stays out of the way until the list is long enough to need it', (tester) async {
+    final s = await pump(tester,
+        picker: _FakePicker([
+          [contact('Dr. Sara Kamal', phone: '+201002345678')]
+        ]));
+
+    expect(find.text(s.strings.care.care_import_search), findsNothing);
+  });
+
+  testWidgets('search filters the picked rows and says when nothing matches', (tester) async {
+    final s = await pump(tester,
+        picker: _FakePicker([
+          [for (var i = 0; i < 9; i++) contact('Contact $i', phone: '+2010000000$i')]
+        ]));
+
+    expect(find.text(s.strings.care.care_import_search), findsOne);
+
+    // Searched by number, so the query itself cannot be mistaken for a row
+    // label: only contact 4's phone ends `04`.
+    await tester.enterText(find.byType(TextField), '04');
+    await tester.pumpAndSettle();
+    expect(find.text('Contact 4'), findsOne);
+    expect(find.text('Contact 5'), findsNothing);
+    // Filtering is a view, not a deselection: all nine are still going in.
+    expect(find.text(s.strings.care.care_import_cta('9')), findsOne);
+
+    await tester.enterText(find.byType(TextField), 'Nobody');
+    await tester.pumpAndSettle();
+    expect(find.text(s.strings.care.care_import_no_match), findsOne);
+  });
+
+  testWidgets('lays out in Arabic on a phone without overflowing — the design is RTL-native', (tester) async {
+    // A phone, not the 800x600 default: the row packs a name, an on-team badge
+    // and a type chip across one line, and only a narrow viewport tests that.
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await pump(
+      tester,
+      ar: true,
+      picker: _FakePicker([
+        [for (var i = 0; i < 9; i++) contact('جهة اتصال $i', phone: '+2010000000$i')]
+      ]),
+      team: [onTeam('جهة اتصال 0', '+20100000000')],
+    );
+
+    // Open one row's type chips — the widest thing the sheet can render — with
+    // the search box, the eyebrow, the select-all control and an on-team badge
+    // all on screen at once.
+    await tester.tap(find.byIcon(LucideIcons.chevronDown).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -91,6 +92,63 @@ class DevDiagnostics {
           // Cap the payload; Sentry truncates large contexts anyway.
           'recent': logs.length > 100 ? logs.sublist(logs.length - 100) : logs,
         });
+      },
+    );
+    return id != SentryId.empty();
+  }
+
+  /// Sentry level for a Report bug severity.
+  static SentryLevel levelFor(String severity) => switch (severity) {
+        'low' => SentryLevel.info,
+        'high' => SentryLevel.error,
+        'critical' => SentryLevel.fatal,
+        _ => SentryLevel.warning,
+      };
+
+  /// Sends a Report bug submission to Sentry as its own issue: the title as the
+  /// message, severity as the level, steps and the redacted recent logs as
+  /// context, and [screenshot] (PNG) as an attachment. Returns `false` when
+  /// Sentry has no DSN (the capture yields an empty id).
+  ///
+  /// The title and steps are the reporter's own text and the screenshot is the
+  /// screen as it was — both can show health data. The caller only offers this
+  /// in dev/staging builds.
+  static Future<bool> sendBugReport({
+    required String title,
+    required String steps,
+    required String severity,
+    required List<DevLogEntry> entries,
+    required String envLabel,
+    required String envUrl,
+    required String viewport,
+    Uint8List? screenshot,
+  }) async {
+    final logs = _redactedLogs(entries);
+    final heading = title.trim().isEmpty ? '(untitled)' : title.trim();
+    final id = await Sentry.captureMessage(
+      '[Bug report] $heading',
+      level: levelFor(severity),
+      withScope: (scope) {
+        // One issue per report title, not one pile for every report.
+        scope.fingerprint = ['dev-bug-report', heading];
+        scope.setTag('bug.severity', severity);
+        scope.setTag('bug.screenshot', screenshot == null ? 'no' : 'yes');
+        scope.setContexts('bug_report', {
+          'severity': severity,
+          'steps': steps.trim().isEmpty ? '(none)' : steps.trim(),
+          'env': envLabel,
+          'url': envUrl,
+          'viewport': viewport,
+          'log_total': entries.length,
+          'recent': logs.length > 50 ? logs.sublist(logs.length - 50) : logs,
+        });
+        if (screenshot != null) {
+          scope.addAttachment(SentryAttachment.fromUint8List(
+            screenshot,
+            'screenshot.png',
+            contentType: 'image/png',
+          ));
+        }
       },
     );
     return id != SentryId.empty();

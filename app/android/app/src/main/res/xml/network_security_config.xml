@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What this app will talk to, stated rather than left to defaults.
+
+     * No plain HTTP, to anywhere. Everything goes over TLS.
+     * Only the certificate authorities that ship with Android are trusted. A
+       CA the user (or malware, or a workplace proxy) installed on the phone
+       cannot read or alter the app's traffic.
+
+     These are Android's defaults for the API level the app targets. Writing
+     them here means a library's manifest or a later edit cannot loosen them
+     without it showing up in a diff. -->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system"/>
+    </trust-anchors>
+  </base-config>
+</network-security-config>

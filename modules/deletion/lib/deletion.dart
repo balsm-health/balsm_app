@@ -5,6 +5,7 @@ export 'src/domain/aggregates/deletion_request.dart';
 export 'src/domain/events/deletion_events.dart';
 
 // Application
+export 'src/application/ports/reauth_port.dart';
 export 'src/application/use_cases/request_deletion_use_case.dart';
 export 'src/application/use_cases/cancel_deletion_use_case.dart';
 

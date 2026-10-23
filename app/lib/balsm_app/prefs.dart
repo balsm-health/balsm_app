@@ -29,6 +29,13 @@ class PatientAppPrefs extends ModulePreferences {
   Future<bool> walkthroughSeen() async => await read<bool>('walkthroughSeen') ?? false;
   Future<void> setWalkthroughSeen(bool v) => write('walkthroughSeen', v);
 
+  /// True when neither [signedIn] nor [walkthroughSeen] has ever been
+  /// written — a first launch since install. Anyone who reached an account
+  /// left the walkthrough (which writes [walkthroughSeen]), so an account in
+  /// the keychain with this true is a leftover from an uninstalled copy (iOS
+  /// keeps keychain items across uninstall; prefs go with the app).
+  Future<bool> isFreshInstall() async => !await contains('signedIn') && !await contains('walkthroughSeen');
+
   /// Last device timezone marker seen on app foreground (FR-023 / gap G9).
   /// Null until first recorded. Non-PHI — a coarse zone name/abbreviation only.
 
@@ -43,6 +50,11 @@ class PatientAppPrefs extends ModulePreferences {
   }
 
   Future<void> setFeedbackSentAt(DateTime v) => write('fbSentAt', v.toUtc().toIso8601String());
+
+  /// Whether the care team is mirrored to Balsm Cloud. On unless the patient
+  /// turned it off in Storage & sync.
+  Future<bool> careCloudSync() async => await read<bool>('careCloudSync') ?? true;
+  Future<void> setCareCloudSync(bool v) => write('careCloudSync', v);
 
   Future<String?> lastTimezone() => read<String>('lastTz');
   Future<void> setLastTimezone(String v) => write('lastTz', v);

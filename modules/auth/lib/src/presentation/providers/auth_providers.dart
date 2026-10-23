@@ -1,6 +1,8 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/offline/offline_account_service.dart';
+import '../../application/offline/offline_password_hasher.dart';
 import '../../application/ports/social_credentials_port.dart';
 import '../../application/use_cases/age_gate_use_case.dart';
 import '../../application/use_cases/recovery_claim_use_case.dart';
@@ -20,6 +22,17 @@ import '../../infrastructure/social/google_credentials_adapter.dart';
 final readAuthRepositoryProvider = Provider<ReadAuthRepository>((ref) {
   return SecureStorageAuthRepository(
     storage: ref.watch(secureStorageProvider),
+    eventBus: ref.watch(eventBusProvider),
+  );
+});
+
+// ── Offline account ───────────────────────────────────────────────────────────
+
+/// Device-only account service: create/unlock/lockout with no network.
+final offlineAccountServiceProvider = Provider<OfflineAccountService>((ref) {
+  return OfflineAccountService(
+    storage: ref.watch(secureStorageProvider),
+    hasher: Argon2idOfflinePasswordHasher(),
     eventBus: ref.watch(eventBusProvider),
   );
 });

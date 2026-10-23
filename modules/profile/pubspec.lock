@@ -82,7 +82,7 @@ packages:
     source: hosted
     version: "2.13.1"
   balsm_api:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "../../packages/balsm_api"
       relative: true
@@ -379,6 +379,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_contacts:
+    dependency: "direct main"
+    description:
+      name: flutter_contacts
+      sha256: "1f492c56cf0c64ce5f7eaca4c2d65bce00e3e5b4f0317e4d0acbde8cad112b4f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
   flutter_local_notifications:
     dependency: transitive
     description:
@@ -1144,14 +1152,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.2"
-  sqlcipher_flutter_libs:
-    dependency: transitive
-    description:
-      name: sqlcipher_flutter_libs
-      sha256: df8eca5a686cbf061246cb7fb7161aec0396c7cae21d394d7d120cf0091cf2cc
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.7"
   sqlite3:
     dependency: transitive
     description:

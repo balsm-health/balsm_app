@@ -63,7 +63,7 @@ void main() {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"code": "otp_expired"}', status: 400));
     final api = DioAuthApi(net: fakeNet(adapter));
     expect(
-      api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG', purpose: OtpPurpose.register)),
+      api.requestOtp(const RequestOtpRequest(email: 'a@b.c', countryCode: 'EG', purpose: OtpPurpose.continueFlow)),
       throwsA(isA<ApiException>().having((e) => e.code, 'code', 'otp_expired')),
     );
   });
@@ -145,5 +145,20 @@ void main() {
     await DioAuthApi(net: fakeNet(adapter)).signOut();
     expect(adapter.requests.single.path, '/auth/sign-out');
     expect(adapter.requests.single.data, isEmpty);
+  });
+
+  test('VerifyOtpRequest sends client_account_id only when set', () {
+    expect(const VerifyOtpRequest(email: 'e', code: 'c', deviceId: 'd', deviceLabel: 'l').toJson(),
+        isNot(contains('client_account_id')));
+    expect(
+        const VerifyOtpRequest(email: 'e', code: 'c', deviceId: 'd', deviceLabel: 'l', clientAccountId: 'x')
+            .toJson()['client_account_id'],
+        'x');
+  });
+
+  test('AuthTokensResponse reads adopted_client_id, defaulting false', () {
+    final base = {'access_token': 'a', 'refresh_token': 'r', 'user_id': 'u'};
+    expect(AuthTokensResponse.fromJson(base).adoptedClientId, isFalse);
+    expect(AuthTokensResponse.fromJson({...base, 'adopted_client_id': true}).adoptedClientId, isTrue);
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/aggregates/medication.dart';
 import '../domain/entities/dose_event.dart';
+import '../domain/services/dose_schedule.dart';
 import '../domain/value_objects/ids.dart';
 import '../infrastructure/drift/drift_medications_data_source.dart';
 
@@ -59,7 +60,7 @@ final todayDosesProvider = FutureProvider<List<TodayDose>>((ref) async {
     };
 
     doses.addAll([
-      for (final at in _occurrencesOn(med, dayStart, dayEnd))
+      for (final at in dosesOn(med, dayStart))
         TodayDose(
           medication: med,
           scheduledAt: at,
@@ -105,9 +106,8 @@ final weekAdherenceProvider = FutureProvider<WeekAdherence>((ref) async {
       }
     }
     for (var i = 0; i < 7; i++) {
-      final dayStart = rangeStart.add(Duration(days: i));
-      final dayEnd = dayStart.add(const Duration(days: 1));
-      for (final at in _occurrencesOn(med, dayStart, dayEnd)) {
+      final dayStart = DateTime(rangeStart.year, rangeStart.month, rangeStart.day + i);
+      for (final at in dosesOn(med, dayStart)) {
         scheduled += 1;
         if (latestBySlot[at.toIso8601String()]?.outcome == DoseOutcome.taken) {
           taken += 1;
@@ -127,34 +127,3 @@ final weekAdherenceProvider = FutureProvider<WeekAdherence>((ref) async {
 final doseHistoryProvider = FutureProvider.autoDispose.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
   return ref.watch(medicationsDataSourceProvider).getDoseEvents(medicationId);
 });
-
-Iterable<DateTime> _occurrencesOn(
-  Medication med,
-  DateTime dayStart,
-  DateTime dayEnd,
-) sync* {
-  if (med.startDate.isAfter(dayEnd)) return;
-  if (med.endDate != null && !med.endDate!.isAfter(dayStart)) return;
-  final cfg = med.scheduleConfig;
-  final matchesDay = switch (med.scheduleType) {
-    ScheduleType.daily => true,
-    ScheduleType.weekly || ScheduleType.custom => (cfg.days ?? const <int>[]).contains(dayStart.weekday),
-  };
-  if (!matchesDay) return;
-
-  for (final hhmm in cfg.times) {
-    final parts = hhmm.split(':');
-    final hour = int.tryParse(parts.first) ?? 0;
-    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-    final at = DateTime(
-      dayStart.year,
-      dayStart.month,
-      dayStart.day,
-      hour,
-      minute,
-    );
-    if (med.startDate.isAfter(at)) continue;
-    if (med.endDate != null && at.isAfter(med.endDate!)) continue;
-    yield at;
-  }
-}

@@ -1,3 +1,5 @@
+import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
@@ -7,10 +9,11 @@ import '../widgets/balsm_mark.dart';
 
 /// In-app rating + feedback.
 ///
-/// The brand's flower is the rating unit rather than stars, and submissions
-/// stay on-device: the team reads them inside Balsm, never an app store. Only
-/// the rating and the send date are retained — the note is not health data and
-/// is not stored after sending.
+/// The brand's flower is the rating unit rather than stars. A submission goes
+/// to the Balsm team through [feedbackReporterProvider] (Sentry's User Feedback
+/// inbox), never an app store. The sheet asks the patient to leave health
+/// details out of the note. On-device, only the rating and the send date are
+/// kept; the note is not stored after sending.
 Future<void> showFeedbackSheet(BuildContext context) => showAppSheet<void>(
       context,
       builder: (_) => const _FeedbackSheet(),
@@ -31,18 +34,19 @@ String _tRecords(PatientAppState s) => s.strings.feedback.fb_t_records;
 String _tMeds(PatientAppState s) => s.strings.feedback.fb_t_meds;
 String _tArabic(PatientAppState s) => s.strings.feedback.fb_t_arabic;
 
-class _FeedbackSheet extends StatefulWidget {
+class _FeedbackSheet extends ConsumerStatefulWidget {
   const _FeedbackSheet();
 
   @override
-  State<_FeedbackSheet> createState() => _FeedbackSheetState();
+  ConsumerState<_FeedbackSheet> createState() => _FeedbackSheetState();
 }
 
-class _FeedbackSheetState extends State<_FeedbackSheet> {
+class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
   int _rating = 0;
   final _selected = <String>{};
   final _note = TextEditingController();
   bool _sent = false;
+  bool _sending = false;
   DateTime? _lastSentAt;
 
   /// Guards the one-shot load below — `didChangeDependencies` runs again on
@@ -79,10 +83,25 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   }
 
   Future<void> _submit() async {
-    if (_rating == 0) return;
-    final prefs = AppScope.of(context).prefs;
-    await prefs?.setFeedbackRating(_rating);
-    await prefs?.setFeedbackSentAt(DateTime.now());
+    if (_rating == 0 || _sending) return;
+    final s = AppScope.of(context);
+    setState(() => _sending = true);
+    final ok = await ref.read(feedbackReporterProvider).send(UserFeedback(
+          rating: _rating,
+          topics: [
+            for (final (id, _) in _topics)
+              if (_selected.contains(id)) id
+          ],
+          note: _note.text,
+        ));
+    if (!mounted) return;
+    if (!ok) {
+      setState(() => _sending = false);
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(s.strings.feedback.fb_failed)));
+      return;
+    }
+    await s.prefs?.setFeedbackRating(_rating);
+    await s.prefs?.setFeedbackSentAt(DateTime.now());
     if (mounted) setState(() => _sent = true);
   }
 
@@ -115,7 +134,12 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
             Expanded(
               child: Text(f.fb_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             ),
-            RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 17,
+                onTap: () => Navigator.of(context).pop()),
           ]),
         ),
         const Divider(height: 1, color: T.ink100),
@@ -193,6 +217,9 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       TextField(
         controller: _note,
         maxLines: null,
+        // A multi-line field's return key adds a line, so tapping anywhere
+        // else is the only way to put the keyboard away (it covers Send).
+        onTapOutside: (_) => FocusScope.of(context).unfocus(),
         minLines: 4,
         style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
         decoration: InputDecoration(
@@ -222,7 +249,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
           accent: s.accent,
           ar: s.rtl,
           // Disabled until a rating is picked — the note alone is not a signal.
-          onTap: _rating == 0 ? null : _submit),
+          onTap: _rating == 0 || _sending ? null : _submit),
     ]);
   }
 

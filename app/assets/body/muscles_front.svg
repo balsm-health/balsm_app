@@ -204,11 +204,11 @@
 <path fill="none" stroke="#a45e49" stroke-width="0.5" stroke-linejoin="round" stroke-linecap="round" d="M65.5216 124.9689C67.3828 125.4418 69.2582 125.8589 71.1445 126.2195C72.3666 126.4531 73.5934 126.6631 74.8236 126.8492"/>
 <path fill="none" stroke="#a45e49" stroke-width="0.5" stroke-linejoin="round" stroke-linecap="round" d="M66.4093 126.8127C67.3323 127.2075 68.2630 127.5845 69.2007 127.9432C70.1278 128.2979 71.0618 128.6348 72.0018 128.9537"/>
 </g><g fill="#c5c1b4" stroke="#a6a29a" stroke-width="0.4">
-    <ellipse id="region-sinuses" fill="#c5c1b4" cx="100" cy="22" rx="14" ry="7"/>
-    <ellipse id="region-l-eye" fill="#c5c1b4" cx="89" cy="28" rx="7" ry="5"/>
-    <ellipse id="region-r-eye" fill="#c5c1b4" cx="111" cy="28" rx="7" ry="5"/>
-    <ellipse id="region-l-ear" fill="#c5c1b4" cx="79" cy="32" rx="5" ry="8"/>
-    <ellipse id="region-r-ear" fill="#c5c1b4" cx="121" cy="32" rx="5" ry="8"/>
-    <ellipse id="region-jaw" fill="#c5c1b4" cx="100" cy="44" rx="14" ry="8"/>
+    <ellipse id="region-sinuses" fill="#FFFFFF00" stroke="none" cx="100" cy="22" rx="14" ry="7"/>
+    <ellipse id="region-l-eye" fill="#FFFFFF00" stroke="none" cx="89" cy="28" rx="7" ry="5"/>
+    <ellipse id="region-r-eye" fill="#FFFFFF00" stroke="none" cx="111" cy="28" rx="7" ry="5"/>
+    <ellipse id="region-l-ear" fill="#FFFFFF00" stroke="none" cx="79" cy="32" rx="5" ry="8"/>
+    <ellipse id="region-r-ear" fill="#FFFFFF00" stroke="none" cx="121" cy="32" rx="5" ry="8"/>
+    <ellipse id="region-jaw" fill="#FFFFFF00" stroke="none" cx="100" cy="44" rx="14" ry="8"/>
 </g>
 </svg>

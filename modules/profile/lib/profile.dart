@@ -11,6 +11,7 @@ export 'src/domain/entities/imported_contact.dart';
 export 'src/domain/events/health_profile_updated.dart';
 export 'src/domain/value_objects/allergy_severity.dart';
 export 'src/domain/value_objects/bmi.dart';
+export 'src/domain/value_objects/care_provider_file.dart';
 export 'src/domain/value_objects/care_provider_type.dart';
 export 'src/domain/value_objects/ids.dart';
 

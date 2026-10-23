@@ -1108,6 +1108,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
+  pasteboard:
+    dependency: "direct main"
+    description:
+      name: pasteboard
+      sha256: fedbe8da188d2f713aa8b01260737342e6e1087534a3ab26e1a719f8d3e8f32f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   path:
     dependency: transitive
     description:
@@ -1324,6 +1332,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.5.2"
+  posthog_flutter:
+    dependency: transitive
+    description:
+      name: posthog_flutter
+      sha256: "189891a7b2ee0306cbcf6a997d8eaeb57665b90c32fe7ce567094a99971293b0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.50.7"
   prescriptions:
     dependency: "direct main"
     description:
@@ -1488,7 +1504,7 @@ packages:
     source: hosted
     version: "6.1.0"
   shared_preferences:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: shared_preferences
       sha256: c3025c5534b01739267eb7d76959bbc25a6d10f6988e1c2a3036940133dd10bf
@@ -1596,14 +1612,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.2"
-  sqlcipher_flutter_libs:
-    dependency: transitive
-    description:
-      name: sqlcipher_flutter_libs
-      sha256: df8eca5a686cbf061246cb7fb7161aec0396c7cae21d394d7d120cf0091cf2cc
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.7"
   sqlite3:
     dependency: transitive
     description:

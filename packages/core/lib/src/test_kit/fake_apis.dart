@@ -106,6 +106,14 @@ class FakeAccountApi implements AccountApi {
   /// right script for the locale being photographed.
   Map<String, String>? displayNameByLanguage;
 
+  /// Per-language given/family names. The home greeting and the avatar
+  /// initials read these, not [displayNameByLanguage] — so setting only the
+  /// display name left an Arabic capture greeting "Nour" in Latin script with
+  /// Latin initials, which is precisely what an Arabic screenshot exists to
+  /// disprove.
+  Map<String, String>? firstNameByLanguage;
+  Map<String, String>? lastNameByLanguage;
+
   /// The language [getSelf] answers with. Public so a screenshot driver can
   /// flip locale without going through the change-language endpoint.
   String get language => _language;
@@ -116,21 +124,43 @@ class FakeAccountApi implements AccountApi {
   String? get handle => _handle;
   set handle(String? value) => _handle = value;
 
+  /// The remaining profile fields [getSelf] answers with. Null keeps the
+  /// endpoint's "not set yet" shape, which is what e2e asserts against; the
+  /// docshots build fills them so captures show a completed profile instead of
+  /// a screen full of empty rows.
+  String? bio;
+  String? gender;
+  String? nationality;
+  String? phone;
+  String? dateOfBirth;
+  String? nationalId;
+
   String? _handle = E2eFixture.handle;
   String? _firstName;
   String? _lastName;
   String _language = E2eFixture.language;
   String _countryCode = E2eFixture.countryCode;
 
+  /// Names the fake reports. Public so a screenshot driver can set them
+  /// without round-tripping through [updateProfile].
+  set firstName(String? value) => _firstName = value;
+  set lastName(String? value) => _lastName = value;
+
   @override
   Future<AccountSelfResponse?> getSelf({CancelToken? cancelToken}) async => AccountSelfResponse(
         id: E2eFixture.userId,
         handle: _handle,
-        firstName: _firstName,
-        lastName: _lastName,
+        firstName: firstNameByLanguage?[_language] ?? _firstName,
+        lastName: lastNameByLanguage?[_language] ?? _lastName,
         displayName: displayNameByLanguage?[_language] ?? E2eFixture.displayName,
+        bio: bio,
+        gender: gender,
+        nationality: nationality,
+        phone: phone,
         countryCode: _countryCode,
         preferredLanguage: _language,
+        dateOfBirth: dateOfBirth,
+        nationalId: nationalId,
       );
 
   @override
@@ -144,6 +174,11 @@ class FakeAccountApi implements AccountApi {
     // Null means "leave unchanged" on the real endpoint; mirror that.
     _firstName = request.firstName ?? _firstName;
     _lastName = request.lastName ?? _lastName;
+    gender = request.gender ?? gender;
+    nationality = request.nationality ?? nationality;
+    phone = request.phone ?? phone;
+    dateOfBirth = request.dateOfBirth ?? dateOfBirth;
+    nationalId = request.nationalId ?? nationalId;
   }
 
   @override
@@ -237,6 +272,14 @@ class FakeGeofenceApi implements GeofenceApi {
 /// which reads as "the map is broken" and makes the screen impossible to test
 /// offline. These are public business listings, not PHI.
 class FakeCareDirectoryApi implements CareDirectoryApi {
+  /// The directory this fake answers from. Defaults to the e2e fixtures, whose
+  /// names are deliberately "E2E …" so a test can never mistake them for real
+  /// places. A screenshot driver passes its own set instead — a store listing
+  /// cannot show a map pinned with "E2E General Hospital".
+  FakeCareDirectoryApi({List<CareEntityResponse>? places}) : places = places ?? _places;
+
+  final List<CareEntityResponse> places;
+
   static const _places = [
     CareEntityResponse(
       id: 'e2e-hospital-1',
@@ -302,7 +345,7 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
   @override
   Future<List<CareEntityResponse>> nearby(NearbyCareQuery query, {CancelToken? cancelToken}) async {
     final text = query.query?.trim().toLowerCase() ?? '';
-    return _places.where((p) {
+    return places.where((p) {
       if (query.type != null && p.type != query.type) return false;
       if (query.radiusKm != null && (p.distanceKm ?? 0) > query.radiusKm!) return false;
       if (text.isEmpty) return true;
@@ -330,7 +373,7 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
 
   @override
   Future<CareEntityResponse?> byId(String id, {double? lat, double? lng, CancelToken? cancelToken}) async {
-    for (final p in _places) {
+    for (final p in places) {
       if (p.id == id) return p;
     }
     return null;

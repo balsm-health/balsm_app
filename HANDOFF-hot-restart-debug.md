@@ -21,7 +21,7 @@ error text/location NOT yet captured — unknown whether it is:
   have invalidated the running binary (macOS kills on signature/binary
   change). Unproven.
 - Amplifier: VS Code multi-root workspace analyzes 22 Dart projects incl.
-  unrelated `/Volumes/Dev/Git/ynmo-revamp-flutter/*`. Recommend
+  an unrelated Flutter checkout elsewhere on the machine. Recommend
   `dart.analysisExcludedFolders` or separate window.
 - Stale tab: deleted file `packages/core/lib/src/domain/value_objects/app_locale.dart`
   still open in editor (harmless; close it).

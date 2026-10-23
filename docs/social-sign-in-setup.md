@@ -35,7 +35,7 @@ a Service ID whose token audience differs from the bundle id the API validates.
 |---|---|---|
 | `GOOGLE_SERVER_CLIENT_ID` | `app/env/shared.json` | Google **Web** client id |
 | `GOOGLE_IOS_CLIENT_ID` | `app/env/shared.json` | Google **iOS** client id |
-| `com.googleusercontent.apps.REPLACE_ME` | `app/ios/Runner/Info.plist` | iOS **reversed** client id |
+| *(no entry today)* | `app/ios/Runner/Info.plist` | iOS **reversed** client id, added as a new URL type — see step 4 |
 | `Google:ClientId` | API `appsettings.Development.json` / `.Local.json` | Google **Web** client id |
 | `Apple:ClientId` | API `appsettings.Development.json` / `.Local.json` | `app.balsm.health` (already correct) |
 
@@ -80,8 +80,21 @@ Search for `REPLACE_ME` to find them all.
      and sign-in fails in production while working in internal testing.
 
 4. **iOS reversed client id.** The iOS client id `123-abc.apps.googleusercontent.com`
-   reverses to `com.googleusercontent.apps.123-abc`. Put that in the second
-   `CFBundleURLTypes` entry in `app/ios/Runner/Info.plist`. Google's console
+   reverses to `com.googleusercontent.apps.123-abc`. Add it as a second
+   `CFBundleURLTypes` entry in `app/ios/Runner/Info.plist`:
+
+   ```xml
+   <dict>
+     <key>CFBundleTypeRole</key><string>Editor</string>
+     <key>CFBundleURLName</key><string>health.balsm.auth.google</string>
+     <key>CFBundleURLSchemes</key>
+     <array><string>com.googleusercontent.apps.123-abc</string></array>
+   </dict>
+   ```
+
+   Only with the real value. The entry was removed because a placeholder there
+   is rejected by App Store Connect (a URL scheme cannot contain `_`), and the
+   build tool refuses a production iOS build with `REPLACE_ME` in that file. Google's console
    shows it directly; a downloaded `GoogleService-Info.plist` has it as
    `REVERSED_CLIENT_ID`. The app does not need that plist file — the client ids
    come from `shared.json`.

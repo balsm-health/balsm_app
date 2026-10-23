@@ -25,7 +25,12 @@ or `melos run run:patient`, or the **"Balsm Patient App (design)"** VS Code laun
 | `app_state.dart` | `PatientAppState` (ChangeNotifier) + `AppScope` |
 | `shell.dart` | tab bar, FAB, routing, `AdaptiveFrame` (responsive device frame) |
 | `screens/` | home, trends, meds, prescriptions, profile, personal-details, map, auth flow, records, appointments, quicklog, report flow |
-| `widgets/` | mood face, line chart, num pad, body map, balsm flower, badges, account switcher |
+| `widgets/` | mood face, line chart, num pad, body map, balsm flower, badges, account switcher, shared `SelectField<V>` dropdown (`select_field.dart`, now with a `disabled` state) |
+
+Body map: a check-in holds one tissue (body type) per record — once >=1
+region is marked, the layer dropdown locks to that tissue (greyed, hint
+shown) until the selection is cleared. Shared `canToggleSite`/
+`lockedBodyTissue` helpers live in `self_report`'s `pain_site.dart`.
 
 ## Adaptive
 Full-bleed on phones; centered phone-proportioned device card on

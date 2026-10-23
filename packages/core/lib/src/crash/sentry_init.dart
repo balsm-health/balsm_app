@@ -1,3 +1,4 @@
+import 'package:balsm_api/balsm_api.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../config/flavor.dart';
 import '../telemetry/telemetry_scrubber.dart';
@@ -19,16 +20,47 @@ Future<void> initSentry() async {
     // this catches anything Sentry auto-instrumentation adds.
     options.beforeSend = (event, hint) => _scrub(event);
     options.beforeBreadcrumb = (breadcrumb, hint) => _scrubBreadcrumb(breadcrumb);
+    // In-app feedback is its own event type and skips beforeSend. Its message
+    // is the patient's note and is sent as typed; the breadcrumbs and route it
+    // carries get the same scrub as everything else.
+    options.beforeSendFeedback = (event, hint) => _scrub(event);
+  });
+
+  // `brand` and `flavor` as tags, the names product analytics uses for the
+  // same build fields, so both portals filter builds alike. `environment`
+  // above already carries the flavor, but says nothing about the brand.
+  final config = FlavorConfig.current;
+  await Sentry.configureScope((scope) async {
+    await scope.setTag('brand', config.brand.name);
+    await scope.setTag('flavor', config.flavor.name);
   });
 }
 
-/// Scrub an outbound event's breadcrumb `data` maps. (Contexts set by the
-/// telemetry logger are already scrubbed at the source; `extra` is deprecated
-/// and unused by our code, so nothing else needs scrubbing here.)
+/// Scrub an outbound event's breadcrumb `data` maps, plus the two URL-bearing
+/// fields the SDK fills in by itself. (Contexts set by the telemetry logger are
+/// already scrubbed at the source; `extra` is deprecated and unused by our code,
+/// so nothing else needs scrubbing here.)
 SentryEvent _scrub(SentryEvent event) {
   final crumbs = event.breadcrumbs;
   if (crumbs != null) {
     event.breadcrumbs = crumbs.map((b) => b.data == null ? b : _scrubbedCrumb(b)).toList();
+  }
+  // `transaction` and `request.url` are set by Sentry's own routing/HTTP
+  // instrumentation, so they never pass through the telemetry logger's scrub.
+  // Both are concrete hrefs, and two secrets live in the parts of a href that a
+  // field-name allowlist cannot see: the emergency-QR AES key (`#k=`) and the
+  // magic sign-in token (`?t=`). Reduce them to route templates.
+  final transaction = event.transaction;
+  if (transaction != null) event.transaction = redactUrl(transaction);
+  final request = event.request;
+  final requestUrl = request?.url;
+  if (request != null && requestUrl != null) {
+    request
+      ..url = redactUrl(requestUrl)
+      // Dropped outright rather than reduced: neither is ever diagnostic here,
+      // and both are where a token or key would be.
+      ..queryString = null
+      ..fragment = null;
   }
   return event;
 }

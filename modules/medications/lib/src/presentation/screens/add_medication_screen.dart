@@ -73,6 +73,8 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
               ScheduleType.daily => 'Daily',
               ScheduleType.weekly => 'Weekly',
               ScheduleType.custom => 'Custom',
+              // Not offered by this screen's options above.
+              ScheduleType.once || ScheduleType.everyHours || ScheduleType.everyDays => '',
             },
             selected: _scheduleType,
             onChanged: (t) => setState(() => _scheduleType = t),

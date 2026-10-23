@@ -90,7 +90,7 @@ class HomeHero extends StatelessWidget {
               Text(s.strings.common.done_q, style: Typo.subhead(ar: s.rtl)),
             ]),
           ),
-          RoundBtn(icon: forwardArrow(context), onTap: onReview),
+          RoundBtn(icon: forwardArrow(context), semanticLabel: s.strings.common.a11y_next, onTap: onReview),
         ]),
       );
     }
@@ -413,7 +413,11 @@ class AwayBanner extends StatelessWidget {
           ]),
         ),
         RoundBtn(
-            icon: forwardArrow(context), bg: const Color(0x1F3A2E05), fg: ink, onTap: () => s.setTab(AppTab.profile)),
+            icon: forwardArrow(context),
+            semanticLabel: s.strings.common.a11y_next,
+            bg: const Color(0x1F3A2E05),
+            fg: ink,
+            onTap: () => s.setTab(AppTab.profile)),
       ]),
     );
   }

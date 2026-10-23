@@ -3,5 +3,14 @@
   "_i69n_language": "en",
   "title": "Delete account",
   "confirm": "Confirm deletion",
-  "cancelled": "Deletion cancelled"
+  "cancelled": "Deletion cancelled",
+  "publicTitle": "Delete your account",
+  "verifyHeading": "Verify it is you",
+  "verifyBody": "We send a one-time code so nobody else can delete your account.",
+  "verifyContinue": "Continue",
+  "sendCode": "Send me a code",
+  "sendCodeAgain": "Send a new code",
+  "otpLabel": "One-time code",
+  "publicCancelTitle": "Cancel account deletion",
+  "publicCancelAction": "Cancel deletion"
 }

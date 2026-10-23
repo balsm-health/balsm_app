@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 /// Design tokens ported from `colors_and_type.css` + `app.css` of the
@@ -31,7 +32,10 @@ class T {
   static const ink700 = Color(0xFF384756);
   static const ink600 = Color(0xFF526174); // = wordmark ".health" TLD
   static const ink500 = Color(0xFF78838F);
-  static const ink400 = Color(0xFF9BA4AD);
+  // Was 0xFF9BA4AD, which measured 2.42:1 on cream — below the 4.5 WCAG asks
+  // for body text, and this ink carries placeholders and disabled labels.
+  // 0xFF677281 clears it at 4.67:1 while staying the same cool grey.
+  static const ink400 = Color(0xFF677281);
   static const ink300 = Color(0xFFC0C6CC);
   static const ink200 = Color(0xFFDBDFE3);
   static const ink100 = Color(0xFFEBEDF0);
@@ -51,7 +55,10 @@ class T {
   static const successBg = hueMint50;
   static const warning = Color(0xFFE5B428);
   static const warningBg = Color(0xFFFDF5DC);
-  static const danger = Color(0xFFD44A3C);
+  // Was 0xFFD44A3C: 4.15:1 on cream and 4.34:1 under white text, both short of
+  // 4.5 at the sizes buttons and error lines actually use. Darkened to clear
+  // both (5.80 and 6.06) without leaving the red it was.
+  static const danger = Color(0xFFB4342A);
   static const dangerBg = Color(0xFFFBEBE7);
   static const controlled = hueViolet;
   static const controlledBg = hueViolet50;
@@ -74,6 +81,29 @@ class T {
   static const border = ink200;
   static const borderStrong = ink300;
   static const borderFocus = hueBlue;
+
+  /// Text or icon colour that stays legible on [fill].
+  ///
+  /// Picks ink900 or white by measuring, rather than assuming white reads on
+  /// anything: white on mint is 2.28:1 and on sun 1.93:1 — invisible by the
+  /// standard — while ink900 on those is 7.24 and 8.57. On violet and blue it
+  /// is the other way round. Measuring means a new accent cannot quietly ship
+  /// an illegible button.
+  static Color onFill(Color fill) =>
+      _contrast(ink900, fill) >= _contrast(const Color(0xFFFFFFFF), fill) ? ink900 : const Color(0xFFFFFFFF);
+
+  static double _relativeLuminance(Color c) {
+    double channel(double v) => v <= 0.03928 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
+    return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);
+  }
+
+  static double _contrast(Color a, Color b) {
+    final la = _relativeLuminance(a);
+    final lb = _relativeLuminance(b);
+    final hi = la > lb ? la : lb;
+    final lo = la > lb ? lb : la;
+    return (hi + 0.05) / (lo + 0.05);
+  }
 
   static const fg1 = ink900; // primary text
   static const fg2 = ink700; // secondary

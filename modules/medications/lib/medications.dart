@@ -3,6 +3,7 @@
 // Domain — aggregate & entity
 export 'src/domain/aggregates/medication.dart';
 export 'src/domain/entities/dose_event.dart';
+export 'src/domain/services/dose_schedule.dart';
 
 // Domain — events
 export 'src/domain/events/medication_added.dart';

@@ -16,6 +16,22 @@ Medium69 and Jmarchn:
 
 Changes: resized for the Balsm 200×384 body-map coordinate system, removed
 labels/backgrounds, and added transparent selectable region overlays.
+Flattened each file's nested `<svg>` into an equivalent `<g transform>` (and,
+in `nerves_front.svg`, inlined one gradient's `xlink:href`-referenced stops)
+so `flutter_svg` renders bones, joints and nerves instead of leaving them
+blank; no visual change.
 
 The remaining body-map layer artwork is original to this project or derived
 from the existing project muscle atlas.
+
+- `nerves_front.svg`: removed 29 tiny nerve-root `<text>` labels (C1–S5). flutter_svg drew them as solid black blocks over the spinal cord; at body-map scale they carried no information. Artwork and region ids unchanged.
+
+- `joints_front.svg`, `joints_back.svg`: selectable regions traced to the joints they name (bone ends, vertebrae, hip sockets) instead of rough boxes; joint fallback tap points in `body_region.dart` recomputed to match. Artwork unchanged.
+
+- `bones_front.svg`, `bones_back.svg`: selectable regions traced to the bones they name instead of rough boxes; bone fallback tap points in `body_region.dart` recomputed to match. Artwork unchanged.
+
+- `bones_back.svg`: added selectable back-of-arm regions (`bk-l/r-upper-arm`, `-elbow`, `-forearm`, `-hand`) traced along the humerus, elbow, radius/ulna and hand bones; matching bone tap points in `body_region.dart`. Artwork and existing regions unchanged.
+
+- `tendons_front.svg`, `tendons_back.svg`: face/ear region ellipses made transparent (`#FFFFFF00`, as in the nerves layer); they were painted solid grey over the face. Tap areas unchanged.
+- `tendons_front.svg`, `tendons_back.svg`: region ellipses also set `stroke="none"`; they inherited the art group stroke and drew grey rings on the head and ears.
+- `muscles_front.svg`, `muscles_back.svg`, `nerves_back.svg`: grey (`#c5c1b4`) face/ear region ellipses made invisible (`fill="#FFFFFF00" stroke="none"`), same fix as the tendons layer.

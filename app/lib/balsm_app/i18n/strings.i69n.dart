@@ -28,6 +28,9 @@ class Strings implements i69n.I69nMessageBundle {
   SettingsStrings get settings => SettingsStrings(this);
   StorageStrings get storage => StorageStrings(this);
   MapPacksStrings get map_packs => MapPacksStrings(this);
+  OfflineStrings get offline => OfflineStrings(this);
+  UpdateStrings get update => UpdateStrings(this);
+  WebStrings get web => WebStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -73,6 +76,12 @@ class Strings implements i69n.I69nMessageBundle {
         return storage;
       case 'map_packs':
         return map_packs;
+      case 'offline':
+        return offline;
+      case 'update':
+        return update;
+      case 'web':
+        return web;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -102,11 +111,24 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get pw_label => "Password";
   String get pw_ph => "Enter your password";
   String get forgot_pw => "Forgot password?";
+  String get pw_continue => "Continue";
   String get pw_signin => "Sign in";
   String get pw_signup => "Sign up";
   String get pw_signing_in => "Signing in…";
   String get otp_verifying => "Verifying…";
   String get pw_invalid_creds => "Invalid email or password.";
+  String get pw_min_hint => "At least 8 characters";
+  String get mode_online => "Online";
+  String get mode_device => "Device only";
+  String get device_title => "Account on this device";
+  String get device_help =>
+      "No internet or verification code needed. Your data stays on this device only. Going online later lets you verify your email, so your password can be recovered, and use sharing.";
+  String get device_pw_label => "Password to lock the app";
+  String get device_warning =>
+      "Your email isn't verified yet, so your password can't be recovered until you go online. Your data is stored only on this device: if you lose it, your data goes with it.";
+  String get device_create => "Create account on device";
+  String get device_create_failed =>
+      "Couldn't create the account on this device. Try again.";
   String get fp_title => "Reset your password";
   String get fp_help =>
       "Enter your email — we'll send a code to reset your password.";
@@ -122,6 +144,21 @@ class AuthStrings implements i69n.I69nMessageBundle {
       "Sign-in is unavailable right now. Use your email instead.";
   String auth_locked_retry(String secs) =>
       "Account temporarily locked. Try again in ${secs}s.";
+  String get unlock_title => "Unlock Balsm";
+  String get unlock_help => "Enter the password you set on this device.";
+  String get unlock_wrong => "Wrong password.";
+  String unlock_locked(String secs) =>
+      "Too many attempts. Try again in ${secs}s.";
+  String get unlock_btn => "Unlock";
+  String get unlock_failed => "Couldn't unlock right now. Try again.";
+  String get remove_device_account => "Remove this account from this phone";
+  String get remove_device_confirm_title => "Remove this account and its data?";
+  String get remove_device_confirm_body =>
+      "This account only exists on this phone. Everything in it will be deleted and can't be recovered.";
+  String get remove_device_confirm_btn => "Remove";
+  String get unlock_forgot => "Forgot password? Start over";
+  String get unlock_forgot_confirm_body =>
+      "Without the password, the data on this phone can't be opened. Starting over deletes it permanently.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -169,6 +206,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return pw_ph;
       case 'forgot_pw':
         return forgot_pw;
+      case 'pw_continue':
+        return pw_continue;
       case 'pw_signin':
         return pw_signin;
       case 'pw_signup':
@@ -179,6 +218,24 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return otp_verifying;
       case 'pw_invalid_creds':
         return pw_invalid_creds;
+      case 'pw_min_hint':
+        return pw_min_hint;
+      case 'mode_online':
+        return mode_online;
+      case 'mode_device':
+        return mode_device;
+      case 'device_title':
+        return device_title;
+      case 'device_help':
+        return device_help;
+      case 'device_pw_label':
+        return device_pw_label;
+      case 'device_warning':
+        return device_warning;
+      case 'device_create':
+        return device_create;
+      case 'device_create_failed':
+        return device_create_failed;
       case 'fp_title':
         return fp_title;
       case 'fp_help':
@@ -203,6 +260,30 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return social_unavailable;
       case 'auth_locked_retry':
         return auth_locked_retry;
+      case 'unlock_title':
+        return unlock_title;
+      case 'unlock_help':
+        return unlock_help;
+      case 'unlock_wrong':
+        return unlock_wrong;
+      case 'unlock_locked':
+        return unlock_locked;
+      case 'unlock_btn':
+        return unlock_btn;
+      case 'unlock_failed':
+        return unlock_failed;
+      case 'remove_device_account':
+        return remove_device_account;
+      case 'remove_device_confirm_title':
+        return remove_device_confirm_title;
+      case 'remove_device_confirm_body':
+        return remove_device_confirm_body;
+      case 'remove_device_confirm_btn':
+        return remove_device_confirm_btn;
+      case 'unlock_forgot':
+        return unlock_forgot;
+      case 'unlock_forgot_confirm_body':
+        return unlock_forgot_confirm_body;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -273,7 +354,15 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get care_import_empty => "No contacts chosen yet.";
   String get care_import_empty_h =>
       "Open your phone's contacts to pick the people and places caring for you.";
+  String get care_import_search => "Search contacts";
+  String care_import_count(String n) => "Contacts · $n";
+  String get care_import_select_all => "Select all";
+  String get care_import_clear => "Clear";
+  String get care_import_no_match => "No matching contacts.";
   String get care_import_on_team => "On your team";
+  String get care_import_fab => "Add from contacts";
+  String care_import_banner(String n) =>
+      "$n added to your care team. Tap edit to add specialty and address.";
   String get care_import_manual => "Not in your contacts? Add manually";
   String get care_import_none => "Select contacts";
   String get care_import_unavailable =>
@@ -342,6 +431,10 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get care_files => "Files";
   String get care_files_head => "Business card & files";
   String get care_attach => "Attach";
+  String get care_attach_empty => "Attach a business card or photo";
+  String get care_attach_empty_h => "Photos, video or PDF";
+  String get care_link_opens => "Open link at";
+  String get care_link_remove => "Remove link to";
   String get care_attach_add => "Add";
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -422,8 +515,22 @@ class CareStrings implements i69n.I69nMessageBundle {
         return care_import_empty;
       case 'care_import_empty_h':
         return care_import_empty_h;
+      case 'care_import_search':
+        return care_import_search;
+      case 'care_import_count':
+        return care_import_count;
+      case 'care_import_select_all':
+        return care_import_select_all;
+      case 'care_import_clear':
+        return care_import_clear;
+      case 'care_import_no_match':
+        return care_import_no_match;
       case 'care_import_on_team':
         return care_import_on_team;
+      case 'care_import_fab':
+        return care_import_fab;
+      case 'care_import_banner':
+        return care_import_banner;
       case 'care_import_manual':
         return care_import_manual;
       case 'care_import_none':
@@ -552,6 +659,14 @@ class CareStrings implements i69n.I69nMessageBundle {
         return care_files_head;
       case 'care_attach':
         return care_attach;
+      case 'care_attach_empty':
+        return care_attach_empty;
+      case 'care_attach_empty_h':
+        return care_attach_empty_h;
+      case 'care_link_opens':
+        return care_link_opens;
+      case 'care_link_remove':
+        return care_link_remove;
       case 'care_attach_add':
         return care_attach_add;
       default:
@@ -600,7 +715,7 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get range_w => "Week";
   String get range_m => "Month";
   String get range_3m => "3 months";
-  String get trend_all_metrics => "All metrics";
+  String get trend_all_metrics => "All";
   String trend_n_metrics(String n) => "$n metrics";
   String get avg => "avg";
   String get no_checkins => "No check-ins yet";
@@ -622,6 +737,11 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get body_view_front => "Front";
   String get body_view_back => "Back";
   String get body_tap => "Tap to mark location";
+  String get body_layer => "Layer";
+  String get body_layer_locked => "Clear selection to change body type";
+  String body_remove(String label) => "Remove $label";
+  String get body_clear_all => "Clear all";
+  String get body_marked => "Marked areas";
   String get list_sep => ", ";
   String get list_mid => " · ";
   String pain_n(String n) => "$n/10";
@@ -796,6 +916,16 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return body_view_back;
       case 'body_tap':
         return body_tap;
+      case 'body_layer':
+        return body_layer;
+      case 'body_layer_locked':
+        return body_layer_locked;
+      case 'body_remove':
+        return body_remove;
+      case 'body_clear_all':
+        return body_clear_all;
+      case 'body_marked':
+        return body_marked;
       case 'list_sep':
         return list_sep;
       case 'list_mid':
@@ -913,6 +1043,25 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get profile => "Profile";
   String get your_accounts => "Your accounts";
   String get pages => "pages";
+  String get a11y_show_pw => "Show password";
+  String get a11y_hide_pw => "Hide password";
+  String get a11y_code_field => "Verification code";
+  String a11y_code_progress(String n) => "$n of 6 digits entered";
+  String get a11y_error => "Error";
+  String get ph_country => "Select country";
+  String get ph_country_search => "Search name or code";
+  String get ph_no_match => "No matches";
+  String ph_country_of(String dial) => "Country code, currently $dial";
+  String get a11y_close => "Close";
+  String get a11y_back => "Back";
+  String get a11y_next => "Next";
+  String get a11y_delete => "Delete";
+  String get a11y_add => "Add";
+  String get a11y_locate => "Find my location";
+  String get a11y_download => "Download";
+  String get a11y_qr => "QR code";
+  String get a11y_edit => "Edit";
+  String get a11y_notifications => "Notifications";
   String get cancel => "Cancel";
   String get acc_active => "Active account";
   String get acc_not_signed_in => "Not signed in";
@@ -967,6 +1116,7 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get rel_grandparent => "Grandparent";
   String get rel_other => "Other";
   String get offline_banner => "You're offline — showing saved data";
+  String get beta_banner => "Beta";
   String get offline_stale_places => "These places may be out of date";
   String get offline_sessions => "Sign-in activity needs a connection";
   String get offline_write => "You're offline. This needs a connection.";
@@ -1007,6 +1157,44 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return your_accounts;
       case 'pages':
         return pages;
+      case 'a11y_show_pw':
+        return a11y_show_pw;
+      case 'a11y_hide_pw':
+        return a11y_hide_pw;
+      case 'a11y_code_field':
+        return a11y_code_field;
+      case 'a11y_code_progress':
+        return a11y_code_progress;
+      case 'a11y_error':
+        return a11y_error;
+      case 'ph_country':
+        return ph_country;
+      case 'ph_country_search':
+        return ph_country_search;
+      case 'ph_no_match':
+        return ph_no_match;
+      case 'ph_country_of':
+        return ph_country_of;
+      case 'a11y_close':
+        return a11y_close;
+      case 'a11y_back':
+        return a11y_back;
+      case 'a11y_next':
+        return a11y_next;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'a11y_add':
+        return a11y_add;
+      case 'a11y_locate':
+        return a11y_locate;
+      case 'a11y_download':
+        return a11y_download;
+      case 'a11y_qr':
+        return a11y_qr;
+      case 'a11y_edit':
+        return a11y_edit;
+      case 'a11y_notifications':
+        return a11y_notifications;
       case 'cancel':
         return cancel;
       case 'acc_active':
@@ -1109,6 +1297,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return rel_other;
       case 'offline_banner':
         return offline_banner;
+      case 'beta_banner':
+        return beta_banner;
       case 'offline_stale_places':
         return offline_stale_places;
       case 'offline_sessions':
@@ -1140,6 +1330,23 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get em_fire => "Fire & rescue";
   String get em_tourist => "Tourist police";
   String get emergency => "Emergency";
+  String get em_one_title => "Sign in or create an account";
+  String get em_one_help =>
+      "Enter your email and a password. New here? We'll email you a code to confirm the address.";
+  String em_send_code_q(String email) =>
+      "That didn't work. Send a code to $email to continue?";
+  String get em_send_code => "Send me a code";
+  String get em_otp_neutral_h => "Enter the 6-digit code we sent to";
+  String get em_adopt_title => "Use this password from now on?";
+  String get em_adopt_help =>
+      "You signed in with a code. Save the password you just typed so it works next time.";
+  String get em_adopt_yes => "Save this password";
+  String get em_adopt_no => "Keep my current one";
+  String get em_adopt_saved => "Password updated.";
+  String get em_adopt_failed =>
+      "Couldn't save the password. You can set one in Settings.";
+  String get em_pw_set_failed =>
+      "Your account is ready, but the password wasn't saved. Set one in Settings.";
   String get em_pw_title => "Welcome back";
   String get em_pw_help => "Enter your password to sign in.";
   String get em_pw_signup_title => "Create your account";
@@ -1214,6 +1421,30 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return em_tourist;
       case 'emergency':
         return emergency;
+      case 'em_one_title':
+        return em_one_title;
+      case 'em_one_help':
+        return em_one_help;
+      case 'em_send_code_q':
+        return em_send_code_q;
+      case 'em_send_code':
+        return em_send_code;
+      case 'em_otp_neutral_h':
+        return em_otp_neutral_h;
+      case 'em_adopt_title':
+        return em_adopt_title;
+      case 'em_adopt_help':
+        return em_adopt_help;
+      case 'em_adopt_yes':
+        return em_adopt_yes;
+      case 'em_adopt_no':
+        return em_adopt_no;
+      case 'em_adopt_saved':
+        return em_adopt_saved;
+      case 'em_adopt_failed':
+        return em_adopt_failed;
+      case 'em_pw_set_failed':
+        return em_pw_set_failed;
       case 'em_pw_title':
         return em_pw_title;
       case 'em_pw_help':
@@ -1469,6 +1700,14 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get med_time_midday => "Midday";
   String get med_time_evening => "Evening";
   String get med_time_night => "Night";
+  String get med_self_note =>
+      "For medicines without a prescription, like pain relief or vitamins. Saved as added by you.";
+  String get med_when => "When do you take it?";
+  String get med_dose_times => "Dose times";
+  String get med_first_dose => "First dose";
+  String get med_added => "Medication added";
+  String get dur_period => "For a set period";
+  String get dur_count => "Count";
   String get meds_signin_help => "Sign in to view your medications.";
   String get meds_empty_help => "No medications yet. Add one to get started.";
   String get meds_none_today => "Nothing scheduled today.";
@@ -1655,6 +1894,20 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return med_time_evening;
       case 'med_time_night':
         return med_time_night;
+      case 'med_self_note':
+        return med_self_note;
+      case 'med_when':
+        return med_when;
+      case 'med_dose_times':
+        return med_dose_times;
+      case 'med_first_dose':
+        return med_first_dose;
+      case 'med_added':
+        return med_added;
+      case 'dur_period':
+        return dur_period;
+      case 'dur_count':
+        return dur_count;
       case 'meds_signin_help':
         return meds_signin_help;
       case 'meds_empty_help':
@@ -1867,6 +2120,8 @@ class WalkthroughStrings implements i69n.I69nMessageBundle {
   String get wt_demo_pin1 => "Zahran Pharmacy";
   String get wt_demo_pin2 => "Nour Clinic";
   String get wt_demo_pin3 => "City Lab";
+  String get wt_analytics_note =>
+      "We also collect anonymous usage data to improve Balsm — never your health records. You can turn it off any time in Profile → Privacy & data.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -1926,6 +2181,8 @@ class WalkthroughStrings implements i69n.I69nMessageBundle {
         return wt_demo_pin2;
       case 'wt_demo_pin3':
         return wt_demo_pin3;
+      case 'wt_analytics_note':
+        return wt_analytics_note;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -2411,7 +2668,8 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
   String get fb_optional => "optional";
   String get fb_ph => "What worked well? What didn't?";
   String get fb_privacy =>
-      "Reviewed by the Balsm team, inside Balsm — never an app store. Your health data stays on your device.";
+      "Sent to the Balsm team, not an app store. Please don't include health details — your health data stays on your device.";
+  String get fb_failed => "Couldn't send your feedback. Please try again.";
   String get fb_send => "Send feedback";
   String get fb_thanks => "Received. Thank you.";
   String get fb_thanks_sub =>
@@ -2457,6 +2715,8 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
         return fb_ph;
       case 'fb_privacy':
         return fb_privacy;
+      case 'fb_failed':
+        return fb_failed;
       case 'fb_send':
         return fb_send;
       case 'fb_thanks':
@@ -2533,6 +2793,21 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get tag_referral => "Referral";
   String get att_section => "Attachments";
   String get att_add => "Add file";
+  String get att_source_title => "Add a file";
+  String get att_src_files => "Files";
+  String get att_src_files_h => "A PDF or image saved on this device";
+  String get att_src_gallery => "Photos";
+  String get att_src_gallery_h => "Pick from your photo library";
+  String get att_src_paste => "Paste";
+  String get att_src_paste_h => "An image or link you copied";
+  String get att_src_url => "Link";
+  String get att_src_url_h => "Type or paste a web address";
+  String get att_url_title => "Add a link";
+  String get att_url_hint => "https://…";
+  String get att_url_bad => "That does not look like a web address.";
+  String get att_url_note =>
+      "Balsm stores the address only — nothing is downloaded, and it opens in your browser.";
+  String get att_paste_empty => "Nothing to paste.";
   String get att_one_file => "1 file";
   String att_n_files(String n) => "$n files";
   String rec_n_selected(String n) => "$n selected";
@@ -2644,6 +2919,34 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return att_section;
       case 'att_add':
         return att_add;
+      case 'att_source_title':
+        return att_source_title;
+      case 'att_src_files':
+        return att_src_files;
+      case 'att_src_files_h':
+        return att_src_files_h;
+      case 'att_src_gallery':
+        return att_src_gallery;
+      case 'att_src_gallery_h':
+        return att_src_gallery_h;
+      case 'att_src_paste':
+        return att_src_paste;
+      case 'att_src_paste_h':
+        return att_src_paste_h;
+      case 'att_src_url':
+        return att_src_url;
+      case 'att_src_url_h':
+        return att_src_url_h;
+      case 'att_url_title':
+        return att_url_title;
+      case 'att_url_hint':
+        return att_url_hint;
+      case 'att_url_bad':
+        return att_url_bad;
+      case 'att_url_note':
+        return att_url_note;
+      case 'att_paste_empty':
+        return att_paste_empty;
       case 'att_one_file':
         return att_one_file;
       case 'att_n_files':
@@ -2749,6 +3052,39 @@ class StorageStrings implements i69n.I69nMessageBundle {
   String get store_deleted_rec => "Record deleted";
   String get store_manage => "Manage storage";
   String get storage => "Storage & sync";
+  String get cat_records => "Medical records";
+  String get cat_rx => "Prescriptions";
+  String get cat_meds => "Medications";
+  String get cat_checkins => "Daily check-ins";
+  String get cat_symptoms => "Symptoms";
+  String get cat_vitals => "Vitals";
+  String get cat_medical => "Conditions & allergies";
+  String get cat_care => "Care team";
+  String get cat_appts => "Appointments";
+  String get store_all_data => "All your data";
+  String get store_all_applies => "Applies to every category";
+  String get store_all_data_back => "All data";
+  String get store_intro =>
+      "Everything is kept on this device. Your care team can also sync to Balsm Cloud; cloud sync for the rest is not available yet.";
+  String get store_accounts => "Cloud accounts";
+  String get store_your_data => "Your data";
+  String get store_stored_in => "Stored in";
+  String get store_connect => "Connect";
+  String get store_disconnect => "Disconnect";
+  String get store_not_connected => "Not connected";
+  String get store_local_always => "Always kept here — works offline";
+  String get store_device => "Device";
+  String get store_device_only_sum => "This device only";
+  String store_device_plus(String target) => "Device + $target";
+  String store_device_plus_n(String n) => "Device + $n clouds";
+  String store_places(String n) => "$n places";
+  String get store_where => "Where it’s stored";
+  String get store_loc_label => "Stored on";
+  String get store_encrypted_note =>
+      "Anything that leaves this phone is encrypted here first, and you choose where it goes.";
+  String get store_whole_journal =>
+      "When cloud sync arrives, Balsm will back up your journal as one encrypted file — so a cloud will be on or off for everything, not per category.";
+  String get store_not_synced => "Not synced yet";
   String get store_local => "On this device";
   String get store_icloud => "iCloud";
   String get store_gdrive => "Google Drive";
@@ -2764,6 +3100,12 @@ class StorageStrings implements i69n.I69nMessageBundle {
       "Only local storage is available right now. iCloud, Google Drive, and Balsm Cloud are all coming later.";
   String get store_coming_soon => "Coming soon";
   String get store_available_soon => "Available soon";
+  String get store_care_cloud_on =>
+      "On — your care team is kept in Balsm Cloud too";
+  String get store_care_cloud_off =>
+      "Off — your care team stays on this device";
+  String get store_care_cloud_note =>
+      "Your care team syncs to Balsm Cloud so it survives a lost phone. Turn it off and new changes stay on this device; what is already in Balsm Cloud is kept.";
   String get store_always_on => "Always on";
   String get store_no_backup => "No backup";
   String store_connecting(String target) => "Connecting to $target…";
@@ -2800,6 +3142,66 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_manage;
       case 'storage':
         return storage;
+      case 'cat_records':
+        return cat_records;
+      case 'cat_rx':
+        return cat_rx;
+      case 'cat_meds':
+        return cat_meds;
+      case 'cat_checkins':
+        return cat_checkins;
+      case 'cat_symptoms':
+        return cat_symptoms;
+      case 'cat_vitals':
+        return cat_vitals;
+      case 'cat_medical':
+        return cat_medical;
+      case 'cat_care':
+        return cat_care;
+      case 'cat_appts':
+        return cat_appts;
+      case 'store_all_data':
+        return store_all_data;
+      case 'store_all_applies':
+        return store_all_applies;
+      case 'store_all_data_back':
+        return store_all_data_back;
+      case 'store_intro':
+        return store_intro;
+      case 'store_accounts':
+        return store_accounts;
+      case 'store_your_data':
+        return store_your_data;
+      case 'store_stored_in':
+        return store_stored_in;
+      case 'store_connect':
+        return store_connect;
+      case 'store_disconnect':
+        return store_disconnect;
+      case 'store_not_connected':
+        return store_not_connected;
+      case 'store_local_always':
+        return store_local_always;
+      case 'store_device':
+        return store_device;
+      case 'store_device_only_sum':
+        return store_device_only_sum;
+      case 'store_device_plus':
+        return store_device_plus;
+      case 'store_device_plus_n':
+        return store_device_plus_n;
+      case 'store_places':
+        return store_places;
+      case 'store_where':
+        return store_where;
+      case 'store_loc_label':
+        return store_loc_label;
+      case 'store_encrypted_note':
+        return store_encrypted_note;
+      case 'store_whole_journal':
+        return store_whole_journal;
+      case 'store_not_synced':
+        return store_not_synced;
       case 'store_local':
         return store_local;
       case 'store_icloud':
@@ -2828,6 +3230,12 @@ class StorageStrings implements i69n.I69nMessageBundle {
         return store_coming_soon;
       case 'store_available_soon':
         return store_available_soon;
+      case 'store_care_cloud_on':
+        return store_care_cloud_on;
+      case 'store_care_cloud_off':
+        return store_care_cloud_off;
+      case 'store_care_cloud_note':
+        return store_care_cloud_note;
       case 'store_always_on':
         return store_always_on;
       case 'store_no_backup':
@@ -2918,6 +3326,171 @@ class MapPacksStrings implements i69n.I69nMessageBundle {
         return cancel;
       case 'offline_notice':
         return offline_notice;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class OfflineStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const OfflineStrings(this._parent);
+  String get go_title => "Go online";
+  String get go_help =>
+      "We'll send a code to your email to verify it. Your data stays on this device.";
+  String get go_send => "Send code";
+  String get go_code_help => "Enter the 6-digit code we sent to";
+  String get go_verify => "Verify and go online";
+  String get go_done_title => "You're online";
+  String get go_done_help =>
+      "Email verified. Your account is now on Balsm and your password can be recovered. Your health data stays on this device.";
+  String get go_done => "Done";
+  String get go_row => "Go online";
+  String get go_row_sub =>
+      "Verify your email to recover your password and use sharing";
+  String get go_cloud_pill => "Go online";
+  String get go_failed => "Couldn't go online right now. Try again.";
+  String get merge_title => "This email already has a Balsm account";
+  String get merge_help =>
+      "You're signed in to that account. Choose what to do with the data on this phone.";
+  String get merge_btn => "Add this phone's data to my account";
+  String get merge_note =>
+      "Your account keeps its current password. The password you set on this phone is no longer used.";
+  String get discard_btn => "Remove this phone's data";
+  String get discard_confirm_title => "Remove the data on this phone?";
+  String get discard_confirm_body =>
+      "Everything you added while offline on this phone will be deleted. This can't be undone.";
+  String get discard_confirm_btn => "Remove";
+  String get merge_failed => "Couldn't finish. Try again.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'go_title':
+        return go_title;
+      case 'go_help':
+        return go_help;
+      case 'go_send':
+        return go_send;
+      case 'go_code_help':
+        return go_code_help;
+      case 'go_verify':
+        return go_verify;
+      case 'go_done_title':
+        return go_done_title;
+      case 'go_done_help':
+        return go_done_help;
+      case 'go_done':
+        return go_done;
+      case 'go_row':
+        return go_row;
+      case 'go_row_sub':
+        return go_row_sub;
+      case 'go_cloud_pill':
+        return go_cloud_pill;
+      case 'go_failed':
+        return go_failed;
+      case 'merge_title':
+        return merge_title;
+      case 'merge_help':
+        return merge_help;
+      case 'merge_btn':
+        return merge_btn;
+      case 'merge_note':
+        return merge_note;
+      case 'discard_btn':
+        return discard_btn;
+      case 'discard_confirm_title':
+        return discard_confirm_title;
+      case 'discard_confirm_body':
+        return discard_confirm_body;
+      case 'discard_confirm_btn':
+        return discard_confirm_btn;
+      case 'merge_failed':
+        return merge_failed;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class UpdateStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const UpdateStrings(this._parent);
+  String get upd_eyebrow_new => "New version";
+  String get upd_eyebrow_required => "Required update";
+  String upd_available_t(String app) => "A newer $app is available";
+  String get upd_available_b =>
+      "Your data stays on your device while you update.";
+  String upd_required_t(String app) => "Update $app to continue";
+  String get upd_required_b =>
+      "This version is needed to keep your records syncing securely.";
+  String get upd_current => "Current";
+  String get upd_new => "New";
+  String get upd_whats_new => "What’s new";
+  String get upd_now => "Update now";
+  String get upd_skip => "Skip this version";
+  String get upd_full_notes => "Full release notes";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'upd_eyebrow_new':
+        return upd_eyebrow_new;
+      case 'upd_eyebrow_required':
+        return upd_eyebrow_required;
+      case 'upd_available_t':
+        return upd_available_t;
+      case 'upd_available_b':
+        return upd_available_b;
+      case 'upd_required_t':
+        return upd_required_t;
+      case 'upd_required_b':
+        return upd_required_b;
+      case 'upd_current':
+        return upd_current;
+      case 'upd_new':
+        return upd_new;
+      case 'upd_whats_new':
+        return upd_whats_new;
+      case 'upd_now':
+        return upd_now;
+      case 'upd_skip':
+        return upd_skip;
+      case 'upd_full_notes':
+        return upd_full_notes;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class WebStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const WebStrings(this._parent);
+  String other_tab_t(String app) => "$app is open in another tab";
+  String get other_tab_b =>
+      "To keep your data safe, it can be open in one tab at a time. Close the other tab, then try again.";
+  String get other_tab_retry => "Try again";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'other_tab_t':
+        return other_tab_t;
+      case 'other_tab_b':
+        return other_tab_b;
+      case 'other_tab_retry':
+        return other_tab_retry;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

@@ -56,7 +56,10 @@ class DevHostLocator {
   /// [androidEmulatorAliases] on Android, nothing elsewhere. A real handset
   /// pays one refused connection for them, which is cheaper than the sweep
   /// they save on an emulator.
-  static List<String> get defaultAliases => Platform.isAndroid ? androidEmulatorAliases : const [];
+  ///
+  /// `kIsWeb` first: `Platform.isAndroid` throws in a browser, and this is
+  /// read while the API client is built — it took the web app down at startup.
+  static List<String> get defaultAliases => !kIsWeb && Platform.isAndroid ? androidEmulatorAliases : const [];
 
   /// Tried after the cheap candidates and before the sweep.
   final List<String> aliases;

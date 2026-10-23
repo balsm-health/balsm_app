@@ -16,7 +16,7 @@ import 'package:test/test.dart';
 ///   E2E_BASE_URL=http://localhost:5050 dart test test/e2e/api_e2e_test.dart
 ///
 ///   # staging (requires the snake_case-enabled deployment):
-///   E2E_BASE_URL=https://api-stg-balsm-health.mosalam.com \
+///   E2E_BASE_URL=https://api-stg.balsm.health \
 ///     dart test test/e2e/api_e2e_test.dart
 ///
 /// Config via env (all optional except E2E_BASE_URL):
@@ -64,7 +64,7 @@ void main() {
 
     test('POST /auth/otp/request accepts the snake_case body', () async {
       await auth.requestOtp(
-        RequestOtpRequest(email: email, countryCode: country, purpose: OtpPurpose.register),
+        RequestOtpRequest(email: email, countryCode: country, purpose: OtpPurpose.continueFlow),
       );
       // Completing without throwing == 2xx (NetworkManager maps non-2xx to
       // ApiException).

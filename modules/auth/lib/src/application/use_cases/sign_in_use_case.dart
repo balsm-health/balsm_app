@@ -31,6 +31,34 @@ class SignInLockout extends SignInResult {
   final LockedOut session;
 }
 
+/// Result of [SignInUseCase.goOnline] — a device-only account's OTP verify
+/// while asking the server to keep its offline id.
+sealed class GoOnlineResult {
+  const GoOnlineResult();
+}
+
+/// Server kept the device's id: nothing to re-key.
+class GoOnlineAdopted extends GoOnlineResult {
+  const GoOnlineAdopted();
+}
+
+/// New server account under a different id (collision): re-key locally.
+class GoOnlineNewId extends GoOnlineResult {
+  const GoOnlineNewId(this.userId);
+  final String userId;
+}
+
+/// The email already had an account; the user must choose merge or discard.
+class GoOnlineExistingAccount extends GoOnlineResult {
+  const GoOnlineExistingAccount(this.userId);
+  final String userId;
+}
+
+class GoOnlineLockout extends GoOnlineResult {
+  const GoOnlineLockout(this.session);
+  final LockedOut session;
+}
+
 /// Handles sign-in for all providers (email OTP, Google, Apple).
 ///
 /// Differences from [SignUpUseCase]:
@@ -52,6 +80,38 @@ class SignInUseCase {
   final EventBus _bus;
 
   // ── Email OTP flow ────────────────────────────────────────────────────────
+
+  /// The code that follows a failed email+password attempt.
+  ///
+  /// One entry serves everyone, so this address may or may not have an
+  /// account and the caller must not find out: the server sends a code either
+  /// way and answers identically. Verifying it signs the owner in or creates
+  /// the account, and reports which only afterwards — by which point the
+  /// mailbox is proven.
+  Future<AppResult<void>> requestContinueOtp(String email, String countryCode) async {
+    try {
+      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.continueFlow);
+      return AppResult.success(null);
+    } on AuthException catch (e) {
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
+  /// The code that proves it is them before their account is deleted. Its
+  /// email says a deletion was asked for, and its link opens the deletion
+  /// screen. An unknown email returns success with no email sent.
+  Future<AppResult<void>> requestDeletionOtp(String email, String countryCode) async {
+    try {
+      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.deleteAccount);
+      return AppResult.success(null);
+    } on AuthException catch (e) {
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
 
   /// Step 1 of forgot-password: request a reset code for an existing user.
   /// Email-OTP login was removed, so this is reset-only; the code is submitted
@@ -95,6 +155,41 @@ class SignInUseCase {
     } on AuthException catch (e) {
       if (e.code == 'account_locked') {
         return _handleLockout(e, email);
+      }
+      return AppResult.failure(NetworkFailure(e.message));
+    } catch (_) {
+      return AppResult.failure(const NetworkFailure());
+    }
+  }
+
+  /// Device-only account going online. Persists the session like
+  /// [verifyEmailOtp] but leaves publishing [UserSignedIn] to the caller,
+  /// which may first need to re-key local data to the returned id.
+  Future<AppResult<GoOnlineResult>> goOnline({
+    required String email,
+    required String code,
+    required String clientAccountId,
+  }) async {
+    try {
+      final deviceId = await _ensureDeviceId();
+      final r = await _adapter.verifyOtpClaim(email, code, deviceId, _deviceLabel(), clientAccountId);
+      // The mode stays deviceOnly here: the caller flips it once local data
+      // is re-keyed or merged.
+      await _persistTokens(
+        accessToken: r.tokens.accessToken,
+        refreshToken: r.tokens.refreshToken,
+        userId: r.tokens.userId,
+        markOnline: false,
+      );
+      if (!r.tokens.isNewUser) return AppResult.success(GoOnlineExistingAccount(r.tokens.userId));
+      if (r.adoptedClientId) return AppResult.success(const GoOnlineAdopted());
+      return AppResult.success(GoOnlineNewId(r.tokens.userId));
+    } on AuthException catch (e) {
+      if (e.code == 'account_locked') {
+        final locked = await _handleLockout(e, email);
+        if (locked.isSuccess && locked.value is SignInLockout) {
+          return AppResult.success(GoOnlineLockout((locked.value as SignInLockout).session));
+        }
       }
       return AppResult.failure(NetworkFailure(e.message));
     } catch (_) {
@@ -295,15 +390,23 @@ class SignInUseCase {
 
   String _deviceLabel() => 'Balsm Flutter App';
 
+  /// Stores the session. Every ordinary sign-in also writes
+  /// `balsm.account_mode = online`: a session with server tokens is an online
+  /// account, whatever a previous device-only account left behind — a stale
+  /// `deviceOnly` would make the interceptor refuse every request and boot
+  /// this account to the offline Unlock screen. Only [goOnline] passes
+  /// [markOnline] false (its caller flips the mode after moving local data).
   Future<void> _persistTokens({
     required String accessToken,
     required String refreshToken,
     required String userId,
+    bool markOnline = true,
   }) async {
     await Future.wait([
       _storage.writeToken(_kAccessToken, accessToken),
       _storage.writeToken(_kRefreshToken, refreshToken),
       _storage.writeToken(_kUserId, userId),
+      if (markOnline) _storage.writeToken(kAccountModeKey, AccountMode.online.wire),
     ]);
   }
 }

@@ -14,6 +14,12 @@ final balsmApiClientProvider = Provider<BalsmApiClient>((ref) {
   return ref.watch(balsmApiControllerProvider).client;
 });
 
+/// The language the app is showing right now (`ar`, `en`), for requests whose
+/// answer is written for the person — the code email, above all. A function,
+/// not a value: the language can change while a provider that read it lives
+/// on. English until the app overrides it with its own state.
+final apiLanguageProvider = Provider<String Function()>((ref) => () => 'en');
+
 /// Shared transport wrapper — one per client, injected into every typed API.
 final networkManagerProvider = Provider<NetworkManager>((ref) {
   return NetworkManager(dio: ref.watch(balsmApiClientProvider).dio);

@@ -68,6 +68,26 @@ class CredentialsController extends AutoDisposeNotifier<CredentialsState> {
     );
   }
 
+  /// True → the code is on its way (caller routes to the verification step).
+  ///
+  /// Requested only after a sign-in that failed on credentials, and only when
+  /// the patient taps: every failed attempt would otherwise email whoever owns
+  /// that address, which is a mail-bomb aimed by anyone who knows it.
+  Future<bool> requestContinueOtp({required String email, required String countryCode}) async {
+    state = const CredentialsState(submitting: true);
+    final result = await ref.read(signInUseCaseProvider).requestContinueOtp(email, countryCode);
+    return result.fold(
+      (_) {
+        state = const CredentialsState();
+        return true;
+      },
+      (f) {
+        state = CredentialsState(error: AuthError.server(f.message));
+        return false;
+      },
+    );
+  }
+
   /// True → OTP sent (caller routes to the verification step).
   Future<bool> requestSignupOtp({required String email, required String countryCode}) async {
     state = const CredentialsState(submitting: true);

@@ -18,11 +18,15 @@ dependencies:
   riverpod_annotation: ^2.6.1
   go_router: ^14.0.0
   drift: ^2.29.0
-  # SQLCipher provides the sqlite3 native libs WITH encryption — do not also
-  # depend on sqlite3_flutter_libs (duplicate Sqlite3FlutterLibsPlugin class).
-  # The app pubspec sets sqlite3 hooks `source: process` so Dart does not also
-  # embed native-assets sqlite3.framework (device/sim mixup on iOS).
-  sqlcipher_flutter_libs: ^0.5.4
+  # Web only: WasmSqlite3 + IndexedDbFileSystem for database_connection_web.dart.
+  sqlite3: any
+  # Web only: IndexedDB / WebCrypto / Web Locks bindings.
+  web: ^1.1.0
+  flutter_secure_storage_platform_interface: any
+  # SQLCipher itself comes from package:sqlite3's build hook (app/pubspec.yaml
+  # `hooks: user_defines: sqlite3: source: sqlcipher`), not from a Flutter
+  # plugin. Do not add sqlcipher_flutter_libs / sqlite3_flutter_libs back: since
+  # sqlite3 3.x they are obsolete and would ship a second SQLite copy.
   dio: ^5.8.0
   balsm_api:
     path: ../balsm_api
@@ -30,6 +34,11 @@ dependencies:
   http: ^1.2.0
   sign_in_with_apple: ^8.2.0
   sentry_flutter: ^9.0.0
+  # Product analytics (behaviour, funnels, campaign attribution). Reached only
+  # through the AnalyticsLogger facade in src/telemetry — see
+  # posthog_analytics_logger.dart. Manual init (AUTO_INIT: false on both native
+  # sides) so the patient's consent is read before the SDK ever starts.
+  posthog_flutter: ^5.50.0
   flutter_local_notifications: ^18.0.0
   timezone: ^0.9.4
   permission_handler: ^11.3.0
@@ -46,6 +55,8 @@ dependencies:
   intl: ^0.20.0
   app_links: ^6.3.0
   url_launcher: ^6.3.0
+  # Installed version, for the app-update check.
+  package_info_plus: ^9.0.1
   url_strategy: ^0.3.0
   flutter_svg: ^2.0.10+1
   googleapis: ^13.2.0
@@ -73,7 +84,6 @@ dev_dependencies:
   drift_dev: ^2.29.0
   mocktail: ^1.0.4
 
-  sqlite3: any
 flutter:
   assets:
     - assets/brand/

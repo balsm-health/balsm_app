@@ -193,30 +193,4 @@ class PhiCorpus {
     'bio',
     'emergency_contact',
   };
-
-  /// Field names that are permitted in outbound telemetry.
-  static const Set<String> allowedFields = {
-    'event_id',
-    'timestamp',
-    'platform',
-    'level',
-    'logger',
-    'transaction',
-    'environment',
-    'release',
-    'dist',
-    'type',
-    'value',
-    'stacktrace',
-    'module',
-    'function',
-    'filename',
-    'lineno',
-    'colno',
-    'abs_path',
-    'status_code',
-    'method',
-    'url',
-    'reason',
-  };
 }

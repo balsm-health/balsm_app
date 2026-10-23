@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
@@ -9,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'go_online_sheet.dart';
 import 'profile_subscreens.dart';
 import 'package:core/core.dart';
 import 'package:account/account.dart';
@@ -22,6 +25,7 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../shell.dart';
 import '../widgets/balsm_mark.dart';
+import '../widgets/phone_field.dart';
 
 /// Opens the account/identity editor (home.jsx AccountDetailsScreen).
 void openPersonalDetails(BuildContext context) {
@@ -84,14 +88,10 @@ final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async
   return ref.watch(accountProfileUseCaseProvider).load();
 });
 
-/// TTL choices offered before minting the emergency QR token (FR-017).
-/// `key` is an app i69n label key.
-const _emergencyTtlOptions = <({String key, int seconds})>[
-  (key: 'emergency.eqr_ttl_1h', seconds: 3600),
-  (key: 'emergency.eqr_ttl_6h', seconds: 21600),
-  (key: 'emergency.eqr_ttl_24h', seconds: 86400),
-  (key: 'emergency.eqr_ttl_7d', seconds: 604800),
-];
+/// Connected accounts (Apple / Google) on Account details. Off until Apple ID
+/// and Google sign-in are configured — the rows could only ever show
+/// "disconnected" and a Connect button that links nothing.
+const _showConnectedAccounts = false;
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
   const PersonalDetailsScreen({super.key, required this.s});
@@ -392,7 +392,11 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       // simply show the placeholder until re-selected.
       _nationality = (profile.nationality?.isNotEmpty ?? false) ? CountryCode.tryFromCode(profile.nationality!) : null;
       _gender = profile.gender;
-      s.setGender(profile.gender ?? Gender.other);
+      // setGender notifies AppScope, which may not be marked dirty mid-build.
+      final g = profile.gender ?? Gender.other;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) s.setGender(g);
+      });
       _dob = (profile.dateOfBirth?.isNotEmpty ?? false) ? DateTime.tryParse(profile.dateOfBirth!) : null;
     }
 
@@ -401,7 +405,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       body: Column(children: [
         const PadTop(),
         AppBarRow(
-          leading: RoundBtn(icon: backArrow(context), onTap: () => Navigator.pop(context)),
+          leading: RoundBtn(
+              icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => Navigator.pop(context)),
           children: [
             Expanded(
                 child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
@@ -484,23 +489,24 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
                       ]),
                     ]),
-                    // Connected accounts — visual match of home.jsx. Connect is
-                    // shown disconnected until a real Apple/Google link API exists;
-                    // do not fake a connected session.
-                    _section(LucideIcons.link, s.strings.profile.conn_accounts),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(T.rLg),
-                          border: Border.all(color: T.border),
-                          boxShadow: T.shadowSm),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(children: [
-                        _connectedRow(apple: true, label: s.strings.profile.conn_apple, last: false),
-                        _connectedRow(apple: false, label: s.strings.profile.conn_google, last: true),
-                      ]),
-                    ),
+                    // Connected accounts — visual match of home.jsx. Hidden behind
+                    // [_showConnectedAccounts] until Apple/Google sign-in is set up.
+                    if (_showConnectedAccounts) ...[
+                      _section(LucideIcons.link, s.strings.profile.conn_accounts),
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(T.rLg),
+                            border: Border.all(color: T.border),
+                            boxShadow: T.shadowSm),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(children: [
+                          _connectedRow(apple: true, label: s.strings.profile.conn_apple, last: false),
+                          _connectedRow(apple: false, label: s.strings.profile.conn_google, last: true),
+                        ]),
+                      ),
+                    ],
                     // Basic info — name (→ display_name), date of birth (PHI, 18+),
                     // gender. All persisted via PATCH /account/profile.
                     _section(LucideIcons.user, s.strings.profile.pd_basic_info),
@@ -518,7 +524,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                     // Contact — phone, national ID (PHI/PII, encrypted), nationality.
                     _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
                     _card([
-                      _field(s.strings.profile.pd_phone, _phoneCtrl, mono: true),
+                      _phoneField(s.strings.profile.pd_phone, _phoneCtrl),
                       const SizedBox(height: 14),
                       _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
                       const SizedBox(height: 14),
@@ -538,7 +544,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Expanded(child: _labeled(s.strings.profile.pd_em_rel, _relationField())),
                           const SizedBox(width: 12),
-                          Expanded(child: _field(s.strings.profile.pd_em_phone, emPhone, mono: true)),
+                          Expanded(child: _phoneField(s.strings.profile.pd_em_phone, emPhone)),
                         ]),
                         const SizedBox(height: 14),
                         PButton(s.strings.profile.pd_add_contact,
@@ -643,6 +649,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
       ));
+
+  /// Phone entry with its country picker. Every number the patient gives us is
+  /// captured this way — a bare text field left the country code to guesswork.
+  Widget _phoneField(String label, TextEditingController c) => _labeled(label, PhoneField(controller: c));
 
   /// Date-of-birth field — opens a date picker; shows dd / mm / yyyy.
   Widget _dobField() => GestureDetector(
@@ -991,16 +1001,22 @@ class _RelationshipSheet extends StatelessWidget {
 /// and renders a rounded-dot QR of `{BASE_URL}/emergency/{jti}#k={key}` with the
 /// Balsm flower in its center. The decryption key lives ONLY in the URL fragment
 /// (`#k=`) — it is embedded in the QR / clipboard locally and is NEVER sent to
-/// the server (FR-013/FR-014). Before minting, the user picks a TTL (FR-017);
-/// an active token shows its expiry + a Revoke action. Slides up; in-sheet toast
-/// confirms copy/save/revoke.
+/// the server (FR-013/FR-014). The token is permanent and minted offline-first
+/// (the jti is generated on-device, the server sync is best-effort), so the
+/// code appears without a connection; an active token offers Revoke / Rotate.
+/// Slides up; in-sheet toast confirms copy/save/revoke.
 /// Opens the patient's shareable QR.
 ///
 /// `home.jsx` moved this out of Account details and onto the Profile tab, so
 /// the entry point is [ProfileScreen] now — but the sheet itself, with its
 /// mint/rotate/revoke controller, stays here next to the rest of the account
 /// surface.
-Future<void> openQrShare(BuildContext context, {required PatientAppState s, required String name}) {
+///
+/// Sharing needs a server account, so a device-only account is offered the
+/// go-online sheet first ([requireOnline]).
+Future<void> openQrShare(BuildContext context, {required PatientAppState s, required String name}) async {
+  if (!await requireOnline(context)) return;
+  if (!context.mounted) return;
   return showAppSheet<void>(
     context,
     barrierColor: const Color(0x6B14202B),
@@ -1035,7 +1051,6 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   // naturally; build() watches the provider, so they are always current.
   QrShareState get _qs => ref.read(qrShareControllerProvider);
   MintResult? get _mint => _qs.mint;
-  int get _ttlSeconds => _qs.ttlSeconds;
   bool get _minting => _qs.minting;
   bool get _revoking => _qs.revoking;
   bool get _rotating => _qs.rotating;
@@ -1178,7 +1193,12 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     try {
       final bytes = await _captureQrPng();
       if (bytes == null) return;
-      await Gal.putImageBytes(bytes, name: 'balsm-qr');
+      if (kIsWeb) {
+        // No photo library in a browser: hand the image over as a download.
+        await FilePicker.platform.saveFile(fileName: 'balsm-qr.png', bytes: bytes);
+      } else {
+        await Gal.putImageBytes(bytes, name: 'balsm-qr');
+      }
       _showToast(s.strings.emergency.eqr_saved_toast);
     } on GalException {
       // Permission denied or storage failure — nothing PHI-safe to add.
@@ -1257,7 +1277,12 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                   Expanded(
                       child: Text(s.strings.emergency.eqr_title,
                           style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
-                  RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 17, onTap: () => Navigator.pop(context)),
+                  RoundBtn(
+                      icon: LucideIcons.x,
+                      semanticLabel: s.strings.common.a11y_close,
+                      ghost: true,
+                      iconSize: 17,
+                      onTap: () => Navigator.pop(context)),
                 ]),
               ),
             ]),
@@ -1404,6 +1429,11 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
               onTap: expired ? null : _copy),
         ]),
       ),
+      // `qrshare.jsx` adds a permanence note here ("this is your permanent code
+      // — it doesn't expire"). Deliberately not ported: the token has no expiry
+      // but can still be revoked or rotated, so the sheet gives no reassurance
+      // rather than a promise the app cannot keep. Guarded by
+      // `test/qr_no_permanence_test.dart`.
       const SizedBox(height: 16),
       if (expired)
         // Token lapsed → offer a fresh mint (returns to the affordance).
@@ -1492,20 +1522,14 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     ];
   }
 
-  /// Pre-mint affordance: TTL picker + Generate, plus any mint error.
+  /// Pre-mint affordance: Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
         ..._identity(),
-        const SizedBox(height: 18),
-        Text(s.strings.emergency.eqr_valid_for.toUpperCase(),
-            style: Typo.meta(ar: ar)
-                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 0.8, color: T.fg3)),
-        const SizedBox(height: 8),
-        _ttlControl(),
         if (_error != null) ...[
           const SizedBox(height: 14),
           _errorBox(_error!),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         _minting
             ? _busyButton(primary: true)
             : PButton(s.strings.emergency.eqr_generate,
@@ -1517,37 +1541,6 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                 ar: ar,
                 onTap: _mintToken),
       ];
-
-  /// Segmented TTL selector (mirrors the prototype's `.segmented` control).
-  Widget _ttlControl() => Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-            color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
-        child: Row(
-          spacing: 6,
-          children: _emergencyTtlOptions.map((opt) => Expanded(child: _ttlSeg(opt))).toList(),
-        ),
-      );
-
-  Widget _ttlSeg(({String key, int seconds}) opt) {
-    final active = _ttlSeconds == opt.seconds;
-    return GestureDetector(
-      onTap: () => ref.read(qrShareControllerProvider.notifier).setTtl(opt.seconds),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: Motion.base,
-        curve: Motion.easeOut,
-        height: 42,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-            color: active ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(7),
-            boxShadow: active ? T.shadowXs : null),
-        child: Text(s.t(opt.key),
-            style: Typo.num(size: FS.sm, weight: FontWeight.w700, color: active ? s.accent.d : T.fg3)),
-      ),
-    );
-  }
 
   /// Disabled/empty state — signed out or no health data (never crashes).
   List<Widget> _disabledState({required bool signedOut}) => [

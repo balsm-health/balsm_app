@@ -73,7 +73,7 @@ Future<void> main() => bootstrap();
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 fvm dart analyze app packages modules
 fvm dart format --set-exit-if-changed app/lib/brands/balsm/main_balsm.dart
 cd app && fvm flutter test
@@ -84,7 +84,7 @@ Expected: analyze reports only the pre-existing `app_database.g.dart` `unused_fi
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 fvm dart run tool/build.dart run balsm dev
 ```
 Expected: the app launches to the walkthrough or welcome screen exactly as before. This is the only check that catches a bad move — the unit suites never call `main()`. Stop it once you see the first screen.
@@ -213,7 +213,7 @@ void main() {
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/packages/core
+cd packages/core
 fvm flutter test test/test_kit/fake_apis_test.dart
 ```
 Expected: FAIL to compile — `Undefined name 'FakeAuthApi'`, `E2eFixture`, `e2eApiOverrides`.
@@ -460,7 +460,7 @@ used here for the first time. Confirm each compiles and fix the call site (not
 the DTO) if a named parameter differs:
 
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 grep -n "class RevokeAllSessionsResponse" -A6 packages/balsm_api/lib/src/sessions/responses.dart
 grep -n "class UpdateProfileRequest\|class ChangeLanguageRequest\|class ChangeCountryRequest\|class ClaimHandleRequest" -A8 packages/balsm_api/lib/src/account/requests.dart
 grep -n "class AcceptDisclosureRequest" -A6 packages/balsm_api/lib/src/disclosure/requests.dart
@@ -471,7 +471,7 @@ grep -n "class PasswordSignInRequest" -A8 packages/balsm_api/lib/src/auth/reques
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/packages/core
+cd packages/core
 fvm flutter test test/test_kit/fake_apis_test.dart
 ```
 Expected: PASS, 7 tests.
@@ -480,7 +480,7 @@ Expected: PASS, 7 tests.
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 fvm dart analyze packages/core
 fvm dart format --set-exit-if-changed packages/core/lib/src/test_kit/fake_apis.dart packages/core/test/test_kit/fake_apis_test.dart
 cd packages/core && fvm flutter test test/config test/network test/localization
@@ -539,7 +539,7 @@ Future<void> main() => bootstrap(extraOverrides: e2eApiOverrides());
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app
+cd app
 fvm flutter build apk --debug \
   -t lib/brands/balsm/main_e2e.dart \
   --dart-define-from-file=env/balsm/dev.json \
@@ -591,7 +591,7 @@ patrol:
 
 Then:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app && fvm flutter pub get
+cd app && fvm flutter pub get
 fvm dart pub global activate patrol_cli
 ```
 
@@ -657,7 +657,7 @@ Confirm the package path matches `MainActivity.kt`'s package — the gradle
 file to match:
 
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 find app/android/app/src/main -name "MainActivity.kt" -exec head -3 {} \;
 ```
 If the package is `health.balsm.app`, the test file belongs at
@@ -703,7 +703,7 @@ void main() {
 
 Start an Android emulator, then:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app
+cd app
 patrol test -t integration_test/patrol/sign_in_test.dart \
   --dart-define-from-file=env/balsm/dev.json \
   --dart-define-from-file=env/shared.json
@@ -732,7 +732,7 @@ someone runs the Arabic flow.
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app
+cd app
 patrol test -t integration_test/patrol/sign_in_test.dart \
   --dart-define-from-file=env/balsm/dev.json \
   --dart-define-from-file=env/shared.json
@@ -917,7 +917,7 @@ void main() {
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app
+cd app
 patrol test -t integration_test/patrol/ \
   --dart-define-from-file=env/balsm/dev.json \
   --dart-define-from-file=env/shared.json
@@ -953,7 +953,7 @@ git commit -m "[Test] Patrol: returning account, lockout, sign-in failure, discl
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app
+cd app
 fvm flutter install --debug -t lib/brands/balsm/main_e2e.dart \
   --dart-define-from-file=env/balsm/dev.json \
   --dart-define-from-file=env/shared.json
@@ -964,7 +964,7 @@ Expected: the stubbed build installs on the running emulator or device.
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app
+cd app
 maestro test .maestro/wt_flow.yaml
 ```
 Expected: PASS with three screenshots written. This flow already existed and is
@@ -1038,7 +1038,7 @@ The existing widget test `app/test/social_sign_in_test.dart` and
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app/app
+cd app
 maestro test .maestro/
 ```
 Expected: 3 flows pass.
@@ -1098,7 +1098,7 @@ with:
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 fvm dart run melos e2e
 ```
 Expected: `auth_ui_test.dart` runs and passes; no Patrol file is picked up.
@@ -1185,7 +1185,7 @@ to:
 
 Run:
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 fvm dart analyze app packages modules
 fvm dart run melos test
 fvm dart run melos boundaries

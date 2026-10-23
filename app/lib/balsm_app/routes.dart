@@ -25,6 +25,12 @@ abstract final class AppRoutes {
 
   /// The signed-in tabbed shell.
   static const app = 'app';
+
+  /// Device-only account cold start: password unlock before the shell.
+  static const unlock = 'unlock';
+
+  /// Going online found an existing account: merge this device's data or discard it.
+  static const mergeOrDiscard = 'merge';
 }
 
 /// Tabs and sub-screens inside the signed-in shell ([PatientAppState.tab]).
@@ -59,4 +65,14 @@ abstract final class PublicQrPaths {
 
   /// Serving alias for dev-era codes: `/emergency/{jti}#k={key}`.
   static const legacyEmergency = 'emergency';
+
+  /// Session-less account deletion: `/delete-account`. This is the URL given to
+  /// Google Play's Data deletion field, which requires a route reachable
+  /// WITHOUT the app installed, so the shell must serve it before any auth
+  /// gate. Identity is proven inside the screen by one-time code.
+  static const deleteAccount = 'delete-account';
+
+  /// Session-less cancellation of a pending deletion, linked from the email
+  /// that confirms the request: `/delete-account-cancel`.
+  static const deleteAccountCancel = 'delete-account-cancel';
 }

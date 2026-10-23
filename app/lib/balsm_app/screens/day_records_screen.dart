@@ -6,6 +6,7 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/attachment_thumb.dart';
+import '../widgets/body_map.dart';
 import '../widgets/mood_face.dart';
 import 'checkin_shared.dart';
 
@@ -85,7 +86,10 @@ class DayRecordsScreen extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const PadTop(),
           AppBarRow(children: [
-            RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: backArrow(context),
+                semanticLabel: s.strings.common.a11y_back,
+                onTap: () => Navigator.of(context).pop()),
             const SizedBox(width: 12),
             Expanded(
               child: Text('${d.day} ${checkInMonthShort(s, d)}', style: Typo.heading(ar: s.rtl)),
@@ -153,6 +157,18 @@ class DayRecordsScreen extends StatelessWidget {
                         ]),
                       ]),
                     ),
+                  ]),
+                ),
+              // Where it hurt — the body map as the patient marked it.
+              if (checkIn.painSites.isNotEmpty)
+                PCard(
+                  margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    Text(s.strings.checkin.body_marked,
+                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                    const SizedBox(height: 12),
+                    BodyMapPreview(sites: checkIn.painSites),
                   ]),
                 ),
               // The check-in's photo (records-vault back-reference) — design

@@ -11,12 +11,16 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app_state.dart';
 import '../auth/auth_flow_controllers.dart';
+import '../auth/go_online_controller.dart';
+import '../dev/shake_to_dev_config.dart';
 import '../routes.dart';
 import '../assets.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../widgets/auth_fields.dart';
 import '../widgets/legal_sheet.dart';
+import 'remove_device_account.dart';
 import 'walkthrough_screen.dart';
 
 /// Routes the auth flow by `state.route`.
@@ -30,6 +34,8 @@ class AuthRouter extends StatelessWidget {
       AppRoutes.phone => const _PhoneScreen(),
       AppRoutes.otp => const _OtpScreen(),
       AppRoutes.profileSetup => const _ProfileSetupScreen(),
+      AppRoutes.unlock => const _UnlockScreen(),
+      AppRoutes.mergeOrDiscard => const _MergeOrDiscardScreen(),
       _ => const _WelcomeScreen(),
     };
   }
@@ -46,7 +52,9 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   bool _busyGoogle = false;
   String? _error;
 
-  /// Google sign-in ships on Android, web and macOS only. iOS deliberately
+  /// Google sign-in ships on Android and macOS only. Web is off until the
+  /// Google Identity Services button is wired: google_sign_in's `signIn()` on
+  /// web returns no ID token, so the Balsm token exchange cannot run. iOS deliberately
   /// has NO third-party sign-in: offering one there triggers App Review
   /// guideline 4.8 (Sign in with Apple becomes mandatory), and the Apple
   /// provider stays off until team ownership is settled (account ids are
@@ -55,7 +63,7 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   bool get _googleAvailable {
     if (!FlavorConfig.current.socialSignInEnabled) return false;
     if (FlavorConfig.current.googleServerClientId.isEmpty) return false;
-    if (kIsWeb) return true;
+    if (kIsWeb) return false;
     return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.macOS;
   }
 
@@ -151,7 +159,6 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                     const SizedBox(height: 30),
                     PButton(s.strings.onboarding.w_start(s.gender),
                         variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
-                      s.setAuthIntent(AuthIntent.signUp);
                       s.go(AppRoutes.phone);
                     }),
                     const SizedBox(height: 16),
@@ -172,24 +179,13 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                       // WelcomeScreen): email is the only route where social is off.
                       const SizedBox(height: 18),
                     if (_error != null) ...[
-                      Text(_error!,
-                          textAlign: TextAlign.center,
-                          style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                      Semantics(
+                          liveRegion: true,
+                          child: Text(_error!,
+                              textAlign: TextAlign.center,
+                              style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                       const SizedBox(height: 12),
                     ],
-                    GestureDetector(
-                      onTap: () {
-                        s.setAuthIntent(AuthIntent.signIn);
-                        s.go(AppRoutes.phone);
-                      },
-                      child: RichText(
-                          text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
-                        TextSpan(text: '${s.strings.onboarding.w_have} '),
-                        TextSpan(
-                            text: s.strings.onboarding.w_signin,
-                            style: TextStyle(color: s.accent.main, fontWeight: FontWeight.w700)),
-                      ])),
-                    ),
                   ]),
                 ),
               ),
@@ -209,31 +205,45 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                     _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
                   ]),
             ),
-            Pressable(
-              onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
-              child: Semantics(
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Semantics(
                 button: true,
                 label: s.lang == LanguageCode.ar ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0x6B1A1A17),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0x52FFFFFF)),
+                child: MinTapTarget(
+                  child: Pressable(
+                    onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
+                    child: Builder(
+                        builder: (context) => Container(
+                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: const Color(0x6B1A1A17),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: const Color(0x52FFFFFF)),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                const Icon(LucideIcons.languages, size: 17, color: Colors.white),
+                                const SizedBox(width: 7),
+                                Text(
+                                  s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
+                                  style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
+                                      .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+                                ),
+                              ]),
+                            )),
                   ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.languages, size: 17, color: Colors.white),
-                    const SizedBox(width: 7),
-                    Text(
-                      s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
-                      style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
-                          .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
-                    ),
-                  ]),
                 ),
               ),
-            ),
+              // Dev Config, reachable before anyone signs in. The shake gesture
+              // opens the same screen, but a shake is not available on a
+              // simulator and not discoverable on a device, and the server this
+              // build talks to is the first thing that goes wrong. Never in
+              // prod: `serverSwitchingEnabled` is dev + staging only.
+              if (FlavorConfig.current.serverSwitchingEnabled) ...[
+                const SizedBox(width: 8),
+                _DevConfigPill(onClosed: () => setState(() {})),
+              ],
+            ]),
             const SizedBox(height: 4),
           ]),
         ),
@@ -251,6 +261,74 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
               style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
         ]),
       );
+}
+
+/// Opens Dev Config from the welcome screen, labelled with the server this
+/// build is actually talking to.
+///
+/// The host rather than the preset name: "Local" reads the same whether it
+/// resolved to this machine, to an emulator's host alias, or to nothing at
+/// all, and which one it is decides whether anything works. Shown only where
+/// the server can be switched — dev and staging — so it never reaches a
+/// patient.
+class _DevConfigPill extends ConsumerWidget {
+  const _DevConfigPill({required this.onClosed});
+
+  /// Dev Config can repoint the client while this pill is showing where it
+  /// points, so the caller rebuilds when it closes.
+  final VoidCallback onClosed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The live client where there is one, the configured default where there
+    // is not: a widget test or a docshots run builds this screen in a scope
+    // that never overrode the controller, and a dev affordance must not be
+    // what takes the welcome screen down.
+    String base;
+    try {
+      base = ref.watch(balsmApiControllerProvider).client.baseUrl;
+    } catch (_) {
+      base = FlavorConfig.current.defaultServer.apiBaseUrl;
+    }
+    final url = Uri.tryParse(base);
+    final label = url == null || url.host.isEmpty ? '?' : (url.hasPort ? '${url.host}:${url.port}' : url.host);
+
+    return Semantics(
+        button: true,
+        label: 'Dev config',
+        child: MinTapTarget(
+          child: Pressable(
+            onTap: () async {
+              await openDevConfig(context);
+              onClosed();
+            },
+            child: Container(
+              height: 38,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0x6B1A1A17),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0x52FFFFFF)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(LucideIcons.wrench, size: 16, color: Colors.white),
+                const SizedBox(width: 7),
+                // Narrow enough to sit beside the language pill on a 402px screen;
+                // a long staging host ellipsises rather than overflowing the row.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 132),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.bodySm().copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ));
+  }
 }
 
 /// Welcome `.wactions` hairline divider — `or` between 28% white rules.
@@ -281,7 +359,7 @@ class _AuthHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
       child: Row(children: [
-        RoundBtn(icon: backArrow(context), onTap: onBack),
+        RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: onBack),
         const Spacer(),
         Row(children: [
           for (var i = 0; i < 3; i++)
@@ -322,7 +400,10 @@ class _UnderEighteenScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
               child: Row(children: [
-                RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).maybePop()),
+                RoundBtn(
+                    icon: backArrow(context),
+                    semanticLabel: s.strings.common.a11y_back,
+                    onTap: () => Navigator.of(context).maybePop()),
               ]),
             ),
             const Spacer(),
@@ -388,6 +469,11 @@ class _UnderEighteenScreen extends StatelessWidget {
 // Claude Design `PhoneScreen` is email-only in this phase (no mobile
 // signup/login). Collects email + password; sign-up still verifies by OTP
 // before a session exists; sign-in uses the password path.
+
+/// Which credential path this screen is currently on: a normal server
+/// account, or a device-only account created entirely on-device.
+enum _AuthMode { online, deviceOnly }
+
 class _PhoneScreen extends ConsumerStatefulWidget {
   const _PhoneScreen();
   @override
@@ -399,6 +485,44 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   // in [CredentialsController].
   final ctrl = TextEditingController();
   final pwCtrl = TextEditingController();
+
+  /// Set when the password was refused: the screen then asks whether to send a
+  /// code rather than sending one on its own.
+  bool _offerCode = false;
+
+  /// Online (server account) vs device-only: the segmented control
+  /// at the top of this screen switches it.
+  _AuthMode _mode = _AuthMode.online;
+
+  /// True while [_createOnDevice] is in flight. Separate from [_submitting] —
+  /// that one reflects [credentialsControllerProvider], which the device-only
+  /// path never touches.
+  bool _creating = false;
+
+  /// Set when [_createOnDevice] fails (e.g. secure-storage write failed).
+  /// Never the exception's own text — a generic retry prompt only.
+  String? _deviceError;
+
+  /// The error line to show under the fields: the device-only failure while
+  /// in that mode, the online controller's error otherwise.
+  String? get _displayError => _mode == _AuthMode.deviceOnly ? _deviceError : _error;
+
+  bool _seeded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_seeded) return;
+    _seeded = true;
+    // Coming back from the code step — the code never arrived, or it went to a
+    // mistyped address — should not mean retyping both fields. A blank password
+    // box invites a different password, which then fails for a new reason.
+    // Cleared for real on sign-out and once a verified code has consumed it.
+    final s = AppScope.of(context);
+    ctrl.text = s.authEmail;
+    pwCtrl.text = s.authPassword ?? '';
+  }
+
   bool _showPw = false;
 
   bool get _submitting => ref.read(credentialsControllerProvider).submitting;
@@ -421,9 +545,12 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     super.dispose();
   }
 
+  // D5: 8 characters minimum in both modes — the design said 6, but an
+  // offline password can never be server-side rate-limited, so the product owner
+  // raised the floor for everyone, not just device-only.
   bool get ok {
     final emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(ctrl.text.trim());
-    return emailOk && pwCtrl.text.length >= 8;
+    return emailOk && pwCtrl.text.length >= OfflineAccountService.minPasswordLength;
   }
 
   void _showForgotPassword(String email) {
@@ -434,34 +561,88 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     );
   }
 
+  /// One entry for everyone: try the password, and on a plain refusal offer a
+  /// code instead.
+  ///
+  /// The refusal covers three server-side realities — no account, an account
+  /// with no password, a wrong password — and deliberately does not say which.
+  /// So this branches on "sign-in failed", never on "account exists", and the
+  /// step that follows reads identically in every case.
   Future<void> _continue() async {
     final s = AppScope.of(context);
-    final isSignup = s.authIntent == AuthIntent.signUp;
     final address = ctrl.text.trim();
     final controller = ref.read(credentialsControllerProvider.notifier);
 
-    if (!isSignup) {
-      final ok = await controller.signIn(email: address, password: pwCtrl.text);
-      if (!mounted) return;
-      if (ok) {
-        // Credentials are proven good — this is what raises the platform
-        // "Save password?" prompt. Nothing before this point should, or a
-        // typo gets offered to the keychain.
-        TextInput.finishAutofillContext();
-        s.setAuthContact(method: AuthMethod.email, email: address);
-        unawaited(enterAfterSignIn(context, ref, s));
-      } else {
-        // Wrong password / lockout: discard, so the OS does not offer to save.
-        TextInput.finishAutofillContext(shouldSave: false);
-      }
+    final ok = await controller.signIn(email: address, password: pwCtrl.text);
+    if (!mounted) return;
+    if (ok) {
+      // Credentials are proven good — this is what raises the platform
+      // "Save password?" prompt. Nothing before this point should, or a
+      // typo gets offered to the keychain.
+      TextInput.finishAutofillContext();
+      s.setAuthContact(method: AuthMethod.email, email: address);
+      unawaited(enterAfterSignIn(context, ref, s));
       return;
     }
 
-    final ok = await controller.requestSignupOtp(email: address, countryCode: s.country.value);
+    // Nothing proven: never offer the typed password to the keychain.
+    TextInput.finishAutofillContext(shouldSave: false);
+
+    // Felt, not only shown. The message is visible and announced to a screen
+    // reader; a patient who is deaf and not using one has neither a sound nor
+    // speech, and a buzz says "that did not work" without their having to be
+    // looking at the one line where it says so.
+    unawaited(HapticFeedback.heavyImpact());
+
+    // A lockout is not an invalid credential, and neither is an unreachable
+    // server. Offering a code for either would walk around the lockout, or
+    // email someone because the Wi-Fi dropped.
+    final error = ref.read(credentialsControllerProvider).error;
+    if (error == null || error.kind != AuthErrorKind.invalidCredentials) return;
+
+    setState(() => _offerCode = true);
+  }
+
+  /// Sends the code the patient just asked for, then moves to the code step.
+  Future<void> _sendCode() async {
+    final s = AppScope.of(context);
+    final address = ctrl.text.trim();
+    final ok = await ref
+        .read(credentialsControllerProvider.notifier)
+        .requestContinueOtp(email: address, countryCode: s.country.value);
     if (!mounted || !ok) return;
     s.setAuthContact(method: AuthMethod.email, email: address);
+    // Held only for the length of the flow: if the code proves a NEW account
+    // it becomes that account's password, and if it proves an existing one the
+    // patient is asked whether to adopt it. Cleared either way.
     s.setAuthPassword(pwCtrl.text);
+    setState(() => _offerCode = false);
     s.go(AppRoutes.otp);
+  }
+
+  /// Device-only path: no network round-trip, no OTP. Creates the account
+  /// entirely on-device, then runs the same disclosure gate everyone else
+  /// goes through — while device-only, the disclosure API call is refused
+  /// locally by the interceptor and tolerated; acceptance is stored on-device.
+  Future<void> _createOnDevice(PatientAppState s) async {
+    if (_creating) return;
+    setState(() {
+      _creating = true;
+      _deviceError = null;
+    });
+    try {
+      await ref.read(offlineAccountServiceProvider).create(email: ctrl.text.trim(), password: pwCtrl.text);
+      if (!mounted) return;
+      s.setAccountMode(AccountMode.deviceOnly);
+      TextInput.finishAutofillContext();
+      await enterAfterSignIn(context, ref, s);
+    } catch (_) {
+      // Never the exception's own text (could be a secure-storage failure —
+      // no reason to surface or log its message); a generic retry is enough.
+      if (mounted) setState(() => _deviceError = s.strings.auth.device_create_failed);
+    } finally {
+      if (mounted) setState(() => _creating = false);
+    }
   }
 
   @override
@@ -469,7 +650,6 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     final s = AppScope.of(context);
     // Subscribe: the bridge getters above read this provider's current state.
     ref.watch(credentialsControllerProvider);
-    final isSignup = s.authIntent == AuthIntent.signUp;
     return Container(
       color: T.cream50,
       // Groups the email and password fields into one credential set, so the
@@ -485,16 +665,55 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: _Segmented<_AuthMode>(
+                    left: s.strings.auth.mode_online,
+                    right: s.strings.auth.mode_device,
+                    leftIcon: LucideIcons.cloud,
+                    rightIcon: LucideIcons.smartphone,
+                    leftValue: _AuthMode.online,
+                    rightValue: _AuthMode.deviceOnly,
+                    value: _mode,
+                    // Ignored while a device-only create OR an online sign-in
+                    // is in flight — the switch
+                    // must not move out from under either in-progress request.
+                    onChanged: _creating || _submitting
+                        ? (_) {}
+                        : (m) {
+                            setState(() {
+                              _mode = m;
+                              // An online refusal's "send a code?" offer is
+                              // meaningless (and its button hits the network)
+                              // once the screen is showing the device-only
+                              // path instead.
+                              _offerCode = false;
+                              _deviceError = null;
+                            });
+                            // Clears any stale online sign-in error too —
+                            // rebuilding the controller resets its state.
+                            ref.invalidate(credentialsControllerProvider);
+                          },
+                  ),
+                ),
                 const SizedBox(height: 18),
-                Text(isSignup ? s.strings.emergency.em_pw_signup_title : s.strings.emergency.em_pw_title,
-                    style: Typo.title(ar: s.rtl)),
+                // One title for both audiences online. Which one this patient
+                // is, the screen is not told and must not imply. Device-only
+                // is its own, separately-named mode — there is only one way
+                // in for it, so nothing to stay neutral about.
+                Text(
+                  _mode == _AuthMode.deviceOnly ? s.strings.auth.device_title : s.strings.emergency.em_one_title,
+                  style: Typo.title(ar: s.rtl),
+                ),
                 const SizedBox(height: 8),
-                Text(isSignup ? s.strings.emergency.em_pw_signup_help : s.strings.emergency.em_pw_help,
-                    style: Typo.body(ar: s.rtl)),
+                Text(
+                  _mode == _AuthMode.deviceOnly ? s.strings.auth.device_help : s.strings.emergency.em_one_help,
+                  style: Typo.body(ar: s.rtl),
+                ),
                 const SizedBox(height: 24),
                 _Label(s.strings.emergency.em_label, ar: s.rtl),
                 const SizedBox(height: 8),
-                _Input(
+                AuthInput(
                     controller: ctrl,
                     id: 'emailField',
                     hint: s.strings.emergency.em_ph,
@@ -505,8 +724,13 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     onChanged: (_) => setState(() {})),
                 const SizedBox(height: 16),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  _Label(s.strings.auth.pw_label, ar: s.rtl),
-                  if (!isSignup)
+                  _Label(_mode == _AuthMode.deviceOnly ? s.strings.auth.device_pw_label : s.strings.auth.pw_label,
+                      ar: s.rtl),
+                  // Shown only in online mode: a device-only account has no
+                  // server-side record to recover a password from yet (see
+                  // the warning card below), so there is nothing this link
+                  // could do.
+                  if (_mode == _AuthMode.online)
                     GestureDetector(
                       onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
                       child: Text(s.strings.auth.forgot_pw,
@@ -514,47 +738,92 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     ),
                 ]),
                 const SizedBox(height: 8),
-                _Input(
+                AuthInput(
                     controller: pwCtrl,
                     id: 'passwordField',
-                    hint: s.strings.auth.pw_ph,
+                    // D5: 8 characters minimum in both modes — shown as the
+                    // hint instead of a generic placeholder.
+                    hint: s.strings.auth.pw_min_hint,
                     obscure: !_showPw,
                     forceLtr: true,
                     accent: s.accent,
-                    // newPassword is what makes iOS offer to GENERATE a strong
-                    // one on sign-up; password asks it to fill an existing.
-                    autofillHints: [isSignup ? AutofillHints.newPassword : AutofillHints.password],
-                    suffixIcon: GestureDetector(
-                      onTap: () => setState(() => _showPw = !_showPw),
-                      child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
+                    // `password`, not `newPassword`: the screen cannot know
+                    // this is a signup, and asking iOS to generate a strong one
+                    // for a returning patient would fight their saved entry.
+                    autofillHints: const [AutofillHints.password],
+                    // Icon-only, so a screen reader has nothing to read, and
+                    // 17px is well under a fingertip.
+                    suffixIcon: Semantics(
+                      button: true,
+                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                      child: GestureDetector(
+                        // Opaque, so the whole slot the decoration reserves is
+                        // tappable rather than just the glyph.
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => setState(() => _showPw = !_showPw),
+                        child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
+                      ),
                     ),
                     onChanged: (_) => setState(() {})),
+                if (_mode == _AuthMode.deviceOnly) ...[
+                  const SizedBox(height: 12),
+                  _DeviceOnlyWarning(text: s.strings.auth.device_warning, ar: s.rtl),
+                ],
               ]),
             )),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
               child: Column(children: [
-                if (_error != null)
+                if (_displayError != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(_error!,
-                        textAlign: TextAlign.center,
-                        style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_displayError!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
+                // The password was refused. Ask before sending anything: a
+                // mistyped password would otherwise email whoever owns that
+                // address, every time. Online only — device-only has no OTP.
+                if (_offerCode && _mode == _AuthMode.online) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      s.strings.emergency.em_send_code_q(ctrl.text.trim()),
+                      textAlign: TextAlign.center,
+                      style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5),
+                    ),
+                  ),
+                  PButton(
+                    s.strings.emergency.em_send_code,
+                    variant: BtnVariant.primary,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _submitting ? null : _sendCode,
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 Opacity(
-                    opacity: ok && !_submitting ? 1 : 0.4,
+                    opacity: ok && !_submitting && !_creating ? 1 : 0.4,
                     child: PButton(
-                        _submitting && !isSignup
-                            ? s.strings.auth.pw_signing_in
-                            : (isSignup ? s.strings.auth.pw_signup : s.strings.auth.pw_signin),
-                        variant: BtnVariant.primary,
+                        _mode == _AuthMode.deviceOnly
+                            ? s.strings.auth.device_create
+                            : (_submitting ? s.strings.auth.pw_signing_in : s.strings.auth.pw_continue),
+                        variant: _offerCode && _mode == _AuthMode.online ? BtnVariant.secondary : BtnVariant.primary,
                         large: true,
                         block: true,
                         accent: s.accent,
                         ar: s.rtl,
-                        onTap: ok && !_submitting
+                        onTap: ok && !_submitting && !_creating
                             ? () {
-                                _continue();
+                                if (_mode == _AuthMode.deviceOnly) {
+                                  _createOnDevice(s);
+                                } else {
+                                  _continue();
+                                }
                               }
                             : null)),
                 const SizedBox(height: 14),
@@ -568,13 +837,442 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   }
 }
 
+// ── Unlock (device-only cold start) ──────────────────────────
+// [PatientAppState.load] boots a device-only account straight here instead
+// of the welcome screen (and a pending merge too, before its merge screen).
+// "Forgot password? Start over" removes the account and its data after two
+// confirmations — the password can't be recovered. No DesignSync design exists for this screen
+// yet — it is built from _PhoneScreen's own pieces (cream background, the
+// password AuthInput with its show/hide eye, the device-only warning card) so it
+// at least looks native meanwhile; ask for a real design before release (see
+// docs/offline-account.md, "Unlock").
+class _UnlockScreen extends ConsumerStatefulWidget {
+  const _UnlockScreen();
+  @override
+  ConsumerState<_UnlockScreen> createState() => _UnlockScreenState();
+}
+
+class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
+  final _pwCtrl = TextEditingController();
+  bool _showPw = false;
+  bool _busy = false;
+
+  /// Set when [OfflineAccountService.unlock] refuses the password. Cleared on
+  /// the next attempt.
+  String? _error;
+
+  /// Non-null while locked out; cleared once the countdown reaches zero.
+  DateTime? _lockedUntil;
+  int _secsLeft = 0;
+  Timer? _timer;
+
+  bool get _locked => _lockedUntil != null;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_checkLockout());
+  }
+
+  Future<void> _checkLockout() async {
+    final locked = await ref.read(offlineAccountServiceProvider).lockout();
+    if (!mounted || locked == null) return;
+    _startLockout(locked.until);
+  }
+
+  /// Seeds the countdown from a single `DateTime.now()` read, then ticks the
+  /// local counter down once a second rather than re-reading the clock on
+  /// every tick. The seconds remaining round UP (a 29.9s wait still reads
+  /// "30s") — never show less time than is actually left.
+  void _startLockout(DateTime until) {
+    _timer?.cancel();
+    final ms = until.difference(DateTime.now().toUtc()).inMilliseconds;
+    final secs = ms <= 0 ? 0 : (ms / 1000).ceil();
+    if (secs <= 0) {
+      setState(() => _lockedUntil = null);
+      return;
+    }
+    setState(() {
+      _lockedUntil = until;
+      _secsLeft = secs;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _secsLeft -= 1;
+        if (_secsLeft <= 0) {
+          _lockedUntil = null;
+          _timer?.cancel();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pwCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_locked || _busy || _pwCtrl.text.isEmpty) return;
+    final s = AppScope.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await ref.read(offlineAccountServiceProvider).unlock(_pwCtrl.text);
+      if (!mounted) return;
+      switch (result) {
+        case Unlocked():
+          _pwCtrl.clear();
+          // A go-online that found an existing account is still waiting for
+          // its merge-or-discard choice: that screen, not the app.
+          final pendingMerge = await ref.read(offlineAccountServiceProvider).pendingMerge();
+          if (!mounted) return;
+          s.go(pendingMerge ? AppRoutes.mergeOrDiscard : AppRoutes.app);
+        case WrongPassword():
+          _pwCtrl.clear();
+          setState(() => _error = s.strings.auth.unlock_wrong);
+        case LockedUntil(:final until):
+          _pwCtrl.clear();
+          _startLockout(until);
+      }
+    } catch (_) {
+      // Never the exception's own text (could be a secure-storage failure —
+      // no reason to surface or log its message); a generic retry is enough.
+      if (mounted) {
+        _pwCtrl.clear();
+        setState(() => _error = s.strings.auth.unlock_failed);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// "Forgot password? Start over": the password can't be recovered (spec
+  /// §1, out of scope), so the only way forward is to delete the account and
+  /// its data. Two explicit confirmations first.
+  Future<void> _startOver() async {
+    if (_busy) return;
+    final s = AppScope.of(context);
+    if (!await confirmRemoveDeviceAccount(context, s, forgotPassword: true) || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final ok = await removeDeviceAccount(ref, s);
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (!ok) _error = s.strings.offline.merge_failed;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final ok = _pwCtrl.text.isNotEmpty && !_locked && !_busy;
+    return Container(
+      color: T.cream50,
+      child: SafeArea(
+        child: ContentColumn(
+          maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
+          child: Column(children: [
+            const SizedBox(height: 28),
+            Expanded(
+                child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Semantics(header: true, child: Text(s.strings.auth.unlock_title, style: Typo.title(ar: s.rtl))),
+                const SizedBox(height: 8),
+                Text(s.strings.auth.unlock_help, style: Typo.body(ar: s.rtl)),
+                const SizedBox(height: 24),
+                _Label(s.strings.auth.pw_label, ar: s.rtl),
+                const SizedBox(height: 8),
+                AuthInput(
+                    controller: _pwCtrl,
+                    id: 'unlockPasswordField',
+                    hint: s.strings.auth.pw_ph,
+                    obscure: !_showPw,
+                    forceLtr: true,
+                    accent: s.accent,
+                    autofillHints: const [AutofillHints.password],
+                    suffixIcon: Semantics(
+                      button: true,
+                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => setState(() => _showPw = !_showPw),
+                        child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
+                      ),
+                    ),
+                    onChanged: (_) => setState(() {})),
+                const SizedBox(height: 12),
+                _DeviceOnlyWarning(text: s.strings.auth.device_warning, ar: s.rtl),
+              ]),
+            )),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+              child: Column(children: [
+                if (_locked)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(s.strings.auth.unlock_locked(_secsLeft.toString()),
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  )
+                else if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  ),
+                Opacity(
+                    opacity: ok ? 1 : 0.4,
+                    child: PButton(
+                      s.strings.auth.unlock_btn,
+                      variant: BtnVariant.primary,
+                      large: true,
+                      block: true,
+                      accent: s.accent,
+                      ar: s.rtl,
+                      onTap: ok ? _submit : null,
+                    )),
+                const SizedBox(height: 4),
+                PButton(
+                  s.strings.auth.unlock_forgot,
+                  variant: BtnVariant.ghost,
+                  block: true,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: _busy ? null : _startOver,
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Merge or discard (email already has an account) ──────────
+// PROVISIONAL — pending the DesignSync design (spec §3); release stays blocked
+// on it. Built from _UnlockScreen's pieces (cream background, title/help, the
+// info card, a primary + secondary action) so it looks native meanwhile; see
+// docs/offline-account.md, "Merge or discard".
+//
+// Reached from the go-online sheet, and at boot while `balsm.pending_merge`
+// is set (PatientAppState.load), so a choice interrupted by a crash comes back
+// here and is simply run again.
+class _MergeOrDiscardScreen extends ConsumerStatefulWidget {
+  const _MergeOrDiscardScreen();
+  @override
+  ConsumerState<_MergeOrDiscardScreen> createState() => _MergeOrDiscardScreenState();
+}
+
+class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
+  bool _busy = false;
+  String? _error;
+
+  /// A choice a previous attempt started and did not finish. Once one has
+  /// begun only it is offered — e.g. after a merge's rows committed, Remove
+  /// would delete the merged records' attachments.
+  MergeChoice? _started;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadStarted());
+  }
+
+  Future<void> _loadStarted() async {
+    MergeChoice? c;
+    try {
+      c = await ref.read(goOnlineControllerProvider).pendingChoice();
+    } catch (_) {
+      return;
+    }
+    if (mounted && c != _started) setState(() => _started = c);
+  }
+
+  Future<void> _merge() => _run((c) => c.merge());
+
+  /// Destructive: a second, explicit confirmation before anything is deleted
+  /// (also when finishing a discard that already started).
+  Future<void> _discard() async {
+    if (_busy) return;
+    final s = AppScope.of(context);
+    final ok = await showAppSheet<bool>(context, builder: (_) => _DiscardConfirmSheet(s: s));
+    if (ok != true || !mounted) return;
+    await _run((c) => c.discard());
+  }
+
+  Future<void> _run(Future<AppResult<void>> Function(GoOnlineController c) action) async {
+    if (_busy) return;
+    final s = AppScope.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    AppResult<void>? r;
+    try {
+      r = await action(ref.read(goOnlineControllerProvider));
+    } catch (_) {
+      // Never the exception's text; the choice can simply be made again.
+      r = null;
+    }
+    if (!mounted) return;
+    if (r != null && r.isSuccess) {
+      s.setAccountMode(AccountMode.online);
+      unawaited(HapticFeedback.lightImpact());
+      await enterAfterSignIn(context, ref, s);
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+    unawaited(HapticFeedback.heavyImpact());
+    setState(() {
+      _busy = false;
+      _error = s.strings.offline.merge_failed;
+    });
+    await _loadStarted();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final st = s.strings.offline;
+    return Container(
+      color: T.cream50,
+      child: SafeArea(
+        child: ContentColumn(
+          maxWidth: 440,
+          maxHeight: kContentBlockMaxHeight,
+          child: Column(children: [
+            const SizedBox(height: 28),
+            Expanded(
+                child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Semantics(header: true, child: Text(st.merge_title, style: Typo.title(ar: s.rtl))),
+                const SizedBox(height: 8),
+                Text(st.merge_help, style: Typo.body(ar: s.rtl)),
+                const SizedBox(height: 24),
+                _DeviceOnlyWarning(text: st.merge_note, ar: s.rtl),
+              ]),
+            )),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+              child: Column(children: [
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  ),
+                Opacity(
+                  opacity: _busy ? 0.4 : 1,
+                  child: Column(children: [
+                    if (_started != MergeChoice.discard)
+                      PButton(
+                        st.merge_btn,
+                        variant: BtnVariant.primary,
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _busy ? null : _merge,
+                      ),
+                    if (_started == null) const SizedBox(height: 10),
+                    if (_started != MergeChoice.merge)
+                      PButton(
+                        st.discard_btn,
+                        variant: BtnVariant.secondary,
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _busy ? null : _discard,
+                      ),
+                  ]),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// The discard's second step. Pops `true` only on the explicit Remove.
+class _DiscardConfirmSheet extends StatelessWidget {
+  const _DiscardConfirmSheet({required this.s});
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) {
+    final st = s.strings.offline;
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        const SheetGrab(),
+        const SizedBox(height: 16),
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 24)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(st.discard_confirm_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(st.discard_confirm_body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
+            const SizedBox(height: 20),
+            PButton(
+              st.discard_confirm_btn,
+              variant: BtnVariant.danger,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, true),
+            ),
+            const SizedBox(height: 8),
+            PButton(
+              s.strings.common.cancel,
+              variant: BtnVariant.secondary,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, false),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
 // ── Disclosure gate identity ─────────────────────────────────
 // The consolidated privacy disclosure the post-sign-in gate enforces. Matches
 // the id/version the disclosure module's routes default to (`consolidated` /
 // `1`). Acceptance is tracked per (id, version), so bumping the version here
 // re-gates every user until they accept the new notice (fail-closed).
-const String _kDisclosureId = 'consolidated';
-const String _kDisclosureVersion = '1';
+const String kDisclosureId = 'consolidated';
+const String kDisclosureVersion = '1';
 
 /// Fail-closed disclosure GATE — interposed between a successful sign-in and
 /// reaching 'app'. Shared by BOTH the OTP-verify and the email+password
@@ -590,8 +1288,8 @@ Future<void> enterAfterSignIn(BuildContext context, WidgetRef ref, PatientAppSta
   final accepted = await ref
       .read(disclosureDaoProvider)
       .watchAcceptance(
-        const DisclosureId.value(_kDisclosureId),
-        _kDisclosureVersion,
+        const DisclosureId.value(kDisclosureId),
+        kDisclosureVersion,
       )
       .first;
   if (!context.mounted) return;
@@ -610,6 +1308,60 @@ Future<void> enterAfterSignIn(BuildContext context, WidgetRef ref, PatientAppSta
   if (didAccept == true) s.go(AppRoutes.app);
 }
 
+/// Asked once, after a code signed an EXISTING account in: should the password
+/// typed a moment ago become this account's password?
+///
+/// Separate and explicit because the two things are not the same act. The code
+/// proved the mailbox; it did not say "replace my credentials". Someone who
+/// simply mistyped their password would otherwise lose the one they have.
+class _AdoptPasswordSheet extends StatelessWidget {
+  const _AdoptPasswordSheet({required this.s});
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = s.strings.emergency;
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 10),
+        const SheetGrab(),
+        const SizedBox(height: 16),
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 24)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(c.em_adopt_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(c.em_adopt_help, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
+            const SizedBox(height: 20),
+            PButton(
+              c.em_adopt_yes,
+              variant: BtnVariant.primary,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, true),
+            ),
+            const SizedBox(height: 8),
+            PButton(
+              c.em_adopt_no,
+              variant: BtnVariant.secondary,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(context, false),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
 // ── OTP ──────────────────────────────────────────────────────
 class _OtpScreen extends ConsumerStatefulWidget {
   const _OtpScreen();
@@ -621,6 +1373,17 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
   // View state only: input + focus. Countdown/verify live in [OtpController].
   final ctrl = TextEditingController();
   final focus = FocusNode();
+
+  /// Set when the session is fine but something after it was not — a password
+  /// that failed to save. Not an auth error, so it does not clear the boxes.
+  String? _notice;
+
+  /// Asks whether to adopt the password typed before the code was requested.
+  /// Null when the sheet is dismissed, which means no.
+  Future<bool?> _askAdoptPassword(PatientAppState s) => showAppSheet<bool>(
+        context,
+        builder: (_) => _AdoptPasswordSheet(s: s),
+      );
 
   int get secs => ref.read(otpControllerProvider).secs;
   bool get _verifying => ref.read(otpControllerProvider).verifying;
@@ -649,6 +1412,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
     final s = AppScope.of(context);
     final isNewUser = await ref.read(otpControllerProvider.notifier).verify(email: s.authEmail, code: code);
     if (!mounted) return;
+    unawaited(isNewUser == null ? HapticFeedback.heavyImpact() : HapticFeedback.lightImpact());
     if (isNewUser != null) {
       // The sign-up password is applied in _afterVerify; the account now
       // exists, so the credentials are worth saving.
@@ -659,14 +1423,29 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
     }
   }
 
-  /// Post-verify navigation. On the password sign-up path a password was stashed
-  /// on the app state — the session now exists, so apply it via setPassword
-  /// (best-effort: the account is already usable regardless) before routing.
+  /// Post-verify navigation, and what becomes of the password that was typed
+  /// before the code was asked for.
+  ///
+  /// A new account keeps it: they chose it a moment ago and never typed it
+  /// twice. An existing account is ASKED. Verifying a code proves the mailbox,
+  /// not an intent to change credentials — silently adopting whatever was in
+  /// the password field would let a typo replace a working password for good.
   Future<void> _afterVerify(PatientAppState s, {required bool isNewUser}) async {
     final pw = s.authPassword;
+    s.setAuthPassword(null); // transient either way — never persisted
     if (pw != null && pw.isNotEmpty) {
-      await ref.read(signInUseCaseProvider).setPassword(password: pw);
-      s.setAuthPassword(null); // clear the transient password
+      final apply = isNewUser || (await _askAdoptPassword(s) ?? false);
+      if (!mounted) return;
+      if (apply) {
+        final result = await ref.read(signInUseCaseProvider).setPassword(password: pw);
+        if (!mounted) return;
+        if (result.isFailure) {
+          // The account exists and the session is live; only the password did
+          // not stick. Say so rather than let them find out next launch.
+          setState(
+              () => _notice = isNewUser ? s.strings.emergency.em_pw_set_failed : s.strings.emergency.em_adopt_failed);
+        }
+      }
     }
     if (!mounted) return;
     // Design 2026-09: the profile-setup step left the registration flow. A new
@@ -706,20 +1485,40 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                 const SizedBox(height: 8),
                 RichText(
                     text: TextSpan(style: Typo.body(ar: s.rtl), children: [
-                  TextSpan(text: '${s.strings.emergency.em_otp_h} '),
+                  // Says nothing about whether this address has an account.
+                  // The screen is reached identically either way, and the copy
+                  // is the last place that distinction could leak.
+                  TextSpan(text: '${s.strings.emergency.em_otp_neutral_h} '),
                   TextSpan(text: contact, style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
                 ])),
+                if (_notice != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_notice!,
+                      style: Typo.meta(ar: s.rtl).copyWith(color: T.sun500, fontWeight: FontWeight.w600, height: 1.5)),
+                ],
                 const SizedBox(height: 28),
-                GestureDetector(
+                // Six painted boxes, one field. Read separately they are six
+                // unnamed containers: no name, no way to hear how many digits
+                // have landed, no sign it is an input at all. The boxes are
+                // excluded and the group carries the label and the count.
+                Semantics(
+                  textField: true,
+                  label: s.strings.common.a11y_code_field,
+                  value: s.strings.common.a11y_code_progress('${code.length}'),
                   onTap: () => focus.requestFocus(),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    for (var i = 0; i < 6; i++)
-                      _OtpBox(
-                        char: i < code.length ? code[i] : '',
-                        active: code.length == i,
-                        accent: s.accent,
-                      ),
-                  ]),
+                  child: ExcludeSemantics(
+                    child: GestureDetector(
+                      onTap: () => focus.requestFocus(),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        for (var i = 0; i < 6; i++)
+                          OtpBox(
+                            char: i < code.length ? code[i] : '',
+                            active: code.length == i,
+                            accent: s.accent,
+                          ),
+                      ]),
+                    ),
+                  ),
                 ),
                 Opacity(
                     opacity: 0,
@@ -743,9 +1542,11 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
-                    child: Text(_error!,
-                        textAlign: TextAlign.center,
-                        style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
                 const SizedBox(height: 24),
                 Center(
@@ -782,33 +1583,6 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
           ]),
         ),
       ),
-    );
-  }
-}
-
-class _OtpBox extends StatelessWidget {
-  const _OtpBox({required this.char, required this.active, required this.accent});
-  final String char;
-  final bool active;
-  final Accent accent;
-  @override
-  Widget build(BuildContext context) {
-    final filled = char.isNotEmpty;
-    // `.otp-box` — border + focus ring animate over --dur-base ease-out.
-    return AnimatedContainer(
-      duration: Motion.base,
-      curve: Motion.easeOut,
-      width: 48,
-      height: 60,
-      margin: const EdgeInsets.symmetric(horizontal: 5),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(T.rMd),
-        border: Border.all(color: active || filled ? accent.main : T.border, width: 1.5),
-        boxShadow: active ? [BoxShadow(color: accent.bg, blurRadius: 0, spreadRadius: 4)] : null,
-      ),
-      child: Text(char, style: Typo.num(size: FS.xl2, weight: FontWeight.w600)),
     );
   }
 }
@@ -875,8 +1649,8 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
     });
     // Real use-case: on-device persist (FR-040 snapshots) + cloud sync + event.
     final result = await ref.read(acceptDisclosureUseCaseProvider).execute(
-          disclosureId: const DisclosureId.value(_kDisclosureId),
-          version: _kDisclosureVersion,
+          disclosureId: const DisclosureId.value(kDisclosureId),
+          version: kDisclosureVersion,
           countryCode: s.country.value,
           supervisoryAuthority: registry.supervisoryAuthority(s.country.value),
           preferredLanguage: s.lang.value,
@@ -905,7 +1679,10 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
               child: Row(children: [
-                RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).maybePop()),
+                RoundBtn(
+                    icon: backArrow(context),
+                    semanticLabel: s.strings.common.a11y_back,
+                    onTap: () => Navigator.of(context).maybePop()),
               ]),
             ),
             Expanded(
@@ -984,9 +1761,11 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(_error!,
-                        textAlign: TextAlign.center,
-                        style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
                 Opacity(
                   opacity: _readToEnd && !_submitting ? 1 : 0.4,
@@ -1186,7 +1965,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                       child: _Field(
                           label: s.strings.onboarding.pf_fname,
                           ar: s.rtl,
-                          child: _Input(
+                          child: AuthInput(
                               controller: first,
                               hint: s.strings.onboarding.pf_fname_ph,
                               accent: s.accent,
@@ -1196,7 +1975,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                       child: _Field(
                           label: s.strings.onboarding.pf_lname,
                           ar: s.rtl,
-                          child: _Input(
+                          child: AuthInput(
                               controller: last,
                               hint: s.strings.onboarding.pf_lname_ph,
                               accent: s.accent,
@@ -1211,7 +1990,7 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
                     child: GestureDetector(
                       onTap: _pickDob,
                       child: AbsorbPointer(
-                        child: _Input(
+                        child: AuthInput(
                             controller: dob,
                             hint: 'DD / MM / YYYY',
                             mono: true,
@@ -1282,7 +2061,7 @@ class _UsernameField extends StatelessWidget {
         ar: s.rtl,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Stack(alignment: Alignment.centerLeft, children: [
-            _Input(
+            AuthInput(
                 controller: controller,
                 hint: s.strings.auth.un_ph,
                 mono: true,
@@ -1337,24 +2116,45 @@ class _Segmented<V> extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     // `.segmented button` — active pill bg/shadow animate over --dur-base.
+    // The pill itself stays the design's height; `MinTapTarget` grows only the
+    // tap/semantics area to the 48px platform minimum, same pattern as
+    // `RoundBtn` — nothing painted changes.
     Widget seg(String label, IconData? icon, bool active, VoidCallback onTap) => Expanded(
-          child: GestureDetector(
+          child: Semantics(
+            button: true,
+            selected: active,
+            label: label,
+            // The node itself must carry the tap action — `excludeSemantics`
+            // below hides the GestureDetector's own semantics (which would
+            // otherwise duplicate the label), so without this the node has no
+            // SemanticsAction.tap and a screen reader's activate gesture does
+            // nothing.
             onTap: onTap,
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: Motion.base,
-              curve: Motion.easeOut,
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  color: active ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                  boxShadow: active ? T.shadowXs : null),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-                if (icon != null) ...[Icon(icon, size: 14, color: active ? T.fg1 : T.fg3), const SizedBox(width: 5)],
-                Text(label,
-                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
-              ]),
+            excludeSemantics: true,
+            child: MinTapTarget(
+              child: GestureDetector(
+                onTap: onTap,
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: Motion.base,
+                  curve: Motion.easeOut,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                      color: active ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(7),
+                      boxShadow: active ? T.shadowXs : null),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: 14, color: active ? T.fg1 : T.fg3),
+                      const SizedBox(width: 5)
+                    ],
+                    Text(label,
+                        style: Typo.bodySm(ar: s.rtl)
+                            .copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
+                  ]),
+                ),
+              ),
             ),
           ),
         );
@@ -1391,6 +2191,29 @@ class _Field extends StatelessWidget {
         const SizedBox(height: 8),
         child,
       ]);
+}
+
+/// Device-only sign-in's unrecoverable-password notice — same info-card shape
+/// used elsewhere in the app (icon + cream-50 fill), under the password field.
+class _DeviceOnlyWarning extends StatelessWidget {
+  const _DeviceOnlyWarning({required this.text, required this.ar});
+  final String text;
+  final bool ar;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: T.cream50, borderRadius: BorderRadius.circular(T.rLg)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(LucideIcons.info, size: 16, color: T.fg3),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.45)),
+          ),
+        ]),
+      );
 }
 
 // ── Forgot-password (email-only reset via OTP code) ──────────
@@ -1463,7 +2286,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
             if (_step == ResetStep.email) ...[
               Text(s.strings.auth.fp_help, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
               const SizedBox(height: 16),
-              _Input(
+              AuthInput(
                   controller: _email,
                   hint: s.strings.emergency.em_ph,
                   keyboard: TextInputType.emailAddress,
@@ -1479,7 +2302,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
               const SizedBox(height: 16),
               _Label(s.strings.auth.fp_code_label, ar: s.rtl),
               const SizedBox(height: 8),
-              _Input(
+              AuthInput(
                   controller: _code,
                   hint: '••••••',
                   keyboard: TextInputType.number,
@@ -1490,22 +2313,28 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
               const SizedBox(height: 14),
               _Label(s.strings.auth.fp_new_pw, ar: s.rtl),
               const SizedBox(height: 8),
-              _Input(
+              AuthInput(
                   controller: _newPw,
                   hint: s.strings.auth.pw_ph,
                   obscure: !_showPw,
                   forceLtr: true,
                   accent: s.accent,
-                  suffixIcon: GestureDetector(
-                      onTap: () => setState(() => _showPw = !_showPw),
-                      child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3)),
+                  suffixIcon: Semantics(
+                      button: true,
+                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                      child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => setState(() => _showPw = !_showPw),
+                          child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3))),
                   onChanged: (_) => setState(() {})),
             ],
             if (_error != null)
               Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(_error!,
-                      style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  child: Semantics(
+                      liveRegion: true,
+                      child: Text(_error!,
+                          style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)))),
             const SizedBox(height: 20),
             if (_step == ResetStep.email)
               Opacity(
@@ -1547,78 +2376,6 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
         ),
       ),
     );
-  }
-}
-
-class _Input extends StatelessWidget {
-  const _Input(
-      {required this.controller,
-      required this.hint,
-      this.id,
-      this.keyboard,
-      this.mono = false,
-      this.forceLtr = false,
-      this.obscure = false,
-      this.prefix,
-      this.prefixIcon,
-      this.suffixIcon,
-      required this.accent,
-      this.onChanged,
-      this.autofillHints});
-  final TextEditingController controller;
-  final String hint;
-
-  /// Stable test selector. Set it and the field becomes addressable by both
-  /// drivers: Patrol matches the Flutter [Key], Maestro matches the platform
-  /// accessibility identifier the semantics node exposes. Label text is not a
-  /// usable selector — it is translated, so an Arabic run would miss it.
-  final String? id;
-  final TextInputType? keyboard;
-  final bool mono;
-  final bool forceLtr;
-  final bool obscure;
-  final String? prefix;
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
-  final Accent accent;
-  final ValueChanged<String>? onChanged;
-
-  /// Tells the OS what this field holds, so the platform password manager can
-  /// fill it and offer to save it. Null for fields that are not credentials —
-  /// an OTP code or a display name must never be offered to a keychain.
-  final List<String>? autofillHints;
-  @override
-  Widget build(BuildContext context) {
-    final style = mono ? Typo.num(size: FS.lg) : Typo.body(ar: false).copyWith(fontSize: FS.lg, color: T.fg1);
-    final field = TextField(
-      key: id == null ? null : Key(id!),
-      controller: controller,
-      keyboardType: keyboard,
-      onChanged: onChanged,
-      obscureText: obscure,
-      autofillHints: autofillHints,
-      textDirection: forceLtr ? TextDirection.ltr : null,
-      style: style,
-      decoration: InputDecoration(
-        isDense: true,
-        prefixText: prefix,
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
-        prefixStyle: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3),
-        hintText: hint,
-        hintStyle: (mono ? Typo.num(size: FS.lg, color: T.fg4) : Typo.body().copyWith(fontSize: FS.lg, color: T.fg4)),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-        focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: accent.main, width: 1.5)),
-      ),
-    );
-    // Maestro selects on the platform accessibility identifier, which only
-    // exists if a semantics node carries one; Patrol selects on the Key above.
-    return id == null ? field : Semantics(identifier: id, child: field);
   }
 }
 

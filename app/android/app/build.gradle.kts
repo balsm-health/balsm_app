@@ -23,6 +23,13 @@ android {
     // Flutter's NDK (28.2.13676358 for 3.47) — every plugin requires it.
     ndkVersion = flutter.ndkVersion
 
+    // The app is Arabic and English only. Libraries ship strings in eighty-odd
+    // languages; without this they are all packaged, and Play lists every one
+    // of them as a language the app supports.
+    androidResources {
+        localeFilters += listOf("en", "ar")
+    }
+
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
@@ -75,6 +82,13 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // R8: rename and shrink the Java/Kotlin side, and drop unused
+            // resources. Flutter turns these on for release builds by default;
+            // stated here so a change of default, or a `--no-shrink` passed by
+            // hand, cannot ship readable class names. The build tool also
+            // refuses a production build that R8 did not run on.
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 
@@ -99,27 +113,4 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-
-// sqlcipher_flutter_libs 0.5.x pulls net.zetetic:android-database-sqlcipher,
-// whose libsqlcipher.so has 4 KB-aligned LOAD segments. Devices with 16 KB
-// pages refuse to run it natively, and Play requires 16 KB support — it is the
-// only library in a release build of this app that is not already aligned.
-//
-// The plugin's 0.6.x line does this swap itself, but it also moves the Apple
-// podspec to SQLCipher 4.10, and this app resolves sqlite3 symbols with
-// `source: process` (app/pubspec.yaml): with that pod the symbols stop being
-// reachable and the database cannot open. Doing it here keeps the fix on the
-// platform that needs it.
-//
-// Safe because nothing in this app touches the AAR's Java API. The plugin
-// exists so System.loadLibrary("sqlcipher") works and Dart dlopens the
-// library; the replacement ships the same libsqlcipher.so, exporting the same
-// sqlite3_* symbols.
-configurations.configureEach {
-    resolutionStrategy.dependencySubstitution {
-        substitute(module("net.zetetic:android-database-sqlcipher"))
-            .using(module("net.zetetic:sqlcipher-android:4.10.0"))
-            .because("16 KB page alignment; the old artifact is end-of-line at 4.5.4")
-    }
 }

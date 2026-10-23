@@ -1,0 +1,26 @@
+Balsm is a personal health record for patients in Egypt, Saudi Arabia and the UAE.
+
+SETUP NOTES
+- At sign-up the app asks for an account country. Please choose Egypt.
+  Balsm launches in Egypt, Saudi Arabia and the UAE only; the list is
+  intentionally short and is not a defect.
+- The app requires users to be 18 or over. Please enter a date of birth
+  before 2008 if prompted.
+- The app is bilingual. Switch between English and Arabic in
+  Settings > Language; the whole interface mirrors to right-to-left.
+
+WHERE THINGS ARE
+- Medications and dose history: Medications tab.
+- Health records and prescription photos: Records tab.
+- Care team, including import from your contacts: Care Team tab.
+- Nearby clinics and pharmacies: Care Team > Find care. This is the only
+  feature that uses location.
+- Account deletion: Settings > Account > Delete account. Deletion is
+  immediate and in-app.
+
+PRIVACY
+Medications, dose history and health records are stored only on the device,
+encrypted with SQLCipher. There is no server endpoint for them. Account
+identity, care-team entries and the nearby-care search do reach our API, and
+are declared in the privacy questionnaire. The app contains no analytics or
+advertising SDK and does no tracking.

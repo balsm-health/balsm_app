@@ -1,7 +1,7 @@
 name: app
 description: Balsm runnable shell
 publish_to: none
-version: 0.1.0+1
+version: 0.1.2+11
 environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
@@ -79,9 +79,13 @@ dependencies:
   share_plus: ^12.0.2
   gal: ^2.3.3
   mobile_scanner: ^7.4.2
+  pasteboard: ^0.5.0
 dev_dependencies:
   # Test-only: care_repository_test opens an in-memory AppDatabase.
   drift: ^2.29.0
+  # Test-only: analytics_consent_toggle_test seeds the KV store via
+  # SharedPreferences.setMockInitialValues.
+  shared_preferences: ^2.3.0
   patrol: ^4.9.0
   flutter_test:
     sdk: flutter
@@ -100,16 +104,19 @@ dependency_overrides:
   # linked → "Couldn't resolve OBJC_CLASS_$_NSArray ... symbol not found").
   # Pin to the last method-channel build to sidestep native assets.
   path_provider_foundation: 2.4.1
-# sqlite3 3.x defaults to bundling a precompiled sqlite3.framework via Dart
-# hooks. Flutter's native-assets copy step shares `build/native_assets/ios`
-# across iphoneos and iphonesimulator, so a device build's framework gets
-# embedded into the next simulator run (dlopen: have 'iOS', need
-# 'iOS-simulator'). Look up SQLCipher already linked by sqlcipher_flutter_libs
-# instead of shipping a second sqlite3.
+# The on-device database is SQLCipher on every platform. package:sqlite3's
+# build hook downloads its prebuilt, sha256-pinned SQLCipher build for each
+# target (libsqlcipher.so per Android ABI, libsqlcipher.dylib for iOS device /
+# simulator) and bundles it as a native asset (DynamicLoadingBundled): the Dart
+# runtime dlopens that file and resolves sqlite3_* on its handle, so no global
+# symbol publication is needed (the Android failure behind `source: process`).
+# History: `source: system` + `name_android: sqlcipher` resolved to Apple's
+# plain libsqlite3.dylib on iOS, so the iOS DB was never encrypted; core's
+# `PRAGMA cipher_version` guard now refuses to open such a database.
 hooks:
   user_defines:
     sqlite3:
-      source: process
+      source: sqlcipher
 flutter:
   uses-material-design: true
   generate: true

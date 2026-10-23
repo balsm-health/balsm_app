@@ -176,7 +176,7 @@ void main() {
       final id = await withProvider();
       await providers.putFile(id, 'vault/card.jpg');
       await providers.putFile(id, 'vault/referral.pdf');
-      expect(await providers.findFiles(id), ['vault/card.jpg', 'vault/referral.pdf']);
+      expect([for (final a in await providers.findFiles(id)) a.locator], ['vault/card.jpg', 'vault/referral.pdf']);
     });
 
     test('detaching removes only the named path', () async {
@@ -184,7 +184,7 @@ void main() {
       await providers.putFile(id, 'vault/a.jpg');
       await providers.putFile(id, 'vault/b.jpg');
       await providers.deleteFile(id, 'vault/a.jpg');
-      expect(await providers.findFiles(id), ['vault/b.jpg']);
+      expect([for (final a in await providers.findFiles(id)) a.locator], ['vault/b.jpg']);
     });
 
     test('removing the provider cascades its files away', () async {
@@ -205,7 +205,56 @@ void main() {
     test('watchProviderFiles emits the current set', () async {
       final id = await withProvider();
       await providers.putFile(id, 'vault/card.jpg');
-      expect(await providers.watchFiles(id).first, ['vault/card.jpg']);
+      expect([for (final a in await providers.watchFiles(id).first) a.locator], ['vault/card.jpg']);
+    });
+
+    test('a link attaches beside a file and keeps its kind', () async {
+      final id = await withProvider();
+      await providers.putFile(id, 'vault/card.jpg');
+      await providers.putLink(id, 'https://maps.app.goo.gl/abc');
+
+      final all = await providers.findFiles(id);
+      expect(all.map((a) => a.kind), [CareFileKind.file, CareFileKind.link]);
+      expect(all.last.locator, 'https://maps.app.goo.gl/abc');
+    });
+
+    test('attaching the same locator twice leaves one row', () async {
+      // The port has always promised this; the insert did not keep it.
+      final id = await withProvider();
+      await providers.putFile(id, 'vault/card.jpg');
+      await providers.putFile(id, 'vault/card.jpg');
+      await providers.putLink(id, 'https://example.org/x');
+      await providers.putLink(id, 'https://example.org/x');
+      expect(await providers.findFiles(id), hasLength(2));
+    });
+
+    test('detaching a link leaves the files alone', () async {
+      final id = await withProvider();
+      await providers.putFile(id, 'vault/card.jpg');
+      await providers.putLink(id, 'https://example.org/x');
+      await providers.deleteFile(id, 'https://example.org/x');
+      expect([for (final a in await providers.findFiles(id)) a.locator], ['vault/card.jpg']);
+    });
+  });
+
+  group('link policy', () {
+    test('only http(s) with a host is storable', () {
+      expect(isStorableLink('https://maps.app.goo.gl/abc'), isTrue);
+      expect(isStorableLink('http://example.org'), isTrue);
+    });
+
+    test('schemes that should never be opened later are refused', () {
+      // A pasted attachment is opened externally on tap; these are not
+      // addresses, they are ways to run or read something local.
+      for (final v in ['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,x', 'tel:+20100']) {
+        expect(isStorableLink(v), isFalse, reason: v);
+      }
+    });
+
+    test('a bare string is refused rather than guessed at', () {
+      expect(isStorableLink('example.org'), isFalse);
+      expect(isStorableLink(''), isFalse);
+      expect(isStorableLink('   '), isFalse);
     });
   });
 }

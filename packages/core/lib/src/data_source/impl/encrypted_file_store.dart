@@ -24,7 +24,8 @@ class EncryptedFileStore implements UserFileStore {
     required this.root,
     required this.activeUser,
     required this.keyFor,
-  });
+    SecureStorageWrapper? keychain,
+  }) : _keychain = keychain;
 
   /// Production factory: 32-byte per-user key persisted in the keychain
   /// under `balsm.file_key.<userId>` (secrets tier — never the DB or prefs).
@@ -36,8 +37,9 @@ class EncryptedFileStore implements UserFileStore {
     return EncryptedFileStore(
       root: root,
       activeUser: activeUser,
+      keychain: keychain,
       keyFor: (user) async {
-        final id = 'balsm.file_key.${user.value}';
+        final id = _keyId(user.value);
         final existing = await keychain.readToken(id);
         if (existing != null && existing.isNotEmpty) {
           return base64Decode(existing);
@@ -51,6 +53,13 @@ class EncryptedFileStore implements UserFileStore {
   }
 
   final Directory root;
+
+  /// Where the per-user file keys live, when they live in the keychain
+  /// ([EncryptedFileStore.withKeychainKey]). Null when [keyFor] is injected
+  /// directly — then only the partition moves in [rekeyOwnerFiles].
+  final SecureStorageWrapper? _keychain;
+
+  static String _keyId(String userId) => 'balsm.file_key.$userId';
 
   /// Resolves the active user at call time (null = signed out).
   final UserId? Function() activeUser;
@@ -68,7 +77,9 @@ class EncryptedFileStore implements UserFileStore {
     return user;
   }
 
-  Directory _partition(UserId user) => Directory('${root.path}${Platform.pathSeparator}${user.value}');
+  Directory _partition(UserId user) => _partitionOf(user.value);
+
+  Directory _partitionOf(String userId) => Directory('${root.path}${Platform.pathSeparator}$userId');
 
   File _file(UserId user, String relativeOrName) {
     // Accept both the relative path returned by [save] ('<user>/<name>.enc')
@@ -143,6 +154,96 @@ class EncryptedFileStore implements UserFileStore {
       if (await dir.exists()) await dir.delete(recursive: true);
     } catch (e) {
       throw StorageWriteException('clear partition failed', e);
+    }
+  }
+
+  /// Renames `<root>/<from>/` to `<root>/<to>/` and moves the file key from
+  /// `balsm.file_key.<from>` to `balsm.file_key.<to>` (new written before the
+  /// old is deleted), so every attachment stays readable under the new id.
+  ///
+  /// Each half is skipped when its source is already gone, so a second call —
+  /// or a retry after a crash part-way — finishes the job instead of failing.
+  /// A target key that is the very key being moved is such a resume; any
+  /// other existing target key or partition throws [StateError].
+  @override
+  Future<void> rekeyOwnerFiles({required String from, required String to}) async {
+    _checkIds([from, to]);
+    if (from == to) return;
+    final kc = _keychain;
+    final fromKey = await kc?.readToken(_keyId(from));
+    final toKey = await kc?.readToken(_keyId(to));
+    final fromDir = _partitionOf(from);
+    final toDir = _partitionOf(to);
+    final hasFromDir = await fromDir.exists();
+    if (fromKey != null && toKey != null && toKey != fromKey) {
+      throw StateError('target owner already has files');
+    }
+    if (hasFromDir && await toDir.exists()) {
+      throw StateError('target owner already has files');
+    }
+    if (kc != null && fromKey != null && toKey == null) await kc.writeToken(_keyId(to), fromKey);
+    if (hasFromDir) await fromDir.rename(toDir.path);
+    if (kc != null && fromKey != null) await kc.deleteToken(_keyId(from));
+  }
+
+  /// A target with neither a key nor a partition takes [from]'s wholesale
+  /// ([rekeyOwnerFiles]). Otherwise every `<root>/<from>/*.enc` is decrypted
+  /// with [from]'s key and saved under [to] with [to]'s key, then removed —
+  /// one file at a time, so a crash leaves each file readable under at least
+  /// one owner and a re-run just finishes. A file that can't be decrypted is
+  /// skipped and removed with the partition. [from]'s partition goes before
+  /// its key, so a partition is never left without the key that opens it.
+  @override
+  Future<void> mergeOwnerFiles({required String from, required String to}) async {
+    _checkIds([from, to]);
+    if (from == to) return;
+    final kc = _keychain;
+    final toKey = await kc?.readToken(_keyId(to));
+    if (toKey == null && !await _partitionOf(to).exists()) {
+      return rekeyOwnerFiles(from: from, to: to);
+    }
+    final src = UserId.value(from);
+    final dst = UserId.value(to);
+    final fromDir = _partitionOf(from);
+    if (await fromDir.exists()) {
+      await for (final entry in fromDir.list()) {
+        if (entry is! File) continue;
+        final name = entry.uri.pathSegments.last;
+        if (!name.endsWith('.enc')) continue;
+        Uint8List? bytes;
+        try {
+          bytes = await read(name, scope: src);
+        } on StorageDecodeException {
+          // Unreadable under any key (corrupt, or its key is gone): it can't
+          // be carried over, and must not block the rest. Dropped with the
+          // old partition. Any other I/O error still fails the merge.
+          bytes = null;
+        }
+        if (bytes != null) await save(name.substring(0, name.length - 4), bytes, scope: dst);
+        await entry.delete();
+      }
+      await fromDir.delete(recursive: true);
+    }
+    if (kc != null) await kc.deleteToken(_keyId(from));
+  }
+
+  @override
+  Future<void> deleteOwnerFiles({required String owner}) async {
+    _checkIds([owner]);
+    final dir = _partitionOf(owner);
+    try {
+      if (await dir.exists()) await dir.delete(recursive: true);
+    } catch (e) {
+      throw StorageWriteException('delete owner files failed', e);
+    }
+    await _keychain?.deleteToken(_keyId(owner));
+  }
+
+  static void _checkIds(List<String> ids) {
+    for (final id in ids) {
+      if (id.isEmpty || id == '.' || id == '..' || id.contains('/') || id.contains(r'\')) {
+        throw ArgumentError.value('<redacted>', 'id', 'must be a single path segment');
+      }
     }
   }
 }

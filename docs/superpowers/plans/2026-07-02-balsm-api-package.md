@@ -121,7 +121,7 @@ Expected: both tests PASS (interceptor is pre-existing, copied code; the "failin
 - [ ] **Step 5: Bootstrap melos and verify workspace still resolves**
 
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app && dart run melos bootstrap
+cd "$(git rev-parse --show-toplevel)" && dart run melos bootstrap
 ```
 Expected: `packages/*` glob picks up balsm_api; SUCCESS output.
 
@@ -825,7 +825,7 @@ The fuzz test imports `package:core/core.dart` (for `PhiLeakInterceptor`, now su
 dart run melos bootstrap
 melos exec --scope=core --scope=account -- "flutter analyze --no-fatal-infos"
 melos exec --scope=core -- "flutter test"
-cd /Volumes/Dev/Balsm/balsm_app && flutter test test/phi_leak_fuzz_test
+cd "$(git rev-parse --show-toplevel)" && flutter test test/phi_leak_fuzz_test
 ```
 Expected: analyze clean for core + account; core tests pass; fuzz suite passes.
 
@@ -3087,7 +3087,7 @@ git commit -m "[Refactor] drop dioClientProvider — Dio no longer visible outsi
 ### Task 12: Cross-repo docs — AGENTS.md architecture note
 
 **Files:**
-- Modify: `/Volumes/Dev/Balsm/Balsm-Core/agents/rules/AGENTS.md` (line ~22, P001 architecture note) — **separate repo, separate commit**
+- Modify: `../Balsm-Core/agents/rules/AGENTS.md` (line ~22, P001 architecture note) — **separate repo, separate commit**
 
 - [ ] **Step 1: Update the Flutter architecture bullet**
 
@@ -3104,7 +3104,7 @@ Also update the "12 packages" wording to "13 packages" and add `balsm_api` to th
 - [ ] **Step 2: Commit (in Balsm-Core repo)**
 
 ```bash
-cd /Volumes/Dev/Balsm/Balsm-Core
+cd ../Balsm-Core
 git add agents/rules/AGENTS.md
 git commit -m "docs(agents): Flutter modules depend on core + balsm_api; API layer extracted"
 ```
@@ -3114,7 +3114,7 @@ git commit -m "docs(agents): Flutter modules depend on core + balsm_api; API lay
 ### Task 13: Repo skill — `flutter-add-api-endpoint`
 
 **Files:**
-- Create: `/Volumes/Dev/Balsm/balsm_app/.claude/skills/flutter-add-api-endpoint/SKILL.md`
+- Create: `.claude/skills/flutter-add-api-endpoint/SKILL.md`
 
 - [ ] **Step 1: Write the skill** (format mirrors `.claude/skills/flutter-use-asset-constants/SKILL.md`)
 
@@ -3209,7 +3209,7 @@ folder, same four-file shape.
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Volumes/Dev/Balsm/balsm_app
+cd "$(git rev-parse --show-toplevel)"
 git add .claude/skills/flutter-add-api-endpoint
 git commit -m "[Docs] add flutter-add-api-endpoint skill — balsm_api conventions"
 ```

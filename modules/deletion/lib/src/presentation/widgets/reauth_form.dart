@@ -1,46 +1,26 @@
 import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Identity channel offered during public re-authentication.
-enum ReauthChannel { email, phone, handle }
+import '../i18n/i18n.dart';
 
-extension ReauthChannelLabel on ReauthChannel {
-  String get label => switch (this) {
-        ReauthChannel.email => 'Email',
-        ReauthChannel.phone => 'Phone',
-        ReauthChannel.handle => 'Handle',
-      };
+import '../../application/ports/reauth_port.dart';
 
-  TextInputType get keyboardType => switch (this) {
-        ReauthChannel.email => TextInputType.emailAddress,
-        ReauthChannel.phone => TextInputType.phone,
-        ReauthChannel.handle => TextInputType.text,
-      };
-}
-
-/// Result of a completed re-authentication form submission.
-class ReauthCredentials {
-  const ReauthCredentials({
-    required this.channel,
-    required this.identifier,
-    required this.secret,
-  });
-
-  final ReauthChannel channel;
-  final String identifier;
-  final String secret;
-}
+// ReauthChannel / ReauthCredentials live in the application layer, beside the
+// port that consumes them — a port must not import presentation.
+export '../../application/ports/reauth_port.dart' show ReauthChannel, ReauthCredentials;
 
 /// Self-contained 3-channel re-auth form used by the public (no-session)
 /// deletion + cancellation routes.
 ///
-/// Works identically on web and mobile (no platform-specific deps). When the
-/// `auth` package exposes a shared re-auth use case, the [onSubmit] callback is
-/// the seam to delegate to it before invoking the deletion endpoints.
-class ReauthForm extends StatefulWidget {
+/// Works identically on web and mobile (no platform-specific deps).
+/// [onRequestChallenge] sends the one-time code; [onSubmit] carries the code
+/// back for verification. Neither the identifier nor the code is logged.
+class ReauthForm extends ConsumerStatefulWidget {
   const ReauthForm({
     super.key,
     required this.onSubmit,
+    required this.onRequestChallenge,
     required this.submitLabel,
     this.submitVariant = BalsmButtonVariant.primary,
     this.submitting = false,
@@ -48,16 +28,20 @@ class ReauthForm extends StatefulWidget {
   });
 
   final ValueChanged<ReauthCredentials> onSubmit;
+
+  /// Sends the one-time code to the identifier the person typed.
+  final void Function(ReauthChannel channel, String identifier) onRequestChallenge;
+
   final String submitLabel;
   final BalsmButtonVariant submitVariant;
   final bool submitting;
   final String? error;
 
   @override
-  State<ReauthForm> createState() => _ReauthFormState();
+  ConsumerState<ReauthForm> createState() => _ReauthFormState();
 }
 
-class _ReauthFormState extends State<ReauthForm> {
+class _ReauthFormState extends ConsumerState<ReauthForm> {
   ReauthChannel _channel = ReauthChannel.email;
   final _identifier = TextEditingController();
   final _secret = TextEditingController();
@@ -69,7 +53,16 @@ class _ReauthFormState extends State<ReauthForm> {
     super.dispose();
   }
 
-  bool get _valid => _identifier.text.trim().isNotEmpty && _secret.text.isNotEmpty;
+  bool _codeSent = false;
+
+  bool get _hasIdentifier => _identifier.text.trim().isNotEmpty;
+  bool get _valid => _hasIdentifier && _secret.text.isNotEmpty;
+
+  void _requestCode() {
+    if (!_hasIdentifier) return;
+    setState(() => _codeSent = true);
+    widget.onRequestChallenge(_channel, _identifier.text.trim());
+  }
 
   void _submit() {
     if (!_valid) return;
@@ -82,11 +75,12 @@ class _ReauthFormState extends State<ReauthForm> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(deletionStringsProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Verify it is you',
+        Text(
+          m.verifyHeading,
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -94,8 +88,8 @@ class _ReauthFormState extends State<ReauthForm> {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Sign in again to continue.',
+        Text(
+          m.verifyBody,
           style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
         ),
         const SizedBox(height: 16),
@@ -119,12 +113,20 @@ class _ReauthFormState extends State<ReauthForm> {
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 12),
-        BalsmTextField(
-          label: 'Password',
-          controller: _secret,
-          obscureText: true,
-          onChanged: (_) => setState(() {}),
+        BalsmButton(
+          label: _codeSent ? m.sendCodeAgain : m.sendCode,
+          variant: BalsmButtonVariant.secondary,
+          onPressed: _hasIdentifier && !widget.submitting ? _requestCode : null,
         ),
+        if (_codeSent) ...[
+          const SizedBox(height: 12),
+          BalsmTextField(
+            label: m.otpLabel,
+            controller: _secret,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
         if (widget.error != null) ...[
           const SizedBox(height: 16),
           BalsmErrorBanner(message: widget.error!),

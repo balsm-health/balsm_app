@@ -9,6 +9,9 @@ import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../storage_target.dart';
+import '../widgets/data_loc_pill.dart';
+import '../widgets/med_plan_form.dart';
 
 /// Medications tab (home.jsx MedsScreen).
 ///
@@ -44,17 +47,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
     ref.invalidate(medicationListProvider);
   }
 
-  Future<void> _addMedication(UserId userId, _NewMed draft) async {
-    final med = Medication(
-      id: MedicationId.uuid(),
-      userId: userId,
-      name: draft.name,
-      doseAmount: draft.dose,
-      scheduleType: ScheduleType.daily,
-      scheduleConfig: ScheduleConfig(times: [draft.time]),
-      startDate: DateTime.now(),
-      isControlled: false,
-    );
+  Future<void> _addMedication(UserId userId, Medication med) async {
     await ref.read(addMedicationUseCaseProvider(userId)).call(med);
     if (!mounted) return;
     ref.invalidate(todayDosesProvider);
@@ -76,13 +69,13 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
 
   Future<void> _openAddMedication(UserId userId) async {
     final s = AppScope.of(context);
-    final draft = await showAppSheet<_NewMed>(
+    await showAppSheet<void>(
       context,
+      size: SheetSize.lg,
       barrierColor: const Color(0x6114202B),
       textDirection: s.dir,
-      builder: (_) => _AddMedSheet(s: s),
+      builder: (_) => _AddMedSheet(s: s, userId: userId, onSave: (med) => _addMedication(userId, med)),
     );
-    if (draft != null) await _addMedication(userId, draft);
   }
 
   @override
@@ -121,8 +114,15 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
               Text(s.strings.meds.regimen, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             ]),
           ),
+          const DataLocPill(category: DataCategory.meds),
+          const SizedBox(width: 8),
           // Add medication — disabled (hidden) when signed out.
-          if (userId != null) RoundBtn(icon: LucideIcons.plus, iconSize: 20, onTap: () => _openAddMedication(userId)),
+          if (userId != null)
+            RoundBtn(
+                icon: LucideIcons.plus,
+                semanticLabel: s.strings.common.a11y_add,
+                iconSize: 20,
+                onTap: () => _openAddMedication(userId)),
         ]),
 
         // Adherence (last 7 days). Gradient card from the Claude Design.
@@ -367,7 +367,12 @@ class _SheetChrome extends StatelessWidget {
                     child: Padding(
                         padding: const EdgeInsets.only(left: 4),
                         child: Text(title, style: Typo.subhead(ar: st.rtl).copyWith(fontWeight: FontWeight.w700)))),
-                RoundBtn(icon: LucideIcons.x, ghost: true, iconSize: 18, onTap: () => Navigator.pop(context)),
+                RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: st.strings.common.a11y_close,
+                    ghost: true,
+                    iconSize: 18,
+                    onTap: () => Navigator.pop(context)),
               ]),
             ),
           ]),
@@ -465,117 +470,98 @@ class _DoseActionSheet extends StatelessWidget {
   }
 }
 
-// ── Add-medication sheet ─────────────────────────────────────────────────────
+// ── Add-medication sheet (prescriptions.jsx AddMedSheet) ─────────────────────
 
-/// Result of the add-medication sheet — on-device PHI, never sent to the cloud.
-class _NewMed {
-  const _NewMed({required this.name, required this.time, this.dose});
-  final String name;
-  final String time; // HH:mm
-  final String? dose;
-}
-
+/// A medication with no prescription (pain relief, vitamins, carried-over
+/// meds). Saved on-device, then shown as a confirmation before closing.
 class _AddMedSheet extends StatefulWidget {
-  const _AddMedSheet({required this.s});
+  const _AddMedSheet({required this.s, required this.userId, required this.onSave});
   final PatientAppState s;
+  final UserId userId;
+  final Future<void> Function(Medication med) onSave;
   @override
   State<_AddMedSheet> createState() => _AddMedSheetState();
 }
 
 class _AddMedSheetState extends State<_AddMedSheet> {
-  final _name = TextEditingController();
-  final _dose = TextEditingController();
-  String _time = '08:00';
+  final _draft = MedPlanDraft();
+  bool _saving = false;
+  bool _done = false;
 
   PatientAppState get s => widget.s;
 
-  static const _timeOptions = <(String, String)>[
-    ('08:00', 'meds.med_time_morning'),
-    ('13:00', 'meds.med_time_midday'),
-    ('20:00', 'meds.med_time_evening'),
-    ('22:00', 'meds.med_time_night'),
-  ];
-
   @override
   void dispose() {
-    _name.dispose();
-    _dose.dispose();
+    _draft.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    final name = _name.text.trim();
-    if (name.isEmpty) return;
-    final dose = _dose.text.trim();
-    Navigator.pop(context, _NewMed(name: name, time: _time, dose: dose.isEmpty ? null : dose));
+  Future<void> _submit() async {
+    if (!_draft.isNamed || _saving) return;
+    setState(() => _saving = true);
+    await widget.onSave(_draft.toMedication(widget.userId));
+    if (!mounted) return;
+    setState(() => _done = true);
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    if (mounted) Navigator.pop(context);
   }
-
-  Widget _field(TextEditingController c, String hint, {TextInputType? kb}) => TextField(
-        controller: c,
-        textDirection: s.dir,
-        keyboardType: kb,
-        style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
-          isDense: true,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
-        ),
-      );
 
   @override
   Widget build(BuildContext context) {
+    final m = s.strings.meds;
+    if (_done) {
+      return _SheetChrome(s: s, title: '', child: _Added(s: s, label: m.med_added));
+    }
+    final ready = _draft.isNamed && !_saving;
     return _SheetChrome(
       s: s,
-      title: s.strings.meds.med_add_title,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(s.strings.meds.med_field_name,
-            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-        const SizedBox(height: 8),
-        _field(_name, s.strings.meds.med_ph_name),
-        const SizedBox(height: 16),
-        Text(s.strings.meds.med_field_dose,
-            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-        const SizedBox(height: 8),
-        _field(_dose, s.strings.meds.med_ph_dose),
-        const SizedBox(height: 16),
-        Text(s.strings.meds.med_reminder_time,
-            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-        const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final (value, key) in _timeOptions)
-            Pressable(
-              onTap: () => setState(() => _time = value),
-              scale: 0.96,
-              child: AnimatedContainer(
-                duration: Motion.base,
-                curve: Motion.easeOut,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                decoration: BoxDecoration(
-                  color: _time == value ? s.accent.bg : Colors.white,
-                  borderRadius: BorderRadius.circular(T.rMd),
-                  border: Border.all(color: _time == value ? s.accent.main : T.border, width: 1.5),
-                ),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(s.t(key),
-                      style: Typo.body(ar: s.rtl).copyWith(
-                          fontSize: FS.xs, fontWeight: FontWeight.w700, color: _time == value ? s.accent.d : T.fg2)),
-                  Text(value,
-                      style:
-                          Typo.num(size: FS.xs2, weight: FontWeight.w600, color: _time == value ? s.accent.d : T.fg4)),
-                ]),
-              ),
+      title: m.med_add_title,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: T.cream50, borderRadius: BorderRadius.circular(T.rLg)),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(LucideIcons.info, size: 16, color: T.fg3),
             ),
-        ]),
-        const SizedBox(height: 22),
-        _SheetButton(s: s, label: s.strings.meds.med_add_btn, icon: LucideIcons.plus, primary: true, onTap: _submit),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(m.med_self_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.45)),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 18),
+        MedPlanCard(draft: _draft, onChanged: () => setState(() {})),
+        const SizedBox(height: 18),
+        Opacity(
+          opacity: ready ? 1 : 0.4,
+          child: PButton(m.med_add_btn,
+              large: true, block: true, accent: s.accent, ar: s.rtl, onTap: ready ? _submit : null),
+        ),
       ]),
     );
   }
+}
+
+class _Added extends StatelessWidget {
+  const _Added({required this.s, required this.label});
+  final PatientAppState s;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(children: [
+          Container(
+            width: 72,
+            height: 72,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
+            child: const Icon(LucideIcons.check, size: 36, color: T.hueMint600),
+          ),
+          const SizedBox(height: 14),
+          Text(label, style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+        ]),
+      );
 }

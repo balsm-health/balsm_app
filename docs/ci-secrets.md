@@ -17,12 +17,28 @@ Add under **Repo → Settings → Secrets and variables → Actions**.
 
 | Secret | What |
 |---|---|
-| `SHARED_ENV_JSON` | Contents of a real `app/env/shared.json` (server list + Sentry DSN) |
+| `SHARED_ENV_JSON` | Contents of a real `app/env/shared.json` (server list + Sentry DSN + PostHog project token) |
 
 Optional. `release.yml` writes it to `app/env/shared.json` before building;
 absent, the tracked `shared.example.json` template is used instead (builds
-work, but with placeholder servers and no Sentry DSN). CI builds always use
-the template.
+work, but with placeholder servers, no Sentry DSN and no product analytics —
+both keys are empty in the template, which disables each SDK cleanly). CI builds
+always use the template.
+
+## Web deploy (app.balsm.health)
+
+| Secret | What | How to get |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | Lets `release.yml` deploy the `balsm-app-web` Worker | Cloudflare dashboard → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template, scoped to the Balsm account and the `balsm.health` zone |
+
+Optional. With it, a production tag (`v1.2.0`, no `-alpha`/`-beta`) builds the
+web app for the domain root and deploys it with the Worker and the update
+manifests, then smoke-checks the live site. Without it the `deploy-web` job
+is skipped and the release still passes; deploy by hand as in
+`docs/app-update.md`.
+
+The job runs in the `web-production` environment. Add required reviewers
+under **Repo → Settings → Environments** to make each deploy wait for approval.
 
 ## Android signing (release APK)
 
@@ -41,8 +57,10 @@ keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 \
 base64 -i upload-keystore.jks | pbcopy   # → ANDROID_KEYSTORE_BASE64
 ```
 
-CI decodes it to `app/android/keystore.jks` and writes `app/android/key.properties`;
-`build.gradle.kts` picks it up automatically. Neither file is committed
+CI decodes it to `app/android/keystore.jks` and writes `app/android/key.properties`
+with `storeFile=../keystore.jks`; `build.gradle.kts` picks it up automatically.
+The `../` matters: Gradle resolves `storeFile` from `app/android/app/`, one
+folder below where the keystore is written. Neither file is committed
 (`.gitignore`).
 
 ## iOS signing (IPA)
@@ -77,3 +95,14 @@ git tag v1.2.0-alpha && git push origin v1.2.0-alpha   # alpha  (staging backend
 git tag v1.2.0-beta  && git push origin v1.2.0-beta    # beta   (staging backend)
 git tag v1.2.0       && git push origin v1.2.0         # production (prod backend)
 ```
+
+Branch pushes release too, as pre-releases on the Releases page, with no
+Firebase upload and no web deploy. The version comes from `app/pubspec.yaml`
+and the release makes its own tag at the commit it built:
+
+```
+git push origin main            # → v0.1.0-main.<run>  (prod backend)
+git push origin release/1.0     # → v0.1.0-rc.<run>    (staging backend)
+```
+
+A newer push to the same branch cancels the build still running for it.

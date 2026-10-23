@@ -31,9 +31,10 @@ class LanguageCode extends ValueObject {
 
   final bool isRtl;
 
-  /// True when the app ships a complete UI translation for this language;
-  /// the rest of [supported] appears in the picker as "beta" and can't be
-  /// selected yet.
+  /// True when the app ships a complete UI translation for this language.
+  /// Every language in [supported] does today; a language added before its
+  /// translation is finished would be false and show in the picker as "beta",
+  /// unselectable.
   final bool isFullySupported;
 
   /// Combine with a region to form a BCP-47 tag string (`ar` + `EG` → `ar-EG`).
@@ -41,18 +42,16 @@ class LanguageCode extends ValueObject {
 
   static const ar = LanguageCode._('ar', 'العربية', true, isFullySupported: true);
   static const en = LanguageCode._('en', 'English', false, isFullySupported: true);
-  static const fr = LanguageCode._('fr', 'Français', false);
-  static const ur = LanguageCode._('ur', 'اردو', true);
-  static const fa = LanguageCode._('fa', 'فارسی', true);
-  static const tr = LanguageCode._('tr', 'Türkçe', false);
 
-  /// Languages the app has UI support for (used by the language picker).
-  static const supported = [ar, en, fr, ur, fa, tr];
+  /// The languages the app offers: Arabic and English, nothing else. This is
+  /// what the language picker lists. The store builds are trimmed to the same
+  /// two (Android `localeFilters`, the iOS "Strip unsupported languages" build
+  /// phase), so adding one here means adding it there as well.
+  static const supported = [ar, en];
 
   /// The fully-supported UI locales — the closed set the app renders in
   /// (absorbs the former `AppLocale` type). Holding one of these means the
-  /// app can fully render in it; the rest of [supported] are picker-visible
-  /// betas.
+  /// app can fully render in it.
   static const uiSupported = [en, ar];
 
   /// Resolve an arbitrary BCP-47 tag to a fully-supported UI language, or

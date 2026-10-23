@@ -101,8 +101,8 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
     await _db.customInsert(
       'INSERT OR REPLACE INTO $_kMedicationsTable '
       '(id, user_id, health_profile_id, name, dose_amount, schedule_type, '
-      'schedule_config, start_date, end_date, is_controlled) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'schedule_config, start_date, end_date, is_controlled, notes) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       variables: [
         Variable<String>(key.value),
         Variable<String>(value.userId.value),
@@ -114,6 +114,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
         Variable<String>(value.startDate.toIso8601String()),
         Variable<String>(value.endDate?.toIso8601String()),
         Variable<int>(value.isControlled ? 1 : 0),
+        Variable<String>(value.notes),
       ],
     );
   }
@@ -290,6 +291,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
         startDate: DateTime.parse(row['start_date'] as String),
         endDate: (row['end_date'] as String?) != null ? DateTime.parse(row['end_date'] as String) : null,
         isControlled: (row['is_controlled'] as int) != 0,
+        notes: row['notes'] as String?,
       );
 
   DoseEvent _doseEventFromRow(Map<String, dynamic> row) => DoseEvent(

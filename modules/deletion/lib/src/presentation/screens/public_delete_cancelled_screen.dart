@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/use_cases/cancel_deletion_use_case.dart';
+import '../../application/ports/reauth_port.dart';
+import '../i18n/i18n.dart';
 import '../widgets/reauth_form.dart';
 
 /// Public, session-less deletion-cancellation flow
@@ -24,13 +26,32 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
   bool _submitting = false;
   String? _error;
 
-  Future<void> _onReauthed(ReauthCredentials _) async {
-    // Re-auth succeeded; cancel the pending deletion. Credentials are never
-    // logged or retained (no PHI).
+  Future<void> _sendCode(ReauthChannel channel, String identifier) async {
+    setState(() => _error = null);
+    final sent = await ref.read(reauthPortProvider).requestChallenge(channel, identifier);
+    if (!mounted) return;
+    if (sent case AppFailureResult(:final failure)) {
+      setState(() => _error = failure.message);
+    }
+  }
+
+  /// Verifies before cancelling. Cancelling is less destructive than deleting,
+  /// but it still changes another person's account state, so it takes the same
+  /// proof. Credentials are never logged or retained.
+  Future<void> _onReauthed(ReauthCredentials credentials) async {
     setState(() {
       _submitting = true;
       _error = null;
     });
+    final proof = await ref.read(reauthPortProvider).verify(credentials);
+    if (!mounted) return;
+    if (proof case AppFailureResult(:final failure)) {
+      setState(() {
+        _submitting = false;
+        _error = failure.message;
+      });
+      return;
+    }
     final result = await ref.read(cancelDeletionUseCaseProvider).call();
     if (!mounted) return;
     result.fold(
@@ -47,6 +68,7 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(deletionStringsProvider);
     return Scaffold(
       backgroundColor: BalsmColors.cream50,
       body: SafeArea(
@@ -57,9 +79,9 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
               padding: const EdgeInsets.all(24),
               shrinkWrap: true,
               children: [
-                const Text(
-                  'Cancel account deletion',
-                  style: TextStyle(
+                Text(
+                  m.publicCancelTitle,
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: BalsmColors.fg1,
@@ -68,9 +90,10 @@ class _PublicDeleteCancelledScreenState extends ConsumerState<PublicDeleteCancel
                 const SizedBox(height: 16),
                 switch (_stage) {
                   _Stage.reauth => ReauthForm(
-                      submitLabel: 'Cancel deletion',
+                      submitLabel: m.publicCancelAction,
                       submitting: _submitting,
                       error: _error,
+                      onRequestChallenge: _sendCode,
                       onSubmit: _onReauthed,
                     ),
                   _Stage.done => Column(

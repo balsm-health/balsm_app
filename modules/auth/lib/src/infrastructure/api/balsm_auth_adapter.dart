@@ -22,9 +22,15 @@ typedef RefreshedTokens = ({
 /// module's records and AuthException.
 /// PHI constraint: do not log email, userId, or tokens at any level.
 class BalsmAuthAdapter {
-  const BalsmAuthAdapter({required AuthApi api}) : _api = api;
+  const BalsmAuthAdapter({required AuthApi api, String Function()? language})
+      : _api = api,
+        _language = language;
 
   final AuthApi _api;
+
+  /// The app's current language, sent with a code request so the email is
+  /// written in it.
+  final String Function()? _language;
 
   /// POST /auth/otp/request
   Future<void> requestOtp(
@@ -34,7 +40,7 @@ class BalsmAuthAdapter {
     CancelToken? cancelToken,
   }) =>
       _guard(() => _api.requestOtp(
-            RequestOtpRequest(email: email, countryCode: countryCode, purpose: purpose),
+            RequestOtpRequest(email: email, countryCode: countryCode, purpose: purpose, language: _language?.call()),
             cancelToken: cancelToken,
           ));
 
@@ -55,6 +61,30 @@ class BalsmAuthAdapter {
             ),
             cancelToken: cancelToken,
           )));
+
+  /// POST /auth/otp/verify for a device-only account going online. Returns
+  /// whether the server kept the device's id.
+  Future<({AuthTokens tokens, bool adoptedClientId})> verifyOtpClaim(
+    String email,
+    String code,
+    String deviceId,
+    String deviceLabel,
+    String clientAccountId, {
+    CancelToken? cancelToken,
+  }) =>
+      _guard(() async {
+        final r = await _api.verifyOtp(
+          VerifyOtpRequest(
+            email: email,
+            code: code,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+            clientAccountId: clientAccountId,
+          ),
+          cancelToken: cancelToken,
+        );
+        return (tokens: _toAuthTokens(r), adoptedClientId: r.adoptedClientId);
+      });
 
   /// POST /auth/otp/verify-link — redeem a magic sign-in link token.
   Future<AuthTokens> verifyLink(
@@ -227,5 +257,5 @@ class BalsmAuthAdapter {
 // ── Riverpod provider ────────────────────────────────────────────────────────
 
 final balsmAuthAdapterProvider = Provider<BalsmAuthAdapter>((ref) {
-  return BalsmAuthAdapter(api: ref.watch(authApiProvider));
+  return BalsmAuthAdapter(api: ref.watch(authApiProvider), language: ref.watch(apiLanguageProvider));
 });

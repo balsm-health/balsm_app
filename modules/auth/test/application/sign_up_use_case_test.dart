@@ -67,13 +67,15 @@ void main() {
   });
 
   group('requestEmailOtp', () {
-    test('success forwards email + country with register purpose', () async {
-      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.register)).thenAnswer((_) async {});
+    test('success forwards email + country with the merged-entry purpose', () async {
+      // Was `register`, which the server refused for an address it already
+      // knew — and refusing told the caller the address was known.
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).thenAnswer((_) async {});
 
       final r = await usecase.requestEmailOtp('a@b.com', 'EG');
 
       expect(r.isSuccess, isTrue);
-      verify(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.register)).called(1);
+      verify(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).called(1);
     });
   });
 

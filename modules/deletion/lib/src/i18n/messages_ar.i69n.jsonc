@@ -3,5 +3,14 @@
   "_i69n_language": "ar",
   "title": "حذف الحساب",
   "confirm": "تأكيد الحذف",
-  "cancelled": "تم إلغاء الحذف"
+  "cancelled": "تم إلغاء الحذف",
+  "publicTitle": "حذف حسابك",
+  "verifyHeading": "تأكيد هويتك",
+  "verifyBody": "نرسل رمزًا لمرة واحدة حتى لا يتمكن غيرك من حذف حسابك.",
+  "verifyContinue": "متابعة",
+  "sendCode": "أرسل لي رمزًا",
+  "sendCodeAgain": "أرسل رمزًا جديدًا",
+  "otpLabel": "الرمز لمرة واحدة",
+  "publicCancelTitle": "إلغاء حذف الحساب",
+  "publicCancelAction": "إلغاء الحذف"
 }

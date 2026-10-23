@@ -22,5 +22,11 @@ String formatSchedule(ScheduleType type, ScheduleConfig cfg) {
       final days = (cfg.days ?? const <int>[]).map((d) => _weekdayShort[d] ?? '?').join(', ');
       final label = days.isEmpty ? (type == ScheduleType.weekly ? 'Weekly' : 'Custom') : days;
       return '$label · $times';
+    case ScheduleType.once:
+      return 'Once · $times';
+    case ScheduleType.everyHours:
+      return 'Every ${cfg.interval ?? 1}h from $times';
+    case ScheduleType.everyDays:
+      return 'Every ${cfg.interval ?? 1} days · $times';
   }
 }

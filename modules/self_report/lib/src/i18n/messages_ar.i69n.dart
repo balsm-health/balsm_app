@@ -14,7 +14,8 @@ class Messages_ar extends Messages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'body':
@@ -57,6 +58,14 @@ class BodyMessages_ar extends BodyMessages {
   String get bk_neck => "الرقبة";
   String get bk_l_shoulder => "كتف أيسر";
   String get bk_r_shoulder => "كتف أيمن";
+  String get bk_l_upper_arm => "عضد أيسر";
+  String get bk_r_upper_arm => "عضد أيمن";
+  String get bk_l_elbow => "مرفق أيسر";
+  String get bk_r_elbow => "مرفق أيمن";
+  String get bk_l_forearm => "ساعد أيسر";
+  String get bk_r_forearm => "ساعد أيمن";
+  String get bk_l_hand => "يد يسرى";
+  String get bk_r_hand => "يد يمنى";
   String get bk_upper => "أعلى الظهر";
   String get bk_mid => "وسط الظهر";
   String get bk_lower => "أسفل الظهر";
@@ -88,7 +97,8 @@ class BodyMessages_ar extends BodyMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'head':
@@ -145,6 +155,22 @@ class BodyMessages_ar extends BodyMessages {
         return bk_l_shoulder;
       case 'bk_r_shoulder':
         return bk_r_shoulder;
+      case 'bk_l_upper_arm':
+        return bk_l_upper_arm;
+      case 'bk_r_upper_arm':
+        return bk_r_upper_arm;
+      case 'bk_l_elbow':
+        return bk_l_elbow;
+      case 'bk_r_elbow':
+        return bk_r_elbow;
+      case 'bk_l_forearm':
+        return bk_l_forearm;
+      case 'bk_r_forearm':
+        return bk_r_forearm;
+      case 'bk_l_hand':
+        return bk_l_hand;
+      case 'bk_r_hand':
+        return bk_r_hand;
       case 'bk_upper':
         return bk_upper;
       case 'bk_mid':
@@ -220,7 +246,8 @@ class TissueMessages_ar extends TissueMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'skin':

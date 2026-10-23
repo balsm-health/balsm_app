@@ -27,7 +27,8 @@ export 'src/domain/value_objects/money.dart';
 export 'src/domain/value_objects/tag.dart';
 export 'src/event_bus/event_bus.dart';
 export 'src/db/app_database.dart';
-export 'package:drift/drift.dart' show Variable, QueryRow;
+export 'src/db/owner_rekey.dart';
+export 'package:drift/drift.dart' show GeneratedDatabase, QueryRow, Variable;
 export 'src/cache/cache_row.dart';
 export 'src/cache/cache_store.dart';
 export 'src/cache/drift_cache_store.dart';
@@ -44,6 +45,8 @@ export 'src/data_source/data_source_providers.dart';
 export 'src/data_source/module_preferences.dart';
 export 'src/data_source/file_store.dart';
 export 'src/data_source/impl/encrypted_file_store.dart';
+export 'src/data_source/impl/web_file_store_stub.dart'
+    if (dart.library.js_interop) 'src/data_source/impl/web_encrypted_file_store.dart' show createWebFileStore;
 export 'src/data_source/impl/shared_prefs_kv_data_source.dart';
 // TARGETED re-export — only the two transport symbols that unmigrated
 // callers (geofence, disclosure, settings screen) and the PHI fuzz test
@@ -56,6 +59,7 @@ export 'package:balsm_api/balsm_api.dart' show BalsmApiClient, PhiLeakIntercepto
 export 'src/network/balsm_api_controller.dart';
 export 'src/network/api_providers.dart';
 export 'src/network/connectivity.dart';
+export 'src/auth_context/account_mode.dart';
 export 'src/auth_context/current_user.dart';
 export 'src/auth_context/current_entity.dart';
 export 'src/auth_context/current_profile.dart';
@@ -72,14 +76,28 @@ export 'src/telemetry/analytics_logger.dart';
 export 'src/telemetry/allowlist.dart';
 export 'src/telemetry/telemetry_scrubber.dart';
 export 'src/telemetry/sentry_analytics_logger.dart';
+export 'src/telemetry/posthog_analytics_logger.dart';
+export 'src/telemetry/posthog_init.dart';
+export 'src/telemetry/analytics_consent.dart';
+export 'src/telemetry/campaign_attribution.dart';
 export 'src/telemetry/console_analytics_logger.dart';
+export 'src/telemetry/dev_log_analytics_logger.dart';
+export 'src/telemetry/feedback_reporter.dart';
+export 'src/update/app_update.dart';
+export 'src/flags/feature_flags.dart';
+export 'src/flags/static_flag_source.dart';
+export 'src/flags/posthog_flag_source.dart';
 export 'src/telemetry/multi_analytics_logger.dart';
 export 'src/telemetry/event_bus_forwarder.dart';
 export 'src/telemetry/analytics_route_observer.dart';
 export 'src/telemetry/providers.dart';
 export 'src/secure_storage/secure_storage_wrapper.dart';
+export 'src/web/tab_claim_stub.dart' if (dart.library.js_interop) 'src/web/tab_claim.dart';
+export 'src/secure_storage/web_secure_storage_stub.dart'
+    if (dart.library.js_interop) 'src/secure_storage/web_secure_storage.dart';
 export 'src/notifications/permission_state.dart';
 export 'src/notifications/permission_change_event.dart';
+export 'src/config/env_hosts.dart';
 export 'src/config/flavor.dart';
 export 'src/config/server_preset.dart';
 export 'src/config/active_server.dart';
@@ -103,7 +121,6 @@ export 'src/kit/theme.dart';
 export 'src/kit/shared_widgets.dart';
 export 'src/kit/not_found_screen.dart';
 export 'src/kit/status_screen.dart';
-export 'src/deeplink/deeplink_router.dart';
 export 'src/backup/icloud_backup_adapter.dart';
 export 'src/backup/drive_backup_adapter.dart';
 

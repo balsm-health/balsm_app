@@ -16,6 +16,7 @@
     <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/app-check" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/gtm-session-fetcher" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/interop-ios-for-google-sdks" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/posthog-ios" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/promises" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/build/ios/SourcePackages/checkouts/sentry-cocoa" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/app/build/macos/SourcePackages/checkouts/AppAuth-iOS" vcs="Git" />

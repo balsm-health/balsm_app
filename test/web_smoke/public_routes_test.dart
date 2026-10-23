@@ -28,7 +28,7 @@ void main() {
     final encoded = base64Url.encode(utf8.encode(rawKey));
     final fragment = 'k=$encoded';
 
-    // Mirror DeeplinkRouter fragment handling: strip the 'k=' prefix.
+    // Mirror deep_links.dart fragment handling: strip the 'k=' prefix.
     final extracted = fragment.replaceFirst('k=', '');
     final decoded = utf8.decode(base64Url.decode(extracted));
 

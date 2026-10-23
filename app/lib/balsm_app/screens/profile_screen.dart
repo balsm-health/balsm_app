@@ -15,6 +15,8 @@ import '../shell.dart';
 import 'personal_details.dart';
 import 'ecosystem_sheet.dart';
 import 'feedback_sheet.dart';
+import 'go_online_sheet.dart';
+import 'remove_device_account.dart';
 import 'care_team_screen.dart';
 import 'profile_subscreens.dart';
 import 'storage_sheet.dart';
@@ -65,6 +67,7 @@ class ProfileScreen extends ConsumerWidget {
               button: true,
               child: RoundBtn(
                 icon: LucideIcons.qrCode,
+                semanticLabel: s.strings.common.a11y_qr,
                 onTap: () => openQrShare(context, s: s, name: displayName),
               ),
             ),
@@ -148,6 +151,14 @@ class ProfileScreen extends ConsumerWidget {
                     Pill(s.storageProvider.label(s.strings.storage), kind: PillKind.neutral, dot: false, ar: s.rtl),
                 first: true,
                 onTap: () => showStorageSync(context)),
+            // Device-only accounts: the way to a server account (Balsm Cloud,
+            // sharing). Same row widget as Storage, directly beneath it.
+            if (s.accountMode == AccountMode.deviceOnly)
+              _ListRow(
+                  icon: LucideIcons.cloud,
+                  label: s.strings.offline.go_row,
+                  sub: s.strings.offline.go_row_sub,
+                  onTap: () => showGoOnlineSheet(context)),
           ]),
 
           // Menu
@@ -214,23 +225,44 @@ class ProfileScreen extends ConsumerWidget {
               ),
           ]),
 
-          // Sign out
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: PButton(s.strings.profile.p_signout,
-                icon: LucideIcons.logOut,
-                variant: BtnVariant.secondary,
-                block: true,
-                ar: s.rtl,
-                color: T.danger, onTap: () async {
-              // Clears tokens + best-effort server sign-out + publishes
-              // UserSignedOut (the main listener clears currentUserId).
-              await ref.read(signOutUseCaseProvider).call();
-              // Account-scoped UI state must not leak to the next account.
-              s.resetForSignOut();
-              if (context.mounted) s.go(AppRoutes.welcome);
-            }),
-          ),
+          // A device-only account exists only on this phone: signing out would
+          // strand its data and leave it locked behind a password. It is
+          // removed instead (rows, files, keys) after a confirmation — and
+          // the server is never called.
+          if (s.accountMode == AccountMode.deviceOnly)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: PButton(s.strings.auth.remove_device_account,
+                  icon: LucideIcons.trash2,
+                  variant: BtnVariant.secondary,
+                  block: true,
+                  ar: s.rtl,
+                  color: T.danger, onTap: () async {
+                if (!await confirmRemoveDeviceAccount(context, s)) return;
+                if (!await removeDeviceAccount(ref, s) && context.mounted) {
+                  ScaffoldMessenger.maybeOf(context)
+                      ?.showSnackBar(SnackBar(content: Text(s.strings.offline.merge_failed)));
+                }
+              }),
+            )
+          else
+            // Sign out
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: PButton(s.strings.profile.p_signout,
+                  icon: LucideIcons.logOut,
+                  variant: BtnVariant.secondary,
+                  block: true,
+                  ar: s.rtl,
+                  color: T.danger, onTap: () async {
+                // Clears tokens + best-effort server sign-out + publishes
+                // UserSignedOut (the main listener clears currentUserId).
+                await ref.read(signOutUseCaseProvider).call();
+                // Account-scoped UI state must not leak to the next account.
+                s.resetForSignOut();
+                if (context.mounted) s.go(AppRoutes.welcome);
+              }),
+            ),
         ]));
   }
 }
@@ -463,6 +495,7 @@ class _ListRow extends StatelessWidget {
   const _ListRow(
       {required this.icon,
       required this.label,
+      this.sub,
       this.trailing,
       this.trailingWidget,
       this.onTap,
@@ -472,6 +505,9 @@ class _ListRow extends StatelessWidget {
       this.first = false});
   final IconData icon;
   final String label;
+
+  /// Optional second line under [label].
+  final String? sub;
   final String? trailing;
   final Widget? trailingWidget;
   final VoidCallback? onTap;
@@ -492,8 +528,11 @@ class _ListRow extends StatelessWidget {
           IconSquare(icon, bg: iconBg ?? s.accent.bg, fg: iconFg ?? s.accent.d, size: 34, iconSize: 19, radius: T.rSm),
           const SizedBox(width: 14),
           Expanded(
-              child: Text(label,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1))),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w500, color: labelColor ?? T.fg1)),
+            if (sub != null)
+              Padding(padding: const EdgeInsets.only(top: 2), child: Text(sub!, style: Typo.meta(ar: s.rtl))),
+          ])),
           if (trailingWidget != null) trailingWidget!,
           if (trailing != null)
             Padding(

@@ -52,6 +52,11 @@ void main() {
     });
   });
 
+  test('the viewer decodes to twice the pixel width of the screen', () {
+    expect(vaultViewerCacheWidth(390, 3), 2340);
+    expect(vaultViewerCacheWidth(360, 2.625), 1890);
+  });
+
   group('VaultFileViewer', () {
     Future<PatientAppState> state() async {
       final prefs = PatientAppPrefs(_MemoryKV());
@@ -79,6 +84,25 @@ void main() {
 
       expect(find.byType(InteractiveViewer), findsOneWidget);
       expect(find.byType(Image), findsOneWidget);
+    });
+
+    testWidgets('the image is decoded for the screen, not at full size', (tester) async {
+      final store = MemoryUserFileStore();
+      final path = await store.save('scan.png', _pngBytes);
+
+      await pump(tester, store, path);
+
+      // A camera frame decoded whole is ~48 MB; the viewer asks for twice the
+      // screen's pixel width and no more.
+      final provider = tester.widget<Image>(find.byType(Image)).image;
+      expect(provider, isA<ResizeImage>());
+      final view = tester.view;
+      expect(
+        (provider as ResizeImage).width,
+        vaultViewerCacheWidth(view.physicalSize.width / view.devicePixelRatio, view.devicePixelRatio),
+      );
+      expect(provider.height, isNull, reason: 'one axis only, so the aspect ratio is kept');
+      expect(provider.allowUpscaling, isFalse, reason: 'a small image must not be blown up');
     });
 
     testWidgets('missing blob shows the generic failure state, never throws', (tester) async {

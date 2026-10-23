@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'care/care_entity.dart';
 import 'prefs.dart';
 import 'routes.dart';
 import 'storage_target.dart';
@@ -39,6 +40,38 @@ class PatientAppState extends ChangeNotifier {
   /// Auth route: walkthrough | welcome | phone | otp | profile | app
   String route = AppRoutes.welcome;
 
+  /// Whether this account has server credentials (see core `AccountMode`).
+  AccountMode accountMode = AccountMode.online;
+
+  /// Feature flags. Bare (every flag at its fallback) until [attachFlags].
+  FeatureFlags flags = FeatureFlags();
+
+  /// Binds the loaded flags, and rebuilds the app when one changes — a flag
+  /// flipped remotely takes effect on screen without a restart.
+  void attachFlags(FeatureFlags f) {
+    flags.removeListener(notifyListeners);
+    flags = f..addListener(notifyListeners);
+    notifyListeners();
+  }
+
+  /// The patient's choice to mirror the care team to Balsm Cloud (on by
+  /// default). Persisted in prefs, which is what the sync service reads.
+  bool careCloudSync = true;
+
+  /// Awaitable so a caller can start a sync only once the choice is stored.
+  Future<void> setCareCloudSync(bool v) async {
+    if (careCloudSync == v) return;
+    careCloudSync = v;
+    notifyListeners();
+    await _prefs?.setCareCloudSync(v);
+  }
+
+  void setAccountMode(AccountMode m) {
+    if (accountMode == m) return;
+    accountMode = m;
+    notifyListeners();
+  }
+
   /// Active tab/sub-screen: home | map | meds | profile | trends | records | appts
   AppTab tab = AppTab.home;
 
@@ -66,6 +99,10 @@ class PatientAppState extends ChangeNotifier {
   Gender gender = Gender.other;
 
   /// Active backup target. Closed catalog — see [StorageTarget].
+  ///
+  /// Read-only on purpose: there is no setter because no cloud can receive a
+  /// copy yet (see `storage_sheet.dart`), and a persisted non-local target is
+  /// downgraded on load. Add a setter alongside a working adapter, not before.
   StorageTarget storageProvider = StorageTarget.local;
 
   /// Session-only extra family members the patient added from the account
@@ -96,7 +133,13 @@ class PatientAppState extends ChangeNotifier {
   /// a null user id, where every account and PHI read resolves to nothing and
   /// nothing ever recovers: no token means no refresh, so `SessionExpired`
   /// never fires. Trust the credentials, and clear the stale flag.
-  static Future<PatientAppState> load(PatientAppPrefs prefs, {required bool hasSession}) async {
+  static Future<PatientAppState> load(
+    PatientAppPrefs prefs, {
+    required bool hasSession,
+    AccountMode accountMode = AccountMode.online,
+    bool pendingMerge = false,
+    bool hasOfflinePassword = false,
+  }) async {
     final s = PatientAppState();
     s._prefs = prefs;
     try {
@@ -115,7 +158,16 @@ class PatientAppState extends ChangeNotifier {
       // claiming the record is backed up to a cloud that never received it.
       final storedTarget = await prefs.storage();
       s.storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local;
-      if (await prefs.signedIn() && hasSession) {
+      s.accountMode = accountMode;
+      s.careCloudSync = await prefs.careCloudSync();
+      if (hasSession && pendingMerge) {
+        // The merge screen moves or deletes the device's data, so while the
+        // device password still guards it, Unlock comes first (Unlock then
+        // continues to the merge screen).
+        s.route = hasOfflinePassword ? AppRoutes.unlock : AppRoutes.mergeOrDiscard;
+      } else if (hasSession && accountMode == AccountMode.deviceOnly) {
+        s.route = AppRoutes.unlock;
+      } else if (await prefs.signedIn() && hasSession) {
         s.route = AppRoutes.app;
       } else {
         // Stale flag without credentials — persist signed-out so the next
@@ -214,6 +266,18 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The latest request to open the care map with a type filter (a deep link
+  /// like `/map?type=pharmacy`). Null until one arrives; [MapScreen] applies it.
+  MapFilterRequest? mapFilterRequest;
+  int _mapFilterSerial = 0;
+
+  /// Switches to the map tab with [types] selected (empty = "All").
+  void openMap({Set<CareEntityType> types = const {}}) {
+    mapFilterRequest = MapFilterRequest(types: types, serial: ++_mapFilterSerial);
+    tab = AppTab.map;
+    notifyListeners();
+  }
+
   /// Clears every account-scoped piece of in-memory + preference state when
   /// the user signs out, so the NEXT account on this device never inherits
   /// the previous one (family members, gendered copy, completion state,
@@ -226,17 +290,16 @@ class PatientAppState extends ChangeNotifier {
     gender = Gender.other;
     authEmail = '';
     authPassword = null;
+    // The name a social provider handed over prefills the next sign-up's
+    // profile form, and the tab would reopen wherever the last person left it.
+    socialGivenName = null;
+    socialFamilyName = null;
+    tab = AppTab.home;
     notifyListeners();
   }
 
   /// Debug-only: ReportFlow registers this while the check-in is open.
   VoidCallback? qaCheckinAdvance;
-
-  void switchCloudProvider(StorageTarget to) {
-    storageProvider = to;
-    _save();
-    notifyListeners();
-  }
 
   void setCountry(CountryCode c) {
     country = c;
@@ -374,6 +437,20 @@ String accountInitials(String displayName) {
   if (parts.isEmpty) return '';
   if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
   return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+}
+
+/// A one-shot instruction to the care map: select exactly [types].
+///
+/// [serial] makes each request distinct even when [types] repeat. Without it,
+/// opening the same `/map?type=pharmacy` link twice would do nothing the second
+/// time if the patient had changed the filter by hand in between — the map
+/// would see an "unchanged" request and keep the patient's selection.
+@immutable
+class MapFilterRequest {
+  const MapFilterRequest({required this.types, required this.serial});
+
+  final Set<CareEntityType> types;
+  final int serial;
 }
 
 /// InheritedNotifier exposing [PatientAppState] to the widget tree.

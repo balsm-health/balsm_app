@@ -1,5 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/prefs.dart';
+import 'package:app/balsm_app/routes.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -64,5 +65,31 @@ void main() {
     await prefs.setWalkthroughSeen(true);
     final s = await PatientAppState.load(prefs, hasSession: true);
     expect(s.route, 'welcome', reason: 'an explicit sign-out must not be undone by a stale keychain id');
+  });
+
+  test('device-only account boots to unlock, even with no refresh token', () async {
+    await prefs.setSignedIn(true);
+    final s = await PatientAppState.load(prefs, hasSession: true, accountMode: AccountMode.deviceOnly);
+    expect(s.route, AppRoutes.unlock);
+    expect(s.accountMode, AccountMode.deviceOnly);
+  });
+
+  test('unresolved merge resumes on the merge-or-discard screen', () async {
+    await prefs.setSignedIn(true);
+    final s = await PatientAppState.load(prefs, hasSession: true, pendingMerge: true);
+    expect(s.route, AppRoutes.mergeOrDiscard);
+  });
+
+  test('unresolved merge goes through Unlock first while the device password exists', () async {
+    await prefs.setSignedIn(true);
+    final s = await PatientAppState.load(prefs,
+        hasSession: true, accountMode: AccountMode.deviceOnly, pendingMerge: true, hasOfflinePassword: true);
+    expect(s.route, AppRoutes.unlock);
+  });
+
+  test('online behaviour unchanged', () async {
+    await prefs.setSignedIn(true);
+    final s = await PatientAppState.load(prefs, hasSession: true);
+    expect(s.route, AppRoutes.app);
   });
 }

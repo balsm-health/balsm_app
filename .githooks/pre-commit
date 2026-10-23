@@ -1,6 +1,7 @@
 #!/bin/sh
-# Balsm pre-commit — block a commit when any staged *.dart is not
-# `dart format`-clean.
+# Balsm pre-commit — two guards:
+#   1. no machine-specific absolute paths in staged content
+#   2. every staged *.dart is `dart format`-clean
 #
 # Enable once per clone:
 #   git config core.hooksPath .githooks
@@ -9,6 +10,53 @@
 # else dart's default. To auto-fix:  dart format . && git add -u
 # Bypass in a genuine emergency:  git commit --no-verify  (discouraged).
 
+# ---------------------------------------------------------------------------
+# 1. Machine-specific absolute paths.
+#
+# A checkout location is one developer's accident, not a fact about the repo.
+# An absolute path into somebody's checkout is wrong in every other clone and
+# on CI, and it silently leaks the author's directory layout. Write
+# repo-relative paths, `$(git rev-parse --show-toplevel)`, or `../<sibling>`
+# for another repo in the workspace.
+#
+# Only ADDED lines are scanned, so existing content never blocks an unrelated
+# commit. The one blanket exclusion is the vendored `*/skills/**` trees, which
+# are installed third-party content. Nothing else is excluded: the patterns
+# below are written with character classes so this file does not match itself,
+# which is what lets the check run over its own definition. Self-exemptions are
+# how 146 bad paths once hid in `.claude/agents/**`.
+added=$(git diff --cached --diff-filter=ACM -U0 -- . \
+          ':(exclude).agents/skills/**' ':(exclude).claude/skills/**' \
+          ':(exclude).agent/skills/**' ':(exclude).qwen/skills/**' \
+          ':(exclude).cursor/skills/**' ':(exclude)plugin/skills/**' \
+        | grep '^+' | grep -v '^+++')
+
+# Mount roots and Windows user directories are always machine paths. The unix
+# home directories count only when followed by a name segment, so an import
+# like `@/pages/Users/...` or prose like "medications/home/profile" does not
+# trip the guard.
+#
+# A line may opt out with a trailing `machine-path-ok` marker, for the cases
+# where an absolute path IS the subject: a test asserting a path is redacted,
+# a mounted installer volume, an illustrative CLI transcript.
+bad=$(printf '%s\n' "$added" \
+  | grep -vF 'machine-path-ok' \
+  | grep -nE '/Vol[u]mes/|[A-Za-z]:\\Us[e]rs\\|(^|[^A-Za-z0-9_.-])/(Us[e]rs|ho[m]e)/[A-Za-z_][A-Za-z0-9_-]*/|~/D[e]v/')
+
+if [ -n "$bad" ]; then
+  echo ""
+  echo "✖ pre-commit: machine-specific absolute path in staged content."
+  printf '%s\n' "$bad" | sed 's/^/    /' | cut -c1-140
+  echo ""
+  echo "  Use a repo-relative path, \"\$(git rev-parse --show-toplevel)\", or"
+  echo "  ../<sibling-repo> for another repo in the workspace."
+  echo "  If the path IS the point, add  machine-path-ok  to that line."
+  echo "  (Override only if you must:  git commit --no-verify)"
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Dart formatting.
 # Prefer fvm's dart (repo standard), else fall back to PATH dart.
 if command -v fvm >/dev/null 2>&1; then
   DART="fvm dart"
@@ -27,7 +75,10 @@ staged=$(git diff --cached --name-only --diff-filter=ACM -- '*.dart' \
 [ -z "$staged" ] && exit 0
 
 # --set-exit-if-changed makes dart exit non-zero if any file would be reformatted.
-if ! printf '%s\n' "$staged" | xargs $DART format --output=none --set-exit-if-changed; then
+# git exports GIT_INDEX_FILE (and GIT_DIR in worktrees) to hooks. fvm runs its
+# own git commands to check its SDK cache; inheriting these points them at the
+# index being committed, and its cache "repair" silently empties the commit.
+if ! printf '%s\n' "$staged" | xargs env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE $DART format --output=none --set-exit-if-changed; then
   echo ""
   echo "✖ pre-commit: staged Dart files are not formatted."
   echo "  Fix with:  dart format . && git add -u"

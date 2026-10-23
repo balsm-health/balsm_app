@@ -35,11 +35,13 @@ class PrescriptionsScreen extends ConsumerWidget {
       child: ListView(padding: EdgeInsets.zero, children: [
         const PadTop(),
         AppBarRow(children: [
-          RoundBtn(icon: backArrow(context), onTap: () => s.setTab(AppTab.meds)),
+          RoundBtn(
+              icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => s.setTab(AppTab.meds)),
           const SizedBox(width: 12),
           Expanded(child: Text(s.strings.records.prescriptions, style: Typo.heading(ar: s.rtl))),
           RoundBtn(
             icon: LucideIcons.plus,
+            semanticLabel: s.strings.common.a11y_add,
             onTap: () => showAddPrescription(context),
           ),
         ]),
@@ -160,11 +162,15 @@ class PrescriptionDetailScreen extends ConsumerWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const PadTop(),
           AppBarRow(children: [
-            RoundBtn(icon: backArrow(context), onTap: () => Navigator.of(context).pop()),
+            RoundBtn(
+                icon: backArrow(context),
+                semanticLabel: s.strings.common.a11y_back,
+                onTap: () => Navigator.of(context).pop()),
             const Spacer(),
             if (rx.isSelf)
               RoundBtn(
                 icon: LucideIcons.trash2,
+                semanticLabel: s.strings.common.a11y_delete,
                 ghost: true,
                 iconSize: 18,
                 onTap: () => _delete(context, ref),

@@ -34,13 +34,24 @@ class WalkthroughScreen extends StatefulWidget {
 }
 
 class _Slide {
-  const _Slide(
-      {required this.accent, required this.eyebrow, required this.title, required this.body, this.demo = false});
+  const _Slide({
+    required this.accent,
+    required this.eyebrow,
+    required this.title,
+    required this.body,
+    this.demo = false,
+    this.note,
+  });
   final Accent accent;
   final String eyebrow;
   final String title;
   final String body;
   final bool demo;
+
+  /// A quieter line under [body]. Used by the data-ownership slide to disclose
+  /// analytics before it starts collecting — product analytics is opt-OUT, so
+  /// the first run is the only honest place to say so.
+  final String? note;
 }
 
 class _WalkthroughScreenState extends State<WalkthroughScreen> {
@@ -54,7 +65,13 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     return [
       _Slide(accent: Accent.emerald, eyebrow: wt.wt_eyebrow_1, title: wt.wt_title_1, body: wt.wt_body_1),
       _Slide(accent: Accent.blue, eyebrow: wt.wt_eyebrow_2, title: wt.wt_title_2, body: wt.wt_body_2, demo: true),
-      _Slide(accent: Accent.aqua, eyebrow: wt.wt_eyebrow_3, title: wt.wt_title_3, body: wt.wt_body_3),
+      _Slide(
+        accent: Accent.aqua,
+        eyebrow: wt.wt_eyebrow_3,
+        title: wt.wt_title_3,
+        body: wt.wt_body_3,
+        note: wt.wt_analytics_note,
+      ),
     ];
   }
 
@@ -210,6 +227,10 @@ class _MarkSlide extends StatelessWidget {
               style: Typo.display(ar: ar).copyWith(fontSize: FS.xl2, height: 1.16, letterSpacing: -0.52)),
           const SizedBox(height: 13),
           Text(slide.body, textAlign: TextAlign.center, style: Typo.body(ar: ar)),
+          if (slide.note != null) ...[
+            const SizedBox(height: 12),
+            Text(slide.note!, textAlign: TextAlign.center, style: Typo.meta(ar: ar)),
+          ],
         ]),
       ),
     ]);

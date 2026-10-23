@@ -8,6 +8,7 @@ import '../../application/ports/care_providers_data_source.dart';
 import '../../domain/entities/care_provider.dart';
 import '../../domain/value_objects/care_provider_type.dart';
 import '../../domain/value_objects/ids.dart';
+import '../../domain/value_objects/care_provider_file.dart';
 
 /// Drift-backed [CareProvidersDataSource]. Raw SQL against the PHI schema in
 /// core's `_phiSchema`, like every other on-device PHI store here.
@@ -240,41 +241,59 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
   // ── attachments ─────────────────────────────────────────────────────────
 
   static const _filesByProvider =
-      'SELECT path FROM care_provider_file WHERE care_provider_id = ? ORDER BY created_at ASC';
+      'SELECT path, kind FROM care_provider_file WHERE care_provider_id = ? ORDER BY created_at ASC';
+
+  static CareProviderFile _hydrateFile(QueryRow r) => CareProviderFile(
+        kind: CareFileKind.fromId(r.read<String?>('kind')),
+        locator: r.read<String>('path'),
+      );
 
   @override
-  Future<List<String>> findFiles(CareProviderId providerId) async {
+  Future<List<CareProviderFile>> findFiles(CareProviderId providerId) async {
     final rows = await _db.customSelect(
       _filesByProvider,
       variables: [Variable.withString(providerId.value)],
     ).get();
-    return [for (final r in rows) r.read<String>('path')];
+    return rows.map(_hydrateFile).toList();
   }
 
   @override
-  Stream<List<String>> watchFiles(CareProviderId providerId) => _db
+  Stream<List<CareProviderFile>> watchFiles(CareProviderId providerId) => _db
       .customSelect(_filesByProvider, variables: [Variable.withString(providerId.value)], readsFrom: {})
       .watch()
-      .map((rows) => [for (final r in rows) r.read<String>('path')]);
+      .map((rows) => rows.map(_hydrateFile).toList());
 
   @override
-  Future<void> putFile(CareProviderId providerId, String path) async {
+  Future<void> putFile(CareProviderId providerId, String path) => _attach(providerId, path, CareFileKind.file);
+
+  @override
+  Future<void> putLink(CareProviderId providerId, String url) => _attach(providerId, url, CareFileKind.link);
+
+  /// Guarded insert, so the port's idempotence promise is actually kept — a
+  /// plain INSERT with a fresh id left a duplicate row every time the same
+  /// locator was attached twice.
+  Future<void> _attach(CareProviderId providerId, String locator, CareFileKind kind) async {
     await _db.customInsert(
-      'INSERT INTO care_provider_file (id, care_provider_id, path, created_at) VALUES (?, ?, ?, ?)',
+      'INSERT INTO care_provider_file (id, care_provider_id, path, kind, created_at) '
+      'SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS ('
+      'SELECT 1 FROM care_provider_file WHERE care_provider_id = ? AND path = ?)',
       variables: [
         Variable.withString(CareProviderId.uuid().value),
         Variable.withString(providerId.value),
-        Variable.withString(path),
+        Variable.withString(locator),
+        Variable.withString(kind.id),
         Variable.withInt(DateTime.now().millisecondsSinceEpoch),
+        Variable.withString(providerId.value),
+        Variable.withString(locator),
       ],
     );
   }
 
   @override
-  Future<void> deleteFile(CareProviderId providerId, String path) async {
+  Future<void> deleteFile(CareProviderId providerId, String locator) async {
     await _db.customUpdate(
       'DELETE FROM care_provider_file WHERE care_provider_id = ? AND path = ?',
-      variables: [Variable.withString(providerId.value), Variable.withString(path)],
+      variables: [Variable.withString(providerId.value), Variable.withString(locator)],
       updateKind: UpdateKind.delete,
     );
   }

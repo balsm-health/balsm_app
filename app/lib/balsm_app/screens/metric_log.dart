@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:account/account.dart';
-import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -87,11 +85,6 @@ typedef MetricLogChanged = void Function(MetricLogCapture capture, {required boo
 
 /// Gender from the signed-in user's current profile. Profile details remain
 /// ephemeral and are never logged or copied into metric captures.
-final _currentProfileGenderProvider = FutureProvider.autoDispose<Gender?>((ref) async {
-  if (ref.watch(currentUserIdProvider) == null) return null;
-  return (await ref.watch(accountProfileUseCaseProvider).load())?.gender;
-});
-
 class _CurrentProfileBodyMap extends ConsumerWidget {
   const _CurrentProfileBodyMap({
     required this.s,
@@ -105,7 +98,7 @@ class _CurrentProfileBodyMap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gender = ref.watch(_currentProfileGenderProvider).valueOrNull ?? s.gender;
+    final gender = ref.watch(currentProfileGenderProvider).valueOrNull ?? s.gender;
     return BodyMap(
       gender: gender,
       selected: selected,
@@ -904,6 +897,7 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
             s: s,
             selected: locations,
             onToggle: (site) => setState(() {
+                  if (!canToggleSite(locations, site)) return;
                   locations.contains(site) ? locations.remove(site) : locations.add(site);
                   emit();
                 })),
@@ -1028,6 +1022,7 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
               s: s,
               selected: locations,
               onToggle: (site) => setState(() {
+                    if (!canToggleSite(locations, site)) return;
                     locations.contains(site) ? locations.remove(site) : locations.add(site);
                     emit();
                   })),
@@ -1133,6 +1128,7 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
             s: s,
             selected: locations,
             onToggle: (site) => setState(() {
+              if (!canToggleSite(locations, site)) return;
               locations.contains(site) ? locations.remove(site) : locations.add(site);
               emit();
             }),

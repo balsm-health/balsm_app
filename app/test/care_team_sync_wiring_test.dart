@@ -1,6 +1,8 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
+import 'package:app/balsm_app/flags.dart';
+import 'package:app/balsm_app/storage_target.dart';
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
@@ -39,7 +41,9 @@ void main() {
     expect(() => container.read(careTeamSyncServiceProvider), throwsA(isA<UnimplementedError>()));
   });
 
-  testWidgets('pulling the care team list down triggers a sync', (tester) async {
+  /// Pumps the screen over a recording API, pulls the list down, and returns
+  /// how many times the network was reached.
+  Future<int> pullsAfterFling(WidgetTester tester, {required bool syncOn}) async {
     const profileId = HealthProfileId.value('hp-1');
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
@@ -59,7 +63,10 @@ void main() {
         careTeamSyncServiceProvider.overrideWithValue(service),
       ],
       child: AppScope(
-        state: PatientAppState(),
+        state: PatientAppState()
+          ..attachFlags(FeatureFlags(flags: AppFlags.all, allowOverrides: true)
+            ..setOverride(AppFlags.sync, syncOn)
+            ..setOverride(AppFlags.syncFor(DataCategory.care), syncOn)),
         // material_ui's MaterialApp, matching care_team_test.dart: this repo's
         // Material layer is material_ui, so SubScreen's RefreshIndicator resolves
         // to material_ui's and wants material_ui's MaterialLocalizations.
@@ -71,6 +78,14 @@ void main() {
     await tester.fling(find.byType(ListView).first, const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
 
-    expect(api.pulls, greaterThan(0));
+    return api.pulls;
+  }
+
+  testWidgets('pulling the care team list down triggers a sync when the flags are on', (tester) async {
+    expect(await pullsAfterFling(tester, syncOn: true), greaterThan(0));
+  });
+
+  testWidgets('with the sync flags off, pulling the list down reaches no server', (tester) async {
+    expect(await pullsAfterFling(tester, syncOn: false), 0);
   });
 }

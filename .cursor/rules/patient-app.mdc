@@ -10,6 +10,8 @@ alwaysApply: true
 - Domain/application layers depend on module ports (`ProfileDataSource`, `UserDataSource`), never on `Drift*` concretes.
 - Run Flutter via **fvm** (`fvm flutter …`, `fvm dart …`).
 - UI strings live in i69n JSON. After editing, run `dart run build_runner build` in that package. No inline `ar ? … : …` ternaries.
+- Every code change keeps the version and the changelog current (`CODING_STANDARDS.md` §9): raise `version:` in `app/pubspec.yaml` (fix → patch, feature → minor, breaking → major, build +1) and add a line to `CHANGELOG.md` under the top section. Never add a version to `app/web/version/<brand>.json` outside a release.
+- Features that may need switching off without a release go behind a flag (`CODING_STANDARDS.md` §8).
 
 @file CLAUDE.md
 @file CODING_STANDARDS.md

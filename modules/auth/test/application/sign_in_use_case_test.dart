@@ -17,6 +17,10 @@ const _uid = 'balsm.user_id';
 const _did = 'balsm.device_id';
 
 void main() {
+  // mocktail needs a concrete value before `any(named: 'purpose')` can stand
+  // in for an enum argument.
+  setUpAll(() => registerFallbackValue(OtpPurpose.reset));
+
   late _MockAdapter adapter;
   late _MockStorage storage;
   late EventBus bus;
@@ -37,6 +41,30 @@ void main() {
   });
 
   Future<void> flush() => Future<void>.delayed(Duration.zero);
+
+  group('requestContinueOtp', () {
+    test('asks for the merged-entry purpose, not reset', () async {
+      // The code that follows a failed email+password attempt. The address may
+      // or may not have an account; the server sends either way and says
+      // nothing about which, which is the only reason the merged screen is
+      // safe. Reset is a different purpose with a different rule.
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).thenAnswer((_) async {});
+
+      final r = await usecase.requestContinueOtp('a@b.com', 'EG');
+
+      expect(r.isSuccess, isTrue);
+      verify(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).called(1);
+    });
+
+    test('a transport failure is reported, not swallowed', () async {
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow))
+          .thenThrow(const AuthException(code: 'network', message: 'no route'));
+
+      final r = await usecase.requestContinueOtp('a@b.com', 'EG');
+
+      expect(r.isFailure, isTrue);
+    });
+  });
 
   group('verifyEmailOtp', () {
     test('success persists tokens and publishes UserSignedIn(email)', () async {
@@ -96,6 +124,28 @@ void main() {
 
       expect(r.isFailure, isTrue);
       expect(r.error, isA<NetworkFailure>());
+    });
+  });
+
+  group('account mode', () {
+    // A device-only account left on this phone must never make a server
+    // session look device-only: every request would be refused locally and
+    // the next boot would land on the offline Unlock screen.
+    test('every ordinary sign-in marks the account online', () async {
+      final tokens = (accessToken: 'AT', refreshToken: 'RT', userId: 'U1', isNewUser: false);
+      when(() => adapter.verifyOtp(any(), any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.passwordSignIn(any(), any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.verifyLink(any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.signInWithGoogle(any(), any(), any(), any())).thenAnswer((_) async => tokens);
+      when(() => adapter.signInWithApple(any(), any(), any(), any(), any())).thenAnswer((_) async => tokens);
+
+      await usecase.verifyEmailOtp(email: 'a@b.com', code: '123456');
+      await usecase.passwordSignIn(email: 'a@b.com', password: 'pw-12345678');
+      await usecase.verifyMagicLink(token: 'tok');
+      await usecase.signInWithGoogle(idToken: 'id', email: 'a@b.com', countryCode: 'EG');
+      await usecase.signInWithApple(idToken: 'id', authCode: 'c', email: 'a@b.com', countryCode: 'EG');
+
+      verify(() => storage.writeToken(kAccountModeKey, AccountMode.online.wire)).called(5);
     });
   });
 
@@ -194,6 +244,49 @@ void main() {
 
       expect(r.isFailure, isTrue);
       expect(r.error, isA<NetworkFailure>());
+    });
+  });
+
+  group('goOnline', () {
+    ({AuthTokens tokens, bool adoptedClientId}) claim(
+            {required String userId, required bool isNew, required bool adopted}) =>
+        (
+          tokens: (accessToken: 'at', refreshToken: 'rt', userId: userId, isNewUser: isNew),
+          adoptedClientId: adopted,
+        );
+
+    setUp(() {
+      when(() => storage.readToken(_did)).thenAnswer((_) async => 'device-1');
+      when(() => storage.writeToken(any(), any())).thenAnswer((_) async {});
+    });
+
+    test('adopted → GoOnlineAdopted, tokens persisted, no UserSignedIn yet', () async {
+      when(() => adapter.verifyOtpClaim('a@b.co', '123456', 'device-1', any(), 'off-1'))
+          .thenAnswer((_) async => claim(userId: 'off-1', isNew: true, adopted: true));
+
+      final r = await usecase.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1');
+
+      expect(r.value, isA<GoOnlineAdopted>());
+      verify(() => storage.writeToken(_at, 'at')).called(1);
+      verify(() => storage.writeToken(_rt, 'rt')).called(1);
+      verify(() => storage.writeToken(_uid, 'off-1')).called(1);
+      expect(events.whereType<UserSignedIn>(), isEmpty);
+      // The caller flips the mode only after local data is moved.
+      verifyNever(() => storage.writeToken(kAccountModeKey, any()));
+    });
+
+    test('new account under a different id → GoOnlineNewId', () async {
+      when(() => adapter.verifyOtpClaim(any(), any(), any(), any(), any()))
+          .thenAnswer((_) async => claim(userId: 'srv-9', isNew: true, adopted: false));
+      final r = await usecase.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1');
+      expect((r.value as GoOnlineNewId).userId, 'srv-9');
+    });
+
+    test('existing account → GoOnlineExistingAccount', () async {
+      when(() => adapter.verifyOtpClaim(any(), any(), any(), any(), any()))
+          .thenAnswer((_) async => claim(userId: 'srv-1', isNew: false, adopted: false));
+      final r = await usecase.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1');
+      expect((r.value as GoOnlineExistingAccount).userId, 'srv-1');
     });
   });
 }

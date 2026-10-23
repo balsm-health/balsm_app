@@ -1,5 +1,7 @@
 include: package:flutter_lints/flutter.yaml
 analyzer:
+  exclude:
+    - build/**
   # plugins:  # disabled 2026-07-31: custom_lint isolate leak
   #   - custom_lint
 

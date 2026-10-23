@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class QrShareState {
   const QrShareState({
     this.mint,
-    this.ttlSeconds = 86400, // default 24h (FR-017)
     this.minting = false,
     this.revoking = false,
     this.rotating = false,
@@ -21,7 +20,6 @@ class QrShareState {
   /// The active token + its `#k=` fragment URL; null until minted (or after
   /// revoke). The fragment key never leaves the device except inside the QR.
   final MintResult? mint;
-  final int ttlSeconds;
   final bool minting;
   final bool revoking;
   final bool rotating;
@@ -39,7 +37,6 @@ class QrShareState {
 
   QrShareState copyWith({
     Object? mint = _unset,
-    int? ttlSeconds,
     bool? minting,
     bool? revoking,
     bool? rotating,
@@ -48,7 +45,6 @@ class QrShareState {
   }) =>
       QrShareState(
         mint: identical(mint, _unset) ? this.mint : mint as MintResult?,
-        ttlSeconds: ttlSeconds ?? this.ttlSeconds,
         minting: minting ?? this.minting,
         revoking: revoking ?? this.revoking,
         rotating: rotating ?? this.rotating,
@@ -89,18 +85,17 @@ class QrShareController extends AutoDisposeNotifier<QrShareState> {
         ),
         qrUrl: record.qrUrl,
       ),
-      ttlSeconds: kPermanentQrTtlSeconds,
     );
     unawaited(ref.read(refreshPermanentQrUseCaseProvider)());
   }
 
-  void setTtl(int seconds) => state = state.copyWith(ttlSeconds: seconds);
-
-  /// Mints a token for the selected TTL. Returns true on success; failures —
-  /// including the age gate (FR-301b) — land in [QrShareState.error].
+  /// Mints the permanent token. Offline-first: the jti is generated
+  /// on-device and the server sync is best-effort, so this succeeds without a
+  /// connection. Returns true on success; failures land in
+  /// [QrShareState.error].
   Future<bool> mint() async {
     state = state.copyWith(minting: true, error: null);
-    final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: state.ttlSeconds);
+    final result = await ref.read(mintEmergencyQrTokenUseCaseProvider).call(ttlSeconds: kPermanentQrTtlSeconds);
     return result.fold(
       (m) {
         state = state.copyWith(

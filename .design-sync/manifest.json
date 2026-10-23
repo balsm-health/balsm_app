@@ -7,7 +7,7 @@
     },
     "_ds/balsm-design-system-51cdbf29-13b7-4206-9328-125fade14cc3/brand/colors_and_type.css": {
       "current_sha": "1c4dbb11eff2d5f09ca392d29d425726d22d62c1ee8cd1b559eaee02357f2814",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/tokens.dart",
         "packages/core/lib/src/kit/_tokens.dart"
@@ -17,7 +17,7 @@
     },
     "_ds/balsm-design-system-51cdbf29-13b7-4206-9328-125fade14cc3/responsive.css": {
       "current_sha": "a3cf6fd018925767e4f4a33b4157ed828795fa635c49db674051e55daeb3e3e7",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "packages/core/lib/src/kit/_tokens.dart"
       ],
@@ -25,8 +25,8 @@
       "synced_sha": "a3cf6fd018925767e4f4a33b4157ed828795fa635c49db674051e55daeb3e3e7"
     },
     "app.css": {
-      "current_sha": "e3596fc0047f0d1cb9a78cdb03f21b087ecb1b1d5b8dbd380c79a170c1ae0de2",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "current_sha": "a1d10f8540b903d858bd665b058f02d2247a427bb54fb4b8db35f726c9fda1d1",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/tokens.dart",
         "app/lib/balsm_app/screens/home_widgets.dart"
@@ -37,7 +37,7 @@
     },
     "app.jsx": {
       "current_sha": "070c709b645529fb1a895398dd084fdd18ced8d81b84d1935c5a352872063cdd",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/shell.dart"
       ],
@@ -46,8 +46,8 @@
       "synced_sha": "070c709b645529fb1a895398dd084fdd18ced8d81b84d1935c5a352872063cdd"
     },
     "appointments.jsx": {
-      "current_sha": "03fd15da3ff246c86bb388e7c93aee902aa28d8c09e02ac8d328e73d1a374df1",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "current_sha": "b427d39da792216c12185a8bbb53d4adc88a6e7acfd881a398b909b0176e6d9c",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/"
       ],
@@ -57,7 +57,7 @@
     },
     "attachments.jsx": {
       "current_sha": "912e25d2e76035cb9eaddd619238885d8d8269b288916ad101963ca636a9c94f",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/widgets/attachment_thumb.dart",
         "app/lib/balsm_app/widgets/vault_file_viewer.dart"
@@ -67,7 +67,7 @@
     },
     "auth.jsx": {
       "current_sha": "5b747d085b981b42a03954aa3645c332b84e40994f592dc9ca689255a5d285c4",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/auth_flow.dart",
         "app/lib/balsm_app/shell.dart"
@@ -78,14 +78,14 @@
     },
     "base.jsx": {
       "current_sha": "52c460033b00bb2e36117c9a2abb9bbd8963e2339d68847231ccc319f08eb2c4",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T12:13:46+00:00",
       "synced_sha": "52c460033b00bb2e36117c9a2abb9bbd8963e2339d68847231ccc319f08eb2c4"
     },
     "bodymap.jsx": {
       "current_sha": "b3662583db682f225b91d48e3e56d50b4cd4e3f4a1bd5bf9246e33868e144455",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/widgets/body_map.dart"
       ],
@@ -93,9 +93,13 @@
       "synced_at": "2026-09-18T13:13:14+00:00",
       "synced_sha": "b3662583db682f225b91d48e3e56d50b4cd4e3f4a1bd5bf9246e33868e144455"
     },
+    "care-import.jsx": {
+      "current_sha": "3871b60cf594906e3bb00baf4a12aa50326b2a22070a6e09b22559342662826f",
+      "fetched_at": "2026-09-27T12:49:14+00:00"
+    },
     "data.jsx": {
       "current_sha": "0f2bded34f0b69107b69b279b4f3c5e43ec4e3921007afaa640048d1a0a5fa13",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/i18n/strings.i69n.jsonc",
         "app/lib/balsm_app/i18n/strings_ar.i69n.jsonc"
@@ -111,7 +115,7 @@
     },
     "dialcodes.jsx": {
       "current_sha": "d6db7c6236c278642403be67138e5f4885bdd134a9c83d6a4efa9bbe840e0ff5",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T13:13:14+00:00",
       "synced_sha": "d6db7c6236c278642403be67138e5f4885bdd134a9c83d6a4efa9bbe840e0ff5"
@@ -123,7 +127,7 @@
     },
     "ecosystem.jsx": {
       "current_sha": "3eced1b20fb9aba7c301e66b25d246f3614deebd0bc638109f2ad4091ac80efe",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/ecosystem_sheet.dart"
       ],
@@ -132,8 +136,8 @@
       "synced_sha": "3eced1b20fb9aba7c301e66b25d246f3614deebd0bc638109f2ad4091ac80efe"
     },
     "feedback.jsx": {
-      "current_sha": "90fb03a31f802464f9d0969d3f641e595b62bfdba60324f88ef767566f3b265d",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "current_sha": "9c5a6e9a093abc69d8927d329d9a06b3fa07c868ef58430c9bc8981c79309d99",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/feedback_sheet.dart"
       ],
@@ -142,8 +146,8 @@
       "synced_sha": "9c5a6e9a093abc69d8927d329d9a06b3fa07c868ef58430c9bc8981c79309d99"
     },
     "home.jsx": {
-      "current_sha": "99cb36346d73994b080bc33759028a59d99bb2acc25cef646751c49a6435875f",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "current_sha": "4ca65feb28554d07d504d7bb5e0748da0e84eb8026ec9053ddb10a9550e731e2",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/care_team_screen.dart",
         "app/lib/balsm_app/screens/profile_screen.dart",
@@ -160,14 +164,14 @@
     },
     "ios-frame.jsx": {
       "current_sha": "20a9df28a5cfdba88704713bef3dd1d25bc9616b915e1f074cb0dee3108305f1",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T12:13:46+00:00",
       "synced_sha": "20a9df28a5cfdba88704713bef3dd1d25bc9616b915e1f074cb0dee3108305f1"
     },
     "map.jsx": {
       "current_sha": "3c8ad3401b0cccb9d17484ead9c8b01dccf8afb0220a16bebf7e03af2a6c6bec",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/map_screen.dart",
         "app/lib/balsm_app/screens/map_packs_sheet.dart"
@@ -178,7 +182,7 @@
     },
     "metric-inputs.jsx": {
       "current_sha": "4f0b34f48f3f7641dea28ba02ab0bba9ccff7282e31549c65b57a65b1303369a",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "modules/self_report/lib/src/domain/value_objects/symptom.dart",
         "app/lib/balsm_app/screens/checkin_shared.dart"
@@ -189,14 +193,14 @@
     },
     "numpad.jsx": {
       "current_sha": "f707ad43ab6bc0e986a149259a3582b16ba2d49eab721284d2fa63da250f3d37",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T12:13:46+00:00",
       "synced_sha": "f707ad43ab6bc0e986a149259a3582b16ba2d49eab721284d2fa63da250f3d37"
     },
     "petalmark.jsx": {
       "current_sha": "03a5725dd05bb9c149a2b37593c789c5d12f23a7c1e0c690abbc7b5e02e4c6a4",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/assets/brand/icon.svg"
       ],
@@ -206,7 +210,7 @@
     },
     "prescriptions.jsx": {
       "current_sha": "5cab6d5b5274b750561a2fdaadcc7f9dc6570a2978f34a17a2a0aa7a035c04ed",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/add_prescription_sheet.dart",
         "app/lib/balsm_app/screens/prescriptions_screen.dart"
@@ -217,17 +221,17 @@
     },
     "qrshare.jsx": {
       "current_sha": "9a1e439f956c16862a0d614d67bf5c0a4fc7dbdee105e78bc0a46c66fefa1462",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
-        "app/lib/balsm_app/screens/personal_details.dart"
+        "app/test/qr_no_permanence_test.dart (delta rejected: permanence note must not ship)"
       ],
       "source": "export:balsm-claude-design-files.json",
-      "synced_at": "2026-09-23T04:44:56+00:00",
-      "synced_sha": "1114cea86a62ddac8815096edc6e4e2104f08122e6390b4ce24fef01969b42f6"
+      "synced_at": "2026-09-27T10:09:31+00:00",
+      "synced_sha": "9a1e439f956c16862a0d614d67bf5c0a4fc7dbdee105e78bc0a46c66fefa1462"
     },
     "quicklog.jsx": {
       "current_sha": "e03f379959682c2bc15ca4f265b36a7076cde37a0f08f860a878ef30fc595529",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/quick_log.dart"
       ],
@@ -237,7 +241,7 @@
     },
     "records.jsx": {
       "current_sha": "c9cd71dae6ab41d4a772784a243cbdc62d87528920cbb351827f4d95a34b87ec",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/records_screen.dart",
         "app/lib/balsm_app/screens/records_detail.dart"
@@ -248,7 +252,7 @@
     },
     "report.jsx": {
       "current_sha": "b5bd5886e2d60aa26a49411bebdd9db644b30d4c1a508f486195e1b0c9cbd66a",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/report_flow.dart",
         "modules/self_report/lib/src/domain/value_objects/check_in_metric.dart"
@@ -259,14 +263,14 @@
     },
     "settings.jsx": {
       "current_sha": "f88f97a252390ad71c118761ac5ced75a364ba76f4bc04d7b1cca45e516b3870",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T13:13:14+00:00",
       "synced_sha": "f88f97a252390ad71c118761ac5ced75a364ba76f4bc04d7b1cca45e516b3870"
     },
     "storage.jsx": {
       "current_sha": "47ed9aed2afcb146b71b65d8385d5fd22c72170c495d580ec49c32ff15ee5fc6",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/storage_sheet.dart"
       ],
@@ -286,28 +290,28 @@
     },
     "walkthrough.css": {
       "current_sha": "0be7ce92dffa8e794398777f8d9fbecf31b08536bc872fdf523902fb90a97e06",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T12:13:46+00:00",
       "synced_sha": "0be7ce92dffa8e794398777f8d9fbecf31b08536bc872fdf523902fb90a97e06"
     },
     "wt-compare.jsx": {
       "current_sha": "2fa4985caf2c001a8f3e164e4d504be7d872173a0395507b3f481ce1dcb08f15",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T13:13:14+00:00",
       "synced_sha": "2fa4985caf2c001a8f3e164e4d504be7d872173a0395507b3f481ce1dcb08f15"
     },
     "wt-core.jsx": {
       "current_sha": "9f18416d7bad11430406e35e0ca227987db6053def3fcfc091ffe8bd7dddbc5e",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "source": "export:balsm-claude-design-files.json",
       "synced_at": "2026-09-18T13:13:14+00:00",
       "synced_sha": "9f18416d7bad11430406e35e0ca227987db6053def3fcfc091ffe8bd7dddbc5e"
     },
     "wt-treatments.jsx": {
       "current_sha": "f1b4e3bbe602bb02ecc4b3805473d525ecd34312d95250f222fbc1406cc6370e",
-      "fetched_at": "2026-09-23T11:45:22+00:00",
+      "fetched_at": "2026-09-27T12:49:14+00:00",
       "ported_to": [
         "app/lib/balsm_app/screens/walkthrough_screen.dart"
       ],
