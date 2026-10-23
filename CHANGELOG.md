@@ -12,6 +12,17 @@ what changed and why it matters.
 
 ## [0.1.1] - Unreleased
 
+### Security
+
+- Product analytics (PostHog) no longer receives the text that comes with an
+  app error. Flutter's error description names the failing widget and its key,
+  and a key can hold patient data, such as the symptom on the quick-log screen.
+- Product analytics drops every `$` property set by the app except the screen
+  name, and clears person properties. `$set` would have written data onto the
+  identified patient's profile, past the allowlist.
+
+## [0.1.0] - Unreleased
+
 First release of the Balsm patient app.
 
 ### Added
@@ -110,12 +121,6 @@ First release of the Balsm patient app.
 
 ### Security
 
-- Product analytics (PostHog) no longer receives the text that comes with an
-  app error. Flutter's error description names the failing widget and its key,
-  and a key can hold patient data, such as the symptom on the quick-log screen.
-- Product analytics drops every `$` property set by the app except the screen
-  name, and clears person properties. `$set` would have written data onto the
-  identified patient's profile, past the allowlist.
 - Staging and production builds are obfuscated; the files that undo it are
   kept beside the build and never shipped (`docs/balsm-cli.md`).
 - A production build can no longer be made readable by accident: turning
