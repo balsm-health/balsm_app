@@ -18,6 +18,9 @@ jobs:
     #   github.event.pull_request.user.login == 'new-developer' ||
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
+    # Skip pushes made by Claude itself (the version raise): there is nothing
+    # of the author's to review, and the action refuses bot-started runs.
+    if: github.actor != 'claude[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read

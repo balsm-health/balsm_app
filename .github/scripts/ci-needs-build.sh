@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# Decides whether CI must analyze, test and build this commit, or whether the
-# last green run already covers it.
+# Decides which CI jobs this commit needs, or whether the last green run
+# already covers it.
 #
 #   ci-needs-build.sh <last-green-sha or empty>
 #
-# Prints `true` or `false`, with the reason on stderr.
+# Prints two lines for $GITHUB_OUTPUT, with the reasons on stderr:
+#   dart=true|false   analyze, tests and coverage: Dart and what it reads
+#   build=true|false  the web/Android/iOS builds: all of that plus native code
+# A change under a package's own platform folder (app/android/, app/ios/,
+# modules/<m>/ios/, …) is native only: it rebuilds but cannot move analysis,
+# tests or coverage. Dart under lib/ — even lib/src/web/ — is Dart.
 #
 # Skipping is only safe against the last *successful* run: a skipped job counts
 # as passed, so measuring from the previous push would let a docs-only commit
@@ -16,12 +21,12 @@ green=${1:-}
 say() { echo "$*" >&2; }
 
 if [ -z "$green" ]; then
-  say "No earlier green run on this pull request: build."
-  echo true; exit 0
+  say "No earlier green run on this pull request: run everything."
+  printf 'dart=true\nbuild=true\n'; exit 0
 fi
 if ! git cat-file -e "$green^{commit}" 2>/dev/null || ! git merge-base --is-ancestor "$green" HEAD; then
-  say "Last green run ($green) is not in this branch's history (force-push?): build."
-  echo true; exit 0
+  say "Last green run ($green) is not in this branch's history (force-push?): run everything."
+  printf 'dart=true\nbuild=true\n'; exit 0
 fi
 
 # Files that cannot change what CI analyzes, tests or builds. Anything else —
@@ -43,7 +48,10 @@ changed=$(git diff --name-only "$green" HEAD -- . "${not_build[@]}")
 # runs, and anything under app/assets/ ships in the bundle, .md files included.
 changed+=$'\n'$(git diff --name-only "$green" HEAD -- .github/workflows/ci.yml .github/scripts/ci-needs-build.sh app/assets)
 
-relevant=()
+# A Flutter platform folder directly under a package root.
+native='^(app|modules/[^/]+|packages/[^/]+)/(android|ios|macos|linux|windows|web)/'
+
+dart=(); native_only=()
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   # A pubspec whose only change is its `version:` line (the version raise)
@@ -52,14 +60,22 @@ while IFS= read -r f; do
     other=$(git diff -U0 "$green" HEAD -- "$f" | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -vE '^[+-]version:' || true)
     [ -z "$other" ] && continue
   fi
-  relevant+=("$f")
-done <<< "$changed"
+  # ci.yml and this script decide what runs, so they count as both.
+  if [[ "$f" =~ $native ]]; then native_only+=("$f"); else dart+=("$f"); fi
+done <<< "$(printf '%s\n' "$changed" | sort -u)"
 
-if [ ${#relevant[@]} -eq 0 ]; then
-  say "Nothing build-relevant changed since the last green run ($green): skip."
-  echo false
-else
-  say "Build-relevant changes since the last green run ($green):"
-  printf '  %s\n' "${relevant[@]:0:20}" >&2
-  echo true
+if [ ${#dart[@]} -gt 0 ]; then
+  say "Dart-relevant changes since the last green run ($green):"
+  printf '  %s\n' "${dart[@]:0:20}" >&2
 fi
+if [ ${#native_only[@]} -gt 0 ]; then
+  say "Native-only changes since the last green run ($green):"
+  printf '  %s\n' "${native_only[@]:0:20}" >&2
+fi
+if [ ${#dart[@]} -eq 0 ] && [ ${#native_only[@]} -eq 0 ]; then
+  say "Nothing build-relevant changed since the last green run ($green): skip."
+fi
+
+has_dart=false; [ ${#dart[@]} -gt 0 ] && has_dart=true
+has_build=false; [ ${#dart[@]} -gt 0 ] || [ ${#native_only[@]} -gt 0 ] && has_build=true
+printf 'dart=%s\nbuild=%s\n' "$has_dart" "$has_build"
