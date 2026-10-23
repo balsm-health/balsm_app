@@ -169,28 +169,32 @@ base branch it merges into, released or not. What ships is everything under
 - You rarely raise it by hand: on every push to a pull request,
   `.github/workflows/claude-version-bump.yml` runs the same check and, when
   the raise is missing, has Claude pick the type from the diff, raise the
-  version and the changelog heading, and commit them (signed) to the branch.
+  version, open its changelog section, and commit them (signed) to the branch.
   Pull from the branch before your next push. Pull requests from forks are
   skipped and raise it by hand.
 
 ### The changelog
 
+- **Every version has its own section**, newest first. A change that raises
+  the version opens a new `## [0.2.0] - Unreleased` section above the others
+  and puts its lines there; the sections below are never renamed or merged
+  into it, so the changelog lists every version that was ever built.
 - **Every change adds one line to `CHANGELOG.md`**, in the same change, under
   the top section, in the group that fits: **Added**, **Changed**, **Fixed**,
-  **Removed** or **Security**. That includes changes that raise no version,
-  when they affect how the app is built, released or secured.
+  **Removed** or **Security** (only the groups a section uses). That includes
+  changes that raise no version, when they affect how the app is built,
+  released or secured.
 - Not recorded: a pure refactor, a test-only or comment-only change, a typo.
-- **The top section's heading is the pubspec version**, as
-  `## [0.2.0] - Unreleased`. When a change raises the version, rename that
-  heading; the lines already under it stay, because they ship in that release
-  too.
+- **The top section's heading is the pubspec version.**
 - Write for someone who was not there: what changed and why it matters, not
   how. No "fixed bug", no ticket number on its own, no file list.
 - **Never add a version to `app/web/version/<brand>.json` in a code change.**
   That file is live and lists released versions only; an entry there is
   offered to every installed app at once. It is edited at release time
-  (`docs/app-update.md`, "Releasing"), which is also when the section here
-  gets its date and a new `Unreleased` section is opened.
+  (`docs/app-update.md`, "Releasing"). That is also when the released
+  version's section, and every `Unreleased` section below it, gets the
+  release date: they all ship in that build.
 
 `app/test/changelog_test.dart` fails when the top section is not for the
-version being built.
+version being built, a version is listed twice or out of order, a section is
+empty, or an `Unreleased` section sits below a released one.
