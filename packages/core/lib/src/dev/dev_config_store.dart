@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'server_url.dart';
+
 /// A user-defined backend saved from the Dev Config Environment tab.
 class SavedEnv {
   const SavedEnv({required this.id, required this.name, required this.url});
@@ -74,7 +76,21 @@ class DevConfigStore extends ChangeNotifier {
     final raw = prefs.getString(_kSavedEnvs);
     if (raw != null) {
       try {
-        _savedEnvs = (jsonDecode(raw) as List).map((e) => SavedEnv.fromJson(e as Map<String, dynamic>)).toList();
+        final loaded = (jsonDecode(raw) as List).map((e) => SavedEnv.fromJson(e as Map<String, dynamic>)).toList();
+        // Older builds saved a custom server as typed, so `192.168.8.3:5050`
+        // may be stored without its scheme. Repair it the way the active
+        // server is repaired on boot, or the entry never matches the server it
+        // selects. One that cannot be repaired stays as it is, to edit or delete.
+        _savedEnvs = [
+          for (final e in loaded)
+            switch (normalizeServerUrl(e.url)) {
+              final url? when url != e.url => SavedEnv(id: e.id, name: e.name, url: url),
+              _ => e,
+            },
+        ];
+        if (!listEquals(_savedEnvs.map((e) => e.url).toList(), loaded.map((e) => e.url).toList())) {
+          await _persistEnvs();
+        }
       } catch (_) {
         _savedEnvs = [];
       }

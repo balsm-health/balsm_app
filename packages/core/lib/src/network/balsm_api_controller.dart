@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/active_server.dart';
 import '../dev/dev_host_locator.dart';
+import '../dev/server_url.dart';
 import '../config/flavor.dart';
 import '../config/server_preset.dart';
 import '../domain/events/app_event.dart';
@@ -47,9 +48,32 @@ class BalsmApiController {
     // Prod cannot switch servers — never honour a leftover Local preset
     // from a previous Dev Config session (that is what pointed the hosted
     // web shell at http://localhost:5050).
-    final saved = FlavorConfig.current.serverSwitchingEnabled ? await _store.read() : null;
+    final saved = FlavorConfig.current.serverSwitchingEnabled ? await _readUsable() : null;
     final preset = saved ?? _store.defaultPreset;
     _client.baseUrl = await _resolve(preset.apiBaseUrl);
+  }
+
+  /// The saved preset, repaired or dropped so it can never stop the app from
+  /// starting.
+  ///
+  /// Older builds saved a Dev Config URL as typed and wrote it before applying
+  /// it, so a schemeless `192.168.8.3:5050` could be stored as the active
+  /// server; applying that on boot throws in dio and the app never leaves the
+  /// splash screen (BALSM-APP-1X). A URL that only lacks its scheme is fixed
+  /// and saved back; one that still cannot work is cleared, and the caller
+  /// falls back to the default server.
+  Future<ServerPreset?> _readUsable() async {
+    final saved = await _store.read();
+    if (saved == null) return null;
+    final url = normalizeServerUrl(saved.apiBaseUrl);
+    if (url == null) {
+      await _store.clear();
+      return null;
+    }
+    if (url == saved.apiBaseUrl) return saved;
+    final repaired = ServerPreset(label: saved.label, apiBaseUrl: url);
+    await _store.write(repaired);
+    return repaired;
   }
 
   /// A loopback URL, pointed at whatever is actually serving it.
@@ -69,7 +93,7 @@ class BalsmApiController {
     if (current == null) return null;
     // Re-ask from the preset, not from the resolved URL: the resolved one
     // names a machine that has just stopped answering.
-    final saved = await _store.read();
+    final saved = await _readUsable();
     final resolved = await _resolve((saved ?? _store.defaultPreset).apiBaseUrl);
     if (resolved == _client.baseUrl) return null;
     _client.baseUrl = resolved;
@@ -82,9 +106,15 @@ class BalsmApiController {
     // machine — which from a device on the desk is a LAN address, not its own
     // loopback. Stored as chosen, so the rewrite follows the machine rather
     // than being baked into secure storage.
-    final resolved = ServerPreset(label: preset.label, apiBaseUrl: await _resolve(preset.apiBaseUrl));
-    await _store.write(preset);
+    //
+    // Applied before it is saved: if the client refuses the URL, nothing is
+    // stored, so a bad choice fails here instead of on every later launch.
+    final url = normalizeServerUrl(preset.apiBaseUrl);
+    if (url == null) throw FormatException('Not a usable server URL', preset.apiBaseUrl);
+    final chosen = ServerPreset(label: preset.label, apiBaseUrl: url);
+    final resolved = ServerPreset(label: chosen.label, apiBaseUrl: await _resolve(chosen.apiBaseUrl));
     _client.baseUrl = resolved.apiBaseUrl;
+    await _store.write(chosen);
     _bus.publish(ServerReconfigured(resolved));
   }
 
