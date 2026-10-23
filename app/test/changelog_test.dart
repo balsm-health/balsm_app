@@ -18,19 +18,46 @@ void main() {
         reason: 'raise app/pubspec.yaml and the top heading of CHANGELOG.md together');
   });
 
-  test('the top section says something', () {
-    final start = sections.first.end;
-    final end = sections.length > 1 ? sections[1].start : changelog.length;
-    final entries = RegExp(r'^- ', multiLine: true).allMatches(changelog.substring(start, end));
-    expect(entries, isNotEmpty, reason: 'a release with nothing in its changelog');
-  });
-
-  test('each release appears once, and a released one carries its date', () {
-    final versions = sections.map((m) => m.group(1)).toList();
-    expect(versions.toSet().length, versions.length, reason: 'a version listed twice');
-    for (final m in sections.skip(1)) {
-      expect(m.group(2), matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')),
-          reason: '${m.group(1)} is below the top section, so it is released and needs its date');
+  test('every version says something', () {
+    for (var i = 0; i < sections.length; i++) {
+      final end = i + 1 < sections.length ? sections[i + 1].start : changelog.length;
+      final entries = RegExp(r'^- ', multiLine: true).allMatches(changelog.substring(sections[i].end, end));
+      expect(entries, isNotEmpty, reason: '${sections[i].group(1)} has nothing in its changelog');
     }
   });
+
+  test('each version appears once, newest first', () {
+    final versions = sections.map((m) => m.group(1)!).toList();
+    expect(versions.toSet().length, versions.length, reason: 'a version listed twice');
+    for (var i = 1; i < versions.length; i++) {
+      expect(_compare(versions[i - 1], versions[i]), greaterThan(0),
+          reason: '${versions[i - 1]} sits above ${versions[i]} but is not newer');
+    }
+  });
+
+  test('a version is Unreleased or dated, and nothing unreleased sits below a release', () {
+    final date = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+    var released = false;
+    for (final m in sections) {
+      final status = m.group(2)!;
+      expect(status == 'Unreleased' || date.hasMatch(status), isTrue,
+          reason: '${m.group(1)}: "$status" is neither Unreleased nor a date');
+      if (date.hasMatch(status)) {
+        released = true;
+      } else {
+        expect(released, isFalse,
+            reason: '${m.group(1)} is Unreleased below a released version; date it with the release that shipped it');
+      }
+    }
+  });
+}
+
+/// Compares two `MAJOR.MINOR.PATCH` versions numerically.
+int _compare(String a, String b) {
+  final x = a.split('.').map(int.parse).toList();
+  final y = b.split('.').map(int.parse).toList();
+  for (var i = 0; i < 3; i++) {
+    if (x[i] != y[i]) return x[i].compareTo(y[i]);
+  }
+  return 0;
 }

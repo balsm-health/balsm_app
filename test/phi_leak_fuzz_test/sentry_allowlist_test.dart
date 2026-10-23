@@ -92,6 +92,13 @@ void main() {
         }
       }
     });
+
+    test(r'the corpus nested under $set / $set_once never reaches the person', () {
+      for (final payload in corpus) {
+        final scrubbed = scrubPostHogProperties({r'$set': payload, r'$set_once': payload});
+        expect(scrubbed, isEmpty, reason: r'a $set payload survived the scrub');
+      }
+    });
   });
 
   group('domain events forwarded by EventBusAnalyticsForwarder', () {

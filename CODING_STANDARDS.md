@@ -81,6 +81,14 @@ need exemptions, and exemptions are what let 146 bad paths hide in
 `.claude/agents/**` on the first pass. The only exclusions left are the
 vendored `*/skills/**` trees, which are installed third-party content.
 
+### What CI rebuilds on a pull request
+
+Analyze, tests, coverage and the web, Android and iOS builds run only when a
+push changes something they depend on since the last green CI run on the pull
+request. The **Build needed?** job decides (`.github/scripts/ci-needs-build.sh`).
+A push of docs, `*.md`, editor or agent config, another workflow file, or only a
+pubspec `version:` line skips them, and the pull request keeps its last green status.
+
 ## 6. Flutter Performance
 
 - `const` constructors wherever possible
@@ -141,48 +149,60 @@ both steps itself, in the same change, without being asked.
 
 ### The version
 
-`version:` in `app/pubspec.yaml` is `MAJOR.MINOR.PATCH+BUILD`. It names the
-**next release**, so it moves when a change makes that release bigger, not once
-per commit.
+`version:` in `app/pubspec.yaml` is `MAJOR.MINOR.PATCH+BUILD`, and it is the
+only version in the repo: the packages under `packages/` and `modules/` ship
+inside the app, never on their own, so they carry none.
+
+**Every pull request that changes what ships raises it**, compared with the
+base branch it merges into, released or not. What ships is everything under
+`app/`, `packages/` and `modules/` except tests and docs.
 
 | The change | Raise | Example |
 |---|---|---|
-| Bug fix, hotfix, security fix, copy or visual correction | PATCH | `0.1.0` → `0.1.1` |
+| Bug fix, hotfix, security fix, copy or visual correction, refactor, dependency bump | PATCH | `0.1.0` → `0.1.1` |
 | New feature, or new behaviour a patient can notice | MINOR, PATCH back to 0 | `0.1.1` → `0.2.0` |
 | Breaking: data that cannot be read by the previous version, a removed feature, a raised minimum OS | MAJOR, the rest back to 0 | `0.2.0` → `1.0.0` |
-| Docs, tests, CI, tooling, refactor with no change in behaviour | nothing | |
+| Only docs, tests, CI or tooling | nothing | |
 
-- **Compare with the last released version**, which is the newest *dated*
-  section of `CHANGELOG.md` (a section still marked `Unreleased` has not
-  shipped; before the first release there is none, and the version stays as
-  it is). If the pubspec is already ahead of it by at
-  least what your change needs, leave it: a fix landing on an unreleased
-  `0.2.0` stays `0.2.0`. If your change needs more (a feature landing on an
-  unreleased `0.1.1`), raise it to that.
-- **`+BUILD` goes up by one every time the version name changes**, and never
-  goes down or resets. Stores reject a build number they have already seen.
+- **`+BUILD` goes up by one with every raise**, and never goes down or resets.
+  Stores reject a build number they have already seen.
+- A pull request raises once, by its largest change: a fix and a feature
+  together is one MINOR raise.
 - A hotfix is a PATCH raise on the released line.
-- When a pull request conflicts on the version line, take the higher version
-  and apply the rule again.
+- When another pull request raised the version first, merge the base branch,
+  take its version and raise again from there.
+- The **Version raised** check (`.github/workflows/version-bump.yml`) fails a
+  pull request, or a merge-queue entry, whose shipped code changed while the
+  name or build number did not rise above the base branch.
+- You rarely raise it by hand: on every push to a pull request,
+  `.github/workflows/claude-version-bump.yml` runs the same check and, when
+  the raise is missing, has Claude pick the type from the diff, raise the
+  version, open its changelog section, and commit them (signed) to the branch.
+  Pull from the branch before your next push. Pull requests from forks are
+  skipped and raise it by hand.
 
 ### The changelog
 
+- **Every version has its own section**, newest first. A change that raises
+  the version opens a new `## [0.2.0] - Unreleased` section above the others
+  and puts its lines there; the sections below are never renamed or merged
+  into it, so the changelog lists every version that was ever built.
 - **Every change adds one line to `CHANGELOG.md`**, in the same change, under
   the top section, in the group that fits: **Added**, **Changed**, **Fixed**,
-  **Removed** or **Security**. That includes changes that raise no version,
-  when they affect how the app is built, released or secured.
+  **Removed** or **Security** (only the groups a section uses). That includes
+  changes that raise no version, when they affect how the app is built,
+  released or secured.
 - Not recorded: a pure refactor, a test-only or comment-only change, a typo.
-- **The top section's heading is the pubspec version**, as
-  `## [0.2.0] - Unreleased`. When a change raises the version, rename that
-  heading; the lines already under it stay, because they ship in that release
-  too.
+- **The top section's heading is the pubspec version.**
 - Write for someone who was not there: what changed and why it matters, not
   how. No "fixed bug", no ticket number on its own, no file list.
 - **Never add a version to `app/web/version/<brand>.json` in a code change.**
   That file is live and lists released versions only; an entry there is
   offered to every installed app at once. It is edited at release time
-  (`docs/app-update.md`, "Releasing"), which is also when the section here
-  gets its date and a new `Unreleased` section is opened.
+  (`docs/app-update.md`, "Releasing"). That is also when the released
+  version's section, and every `Unreleased` section below it, gets the
+  release date: they all ship in that build.
 
 `app/test/changelog_test.dart` fails when the top section is not for the
-version being built.
+version being built, a version is listed twice or out of order, a section is
+empty, or an `Unreleased` section sits below a released one.

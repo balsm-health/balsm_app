@@ -1,0 +1,26 @@
+name: Version bump
+
+# Every pull request that changes what ships in the app raises `version:` in
+# app/pubspec.yaml above the base branch (CODING_STANDARDS.md §9). Runs in the
+# merge queue too: two PRs that both raised 0.1.0+9 → 0.1.1+10 each pass on
+# their own, and only the queue sees the second one landing on top of the first.
+# claude-version-bump.yml raises it for the author; this is the gate.
+
+on:
+  pull_request:
+    branches: [main, develop, 'release/**']
+  merge_group:
+
+jobs:
+  version:
+    name: Version raised
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compare app version with the base branch
+        run: bash .github/scripts/check-version-bump.sh "$BASE_SHA"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}

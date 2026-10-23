@@ -42,7 +42,7 @@ started feeding PostHog for free, which is the payoff for the 2026-07-03 facade.
 | `logEvent(…, key: true)` | breadcrumb **+** event | same as above — `key` is ignored |
 | `log` debug/info | breadcrumb | **dropped** |
 | `log` warning/error | event | `capture('app_log', {log_message, level, …})` |
-| `logError` | `captureException` (full detail) | `capture('app_error', {type, level, log_message?})` |
+| `logError` | `captureException` (full detail) | `capture('app_error', {type, level})` — no message: `FlutterError.onError` passes the widget description, which can hold a PHI-bearing key |
 | `setUser(id)` | `setUser(SentryUser(id))` | `identify(userId: id)` |
 | `setUser(null)` | clears user | `reset()` |
 
@@ -231,10 +231,12 @@ module-independence rules, rather than a seventh lint rule that would never run.
 Same deny-by-default model as the Sentry path, with two PostHog-specific rules in
 `scrubPostHogProperties`:
 
-1. **`$`-prefixed keys pass through.** They are SDK-generated from build metadata
-   and route names (`$screen_name`, `$app_version`, `$lib`), never from patient
-   input, and redacting them would strip the dimensions every PostHog report is
-   built on.
+1. **`$`-prefixed keys are dropped, except `$screen_name`.** The SDK adds its
+   own `$` properties (`$app_version`, `$lib`, …) natively, after the scrub runs,
+   so a `$` key in the map was set by app code. `$set` / `$set_once` there become
+   person properties on the identified patient, so passing them through let a
+   call site skip the allowlist. *(Changed 2026-10-20: these used to pass
+   through.)* `$screen_name` is kept and reduced with `redactUrl`.
 2. **Null values are dropped.** `Posthog().capture` takes `Map<String, Object>`,
    so a null would not survive the platform channel; dropping it keeps a
    redacted-to-null key from looking like data.
@@ -243,7 +245,9 @@ Layers, outermost last:
 
 1. `PostHogAnalyticsLogger` scrubs at the source.
 2. `PostHogConfig.beforeSend` scrubs again — covers any Dart-captured event that
-   reached the SDK without going through the logger. (Natively captured events do
+   reached the SDK without going through the logger — and clears
+   `userProperties` / `userPropertiesSetOnce`: the app never sets person
+   properties. (Natively captured events do
    **not** run these callbacks; they carry `$` properties only and no app data.)
 3. The consent gate short-circuits the logger *and* opts the SDK out, so
    natively-captured events stop too.

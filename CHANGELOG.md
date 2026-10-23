@@ -10,6 +10,30 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.1.2] - Unreleased
+
+### Fixed
+
+- Opening Account details no longer throws "setState() called during build":
+  the loaded gender now reaches the app state after the first frame.
+
+## [0.1.1] - Unreleased
+
+### Changed
+
+- Pull request CI skips analyze, tests and the web, Android and iOS builds when
+  nothing they depend on changed since the last green run, such as a docs,
+  changelog or version-only push, and cancels a run a newer push replaced.
+
+### Security
+
+- Product analytics (PostHog) no longer receives the text that comes with an
+  app error. Flutter's error description names the failing widget and its key,
+  and a key can hold patient data, such as the symptom on the quick-log screen.
+- Product analytics drops every `$` property set by the app except the screen
+  name, and clears person properties. `$set` would have written data onto the
+  identified patient's profile, past the allowlist.
+
 ## [0.1.0] - Unreleased
 
 First release of the Balsm patient app.
@@ -44,6 +68,12 @@ First release of the Balsm patient app.
 
 ### Changed
 
+- Each app version now keeps its own changelog section, newest first, so the
+  changelog lists every version built instead of folding them into one.
+- Every pull request that changes the shipped app now raises the app version
+  above the branch it merges into. Claude raises it on the pull request when
+  the author has not, and a CI check blocks one that still does not, so each
+  merged build is identifiable by its version alone.
 - Care-team sync to Balsm Cloud is off. Only a provider's text ever synced;
   attached files and links stayed on the device.
 - Social sign-in is off in the env template, which had it on with placeholder
@@ -74,8 +104,8 @@ First release of the Balsm patient app.
 
 ### Fixed
 
-- Opening Account details no longer throws "setState() called during build":
-  the loaded gender now reaches the app state after the first frame.
+- Claude's version raise and its `@claude` changes now reach the pull request
+  as signed commits; the raise used to stop short of committing.
 - The update manifest listed a 0.2.0 that was never built, so every install
   was offered an update that did not exist.
 - A minimum version above every release on offer no longer blocks all
