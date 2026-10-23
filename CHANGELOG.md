@@ -12,6 +12,12 @@ what changed and why it matters.
 
 ## [0.1.1] - Unreleased
 
+### Changed
+
+- Pull request CI skips analyze, tests and the web, Android and iOS builds when
+  nothing they depend on changed since the last green run, such as a docs,
+  changelog or version-only push, and cancels a run a newer push replaced.
+
 ### Security
 
 - Product analytics (PostHog) no longer receives the text that comes with an
@@ -55,9 +61,6 @@ First release of the Balsm patient app.
 
 ### Changed
 
-- Pull request CI skips analyze, tests and the web, Android and iOS builds when
-  nothing they depend on changed since the last green run, such as a docs,
-  changelog or version-only push, and cancels a run a newer push replaced.
 - Each app version now keeps its own changelog section, newest first, so the
   changelog lists every version built instead of folding them into one.
 - Every pull request that changes the shipped app now raises the app version
