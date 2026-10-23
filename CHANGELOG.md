@@ -10,7 +10,7 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.1.0] - Unreleased
+## [0.1.1] - Unreleased
 
 First release of the Balsm patient app.
 
