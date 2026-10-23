@@ -10,14 +10,7 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.1.2] - Unreleased
-
-### Fixed
-
-- Opening Account details no longer throws "setState() called during build":
-  the loaded gender now reaches the app state after the first frame.
-
-## [0.1.2] - Unreleased
+## [0.1.3] - Unreleased
 
 ### Fixed
 
@@ -25,6 +18,13 @@ what changed and why it matters.
   `http://` (such as `192.168.8.3:5050`): the scheme is added, an address that
   still cannot work is refused with a message, and an older saved server that
   cannot be used shows an error instead of closing the app.
+
+## [0.1.2] - Unreleased
+
+### Fixed
+
+- Opening Account details no longer throws "setState() called during build":
+  the loaded gender now reaches the app state after the first frame.
 
 ## [0.1.1] - Unreleased
 
