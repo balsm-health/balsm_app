@@ -392,7 +392,11 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       // simply show the placeholder until re-selected.
       _nationality = (profile.nationality?.isNotEmpty ?? false) ? CountryCode.tryFromCode(profile.nationality!) : null;
       _gender = profile.gender;
-      s.setGender(profile.gender ?? Gender.other);
+      // setGender notifies AppScope, which may not be marked dirty mid-build.
+      final g = profile.gender ?? Gender.other;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) s.setGender(g);
+      });
       _dob = (profile.dateOfBirth?.isNotEmpty ?? false) ? DateTime.tryParse(profile.dateOfBirth!) : null;
     }
 
