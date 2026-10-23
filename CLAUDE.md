@@ -21,10 +21,14 @@ Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm
   `localization/i18n/`); after editing JSON run `dart run build_runner build`
   in that package. No inline bilingual `ar ? … : …` ternaries.
 - **Every code change keeps the version and the changelog current**, in the
-  same change and without being asked: raise `version:` in `app/pubspec.yaml`
-  by the rule in `CODING_STANDARDS.md` §9 (fix → patch, feature → minor,
-  breaking → major, build number +1), and add a line to `CHANGELOG.md` under
-  the top section. Never add a version to the live
+  same change and without being asked: every pull request that touches
+  shipped code under `app/`, `packages/` or `modules/` raises `version:` in
+  `app/pubspec.yaml` above the base branch, by the rule in
+  `CODING_STANDARDS.md` §9 (fix → patch, feature → minor, breaking → major,
+  build number +1; packages carry no version), renames the top `CHANGELOG.md`
+  heading to match, and adds a line under it. CI's **Version raised** check
+  enforces the raise, and the Claude version-bump workflow commits it to the
+  pull request when it is missing. Never add a version to the live
   `app/web/version/<brand>.json` outside a release.
 - A feature that may need switching off without a release goes behind a flag
   (`CODING_STANDARDS.md` §8, `docs/feature-flags.md`).
