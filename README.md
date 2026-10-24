@@ -126,11 +126,13 @@ descriptors; see `previews/preview_harness.dart`.) Every preview is also pumped 
 ## Deeper docs
 
 - Feature specs: `docs/superpowers/specs/` · implementation plans: `docs/superpowers/plans/`
-- CI: `.github/workflows/` (`ci.yml` checks, `build-apks.yml`, `release.yml`).
+- CI: `.github/workflows/` (`ci.yml` checks, `build-apks.yml`, `release.yml`,
+  `promote.yml`).
   Pipelines run only for `main` / `develop` / `release/**` and PRs targeting
   them — work branches get CI through their PR, not on every push.
   Every push to `main` or `release/**` and every `v*` tag publishes a GitHub
   Release; branch pushes are pre-releases (`docs/ci-secrets.md`).
+  Releasing to testers and the stores: **Promote** workflow, `docs/releasing.md`.
 - Feature flags: `docs/feature-flags.md` — the flags that exist (cloud sync per
   data type, the beta ribbon), how to turn one on, how to add one
 - CI secrets runbook: `docs/ci-secrets.md` · backup setup: `docs/google-drive-backup-setup.md`

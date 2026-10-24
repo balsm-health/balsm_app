@@ -90,10 +90,14 @@ Create tester groups in the Firebase console named exactly: `alpha-testers`,
 
 ## Channel → tag cheatsheet
 
+Release with the **Promote** workflow (Actions → Promote), which picks the tag
+for you; the full flow is in `docs/releasing.md`. The tags it makes:
+
 ```
-git tag v1.2.0-alpha && git push origin v1.2.0-alpha   # alpha  (staging backend)
-git tag v1.2.0-beta  && git push origin v1.2.0-beta    # beta   (staging backend)
-git tag v1.2.0       && git push origin v1.2.0         # production (prod backend)
+v1.2.0-alpha.N   # alpha       (staging backend, alpha-testers)
+v1.2.0-beta.N    # beta        (staging backend, beta-testers)
+v1.2.0           # production  (prod backend), only on a commit already
+                 #             tagged alpha or beta
 ```
 
 Branch pushes release too, as pre-releases on the Releases page, with no
