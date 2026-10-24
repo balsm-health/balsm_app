@@ -51,8 +51,10 @@ so a tag pushed by hand is held to the same rules:
 - The tag is exactly `vX.Y.Z-alpha.N`, `vX.Y.Z-beta.N` or `vX.Y.Z`. A typo
   such as `v0.2.0-alpa` fails instead of releasing to production.
 - The version in the tag matches `app/pubspec.yaml` at the commit.
-- A production tag sits on a commit that already has an alpha or beta tag of
-  the same version, so nothing reaches the stores that testers never had.
+- A production tag sits on a commit that already has an alpha or beta release
+  of the same version that finished (its GitHub Release exists, which happens
+  only when every build succeeded), so nothing reaches the stores that testers
+  never had.
 - Promote only sends commits on `main` (or a `release/**` hotfix branch) to
   testers, and never reuses a tag that exists.
 
@@ -83,8 +85,9 @@ git tag -s v0.2.0-alpha.4 <commit> -m "0.2.0 alpha 4" && git push origin v0.2.0-
 ```
 
 A hand-pushed production tag skips the `release-production` approval, which
-only Promote asks for. Restricting who may create `v*` tags (a tag ruleset)
-closes that.
+only Promote asks for; the checks in `release.yml` still apply. A tag ruleset
+(below) narrows hand tagging to its bypass list, but does not close it: those
+actors can still create, move or delete release tags.
 
 ## Setup (once, repo admin)
 
@@ -93,6 +96,8 @@ closes that.
   promotions run without waiting.
 - **Tag ruleset (recommended)**: Settings → Rules → New tag ruleset, target
   `v*`, restrict creations, updates and deletions, with the repository admins
-  and the GitHub Actions app as bypass. Promote then becomes the only way a
-  release tag is made, and released tags can never be moved.
+  and the GitHub Actions app as bypass. The Actions bypass is what lets
+  Promote create its tag (it uses the workflow's `GITHUB_TOKEN`). Everyone
+  else then releases only through Promote; admins can still tag, move or
+  delete by hand, so keep that list short.
 - Firebase tester groups and signing secrets: `docs/ci-secrets.md`.

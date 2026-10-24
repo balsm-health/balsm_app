@@ -50,6 +50,7 @@ jobs:
           fetch-tags: true
       - id: p
         env:
+          GH_TOKEN: ${{ github.token }}
           CHANNEL: ${{ inputs.channel }}
           SOURCE: ${{ inputs.source }}
         run: |
@@ -78,6 +79,10 @@ jobs:
                 || { echo "::error::For $CHANNEL, source must be a tested tag such as v0.2.0-alpha.3 (got '$SOURCE')."; exit 1; }
               SHA=$(git rev-parse -q --verify "refs/tags/$SOURCE^{commit}") \
                 || { echo "::error::Tag $SOURCE does not exist."; exit 1; }
+              # Testers had it only if its release finished; a failed build
+              # leaves the tag but no release.
+              gh release view "$SOURCE" -R "$GITHUB_REPOSITORY" --json isDraft -q 'select(.isDraft | not) | 1' 2>/dev/null | grep -q 1 \
+                || { echo "::error::$SOURCE has no finished release, so testers never got it."; exit 1; }
               ;;
           esac
 

@@ -61,6 +61,8 @@ jobs:
           sparse-checkout: app/pubspec.yaml
           sparse-checkout-cone-mode: false
       - id: d
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -e
           PUBSPEC_NAME=$(sed -n 's/^version: *\([0-9][0-9.]*\).*/\1/p' app/pubspec.yaml)
@@ -88,15 +90,23 @@ jobs:
               exit 1
             fi
             # Production ships only what testers already had: the same
-            # commit must carry an alpha or beta tag of the same version.
+            # commit must carry an alpha or beta tag of the same version
+            # whose release finished. A tag alone is not enough, since a
+            # failed build leaves its tag behind; the GitHub Release is made
+            # only once every build of that tag succeeded.
             if [ "$CH" = production ]; then
               QA=$(git ls-remote --tags origin "v${BUILD_NAME}-alpha.*" "v${BUILD_NAME}-beta.*" \
                 | awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2 }' | sort -u)
-              if [ -z "$QA" ]; then
-                echo "::error::$TAG is on a commit no alpha or beta build was made from. Release it to testers first."
+              TESTED=""
+              for q in $QA; do
+                gh release view "$q" -R "$GITHUB_REPOSITORY" --json isDraft -q 'select(.isDraft | not) | 1' 2>/dev/null | grep -q 1 \
+                  && TESTED="$TESTED $q"
+              done
+              if [ -z "$TESTED" ]; then
+                echo "::error::$TAG is on a commit with no finished alpha or beta release${QA:+ (tagged $(echo $QA), but none released)}. Release it to testers first."
                 exit 1
               fi
-              echo "Tested as: $(echo $QA)"
+              echo "Tested as:$TESTED"
             fi
             DIST=true
           else
