@@ -12,6 +12,7 @@ import 'dev_config_store.dart';
 import 'dev_diagnostics.dart';
 import 'dev_log_buffer.dart';
 import 'server_health.dart';
+import 'server_url.dart';
 
 // Dark "terminal" chrome from the Dev Config design (claude.ai/design · Balsm App).
 const _kTermBg = Color(0xFF1A1A17);
@@ -67,7 +68,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   bool _attachShot = true;
   String? _bugSendStatus; // null | sending | sent | error
 
+  /// Where requests go now — shown, probed and reported.
   String get _currentBaseUrl => widget.controller.client.baseUrl;
+
+  /// The server chosen — what decides which row is selected. Differs from
+  /// [_currentBaseUrl] for Local, whose `localhost` is rewritten to the machine
+  /// actually serving it.
+  String get _selectedBaseUrl => widget.controller.selectedBaseUrl;
 
   @override
   void initState() {
@@ -97,10 +104,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   String _activeLabel(FlavorConfig cfg) {
     for (final p in cfg.servers) {
-      if (p.apiBaseUrl == _currentBaseUrl) return p.label;
+      if (p.apiBaseUrl == _selectedBaseUrl) return p.label;
     }
     for (final e in _store.savedEnvs) {
-      if (e.url == _currentBaseUrl) return e.name;
+      if (e.url == _selectedBaseUrl) return e.name;
     }
     return 'Custom';
   }
@@ -299,7 +306,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         _healthRow(),
         ...cfg.servers.map((p) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _presetCard(p, active: _currentBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
+              child: _presetCard(p, active: _selectedBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
             )),
         if (_store.savedEnvs.isNotEmpty) ...[
           _savedHeader(),
@@ -314,7 +321,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   List<Widget> _readOnlyBody(FlavorConfig cfg) {
     final active = cfg.servers.firstWhere(
-      (p) => p.apiBaseUrl == _currentBaseUrl,
+      (p) => p.apiBaseUrl == _selectedBaseUrl,
       orElse: () => ServerPreset(label: _activeLabel(cfg), apiBaseUrl: _currentBaseUrl),
     );
     return [
@@ -347,7 +354,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       );
 
   Widget _savedEnvTile(SavedEnv se) {
-    final active = _currentBaseUrl == se.url;
+    final active = _selectedBaseUrl == se.url;
     final editing = _editingId == se.id;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -463,8 +470,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 ElevatedButton(
                   onPressed: () {
                     final n = _editNameCtrl.text.trim();
-                    final u = _editUrlCtrl.text.trim();
-                    if (n.isEmpty || u.isEmpty) return;
+                    final rawUrl = _editUrlCtrl.text.trim();
+                    if (n.isEmpty || rawUrl.isEmpty) return;
+                    final u = normalizeServerUrl(rawUrl);
+                    if (u == null) {
+                      _snack('Enter a valid server URL, e.g. http://192.168.1.10:5050');
+                      return;
+                    }
                     _store.updateSavedEnv(se.id, n, u);
                     setState(() => _editingId = null);
                   },
@@ -1460,7 +1472,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
   void _onPresetTap(ServerPreset p) {
-    if (_currentBaseUrl == p.apiBaseUrl) return;
+    if (_selectedBaseUrl == p.apiBaseUrl) return;
     if (_EnvStyle.of(p.label).isProd) {
       setState(() => _pendingProd = p);
       return;
@@ -1479,6 +1491,11 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     });
     try {
       await widget.controller.reconfigure(preset);
+    } on FormatException catch (e) {
+      // A preset saved before URL normalization existed (or edited outside
+      // this screen) can still carry a schemeless host — surface it instead
+      // of an uncaught crash.
+      _snack('Cannot use "${preset.apiBaseUrl}" — ${e.message}');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1486,8 +1503,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   Future<void> _saveCustom() async {
     final name = _nameCtrl.text.trim();
-    final url = _urlCtrl.text.trim();
-    if (name.isEmpty || url.isEmpty) return;
+    final rawUrl = _urlCtrl.text.trim();
+    if (name.isEmpty || rawUrl.isEmpty) return;
+    final url = normalizeServerUrl(rawUrl);
+    if (url == null) {
+      _snack('Enter a valid server URL, e.g. http://192.168.1.10:5050');
+      return;
+    }
     final env = await _store.addSavedEnv(name, url);
     await _select(ServerPreset(label: env.name, apiBaseUrl: env.url));
     if (mounted) setState(() => _addingCustom = false);

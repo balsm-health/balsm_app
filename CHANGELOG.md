@@ -10,6 +10,20 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.1.3] - Unreleased
+
+### Fixed
+
+- Dev Config no longer crashes when a custom server is entered without
+  `http://` (such as `192.168.8.3:5050`): the scheme is added, an address that
+  still cannot work is refused with a message, and an older saved server that
+  cannot be used shows an error instead of closing the app.
+- An app that saved such an address as its server no longer stays on the
+  splash screen at every launch: the address is repaired, or dropped for the
+  default server, and the server is now saved only after it has been applied.
+- Dev Config shows Local as selected again once the app has found the
+  machine serving it, instead of no server at all.
+
 ## [0.1.2] - Unreleased
 
 ### Fixed
