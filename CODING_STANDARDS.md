@@ -181,6 +181,10 @@ base branch it merges into, released or not. What ships is everything under
   Pull from the branch before your next push. Pull requests from forks are
   skipped and raise it by hand.
 
+- **Releases are tags, not branches.** QA tests a `v0.2.0-alpha.N` tag and
+  production is the same commit tagged `v0.2.0`, both made by the Promote
+  workflow; see `docs/releasing.md`.
+
 ### The changelog
 
 - **Every version has its own section**, newest first. A change that raises

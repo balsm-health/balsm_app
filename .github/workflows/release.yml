@@ -3,9 +3,14 @@ name: Release
 # Every release lands on the repo's Releases page.
 #
 # A tag is a channel release:
-#   v1.2.0-alpha → alpha (staging backend, Firebase alpha-testers)
-#   v1.2.0-beta  → beta  (staging backend, Firebase beta-testers)
-#   v1.2.0       → production (prod backend, Firebase production, web deploy)
+#   v1.2.0-alpha.N → alpha (staging backend, Firebase alpha-testers)
+#   v1.2.0-beta.N  → beta  (staging backend, Firebase beta-testers)
+#   v1.2.0         → production (prod backend, Firebase production, web deploy)
+# The version in the tag must be the one in app/pubspec.yaml at that commit,
+# and a production tag must sit on a commit QA already had as an alpha or
+# beta. Anything else fails before it builds. Tags are normally made by the
+# Promote workflow (promote.yml), which checks the same and then starts this
+# workflow on the tag; see docs/releasing.md.
 #
 # A branch push is a pre-release of that commit, versioned from
 # app/pubspec.yaml, with its tag made by the release itself:
@@ -17,6 +22,9 @@ name: Release
 # Signing + Firebase steps are guarded on secrets — absent secrets skip the
 # step and still upload an unsigned artifact. See docs/ci-secrets.md.
 on:
+  # How Promote starts a release: a tag it creates with GITHUB_TOKEN starts no
+  # workflow, but a dispatch does. Only a tag is accepted (see setup).
+  workflow_dispatch:
   push:
     branches: [main, 'release/**']
     # The tags branch pushes create are made with GITHUB_TOKEN, which starts no
@@ -49,28 +57,52 @@ jobs:
       distribute: ${{ steps.d.outputs.distribute }}
     steps:
       - uses: actions/checkout@v4
-        if: github.ref_type == 'branch'
         with:
           sparse-checkout: app/pubspec.yaml
           sparse-checkout-cone-mode: false
       - id: d
         run: |
           set -e
+          PUBSPEC_NAME=$(sed -n 's/^version: *\([0-9][0-9.]*\).*/\1/p' app/pubspec.yaml)
+          [ -n "$PUBSPEC_NAME" ] || { echo "::error::no version in app/pubspec.yaml"; exit 1; }
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF_TYPE" != tag ]; then
+            echo "::error::Run this on a release tag, not a branch. To release a commit, use the Promote workflow."
+            exit 1
+          fi
           if [ "$GITHUB_REF_TYPE" = tag ]; then
-            TAG="${GITHUB_REF_NAME}"      # e.g. v1.2.0-beta
-            VER="${TAG#v}"                # 1.2.0-beta
-            case "$TAG" in
-              *-alpha) CH=alpha;      ENVF=staging; GRP=alpha-testers; PRE=true ;;
-              *-beta)  CH=beta;       ENVF=staging; GRP=beta-testers;  PRE=true ;;
-              *)       CH=production; ENVF=prod;     GRP=production;    PRE=false ;;
-            esac
-            BUILD_NAME="${VER%-*}"        # strip -alpha/-beta → 1.2.0
+            TAG="${GITHUB_REF_NAME}"
+            # Exact shapes only: a typo such as v1.2.0-alpa must not fall
+            # through to a production release.
+            if [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-(alpha|beta)\.[0-9]+$ ]]; then
+              BUILD_NAME="${BASH_REMATCH[1]}"; CH="${BASH_REMATCH[2]}"
+              ENVF=staging; GRP="${CH}-testers"; PRE=true
+            elif [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              BUILD_NAME="${BASH_REMATCH[1]}"; CH=production
+              ENVF=prod; GRP=production; PRE=false
+            else
+              echo "::error::$TAG is not a release tag: use v1.2.0-alpha.N, v1.2.0-beta.N or v1.2.0."
+              exit 1
+            fi
+            if [ "$BUILD_NAME" != "$PUBSPEC_NAME" ]; then
+              echo "::error::$TAG says $BUILD_NAME but app/pubspec.yaml at this commit is $PUBSPEC_NAME."
+              exit 1
+            fi
+            # Production ships only what testers already had: the same
+            # commit must carry an alpha or beta tag of the same version.
+            if [ "$CH" = production ]; then
+              QA=$(git ls-remote --tags origin "v${BUILD_NAME}-alpha.*" "v${BUILD_NAME}-beta.*" \
+                | awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2 }' | sort -u)
+              if [ -z "$QA" ]; then
+                echo "::error::$TAG is on a commit no alpha or beta build was made from. Release it to testers first."
+                exit 1
+              fi
+              echo "Tested as: $(echo $QA)"
+            fi
             DIST=true
           else
             # `version: 0.1.0+9` → 0.1.0. The run number, not the pubspec build
             # number, keeps the tag unique: a doc-only push does not raise it.
-            BUILD_NAME=$(sed -n 's/^version: *\([0-9][0-9.]*\).*/\1/p' app/pubspec.yaml)
-            [ -n "$BUILD_NAME" ] || { echo "::error::no version in app/pubspec.yaml"; exit 1; }
+            BUILD_NAME="$PUBSPEC_NAME"
             case "$GITHUB_REF_NAME" in
               main) CH=main; ENVF=prod;    SUFFIX=main ;;
               *)    CH=rc;   ENVF=staging; SUFFIX=rc ;;

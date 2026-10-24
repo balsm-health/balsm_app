@@ -11,6 +11,8 @@
 - [feature-flags.md](feature-flags.md) — switching features on and off without
   a release: the flags that exist, how a value is resolved, adding a flag,
   adding a flag tool (PostHog today)
+- [releasing.md](releasing.md) — how a commit becomes an alpha, beta and
+  production release: tags, the Promote workflow, hotfixes
 - [ci-secrets.md](ci-secrets.md) — what CI needs and where it lives
 - [google-drive-backup-setup.md](google-drive-backup-setup.md) — OAuth setup
   for the encrypted Drive backup
