@@ -44,6 +44,15 @@ class BalsmApiController {
 
   BalsmApiClient get client => _client;
 
+  /// The server that was chosen, as chosen: `http://localhost:5050` for Local.
+  ///
+  /// [client]'s base URL is where requests actually go, and for a loopback
+  /// preset that is the machine found serving it (`http://127.0.0.1:5050` on a
+  /// simulator, `http://10.0.2.2:5050` on an Android emulator, a LAN address on
+  /// a phone). Compare against this to tell which server is selected.
+  String get selectedBaseUrl => _selected ?? _client.baseUrl;
+  String? _selected;
+
   Future<void> init() async {
     // Prod cannot switch servers — never honour a leftover Local preset
     // from a previous Dev Config session (that is what pointed the hosted
@@ -51,6 +60,7 @@ class BalsmApiController {
     final saved = FlavorConfig.current.serverSwitchingEnabled ? await _readUsable() : null;
     final preset = saved ?? _store.defaultPreset;
     _client.baseUrl = await _resolve(preset.apiBaseUrl);
+    _selected = preset.apiBaseUrl;
   }
 
   /// The saved preset, repaired or dropped so it can never stop the app from
@@ -114,6 +124,7 @@ class BalsmApiController {
     final chosen = ServerPreset(label: preset.label, apiBaseUrl: url);
     final resolved = ServerPreset(label: chosen.label, apiBaseUrl: await _resolve(chosen.apiBaseUrl));
     _client.baseUrl = resolved.apiBaseUrl;
+    _selected = chosen.apiBaseUrl;
     await _store.write(chosen);
     _bus.publish(ServerReconfigured(resolved));
   }

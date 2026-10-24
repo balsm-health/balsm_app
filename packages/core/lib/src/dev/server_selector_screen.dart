@@ -68,7 +68,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   bool _attachShot = true;
   String? _bugSendStatus; // null | sending | sent | error
 
+  /// Where requests go now — shown, probed and reported.
   String get _currentBaseUrl => widget.controller.client.baseUrl;
+
+  /// The server chosen — what decides which row is selected. Differs from
+  /// [_currentBaseUrl] for Local, whose `localhost` is rewritten to the machine
+  /// actually serving it.
+  String get _selectedBaseUrl => widget.controller.selectedBaseUrl;
 
   @override
   void initState() {
@@ -98,10 +104,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   String _activeLabel(FlavorConfig cfg) {
     for (final p in cfg.servers) {
-      if (p.apiBaseUrl == _currentBaseUrl) return p.label;
+      if (p.apiBaseUrl == _selectedBaseUrl) return p.label;
     }
     for (final e in _store.savedEnvs) {
-      if (e.url == _currentBaseUrl) return e.name;
+      if (e.url == _selectedBaseUrl) return e.name;
     }
     return 'Custom';
   }
@@ -300,7 +306,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         _healthRow(),
         ...cfg.servers.map((p) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _presetCard(p, active: _currentBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
+              child: _presetCard(p, active: _selectedBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
             )),
         if (_store.savedEnvs.isNotEmpty) ...[
           _savedHeader(),
@@ -315,7 +321,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   List<Widget> _readOnlyBody(FlavorConfig cfg) {
     final active = cfg.servers.firstWhere(
-      (p) => p.apiBaseUrl == _currentBaseUrl,
+      (p) => p.apiBaseUrl == _selectedBaseUrl,
       orElse: () => ServerPreset(label: _activeLabel(cfg), apiBaseUrl: _currentBaseUrl),
     );
     return [
@@ -348,7 +354,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       );
 
   Widget _savedEnvTile(SavedEnv se) {
-    final active = _currentBaseUrl == se.url;
+    final active = _selectedBaseUrl == se.url;
     final editing = _editingId == se.id;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1466,7 +1472,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
   void _onPresetTap(ServerPreset p) {
-    if (_currentBaseUrl == p.apiBaseUrl) return;
+    if (_selectedBaseUrl == p.apiBaseUrl) return;
     if (_EnvStyle.of(p.label).isProd) {
       setState(() => _pendingProd = p);
       return;

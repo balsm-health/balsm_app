@@ -78,4 +78,26 @@ void main() {
       expect(await storage.read(key: _key), isNull);
     });
   });
+
+  group('selectedBaseUrl', () {
+    test('stays the chosen Local URL while requests go to the machine found serving it', () async {
+      setUpWith({});
+      // A device whose dev machine answers at the Android emulator's host alias.
+      controller = BalsmApiController(
+        client: client,
+        store: ActiveServerStore(storage),
+        bus: EventBus(),
+        devHost: DevHostLocator(
+          probe: (host, port, timeout) async => host == '10.0.2.2',
+          subnets: () async => const [],
+          aliases: const ['10.0.2.2'],
+        ),
+      );
+
+      await controller.reconfigure(const ServerPreset(label: 'Local', apiBaseUrl: 'http://localhost:5050'));
+
+      expect(client.baseUrl, 'http://10.0.2.2:5050');
+      expect(controller.selectedBaseUrl, 'http://localhost:5050');
+    });
+  });
 }

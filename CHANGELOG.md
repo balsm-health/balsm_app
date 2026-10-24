@@ -21,6 +21,8 @@ what changed and why it matters.
 - An app that saved such an address as its server no longer stays on the
   splash screen at every launch: the address is repaired, or dropped for the
   default server, and the server is now saved only after it has been applied.
+- Dev Config shows Local as selected again once the app has found the
+  machine serving it, instead of no server at all.
 
 ## [0.1.2] - Unreleased
 
