@@ -1,0 +1,137 @@
+name: Promote
+
+# The release button: tags a commit for a channel and starts the release
+# build on that tag. Run it from Actions → Promote → Run workflow.
+#
+#   alpha       source: a branch or commit on main (or on a release/** hotfix
+#               branch). Tagged v<pubspec version>-alpha.<next>.
+#   beta        source: an alpha tag. Same commit, tagged
+#               v<version>-beta.<next>.
+#   production  source: the alpha or beta tag QA approved. Same commit, tagged
+#               v<version>. Waits for a reviewer on the release-production
+#               environment before anything is tagged.
+#
+# The version always comes from app/pubspec.yaml at the commit, and the next
+# number from the tags that already exist, so neither is typed by hand.
+# release.yml checks the same rules again, so a tag pushed by hand is held to
+# them too. See docs/releasing.md.
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Channel to release to
+        type: choice
+        options: [alpha, beta, production]
+        required: true
+      source:
+        description: 'alpha: branch or commit (default main). beta/production: the tested tag, e.g. v0.2.0-alpha.3'
+        type: string
+        required: false
+
+# One promotion at a time, so two runs cannot both take alpha.4.
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Plan ${{ inputs.channel }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.p.outputs.tag }}
+      sha: ${{ steps.p.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - id: p
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          SOURCE: ${{ inputs.source }}
+        run: |
+          set -euo pipefail
+          SOURCE="${SOURCE:-main}"
+          case "$CHANNEL" in
+            alpha)
+              # A branch name means the remote branch, not a stale local one.
+              if git rev-parse -q --verify "refs/remotes/origin/$SOURCE" >/dev/null; then
+                SHA=$(git rev-parse "refs/remotes/origin/$SOURCE^{commit}")
+              else
+                SHA=$(git rev-parse -q --verify "$SOURCE^{commit}") \
+                  || { echo "::error::$SOURCE is not a branch or commit in this repo."; exit 1; }
+              fi
+              # Only reviewed code goes to testers: the commit must be on main
+              # or on a release/** hotfix branch.
+              ON=""
+              for b in $(git for-each-ref --format='%(refname)' refs/remotes/origin/main 'refs/remotes/origin/release/*'); do
+                git merge-base --is-ancestor "$SHA" "$b" && { ON="${b#refs/remotes/origin/}"; break; }
+              done
+              [ -n "$ON" ] || { echo "::error::$SHA is not on main or a release/** branch."; exit 1; }
+              ;;
+            beta|production)
+              if [ "$CHANNEL" = beta ]; then FROM='alpha'; else FROM='alpha|beta'; fi
+              [[ "$SOURCE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-($FROM)\.[0-9]+$ ]] \
+                || { echo "::error::For $CHANNEL, source must be a tested tag such as v0.2.0-alpha.3 (got '$SOURCE')."; exit 1; }
+              SHA=$(git rev-parse -q --verify "refs/tags/$SOURCE^{commit}") \
+                || { echo "::error::Tag $SOURCE does not exist."; exit 1; }
+              ;;
+          esac
+
+          VER=$(git show "$SHA:app/pubspec.yaml" | sed -n 's/^version: *\([0-9][0-9.]*\).*/\1/p')
+          [ -n "$VER" ] || { echo "::error::No version in app/pubspec.yaml at $SHA."; exit 1; }
+          if [ "$CHANNEL" != alpha ] && [[ "$SOURCE" != "v$VER-"* ]]; then
+            echo "::error::$SOURCE does not match app/pubspec.yaml ($VER) at its commit."; exit 1
+          fi
+
+          if [ "$CHANNEL" = production ]; then
+            TAG="v$VER"
+            if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+              echo "::error::$TAG already exists. Raise the version for a new release."; exit 1
+            fi
+          else
+            LAST=$(git tag -l "v$VER-$CHANNEL.*" | sed "s/^v$VER-$CHANNEL\.//" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)
+            TAG="v$VER-$CHANNEL.$(( ${LAST:-0} + 1 ))"
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "### $CHANNEL: \`$TAG\`"
+            echo "Commit \`$SHA\` ($(git log -1 --format=%s "$SHA"))"
+            [ "$CHANNEL" = alpha ] || echo "Tested as \`$SOURCE\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Production only: holds the run until a required reviewer of the
+  # release-production environment approves, which records who approved what.
+  approve:
+    name: Approve production release
+    needs: plan
+    if: inputs.channel == 'production'
+    runs-on: ubuntu-latest
+    environment: release-production
+    steps:
+      - run: echo "Approved ${{ needs.plan.outputs.tag }} at ${{ needs.plan.outputs.sha }}"
+
+  release:
+    name: Tag and release ${{ needs.plan.outputs.tag }}
+    needs: [plan, approve]
+    if: always() && needs.plan.result == 'success' && (needs.approve.result == 'success' || needs.approve.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.plan.outputs.tag }}
+      SHA: ${{ needs.plan.outputs.sha }}
+    steps:
+      - name: Create the tag
+        run: gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$SHA" >/dev/null
+      - name: Start the release build
+        run: |
+          gh workflow run release.yml -R "$GITHUB_REPOSITORY" --ref "$TAG"
+          echo "Release build started for \`$TAG\`: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/release.yml" >> "$GITHUB_STEP_SUMMARY"

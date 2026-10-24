@@ -12,6 +12,14 @@ what changed and why it matters.
 
 ## [0.1.3] - Unreleased
 
+### Changed
+
+- Releases go through a Promote workflow in Actions: it tags a commit for
+  alpha, beta or production, numbers test builds (`v0.2.0-alpha.3`) itself,
+  and holds a production release for approval. A mistyped tag no longer
+  releases to production, a tag whose version differs from the app's fails,
+  and production can only ship a commit testers already had.
+
 ### Fixed
 
 - Dev Config no longer crashes when a custom server is entered without
