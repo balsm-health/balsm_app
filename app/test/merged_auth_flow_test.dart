@@ -5,6 +5,7 @@ import 'package:app/balsm_app/auth/device_account_remover.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
+import 'package:app/balsm_app/widgets/auth_fields.dart' show OtpBox;
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
@@ -229,6 +230,41 @@ void main() {
     expect(find.text('patient@example.test'), findsOneWidget);
     final password = tester.widget<TextField>(find.byType(TextField).last);
     expect(password.controller?.text, 'a-real-password');
+  });
+
+  group('Code step keyboard (#98)', () {
+    bool keyboardShown(WidgetTester tester) => tester.testTextInput.log.any((c) => c.method == 'TextInput.show');
+
+    Future<void> leaveAndComeBack(WidgetTester tester) async {
+      for (final s in [AppLifecycleState.inactive, AppLifecycleState.hidden, AppLifecycleState.paused]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      tester.testTextInput.log.clear();
+      for (final s in [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await tester.pump();
+    }
+
+    testWidgets('coming back from another app reopens the keyboard', (tester) async {
+      await pumpAtRoute(tester, AppRoutes.otp);
+      await tester.pump();
+
+      await leaveAndComeBack(tester);
+
+      expect(keyboardShown(tester), isTrue);
+    });
+
+    testWidgets('tapping the boxes reopens the keyboard while the field still has focus', (tester) async {
+      await pumpAtRoute(tester, AppRoutes.otp);
+      await tester.pump();
+      tester.testTextInput.log.clear();
+
+      await tester.tap(find.byType(OtpBox).first);
+      await tester.pump();
+
+      expect(keyboardShown(tester), isTrue);
+    });
   });
 
   testWidgets('the code step says nothing about whether the account existed', (tester) async {

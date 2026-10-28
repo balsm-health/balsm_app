@@ -10,6 +10,15 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.1.4] - Unreleased
+
+### Fixed
+
+- The keyboard on the Enter your code step opens again after switching to
+  the email app to copy the code: coming back reopens it, and tapping the
+  code boxes always does. Before, it stayed closed until the screen was left
+  and opened again.
+
 ## [0.1.3] - Unreleased
 
 ### Changed

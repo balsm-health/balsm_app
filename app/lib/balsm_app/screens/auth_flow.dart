@@ -1369,7 +1369,7 @@ class _OtpScreen extends ConsumerStatefulWidget {
   ConsumerState<_OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends ConsumerState<_OtpScreen> {
+class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObserver {
   // View state only: input + focus. Countdown/verify live in [OtpController].
   final ctrl = TextEditingController();
   final focus = FocusNode();
@@ -1401,7 +1401,30 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => focus.requestFocus());
+  }
+
+  /// Back from the mail app with the code: the OS closed the keyboard, but the
+  /// hidden field kept focus, so nothing would open it again (#98).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    if (_verifying || ctrl.text.length >= 6) return;
+    // Not over a sheet or dialog this screen opened.
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    _showKeyboard();
+  }
+
+  /// Opens the keyboard for the hidden field. A field that already has focus
+  /// ignores requestFocus, which is exactly the state after a trip to another
+  /// app, so then the keyboard is asked for directly.
+  void _showKeyboard() {
+    if (focus.hasFocus) {
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    } else {
+      focus.requestFocus();
+    }
   }
 
   /// Verifies the 6-digit code against the real auth module. On success the
@@ -1457,6 +1480,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     focus.dispose();
     ctrl.dispose();
     super.dispose();
@@ -1505,10 +1529,10 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                   textField: true,
                   label: s.strings.common.a11y_code_field,
                   value: s.strings.common.a11y_code_progress('${code.length}'),
-                  onTap: () => focus.requestFocus(),
+                  onTap: _showKeyboard,
                   child: ExcludeSemantics(
                     child: GestureDetector(
-                      onTap: () => focus.requestFocus(),
+                      onTap: _showKeyboard,
                       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         for (var i = 0; i < 6; i++)
                           OtpBox(
