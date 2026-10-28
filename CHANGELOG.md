@@ -18,6 +18,9 @@ what changed and why it matters.
   the email app to copy the code: coming back reopens it, and tapping the
   code boxes always does. Before, it stayed closed until the screen was left
   and opened again.
+- The 6-digit code reads left to right in Arabic too, on the sign-in code
+  step and in Go online: the first digit lands in the leftmost box, as it is
+  written in the email.
 
 ## [0.1.3] - Unreleased
 

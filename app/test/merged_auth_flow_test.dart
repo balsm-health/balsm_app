@@ -267,6 +267,19 @@ void main() {
     });
   });
 
+  testWidgets('in Arabic the code still fills left to right', (tester) async {
+    state.setLang(LanguageCode.ar);
+    await pumpAtRoute(tester, AppRoutes.otp);
+
+    await tester.enterText(find.byType(TextField), '12');
+    await tester.pump();
+
+    final boxes = tester.widgetList<OtpBox>(find.byType(OtpBox)).toList();
+    double left(String c) => tester.getTopLeft(find.byWidget(boxes.firstWhere((b) => b.char == c))).dx;
+    expect(left('1'), lessThan(left('2')));
+    expect(tester.widget<TextField>(find.byType(TextField)).textDirection, TextDirection.ltr);
+  });
+
   testWidgets('the code step says nothing about whether the account existed', (tester) async {
     when(() => signIn.passwordSignIn(email: any(named: 'email'), password: any(named: 'password')))
         .thenAnswer((_) async => AppResult.failure(const NetworkFailure('invalid')));

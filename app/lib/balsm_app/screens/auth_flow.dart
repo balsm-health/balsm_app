@@ -1533,14 +1533,18 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                   child: ExcludeSemantics(
                     child: GestureDetector(
                       onTap: _showKeyboard,
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        for (var i = 0; i < 6; i++)
-                          OtpBox(
-                            char: i < code.length ? code[i] : '',
-                            active: code.length == i,
-                            accent: s.accent,
-                          ),
-                      ]),
+                      // A code reads left to right in every language: the first digit
+                      // typed lands in the leftmost box, Arabic included.
+                      child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            for (var i = 0; i < 6; i++)
+                              OtpBox(
+                                char: i < code.length ? code[i] : '',
+                                active: code.length == i,
+                                accent: s.accent,
+                              ),
+                          ])),
                     ),
                   ),
                 ),
@@ -1552,6 +1556,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                         child: TextField(
                           controller: ctrl,
                           focusNode: focus,
+                          textDirection: TextDirection.ltr,
                           keyboardType: TextInputType.number,
                           maxLength: 6,
                           inputFormatters: [
