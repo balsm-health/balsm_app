@@ -253,10 +253,12 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
         textField: true,
         label: s.strings.common.a11y_code_field,
         value: s.strings.common.a11y_code_progress('${code.length}'),
-        onTap: () => _codeFocus.requestFocus(),
+        onTap: () => reopenCodeKeyboard(_codeFocus, mounted: () => mounted),
         child: ExcludeSemantics(
           child: GestureDetector(
-            onTap: () => _codeFocus.requestFocus(),
+            // The gaps between boxes count as the field too.
+            behavior: HitTestBehavior.opaque,
+            onTap: () => reopenCodeKeyboard(_codeFocus, mounted: () => mounted),
             // A code reads left to right in every language: the first digit
             // typed lands in the leftmost box, Arabic included.
             child: Directionality(

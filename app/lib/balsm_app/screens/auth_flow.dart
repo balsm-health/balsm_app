@@ -1416,16 +1416,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
     _showKeyboard();
   }
 
-  /// Opens the keyboard for the hidden field. A field that already has focus
-  /// ignores requestFocus, which is exactly the state after a trip to another
-  /// app, so then the keyboard is asked for directly.
-  void _showKeyboard() {
-    if (focus.hasFocus) {
-      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
-    } else {
-      focus.requestFocus();
-    }
-  }
+  void _showKeyboard() => reopenCodeKeyboard(focus, mounted: () => mounted);
 
   /// Verifies the 6-digit code against the real auth module. On success the
   /// use-case has already persisted tokens + `balsm.user_id` to secure storage;
@@ -1532,17 +1523,23 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                   onTap: _showKeyboard,
                   child: ExcludeSemantics(
                     child: GestureDetector(
+                      // The gaps between boxes count as the field too.
+                      behavior: HitTestBehavior.opaque,
                       onTap: _showKeyboard,
                       // A code reads left to right in every language: the first digit
                       // typed lands in the leftmost box, Arabic included.
                       child: Directionality(
                           textDirection: TextDirection.ltr,
                           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            // Flexible: six boxes are wider than a 384dp phone's
+                            // column, so they shrink rather than overflow.
                             for (var i = 0; i < 6; i++)
-                              OtpBox(
-                                char: i < code.length ? code[i] : '',
-                                active: code.length == i,
-                                accent: s.accent,
+                              Flexible(
+                                child: OtpBox(
+                                  char: i < code.length ? code[i] : '',
+                                  active: code.length == i,
+                                  accent: s.accent,
+                                ),
                               ),
                           ])),
                     ),
