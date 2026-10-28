@@ -253,20 +253,26 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
         textField: true,
         label: s.strings.common.a11y_code_field,
         value: s.strings.common.a11y_code_progress('${code.length}'),
-        onTap: () => _codeFocus.requestFocus(),
+        onTap: () => reopenCodeKeyboard(_codeFocus, mounted: () => mounted),
         child: ExcludeSemantics(
           child: GestureDetector(
-            onTap: () => _codeFocus.requestFocus(),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              for (var i = 0; i < 6; i++)
-                Flexible(
-                  child: OtpBox(
-                    char: i < code.length ? code[i] : '',
-                    active: code.length == i,
-                    accent: s.accent,
-                  ),
-                ),
-            ]),
+            // The gaps between boxes count as the field too.
+            behavior: HitTestBehavior.opaque,
+            onTap: () => reopenCodeKeyboard(_codeFocus, mounted: () => mounted),
+            // A code reads left to right in every language: the first digit
+            // typed lands in the leftmost box, Arabic included.
+            child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  for (var i = 0; i < 6; i++)
+                    Flexible(
+                      child: OtpBox(
+                        char: i < code.length ? code[i] : '',
+                        active: code.length == i,
+                        accent: s.accent,
+                      ),
+                    ),
+                ])),
           ),
         ),
       ),
@@ -278,6 +284,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
               child: TextField(
                 controller: _code,
                 focusNode: _codeFocus,
+                textDirection: TextDirection.ltr,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],

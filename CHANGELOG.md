@@ -10,6 +10,21 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.1.4] - Unreleased
+
+### Fixed
+
+- The keyboard on the Enter your code step opens again after switching to
+  the email app to copy the code: coming back reopens it, and tapping the
+  code boxes, or the gaps between them, always does. Before, it stayed
+  closed until the screen was left and opened again. The same tap fix
+  applies to the Go online code step.
+- The six code boxes no longer overflow on narrower phones such as the
+  Galaxy A17; they shrink to fit.
+- The 6-digit code reads left to right in Arabic too, on the sign-in code
+  step and in Go online: the first digit lands in the leftmost box, as it is
+  written in the email.
+
 ## [0.1.3] - Unreleased
 
 ### Changed

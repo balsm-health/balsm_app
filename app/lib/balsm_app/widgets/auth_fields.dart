@@ -80,6 +80,22 @@ class AuthInput extends StatelessWidget {
   }
 }
 
+/// Opens the keyboard for a code field's hidden input. After a trip to
+/// another app the field still has focus but its input connection is gone, so
+/// neither requestFocus nor a bare keyboard-show does anything. Dropping focus
+/// and taking it back once that has settled opens a fresh connection, and the
+/// keyboard with it (#98).
+void reopenCodeKeyboard(FocusNode focus, {required bool Function() mounted}) {
+  if (!focus.hasFocus) {
+    focus.requestFocus();
+    return;
+  }
+  focus.unfocus();
+  Future<void>.delayed(Duration.zero, () {
+    if (mounted()) focus.requestFocus();
+  });
+}
+
 /// One painted box of the six-digit code row (`.otp-box`).
 class OtpBox extends StatelessWidget {
   const OtpBox({super.key, required this.char, required this.active, required this.accent});

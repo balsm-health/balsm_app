@@ -5,6 +5,7 @@ import 'package:app/balsm_app/auth/device_account_remover.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
+import 'package:app/balsm_app/widgets/auth_fields.dart' show OtpBox;
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
@@ -229,6 +230,91 @@ void main() {
     expect(find.text('patient@example.test'), findsOneWidget);
     final password = tester.widget<TextField>(find.byType(TextField).last);
     expect(password.controller?.text, 'a-real-password');
+  });
+
+  group('Code step keyboard (#98)', () {
+    // A fresh input connection, then the keyboard: what the platform needs
+    // after it dropped the old connection. A show on its own reaches nothing.
+    bool keyboardShown(WidgetTester tester) {
+      final methods = tester.testTextInput.log.map((c) => c.method).toList();
+      final attached = methods.indexOf('TextInput.setClient');
+      return attached >= 0 && methods.indexOf('TextInput.show', attached) > attached;
+    }
+
+    Future<void> leaveAndComeBack(WidgetTester tester) async {
+      for (final s in [AppLifecycleState.inactive, AppLifecycleState.hidden, AppLifecycleState.paused]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      // Android tears the connection down while the app is away.
+      tester.testTextInput.closeConnection();
+      tester.testTextInput.log.clear();
+      for (final s in [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+    }
+
+    testWidgets('coming back from another app reopens the keyboard', (tester) async {
+      await pumpAtRoute(tester, AppRoutes.otp);
+      await tester.pump();
+
+      await leaveAndComeBack(tester);
+
+      expect(keyboardShown(tester), isTrue);
+    });
+
+    testWidgets('tapping the boxes reopens the keyboard while the field still has focus', (tester) async {
+      await pumpAtRoute(tester, AppRoutes.otp);
+      await tester.pump();
+      tester.testTextInput.closeConnection();
+      tester.testTextInput.log.clear();
+
+      await tester.tap(find.byType(OtpBox).first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(keyboardShown(tester), isTrue);
+    });
+  });
+
+  testWidgets('a tap between two boxes opens the keyboard', (tester) async {
+    await pumpAtRoute(tester, AppRoutes.otp);
+    await tester.pump();
+    tester.testTextInput.closeConnection();
+    tester.testTextInput.log.clear();
+
+    final third = tester.getCenter(find.byType(OtpBox).at(2));
+    final fourth = tester.getCenter(find.byType(OtpBox).at(3));
+    await tester.tapAt(Offset((third.dx + fourth.dx) / 2, third.dy));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(tester.testTextInput.log.map((c) => c.method), contains('TextInput.show'));
+  });
+
+  testWidgets('six boxes fit a 384dp-wide phone', (tester) async {
+    await pumpAtRoute(tester, AppRoutes.otp);
+    // SM-A175F: 1080px at 450dpi. The fixed-width row overflowed by 4px.
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 450 / 160;
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(tester.getTopRight(find.byType(OtpBox).last).dx, lessThanOrEqualTo(1080 / (450 / 160)));
+  });
+
+  testWidgets('in Arabic the code still fills left to right', (tester) async {
+    state.setLang(LanguageCode.ar);
+    await pumpAtRoute(tester, AppRoutes.otp);
+
+    await tester.enterText(find.byType(TextField), '12');
+    await tester.pump();
+
+    final boxes = tester.widgetList<OtpBox>(find.byType(OtpBox)).toList();
+    double left(String c) => tester.getTopLeft(find.byWidget(boxes.firstWhere((b) => b.char == c))).dx;
+    expect(left('1'), lessThan(left('2')));
+    expect(tester.widget<TextField>(find.byType(TextField)).textDirection, TextDirection.ltr);
   });
 
   testWidgets('the code step says nothing about whether the account existed', (tester) async {

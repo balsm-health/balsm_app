@@ -1369,7 +1369,7 @@ class _OtpScreen extends ConsumerStatefulWidget {
   ConsumerState<_OtpScreen> createState() => _OtpScreenState();
 }
 
-class _OtpScreenState extends ConsumerState<_OtpScreen> {
+class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObserver {
   // View state only: input + focus. Countdown/verify live in [OtpController].
   final ctrl = TextEditingController();
   final focus = FocusNode();
@@ -1401,8 +1401,22 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => focus.requestFocus());
   }
+
+  /// Back from the mail app with the code: the OS closed the keyboard, but the
+  /// hidden field kept focus, so nothing would open it again (#98).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    if (_verifying || ctrl.text.length >= 6) return;
+    // Not over a sheet or dialog this screen opened.
+    if (ModalRoute.of(context)?.isCurrent == false) return;
+    _showKeyboard();
+  }
+
+  void _showKeyboard() => reopenCodeKeyboard(focus, mounted: () => mounted);
 
   /// Verifies the 6-digit code against the real auth module. On success the
   /// use-case has already persisted tokens + `balsm.user_id` to secure storage;
@@ -1457,6 +1471,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     focus.dispose();
     ctrl.dispose();
     super.dispose();
@@ -1505,18 +1520,28 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                   textField: true,
                   label: s.strings.common.a11y_code_field,
                   value: s.strings.common.a11y_code_progress('${code.length}'),
-                  onTap: () => focus.requestFocus(),
+                  onTap: _showKeyboard,
                   child: ExcludeSemantics(
                     child: GestureDetector(
-                      onTap: () => focus.requestFocus(),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        for (var i = 0; i < 6; i++)
-                          OtpBox(
-                            char: i < code.length ? code[i] : '',
-                            active: code.length == i,
-                            accent: s.accent,
-                          ),
-                      ]),
+                      // The gaps between boxes count as the field too.
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _showKeyboard,
+                      // A code reads left to right in every language: the first digit
+                      // typed lands in the leftmost box, Arabic included.
+                      child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            // Flexible: six boxes are wider than a 384dp phone's
+                            // column, so they shrink rather than overflow.
+                            for (var i = 0; i < 6; i++)
+                              Flexible(
+                                child: OtpBox(
+                                  char: i < code.length ? code[i] : '',
+                                  active: code.length == i,
+                                  accent: s.accent,
+                                ),
+                              ),
+                          ])),
                     ),
                   ),
                 ),
@@ -1528,6 +1553,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
                         child: TextField(
                           controller: ctrl,
                           focusNode: focus,
+                          textDirection: TextDirection.ltr,
                           keyboardType: TextInputType.number,
                           maxLength: 6,
                           inputFormatters: [
