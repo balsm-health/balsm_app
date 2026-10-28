@@ -10,6 +10,12 @@
 /// silent for an address it does not know.
 enum OtpPurpose {
   continueFlow,
+
+  /// The sign-up screen. Sent like [continueFlow], except while the server
+  /// holds sign-up strict (an email quota or abuse switch, flipped server-side):
+  /// then an address that already has an account gets 409 `EmailRegistered`
+  /// and no email. Servers older than the switch answer 400 `InvalidPurpose`.
+  signUp,
   reset,
 
   /// Proving it is them before deleting their account. The server words the
@@ -20,6 +26,7 @@ enum OtpPurpose {
   /// enum value cannot simply be named after it.
   String get wireName => switch (this) {
         continueFlow => 'continue',
+        signUp => 'signup',
         reset => 'reset',
         deleteAccount => 'delete',
       };

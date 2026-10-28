@@ -116,14 +116,14 @@ void main() {
     // screen reader met before: no name, no way to know how many digits had
     // landed, no way to tell it was an input at all.
     final handle = await pump(tester, const AuthRouter());
-    await tester.tap(find.text('Get started'));
+    await tester.tap(find.text('Create an account'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'patient@example.test');
     await tester.enterText(find.byType(TextField).last, 'a-real-password');
     await tester.pump();
 
     // Straight to the code step through the router's own state.
-    AppScope.of(tester.element(find.text('Continue'))).go(AppRoutes.otp);
+    AppScope.of(tester.element(find.text('Send code'))).go(AppRoutes.otp);
     await tester.pumpAndSettle();
 
     final field = find.bySemanticsLabel('Verification code');
@@ -140,14 +140,16 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('the sign-in screen', (tester) async {
-    final handle = await pump(tester, const AuthRouter());
-    await tester.tap(find.text('Get started'));
-    await tester.pumpAndSettle();
+  for (final button in ['Sign in', 'Create an account', 'Use on this device only']) {
+    testWidgets('the credential screen after "$button"', (tester) async {
+      final handle = await pump(tester, const AuthRouter());
+      await tester.tap(find.text(button));
+      await tester.pumpAndSettle();
 
-    await expectAccessible(tester);
-    handle.dispose();
-  });
+      await expectAccessible(tester);
+      handle.dispose();
+    });
+  }
 
   testWidgets('the unlock screen', (tester) async {
     final handle = await pump(tester, const AuthRouter(), route: AppRoutes.unlock);
@@ -161,25 +163,16 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('the online/device-only segmented control is reachable by screen reader', (tester) async {
+  testWidgets('the sign-in ⇄ sign-up switch is reachable by screen reader', (tester) async {
     // The tap-target-size guideline above only checks geometry — a node with
     // no SemanticsAction.tap at all would still pass it, silently. This test
-    // is what actually proves TalkBack/VoiceOver can activate the segment.
+    // is what actually proves TalkBack/VoiceOver can activate the link.
     final handle = await pump(tester, const AuthRouter());
-    await tester.tap(find.text('Get started'));
+    await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 
-    final node = tester.getSemantics(find.bySemanticsLabel('Device only'));
-    expect(
-      node,
-      matchesSemantics(
-        isButton: true,
-        hasTapAction: true,
-        hasSelectedState: true,
-        isSelected: false,
-        label: 'Device only',
-      ),
-    );
+    final node = tester.getSemantics(find.bySemanticsLabel('Create an account'));
+    expect(node, matchesSemantics(isButton: true, hasTapAction: true, label: 'Create an account'));
 
     // The activation a screen reader's gesture sends — not a raw widget tap.
     // `rootPipelineOwner`'s owner doesn't hold this node's id in this test
@@ -189,7 +182,7 @@ void main() {
     tester.binding.pipelineOwner.semanticsOwner!.performAction(node.id, SemanticsAction.tap);
     await tester.pumpAndSettle();
 
-    expect(find.text('Account on this device'), findsOneWidget, reason: 'the semantics action must switch mode');
+    expect(find.text('Send code'), findsOneWidget, reason: 'the semantics action must switch to sign-up');
     handle.dispose();
   });
 

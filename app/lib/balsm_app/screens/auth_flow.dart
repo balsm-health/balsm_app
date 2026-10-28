@@ -121,6 +121,11 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
     );
   }
 
+  void _start(PatientAppState s, AuthIntent intent) {
+    s.setAuthIntent(intent);
+    s.go(AppRoutes.phone);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -157,10 +162,33 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                           textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
                     ),
                     const SizedBox(height: 30),
-                    PButton(s.strings.onboarding.w_start(s.gender),
-                        variant: BtnVariant.primary, large: true, block: true, accent: s.accent, ar: s.rtl, onTap: () {
-                      s.go(AppRoutes.phone);
-                    }),
+                    // auth.jsx WelcomeScreen: one button per way in, so the next
+                    // screen knows whether it registers, signs in or creates a
+                    // device-only account.
+                    PButton(s.strings.onboarding.w_create,
+                        variant: BtnVariant.primary,
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: () => _start(s, AuthIntent.signUp)),
+                    const SizedBox(height: 10),
+                    PButton(s.strings.onboarding.w_signin,
+                        variant: BtnVariant.secondary,
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: () => _start(s, AuthIntent.signIn)),
+                    const SizedBox(height: 10),
+                    PButton(s.strings.onboarding.w_device,
+                        icon: LucideIcons.smartphone,
+                        variant: BtnVariant.ghost,
+                        size: BtnSize.md,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: () => _start(s, AuthIntent.deviceOnly)),
                     const SizedBox(height: 16),
                     if (_googleAvailable) ...[
                       _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
@@ -350,9 +378,12 @@ class _OrDivider extends StatelessWidget {
 
 // ── Auth header with step dots ───────────────────────────────
 class _AuthHeader extends StatelessWidget {
-  const _AuthHeader({required this.onBack, required this.step});
+  const _AuthHeader({required this.onBack, this.step, this.total = 3});
   final VoidCallback onBack;
-  final int step; // 1..3
+
+  /// 1-based; null shows no dots (sign-in and device-only are one step).
+  final int? step;
+  final int total;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -361,19 +392,20 @@ class _AuthHeader extends StatelessWidget {
       child: Row(children: [
         RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: onBack),
         const Spacer(),
-        Row(children: [
-          for (var i = 0; i < 3; i++)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.only(left: 4),
-              width: i == step - 1 ? 22 : 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: i <= step - 1 ? s.accent.main : T.ink200,
-                borderRadius: BorderRadius.circular(999),
+        if (step case final step?)
+          Row(children: [
+            for (var i = 0; i < total; i++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.only(left: 4),
+                width: i == step - 1 ? 22 : 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: i <= step - 1 ? s.accent.main : T.ink200,
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-            ),
-        ]),
+          ]),
       ]),
     );
   }
@@ -466,13 +498,12 @@ class _UnderEighteenScreen extends StatelessWidget {
 }
 
 // ── Email + password ─────────────────────────────────────────
-// Claude Design `PhoneScreen` is email-only in this phase (no mobile
-// signup/login). Collects email + password; sign-up still verifies by OTP
-// before a session exists; sign-in uses the password path.
-
-/// Which credential path this screen is currently on: a normal server
-/// account, or a device-only account created entirely on-device.
-enum _AuthMode { online, deviceOnly }
+// Claude Design auth.jsx `PhoneScreen` (basic auth). Which Welcome button led
+// here decides the screen ([PatientAppState.authIntent]):
+//   sign up      email + new password → a code confirms the email → password set
+//   sign in      email + password
+//   device only  email + lock password, created on this device, no code
+// The patient switches between sign up and sign in with the link at the foot.
 
 class _PhoneScreen extends ConsumerStatefulWidget {
   const _PhoneScreen();
@@ -486,14 +517,6 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   final ctrl = TextEditingController();
   final pwCtrl = TextEditingController();
 
-  /// Set when the password was refused: the screen then asks whether to send a
-  /// code rather than sending one on its own.
-  bool _offerCode = false;
-
-  /// Online (server account) vs device-only: the segmented control
-  /// at the top of this screen switches it.
-  _AuthMode _mode = _AuthMode.online;
-
   /// True while [_createOnDevice] is in flight. Separate from [_submitting] —
   /// that one reflects [credentialsControllerProvider], which the device-only
   /// path never touches.
@@ -503,9 +526,13 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// Never the exception's own text — a generic retry prompt only.
   String? _deviceError;
 
+  AuthIntent get _intent => AppScope.of(context).authIntent;
+  bool get _device => _intent == AuthIntent.deviceOnly;
+  bool get _signUp => _intent == AuthIntent.signUp;
+
   /// The error line to show under the fields: the device-only failure while
   /// in that mode, the online controller's error otherwise.
-  String? get _displayError => _mode == _AuthMode.deviceOnly ? _deviceError : _error;
+  String? get _displayError => _device ? _deviceError : _error;
 
   bool _seeded = false;
 
@@ -534,6 +561,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     return switch (e.kind) {
       AuthErrorKind.lockout => s.strings.auth.auth_locked_retry(e.lockoutSecs.toString()),
       AuthErrorKind.invalidCredentials => s.strings.auth.pw_invalid_creds,
+      AuthErrorKind.emailRegistered => s.strings.auth.signup_email_registered,
       AuthErrorKind.server => e.message,
     };
   }
@@ -545,13 +573,15 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     super.dispose();
   }
 
-  // D5: 8 characters minimum in both modes — the design said 6, but an
-  // offline password can never be server-side rate-limited, so the product owner
-  // raised the floor for everyone, not just device-only.
+  // D5: 8 characters minimum in every mode — the design says 6, but an
+  // offline password can never be server-side rate-limited, so the product
+  // owner raised the floor for everyone, not just device-only.
   bool get ok {
     final emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(ctrl.text.trim());
     return emailOk && pwCtrl.text.length >= OfflineAccountService.minPasswordLength;
   }
+
+  bool get _busy => _submitting || _creating;
 
   void _showForgotPassword(String email) {
     final s = AppScope.of(context);
@@ -561,21 +591,33 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     );
   }
 
-  /// One entry for everyone: try the password, and on a plain refusal offer a
-  /// code instead.
-  ///
-  /// The refusal covers three server-side realities — no account, an account
-  /// with no password, a wrong password — and deliberately does not say which.
-  /// So this branches on "sign-in failed", never on "account exists", and the
-  /// step that follows reads identically in every case.
-  Future<void> _continue() async {
-    final s = AppScope.of(context);
+  /// Sign up ⇄ sign in, keeping what was typed.
+  void _switchTo(PatientAppState s, AuthIntent intent) {
+    if (_busy) return;
+    // Rebuilding the controller clears a stale error from the other mode.
+    ref.invalidate(credentialsControllerProvider);
+    s.setAuthIntent(intent);
+  }
+
+  void _submit(PatientAppState s) {
+    if (!ok || _busy) return;
+    switch (_intent) {
+      case AuthIntent.signIn:
+        unawaited(_signIn(s));
+      case AuthIntent.signUp:
+        unawaited(_register(s));
+      case AuthIntent.deviceOnly:
+        unawaited(_createOnDevice(s));
+    }
+  }
+
+  Future<void> _signIn(PatientAppState s) async {
     final address = ctrl.text.trim();
     final controller = ref.read(credentialsControllerProvider.notifier);
 
-    final ok = await controller.signIn(email: address, password: pwCtrl.text);
+    final signedIn = await controller.signIn(email: address, password: pwCtrl.text);
     if (!mounted) return;
-    if (ok) {
+    if (signedIn) {
       // Credentials are proven good — this is what raises the platform
       // "Save password?" prompt. Nothing before this point should, or a
       // typo gets offered to the keychain.
@@ -594,29 +636,31 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     // looking at the one line where it says so.
     unawaited(HapticFeedback.heavyImpact());
 
-    // A lockout is not an invalid credential, and neither is an unreachable
-    // server. Offering a code for either would walk around the lockout, or
-    // email someone because the Wi-Fi dropped.
-    final error = ref.read(credentialsControllerProvider).error;
-    if (error == null || error.kind != AuthErrorKind.invalidCredentials) return;
-
-    setState(() => _offerCode = true);
+    // The refusal never says whether the address has an account — the server
+    // does not tell the app, so the error reads the same either way, and the
+    // "New to Balsm?" line below is always there for a newcomer.
   }
 
-  /// Sends the code the patient just asked for, then moves to the code step.
-  Future<void> _sendCode() async {
-    final s = AppScope.of(context);
+  /// Sign up: send the code that confirms the email, then move to the code
+  /// step. The password waits in memory until the code proves the address.
+  ///
+  /// The server normally sends the code whether or not the address already
+  /// has an account and never says which; a code for an existing account
+  /// signs in to it, and the code step then asks whether to adopt the new
+  /// password. While the server holds sign-up strict (email quota or abuse)
+  /// it answers "already registered" instead, shown under the field, with the
+  /// sign-in link right below.
+  Future<void> _register(PatientAppState s) async {
     final address = ctrl.text.trim();
-    final ok = await ref
+    final sent = await ref
         .read(credentialsControllerProvider.notifier)
-        .requestContinueOtp(email: address, countryCode: s.country.value);
-    if (!mounted || !ok) return;
+        .requestSignupOtp(email: address, countryCode: s.country.value);
+    if (!mounted || !sent) return;
     s.setAuthContact(method: AuthMethod.email, email: address);
     // Held only for the length of the flow: if the code proves a NEW account
     // it becomes that account's password, and if it proves an existing one the
     // patient is asked whether to adopt it. Cleared either way.
     s.setAuthPassword(pwCtrl.text);
-    setState(() => _offerCode = false);
     s.go(AppRoutes.otp);
   }
 
@@ -645,11 +689,40 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
     }
   }
 
+  /// "New to Balsm? Create an account" / "Have an account? Sign in".
+  Widget _switchLine(PatientAppState s, {required String prompt, required String action, required AuthIntent to}) {
+    final style = Typo.meta(ar: s.rtl);
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Flexible(child: Text('$prompt ', style: style)),
+      Semantics(
+        button: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _busy ? null : () => _switchTo(s, to),
+          // 48pt tall, only as wide as the words, so it stays on the prompt's line.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
+            child: Align(
+              widthFactor: 1,
+              child: Text(action, style: style.copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ),
+      ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final a = s.strings.auth;
     // Subscribe: the bridge getters above read this provider's current state.
     ref.watch(credentialsControllerProvider);
+    final (title, help, cta) = switch (s.authIntent) {
+      AuthIntent.signUp => (a.signup_title, a.signup_help, a.signup_send),
+      AuthIntent.signIn => (a.signin_title, a.signin_help, _submitting ? a.pw_signing_in : a.pw_signin),
+      AuthIntent.deviceOnly => (a.device_title, a.device_help, a.device_create),
+    };
     return Container(
       color: T.cream50,
       // Groups the email and password fields into one credential set, so the
@@ -660,56 +733,16 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
-            _AuthHeader(onBack: () => s.go(AppRoutes.welcome), step: 1),
+            // Sign up is two steps (this, then the code); the others are one.
+            _AuthHeader(onBack: () => s.go(AppRoutes.welcome), step: _signUp ? 1 : null, total: 2),
             Expanded(
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: _Segmented<_AuthMode>(
-                    left: s.strings.auth.mode_online,
-                    right: s.strings.auth.mode_device,
-                    leftIcon: LucideIcons.cloud,
-                    rightIcon: LucideIcons.smartphone,
-                    leftValue: _AuthMode.online,
-                    rightValue: _AuthMode.deviceOnly,
-                    value: _mode,
-                    // Ignored while a device-only create OR an online sign-in
-                    // is in flight — the switch
-                    // must not move out from under either in-progress request.
-                    onChanged: _creating || _submitting
-                        ? (_) {}
-                        : (m) {
-                            setState(() {
-                              _mode = m;
-                              // An online refusal's "send a code?" offer is
-                              // meaningless (and its button hits the network)
-                              // once the screen is showing the device-only
-                              // path instead.
-                              _offerCode = false;
-                              _deviceError = null;
-                            });
-                            // Clears any stale online sign-in error too —
-                            // rebuilding the controller resets its state.
-                            ref.invalidate(credentialsControllerProvider);
-                          },
-                  ),
-                ),
-                const SizedBox(height: 18),
-                // One title for both audiences online. Which one this patient
-                // is, the screen is not told and must not imply. Device-only
-                // is its own, separately-named mode — there is only one way
-                // in for it, so nothing to stay neutral about.
-                Text(
-                  _mode == _AuthMode.deviceOnly ? s.strings.auth.device_title : s.strings.emergency.em_one_title,
-                  style: Typo.title(ar: s.rtl),
-                ),
                 const SizedBox(height: 8),
-                Text(
-                  _mode == _AuthMode.deviceOnly ? s.strings.auth.device_help : s.strings.emergency.em_one_help,
-                  style: Typo.body(ar: s.rtl),
-                ),
+                Text(title, style: Typo.title(ar: s.rtl)),
+                const SizedBox(height: 8),
+                Text(help, style: Typo.body(ar: s.rtl)),
                 const SizedBox(height: 24),
                 _Label(s.strings.emergency.em_label, ar: s.rtl),
                 const SizedBox(height: 8),
@@ -724,33 +757,37 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                     onChanged: (_) => setState(() {})),
                 const SizedBox(height: 16),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  _Label(_mode == _AuthMode.deviceOnly ? s.strings.auth.device_pw_label : s.strings.auth.pw_label,
-                      ar: s.rtl),
-                  // Shown only in online mode: a device-only account has no
-                  // server-side record to recover a password from yet (see
-                  // the warning card below), so there is nothing this link
-                  // could do.
-                  if (_mode == _AuthMode.online)
+                  _Label(_device ? a.device_pw_label : a.pw_label, ar: s.rtl),
+                  // Sign in only: a new account has no password to forget yet,
+                  // and a device-only account has no server-side record to
+                  // recover one from (see the warning card below).
+                  if (s.authIntent == AuthIntent.signIn)
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
-                      child: Text(s.strings.auth.forgot_pw,
-                          style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                      // 48pt target around 13pt text: the label row grows, the
+                      // link does not look any bigger.
+                      child: MinTapTarget(
+                        child: Text(a.forgot_pw,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+                      ),
                     ),
                 ]),
                 const SizedBox(height: 8),
                 AuthInput(
                     controller: pwCtrl,
                     id: 'passwordField',
-                    // D5: 8 characters minimum in both modes — shown as the
+                    // D5: 8 characters minimum in every mode — shown as the
                     // hint instead of a generic placeholder.
-                    hint: s.strings.auth.pw_min_hint,
+                    hint: a.pw_min_hint,
                     obscure: !_showPw,
                     forceLtr: true,
                     accent: s.accent,
-                    // `password`, not `newPassword`: the screen cannot know
-                    // this is a signup, and asking iOS to generate a strong one
-                    // for a returning patient would fight their saved entry.
-                    autofillHints: const [AutofillHints.password],
+                    // A new password where one is being chosen, so the
+                    // platform can suggest a strong one; the saved one at sign in.
+                    autofillHints: [
+                      s.authIntent == AuthIntent.signIn ? AutofillHints.password : AutofillHints.newPassword
+                    ],
                     // Icon-only, so a screen reader has nothing to read, and
                     // 17px is well under a fingertip.
                     suffixIcon: Semantics(
@@ -765,9 +802,9 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                       ),
                     ),
                     onChanged: (_) => setState(() {})),
-                if (_mode == _AuthMode.deviceOnly) ...[
+                if (_device) ...[
                   const SizedBox(height: 12),
-                  _DeviceOnlyWarning(text: s.strings.auth.device_warning, ar: s.rtl),
+                  _DeviceOnlyWarning(text: a.device_warning, ar: s.rtl),
                 ],
               ]),
             )),
@@ -783,51 +820,27 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
                             textAlign: TextAlign.center,
                             style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
-                // The password was refused. Ask before sending anything: a
-                // mistyped password would otherwise email whoever owns that
-                // address, every time. Online only — device-only has no OTP.
-                if (_offerCode && _mode == _AuthMode.online) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(
-                      s.strings.emergency.em_send_code_q(ctrl.text.trim()),
-                      textAlign: TextAlign.center,
-                      style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5),
-                    ),
-                  ),
-                  PButton(
-                    s.strings.emergency.em_send_code,
-                    variant: BtnVariant.primary,
-                    large: true,
-                    block: true,
-                    accent: s.accent,
-                    ar: s.rtl,
-                    onTap: _submitting ? null : _sendCode,
-                  ),
-                  const SizedBox(height: 10),
-                ],
                 Opacity(
-                    opacity: ok && !_submitting && !_creating ? 1 : 0.4,
-                    child: PButton(
-                        _mode == _AuthMode.deviceOnly
-                            ? s.strings.auth.device_create
-                            : (_submitting ? s.strings.auth.pw_signing_in : s.strings.auth.pw_continue),
-                        variant: _offerCode && _mode == _AuthMode.online ? BtnVariant.secondary : BtnVariant.primary,
+                    opacity: ok && !_busy ? 1 : 0.4,
+                    child: PButton(cta,
+                        variant: BtnVariant.primary,
                         large: true,
                         block: true,
                         accent: s.accent,
                         ar: s.rtl,
-                        onTap: ok && !_submitting && !_creating
-                            ? () {
-                                if (_mode == _AuthMode.deviceOnly) {
-                                  _createOnDevice(s);
-                                } else {
-                                  _continue();
-                                }
-                              }
-                            : null)),
-                const SizedBox(height: 14),
-                TermsLine(s: s),
+                        onTap: ok && !_busy ? () => _submit(s) : null)),
+                const SizedBox(height: 8),
+                switch (s.authIntent) {
+                  AuthIntent.signUp =>
+                    _switchLine(s, prompt: a.have_account, action: a.pw_signin, to: AuthIntent.signIn),
+                  AuthIntent.signIn =>
+                    _switchLine(s, prompt: a.new_here, action: a.create_account, to: AuthIntent.signUp),
+                  AuthIntent.deviceOnly => const SizedBox.shrink(),
+                },
+                if (s.authIntent != AuthIntent.signIn) ...[
+                  const SizedBox(height: 8),
+                  TermsLine(s: s),
+                ],
               ]),
             ),
           ]),
@@ -1475,22 +1488,25 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> {
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
           child: Column(children: [
-            _AuthHeader(onBack: () => s.go(AppRoutes.phone), step: 2),
+            _AuthHeader(onBack: () => s.go(AppRoutes.phone), step: 2, total: 2),
             Expanded(
                 child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const SizedBox(height: 8),
-                Text(s.strings.auth.otp_title, style: Typo.title(ar: s.rtl)),
+                // auth.jsx OtpScreen: this step only follows sign-up now.
+                Text(s.strings.auth.otp_confirm_title, style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 8),
                 RichText(
                     text: TextSpan(style: Typo.body(ar: s.rtl), children: [
                   // Says nothing about whether this address has an account.
                   // The screen is reached identically either way, and the copy
                   // is the last place that distinction could leak.
-                  TextSpan(text: '${s.strings.emergency.em_otp_neutral_h} '),
+                  TextSpan(text: '${s.strings.auth.otp_sent_to} '),
                   TextSpan(text: contact, style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
                 ])),
+                const SizedBox(height: 8),
+                Text(s.strings.auth.otp_existing_note, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
                 if (_notice != null) ...[
                   const SizedBox(height: 12),
                   Text(_notice!,
