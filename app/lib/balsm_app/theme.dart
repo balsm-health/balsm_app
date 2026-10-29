@@ -23,6 +23,12 @@ import 'tokens.dart';
 /// on the menu themes is belt-and-braces: M3 tints a raised Material by its
 /// elevation, which would put the same cast back on a white fill.
 ///
+/// The date and time pickers read a *different* token — `DatePickerDialog`
+/// takes `DatePickerTheme.of(context).backgroundColor`, which falls back to
+/// `colorScheme.surfaceContainerHigh`, not `canvasColor` — so they are set
+/// here too. They look like the same bug to a patient and would otherwise be
+/// left lilac by a fix that reads like it covered them.
+///
 /// Lives in its own file so `previews/preview_harness.dart` can mount the same
 /// theme the shell does — a preview that is not the app's colour is a preview
 /// that lies.
@@ -42,5 +48,17 @@ ThemeData balsmTheme() => ThemeData(
           backgroundColor: WidgetStatePropertyAll(T.surface),
           surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
         ),
+      ),
+      datePickerTheme: const DatePickerThemeData(
+        backgroundColor: T.surface,
+        headerBackgroundColor: T.surface,
+        headerForegroundColor: T.fg1,
+        surfaceTintColor: Colors.transparent,
+      ),
+      // TimePickerThemeData carries no surfaceTintColor on this Flutter
+      // version; backgroundColor is the whole dialog.
+      timePickerTheme: const TimePickerThemeData(
+        backgroundColor: T.surface,
+        dialBackgroundColor: T.surfaceMuted,
       ),
     );

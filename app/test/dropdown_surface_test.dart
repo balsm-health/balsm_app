@@ -28,6 +28,19 @@ void main() {
     expect(theme.popupMenuTheme.surfaceTintColor, Colors.transparent);
   });
 
+  test('the date and time pickers are white too', () {
+    final theme = balsmTheme();
+
+    // A different token from canvasColor: DatePickerDialog falls back to
+    // colorScheme.surfaceContainerHigh, so setting canvasColor alone would
+    // leave this dialog lilac while reading as though it had covered it.
+    expect(theme.datePickerTheme.backgroundColor, T.surface);
+    expect(theme.datePickerTheme.headerBackgroundColor, T.surface);
+    expect(theme.datePickerTheme.surfaceTintColor, Colors.transparent);
+
+    expect(theme.timePickerTheme.backgroundColor, T.surface);
+  });
+
   testWidgets('an open SelectField menu is white', (tester) async {
     const items = [('skin', 'Skin'), ('muscle', 'Muscle'), ('bone', 'Bone')];
     var value = 'skin';
