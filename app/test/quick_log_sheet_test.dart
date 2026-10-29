@@ -32,6 +32,8 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text(s.strings.profile.m_mood));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(s.strings.profile.m_mood));
     await tester.pumpAndSettle();
   }
@@ -141,5 +143,65 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MetricLog), findsNothing);
     expect(find.text(s.strings.checkin.ql_title), findsNothing);
+  });
+
+  Future<void> openList(WidgetTester tester) async {
+    s = PatientAppState();
+    tester.view.physicalSize = const Size(402, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(ProviderScope(
+      child: AppScope(
+        state: s,
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+  }
+
+  double top(WidgetTester tester, String text) => tester.getTopLeft(find.text(text)).dy;
+
+  testWidgets('documents sit in their own group, between Vitals and Wellbeing', (tester) async {
+    await openList(tester);
+    final c = s.strings.checkin;
+    final docs = top(tester, c.ql_add_document.toUpperCase());
+    expect(docs, greaterThan(top(tester, s.strings.profile.m_weight)));
+    expect(docs, lessThan(top(tester, c.ql_wellbeing.toUpperCase())));
+  });
+
+  testWidgets('with Vitals filtered out, documents come last', (tester) async {
+    await openList(tester);
+    // "Scan"/"Report" style labels match no metric or symptom.
+    await tester.enterText(find.byType(TextField), s.strings.records.rec_scan_one);
+    await tester.pumpAndSettle();
+    expect(find.text(s.strings.checkin.ql_vitals.toUpperCase()), findsNothing);
+    expect(find.text(s.strings.checkin.ql_add_document.toUpperCase()), findsOneWidget);
+    // The search field and the tile.
+    expect(find.text(s.strings.records.rec_scan_one), findsNWidgets(2));
+  });
+
+  testWidgets('symptoms are in A–Z order of their label', (tester) async {
+    await openList(tester);
+    final labels = find
+        .descendant(of: find.byType(PCard).last, matching: find.byType(Text))
+        .evaluate()
+        .map((e) => (e.widget as Text).data!)
+        .toList();
+    final sorted = [...labels]..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    expect(labels, sorted);
+  });
+
+  testWidgets('Pulse sits in Vitals right after Oxygen', (tester) async {
+    await openList(tester);
+    final p = s.strings.profile;
+    expect(top(tester, p.m_pulse), greaterThan(top(tester, p.m_o2)));
+    expect(top(tester, p.m_pulse), lessThan(top(tester, p.m_weight)));
   });
 }
