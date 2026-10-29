@@ -1,6 +1,19 @@
 {
   "_i69n": "nothrow",
   "_i69n_language": "ar",
+  "status": {
+    "title": "حالة الخدمة",
+    "operational": "جميع الأنظمة تعمل",
+    "degraded": "أداء متراجع",
+    "down": "انقطاع في الخدمة",
+    "unknown": "الحالة غير معروفة",
+    "incidents": "الأعطال",
+    "no_incidents": "لا توجد أعطال",
+    "incident": "عطل",
+    "unavailable": "الحالة غير متاحة",
+    "unavailable_body": "تعذّر الوصول إلى خدمة الحالة. إن احتجت مساعدة، تواصل مع الدعم أدناه.",
+    "need_help": "تحتاج مساعدة؟"
+  },
   "common": {
     "continue_": "متابعة",
     "back": "رجوع",
