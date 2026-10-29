@@ -79,6 +79,11 @@
     "boot_preparing": "Preparing your health record"
   },
   "care": {
+    // Recenter found no device position: why, and the setting that fixes it.
+    "loc_off": "Location is turned off on this phone.",
+    "loc_denied": "Balsm doesn’t have permission to use your location.",
+    "loc_unavailable": "Couldn’t find your location. Try again outdoors.",
+    "loc_settings": "Settings",
     "map_sub": "places mapped nearby",
     "to_doctor": "A copy reaches Dr. Sara at your next visit.",
     "to_home": "Back to home",

@@ -80,6 +80,11 @@
     "boot_preparing": "نُجهّز سجلّك الصحي"
   },
   "care": {
+    // Recenter found no device position: why, and the setting that fixes it.
+    "loc_off": "خدمة الموقع متوقفة على هذا الهاتف.",
+    "loc_denied": "لا يملك بلسم إذن استخدام موقعك.",
+    "loc_unavailable": "تعذّر تحديد موقعك. حاول مرة أخرى في مكان مفتوح.",
+    "loc_settings": "الإعدادات",
     "map_sub": "مكان بالقرب منك",
     "to_doctor": "ستصل نسخة إلى د. سارة في زيارتك القادمة.",
     "to_home": "العودة للرئيسية",

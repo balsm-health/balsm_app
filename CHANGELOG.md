@@ -10,6 +10,16 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.3.1] - Unreleased
+
+### Fixed
+
+- Nearby care no longer shows you in central Cairo when Balsm can't read
+  your location. The map's own-position dot appears only for a real fix,
+  and the locate button asks for permission again; when location is off or
+  refused it says so, with a button to the setting that fixes it.
+  ([#125](https://github.com/balsm-health/balsm_app/pull/125))
+
 ## [0.3.0] - Unreleased
 
 ### Changed
