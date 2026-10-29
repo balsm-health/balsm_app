@@ -541,11 +541,11 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                       if (!atMaxContacts) ...[
                         _field(s.strings.profile.pd_em_name, emName),
                         const SizedBox(height: 14),
-                        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Expanded(child: _labeled(s.strings.profile.pd_em_rel, _relationField())),
-                          const SizedBox(width: 12),
-                          Expanded(child: _phoneField(s.strings.profile.pd_em_phone, emPhone)),
-                        ]),
+                        // Stacked, not side by side: the phone field carries a
+                        // country-code picker and needs the full card width.
+                        _labeled(s.strings.profile.pd_em_rel, _relationField()),
+                        const SizedBox(height: 14),
+                        _phoneField(s.strings.profile.pd_em_phone, emPhone),
                         const SizedBox(height: 14),
                         PButton(s.strings.profile.pd_add_contact,
                             icon: LucideIcons.plus,
