@@ -1,7 +1,7 @@
 name: app
 description: Balsm runnable shell
 publish_to: none
-version: 0.4.1+21
+version: 0.5.0+23
 environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
@@ -87,6 +87,9 @@ dev_dependencies:
   # Test-only: analytics_consent_toggle_test seeds the KV store via
   # SharedPreferences.setMockInitialValues.
   shared_preferences: ^2.3.0
+  # Test-only: device_location_test fakes the platform's location answers.
+  geolocator_platform_interface: ^4.2.8
+  plugin_platform_interface: ^2.1.8
   patrol: ^4.9.0
   flutter_test:
     sdk: flutter

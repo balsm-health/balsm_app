@@ -10,6 +10,32 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.5.0] - Unreleased
+
+### Added
+
+- Pulse can be logged from the quick-log sheet, under Vitals after Oxygen.
+  Type the rate in beats per minute, or tap "Count with me" and tap each
+  beat for 15 seconds; Balsm multiplies the count by four. Only 30 to 220
+  bpm saves. Saved readings show in the day's records.
+  ([#134](https://github.com/balsm-health/balsm_app/pull/134))
+
+### Changed
+
+- The quick-log sheet groups lab, scan and report shortcuts as "Add a
+  document", right after Vitals, and lists symptoms A to Z in the app's
+  language. ([#134](https://github.com/balsm-health/balsm_app/pull/134))
+
+## [0.4.2] - Unreleased
+
+### Fixed
+
+- Nearby care no longer shows you in central Cairo when Balsm can't read
+  your location. The map's own-position dot appears only for a real fix,
+  and the locate button asks for permission again; when location is off or
+  refused it says so, with a button to the setting that fixes it.
+  ([#125](https://github.com/balsm-health/balsm_app/pull/125))
+
 ## [0.4.1] - Unreleased
 
 ### Fixed
@@ -20,6 +46,11 @@ what changed and why it matters.
   ([#128](https://github.com/balsm-health/balsm_app/issues/128))
 - The date and time pickers open white as well, instead of lilac.
   ([#128](https://github.com/balsm-health/balsm_app/issues/128))
+- Service status in Profile shows whether Balsm's servers are working again:
+  it always said the status was unknown, even when everything was up. It now
+  speaks the app's language, so in Arabic it reads in Arabic instead of
+  English laid out right to left. Devices & sessions is hidden from Profile
+  for now. ([#124](https://github.com/balsm-health/balsm_app/pull/124))
 
 ## [0.4.0] - Unreleased
 

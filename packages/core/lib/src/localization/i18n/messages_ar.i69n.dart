@@ -9,6 +9,7 @@ String get _localeName => 'ar';
 
 class Messages_ar extends Messages {
   const Messages_ar();
+  StatusMessages_ar get status => StatusMessages_ar(this);
   CommonMessages_ar get common => CommonMessages_ar(this);
   ErrorMessages_ar get error => ErrorMessages_ar(this);
   NotfoundMessages_ar get notfound => NotfoundMessages_ar(this);
@@ -18,9 +19,12 @@ class Messages_ar extends Messages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
+      case 'status':
+        return status;
       case 'common':
         return common;
       case 'error':
@@ -33,6 +37,56 @@ class Messages_ar extends Messages {
         return language;
       case 'relation':
         return relation;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class StatusMessages_ar extends StatusMessages {
+  final Messages_ar _parent;
+  const StatusMessages_ar(this._parent) : super(_parent);
+  String get title => "حالة الخدمة";
+  String get operational => "جميع الأنظمة تعمل";
+  String get degraded => "أداء متراجع";
+  String get down => "انقطاع في الخدمة";
+  String get unknown => "الحالة غير معروفة";
+  String get incidents => "الأعطال";
+  String get no_incidents => "لا توجد أعطال";
+  String get incident => "عطل";
+  String get unavailable => "الحالة غير متاحة";
+  String get unavailable_body =>
+      "تعذّر الوصول إلى خدمة الحالة. إن احتجت مساعدة، تواصل مع الدعم أدناه.";
+  String get need_help => "تحتاج مساعدة؟";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'operational':
+        return operational;
+      case 'degraded':
+        return degraded;
+      case 'down':
+        return down;
+      case 'unknown':
+        return unknown;
+      case 'incidents':
+        return incidents;
+      case 'no_incidents':
+        return no_incidents;
+      case 'incident':
+        return incident;
+      case 'unavailable':
+        return unavailable;
+      case 'unavailable_body':
+        return unavailable_body;
+      case 'need_help':
+        return need_help;
       default:
         return super[key];
     }
@@ -54,7 +108,8 @@ class CommonMessages_ar extends CommonMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -88,7 +143,8 @@ class ErrorMessages_ar extends ErrorMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'unknown':
@@ -107,7 +163,8 @@ class NotfoundMessages_ar extends NotfoundMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -138,7 +195,8 @@ class CountryMessages_ar extends CountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'eg':
@@ -179,7 +237,8 @@ class EgCountryMessages_ar extends EgCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -200,7 +259,8 @@ class SaCountryMessages_ar extends SaCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -221,7 +281,8 @@ class AeCountryMessages_ar extends AeCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -242,7 +303,8 @@ class QaCountryMessages_ar extends QaCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -263,7 +325,8 @@ class KwCountryMessages_ar extends KwCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -284,7 +347,8 @@ class BhCountryMessages_ar extends BhCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -305,7 +369,8 @@ class OmCountryMessages_ar extends OmCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -326,7 +391,8 @@ class JoCountryMessages_ar extends JoCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -347,7 +413,8 @@ class LbCountryMessages_ar extends LbCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -368,7 +435,8 @@ class MaCountryMessages_ar extends MaCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -389,7 +457,8 @@ class UsCountryMessages_ar extends UsCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -410,7 +479,8 @@ class GbCountryMessages_ar extends GbCountryMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -435,7 +505,8 @@ class LanguageMessages_ar extends LanguageMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'ar':
@@ -463,7 +534,8 @@ class ArLanguageMessages_ar extends ArLanguageMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -481,7 +553,8 @@ class EnLanguageMessages_ar extends EnLanguageMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -499,7 +572,8 @@ class FrLanguageMessages_ar extends FrLanguageMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -517,7 +591,8 @@ class UrLanguageMessages_ar extends UrLanguageMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -535,7 +610,8 @@ class FaLanguageMessages_ar extends FaLanguageMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -553,7 +629,8 @@ class TrLanguageMessages_ar extends TrLanguageMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -581,7 +658,8 @@ class RelationMessages_ar extends RelationMessages {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'spouse':
