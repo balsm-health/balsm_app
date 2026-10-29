@@ -108,6 +108,7 @@ class AuthStrings_ar extends AuthStrings {
   String get legal_updated => "إصدار الإشعار";
   String get otp_title => "أدخل رمز التحقق";
   String get otp_resend => "إعادة إرسال الرمز";
+  String get link_used_or_expired => "رابط تسجيل الدخول هذا مُستخدَم من قبل أو انتهت صلاحيته. اطلب رمزًا جديدًا.";
   String get otp_in => "إعادة الإرسال خلال";
   String get verify => "تأكيد";
   String get pw_label => "كلمة المرور";
@@ -203,6 +204,8 @@ class AuthStrings_ar extends AuthStrings {
         return otp_title;
       case 'otp_resend':
         return otp_resend;
+      case 'link_used_or_expired':
+        return link_used_or_expired;
       case 'otp_in':
         return otp_in;
       case 'verify':

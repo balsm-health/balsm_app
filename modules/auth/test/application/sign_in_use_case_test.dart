@@ -127,6 +127,26 @@ void main() {
     });
   });
 
+  group('verifyMagicLink', () {
+    test('a refused link is told apart from a network failure (#117)', () async {
+      when(() => adapter.verifyLink(any(), any(), any()))
+          .thenThrow(const AuthException(code: 'unauthorized', message: 'Authentication required.'));
+
+      final r = await usecase.verifyMagicLink(token: 'spent');
+
+      r.fold((_) => fail('a refused link must not sign in'), (f) => expect(f, isA<UnauthorizedFailure>()));
+    });
+
+    test('other failures stay network failures', () async {
+      when(() => adapter.verifyLink(any(), any(), any()))
+          .thenThrow(const AuthException(code: 'server_error', message: 'A server error occurred.'));
+
+      final r = await usecase.verifyMagicLink(token: 'tok');
+
+      r.fold((_) => fail('a failed redeem must not sign in'), (f) => expect(f, isA<NetworkFailure>()));
+    });
+  });
+
   group('account mode', () {
     // A device-only account left on this phone must never make a server
     // session look device-only: every request would be refused locally and

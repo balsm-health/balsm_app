@@ -17,6 +17,7 @@
     "legal_updated": "Notice version",
     "otp_title": "Enter your code",
     "otp_resend": "Resend code",
+    "link_used_or_expired": "This sign-in link has already been used or has expired. Request a new code.",
     "otp_in": "Resend in",
     "verify": "Verify",
     "pw_label": "Password",

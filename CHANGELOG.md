@@ -18,6 +18,10 @@ what changed and why it matters.
   only restarted the countdown and no email came. If the server refuses
   (too many requests, for example), the reason shows and Resend stays
   available. (#116)
+- A sign-in link from an email that has already been used, was replaced by
+  a newer code, or has expired now says so and asks for a new code, in
+  English and Arabic. Before, it said "Authentication required. Please
+  sign in again.", which pointed at the wrong problem. (#117)
 
 ## [0.2.1] - Unreleased
 
