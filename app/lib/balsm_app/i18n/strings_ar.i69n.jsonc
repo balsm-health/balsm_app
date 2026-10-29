@@ -250,6 +250,12 @@
     "quick_log_or": "أو سجّل قراءة واحدة",
     "ql_save": "حفظ",
     "ql_saved": "تم الحفظ",
+    "ql_save_hint": "أكمل الحقول المطلوبة لتتمكن من الحفظ.",
+    // Quick-log flow: leaving with unsaved input asks first (quicklog.jsx Sheet).
+    "ql_discard_title": "تجاهل هذا التسجيل؟",
+    "ql_discard_body": "لن يُحفظ ما أدخلته.",
+    "ql_discard": "تجاهل",
+    "ql_keep_editing": "متابعة التعديل",
     "body_location": "أين يؤلمك؟",
     "body_view_front": "أمامي",
     "body_view_back": "خلفي",

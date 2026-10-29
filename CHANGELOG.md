@@ -10,7 +10,16 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.3.1] - Unreleased
+## [0.4.0] - Unreleased
+
+### Changed
+
+- The quick-log sheet follows the new design. Save sits in the header as a
+  tick and again under the note, with a hint while the entry is incomplete,
+  and Cancel below it. Leaving an entry that has changed asks before
+  discarding it. Back steps out of an entry before closing the sheet, and
+  after a save the sheet returns to the list with a "Saved" message instead
+  of closing. ([#123](https://github.com/balsm-health/balsm_app/pull/123))
 
 ### Fixed
 
