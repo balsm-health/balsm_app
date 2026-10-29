@@ -161,6 +161,14 @@ class T {
   /// `.h2-vfoot`: a reading above its range.
   static const warnInk = Color(0xFF9A5A00);
 
+  /// Welcome language pill: `rgba(255,255,255,0.85)` over the watercolour.
+  static const langPillBg = Color(0xD9FFFFFF);
+
+  /// Tab-bar check-in disc (compact): `0 6px 16px rgba(31,45,61,.28)`.
+  static const List<BoxShadow> fabShadow = [
+    BoxShadow(color: Color(0x471F2D3D), blurRadius: 16, offset: Offset(0, 6)),
+  ];
+
   // App accent shadow (blue) — `--app-accent-shadow`
   static const List<BoxShadow> accentShadow = [
     BoxShadow(color: Color(0x421283FF), blurRadius: 22, offset: Offset(0, 8)),
