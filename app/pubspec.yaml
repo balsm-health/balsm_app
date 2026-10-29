@@ -80,6 +80,7 @@ dependencies:
   gal: ^2.3.3
   mobile_scanner: ^7.4.2
   pasteboard: ^0.5.0
+  device_info_plus: ^12.4.0
 dev_dependencies:
   # Test-only: care_repository_test opens an in-memory AppDatabase.
   drift: ^2.29.0

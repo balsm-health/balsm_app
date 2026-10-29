@@ -23,7 +23,9 @@ what changed and why it matters.
 - The welcome screen's language switch moved to the top corner as a light
   pill, and the check-in button in the tab bar is a dark disc level with
   the tabs, as in the latest design. Switching language no longer moves the
-  welcome screen's logo and buttons.
+  welcome screen's logo and buttons. In dev and staging builds, the server
+  pill on the welcome screen shows only on emulators, simulators, desktop
+  and web; on a real phone or tablet, shake the device to open Dev Config.
   ([#121](https://github.com/balsm-health/balsm_app/pull/121))
 
 ## [0.2.4] - Unreleased

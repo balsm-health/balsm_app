@@ -257,7 +257,11 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                   // simulator and not discoverable on a device, and the server this
                   // build talks to is the first thing that goes wrong. Never in
                   // prod: `serverSwitchingEnabled` is dev + staging only.
-                  if (FlavorConfig.current.serverSwitchingEnabled) _DevConfigPill(onClosed: () => setState(() {})),
+                  // Only where a shake can't reach Dev Config: emulators,
+                  // simulators, desktop and web. A real phone or tablet shakes,
+                  // and the pill there is clutter (hidden while the check runs).
+                  if (FlavorConfig.current.serverSwitchingEnabled && ref.watch(canShakeProvider).valueOrNull == false)
+                    _DevConfigPill(onClosed: () => setState(() {})),
                 ]),
                 const SizedBox(height: 4),
               ]),
