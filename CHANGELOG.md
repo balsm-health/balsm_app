@@ -10,13 +10,42 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.3.1] - Unreleased
+## [0.4.1] - Unreleased
 
 ### Fixed
 
 - Adding someone to your care team from your phone's contacts on Android
   asked you to find and tap the same person twice. It asks once now.
   ([#127](https://github.com/balsm-health/balsm_app/issues/127))
+
+## [0.4.0] - Unreleased
+
+### Changed
+
+- The quick-log sheet follows the new design. Save sits in the header as a
+  tick and again under the note, with a hint while the entry is incomplete,
+  and Cancel below it. Leaving an entry that has changed asks before
+  discarding it. Back steps out of an entry before closing the sheet, and
+  after a save the sheet returns to the list with a "Saved" message instead
+  of closing. ([#123](https://github.com/balsm-health/balsm_app/pull/123))
+
+### Fixed
+
+- The five mood faces fit on narrower phones. On a 360dp-wide screen the
+  labels overflowed their squares, and the first four faces were drawn
+  smaller than the fifth.
+  ([#123](https://github.com/balsm-health/balsm_app/pull/123))
+- An account kept on this device only can sign out again. Sign out in
+  Profile now locks the app and returns to the Unlock screen, with nothing
+  deleted; the password set on this device opens it again. Before, the only
+  way out was removing the account and all its data. Remove this account
+  from this phone is still there, as a separate choice.
+  ([#122](https://github.com/balsm-health/balsm_app/issues/122))
+- Home's latest readings keep blood pressure, glucose and oxygen after a
+  mood or pain check-in. Each reading now shows the newest value logged for
+  it; before, the card showed only the newest check-in, so logging mood
+  alone blanked the vitals.
+  ([#123](https://github.com/balsm-health/balsm_app/pull/123))
 
 ## [0.3.0] - Unreleased
 

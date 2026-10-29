@@ -107,13 +107,20 @@ class MoodCell extends StatelessWidget {
               borderRadius: BorderRadius.circular(T.rLg),
               border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
             ),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
-              const SizedBox(height: 8),
-              Text(moodLabel(s, lv),
-                  style: Typo.meta(ar: s.rtl)
-                      .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
-            ]),
+            // A 360dp phone leaves each square ~51dp — less than the face and
+            // label need — so the content scales down rather than overflow.
+            padding: const EdgeInsets.all(4),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
+                const SizedBox(height: 8),
+                Text(moodLabel(s, lv),
+                    maxLines: 1,
+                    style: Typo.meta(ar: s.rtl)
+                        .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
+              ]),
+            ),
           ),
         ),
       );
