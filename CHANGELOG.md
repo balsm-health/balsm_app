@@ -10,6 +10,14 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.3.1] - Unreleased
+
+### Fixed
+
+- Adding someone to your care team from your phone's contacts on Android
+  asked you to find and tap the same person twice. It asks once now.
+  ([#127](https://github.com/balsm-health/balsm_app/issues/127))
+
 ## [0.3.0] - Unreleased
 
 ### Changed
