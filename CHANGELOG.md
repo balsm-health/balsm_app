@@ -10,6 +10,15 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.3.1] - Unreleased
+
+### Fixed
+
+- Dropdown menus — medication frequency, duration and dose unit, the body
+  map's layer picker — open white, like the field they drop out of, instead
+  of the pale lilac Material gives an app that does not say otherwise.
+  ([#128](https://github.com/balsm-health/balsm_app/issues/128))
+
 ## [0.3.0] - Unreleased
 
 ### Changed
