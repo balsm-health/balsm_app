@@ -20,6 +20,11 @@ what changed and why it matters.
   way out was removing the account and all its data. Remove this account
   from this phone is still there, as a separate choice.
   ([#122](https://github.com/balsm-health/balsm_app/issues/122))
+- Home's latest readings keep blood pressure, glucose and oxygen after a
+  mood or pain check-in. Each reading now shows the newest value logged for
+  it; before, the card showed only the newest check-in, so logging mood
+  alone blanked the vitals.
+  ([#123](https://github.com/balsm-health/balsm_app/pull/123))
 
 ## [0.3.0] - Unreleased
 

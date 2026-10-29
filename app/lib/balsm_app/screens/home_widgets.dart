@@ -301,6 +301,42 @@ class _DashedRulePainter extends CustomPainter {
   bool shouldRepaint(_DashedRulePainter oldDelegate) => false;
 }
 
+/// The newest value of each reading on the home card, each taken from the
+/// most recent check-in that logged it. A check-in records only what the
+/// patient filled in, so a mood-only check-in must not blank the blood
+/// pressure logged an hour earlier.
+class LatestReadings {
+  const LatestReadings({this.systolic, this.diastolic, this.glucose, this.spo2, this.mood, this.pain});
+
+  /// [history] is newest first, as `checkInHistoryProvider` streams it.
+  factory LatestReadings.from(List<CheckIn> history) {
+    V? newest<V>(V? Function(CheckIn c) pick) {
+      for (final c in history) {
+        final v = pick(c);
+        if (v != null) return v;
+      }
+      return null;
+    }
+
+    final bp = newest((c) => c.vitals.systolic != null && c.vitals.diastolic != null ? c.vitals : null);
+    return LatestReadings(
+      systolic: bp?.systolic,
+      diastolic: bp?.diastolic,
+      glucose: newest((c) => c.vitals.glucoseFasting ?? c.vitals.glucosePostMeal ?? c.vitals.glucoseRandom),
+      spo2: newest((c) => c.vitals.spo2),
+      mood: newest((c) => c.mood),
+      pain: newest((c) => c.painLevel.isNone ? null : c.painLevel),
+    );
+  }
+
+  final int? systolic;
+  final int? diastolic;
+  final int? glucose;
+  final int? spo2;
+  final Mood? mood;
+  final PainLevel? pain;
+}
+
 /// `.h2-vitals` — the latest blood pressure large on top, then glucose,
 /// oxygen, mood and pain in a two-by-two grid. A reading not logged yet
 /// shows a dash; nothing here is a sample value.
