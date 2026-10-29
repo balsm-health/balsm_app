@@ -10,6 +10,14 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.5.1] - Unreleased
+
+### Fixed
+
+- Adding someone to your care team from your phone's contacts on Android
+  asked you to find and tap the same person twice. It asks once now.
+  ([#127](https://github.com/balsm-health/balsm_app/issues/127))
+
 ## [0.5.0] - Unreleased
 
 ### Added
@@ -40,9 +48,6 @@ what changed and why it matters.
 
 ### Fixed
 
-- Adding someone to your care team from your phone's contacts on Android
-  asked you to find and tap the same person twice. It asks once now.
-  ([#127](https://github.com/balsm-health/balsm_app/issues/127))
 - Service status in Profile shows whether Balsm's servers are working again:
   it always said the status was unknown, even when everything was up. It now
   speaks the app's language, so in Arabic it reads in Arabic instead of
