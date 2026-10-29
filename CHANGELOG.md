@@ -10,6 +10,16 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.2.4] - Unreleased
+
+### Fixed
+
+- On Android phones that use the Back / Home / Recents buttons, the bottom
+  tabs (Home, Map, +, Meds, Profile) sit fully above those buttons again.
+  Since Android 15 the app draws under them, and the tabs' labels were
+  partly hidden. iPhone and gesture navigation look the same as before.
+  ([#120](https://github.com/balsm-health/balsm_app/pull/120))
+
 ## [0.2.3] - Unreleased
 
 ### Fixed
