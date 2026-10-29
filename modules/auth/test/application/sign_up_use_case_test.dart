@@ -67,15 +67,33 @@ void main() {
   });
 
   group('requestEmailOtp', () {
-    test('success forwards email + country with the merged-entry purpose', () async {
-      // Was `register`, which the server refused for an address it already
-      // knew — and refusing told the caller the address was known.
+    test('success forwards email + country with the sign-up purpose', () async {
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.signUp)).thenAnswer((_) async {});
+
+      final r = await usecase.requestEmailOtp('a@b.com', 'EG');
+
+      expect(r.isSuccess, isTrue);
+      verify(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.signUp)).called(1);
+    });
+
+    test('a server without the sign-up purpose gets the merged-entry one', () async {
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.signUp))
+          .thenThrow(const AuthException(code: 'InvalidPurpose', message: 'x'));
       when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).thenAnswer((_) async {});
 
       final r = await usecase.requestEmailOtp('a@b.com', 'EG');
 
       expect(r.isSuccess, isTrue);
       verify(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.continueFlow)).called(1);
+    });
+
+    test('EmailRegistered maps to ConflictFailure', () async {
+      when(() => adapter.requestOtp('a@b.com', 'EG', purpose: OtpPurpose.signUp))
+          .thenThrow(const AuthException(code: 'EmailRegistered', message: 'x'));
+
+      final r = await usecase.requestEmailOtp('a@b.com', 'EG');
+
+      expect(r.error, isA<ConflictFailure>());
     });
   });
 

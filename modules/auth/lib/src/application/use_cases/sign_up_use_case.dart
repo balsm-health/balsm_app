@@ -33,15 +33,23 @@ class SignUpUseCase {
 
   /// Step 1 of email sign-up: request OTP.
   /// Returns [AppResult.success(null)] on success so the UI can navigate to
-  /// the OTP verification screen.
+  /// the OTP verification screen, and [ConflictFailure] when the server says
+  /// the address already has an account (only while it holds sign-up strict).
   Future<AppResult<void>> requestEmailOtp(
     String email,
     String countryCode,
   ) async {
     try {
-      await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.continueFlow);
+      try {
+        await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.signUp);
+      } on AuthException catch (e) {
+        if (e.code != 'InvalidPurpose') rethrow;
+        // A server from before `signup` existed: the same code, never strict.
+        await _adapter.requestOtp(email, countryCode, purpose: OtpPurpose.continueFlow);
+      }
       return AppResult.success(null);
     } on AuthException catch (e) {
+      if (e.code == 'EmailRegistered') return AppResult.failure(ConflictFailure(e.message));
       return AppResult.failure(NetworkFailure(e.message));
     } catch (e) {
       return AppResult.failure(const NetworkFailure());
