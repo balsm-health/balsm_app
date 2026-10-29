@@ -230,7 +230,7 @@ class ProfileScreen extends ConsumerWidget {
           // the app: back to Unlock, exactly as every cold start opens, with
           // nothing deleted (#122).
           Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, s.accountMode == AccountMode.deviceOnly ? 12 : 24),
+            padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, s.accountMode == AccountMode.deviceOnly ? 12 : 24),
             child: PButton(s.strings.profile.p_signout,
                 icon: LucideIcons.logOut,
                 variant: BtnVariant.secondary,
