@@ -18,7 +18,9 @@ what changed and why it matters.
   tabs (Home, Map, +, Meds, Profile) sit fully above those buttons again.
   Since Android 15 the app draws under them, and the tabs' labels were
   partly hidden. The grey band Android drew behind those buttons is gone
-  too, so the app runs to the bottom edge instead of looking raised. iPhone
+  too, so the app runs to the bottom edge instead of looking raised, and the
+  welcome screen no longer pushes the logo up under the status bar on
+  shorter phones such as the Galaxy A17. iPhone
   and gesture navigation look the same as before.
   ([#120](https://github.com/balsm-health/balsm_app/pull/120))
 

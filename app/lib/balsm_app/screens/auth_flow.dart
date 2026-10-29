@@ -129,6 +129,11 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // The design's 168px lockup fits a tall phone. Below 860 high (a Galaxy
+    // A17 is 832, less its status and navigation bars) the bottom-anchored
+    // column is taller than the space, scrolls up, and the logo ends up pinned
+    // under the status bar. A smaller lockup and a tighter gap give it room.
+    final short = MediaQuery.sizeOf(context).height < 860;
     return BalsmWelcomeBackground(
       child: SafeArea(
         child: ContentColumn(
@@ -149,8 +154,9 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(28, 0, 28, 36),
                   child: Column(children: [
-                    SvgPicture.asset(Assets.brand_logo_vertical, width: 168, height: 168, fit: BoxFit.contain),
-                    const SizedBox(height: 26),
+                    SvgPicture.asset(Assets.brand_logo_vertical,
+                        width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),
+                    SizedBox(height: short ? 18 : 26),
                     Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
                     const SizedBox(height: 14),
                     // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
