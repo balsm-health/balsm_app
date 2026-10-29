@@ -154,7 +154,7 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                 child: Padding(
                   // `.wbody { padding-bottom: 36px }`, trimmed on a short phone
                   // so the block sits down by the trust row, not high above it.
-                  padding: EdgeInsets.fromLTRB(28, 0, 28, short ? 20 : 36),
+                  padding: EdgeInsetsDirectional.fromSTEB(28, 0, 28, short ? 20 : 36),
                   child: Column(children: [
                     SvgPicture.asset(Assets.brand_logo_vertical,
                         width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),

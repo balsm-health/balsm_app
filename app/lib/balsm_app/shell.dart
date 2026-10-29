@@ -678,7 +678,7 @@ class _TabBar extends StatelessWidget {
         border: Border(top: BorderSide(color: T.border)),
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: tabBarBottomPadding(MediaQuery.paddingOf(context).bottom)),
+        padding: EdgeInsetsDirectional.only(bottom: tabBarBottomPadding(MediaQuery.paddingOf(context).bottom)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
           _Tab(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
