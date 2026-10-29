@@ -21,7 +21,7 @@ import 'report_flow.dart';
 /// Opens the quick-log sheet (quicklog.jsx `QuickLogSheet`) — what the "+"
 /// action in the tab bar / nav rail resolves to. Search + grouped vitals /
 /// wellbeing / per-symptom rows, plus the full check-in CTA.
-void showQuickLog(BuildContext context) {
+void showQuickLog(BuildContext context, {String source = ProductSource.tabBar}) {
   final s = AppScope.of(context);
   showAppSheet<void>(
     context,
@@ -34,6 +34,7 @@ void showQuickLog(BuildContext context) {
     textDirection: s.dir,
     builder: (sheetContext) => _QuickLogSheet(
       s: s,
+      source: source,
       onFullCheckin: () {
         Navigator.pop(sheetContext);
         openCheckin(context);
@@ -114,7 +115,8 @@ List<_QlGroup> _groupItems(List<_QlItem> items) =>
     items.splitBetween((a, b) => a.kind != b.kind).map((run) => _QlGroup(kind: run.first.kind, items: run)).toList();
 
 class _QuickLogSheet extends ConsumerStatefulWidget {
-  const _QuickLogSheet({required this.s, required this.onFullCheckin, required this.onAddRecord});
+  const _QuickLogSheet({required this.s, required this.source, required this.onFullCheckin, required this.onAddRecord});
+  final String source;
   final PatientAppState s;
   final VoidCallback onFullCheckin;
   final ValueChanged<RecordType> onAddRecord;
@@ -166,11 +168,42 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   @override
   void initState() {
     super.initState();
-    searchCtrl = TextEditingController()..addListener(() => setState(() {}));
+    searchCtrl = TextEditingController()..addListener(_onSearch);
+    _track(ProductEvent.quickLogOpened, {'source': widget.source});
+  }
+
+  // ── Product analytics (kinds of actions only — see ProductEvent) ──
+  AnalyticsLogger get _analytics => ref.read(analyticsLoggerProvider);
+  void _track(String event, [Map<String, Object?>? props]) => _analytics.logEvent(event, props: props);
+
+  /// When the open entry was opened, for `duration_ms` on save.
+  DateTime? _flowOpenedAt;
+
+  /// The open entry's quick-log group, never which metric or symptom.
+  String? get _category {
+    if (activeSymptom != null) return ProductCategory.symptom;
+    final m = active;
+    if (m == null) return null;
+    return _metricStyles[m]!.kind == _QlKind.wellbeing ? ProductCategory.wellbeing : ProductCategory.vital;
+  }
+
+  /// Reported once typing settles, so a search is one event, not one per key.
+  Timer? _searchTimer;
+  void _onSearch() {
+    setState(() {});
+    _searchTimer?.cancel();
+    final q = searchCtrl.text.trim().toLowerCase();
+    if (q.isEmpty) return;
+    _searchTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      final rows = _allItems().where((it) => it.label.toLowerCase().contains(q)).length;
+      _track(ProductEvent.quickLogSearched, {'result': rows == 0 ? 'empty' : 'hits', 'count': rows});
+    });
   }
 
   @override
   void dispose() {
+    _searchTimer?.cancel();
     _toastTimer?.cancel();
     searchCtrl.dispose();
     super.dispose();
@@ -188,6 +221,8 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   /// it rather than dropping the capture.
   Future<void> _save(MetricLogCapture capture) async {
     if (saving) return;
+    final savedCategory = _category;
+    final openedAt = _flowOpenedAt;
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
     setState(() => saving = true);
@@ -227,6 +262,10 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       saving = false;
       _openList();
       _toastValue = capture.summary;
+      _track(ProductEvent.quickLogSaved, {
+        'category': savedCategory,
+        if (openedAt != null) 'duration_ms': DateTime.now().difference(openedAt).inMilliseconds,
+      });
     });
     _toastTimer?.cancel();
     _toastTimer = Timer(_toastFor, () {
@@ -272,6 +311,10 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
 
   void _discard() {
     final leave = _confirm;
+    _track(ProductEvent.quickLogDiscarded, {
+      'category': _category,
+      'action': leave == _Leave.close ? 'close' : 'back',
+    });
     setState(_openList);
     if (leave == _Leave.close) Navigator.pop(context);
   }
@@ -503,7 +546,10 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Pressable(
-        onTap: widget.onFullCheckin,
+        onTap: () {
+          _track(ProductEvent.quickLogFullCheckInTapped);
+          widget.onFullCheckin();
+        },
         scale: 0.985,
         child: Container(
           clipBehavior: Clip.antiAlias,
@@ -598,13 +644,17 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
 
   Widget _itemRow(_QlItem item, {required bool last}) {
     return PressHighlight(
-      onTap: () => setState(() {
-        if (item.symptom != null) {
-          activeSymptom = item.symptom;
-        } else {
-          active = item.metric;
-        }
-      }),
+      onTap: () {
+        setState(() {
+          if (item.symptom != null) {
+            activeSymptom = item.symptom;
+          } else {
+            active = item.metric;
+          }
+          _flowOpenedAt = DateTime.now();
+        });
+        _track(ProductEvent.quickLogItemOpened, {'category': _category});
+      },
       radius: last ? T.rLg : 0,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
@@ -651,7 +701,10 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   Widget _recordShortcut(RecordType type) {
     final style = recordTypeStyle(type);
     return PressHighlight(
-      onTap: () => widget.onAddRecord(type),
+      onTap: () {
+        _track(ProductEvent.quickLogDocumentTapped, {'type': type.name});
+        widget.onAddRecord(type);
+      },
       radius: T.rLg,
       border: Border.all(color: T.border, width: 1.5),
       child: Padding(

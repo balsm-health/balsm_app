@@ -163,6 +163,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final device = await ref.read(deviceLocationProvider.future);
     if (!mounted) return;
     final loc = device.position;
+    ref.read(analyticsLoggerProvider).logEvent(ProductEvent.nearbyLocate, props: {
+      'result': switch (device.issue) {
+        null => ProductLocateResult.found,
+        DeviceLocationIssue.serviceOff => ProductLocateResult.serviceOff,
+        DeviceLocationIssue.denied => ProductLocateResult.denied,
+        DeviceLocationIssue.deniedForever => ProductLocateResult.deniedForever,
+        DeviceLocationIssue.unavailable => ProductLocateResult.unavailable,
+      },
+    });
     if (loc == null) {
       _explainNoLocation(device.issue);
       return;

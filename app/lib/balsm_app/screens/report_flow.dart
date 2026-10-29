@@ -92,6 +92,31 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   List<String> _steps = const [];
 
   PatientAppState get s => widget.s;
+
+  // ── Product analytics: positions and counts only, never metric ids ──
+  // Read once up front: `ref` cannot be used in dispose, where an abandoned
+  // check-in is reported.
+  late final AnalyticsLogger _analytics = ref.read(analyticsLoggerProvider);
+  final DateTime _openedAt = DateTime.now();
+  bool _startLogged = false;
+
+  void _trackStep() =>
+      _analytics.logEvent(ProductEvent.checkInStepViewed, props: {'step': step, 'count': _steps.length});
+
+  @override
+  void initState() {
+    super.initState();
+    _analytics; // resolve while ref is usable
+  }
+
+  @override
+  void dispose() {
+    if (_startLogged && !submitted) {
+      _analytics.logEvent(ProductEvent.checkInAbandoned, props: {'step': step, 'count': _steps.length});
+    }
+    super.dispose();
+  }
+
   String get cur => (step >= 0 && step < _steps.length) ? _steps[step] : '';
 
   bool get canNext {
@@ -122,6 +147,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   void next() {
     if (step < _steps.length - 1) {
       setState(() => step++);
+      _trackStep();
     } else {
       _finish();
     }
@@ -130,6 +156,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   void back() {
     if (step > 0) {
       setState(() => step--);
+      _trackStep();
     } else {
       Navigator.pop(context);
     }
@@ -250,6 +277,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       saving = false;
       submitted = true;
     });
+    _analytics.logEvent(ProductEvent.checkInCompleted, props: {
+      'count': _steps.length,
+      'duration_ms': DateTime.now().difference(_openedAt).inMilliseconds,
+    });
   }
 
   void _close(AppTab tab) {
@@ -271,6 +302,11 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       );
     }
     if (step >= _steps.length) step = _steps.isEmpty ? 0 : _steps.length - 1;
+    if (!_startLogged && _steps.isNotEmpty) {
+      _startLogged = true;
+      _analytics.logEvent(ProductEvent.checkInStarted, props: {'count': _steps.length});
+      _trackStep();
+    }
 
     if (submitted) return _Summary(state: this);
 

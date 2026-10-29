@@ -10,6 +10,19 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.4.3] - Unreleased
+
+### Added
+
+- Product analytics follow the main journeys, so we can see which features
+  are used, where people drop off and what they abandon: the quick-log
+  sheet (opened, entry opened, saved, discarded, searched, document and
+  full check-in shortcuts), the full check-in (started, each step, completed,
+  abandoned) and Nearby's locate button. Events say what kind of thing
+  happened (a vital, a symptom), never which reading, symptom or search
+  text, and they still respect the analytics switch in Privacy & data.
+  ([#135](https://github.com/balsm-health/balsm_app/pull/135))
+
 ## [0.4.2] - Unreleased
 
 ### Fixed

@@ -73,6 +73,7 @@ export 'src/localization/localization_util.dart';
 export 'src/localization/country_registry.dart';
 export 'src/crash/sentry_init.dart';
 export 'src/telemetry/analytics_logger.dart';
+export 'src/telemetry/product_events.dart';
 export 'src/telemetry/allowlist.dart';
 export 'src/telemetry/telemetry_scrubber.dart';
 export 'src/telemetry/sentry_analytics_logger.dart';
