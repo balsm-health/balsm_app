@@ -521,15 +521,7 @@ class _Summary extends StatelessWidget {
                 const SizedBox(height: 18),
                 Text(s.strings.common.saved_t, style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
-                    const SizedBox(width: 8),
-                    Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                  ]),
-                ),
+                SavedLocallyNote(s: s),
               ]),
             )),
             Padding(
@@ -595,6 +587,37 @@ class _Summary extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// The "saved on this device" pill under the check-in's closing tick.
+///
+/// Its own widget so the overflow it used to cause can be pumped on its own:
+/// the screen around it needs a half-finished check-in to reach.
+///
+/// The row is [MainAxisSize.min] so the pill hugs its label rather than
+/// stretching across the screen, and the label is [Flexible] so that when the
+/// label is wider than the screen — "Saved locally. Will sync when you
+/// reconnect." wants more than the ~261pt a 360pt phone leaves it, and the
+/// Arabic more again — the pill wraps instead of running off the right edge.
+/// Without the Flexible the row asked for the full single-line width and the
+/// hug became an overflow.
+class SavedLocallyNote extends StatelessWidget {
+  const SavedLocallyNote({super.key, required this.s});
+
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          ),
+        ]),
+      );
 }
 
 (IconData, PillKind) _summaryIcon(String id) {

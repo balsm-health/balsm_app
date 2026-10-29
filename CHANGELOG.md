@@ -10,6 +10,15 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.3.1] - Unreleased
+
+### Fixed
+
+- On the screen that closes a check-in, the grey "saved on this device"
+  note no longer runs off the right edge of the phone. It wraps onto a
+  second line instead, in both languages and at every text size.
+  ([#129](https://github.com/balsm-health/balsm_app/issues/129))
+
 ## [0.3.0] - Unreleased
 
 ### Changed
