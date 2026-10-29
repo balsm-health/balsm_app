@@ -10,6 +10,17 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.6.0] - Unreleased
+
+### Added
+
+- Short in-app surveys can ask how a feature felt, using taps only:
+  thumbs, ratings and fixed answers. Balsm refuses any survey that asks for
+  typed text (an open question, an "Other: ___" choice or a link), so no
+  survey can collect health details, and shows none while analytics is
+  switched off in Privacy & data.
+  ([#136](https://github.com/balsm-health/balsm_app/pull/136))
+
 ## [0.5.0] - Unreleased
 
 ### Added

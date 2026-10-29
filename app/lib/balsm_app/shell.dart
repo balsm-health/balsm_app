@@ -69,10 +69,10 @@ void registerExtensionOnce(String name, developer.ServiceExtensionHandler handle
 }
 
 class PatientApp extends ConsumerStatefulWidget {
-  const PatientApp({super.key, required this.navObserver});
+  const PatientApp({super.key, required this.navObservers});
 
   /// Logs a `screen_view` analytics action on each navigation.
-  final NavigatorObserver navObserver;
+  final List<NavigatorObserver> navObservers;
 
   @override
   ConsumerState<PatientApp> createState() => _PatientAppState();
@@ -336,7 +336,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
         builder: (context) => MaterialApp(
           debugShowCheckedModeBanner: false,
           navigatorKey: _navKey,
-          navigatorObservers: [widget.navObserver],
+          navigatorObservers: widget.navObservers,
           // G2: wire Flutter's Material/Cupertino/widget localizations so date
           // pickers, semantics and default tooltips localize. The app's own
           // string system (i69n `tr()`) is unchanged; these delegates only
