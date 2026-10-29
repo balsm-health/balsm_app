@@ -482,6 +482,9 @@
     "hero_disclaimer": "Your own self-report — not a clinical measurement",
     "care_team_sub": "Doctors, pharmacies and caregivers",
     "care_team_n": "providers following your care",
+    "sc_providers": "providers",
+    "sc_places": "places nearby",
+    "sc_records": "Records",
     "viewing_member(String name)": "$name is selected",
     "viewing_own_data": "Their record isn't on this device yet — you're still seeing your own.",
     "viewing_switch_back": "Switch back"

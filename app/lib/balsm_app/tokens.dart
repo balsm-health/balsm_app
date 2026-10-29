@@ -119,6 +119,12 @@ class T {
   static const r2xl = 28.0;
   static const rPill = 999.0;
 
+  // Home v2 (home-v2.css): the check-in card, the shortcut tiles and the
+  // shortcut icon squares.
+  static const rHeroV2 = 22.0;
+  static const rTileV2 = 16.0;
+  static const rIconV2 = 11.0;
+
   // ── Layout ─────────────────────────────────────────────────
   /// `--content-max` as the app body sets it at expanded and up (app.css
   /// `@container app (min-width: 1024px) .app-body`): the DS's 768 reading
@@ -137,6 +143,23 @@ class T {
     BoxShadow(color: Color(0x1414202B), blurRadius: 20, offset: Offset(0, 8)),
     BoxShadow(color: Color(0x0A14202B), blurRadius: 6, offset: Offset(0, 2)),
   ];
+
+  // ── Home v2 (home-v2.css) ──────────────────────────────────
+  /// `--v2-line`: the dashed rule above the week strip.
+  static const lineV2 = Color(0x141F2D3D); // rgba(31,45,61,.08)
+  /// `--v2-line-2`: card borders and the hairlines between vitals.
+  static const lineV2Soft = Color(0x0D1F2D3D); // rgba(31,45,61,.05)
+  /// `--v2-card-sh`
+  static const List<BoxShadow> shadowCardV2 = [
+    BoxShadow(color: Color(0x0A14202B), blurRadius: 2, offset: Offset(0, 1)), // rgba(20,32,43,.04)
+    BoxShadow(color: Color(0x0B14202B), blurRadius: 24, offset: Offset(0, 8)), // rgba(20,32,43,.045)
+  ];
+
+  /// `.h2-streak` ink on [warningBg].
+  static const streakInk = Color(0xFF7A5A00);
+
+  /// `.h2-vfoot`: a reading above its range.
+  static const warnInk = Color(0xFF9A5A00);
 
   // App accent shadow (blue) — `--app-accent-shadow`
   static const List<BoxShadow> accentShadow = [

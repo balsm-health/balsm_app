@@ -1556,6 +1556,9 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get hero_disclaimer => "Your own self-report — not a clinical measurement";
   String get care_team_sub => "Doctors, pharmacies and caregivers";
   String get care_team_n => "providers following your care";
+  String get sc_providers => "providers";
+  String get sc_places => "places nearby";
+  String get sc_records => "Records";
   String viewing_member(String name) => "$name is selected";
   String get viewing_own_data => "Their record isn't on this device yet — you're still seeing your own.";
   String get viewing_switch_back => "Switch back";
@@ -1599,6 +1602,12 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return care_team_sub;
       case 'care_team_n':
         return care_team_n;
+      case 'sc_providers':
+        return sc_providers;
+      case 'sc_places':
+        return sc_places;
+      case 'sc_records':
+        return sc_records;
       case 'viewing_member':
         return viewing_member;
       case 'viewing_own_data':

@@ -28,10 +28,12 @@ import 'care_team_screen.dart';
 /// Ported onto real providers: the greeting name comes from the account
 /// summary (not the sample family-account data), and the status cards reflect
 /// real on-device state — onboarding nudges (claim handle, set up the
-/// emergency card, add a first medication). Layout follows the Claude Design
-/// HomeScreen: travel banner, check-in hero, streak, nearby/records shortcuts,
-/// latest readings (including SpO₂ when logged), then recent reports that open
-/// the day detail. Appointments and today's meds live on their own tabs.
+/// emergency card, add a first medication). Layout follows Claude Design
+/// home-v2.jsx HomeScreenV2 (with the v1 app bar): travel banner, the check-in
+/// card with streak and week strip, latest readings, three shortcut tiles
+/// (care team, nearby, records), then recent reports that open the day
+/// detail. From 840 wide it is two columns. Appointments and today's meds
+/// live on their own tabs.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -52,61 +54,84 @@ class HomeScreen extends ConsumerWidget {
     const avatarColor = T.hueAqua;
 
     return ContentColumn(
-      maxWidth: 720,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const PadTop(),
+      maxWidth: T.contentMax,
+      child: LayoutBuilder(builder: (context, box) {
+        // `.hv2 { --g }` — 16 on a phone, 24 from 600; two columns from 840.
+        final g = box.maxWidth >= 600 ? 24.0 : 16.0;
+        final wide = box.maxWidth >= 840;
+        return ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const PadTop(),
 
-          // App bar: avatar (account switcher) + greeting + bell.
-          AppBarRow(children: [
-            _AvatarButton(
-              initials: accountInitials(displayName),
-              color: avatarColor,
-              showBadge: s.extraFamily.isNotEmpty,
-              onTap: () => showAccountSwitcher(context),
+            // App bar: avatar (account switcher) + greeting. The design keeps
+            // the v1 header (`BALSM_V1_HEADER`).
+            AppBarRow(children: [
+              _AvatarButton(
+                initials: accountInitials(displayName),
+                color: avatarColor,
+                showBadge: s.extraFamily.isNotEmpty,
+                onTap: () => showAccountSwitcher(context),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
+                  if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
+                ]),
+              ),
+              // Bell hidden: it had an empty onTap, so it announced itself to a
+              // screen reader as a working button and then did nothing. Restore
+              // it with the screen it is meant to open.
+            ]),
+
+            // `UX Enhancement Screens.html` — "Household · active-account
+            // accent": the design keeps whose-data-is-this permanently visible.
+            // Here it says the true thing: the member is selected, but their
+            // record is not on this device yet, so this is still your own.
+            if (member != null) _ViewingBanner(member: member),
+
+            const AwayBanner(),
+
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: g),
+              child: wide
+                  ? const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(
+                        flex: 115,
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                          _CheckInSection(),
+                          _NudgeSection(),
+                          _LatestMetrics(),
+                        ]),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        flex: 100,
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                          _Shortcuts(row: true),
+                          _RecentReports(),
+                        ]),
+                      ),
+                    ])
+                  : const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      _CheckInSection(),
+                      // Onboarding nudges — driven by real P001 providers
+                      // (handle / emergency card / first medication). Each
+                      // stays hidden until its provider resolves, so
+                      // signed-out never flashes a wrong nudge.
+                      _NudgeSection(),
+                      _LatestMetrics(),
+                      SizedBox(height: 10),
+                      _Shortcuts(),
+                      _RecentReports(),
+                    ]),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
-                if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-              ]),
-            ),
-            // Bell hidden: it had an empty onTap, so it announced itself to a
-            // screen reader as a working button and then did nothing. Restore
-            // it with the screen it is meant to open.
-          ]),
 
-          // `UX Enhancement Screens.html` — "Household · active-account
-          // accent": the design keeps whose-data-is-this permanently visible.
-          // Here it says the true thing: the member is selected, but their
-          // record is not on this device yet, so this is still your own.
-          if (member != null) _ViewingBanner(member: member),
-
-          const AwayBanner(),
-
-          // Daily check-in hero — the primary action on this screen.
-          const _CheckInSection(),
-
-          // Onboarding nudges — driven by real P001 providers (handle /
-          // emergency card / first medication). Each stays hidden until its
-          // provider resolves, so signed-out never flashes a wrong nudge.
-          const _NudgeSection(),
-
-          // Care team, nearby care and records shortcuts, in the design's order.
-          const _CareTeamShortcut(),
-          const _NearbyShortcut(),
-          const _RecordsShortcut(),
-
-          // Latest readings — only once something has been logged.
-          const _LatestMetrics(),
-
-          const _RecentReports(),
-
-          const SizedBox(height: 24),
-        ],
-      ),
+            const SizedBox(height: 28),
+          ],
+        );
+      }),
     );
   }
 }
@@ -238,7 +263,7 @@ class _Shortcut extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return PCard(
-      margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      margin: const EdgeInsets.only(top: 14),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       onTap: onTap,
       child: Row(children: [
@@ -257,7 +282,8 @@ class _Shortcut extends StatelessWidget {
   }
 }
 
-/// Check-in hero + streak, both driven by real check-in history.
+/// The check-in card: today's state, the streak and the last seven days, all
+/// from real check-in history.
 class _CheckInSection extends ConsumerWidget {
   const _CheckInSection();
 
@@ -265,84 +291,77 @@ class _CheckInSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
-    final done = todayCheckIn(history) != null;
-    final streak = checkInStreak(history);
-    return Column(children: [
-      HomeHero(
-        done: done,
-        onStart: () => openCheckin(context),
-        onReview: () => s.setTab(AppTab.trends),
+    return HomeCheckInCard(
+      done: todayCheckIn(history) != null,
+      streak: checkInStreak(history),
+      week: checkInDays(history, 7),
+      onStart: () => openCheckin(context),
+      onReview: () => s.setTab(AppTab.trends),
+    );
+  }
+}
+
+/// `.h2-shortcuts` — care team, nearby care and records, each with its real
+/// count: the patient's own care team, the directory, their documents.
+class _Shortcuts extends ConsumerWidget {
+  const _Shortcuts({this.row = false});
+
+  /// List rows for the two-column home instead of three tiles across.
+  final bool row;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final team = (ref.watch(careTeamProvider).valueOrNull ?? const <CareProvider>[]).length;
+    final nearby = (ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[]).length;
+    final records = (ref.watch(recordListProvider).valueOrNull ?? const <RecordDocument>[]).length;
+    final tiles = [
+      HomeShortcutTile(
+        icon: LucideIcons.stethoscope,
+        iconBg: T.hueMint50,
+        iconFg: T.hueMint600,
+        label: s.strings.profile.p_care,
+        count: team,
+        unit: s.strings.home.sc_providers,
+        onTap: () => openCareTeam(context),
+        row: row,
       ),
-      // A streak of zero is not an achievement worth a card.
-      if (streak > 0) HomeStreak(days: streak, checkedLast7: checkInsLastDays(history, 7)),
-    ]);
-  }
-}
-
-/// Care-team shortcut (home.jsx "Care team shortcut"). The prototype counts
-/// its seeded sample doctors under the title; this counts the patient's own
-/// on-device care team, and falls back to naming what the screen is for while
-/// that team is still empty.
-class _CareTeamShortcut extends ConsumerWidget {
-  const _CareTeamShortcut();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = AppScope.of(context);
-    final count = (ref.watch(careTeamProvider).valueOrNull ?? const <CareProvider>[]).length;
-    return HomeShortcut(
-      icon: LucideIcons.stethoscope,
-      iconBg: T.hueMint50,
-      iconFg: T.hueMint,
-      title: s.strings.profile.p_care,
-      // The design counts its seeded roster; count the patient's real team,
-      // and say what the screen is for rather than showing them a zero.
-      subtitle: count == 0 ? s.strings.home.care_team_sub : '$count ${s.strings.home.care_team_n}',
-      onTap: () => openCareTeam(context),
+      HomeShortcutTile(
+        icon: LucideIcons.mapPin,
+        iconBg: T.hueBlue50,
+        iconFg: T.hueBlue,
+        label: s.strings.care.map_nearby,
+        count: nearby,
+        unit: s.strings.home.sc_places,
+        onTap: () => s.setTab(AppTab.map),
+        row: row,
+      ),
+      HomeShortcutTile(
+        icon: LucideIcons.folderHeart,
+        iconBg: T.hueViolet50,
+        iconFg: T.hueViolet,
+        label: s.strings.home.sc_records,
+        count: records,
+        unit: s.strings.records.rec_documents,
+        onTap: () => s.setTab(AppTab.records),
+        row: row,
+      ),
+    ];
+    if (row) {
+      return Column(children: [
+        for (final (i, t) in tiles.indexed) ...[if (i > 0) const SizedBox(height: 8), t],
+      ]);
+    }
+    return IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (final (i, t) in tiles.indexed) ...[if (i > 0) const SizedBox(width: 8), Expanded(child: t)],
+      ]),
     );
   }
 }
 
-/// Nearby-care shortcut, with a live directory count.
-class _NearbyShortcut extends ConsumerWidget {
-  const _NearbyShortcut();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = AppScope.of(context);
-    final count = (ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[]).length;
-    return HomeShortcut(
-      icon: LucideIcons.mapPin,
-      iconBg: T.hueBlue50,
-      iconFg: T.hueBlue,
-      title: s.strings.care.map_nearby,
-      subtitle: '$count ${s.strings.care.map_sub}',
-      onTap: () => s.setTab(AppTab.map),
-    );
-  }
-}
-
-/// Records shortcut, with a live document count.
-class _RecordsShortcut extends ConsumerWidget {
-  const _RecordsShortcut();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = AppScope.of(context);
-    final count = (ref.watch(recordListProvider).valueOrNull ?? const <RecordDocument>[]).length;
-    return HomeShortcut(
-      icon: LucideIcons.folderHeart,
-      iconBg: T.hueViolet50,
-      iconFg: T.hueViolet,
-      title: s.strings.records.records,
-      subtitle: '$count ${s.strings.records.rec_documents}',
-      onTap: () => s.setTab(AppTab.records),
-    );
-  }
-}
-
-/// `.metric-grid` — the most recent reading of each tracked vital. Hidden
-/// until at least one check-in exists, so a new patient sees no empty tiles.
+/// `.h2-vitals` — the most recent check-in's readings. Hidden until at least
+/// one check-in exists, so a new patient sees no empty card.
 class _LatestMetrics extends ConsumerWidget {
   const _LatestMetrics();
 
@@ -354,53 +373,19 @@ class _LatestMetrics extends ConsumerWidget {
     final latest = history.first;
     final v = latest.vitals;
     final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
+    final hasBp = v.systolic != null && v.diastolic != null;
 
-    final tiles = <Widget>[
-      if (v.systolic != null && v.diastolic != null)
-        MetricTile(
-          icon: LucideIcons.activity,
-          label: s.strings.profile.m_bp,
-          value: '${v.systolic}/${v.diastolic}',
-          unit: s.strings.checkin.unit_bp,
-          foot: (v.systolic! >= 130 || v.diastolic! >= 85) ? s.strings.checkin.bp_high : s.strings.checkin.bp_normal,
-          footTone: v.systolic! >= 130 || v.diastolic! >= 85,
-        ),
-      if (glucose != null)
-        MetricTile(
-          icon: LucideIcons.droplet,
-          label: s.strings.profile.m_glucose,
-          value: '$glucose',
-          unit: s.strings.checkin.unit_glu,
-          foot: glucose >= 140 ? s.strings.checkin.bp_high : s.strings.checkin.bp_normal,
-          footTone: glucose >= 140,
-        ),
-      if (v.spo2 != null)
-        MetricTile(
-          icon: LucideIcons.wind,
-          label: s.strings.profile.m_o2,
-          value: '${v.spo2}',
-          unit: s.strings.checkin.unit_spo2,
-        ),
-      if (latest.mood != null)
-        MetricTile(
-          icon: LucideIcons.smile,
-          label: s.strings.profile.m_mood,
-          value: moodLabel(s, latest.mood!.score),
-        ),
-      if (latest.painLevel.value > 0)
-        MetricTile(
-          icon: LucideIcons.thermometer,
-          label: s.strings.profile.m_pain,
-          value: '${latest.painLevel.value}/10',
-        ),
-    ];
-    if (tiles.isEmpty) return const SizedBox.shrink();
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      RowHead(s.strings.checkin.latest, ar: s.rtl),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: MetricGrid(tiles: tiles),
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      HomeSectionHead(s.strings.checkin.latest,
+          action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends)),
+      HomeVitalsCard(
+        bp: hasBp ? '${v.systolic}/${v.diastolic}' : null,
+        bpHigh: hasBp && (v.systolic! >= 130 || v.diastolic! >= 85),
+        glucose: glucose?.toString(),
+        glucoseHigh: glucose != null && glucose >= 140,
+        spo2: v.spo2?.toString(),
+        mood: latest.mood == null ? null : moodLabel(s, latest.mood!.score),
+        pain: latest.painLevel.value > 0 ? '${latest.painLevel.value}/10' : null,
       ),
     ]);
   }
@@ -417,11 +402,10 @@ class _RecentReports extends ConsumerWidget {
     final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
     if (history.isEmpty) return const SizedBox.shrink();
     final recent = history.take(3).toList();
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      RowHead(s.strings.common.recent,
-          action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends), ar: s.rtl),
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      HomeSectionHead(s.strings.common.recent,
+          action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends)),
       PCard(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: EdgeInsets.zero,
         child: Column(
           children: recent.indexed
