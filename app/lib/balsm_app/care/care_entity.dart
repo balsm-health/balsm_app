@@ -193,23 +193,58 @@ final LatLngBounds kCareCoverage = LatLngBounds(
 /// or permission is denied — the directory still returns nearby-to-Cairo data.
 const kCareFallbackCenter = LatLng(30.0444, 31.2357);
 
-/// The user's current position for directory queries, or [kCareFallbackCenter]
-/// when location services/permission are unavailable. Never throws.
-final userLatLngProvider = FutureProvider.autoDispose<LatLng>((ref) async {
+/// Why the device position is missing.
+enum DeviceLocationIssue {
+  /// Location is switched off for the whole phone.
+  serviceOff,
+
+  /// Balsm was refused; asking again may still show the prompt.
+  denied,
+
+  /// Refused for good — only the system settings can change it.
+  deniedForever,
+
+  /// Permitted, but no fix came back in time.
+  unavailable,
+}
+
+/// Where the device is, or why that is unknown. Exactly one is set.
+typedef DeviceLocation = ({LatLng? position, DeviceLocationIssue? issue});
+
+/// The device's real position. Never a stand-in: the map's "you are here" dot
+/// and the recenter button read this, and drawing the Cairo fallback as the
+/// user's position put them somewhere they were not. Never throws.
+final deviceLocationProvider = FutureProvider.autoDispose<DeviceLocation>((ref) async {
   try {
-    if (await Geolocator.isLocationServiceEnabled()) {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.always || perm == LocationPermission.whileInUse) {
-        final pos = await Geolocator.getCurrentPosition();
-        return LatLng(pos.latitude, pos.longitude);
-      }
+    if (!await Geolocator.isLocationServiceEnabled()) return (position: null, issue: DeviceLocationIssue.serviceOff);
+    var perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
+    if (perm == LocationPermission.deniedForever) return (position: null, issue: DeviceLocationIssue.deniedForever);
+    if (perm != LocationPermission.always && perm != LocationPermission.whileInUse) {
+      return (position: null, issue: DeviceLocationIssue.denied);
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 15)),
+      );
+      return (position: LatLng(pos.latitude, pos.longitude), issue: null);
+    } catch (_) {
+      // No fresh fix (indoors, GPS cold): the last known one beats nothing.
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) return (position: LatLng(last.latitude, last.longitude), issue: null);
     }
   } catch (_) {
-    // Fall through to the market-center fallback.
+    // Fall through.
   }
-  return kCareFallbackCenter;
+  return (position: null, issue: DeviceLocationIssue.unavailable);
 });
+
+/// The center for directory queries: the device position, or
+/// [kCareFallbackCenter] when it is unknown so the directory still returns
+/// something. A search center only — never show it as the user's position.
+final userLatLngProvider = FutureProvider.autoDispose<LatLng>(
+  (ref) async => (await ref.watch(deviceLocationProvider.future)).position ?? kCareFallbackCenter,
+);
 
 /// Default search radius. The directory holds ~19k Egyptian places, so an
 /// unbounded query would return the entire country distance-sorted — the server

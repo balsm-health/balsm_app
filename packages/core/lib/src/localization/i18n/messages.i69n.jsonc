@@ -1,6 +1,19 @@
 {
   "_i69n": "nothrow",
   "_i69n_language": "en",
+  "status": {
+    "title": "Service status",
+    "operational": "All systems operational",
+    "degraded": "Degraded performance",
+    "down": "Service disruption",
+    "unknown": "Status unknown",
+    "incidents": "Incidents",
+    "no_incidents": "No incidents",
+    "incident": "Incident",
+    "unavailable": "Status unavailable",
+    "unavailable_body": "We could not reach the status service. If you need help, contact support below.",
+    "need_help": "Need help?"
+  },
   "common": {
     "continue_": "Continue",
     "back": "Back",

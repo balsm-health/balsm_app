@@ -627,6 +627,7 @@ class SavedLocallyNote extends StatelessWidget {
   if (metric == CheckInMetric.glucose) return (LucideIcons.droplet, PillKind.success);
   if (metric == CheckInMetric.weight) return (LucideIcons.scale, PillKind.info);
   if (metric == CheckInMetric.spo2) return (LucideIcons.wind, PillKind.info);
+  if (metric == CheckInMetric.heartRate) return (LucideIcons.heartPulse, PillKind.violet);
   if (metric == CheckInMetric.pain) return (LucideIcons.zap, PillKind.warn);
   if (metric == CheckInMetric.symptoms) return (LucideIcons.stethoscope, PillKind.neutral);
   return (LucideIcons.activity, PillKind.neutral);
@@ -639,6 +640,7 @@ String _summaryLabel(PatientAppState s, String id) {
   if (metric == CheckInMetric.glucose) return s.strings.profile.m_glucose;
   if (metric == CheckInMetric.weight) return s.strings.profile.m_weight;
   if (metric == CheckInMetric.spo2) return s.strings.profile.m_o2;
+  if (metric == CheckInMetric.heartRate) return s.strings.profile.m_pulse;
   if (metric == CheckInMetric.pain) return s.strings.profile.m_pain;
   if (metric == CheckInMetric.symptoms) return s.strings.checkin.symptoms;
   return id;

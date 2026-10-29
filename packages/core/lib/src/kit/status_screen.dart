@@ -1,3 +1,5 @@
+import '../localization/i18n/messages.i69n.dart';
+import '../localization/i18n/messages_ar.i69n.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -108,6 +110,8 @@ class ServiceHealth {
   /// Tolerant parser for whatever the backend returns. Accepts a Map with a
   /// `status`/`state`/`health` field and an optional `incidents` list.
   factory ServiceHealth.fromJson(dynamic json) {
+    // The API wraps every body in `{ "data": … }`; read inside it.
+    if (json is Map && json['data'] is Map) return ServiceHealth.fromJson(json['data']);
     if (json is Map) {
       final rawStatus = (json['status'] ?? json['state'] ?? json['health'])?.toString();
       final level = _levelFrom(rawStatus);
@@ -160,7 +164,7 @@ class StatusScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: BalsmColors.cream50,
       appBar: AppBar(
-        title: const Text('Service status'),
+        title: Text(_msgs(context).status.title),
         backgroundColor: BalsmColors.cream50,
         foregroundColor: BalsmColors.ink900,
         elevation: 0,
@@ -242,7 +246,7 @@ class _HealthView extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  health.label,
+                  _levelLabel(_msgs(context), health.level),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -254,8 +258,8 @@ class _HealthView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 28),
-        const Text(
-          'Incidents',
+        Text(
+          _msgs(context).status.incidents,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -265,8 +269,8 @@ class _HealthView extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (health.incidents.isEmpty)
-          const Text(
-            'No incidents',
+          Text(
+            _msgs(context).status.no_incidents,
             style: TextStyle(fontSize: 15, color: BalsmColors.fg2),
           )
         else
@@ -346,12 +350,12 @@ class _UnavailableView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               Icon(Icons.cloud_off_outlined, color: BalsmColors.ink500, size: 26),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Status unavailable',
+                  _msgs(context).status.unavailable,
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -362,9 +366,8 @@ class _UnavailableView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'We could not reach the status service. If you need help, contact '
-            'support below.',
+          Text(
+            _msgs(context).status.unavailable_body,
             style: TextStyle(fontSize: 14, color: BalsmColors.fg2),
           ),
         ],
@@ -396,8 +399,8 @@ class _SupportFooter extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Need help?',
+        Text(
+          _msgs(context).status.need_help,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -447,3 +450,17 @@ final statusRoutes = <RouteBase>[
     builder: (_, __) => const StatusScreen(),
   ),
 ];
+
+/// The core bundle for the screen's language: the page follows the app's
+/// locale instead of always speaking English.
+Messages _msgs(BuildContext context) =>
+    Localizations.localeOf(context).languageCode == 'ar' ? const Messages_ar() : const Messages();
+
+/// What the page says for each level, in the screen's language. The server's
+/// own word ("operational") is not shown: it is a code, not copy.
+String _levelLabel(Messages m, ServiceStatusLevel level) => switch (level) {
+      ServiceStatusLevel.operational => m.status.operational,
+      ServiceStatusLevel.degraded => m.status.degraded,
+      ServiceStatusLevel.down => m.status.down,
+      ServiceStatusLevel.unknown => m.status.unknown,
+    };

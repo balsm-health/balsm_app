@@ -67,6 +67,29 @@ void main() {
     expect(got.vitals.diastolic, 76);
   });
 
+  test('a pulse-only quick-log entry round-trips its heart rate', () async {
+    final pulse = CheckIn(
+      id: CheckInId.value('chk-pulse'),
+      healthProfileId: profile,
+      recordedAt: DateTime.utc(2026, 7, 24, 19),
+      painLevel: PainLevel.none,
+      painSites: const {},
+      symptoms: const {},
+      vitals: const Vitals(heartRate: 72),
+      note: 'after stairs',
+    );
+    await ds.put(pulse.id, pulse);
+
+    final got = await ds.find(pulse.id);
+    expect(got!.vitals.heartRate, 72);
+    expect(got.vitals.systolic, isNull);
+    expect(got.vitals.spo2, isNull);
+    expect(got.mood, isNull);
+    expect(got.note, 'after stairs');
+    expect(got.recordedAt, DateTime.utc(2026, 7, 24, 19));
+    expect((await ds.findAll()).map((c) => c.id), contains(pulse.id));
+  });
+
   test('findAll returns newest-first and is profile-scoped', () async {
     final older = CheckIn(
       id: CheckInId.value('chk-old'),
