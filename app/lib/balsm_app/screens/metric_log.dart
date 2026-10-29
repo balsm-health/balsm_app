@@ -442,22 +442,23 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
 
   @override
   Widget build(BuildContext context) => chrome(
-        child: Row(
-            children: List.generate(
-                5,
-                (i) => Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(right: i < 4 ? 10 : 0),
-                        child: MoodCell(
-                            lv: i + 1,
-                            selected: mood == i + 1,
-                            s: s,
-                            onTap: () => setState(() {
-                                  mood = i + 1;
-                                  emit();
-                                })),
-                      ),
-                    ))),
+        // Gaps between the cells, not padding inside them: padding on one
+        // side left the first four 10dp narrower than the last.
+        child: Row(children: [
+          for (var i = 0; i < 5; i++) ...[
+            if (i > 0) const SizedBox(width: 10),
+            Expanded(
+              child: MoodCell(
+                  lv: i + 1,
+                  selected: mood == i + 1,
+                  s: s,
+                  onTap: () => setState(() {
+                        mood = i + 1;
+                        emit();
+                      })),
+            ),
+          ],
+        ]),
       );
 }
 

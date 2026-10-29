@@ -23,6 +23,10 @@ what changed and why it matters.
 
 ### Fixed
 
+- The five mood faces fit on narrower phones. On a 360dp-wide screen the
+  labels overflowed their squares, and the first four faces were drawn
+  smaller than the fifth.
+  ([#123](https://github.com/balsm-health/balsm_app/pull/123))
 - An account kept on this device only can sign out again. Sign out in
   Profile now locks the app and returns to the Unlock screen, with nothing
   deleted; the password set on this device opens it again. Before, the only
