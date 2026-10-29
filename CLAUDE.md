@@ -27,8 +27,9 @@ Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm
   `CODING_STANDARDS.md` §9 (fix → patch, feature → minor, breaking → major,
   build number +1; packages carry no version), and opens a new
   `## [<version>] - Unreleased` section at the top of `CHANGELOG.md` for its
-  lines, each ending with its ticket, `(#99)` (the PR number when there is
-  no issue); older sections are never renamed. CI's **Version raised** check
+  lines, each ending with its ticket as a link,
+  `([#99](https://github.com/balsm-health/balsm_app/issues/99))` (the PR's
+  `/pull/` link when there is no issue); older sections are never renamed. CI's **Version raised** check
   enforces the raise, and the Claude version-bump workflow commits it to the
   pull request when it is missing. Never add a version to the live
   `app/web/version/<brand>.json` outside a release.

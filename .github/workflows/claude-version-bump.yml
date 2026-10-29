@@ -81,7 +81,8 @@ jobs:
                sections into the new one, under the same group headings
                (Added / Changed / Fixed / Removed / Security, only those used).
                If the PR added no line, write one, as §9 asks: what changed and
-               why it matters to a patient.
+               why it matters to a patient, ending with its ticket as a link
+               (the linked issue, else this PR).
             5. Run `bash .github/scripts/check-version-bump.sh ${{ github.event.pull_request.base.sha }}`
                and make sure it passes.
             6. Commit only app/pubspec.yaml and CHANGELOG.md, with the message

@@ -17,11 +17,11 @@ what changed and why it matters.
 - Resend code on the sign-up code step sends a new code again. Before, it
   only restarted the countdown and no email came. If the server refuses
   (too many requests, for example), the reason shows and Resend stays
-  available. (#116)
+  available. ([#116](https://github.com/balsm-health/balsm_app/issues/116))
 - A sign-in link from an email that has already been used, was replaced by
   a newer code, or has expired now says so and asks for a new code, in
   English and Arabic. Before, it said "Authentication required. Please
-  sign in again.", which pointed at the wrong problem. (#117)
+  sign in again.", which pointed at the wrong problem. ([#117](https://github.com/balsm-health/balsm_app/issues/117))
 
 ## [0.2.2] - Unreleased
 
@@ -32,7 +32,7 @@ what changed and why it matters.
   copied `123 456` or a whole sentence like "Your code is 123456" fills the
   six boxes and submits, and the keyboard offers the code from the email
   where the phone supports it. Before, copying the code from the email app
-  was no help, and the code had to be typed by hand. (#99)
+  was no help, and the code had to be typed by hand. ([#99](https://github.com/balsm-health/balsm_app/issues/99))
 
 ## [0.2.1] - Unreleased
 
@@ -40,7 +40,7 @@ what changed and why it matters.
 
 - The emergency contact number in Personal details has room again: the
   relationship picker now sits on its own line above it, instead of
-  sharing the row and squeezing the number into half the width. (#113)
+  sharing the row and squeezing the number into half the width. ([#113](https://github.com/balsm-health/balsm_app/pull/113))
 
 ## [0.2.0] - Unreleased
 
