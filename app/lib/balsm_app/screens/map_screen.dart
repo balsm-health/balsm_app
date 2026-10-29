@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fluster/fluster.dart';
@@ -157,7 +158,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// directly — recentring on yourself and then being asked to press a button
   /// to see what is around you would be a strange thing to ask for.
   Future<void> _recenter() async {
-    final loc = await ref.read(userLatLngProvider.future);
+    // Ask afresh: permission or the location switch may have changed since.
+    ref.invalidate(deviceLocationProvider);
+    final device = await ref.read(deviceLocationProvider.future);
+    if (!mounted) return;
+    final loc = device.position;
+    if (loc == null) {
+      _explainNoLocation(device.issue);
+      return;
+    }
     _mapController.move(loc, 14);
     setState(() {
       _lastSearched = loc;
@@ -165,6 +174,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _pendingCamera = null;
     });
     _pushSearch(immediate: true, focus: loc, radiusKm: kCareDefaultRadiusKm, tooZoomedOut: false);
+  }
+
+  /// Says why recentering found no position, with the setting that fixes it.
+  void _explainNoLocation(DeviceLocationIssue? issue) {
+    final c = AppScope.of(context).strings.care;
+    final (message, settings) = switch (issue) {
+      DeviceLocationIssue.serviceOff => (c.loc_off, Geolocator.openLocationSettings),
+      DeviceLocationIssue.denied || DeviceLocationIssue.deniedForever => (c.loc_denied, Geolocator.openAppSettings),
+      _ => (c.loc_unavailable, null),
+    };
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+      content: Text(message),
+      action: settings == null ? null : SnackBarAction(label: c.loc_settings, onPressed: () => settings()),
+    ));
   }
 
   List<CareEntity> _filter(List<CareEntity> all) => filterCareEntities(all, query: _query, types: _activeTypes);
@@ -371,7 +394,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               // while the list shows full rows for the nearest few. Client-side
               // type narrowing applies to both.
               ? _mapBody(s, _filterPins(ref.watch(carePinsProvider).valueOrNull?.pins ?? const []),
-                  ref.watch(userLatLngProvider).valueOrNull)
+                  ref.watch(deviceLocationProvider).valueOrNull?.position)
               : ContentColumn(maxWidth: 720, child: _listBody(s, filtered)),
         ),
       ]),
@@ -407,7 +430,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg2)),
         ),
       ),
-      // Recenter — decorative (real geolocation lands with the backend).
+      // Recenter on the device's position.
       PositionedDirectional(
         bottom: _selectedId != null ? 220 : 20,
         end: 14,
