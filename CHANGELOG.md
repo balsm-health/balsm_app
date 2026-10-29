@@ -10,7 +10,7 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.3.1] - Unreleased
+## [0.4.2] - Unreleased
 
 ### Fixed
 
@@ -19,6 +19,45 @@ what changed and why it matters.
   and the locate button asks for permission again; when location is off or
   refused it says so, with a button to the setting that fixes it.
   ([#125](https://github.com/balsm-health/balsm_app/pull/125))
+
+## [0.4.1] - Unreleased
+
+### Fixed
+
+- Service status in Profile shows whether Balsm's servers are working again:
+  it always said the status was unknown, even when everything was up. It now
+  speaks the app's language, so in Arabic it reads in Arabic instead of
+  English laid out right to left. Devices & sessions is hidden from Profile
+  for now. ([#124](https://github.com/balsm-health/balsm_app/pull/124))
+
+## [0.4.0] - Unreleased
+
+### Changed
+
+- The quick-log sheet follows the new design. Save sits in the header as a
+  tick and again under the note, with a hint while the entry is incomplete,
+  and Cancel below it. Leaving an entry that has changed asks before
+  discarding it. Back steps out of an entry before closing the sheet, and
+  after a save the sheet returns to the list with a "Saved" message instead
+  of closing. ([#123](https://github.com/balsm-health/balsm_app/pull/123))
+
+### Fixed
+
+- The five mood faces fit on narrower phones. On a 360dp-wide screen the
+  labels overflowed their squares, and the first four faces were drawn
+  smaller than the fifth.
+  ([#123](https://github.com/balsm-health/balsm_app/pull/123))
+- An account kept on this device only can sign out again. Sign out in
+  Profile now locks the app and returns to the Unlock screen, with nothing
+  deleted; the password set on this device opens it again. Before, the only
+  way out was removing the account and all its data. Remove this account
+  from this phone is still there, as a separate choice.
+  ([#122](https://github.com/balsm-health/balsm_app/issues/122))
+- Home's latest readings keep blood pressure, glucose and oxygen after a
+  mood or pain check-in. Each reading now shows the newest value logged for
+  it; before, the card showed only the newest check-in, so logging mood
+  alone blanked the vitals.
+  ([#123](https://github.com/balsm-health/balsm_app/pull/123))
 
 ## [0.3.0] - Unreleased
 

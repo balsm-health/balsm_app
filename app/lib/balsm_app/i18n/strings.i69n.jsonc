@@ -254,6 +254,12 @@
     "quick_log_or": "or log just one",
     "ql_save": "Save",
     "ql_saved": "Saved",
+    "ql_save_hint": "Fill in the required fields to save.",
+    // Quick-log flow: leaving with unsaved input asks first (quicklog.jsx Sheet).
+    "ql_discard_title": "Discard this entry?",
+    "ql_discard_body": "What you entered won’t be saved.",
+    "ql_discard": "Discard",
+    "ql_keep_editing": "Keep editing",
     "body_location": "Where does it hurt?",
     // Body-map chrome. No inline ar/en ternaries in widgets.
     "body_view_front": "Front",

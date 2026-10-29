@@ -789,6 +789,11 @@ class CheckinStrings_ar extends CheckinStrings {
   String get quick_log_or => "أو سجّل قراءة واحدة";
   String get ql_save => "حفظ";
   String get ql_saved => "تم الحفظ";
+  String get ql_save_hint => "أكمل الحقول المطلوبة لتتمكن من الحفظ.";
+  String get ql_discard_title => "تجاهل هذا التسجيل؟";
+  String get ql_discard_body => "لن يُحفظ ما أدخلته.";
+  String get ql_discard => "تجاهل";
+  String get ql_keep_editing => "متابعة التعديل";
   String get body_location => "أين يؤلمك؟";
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
@@ -969,6 +974,16 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_save;
       case 'ql_saved':
         return ql_saved;
+      case 'ql_save_hint':
+        return ql_save_hint;
+      case 'ql_discard_title':
+        return ql_discard_title;
+      case 'ql_discard_body':
+        return ql_discard_body;
+      case 'ql_discard':
+        return ql_discard;
+      case 'ql_keep_editing':
+        return ql_keep_editing;
       case 'body_location':
         return body_location;
       case 'body_view_front':

@@ -231,6 +231,7 @@ class RoundBtn extends StatefulWidget {
     this.bg,
     this.fg,
     this.ghost = false,
+    this.outlined = true,
     this.iconSize = 21,
   });
   final IconData icon;
@@ -243,6 +244,10 @@ class RoundBtn extends StatefulWidget {
   final Color? bg;
   final Color? fg;
   final bool ghost;
+
+  /// The hairline ring of the default button. A filled action (the quick-log
+  /// header's Save) draws none.
+  final bool outlined;
   final double iconSize;
   @override
   State<RoundBtn> createState() => _RoundBtnState();
@@ -278,7 +283,7 @@ class _RoundBtnState extends State<RoundBtn> {
             decoration: BoxDecoration(
               color: _down ? T.ink100 : rest,
               shape: BoxShape.circle,
-              border: widget.ghost ? null : Border.all(color: T.border),
+              border: widget.ghost || !widget.outlined ? null : Border.all(color: T.border),
             ),
             child: Icon(widget.icon, size: widget.iconSize, color: widget.fg ?? T.ink700),
           ),

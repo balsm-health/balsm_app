@@ -790,6 +790,11 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get quick_log_or => "or log just one";
   String get ql_save => "Save";
   String get ql_saved => "Saved";
+  String get ql_save_hint => "Fill in the required fields to save.";
+  String get ql_discard_title => "Discard this entry?";
+  String get ql_discard_body => "What you entered won’t be saved.";
+  String get ql_discard => "Discard";
+  String get ql_keep_editing => "Keep editing";
   String get body_location => "Where does it hurt?";
   String get body_view_front => "Front";
   String get body_view_back => "Back";
@@ -965,6 +970,16 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_save;
       case 'ql_saved':
         return ql_saved;
+      case 'ql_save_hint':
+        return ql_save_hint;
+      case 'ql_discard_title':
+        return ql_discard_title;
+      case 'ql_discard_body':
+        return ql_discard_body;
+      case 'ql_discard':
+        return ql_discard;
+      case 'ql_keep_editing':
+        return ql_keep_editing;
       case 'body_location':
         return body_location;
       case 'body_view_front':
