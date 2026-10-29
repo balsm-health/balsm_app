@@ -227,20 +227,15 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       saving = false;
       _openList();
       _toastValue = capture.summary;
-      _undoCheckInId = checkInId;
-      _undoPhotoRecordId = photoRecordId;
     });
     _toastTimer?.cancel();
-    _toastTimer = Timer(_undoWindow, () {
-      if (mounted) setState(_hideToast);
+    _toastTimer = Timer(_toastFor, () {
+      if (mounted) setState(() => _toastValue = null);
     });
   }
 
-  void _hideToast() {
-    _toastValue = null;
-    _undoCheckInId = null;
-    _undoPhotoRecordId = null;
-  }
+  /// quicklog.jsx `qlToast` — 2.6s.
+  static const _toastFor = Duration(milliseconds: 2600);
 
   /// Back to the list, forgetting the flow. Call inside `setState`.
   void _openList() {
@@ -279,35 +274,6 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     final leave = _confirm;
     setState(_openList);
     if (leave == _Leave.close) Navigator.pop(context);
-  }
-
-  /// `UX Enhancement Screens.html` — "Quick-log · undo after save": a short
-  /// window to catch a mis-tap, instead of a confirm step on every entry.
-  static const _undoWindow = Duration(seconds: 4);
-
-  /// The entry the undo affordance would remove; null once the window closes.
-  CheckInId? _undoCheckInId;
-  String? _undoPhotoRecordId;
-
-  /// Deletes the just-saved entry; the sheet stays on the list. The photo record goes first —
-  /// same ordering rule as [DeleteRecordDocumentUseCase]: never leave a
-  /// readable blob with no row pointing at it.
-  Future<void> _undo() async {
-    final id = _undoCheckInId;
-    if (id == null) return;
-    _toastTimer?.cancel();
-    setState(_hideToast);
-
-    final userId = ref.read(currentUserIdProvider);
-    final photoId = _undoPhotoRecordId;
-    if (photoId != null && userId != null) {
-      final records = ref.read(recordsDataSourceProvider);
-      final doc = (await records.findAll()).where((r) => r.id.value == photoId).firstOrNull;
-      if (doc != null) {
-        await ref.read(deleteRecordDocumentUseCaseProvider).call(doc, scope: userId);
-      }
-    }
-    await ref.read(checkInsDataSourceProvider).delete(id);
   }
 
   @override
@@ -393,13 +359,13 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
                 ),
               ),
             ]),
-            // "Saved" with the reading, and Undo while the window is open.
+            // "Saved" with the reading.
             if (_toastValue != null && !inFlow)
               PositionedDirectional(
                 start: 16,
                 end: 16,
                 bottom: sheetBottomInset(context, base: 24),
-                child: _SavedToast(s: s, value: _toastValue!, onUndo: _undoCheckInId == null ? null : _undo),
+                child: IgnorePointer(child: _SavedToast(s: s, value: _toastValue!)),
               ),
             if (_confirm != null)
               Positioned.fill(
@@ -705,13 +671,11 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
 enum _Leave { back, close }
 
 /// quicklog.jsx toast — dark, over the list after a save: a mint tick,
-/// "Saved" and the reading, plus Undo for the short window
-/// (`UX Enhancement Screens.html`, "Quick-log · undo after save").
+/// "Saved" and the reading. Status only; nothing in it is tappable.
 class _SavedToast extends StatelessWidget {
-  const _SavedToast({required this.s, required this.value, this.onUndo});
+  const _SavedToast({required this.s, required this.value});
   final PatientAppState s;
   final String value;
-  final VoidCallback? onUndo;
 
   @override
   Widget build(BuildContext context) {
@@ -724,7 +688,7 @@ class _SavedToast extends StatelessWidget {
         elevation: 8,
         shadowColor: const Color(0x4714202B),
         child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 8, 12),
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
           child: Row(children: [
             Container(
               width: 28,
@@ -745,14 +709,6 @@ class _SavedToast extends StatelessWidget {
                       style: Typo.meta(ar: ar).copyWith(color: Colors.white.withValues(alpha: 0.85))),
               ]),
             ),
-            if (onUndo != null)
-              TextButton(
-                onPressed: onUndo,
-                child: Text(
-                  s.strings.common.undo,
-                  style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.hueBlue),
-                ),
-              ),
           ]),
         ),
       ),
