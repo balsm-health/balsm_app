@@ -17,7 +17,9 @@ what changed and why it matters.
 - On Android phones that use the Back / Home / Recents buttons, the bottom
   tabs (Home, Map, +, Meds, Profile) sit fully above those buttons again.
   Since Android 15 the app draws under them, and the tabs' labels were
-  partly hidden. iPhone and gesture navigation look the same as before.
+  partly hidden. The grey band Android drew behind those buttons is gone
+  too, so the app runs to the bottom edge instead of looking raised. iPhone
+  and gesture navigation look the same as before.
   ([#120](https://github.com/balsm-health/balsm_app/pull/120))
 
 ## [0.2.3] - Unreleased

@@ -6,6 +6,7 @@ import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geofence_block/geofence_block.dart';
@@ -53,6 +54,21 @@ Future<void> bootstrap({
   // before anything reads a token or the database key.
   installWebSecureStorage();
   FlavorConfig.initFromEnvironment();
+
+  // Android 15+ always draws the app under the navigation bar. Left at the
+  // default, 3-button navigation lays a grey scrim over the app's bottom edge,
+  // so the tab bar looks cut short and the whole screen reads as raised. A
+  // transparent bar with no forced contrast lets the app's own surface run
+  // under the buttons; the tab bar already keeps its labels clear of them.
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      systemNavigationBarColor: Color(0x00000000),
+      systemNavigationBarDividerColor: Color(0x00000000),
+      systemNavigationBarContrastEnforced: false,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
+  }
 
   // Telemetry: crash reporting + user-action analytics via the AnalyticsLogger
   // facade (Sentry backend). See docs/superpowers/specs/2026-07-03-telemetry-*.
