@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/auth/device_account_remover.dart';
+import 'package:app/balsm_app/dev/shake_to_dev_config.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
@@ -61,7 +62,7 @@ void main() {
     when(() => disclosure.watchAcceptance(any(), any())).thenAnswer((_) => Stream<DisclosureAcceptance?>.value(null));
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool canShake = false}) async {
     tester.view.physicalSize = const Size(402, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -73,6 +74,7 @@ void main() {
         disclosureDaoProvider.overrideWithValue(disclosure),
         offlineAccountServiceProvider.overrideWithValue(offline),
         deviceAccountRemoverProvider.overrideWithValue(remover),
+        canShakeProvider.overrideWith((ref) async => canShake),
       ],
       child: MaterialApp(
         home: Material(
@@ -110,6 +112,22 @@ void main() {
           .thenAnswer((_) async => AppResult.failure(const NetworkFailure('invalid')));
 
   void sendCodes() => when(() => signUp.requestEmailOtp(any(), any())).thenAnswer((_) async => AppResult.success(null));
+
+  group('Welcome server pill', () {
+    testWidgets('shows on an emulator or simulator, where nothing can shake', (tester) async {
+      await pump(tester);
+      await tester.pump();
+
+      expect(find.textContaining('localhost:5050'), findsOneWidget);
+    });
+
+    testWidgets('is hidden on a real phone or tablet, where a shake opens Dev Config', (tester) async {
+      await pump(tester, canShake: true);
+      await tester.pump();
+
+      expect(find.textContaining('localhost:5050'), findsNothing);
+    });
+  });
 
   testWidgets('welcome offers three ways in', (tester) async {
     await pump(tester);

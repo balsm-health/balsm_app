@@ -4,11 +4,30 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:core/core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+
+/// True on a real phone or tablet (Android or iOS), where a shake opens Dev
+/// Config. False on an emulator, a simulator, desktop and web, where nobody
+/// can shake the device, so on-screen ways in are needed there. A failed
+/// lookup reads as false: better a visible way in than none.
+final canShakeProvider = FutureProvider<bool>((ref) async {
+  if (kIsWeb) return false;
+  try {
+    final info = DeviceInfoPlugin();
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => (await info.androidInfo).isPhysicalDevice,
+      TargetPlatform.iOS => (await info.iosInfo).isPhysicalDevice,
+      _ => false,
+    };
+  } catch (_) {
+    return false;
+  }
+});
 
 /// Wraps the app so a phone shake opens the Dev Config screen in EVERY flavor.
 /// The screen itself is read-only in prod (server switching is dev/staging

@@ -766,7 +766,9 @@ class _QuickLog extends StatelessWidget {
     // Bar: a 58px disc whose 4px white ring lets it punch through the bar as
     // it rides above it. Rail (600–1439): `.tab-fab .fab { width: 48px;
     // height: 48px; border: 0 }` with a 24px glyph, drawn flush.
-    final size = rail ? 48.0 : 58.0;
+    // The compact bar now draws it inline (app.css "Check-in FAB — v2 colour +
+    // inline position"): a 52px ink disc, no ring, centred in the bar.
+    final size = rail ? 48.0 : 52.0;
     final button = Pressable(
       onTap: () => showQuickLog(context),
       scale: 0.94,
@@ -775,10 +777,9 @@ class _QuickLog extends StatelessWidget {
         height: size,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: s.accent.main,
+          color: rail ? s.accent.main : T.ink800,
           shape: BoxShape.circle,
-          border: rail ? null : Border.all(color: Colors.white, width: 4),
-          boxShadow: s.accent.boxShadow,
+          boxShadow: rail ? s.accent.boxShadow : T.fabShadow,
         ),
         child: Icon(LucideIcons.plus, size: rail ? 24 : 26, color: Colors.white),
       ),
@@ -791,9 +792,12 @@ class _QuickLog extends StatelessWidget {
         child: Center(child: button),
       );
     }
+    // `.tabbar .tab-fab { align-self: center }` — level with the tabs (58
+    // tall), not raised above the bar.
     return Expanded(
-      child: Center(
-        child: Transform.translate(offset: const Offset(0, -22), child: button),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(top: 3),
+        child: Center(child: button),
       ),
     );
   }

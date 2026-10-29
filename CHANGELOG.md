@@ -10,6 +10,24 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.3.0] - Unreleased
+
+### Changed
+
+- Home has a new look. Today's check-in is one card with your streak and
+  a strip of dots for the last seven days; your latest readings sit in one
+  card, blood pressure large with whether it is in range; care team, nearby
+  care and records are three tiles with their counts. On a tablet, Home
+  uses two columns. Everything shown is your own data.
+  ([#121](https://github.com/balsm-health/balsm_app/pull/121))
+- The welcome screen's language switch moved to the top corner as a light
+  pill, and the check-in button in the tab bar is a dark disc level with
+  the tabs, as in the latest design. Switching language no longer moves the
+  welcome screen's logo and buttons. In dev and staging builds, the server
+  pill on the welcome screen shows only on emulators, simulators, desktop
+  and web; on a real phone or tablet, shake the device to open Dev Config.
+  ([#121](https://github.com/balsm-health/balsm_app/pull/121))
+
 ## [0.2.4] - Unreleased
 
 ### Fixed

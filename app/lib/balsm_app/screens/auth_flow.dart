@@ -136,152 +136,141 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
     final short = MediaQuery.sizeOf(context).height < 860;
     return BalsmWelcomeBackground(
       child: SafeArea(
-        child: ContentColumn(
-          maxWidth: 440,
-          maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            // `.wbody { margin-top: auto }` — lockup + CTAs sit on the cream
-            // fade; watercolor fills the space above.
-            // `.wbody { margin-top: auto }` with a safety valve. The design's
-            // 168px lockup assumes the prototype's welcome, which has no social
-            // buttons; Flutter still shows Google on Android/web/macOS, and that
-            // extra block plus an error line overflows a 402x900 viewport.
-            // reverse: true keeps the content bottom-anchored exactly as the
-            // Spacer did, and scrolls instead of clipping when it cannot fit.
-            Expanded(
-              child: SingleChildScrollView(
-                reverse: true,
-                child: Padding(
-                  // `.wbody { padding-bottom: 36px }`, trimmed on a short phone
-                  // so the block sits down by the trust row, not high above it.
-                  padding: EdgeInsetsDirectional.fromSTEB(28, 0, 28, short ? 20 : 36),
-                  child: Column(children: [
-                    SvgPicture.asset(Assets.brand_logo_vertical,
-                        width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),
-                    SizedBox(height: short ? 18 : 26),
-                    Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
-                    const SizedBox(height: 14),
-                    // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
-                    // measure instead of the full 28px-gutter width. 34ch against
-                    // the 16px body face is ~326 logical px.
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 326),
-                      child: Text(s.strings.onboarding.w_sub,
-                          textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+        child: Stack(children: [
+          Positioned.fill(
+            child: ContentColumn(
+              maxWidth: 440,
+              maxHeight: kContentBlockMaxHeight,
+              child: Column(children: [
+                // `.wbody { margin-top: auto }` — lockup + CTAs sit on the cream
+                // fade; watercolor fills the space above.
+                // `.wbody { margin-top: auto }` with a safety valve. The design's
+                // 168px lockup assumes the prototype's welcome, which has no social
+                // buttons; Flutter still shows Google on Android/web/macOS, and that
+                // extra block plus an error line overflows a 402x900 viewport.
+                // reverse: true keeps the content bottom-anchored exactly as the
+                // Spacer did, and scrolls instead of clipping when it cannot fit.
+                Expanded(
+                  child: SingleChildScrollView(
+                    reverse: true,
+                    child: Padding(
+                      // `.wbody { padding-bottom: 36px }`, trimmed on a short phone
+                      // so the block sits down by the trust row, not high above it.
+                      padding: EdgeInsetsDirectional.fromSTEB(28, 0, 28, short ? 20 : 36),
+                      child: Column(children: [
+                        SvgPicture.asset(Assets.brand_logo_vertical,
+                            width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),
+                        SizedBox(height: short ? 18 : 26),
+                        _SteadyLines(
+                          lines: 2,
+                          style: Typo.display(ar: s.rtl),
+                          child: Text(s.strings.onboarding.w_title,
+                              textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
+                        ),
+                        const SizedBox(height: 14),
+                        // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
+                        // measure instead of the full 28px-gutter width. 34ch against
+                        // the 16px body face is ~326 logical px.
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 326),
+                          child: _SteadyLines(
+                            lines: 3,
+                            style: Typo.body(ar: s.rtl),
+                            child: Text(s.strings.onboarding.w_sub,
+                                textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        // auth.jsx WelcomeScreen: one button per way in, so the next
+                        // screen knows whether it registers, signs in or creates a
+                        // device-only account.
+                        PButton(s.strings.onboarding.w_create,
+                            variant: BtnVariant.primary,
+                            large: true,
+                            block: true,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: () => _start(s, AuthIntent.signUp)),
+                        const SizedBox(height: 10),
+                        PButton(s.strings.onboarding.w_signin,
+                            variant: BtnVariant.secondary,
+                            large: true,
+                            block: true,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: () => _start(s, AuthIntent.signIn)),
+                        const SizedBox(height: 10),
+                        PButton(s.strings.onboarding.w_device,
+                            icon: LucideIcons.smartphone,
+                            variant: BtnVariant.ghost,
+                            size: BtnSize.md,
+                            block: true,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: () => _start(s, AuthIntent.deviceOnly)),
+                        const SizedBox(height: 16),
+                        if (_googleAvailable) ...[
+                          _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
+                          const SizedBox(height: 14),
+                          _SocialButton(
+                              label: s.strings.onboarding.w_google,
+                              dark: false,
+                              googleG: true,
+                              busy: _busyGoogle,
+                              onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s))),
+                          const SizedBox(height: 14),
+                        ],
+                        // No social button on this platform, so no separator and
+                        // no space held for one: the design dropped both with the
+                        // buttons (auth.jsx WelcomeScreen). Holding 18px here left
+                        // an empty band under the CTAs that pushed the block up.
+                        if (_error != null) ...[
+                          Semantics(
+                              liveRegion: true,
+                              child: Text(_error!,
+                                  textAlign: TextAlign.center,
+                                  style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                          const SizedBox(height: 12),
+                        ],
+                      ]),
                     ),
-                    const SizedBox(height: 30),
-                    // auth.jsx WelcomeScreen: one button per way in, so the next
-                    // screen knows whether it registers, signs in or creates a
-                    // device-only account.
-                    PButton(s.strings.onboarding.w_create,
-                        variant: BtnVariant.primary,
-                        large: true,
-                        block: true,
-                        accent: s.accent,
-                        ar: s.rtl,
-                        onTap: () => _start(s, AuthIntent.signUp)),
-                    const SizedBox(height: 10),
-                    PButton(s.strings.onboarding.w_signin,
-                        variant: BtnVariant.secondary,
-                        large: true,
-                        block: true,
-                        accent: s.accent,
-                        ar: s.rtl,
-                        onTap: () => _start(s, AuthIntent.signIn)),
-                    const SizedBox(height: 10),
-                    PButton(s.strings.onboarding.w_device,
-                        icon: LucideIcons.smartphone,
-                        variant: BtnVariant.ghost,
-                        size: BtnSize.md,
-                        block: true,
-                        accent: s.accent,
-                        ar: s.rtl,
-                        onTap: () => _start(s, AuthIntent.deviceOnly)),
-                    const SizedBox(height: 16),
-                    if (_googleAvailable) ...[
-                      _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
-                      const SizedBox(height: 14),
-                      _SocialButton(
-                          label: s.strings.onboarding.w_google,
-                          dark: false,
-                          googleG: true,
-                          busy: _busyGoogle,
-                          onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s))),
-                      const SizedBox(height: 14),
-                    ],
-                    // No social button on this platform, so no separator and
-                    // no space held for one: the design dropped both with the
-                    // buttons (auth.jsx WelcomeScreen). Holding 18px here left
-                    // an empty band under the CTAs that pushed the block up.
-                    if (_error != null) ...[
-                      Semantics(
-                          liveRegion: true,
-                          child: Text(_error!,
-                              textAlign: TextAlign.center,
-                              style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
-                      const SizedBox(height: 12),
-                    ],
-                  ]),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  // Labels are translated and wrap to different line counts;
-                  // top alignment keeps the three icons on one baseline.
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _trust(s, LucideIcons.smartphone, s.strings.settings.trust_device),
-                    const SizedBox(width: 22),
-                    _trust(s, LucideIcons.lock, s.strings.settings.trust_private),
-                    const SizedBox(width: 22),
-                    _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
-                  ]),
-            ),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Semantics(
-                button: true,
-                label: s.lang == LanguageCode.ar ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
-                child: MinTapTarget(
-                  child: Pressable(
-                    onTap: () => s.setLang(s.lang == LanguageCode.ar ? LanguageCode.en : LanguageCode.ar),
-                    child: Builder(
-                        builder: (context) => Container(
-                              height: 38,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: const Color(0x6B1A1A17),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: const Color(0x52FFFFFF)),
-                              ),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                const Icon(LucideIcons.languages, size: 17, color: Colors.white),
-                                const SizedBox(width: 7),
-                                Text(
-                                  s.lang == LanguageCode.ar ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
-                                  style: (s.lang == LanguageCode.ar ? Typo.bodySm() : Typo.bodySm(ar: true))
-                                      .copyWith(fontWeight: FontWeight.w700, color: Colors.white),
-                                ),
-                              ]),
-                            )),
                   ),
                 ),
-              ),
-              // Dev Config, reachable before anyone signs in. The shake gesture
-              // opens the same screen, but a shake is not available on a
-              // simulator and not discoverable on a device, and the server this
-              // build talks to is the first thing that goes wrong. Never in
-              // prod: `serverSwitchingEnabled` is dev + staging only.
-              if (FlavorConfig.current.serverSwitchingEnabled) ...[
-                const SizedBox(width: 8),
-                _DevConfigPill(onClosed: () => setState(() {})),
-              ],
-            ]),
-            const SizedBox(height: 4),
-          ]),
-        ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      // Labels are translated and wrap to different line counts;
+                      // top alignment keeps the three icons on one baseline.
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _trust(s, LucideIcons.smartphone, s.strings.settings.trust_device),
+                        const SizedBox(width: 22),
+                        _trust(s, LucideIcons.lock, s.strings.settings.trust_private),
+                        const SizedBox(width: 22),
+                        _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
+                      ]),
+                ),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  // Dev Config, reachable before anyone signs in. The shake gesture
+                  // opens the same screen, but a shake is not available on a
+                  // simulator and not discoverable on a device, and the server this
+                  // build talks to is the first thing that goes wrong. Never in
+                  // prod: `serverSwitchingEnabled` is dev + staging only.
+                  // Only where a shake can't reach Dev Config: emulators,
+                  // simulators, desktop and web. A real phone or tablet shakes,
+                  // and the pill there is clutter (hidden while the check runs).
+                  if (FlavorConfig.current.serverSwitchingEnabled && ref.watch(canShakeProvider).valueOrNull == false)
+                    _DevConfigPill(onClosed: () => setState(() {})),
+                ]),
+                const SizedBox(height: 4),
+              ]),
+            ),
+          ),
+          // auth.jsx WelcomeScreen: the language switch rides the top end
+          // corner, a light pill over the watercolour.
+          const PositionedDirectional(top: 12, end: 16, child: _LanguagePill()),
+        ]),
       ),
     );
   }
@@ -291,9 +280,15 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
         child: Column(children: [
           Icon(icon, size: 22, color: s.accent.main),
           const SizedBox(height: 6),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
+          // Two lines held in both languages ("Private by / default" wraps in
+          // English only), so the row does not change height on a switch.
+          _SteadyLines(
+            lines: 2,
+            style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2),
+            child: Text(label,
+                textAlign: TextAlign.center,
+                style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
+          ),
         ]),
       );
 }
@@ -2514,3 +2509,66 @@ const _kGoogleGSvg = '''
   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
 </svg>
 ''';
+
+/// auth.jsx WelcomeScreen language switch: a light pill in the top end
+/// corner. The label is the language it switches to, in that language's own
+/// face, so each reads right to its own speakers.
+class _LanguagePill extends StatelessWidget {
+  const _LanguagePill();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final toEn = s.lang == LanguageCode.ar;
+    return Semantics(
+      button: true,
+      label: toEn ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
+      excludeSemantics: true,
+      child: MinTapTarget(
+        child: Pressable(
+          onTap: () => s.setLang(toEn ? LanguageCode.en : LanguageCode.ar),
+          child: Container(
+            height: 40,
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: T.langPillBg,
+              borderRadius: BorderRadius.circular(T.rPill),
+              border: Border.all(color: T.ink200),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(LucideIcons.languages, size: 17, color: T.fg1),
+              const SizedBox(width: 6),
+              Text(
+                toEn ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
+                style: Typo.bodySm(ar: !toEn).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Holds [child] to at least [lines] lines of [style], centred inside.
+///
+/// The welcome column is bottom-anchored, so its height is its text: Arabic
+/// sets the title on one line and the sub on two where English takes two and
+/// three, and switching language moved the logo and everything above the
+/// buttons by about 60dp. Reserving the English line counts keeps both
+/// languages in the same place; longer copy or larger system text still grows.
+class _SteadyLines extends StatelessWidget {
+  const _SteadyLines({required this.lines, required this.style, required this.child});
+  final int lines;
+  final TextStyle style;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final line = MediaQuery.textScalerOf(context).scale(style.fontSize!) * (style.height ?? 1.2);
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: line * lines),
+      child: Align(heightFactor: 1, child: child),
+    );
+  }
+}
