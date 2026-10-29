@@ -118,14 +118,16 @@ final credentialsControllerProvider =
 
 @immutable
 class OtpState {
-  const OtpState({this.secs = 28, this.verifying = false, this.error});
+  const OtpState({this.secs = 28, this.verifying = false, this.resending = false, this.error});
   final int secs;
   final bool verifying;
+  final bool resending;
   final AuthError? error;
 
-  OtpState copyWith({int? secs, bool? verifying, Object? error = _unset}) => OtpState(
+  OtpState copyWith({int? secs, bool? verifying, bool? resending, Object? error = _unset}) => OtpState(
         secs: secs ?? this.secs,
         verifying: verifying ?? this.verifying,
+        resending: resending ?? this.resending,
         error: identical(error, _unset) ? this.error : error as AuthError?,
       );
   static const _unset = Object();
@@ -136,10 +138,14 @@ class OtpState {
 /// session; the screen only navigates.
 class OtpController extends AutoDisposeNotifier<OtpState> {
   Timer? _timer;
+  bool _disposed = false;
 
   @override
   OtpState build() {
-    ref.onDispose(() => _timer?.cancel());
+    ref.onDispose(() {
+      _disposed = true;
+      _timer?.cancel();
+    });
     _startCountdown();
     return const OtpState();
   }
@@ -155,9 +161,28 @@ class OtpController extends AutoDisposeNotifier<OtpState> {
     });
   }
 
-  void resend() {
-    state = state.copyWith(secs: 28);
-    _startCountdown();
+  /// Requests a new code for the same address, which also retires the
+  /// previous email's code and link. The countdown restarts only once the
+  /// server has accepted; a refusal stays on screen with Resend still offered
+  /// (#116). True when a new code is on its way.
+  Future<bool> resend({required String email, required String countryCode}) async {
+    if (state.resending || state.verifying || state.secs > 0) return false;
+    state = state.copyWith(resending: true, error: null);
+    final result = await ref.read(signUpUseCaseProvider).requestEmailOtp(email, countryCode);
+    if (_disposed) return false;
+    return result.fold(
+      (_) {
+        state = state.copyWith(resending: false, secs: 28);
+        _startCountdown();
+        return true;
+      },
+      (f) {
+        state = state.copyWith(
+            resending: false,
+            error: f is ConflictFailure ? const AuthError.emailRegistered() : AuthError.server(f.message));
+        return false;
+      },
+    );
   }
 
   /// Null → verified; the success carries `isNewUser`. Non-null result means

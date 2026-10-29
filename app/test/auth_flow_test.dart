@@ -355,6 +355,41 @@ void main() {
     });
   });
 
+  group('Resend code (#116)', () {
+    Future<void> waitOutCountdown(WidgetTester tester) async {
+      state.setAuthContact(method: AuthMethod.email, email: 'patient@example.test');
+      await pumpAtRoute(tester, AppRoutes.otp);
+      for (var i = 0; i < 29; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+    }
+
+    testWidgets('asks the server for a new code and restarts the countdown', (tester) async {
+      sendCodes();
+      await waitOutCountdown(tester);
+
+      await tester.tap(find.widgetWithText(PButton, 'Resend code'));
+      await tester.pump();
+      await tester.pump();
+
+      verify(() => signUp.requestEmailOtp('patient@example.test', any())).called(1);
+      expect(find.widgetWithText(PButton, 'Resend code'), findsNothing);
+    });
+
+    testWidgets('a refused resend says why and keeps the button', (tester) async {
+      when(() => signUp.requestEmailOtp(any(), any()))
+          .thenAnswer((_) async => AppResult.failure(const NetworkFailure('Too many requests. Please wait.')));
+      await waitOutCountdown(tester);
+
+      await tester.tap(find.widgetWithText(PButton, 'Resend code'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Too many requests. Please wait.'), findsOneWidget);
+      expect(find.widgetWithText(PButton, 'Resend code'), findsOneWidget);
+    });
+  });
+
   testWidgets('a tap between two boxes opens the keyboard', (tester) async {
     await pumpAtRoute(tester, AppRoutes.otp);
     await tester.pump();

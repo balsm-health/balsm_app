@@ -10,6 +10,15 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.2.2] - Unreleased
+
+### Fixed
+
+- Resend code on the sign-up code step sends a new code again. Before, it
+  only restarted the countdown and no email came. If the server refuses
+  (too many requests, for example), the reason shows and Resend stays
+  available. (#116)
+
 ## [0.2.1] - Unreleased
 
 ### Fixed
