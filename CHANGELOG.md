@@ -10,6 +10,22 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.5.0] - Unreleased
+
+### Added
+
+- Pulse can be logged from the quick-log sheet, under Vitals after Oxygen.
+  Type the rate in beats per minute, or tap "Count with me" and tap each
+  beat for 15 seconds; Balsm multiplies the count by four. Only 30 to 220
+  bpm saves. Saved readings show in the day's records.
+  ([#134](https://github.com/balsm-health/balsm_app/pull/134))
+
+### Changed
+
+- The quick-log sheet groups lab, scan and report shortcuts as "Add a
+  document", right after Vitals, and lists symptoms A to Z in the app's
+  language. ([#134](https://github.com/balsm-health/balsm_app/pull/134))
+
 ## [0.4.2] - Unreleased
 
 ### Fixed
