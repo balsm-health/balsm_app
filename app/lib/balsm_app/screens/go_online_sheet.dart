@@ -78,6 +78,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
   @override
   void dispose() {
     _timer?.cancel();
+    ContextMenuController.removeAny();
     _email.dispose();
     _code.dispose();
     _codeFocus.dispose();
@@ -122,6 +123,19 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
         if (mounted) _codeFocus.requestFocus();
       });
     }
+  }
+
+  void _showCodeKeyboard() {
+    ContextMenuController.removeAny();
+    reopenCodeKeyboard(_codeFocus, mounted: () => mounted);
+  }
+
+  /// Fills the boxes from the clipboard; a whole code submits at once (#99).
+  Future<void> _pasteCode() async {
+    final code = await clipboardCode();
+    if (code == null || !mounted || _busy) return;
+    setState(() => _code.text = code);
+    if (code.length == 6) unawaited(_verify());
   }
 
   Future<void> _verify() async {
@@ -253,12 +267,14 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
         textField: true,
         label: s.strings.common.a11y_code_field,
         value: s.strings.common.a11y_code_progress('${code.length}'),
-        onTap: () => reopenCodeKeyboard(_codeFocus, mounted: () => mounted),
+        onTap: _showCodeKeyboard,
+        onPaste: _pasteCode,
         child: ExcludeSemantics(
           child: GestureDetector(
             // The gaps between boxes count as the field too.
             behavior: HitTestBehavior.opaque,
-            onTap: () => reopenCodeKeyboard(_codeFocus, mounted: () => mounted),
+            onTap: _showCodeKeyboard,
+            onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, _pasteCode),
             // A code reads left to right in every language: the first digit
             // typed lands in the leftmost box, Arabic included.
             child: Directionality(
@@ -286,8 +302,9 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
                 focusNode: _codeFocus,
                 textDirection: TextDirection.ltr,
                 keyboardType: TextInputType.number,
+                autofillHints: const [AutofillHints.oneTimeCode],
                 maxLength: 6,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                inputFormatters: const [CodeInputFormatter()],
                 onChanged: (v) {
                   setState(() {});
                   if (v.length == 6) unawaited(_verify());
