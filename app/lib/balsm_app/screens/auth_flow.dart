@@ -161,15 +161,24 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                         SvgPicture.asset(Assets.brand_logo_vertical,
                             width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),
                         SizedBox(height: short ? 18 : 26),
-                        Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
+                        _SteadyLines(
+                          lines: 2,
+                          style: Typo.display(ar: s.rtl),
+                          child: Text(s.strings.onboarding.w_title,
+                              textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
+                        ),
                         const SizedBox(height: 14),
                         // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
                         // measure instead of the full 28px-gutter width. 34ch against
                         // the 16px body face is ~326 logical px.
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 326),
-                          child: Text(s.strings.onboarding.w_sub,
-                              textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+                          child: _SteadyLines(
+                            lines: 3,
+                            style: Typo.body(ar: s.rtl),
+                            child: Text(s.strings.onboarding.w_sub,
+                                textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+                          ),
                         ),
                         const SizedBox(height: 30),
                         // auth.jsx WelcomeScreen: one button per way in, so the next
@@ -267,9 +276,15 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
         child: Column(children: [
           Icon(icon, size: 22, color: s.accent.main),
           const SizedBox(height: 6),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
+          // Two lines held in both languages ("Private by / default" wraps in
+          // English only), so the row does not change height on a switch.
+          _SteadyLines(
+            lines: 2,
+            style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2),
+            child: Text(label,
+                textAlign: TextAlign.center,
+                style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
+          ),
         ]),
       );
 }
@@ -2527,6 +2542,29 @@ class _LanguagePill extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Holds [child] to at least [lines] lines of [style], centred inside.
+///
+/// The welcome column is bottom-anchored, so its height is its text: Arabic
+/// sets the title on one line and the sub on two where English takes two and
+/// three, and switching language moved the logo and everything above the
+/// buttons by about 60dp. Reserving the English line counts keeps both
+/// languages in the same place; longer copy or larger system text still grows.
+class _SteadyLines extends StatelessWidget {
+  const _SteadyLines({required this.lines, required this.style, required this.child});
+  final int lines;
+  final TextStyle style;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final line = MediaQuery.textScalerOf(context).scale(style.fontSize!) * (style.height ?? 1.2);
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: line * lines),
+      child: Align(heightFactor: 1, child: child),
     );
   }
 }
