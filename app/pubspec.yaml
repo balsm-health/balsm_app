@@ -1,7 +1,7 @@
 name: app
 description: Balsm runnable shell
 publish_to: none
-version: 0.5.0+23
+version: 0.5.1+23
 environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
