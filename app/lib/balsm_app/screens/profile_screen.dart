@@ -225,10 +225,31 @@ class ProfileScreen extends ConsumerWidget {
               ),
           ]),
 
-          // A device-only account exists only on this phone: signing out would
-          // strand its data and leave it locked behind a password. It is
-          // removed instead (rows, files, keys) after a confirmation — and
-          // the server is never called.
+          // Sign out. A device-only account has no session to end on a
+          // server and nowhere else to sign back in, so for it Sign out locks
+          // the app: back to Unlock, exactly as every cold start opens, with
+          // nothing deleted (#122).
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, s.accountMode == AccountMode.deviceOnly ? 12 : 24),
+            child: PButton(s.strings.profile.p_signout,
+                icon: LucideIcons.logOut,
+                variant: BtnVariant.secondary,
+                block: true,
+                ar: s.rtl,
+                color: T.danger, onTap: () async {
+              if (s.accountMode == AccountMode.deviceOnly) return lockDeviceAccount(s);
+              // Clears tokens + best-effort server sign-out + publishes
+              // UserSignedOut (the main listener clears currentUserId).
+              await ref.read(signOutUseCaseProvider).call();
+              // Account-scoped UI state must not leak to the next account.
+              s.resetForSignOut();
+              if (context.mounted) s.go(AppRoutes.welcome);
+            }),
+          ),
+
+          // A device-only account exists only on this phone, so it can also be
+          // removed from it (rows, files, keys) after a confirmation. The
+          // server is never called.
           if (s.accountMode == AccountMode.deviceOnly)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -243,24 +264,6 @@ class ProfileScreen extends ConsumerWidget {
                   ScaffoldMessenger.maybeOf(context)
                       ?.showSnackBar(SnackBar(content: Text(s.strings.offline.merge_failed)));
                 }
-              }),
-            )
-          else
-            // Sign out
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              child: PButton(s.strings.profile.p_signout,
-                  icon: LucideIcons.logOut,
-                  variant: BtnVariant.secondary,
-                  block: true,
-                  ar: s.rtl,
-                  color: T.danger, onTap: () async {
-                // Clears tokens + best-effort server sign-out + publishes
-                // UserSignedOut (the main listener clears currentUserId).
-                await ref.read(signOutUseCaseProvider).call();
-                // Account-scoped UI state must not leak to the next account.
-                s.resetForSignOut();
-                if (context.mounted) s.go(AppRoutes.welcome);
               }),
             ),
         ]));

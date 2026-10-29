@@ -10,6 +10,17 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.2.4] - Unreleased
+
+### Fixed
+
+- An account kept on this device only can sign out again. Sign out in
+  Profile now locks the app and returns to the Unlock screen, with nothing
+  deleted; the password set on this device opens it again. Before, the only
+  way out was removing the account and all its data. Remove this account
+  from this phone is still there, as a separate choice.
+  ([#122](https://github.com/balsm-health/balsm_app/issues/122))
+
 ## [0.2.3] - Unreleased
 
 ### Fixed
