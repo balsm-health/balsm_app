@@ -10,6 +10,16 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.3.1] - Unreleased
+
+### Fixed
+
+- The five mood faces on the check-in no longer spill past the bottom of
+  their row on a narrow phone. They now shrink to whatever space the row
+  has, so the faces and their labels stay whole in both languages and at
+  every text size.
+  ([#126](https://github.com/balsm-health/balsm_app/issues/126))
+
 ## [0.3.0] - Unreleased
 
 ### Changed
