@@ -20,7 +20,10 @@ what changed and why it matters.
   partly hidden. The grey band Android drew behind those buttons is gone
   too, so the app runs to the bottom edge instead of looking raised, and the
   welcome screen no longer pushes the logo up under the status bar on
-  shorter phones such as the Galaxy A17. iPhone
+  shorter phones such as the Galaxy A17. The welcome screen's language switch
+  moved to the top corner as a light pill, and the check-in button in the
+  tab bar is now a dark disc level with the tabs, as in the latest design.
+  iPhone
   and gesture navigation look the same as before.
   ([#120](https://github.com/balsm-health/balsm_app/pull/120))
 
