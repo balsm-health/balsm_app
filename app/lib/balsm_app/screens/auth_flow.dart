@@ -1407,8 +1407,16 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
     final s = AppScope.of(context);
     return switch (e.kind) {
       AuthErrorKind.lockout => s.strings.auth.auth_locked_retry(e.lockoutSecs.toString()),
+      AuthErrorKind.emailRegistered => s.strings.auth.signup_email_registered,
       _ => e.message,
     };
+  }
+
+  /// A fresh code makes whatever is in the boxes stale, so they empty.
+  Future<void> _resend(PatientAppState s) async {
+    final sent =
+        await ref.read(otpControllerProvider.notifier).resend(email: s.authEmail, countryCode: s.country.value);
+    if (sent && mounted) setState(ctrl.clear);
   }
 
   @override
@@ -1615,7 +1623,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                             variant: BtnVariant.ghost,
                             accent: s.accent,
                             ar: s.rtl,
-                            onTap: () => ref.read(otpControllerProvider.notifier).resend())),
+                            onTap: ref.read(otpControllerProvider).resending ? null : () => _resend(s))),
               ]),
             )),
             Padding(

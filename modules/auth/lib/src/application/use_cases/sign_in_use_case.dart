@@ -221,6 +221,10 @@ class SignInUseCase {
 
       return AppResult.success(SignInSuccess(isNewUser: tokens.isNewUser));
     } on AuthException catch (e) {
+      // 401 is the link itself: used (its code or an earlier tap redeemed the
+      // challenge), replaced by a newer code, or expired. Kept apart so the
+      // screen can say so instead of "sign in again" (#117).
+      if (e.code == 'unauthorized') return AppResult.failure(UnauthorizedFailure(e.message));
       return AppResult.failure(NetworkFailure(e.message));
     } catch (_) {
       return AppResult.failure(const NetworkFailure());

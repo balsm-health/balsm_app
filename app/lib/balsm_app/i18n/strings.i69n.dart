@@ -105,6 +105,7 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get legal_updated => "Notice version";
   String get otp_title => "Enter your code";
   String get otp_resend => "Resend code";
+  String get link_used_or_expired => "This sign-in link has already been used or has expired. Request a new code.";
   String get otp_in => "Resend in";
   String get verify => "Verify";
   String get pw_label => "Password";
@@ -201,6 +202,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
         return otp_title;
       case 'otp_resend':
         return otp_resend;
+      case 'link_used_or_expired':
+        return link_used_or_expired;
       case 'otp_in':
         return otp_in;
       case 'verify':

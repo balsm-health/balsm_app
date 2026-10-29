@@ -258,7 +258,8 @@ class _DeepLinkHandlerState extends ConsumerState<DeepLinkHandler> {
         // A single-use token that was already spent, or expired — the most
         // common real failure, and worth a number rather than only a snackbar.
         _logOpen(uri, kind, 'failed');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failure.message)));
+        final message = failure is UnauthorizedFailure ? s.strings.auth.link_used_or_expired : failure.message;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       },
     );
     _handling = false;
