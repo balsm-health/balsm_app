@@ -10,7 +10,7 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.2.1] - Unreleased
+## [0.2.2] - Unreleased
 
 ### Fixed
 
@@ -20,6 +20,14 @@ what changed and why it matters.
   six boxes and submits, and the keyboard offers the code from the email
   where the phone supports it. Before, copying the code from the email app
   was no help, and the code had to be typed by hand. (#99)
+
+## [0.2.1] - Unreleased
+
+### Fixed
+
+- The emergency contact number in Personal details has room again: the
+  relationship picker now sits on its own line above it, instead of
+  sharing the row and squeezing the number into half the width. (#113)
 
 ## [0.2.0] - Unreleased
 
