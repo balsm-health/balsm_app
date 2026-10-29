@@ -16,7 +16,7 @@ what changed and why it matters.
 
 - The emergency contact number in Personal details has room again: the
   relationship picker now sits on its own line above it, instead of
-  sharing the row and squeezing the number into half the width.
+  sharing the row and squeezing the number into half the width. (#113)
 
 ## [0.2.0] - Unreleased
 
