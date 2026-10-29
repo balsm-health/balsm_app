@@ -355,6 +355,46 @@ void main() {
     });
   });
 
+  group('Code step paste (#99)', () {
+    void refuseCodes() => when(() => signIn.verifyEmailOtp(email: any(named: 'email'), code: any(named: 'code')))
+        .thenAnswer((_) async => AppResult.failure(const NetworkFailure('invalid')));
+
+    testWidgets('the field asks for the one-time code suggestion', (tester) async {
+      await pumpAtRoute(tester, AppRoutes.otp);
+
+      expect(tester.widget<TextField>(find.byType(TextField)).autofillHints, contains(AutofillHints.oneTimeCode));
+    });
+
+    testWidgets('a pasted message fills in its code and submits it', (tester) async {
+      refuseCodes();
+      await pumpAtRoute(tester, AppRoutes.otp);
+
+      await tester.enterText(find.byType(TextField), 'Your code is 123 456');
+      await tester.pump();
+
+      verify(() => signIn.verifyEmailOtp(email: any(named: 'email'), code: '123456')).called(1);
+    });
+
+    testWidgets('long-press on the boxes offers Paste, which submits the copied code', (tester) async {
+      refuseCodes();
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.getData') return <String, dynamic>{'text': 'Your Balsm code: 654 321'};
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      await pumpAtRoute(tester, AppRoutes.otp);
+
+      await tester.longPress(find.byType(OtpBox).at(2));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Paste'));
+      await tester.pump();
+      await tester.pump();
+
+      verify(() => signIn.verifyEmailOtp(email: any(named: 'email'), code: '654321')).called(1);
+      expect(find.text('Paste'), findsNothing);
+    });
+  });
+
   testWidgets('a tap between two boxes opens the keyboard', (tester) async {
     await pumpAtRoute(tester, AppRoutes.otp);
     await tester.pump();
