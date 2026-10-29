@@ -10,6 +10,17 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.2.2] - Unreleased
+
+### Fixed
+
+- The emailed code can be pasted on the Enter your code step and in Go
+  online: long-press the boxes for Paste, or paste from the keyboard. A
+  copied `123 456` or a whole sentence like "Your code is 123456" fills the
+  six boxes and submits, and the keyboard offers the code from the email
+  where the phone supports it. Before, copying the code from the email app
+  was no help, and the code had to be typed by hand. (#99)
+
 ## [0.2.1] - Unreleased
 
 ### Fixed

@@ -1429,7 +1429,18 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
     _showKeyboard();
   }
 
-  void _showKeyboard() => reopenCodeKeyboard(focus, mounted: () => mounted);
+  void _showKeyboard() {
+    ContextMenuController.removeAny();
+    reopenCodeKeyboard(focus, mounted: () => mounted);
+  }
+
+  /// Fills the boxes from the clipboard; a whole code submits at once (#99).
+  Future<void> _pasteCode() async {
+    final code = await clipboardCode();
+    if (code == null || !mounted || _verifying) return;
+    setState(() => ctrl.text = code);
+    if (code.length == 6) unawaited(_verify(code));
+  }
 
   /// Verifies the 6-digit code against the real auth module. On success the
   /// use-case has already persisted tokens + `balsm.user_id` to secure storage;
@@ -1485,6 +1496,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    ContextMenuController.removeAny();
     focus.dispose();
     ctrl.dispose();
     super.dispose();
@@ -1537,11 +1549,13 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                   label: s.strings.common.a11y_code_field,
                   value: s.strings.common.a11y_code_progress('${code.length}'),
                   onTap: _showKeyboard,
+                  onPaste: _pasteCode,
                   child: ExcludeSemantics(
                     child: GestureDetector(
                       // The gaps between boxes count as the field too.
                       behavior: HitTestBehavior.opaque,
                       onTap: _showKeyboard,
+                      onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, _pasteCode),
                       // A code reads left to right in every language: the first digit
                       // typed lands in the leftmost box, Arabic included.
                       child: Directionality(
@@ -1571,11 +1585,9 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                           focusNode: focus,
                           textDirection: TextDirection.ltr,
                           keyboardType: TextInputType.number,
+                          autofillHints: const [AutofillHints.oneTimeCode],
                           maxLength: 6,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(6)
-                          ],
+                          inputFormatters: const [CodeInputFormatter()],
                           onChanged: (v) {
                             setState(() {});
                             if (v.length == 6) _verify(v);
