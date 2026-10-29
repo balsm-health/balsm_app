@@ -355,6 +355,12 @@ class BootStrings implements i69n.I69nMessageBundle {
 class CareStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const CareStrings(this._parent);
+  String get loc_off => "Location is turned off on this phone.";
+  String get loc_denied =>
+      "Balsm doesn’t have permission to use your location.";
+  String get loc_unavailable =>
+      "Couldn’t find your location. Try again outdoors.";
+  String get loc_settings => "Settings";
   String get map_sub => "places mapped nearby";
   String get to_doctor => "A copy reaches Dr. Sara at your next visit.";
   String get to_home => "Back to home";
@@ -486,6 +492,14 @@ class CareStrings implements i69n.I69nMessageBundle {
           as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
+      case 'loc_off':
+        return loc_off;
+      case 'loc_denied':
+        return loc_denied;
+      case 'loc_unavailable':
+        return loc_unavailable;
+      case 'loc_settings':
+        return loc_settings;
       case 'map_sub':
         return map_sub;
       case 'to_doctor':

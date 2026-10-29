@@ -360,6 +360,11 @@ class BootStrings_ar extends BootStrings {
 class CareStrings_ar extends CareStrings {
   final Strings_ar _parent;
   const CareStrings_ar(this._parent) : super(_parent);
+  String get loc_off => "خدمة الموقع متوقفة على هذا الهاتف.";
+  String get loc_denied => "لا يملك بلسم إذن استخدام موقعك.";
+  String get loc_unavailable =>
+      "تعذّر تحديد موقعك. حاول مرة أخرى في مكان مفتوح.";
+  String get loc_settings => "الإعدادات";
   String get map_sub => "مكان بالقرب منك";
   String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
   String get to_home => "العودة للرئيسية";
@@ -486,6 +491,14 @@ class CareStrings_ar extends CareStrings {
           as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
+      case 'loc_off':
+        return loc_off;
+      case 'loc_denied':
+        return loc_denied;
+      case 'loc_unavailable':
+        return loc_unavailable;
+      case 'loc_settings':
+        return loc_settings;
       case 'map_sub':
         return map_sub;
       case 'to_doctor':
