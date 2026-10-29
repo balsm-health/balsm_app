@@ -10,7 +10,7 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.2.4] - Unreleased
+## [0.3.1] - Unreleased
 
 ### Fixed
 
@@ -20,6 +20,38 @@ what changed and why it matters.
   way out was removing the account and all its data. Remove this account
   from this phone is still there, as a separate choice.
   ([#122](https://github.com/balsm-health/balsm_app/issues/122))
+
+## [0.3.0] - Unreleased
+
+### Changed
+
+- Home has a new look. Today's check-in is one card with your streak and
+  a strip of dots for the last seven days; your latest readings sit in one
+  card, blood pressure large with whether it is in range; care team, nearby
+  care and records are three tiles with their counts. On a tablet, Home
+  uses two columns. Everything shown is your own data.
+  ([#121](https://github.com/balsm-health/balsm_app/pull/121))
+- The welcome screen's language switch moved to the top corner as a light
+  pill, and the check-in button in the tab bar is a dark disc level with
+  the tabs, as in the latest design. Switching language no longer moves the
+  welcome screen's logo and buttons. In dev and staging builds, the server
+  pill on the welcome screen shows only on emulators, simulators, desktop
+  and web; on a real phone or tablet, shake the device to open Dev Config.
+  ([#121](https://github.com/balsm-health/balsm_app/pull/121))
+
+## [0.2.4] - Unreleased
+
+### Fixed
+
+- On Android phones that use the Back / Home / Recents buttons, the bottom
+  tabs (Home, Map, +, Meds, Profile) sit fully above those buttons again.
+  Since Android 15 the app draws under them, and the tabs' labels were
+  partly hidden. The grey band Android drew behind those buttons is gone
+  too, so the app runs to the bottom edge instead of looking raised, and the
+  welcome screen no longer pushes the logo up under the status bar on
+  shorter phones such as the Galaxy A17. iPhone
+  and gesture navigation look the same as before.
+  ([#120](https://github.com/balsm-health/balsm_app/pull/120))
 
 ## [0.2.3] - Unreleased
 

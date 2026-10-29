@@ -1560,6 +1560,9 @@ class HomeStrings_ar extends HomeStrings {
   String get hero_disclaimer => "تقييمك الخاص — لا يعتمد على قياس طبي";
   String get care_team_sub => "أطباء وصيدليات ومقدّمو رعاية";
   String get care_team_n => "مقدّم رعاية يتابع حالتك";
+  String get sc_providers => "مقدّمو رعاية";
+  String get sc_places => "مكان قريب";
+  String get sc_records => "السجلات";
   String viewing_member(String name) => "$name محدد";
   String get viewing_own_data => "سجلّه غير متاح على هذا الجهاز بعد — ما تراه هو سجلّك أنت.";
   String get viewing_switch_back => "العودة";
@@ -1603,6 +1606,12 @@ class HomeStrings_ar extends HomeStrings {
         return care_team_sub;
       case 'care_team_n':
         return care_team_n;
+      case 'sc_providers':
+        return sc_providers;
+      case 'sc_places':
+        return sc_places;
+      case 'sc_records':
+        return sc_records;
       case 'viewing_member':
         return viewing_member;
       case 'viewing_own_data':

@@ -1,3 +1,4 @@
+import 'package:app/balsm_app/dev/shake_to_dev_config.dart';
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:core/core.dart';
@@ -36,7 +37,11 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [disclosureDaoProvider.overrideWithValue(disclosure)],
+        overrides: [
+          disclosureDaoProvider.overrideWithValue(disclosure),
+          // An emulator: nothing to shake, so the pill is the way in.
+          canShakeProvider.overrideWith((ref) async => false),
+        ],
         child: MaterialApp(
           home: Material(
             type: MaterialType.transparency,
