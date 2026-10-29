@@ -106,7 +106,7 @@ class HomeCheckInCard extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsetsDirectional.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(
@@ -183,7 +183,7 @@ class _StreakPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: T.warningBg, borderRadius: BorderRadius.circular(T.rPill)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         const Icon(LucideIcons.flame, size: 14, color: T.streakInk),
@@ -371,7 +371,7 @@ class HomeVitalsCard extends StatelessWidget {
       ),
       child: Column(children: [
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 12),
           decoration: const BoxDecoration(border: Border(bottom: hairline)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _VitalLabel(icon: LucideIcons.activity, color: T.hueViolet, label: p.m_bp, size: 15),
@@ -390,7 +390,7 @@ class HomeVitalsCard extends StatelessWidget {
               if (bp != null) ...[
                 const SizedBox(width: 12),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsetsDirectional.only(bottom: 4),
                   child:
                       Pill(bpHigh ? c.bp_high : c.bp_normal, kind: bpHigh ? PillKind.warn : PillKind.success, ar: ar),
                 ),
@@ -461,7 +461,7 @@ class _VitalCell extends StatelessWidget {
     final style =
         numeric && v != null ? Typo.num(size: FS.xl) : Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 16, vertical: 11),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _VitalLabel(icon: icon, color: color, label: label),
         const SizedBox(height: 4),
@@ -504,7 +504,7 @@ class HomeSectionHead extends StatelessWidget {
     final s = AppScope.of(context);
     final ar = s.rtl;
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 6),
+      padding: const EdgeInsetsDirectional.only(top: 20, bottom: 6),
       child: Row(children: [
         Expanded(
           child: Semantics(
@@ -520,7 +520,7 @@ class HomeSectionHead extends StatelessWidget {
           TextButton(
             onPressed: onAction,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsetsDirectional.symmetric(horizontal: 4),
               minimumSize: const Size(44, 44),
               foregroundColor: s.accent.d,
             ),
@@ -724,7 +724,7 @@ class HomeShortcutTile extends StatelessWidget {
       child: Pressable(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          padding: const EdgeInsetsDirectional.symmetric(horizontal: 10, vertical: 12),
           decoration: BoxDecoration(
             color: T.surface,
             borderRadius: BorderRadius.circular(T.rTileV2),

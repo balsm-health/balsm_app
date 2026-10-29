@@ -94,7 +94,7 @@ class HomeScreen extends ConsumerWidget {
             const AwayBanner(),
 
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: g),
+              padding: EdgeInsetsDirectional.symmetric(horizontal: g),
               child: wide
                   ? const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(
@@ -263,7 +263,7 @@ class _Shortcut extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return PCard(
-      margin: const EdgeInsets.only(top: 14),
+      margin: const EdgeInsetsDirectional.only(top: 14),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       onTap: onTap,
       child: Row(children: [
