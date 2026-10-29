@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:auth/auth.dart';
+import 'package:core/core.dart' show ConflictFailure;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Typed auth-flow errors. The screens map kinds onto localized strings —
 /// controllers never touch the string bundles.
-enum AuthErrorKind { lockout, invalidCredentials, server }
+enum AuthErrorKind { lockout, invalidCredentials, emailRegistered, server }
 
 @immutable
 class AuthError {
@@ -15,6 +16,10 @@ class AuthError {
         message = null;
   const AuthError.invalidCredentials()
       : kind = AuthErrorKind.invalidCredentials,
+        message = null,
+        lockoutSecs = 0;
+  const AuthError.emailRegistered()
+      : kind = AuthErrorKind.emailRegistered,
         message = null,
         lockoutSecs = 0;
   const AuthError.server(this.message)
@@ -98,7 +103,8 @@ class CredentialsController extends AutoDisposeNotifier<CredentialsState> {
         return true;
       },
       (f) {
-        state = CredentialsState(error: AuthError.server(f.message));
+        state = CredentialsState(
+            error: f is ConflictFailure ? const AuthError.emailRegistered() : AuthError.server(f.message));
         return false;
       },
     );

@@ -10,13 +10,30 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.1.5] - Unreleased
+## [0.2.1] - Unreleased
 
 ### Fixed
 
 - The emergency contact number in Personal details has room again: the
   relationship picker now sits on its own line above it, instead of
   sharing the row and squeezing the number into half the width.
+
+## [0.2.0] - Unreleased
+
+### Changed
+
+- Welcome offers three ways in: Create an account, Sign in, and Use on this
+  device only. Creating an account asks for an email and a new password, then
+  a 6-digit code confirms the email; signing in is email and password, with
+  Forgot password beside it. A refused sign-in now just says so, instead of
+  offering to email a code, and a link at the foot switches between the two.
+  The Online / Device only switch on the credential screen is gone: the
+  Welcome button decides it.
+- The code step now says that an email which already has an account is
+  signed in to it, the same words for everyone. When the server switches
+  sign-up to strict (email quota or abuse), Create an account says the email
+  is already registered and points to Sign in, with no app update needed.
+  Older servers keep working unchanged.
 
 ## [0.1.4] - Unreleased
 

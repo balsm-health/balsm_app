@@ -22,7 +22,9 @@ const kHomeCountry = CountryCode.egypt;
 /// (`accountSummaryProvider`, `profileDataSourceProvider`).
 /// Which credential flow the auth screens run ('signup' vs 'signin' in the
 /// design prototype).
-enum AuthIntent { signIn, signUp }
+/// Which Welcome button led to the credentials step: Create an account,
+/// Sign in, or Use on this device only (design: auth.jsx `authIntent`).
+enum AuthIntent { signIn, signUp, deviceOnly }
 
 /// How the account was reached at the credentials step.
 enum AuthMethod { phone, email }
@@ -78,8 +80,8 @@ class PatientAppState extends ChangeNotifier {
   AuthMethod authMethod = AuthMethod.phone;
   String authEmail = '';
 
-  /// 'signup' (Get started / social) | 'signin' (Sign in link). Decides whether
-  /// the email+password form registers (OTP → setPassword) or signs in.
+  /// Which Welcome button was tapped. Decides whether the email+password form
+  /// registers (code → setPassword), signs in, or creates a device-only account.
   AuthIntent authIntent = AuthIntent.signIn;
 
   /// Transient — password captured on the password sign-up screen, applied via
