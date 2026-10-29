@@ -10,6 +10,16 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.4.1] - Unreleased
+
+### Fixed
+
+- Service status in Profile shows whether Balsm's servers are working again:
+  it always said the status was unknown, even when everything was up. It now
+  speaks the app's language, so in Arabic it reads in Arabic instead of
+  English laid out right to left. Devices & sessions is hidden from Profile
+  for now. ([#124](https://github.com/balsm-health/balsm_app/pull/124))
+
 ## [0.4.0] - Unreleased
 
 ### Changed

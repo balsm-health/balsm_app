@@ -183,15 +183,12 @@ class ProfileScreen extends ConsumerWidget {
 
           // → StatusScreen hop.
           _ListCard(children: [
-            _ListRow(
-              icon: LucideIcons.smartphone,
-              label: s.strings.nav.gov_sessions,
-              first: true,
-              onTap: () => _pushSessionsRouted(context),
-            ),
+            // Devices & sessions is hidden for now; its screen and route stay
+            // in place for when it returns.
             _ListRow(
               icon: LucideIcons.activity,
               label: s.strings.nav.gov_status,
+              first: true,
               onTap: () => _pushGovernance(context, const StatusScreen()),
             ),
             // Deletion drives declarative go_router nav (goNamed('deletion.confirm'|
@@ -299,6 +296,7 @@ void _pushGovernance(BuildContext context, Widget screen) {
 /// Sessions has a single route whose ONLY navigation is `context.pop()`, so the
 /// one-shot exit observer suffices. Deletion drives a multi-screen declarative
 /// flow (`goNamed` + `go('/')`); it uses the richer [_pushDeletionRouted] host.
+// ignore: unused_element -- Sessions is hidden from Profile for now; kept for its return.
 void _pushSessionsRouted(BuildContext context) {
   final s = AppScope.of(context);
   final theme = Theme.of(context);
