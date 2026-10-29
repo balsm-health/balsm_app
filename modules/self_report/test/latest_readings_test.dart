@@ -1,9 +1,8 @@
-import 'package:app/balsm_app/screens/home_widgets.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:self_report/self_report.dart';
 
-/// Home "latest readings": each reading comes from the newest check-in that
+/// Latest readings: each reading comes from the newest check-in that
 /// logged it, so a later mood- or pain-only check-in keeps the vitals.
 void main() {
   const profile = HealthProfileId.value('hp-1');

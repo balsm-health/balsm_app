@@ -18,6 +18,7 @@ export 'src/domain/value_objects/body_tissue.dart';
 export 'src/domain/value_objects/pain_site.dart';
 export 'src/domain/value_objects/vitals.dart';
 export 'src/domain/value_objects/check_in_metric.dart';
+export 'src/domain/value_objects/latest_readings.dart';
 export 'src/i18n/strings.dart';
 
 // Application
