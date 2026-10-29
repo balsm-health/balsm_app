@@ -360,8 +360,8 @@ class _Shortcuts extends ConsumerWidget {
   }
 }
 
-/// `.h2-vitals` — the most recent check-in's readings. Hidden until at least
-/// one check-in exists, so a new patient sees no empty card.
+/// `.h2-vitals` — the newest value of each reading across check-ins. Hidden
+/// until at least one check-in exists, so a new patient sees no empty card.
 class _LatestMetrics extends ConsumerWidget {
   const _LatestMetrics();
 
@@ -370,22 +370,21 @@ class _LatestMetrics extends ConsumerWidget {
     final s = AppScope.of(context);
     final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
     if (history.isEmpty) return const SizedBox.shrink();
-    final latest = history.first;
-    final v = latest.vitals;
-    final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
-    final hasBp = v.systolic != null && v.diastolic != null;
+    final r = LatestReadings.from(history);
+    final glucose = r.glucose;
+    final hasBp = r.systolic != null && r.diastolic != null;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       HomeSectionHead(s.strings.checkin.latest,
           action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends)),
       HomeVitalsCard(
-        bp: hasBp ? '${v.systolic}/${v.diastolic}' : null,
-        bpHigh: hasBp && (v.systolic! >= 130 || v.diastolic! >= 85),
+        bp: hasBp ? '${r.systolic}/${r.diastolic}' : null,
+        bpHigh: hasBp && (r.systolic! >= 130 || r.diastolic! >= 85),
         glucose: glucose?.toString(),
         glucoseHigh: glucose != null && glucose >= 140,
-        spo2: v.spo2?.toString(),
-        mood: latest.mood == null ? null : moodLabel(s, latest.mood!.score),
-        pain: latest.painLevel.value > 0 ? '${latest.painLevel.value}/10' : null,
+        spo2: r.spo2?.toString(),
+        mood: r.mood == null ? null : moodLabel(s, r.mood!.score),
+        pain: r.pain == null ? null : '${r.pain!.value}/10',
       ),
     ]);
   }

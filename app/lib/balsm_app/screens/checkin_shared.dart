@@ -107,22 +107,18 @@ class MoodCell extends StatelessWidget {
               borderRadius: BorderRadius.circular(T.rLg),
               border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
             ),
-            // The cell is square (AspectRatio above), so five of them across a
-            // 360pt phone leave about 56pt — less than the face, the gap and a
-            // line of label need, and less again at a larger text scale or in
-            // Arabic. FittedBox scales the trio down to whatever the cell has
-            // rather than letting it overflow; at the sizes where it already
-            // fits, scaleDown leaves it untouched.
+            // A 360dp phone leaves each square ~51dp — less than the face and
+            // label need — so the content scales down rather than overflow.
+            padding: const EdgeInsets.all(4),
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
                 MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
                 const SizedBox(height: 8),
                 Text(moodLabel(s, lv),
                     maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: Typo.meta(ar: s.rtl).copyWith(
-                        fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
+                    style: Typo.meta(ar: s.rtl)
+                        .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
               ]),
             ),
           ),

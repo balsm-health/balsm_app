@@ -95,4 +95,30 @@ void main() {
     expect(state.route, AppRoutes.app);
     expect(state.accountMode, AccountMode.deviceOnly);
   });
+
+  group('Sign out locks a device-only account (#122)', () {
+    PatientAppState signedIn() => PatientAppState()
+      ..route = AppRoutes.app
+      ..setAccountMode(AccountMode.deviceOnly)
+      ..setTab(AppTab.meds);
+
+    test('it returns to Unlock, back on the Home tab', () {
+      final state = signedIn();
+
+      lockDeviceAccount(state);
+
+      expect(state.route, AppRoutes.unlock);
+      expect(state.tab, AppTab.home);
+    });
+
+    test('it keeps the account and what this phone knows about the patient', () {
+      final state = signedIn()..addFamilyMember(name: 'n', relation: 'r');
+
+      lockDeviceAccount(state);
+
+      expect(state.accountMode, AccountMode.deviceOnly);
+      expect(state.extraFamily, hasLength(1));
+      verifyNever(() => remover.remove());
+    });
+  });
 }
