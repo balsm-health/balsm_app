@@ -46,6 +46,16 @@ Future<bool> removeDeviceAccount(WidgetRef ref, PatientAppState s) async {
   return true;
 }
 
+/// Signs a device-only account out by locking the app: back to Unlock, which
+/// is where every cold start of this account opens. Nothing is deleted, the
+/// server is never called, and the password set on this device opens it
+/// again (#122). The session and the patient's own preferences stay, so it is
+/// the same account that unlocks; only the tab goes back to Home.
+void lockDeviceAccount(PatientAppState s) {
+  s.setTab(AppTab.home);
+  s.go(AppRoutes.unlock);
+}
+
 /// Pops `true` only on the explicit destructive button.
 class _ConfirmSheet extends StatelessWidget {
   const _ConfirmSheet({required this.s, required this.title, required this.body, required this.confirm});
