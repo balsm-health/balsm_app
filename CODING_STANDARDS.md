@@ -200,10 +200,14 @@ base branch it merges into, released or not. What ships is everything under
 - **The top section's heading is the pubspec version.**
 - Write for someone who was not there: what changed and why it matters, not
   how. No "fixed bug", no ticket number on its own, no file list.
-- **Every line ends with its ticket**, as `(#99)`: the issue it fixes or
-  delivers, or the pull request's own number when there is no issue. Several
-  tickets are listed together, `(#98, #99)`. The sentence comes first; the
-  reference never stands in for it.
+- **Every line ends with its ticket, as a link**:
+  `([#99](https://github.com/balsm-health/balsm_app/issues/99))` for the
+  issue it fixes or delivers, or the pull request when there is no issue,
+  `([#113](https://github.com/balsm-health/balsm_app/pull/113))`. Several
+  tickets share one pair of brackets, separated by commas. The link is
+  written out because the changelog is also read outside GitHub, where a
+  bare `#99` links nowhere. The sentence comes first; the reference never
+  stands in for it.
 - **Never add a version to `app/web/version/<brand>.json` in a code change.**
   That file is live and lists released versions only; an entry there is
   offered to every installed app at once. It is edited at release time
