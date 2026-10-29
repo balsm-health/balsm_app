@@ -16,7 +16,8 @@ import 'checkin_shared.dart';
 
 /// How a metric capture is hosted.
 enum MetricLogHost {
-  /// Quick-log sheet: note + Save. [MetricLog.onSave] fires on tap.
+  /// Quick-log sheet: note, then Save and Cancel. [MetricLog.onSave] fires
+  /// on Save; the sheet header's ✓ reads [MetricLog.onChanged] instead.
   standalone,
 
   /// Full check-in step: same capture + note, no Save. Wizard footer continues.
@@ -116,6 +117,7 @@ class MetricLog extends StatelessWidget {
     required this.s,
     required this.host,
     this.onSave,
+    this.onCancel,
     this.onChanged,
     this.focusedSymptom,
     this.belowField,
@@ -125,6 +127,7 @@ class MetricLog extends StatelessWidget {
   final PatientAppState s;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
 
   /// Quick-log one-symptom detail: skip the multi-select picker and capture
@@ -144,29 +147,35 @@ class MetricLog extends StatelessWidget {
         belowField: belowField,
         symptom: focusedSymptom!,
         onSave: onSave,
+        onCancel: onCancel,
         onChanged: onChanged,
       );
     }
     if (metric == CheckInMetric.mood) {
-      return _MoodLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
+      return _MoodLog(
+          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     if (metric == CheckInMetric.bloodPressure) {
-      return _BpLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
+      return _BpLog(s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     if (metric == CheckInMetric.glucose) {
-      return _GlucoseLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
+      return _GlucoseLog(
+          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     if (metric == CheckInMetric.weight) {
-      return _WeightLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
+      return _WeightLog(
+          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     if (metric == CheckInMetric.spo2) {
-      return _O2Log(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
+      return _O2Log(s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     if (metric == CheckInMetric.pain) {
-      return _PainLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
+      return _PainLog(
+          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     if (metric == CheckInMetric.symptoms) {
-      return _SymptomsLog(s: s, host: host, belowField: belowField, onSave: onSave, onChanged: onChanged);
+      return _SymptomsLog(
+          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     return const SizedBox.shrink();
   }
@@ -184,6 +193,7 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   PatientAppState get s;
   MetricLogHost get host;
   MetricLogSave? get onSave;
+  VoidCallback? get onCancel;
   MetricLogChanged? get onChanged;
   bool get valid;
   MetricLogCapture get capture;
@@ -231,11 +241,7 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
               setState(() => photo = p);
               emit();
             }),
-        _SaveButton(
-          s: s,
-          enabled: valid,
-          onTap: () => onSave?.call(capture),
-        ),
+        _FlowSubmit(s: s, valid: valid, onSave: () => onSave?.call(capture), onCancel: onCancel),
       ],
     ]);
   }
@@ -285,25 +291,42 @@ class _NoteField extends StatelessWidget {
   }
 }
 
-class _SaveButton extends StatelessWidget {
-  const _SaveButton({required this.s, required this.enabled, required this.onTap});
+/// quicklog.jsx `FlowSubmit` — Save, a hint while it is disabled, then
+/// Cancel. The sheet header repeats Save as a ✓.
+class _FlowSubmit extends StatelessWidget {
+  const _FlowSubmit({required this.s, required this.valid, required this.onSave, required this.onCancel});
   final PatientAppState s;
-  final bool enabled;
-  final VoidCallback onTap;
+  final bool valid;
+  final VoidCallback onSave;
+  final VoidCallback? onCancel;
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: Opacity(
-          opacity: enabled ? 1 : 0.4,
+  Widget build(BuildContext context) {
+    final ar = s.rtl;
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(top: 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Opacity(
+          opacity: valid ? 1 : 0.4,
           child: PButton(s.strings.checkin.ql_save,
               variant: BtnVariant.primary,
               large: true,
               block: true,
               accent: s.accent,
-              ar: s.rtl,
-              onTap: enabled ? onTap : null),
+              ar: ar,
+              onTap: valid ? onSave : null),
         ),
-      );
+        if (!valid)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 8),
+            child: Text(s.strings.checkin.ql_save_hint,
+                textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(color: T.fg3)),
+          ),
+        const SizedBox(height: 10),
+        PButton(s.strings.common.cancel,
+            variant: BtnVariant.ghost, large: true, block: true, accent: s.accent, ar: ar, onTap: onCancel),
+      ]),
+    );
+  }
 }
 
 class _BigReading extends StatelessWidget {
@@ -370,11 +393,12 @@ String? _trimmedNote(TextEditingController c) {
 // ── Mood ─────────────────────────────────────────────────────
 
 class _MoodLog extends StatefulWidget {
-  const _MoodLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
+  const _MoodLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_MoodLog> createState() => _MoodLogState();
@@ -389,6 +413,8 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
@@ -416,33 +442,35 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
 
   @override
   Widget build(BuildContext context) => chrome(
-        child: Row(
-            children: List.generate(
-                5,
-                (i) => Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(right: i < 4 ? 10 : 0),
-                        child: MoodCell(
-                            lv: i + 1,
-                            selected: mood == i + 1,
-                            s: s,
-                            onTap: () => setState(() {
-                                  mood = i + 1;
-                                  emit();
-                                })),
-                      ),
-                    ))),
+        // Gaps between the cells, not padding inside them: padding on one
+        // side left the first four 10dp narrower than the last.
+        child: Row(children: [
+          for (var i = 0; i < 5; i++) ...[
+            if (i > 0) const SizedBox(width: 10),
+            Expanded(
+              child: MoodCell(
+                  lv: i + 1,
+                  selected: mood == i + 1,
+                  s: s,
+                  onTap: () => setState(() {
+                        mood = i + 1;
+                        emit();
+                      })),
+            ),
+          ],
+        ]),
       );
 }
 
 // ── Blood pressure ───────────────────────────────────────────
 
 class _BpLog extends StatefulWidget {
-  const _BpLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
+  const _BpLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_BpLog> createState() => _BpLogState();
@@ -457,6 +485,8 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
@@ -544,11 +574,12 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
 enum _GluCtx { fasting, meal, random }
 
 class _GlucoseLog extends StatefulWidget {
-  const _GlucoseLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
+  const _GlucoseLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_GlucoseLog> createState() => _GlucoseLogState();
@@ -563,6 +594,8 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
@@ -650,11 +683,12 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
 // ── Weight ───────────────────────────────────────────────────
 
 class _WeightLog extends StatefulWidget {
-  const _WeightLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
+  const _WeightLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_WeightLog> createState() => _WeightLogState();
@@ -669,6 +703,8 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
@@ -739,11 +775,12 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
 // ── SpO₂ ─────────────────────────────────────────────────────
 
 class _O2Log extends StatefulWidget {
-  const _O2Log({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
+  const _O2Log({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_O2Log> createState() => _O2LogState();
@@ -758,6 +795,8 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
@@ -817,11 +856,12 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
 // ── Pain ─────────────────────────────────────────────────────
 
 class _PainLog extends StatefulWidget {
-  const _PainLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
+  const _PainLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_PainLog> createState() => _PainLogState();
@@ -836,6 +876,8 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
@@ -909,11 +951,13 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
 // ── Symptoms ─────────────────────────────────────────────────
 
 class _SymptomsLog extends StatefulWidget {
-  const _SymptomsLog({required this.s, required this.host, this.onSave, this.onChanged, this.belowField});
+  const _SymptomsLog(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_SymptomsLog> createState() => _SymptomsLogState();
@@ -928,6 +972,8 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
@@ -1040,6 +1086,7 @@ class _OneSymptomLog extends StatefulWidget {
     required this.host,
     required this.symptom,
     this.onSave,
+    this.onCancel,
     this.onChanged,
     this.belowField,
   });
@@ -1048,6 +1095,7 @@ class _OneSymptomLog extends StatefulWidget {
   final Widget? belowField;
   final SymptomId symptom;
   final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
   @override
   State<_OneSymptomLog> createState() => _OneSymptomLogState();
@@ -1062,6 +1110,8 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
   MetricLogHost get host => widget.host;
   @override
   MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override

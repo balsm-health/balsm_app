@@ -28,6 +28,9 @@ void showQuickLog(BuildContext context) {
     useRootNavigator: true,
     size: SheetSize.lg,
     barrierColor: const Color(0x61141F2B),
+    // The sheet drags itself from its header: the route's own drag pops
+    // past [PopScope] and would drop unsaved input without asking.
+    enableDrag: false,
     textDirection: s.dir,
     builder: (sheetContext) => _QuickLogSheet(
       s: s,
@@ -122,10 +125,39 @@ class _QuickLogSheet extends ConsumerStatefulWidget {
 class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   _Metric? active;
   SymptomId? activeSymptom;
-  String? savedValue;
-  String? savedNote;
   bool saving = false;
-  Timer? _closeTimer;
+
+  /// What the open flow holds, and whether it may be saved — the header's
+  /// Save reads these (quicklog.jsx `FlowSubmit` binds them to the sheet).
+  MetricLogCapture? _capture;
+  bool _valid = false;
+
+  /// The flow as it opened; leaving asks first only once the entry differs
+  /// from it, so undoing an edit needs no prompt.
+  MetricLogCapture? _initial;
+  bool get _dirty => _capture != null && _initial != null && !_sameEntry(_capture!, _initial!);
+
+  /// Where the discard prompt leads once confirmed; null while it is hidden.
+  _Leave? _confirm;
+
+  /// How far the header has dragged the sheet down.
+  double _dragDy = 0;
+  bool _dragging = false;
+
+  void _dragEnd(DragEndDetails d) {
+    final dy = _dragDy;
+    final fast = (d.primaryVelocity ?? 0) > 700;
+    setState(() {
+      _dragDy = 0;
+      _dragging = false;
+    });
+    // quicklog.jsx: past 110px, or a flick past 30px, closes.
+    if (dy > 110 || (fast && dy > 30)) _requestClose();
+  }
+
+  /// The last save's summary, shown in the "Saved" toast over the list.
+  String? _toastValue;
+  Timer? _toastTimer;
   late final TextEditingController searchCtrl;
 
   PatientAppState get s => widget.s;
@@ -139,13 +171,13 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
 
   @override
   void dispose() {
-    _closeTimer?.cancel();
+    _toastTimer?.cancel();
     searchCtrl.dispose();
     super.dispose();
   }
 
-  /// Persists the single metric as a check-in on-device, then flashes the
-  /// confirmation and closes. PHI: the captured values are never logged.
+  /// Persists the single metric as a check-in on-device, then returns to the
+  /// list with a "Saved" toast, so the next reading is one tap away. PHI: the captured values are never logged.
   ///
   /// [currentProfileIdProvider] is a plain (non-async) read of whatever
   /// [activeProfileProvider] has resolved so far — on a cold session that
@@ -193,132 +225,178 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     if (!mounted) return;
     setState(() {
       saving = false;
-      savedValue = capture.summary;
-      savedNote = capture.note;
-      _undoCheckInId = checkInId;
-      _undoPhotoRecordId = photoRecordId;
+      _openList();
+      _toastValue = capture.summary;
     });
-    // The design holds the sheet open for the undo window rather than closing
-    // on the old 1.6s confirmation beat.
-    _closeTimer = Timer(_undoWindow, () {
-      if (mounted) Navigator.pop(context);
+    _toastTimer?.cancel();
+    _toastTimer = Timer(_toastFor, () {
+      if (mounted) setState(() => _toastValue = null);
     });
   }
 
-  /// `UX Enhancement Screens.html` — "Quick-log · undo after save": a short
-  /// window to catch a mis-tap, instead of a confirm step on every entry.
-  static const _undoWindow = Duration(seconds: 4);
+  /// quicklog.jsx `qlToast` — 2.6s.
+  static const _toastFor = Duration(milliseconds: 2600);
 
-  /// The entry the undo affordance would remove; null once the window closes.
-  CheckInId? _undoCheckInId;
-  String? _undoPhotoRecordId;
+  /// Back to the list, forgetting the flow. Call inside `setState`.
+  void _openList() {
+    active = null;
+    activeSymptom = null;
+    _capture = null;
+    _initial = null;
+    _valid = false;
+    _confirm = null;
+  }
 
-  /// Deletes the just-saved entry and closes. The photo record goes first —
-  /// same ordering rule as [DeleteRecordDocumentUseCase]: never leave a
-  /// readable blob with no row pointing at it.
-  Future<void> _undo() async {
-    final id = _undoCheckInId;
-    if (id == null) return;
-    _closeTimer?.cancel();
-    setState(() => _undoCheckInId = null);
+  void _onChanged(MetricLogCapture capture, {required bool valid}) {
+    setState(() {
+      // The first report is the flow's starting state, not an edit.
+      _initial ??= capture;
+      _capture = capture;
+      _valid = valid;
+    });
+  }
 
-    final userId = ref.read(currentUserIdProvider);
-    final photoId = _undoPhotoRecordId;
-    if (photoId != null && userId != null) {
-      final records = ref.read(recordsDataSourceProvider);
-      final doc = (await records.findAll()).where((r) => r.id.value == photoId).firstOrNull;
-      if (doc != null) {
-        await ref.read(deleteRecordDocumentUseCaseProvider).call(doc, scope: userId);
-      }
+  void _requestBack() => _dirty ? setState(() => _confirm = _Leave.back) : setState(_openList);
+
+  void _requestClose() => _dirty ? setState(() => _confirm = _Leave.close) : Navigator.pop(context);
+
+  /// System back and Escape (quicklog.jsx): dismiss the prompt, else step
+  /// back out of the flow, else close the sheet.
+  void _onBlockedPop() {
+    if (_confirm != null) {
+      setState(() => _confirm = null);
+    } else {
+      _requestBack();
     }
-    await ref.read(checkInsDataSourceProvider).delete(id);
+  }
 
-    if (mounted) Navigator.pop(context);
+  void _discard() {
+    final leave = _confirm;
+    setState(_openList);
+    if (leave == _Leave.close) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final showBack = (active != null || activeSymptom != null) && savedValue == null;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
-        decoration:
-            const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-        child: Stack(children: [
-          Column(mainAxisSize: MainAxisSize.min, children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: Column(children: [
-                if (!showBack) const Padding(padding: EdgeInsets.only(bottom: 10), child: SheetGrab()),
-                Container(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
-                  child: Row(children: [
-                    if (showBack) ...[
-                      RoundBtn(
-                          icon: backArrow(context),
-                          semanticLabel: s.strings.common.a11y_back,
-                          ghost: true,
-                          iconSize: 18,
-                          onTap: () => setState(() {
-                                active = null;
-                                activeSymptom = null;
-                              })),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: Text(
-                        _headerTitle(),
-                        style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
-                      ),
+    final inFlow = active != null || activeSymptom != null;
+    final accent = s.accent.main;
+    return PopScope(
+      canPop: !inFlow && _confirm == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBlockedPop();
+      },
+      child: Padding(
+        padding: EdgeInsetsDirectional.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: AnimatedContainer(
+          duration: _dragging ? Duration.zero : Motion.base,
+          curve: Motion.easeOut,
+          transform: Matrix4.translationValues(0, _dragDy, 0),
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
+          decoration: const BoxDecoration(
+              color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+          child: Stack(children: [
+            Column(mainAxisSize: MainAxisSize.min, children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onVerticalDragStart: (_) => setState(() => _dragging = true),
+                onVerticalDragUpdate: (d) => setState(() => _dragDy = math.max(0, _dragDy + d.delta.dy)),
+                onVerticalDragEnd: _dragEnd,
+                onVerticalDragCancel: () => setState(() {
+                  _dragDy = 0;
+                  _dragging = false;
+                }),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 0),
+                  child: Column(children: [
+                    const Padding(padding: EdgeInsetsDirectional.only(bottom: 10), child: SheetGrab()),
+                    Container(
+                      padding: const EdgeInsetsDirectional.only(bottom: 10),
+                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
+                      child: Row(children: [
+                        if (inFlow) ...[
+                          RoundBtn(
+                              icon: backArrow(context),
+                              semanticLabel: s.strings.common.a11y_back,
+                              ghost: true,
+                              iconSize: 18,
+                              onTap: _requestBack),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            _headerTitle(),
+                            style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        if (inFlow)
+                          // quicklog.jsx: Save moves to the header — accent once
+                          // the entry is complete, greyed until then.
+                          RoundBtn(
+                            icon: LucideIcons.check,
+                            semanticLabel: s.strings.checkin.ql_save,
+                            bg: _valid ? accent : T.ink100,
+                            fg: _valid ? Colors.white : T.fg4,
+                            outlined: false,
+                            iconSize: 19,
+                            onTap: _valid && !saving && _capture != null ? () => _save(_capture!) : null,
+                          )
+                        else
+                          RoundBtn(
+                              icon: LucideIcons.x,
+                              semanticLabel: s.strings.common.a11y_close,
+                              ghost: true,
+                              iconSize: 18,
+                              onTap: () => Navigator.pop(context)),
+                      ]),
                     ),
-                    RoundBtn(
-                        icon: LucideIcons.x,
-                        semanticLabel: s.strings.common.a11y_close,
-                        ghost: true,
-                        iconSize: 18,
-                        onTap: () => Navigator.pop(context)),
                   ]),
                 ),
-              ]),
-            ),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context)),
-                child: RiseIn(key: ValueKey('${active}_${activeSymptom}_${savedValue != null}'), child: _body()),
               ),
-            ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, sheetBottomInset(context)),
+                  child: RiseIn(key: ValueKey('${active}_$activeSymptom'), child: _body()),
+                ),
+              ),
+            ]),
+            // "Saved" with the reading.
+            if (_toastValue != null && !inFlow)
+              PositionedDirectional(
+                start: 16,
+                end: 16,
+                bottom: sheetBottomInset(context, base: 24),
+                child: IgnorePointer(child: _SavedToast(s: s, value: _toastValue!)),
+              ),
+            if (_confirm != null)
+              Positioned.fill(
+                child: _DiscardPrompt(
+                  s: s,
+                  onDiscard: _discard,
+                  onKeep: () => setState(() => _confirm = null),
+                ),
+              ),
           ]),
-          // "Saved · Undo" — only while the window is open.
-          if (_undoCheckInId != null)
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: sheetBottomInset(context, base: 20),
-              child: _UndoToast(s: s, onUndo: _undo),
-            ),
-        ]),
+        ),
       ),
     );
   }
 
   String _headerTitle() {
-    if (savedValue != null) return s.strings.checkin.ql_saved;
     if (activeSymptom != null) return symptomLabel(s, activeSymptom!);
     if (active != null) return _metricLabel(s, active!);
     return s.strings.checkin.ql_title;
   }
 
   Widget _body() {
-    if (savedValue != null) return _SavedFlash(s: s, value: savedValue!, note: savedNote);
     if (activeSymptom != null) {
       return MetricLog(
         metric: CheckInMetric.symptoms,
         focusedSymptom: activeSymptom,
         s: s,
         host: MetricLogHost.standalone,
+        onChanged: _onChanged,
         onSave: _save,
+        onCancel: _requestBack,
       );
     }
     if (active != null) {
@@ -326,7 +404,9 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         metric: _catalogMetric(active!),
         s: s,
         host: MetricLogHost.standalone,
+        onChanged: _onChanged,
         onSave: _save,
+        onCancel: _requestBack,
       );
     }
     return _menu();
@@ -588,84 +668,112 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   }
 }
 
-class _SavedFlash extends StatelessWidget {
-  const _SavedFlash({required this.s, required this.value, this.note});
+enum _Leave { back, close }
+
+/// quicklog.jsx toast — dark, over the list after a save: a mint tick,
+/// "Saved" and the reading. Status only; nothing in it is tappable.
+class _SavedToast extends StatelessWidget {
+  const _SavedToast({required this.s, required this.value});
   final PatientAppState s;
   final String value;
-  final String? note;
+
   @override
   Widget build(BuildContext context) {
     final ar = s.rtl;
-    return Column(children: [
-      Container(
-          width: 72,
-          height: 72,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
-          child: const Icon(LucideIcons.check, size: 36, color: T.hueMint600)),
-      const SizedBox(height: 14),
-      Text(s.strings.checkin.ql_saved, style: Typo.heading(ar: ar)),
-      const SizedBox(height: 6),
-      Text(value, textAlign: TextAlign.center, style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w500)),
-      const SizedBox(height: 12),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
-          const SizedBox(width: 8),
-          Text(s.strings.common.saved_local, style: Typo.bodySm(ar: ar).copyWith(color: T.fg3)),
-        ]),
-      ),
-      if (note != null)
-        Container(
-          margin: const EdgeInsets.only(top: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
+    return Semantics(
+      liveRegion: true,
+      child: Material(
+        color: T.wordmark,
+        borderRadius: BorderRadius.circular(T.rLg),
+        elevation: 8,
+        shadowColor: const Color(0x4714202B),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
           child: Row(children: [
-            const Icon(LucideIcons.fileText, size: 13, color: T.fg4),
-            const SizedBox(width: 8),
-            Expanded(child: Text(note!, style: Typo.bodySm(ar: ar).copyWith(color: T.fg3))),
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: T.hueMint, shape: BoxShape.circle),
+              child: const Icon(LucideIcons.check, size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text(s.strings.checkin.ql_saved,
+                    style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: Colors.white)),
+                if (value.isNotEmpty)
+                  Text(value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Typo.meta(ar: ar).copyWith(color: Colors.white.withValues(alpha: 0.85))),
+              ]),
+            ),
           ]),
         ),
-    ]);
-  }
-}
-
-/// `UX Enhancement Screens.html` — the dark "Saved · Undo" toast that sits
-/// over the confirmation for the length of the undo window.
-class _UndoToast extends StatelessWidget {
-  const _UndoToast({required this.s, required this.onUndo});
-  final PatientAppState s;
-  final VoidCallback onUndo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: T.wordmark,
-      borderRadius: BorderRadius.circular(T.rLg),
-      elevation: 8,
-      shadowColor: const Color(0x4714202B),
-      child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 16, end: 8, top: 4, bottom: 4),
-        child: Row(children: [
-          const Icon(LucideIcons.circleCheck, size: 18, color: T.hueMint),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              s.strings.checkin.ql_saved,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: Colors.white),
-            ),
-          ),
-          TextButton(
-            onPressed: onUndo,
-            child: Text(
-              s.strings.common.undo,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.hueBlue),
-            ),
-          ),
-        ]),
       ),
     );
   }
 }
+
+/// quicklog.jsx discard prompt — slides over the sheet when leaving a flow
+/// with unsaved input. Tapping the dimmed sheet keeps editing.
+class _DiscardPrompt extends StatelessWidget {
+  const _DiscardPrompt({required this.s, required this.onDiscard, required this.onKeep});
+  final PatientAppState s;
+  final VoidCallback onDiscard;
+  final VoidCallback onKeep;
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = s.rtl;
+    final c = s.strings.checkin;
+    return GestureDetector(
+      onTap: onKeep,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Color(0x52141F2B),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        ),
+        alignment: AlignmentDirectional.bottomCenter,
+        child: GestureDetector(
+          onTap: () {},
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsetsDirectional.fromSTEB(20, 22, 20, sheetBottomInset(context, base: 32)),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+              boxShadow: T.shadowMd,
+            ),
+            child: Semantics(
+              scopesRoute: true,
+              namesRoute: true,
+              explicitChildNodes: true,
+              label: c.ql_discard_title,
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Text(c.ql_discard_title, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                Text(c.ql_discard_body, style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.5)),
+                const SizedBox(height: 18),
+                PButton(c.ql_discard,
+                    variant: BtnVariant.danger, large: true, block: true, accent: s.accent, ar: ar, onTap: onDiscard),
+                const SizedBox(height: 10),
+                PButton(c.ql_keep_editing,
+                    variant: BtnVariant.secondary, large: true, block: true, accent: s.accent, ar: ar, onTap: onKeep),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Whether two captures hold the same entry — [MetricLogCapture]'s own `==`
+/// leaves out the time, the photo and the symptom details.
+bool _sameEntry(MetricLogCapture a, MetricLogCapture b) =>
+    a == b &&
+    a.when == b.when &&
+    identical(a.photoBytes, b.photoBytes) &&
+    const MapEquality<SymptomId, SymptomDetail>().equals(a.symptomDetails, b.symptomDetails);
