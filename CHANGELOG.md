@@ -10,6 +10,14 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.1.5] - Unreleased
+
+### Fixed
+
+- The emergency contact number in Personal details has room again: the
+  relationship picker now sits on its own line above it, instead of
+  sharing the row and squeezing the number into half the width.
+
 ## [0.1.4] - Unreleased
 
 ### Fixed
