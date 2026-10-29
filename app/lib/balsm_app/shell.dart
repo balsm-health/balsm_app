@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
@@ -652,6 +653,17 @@ class _ScreenSkeleton extends StatelessWidget {
 }
 
 // ── Phone bottom tab bar ─────────────────────────────────────
+
+/// Space under the tabs for a bottom system inset of [inset].
+///
+/// The design's 22px foot already leaves room for the iPhone home indicator,
+/// which may overlap it, so only 12 more of its 34 are added. Android draws
+/// edge to edge from SDK 35, and its 3-button navigation bar (about 48dp) is
+/// solid: nothing may sit under it, so the bar never gives less than the whole
+/// inset. Gesture navigation's thin handle keeps the iPhone spacing.
+@visibleForTesting
+double tabBarBottomPadding(double inset) => math.max(22 + inset.clamp(0, 12), inset);
+
 class _TabBar extends StatelessWidget {
   const _TabBar();
   @override
@@ -666,7 +678,7 @@ class _TabBar extends StatelessWidget {
         border: Border(top: BorderSide(color: T.border)),
       ),
       child: Padding(
-        padding: EdgeInsets.only(bottom: 22 + MediaQuery.paddingOf(context).bottom.clamp(0, 12)),
+        padding: EdgeInsetsDirectional.only(bottom: tabBarBottomPadding(MediaQuery.paddingOf(context).bottom)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
           _Tab(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),

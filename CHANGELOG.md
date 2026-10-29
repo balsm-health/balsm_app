@@ -20,6 +20,25 @@ what changed and why it matters.
   care and records are three tiles with their counts. On a tablet, Home
   uses two columns. Everything shown is your own data.
   ([#121](https://github.com/balsm-health/balsm_app/pull/121))
+- The welcome screen's language switch moved to the top corner as a light
+  pill, and the check-in button in the tab bar is a dark disc level with
+  the tabs, as in the latest design. Switching language no longer moves the
+  welcome screen's logo and buttons.
+  ([#121](https://github.com/balsm-health/balsm_app/pull/121))
+
+## [0.2.4] - Unreleased
+
+### Fixed
+
+- On Android phones that use the Back / Home / Recents buttons, the bottom
+  tabs (Home, Map, +, Meds, Profile) sit fully above those buttons again.
+  Since Android 15 the app draws under them, and the tabs' labels were
+  partly hidden. The grey band Android drew behind those buttons is gone
+  too, so the app runs to the bottom edge instead of looking raised, and the
+  welcome screen no longer pushes the logo up under the status bar on
+  shorter phones such as the Galaxy A17. iPhone
+  and gesture navigation look the same as before.
+  ([#120](https://github.com/balsm-health/balsm_app/pull/120))
 
 ## [0.2.3] - Unreleased
 

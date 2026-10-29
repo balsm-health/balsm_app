@@ -129,6 +129,11 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // The design's 168px lockup fits a tall phone. Below 860 high (a Galaxy
+    // A17 is 832, less its status and navigation bars) the bottom-anchored
+    // column is taller than the space, scrolls up, and the logo ends up pinned
+    // under the status bar. A smaller lockup and a tighter gap give it room.
+    final short = MediaQuery.sizeOf(context).height < 860;
     return BalsmWelcomeBackground(
       child: SafeArea(
         child: ContentColumn(
@@ -147,10 +152,13 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
               child: SingleChildScrollView(
                 reverse: true,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 36),
+                  // `.wbody { padding-bottom: 36px }`, trimmed on a short phone
+                  // so the block sits down by the trust row, not high above it.
+                  padding: EdgeInsetsDirectional.fromSTEB(28, 0, 28, short ? 20 : 36),
                   child: Column(children: [
-                    SvgPicture.asset(Assets.brand_logo_vertical, width: 168, height: 168, fit: BoxFit.contain),
-                    const SizedBox(height: 26),
+                    SvgPicture.asset(Assets.brand_logo_vertical,
+                        width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),
+                    SizedBox(height: short ? 18 : 26),
                     Text(s.strings.onboarding.w_title, textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
                     const SizedBox(height: 14),
                     // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
@@ -200,12 +208,11 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                           busy: _busyGoogle,
                           onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s))),
                       const SizedBox(height: 14),
-                    ] else
-                      // No social button on this platform, so no separator either —
-                      // an "or" with nothing after it reads as a missing control.
-                      // The design dropped the divider with the buttons (auth.jsx
-                      // WelcomeScreen): email is the only route where social is off.
-                      const SizedBox(height: 18),
+                    ],
+                    // No social button on this platform, so no separator and
+                    // no space held for one: the design dropped both with the
+                    // buttons (auth.jsx WelcomeScreen). Holding 18px here left
+                    // an empty band under the CTAs that pushed the block up.
                     if (_error != null) ...[
                       Semantics(
                           liveRegion: true,
