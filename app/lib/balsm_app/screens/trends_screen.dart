@@ -81,7 +81,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
         .nonNulls
         .map((g) => g.toDouble())
         .toList();
-    final pain = inRange.map((c) => c.painLevel.value.toDouble()).toList();
+    final pain = inRange.where((c) => c.reportsPain).map((c) => c.painLevel.value.toDouble()).toList();
     final weight = inRange.map((c) => c.vitals.weightKg).nonNulls.toList();
 
     // Every metric that can appear is one line of this literal: switched on and
