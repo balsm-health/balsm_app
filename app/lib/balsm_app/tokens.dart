@@ -144,6 +144,12 @@ class T {
     BoxShadow(color: Color(0x0A14202B), blurRadius: 6, offset: Offset(0, 2)),
   ];
 
+  /// `--shadow-lg`: floating surfaces over content, such as a toast.
+  static const List<BoxShadow> shadowLg = [
+    BoxShadow(color: Color(0x1A14202B), blurRadius: 40, offset: Offset(0, 18)), // rgba(20,32,43,.10)
+    BoxShadow(color: Color(0x0F14202B), blurRadius: 12, offset: Offset(0, 4)), // rgba(20,32,43,.06)
+  ];
+
   // ── Home v2 (home-v2.css) ──────────────────────────────────
   /// `--v2-line`: the dashed rule above the week strip.
   static const lineV2 = Color(0x141F2D3D); // rgba(31,45,61,.08)

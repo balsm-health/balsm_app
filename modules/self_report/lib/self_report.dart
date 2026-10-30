@@ -25,7 +25,7 @@ export 'src/i18n/strings.dart';
 export 'src/application/ports/check_ins_data_source.dart';
 export 'src/application/use_cases/save_check_in_use_case.dart';
 export 'src/application/use_cases/list_check_ins_use_case.dart';
-export 'src/application/use_cases/delete_check_in_use_case.dart';
+export 'src/application/use_cases/update_check_in_use_case.dart';
 export 'src/application/full_check_in_plan.dart';
 
 // Infrastructure (provider binding)

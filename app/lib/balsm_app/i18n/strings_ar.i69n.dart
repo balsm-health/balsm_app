@@ -803,12 +803,10 @@ class CheckinStrings_ar extends CheckinStrings {
   String body_remove(String label) => "إزالة $label";
   String get body_clear_all => "مسح الكل";
   String get body_marked => "المناطق المحددة";
-  String get del => "حذف المتابعة";
-  String get del_title => "حذف هذه المتابعة؟";
-  String get del_body =>
-      "تُحذف قياساتها وأعراضها وصورتها من هذا الجهاز. لا يمكن التراجع.";
-  String get del_confirm => "حذف";
-  String get deleted => "تم حذف المتابعة";
+  String rec_more(String label) => "خيارات $label";
+  String get rec_delete => "حذف السجل";
+  String rec_deleted(String label) => "تم حذف $label";
+  String get day_empty => "لا توجد سجلات في هذا اليوم.";
   String get list_sep => "، ";
   String get list_mid => " · ";
   String pain_n(String n) => "$n/10";
@@ -1017,16 +1015,14 @@ class CheckinStrings_ar extends CheckinStrings {
         return body_clear_all;
       case 'body_marked':
         return body_marked;
-      case 'del':
-        return del;
-      case 'del_title':
-        return del_title;
-      case 'del_body':
-        return del_body;
-      case 'del_confirm':
-        return del_confirm;
-      case 'deleted':
-        return deleted;
+      case 'rec_more':
+        return rec_more;
+      case 'rec_delete':
+        return rec_delete;
+      case 'rec_deleted':
+        return rec_deleted;
+      case 'day_empty':
+        return day_empty;
       case 'list_sep':
         return list_sep;
       case 'list_mid':
