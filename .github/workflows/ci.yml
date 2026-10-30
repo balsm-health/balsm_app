@@ -185,11 +185,6 @@ jobs:
         run: cp app/env/shared.example.json app/env/shared.json
       - name: Build web (release, prod)
         run: ./bin/balsm web balsm prod
-      - uses: actions/upload-artifact@v4
-        with:
-          name: web-prod
-          path: app/build/web
-          if-no-files-found: error
 
   build-android:
     name: Build Android APK
@@ -220,11 +215,6 @@ jobs:
       # keystore is wired (see SIGNING below).
       - name: Build APK (release, balsm · prod)
         run: ./bin/balsm apk balsm prod
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-prod-apk
-          path: app/build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: error
 
   build-ios:
     name: Build iOS (no codesign)
@@ -248,13 +238,6 @@ jobs:
         run: cp app/env/shared.example.json app/env/shared.json
       - name: Build iOS (release, no codesign, balsm · prod)
         run: ./bin/balsm ios balsm prod
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios-prod-app
-          # `balsm ios` archives (flutter build ipa --no-codesign), so the app
-          # is inside the archive, not under build/ios/iphoneos.
-          path: app/build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app
-          if-no-files-found: error
 
   coverage:
     name: Coverage → Codecov

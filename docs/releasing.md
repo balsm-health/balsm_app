@@ -15,8 +15,9 @@ approves a tag, and production is that same commit tagged again.
 `N` counts up from 1 for each version. The version in a tag is always the
 `version:` in `app/pubspec.yaml` at that commit.
 
-Every push to `main` also builds a pre-release (`v0.2.0-main.<run>`) on the
-Releases page. It is not sent to testers.
+Every push to `main` also builds every platform, to prove it still builds.
+It uploads nothing and makes no release: only a release the team starts
+does.
 
 ## The flow
 

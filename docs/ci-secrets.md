@@ -100,13 +100,12 @@ v1.2.0           # production  (prod backend), only on a commit already
                  #             tagged alpha or beta
 ```
 
-Branch pushes release too, as pre-releases on the Releases page, with no
-Firebase upload and no web deploy. The version comes from `app/pubspec.yaml`
-and the release makes its own tag at the commit it built:
+Branch pushes build every platform too, but upload no artifacts, make no
+release, send nothing to Firebase and deploy nothing:
 
 ```
-git push origin main            # → v0.1.0-main.<run>  (prod backend)
-git push origin release/1.0     # → v0.1.0-rc.<run>    (staging backend)
+git push origin main            # builds against the prod backend
+git push origin release/1.0     # builds against the staging backend
 ```
 
 A newer push to the same branch cancels the build still running for it.

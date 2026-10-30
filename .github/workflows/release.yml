@@ -12,12 +12,14 @@ name: Release
 # Promote workflow (promote.yml), which checks the same and then starts this
 # workflow on the tag; see docs/releasing.md.
 #
-# A branch push is a pre-release of that commit, versioned from
-# app/pubspec.yaml, with its tag made by the release itself:
-#   main        → v<version>-main.<run> (prod backend)
-#   release/**  → v<version>-rc.<run>   (staging backend)
-# Branch builds are never sent to Firebase testers and never deploy the web
-# app; that stays with a tag someone chose to push.
+# A branch push builds that commit for every platform, to prove it still
+# builds:
+#   main        → prod backend
+#   release/**  → staging backend
+# It uploads no artifacts, makes no GitHub Release, sends nothing to Firebase
+# testers and deploys nothing: a branch push starts on its own, and only a
+# release someone on the team starts (Promote, or a tag pushed by hand)
+# uploads anything.
 #
 # Signing + Firebase steps are guarded on secrets — absent secrets skip the
 # step and still upload an unsigned artifact. See docs/ci-secrets.md.
@@ -178,7 +180,8 @@ jobs:
             --build-number=${{ github.run_number }}
           mkdir -p dist
           cp app/build/app/outputs/flutter-apk/*.apk "dist/balsm-${{ needs.setup.outputs.channel }}.apk"
-      - uses: actions/upload-artifact@v4
+      - if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: dist/balsm-${{ needs.setup.outputs.channel }}.apk
@@ -265,7 +268,8 @@ jobs:
             --build-number=${{ github.run_number }}
           mkdir -p dist
           (cd app/build/ios/archive/Runner.xcarchive/Products/Applications && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-ios-unsigned.zip" Runner.app)
-      - uses: actions/upload-artifact@v4
+      - if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
         with:
           name: ios-build
           path: dist/*
@@ -315,7 +319,8 @@ jobs:
             --build-number=${{ github.run_number }}
           mkdir -p dist
           (cd app/build/macos/Build/Products/Release && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-macos.zip" *.app)
-      - uses: actions/upload-artifact@v4
+      - if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
         with:
           name: macos-build
           path: dist/*.zip
@@ -361,7 +366,8 @@ jobs:
             --build-number=${{ github.run_number }}
           mkdir -p dist
           (cd app/build/windows/x64/runner/Release && 7z a "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-windows.zip" ./*)
-      - uses: actions/upload-artifact@v4
+      - if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: dist/*.zip
@@ -406,7 +412,8 @@ jobs:
             --build-number=${{ github.run_number }}
           mkdir -p dist
           tar -C app/build/linux/x64/release/bundle -czf "dist/balsm-${{ needs.setup.outputs.channel }}-linux.tar.gz" .
-      - uses: actions/upload-artifact@v4
+      - if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
         with:
           name: linux-build
           path: dist/*.tar.gz
@@ -450,7 +457,8 @@ jobs:
             --build-number=${{ github.run_number }} $EXTRA
           mkdir -p dist
           (cd app/build/web && zip -r "$GITHUB_WORKSPACE/dist/balsm-${{ needs.setup.outputs.channel }}-web.zip" .)
-      - uses: actions/upload-artifact@v4
+      - if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
         with:
           name: web-build
           path: dist/*.zip
@@ -459,6 +467,8 @@ jobs:
   github-release:
     name: GitHub Release
     needs: [setup, android, ios, macos, windows, linux, web]
+    # Tags only: branch builds upload nothing to attach.
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -472,8 +482,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # On a branch push the tag does not exist yet; the release creates
-          # it at the commit that was built.
           tag_name: ${{ needs.setup.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Balsm ${{ needs.setup.outputs.tag }}
