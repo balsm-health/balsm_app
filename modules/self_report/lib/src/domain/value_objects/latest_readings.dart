@@ -29,7 +29,7 @@ class LatestReadings {
       glucose: newest((c) => c.vitals.glucoseFasting ?? c.vitals.glucosePostMeal ?? c.vitals.glucoseRandom),
       spo2: newest((c) => c.vitals.spo2),
       mood: newest((c) => c.mood),
-      pain: newest((c) => c.painLevel.isNone ? null : c.painLevel),
+      pain: newest((c) => c.reportsPain ? c.painLevel : null),
     );
   }
 
