@@ -92,6 +92,31 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   List<String> _steps = const [];
 
   PatientAppState get s => widget.s;
+
+  // ── Product analytics: positions and counts only, never metric ids ──
+  // Read once up front: `ref` cannot be used in dispose, where an abandoned
+  // check-in is reported.
+  late final AnalyticsLogger _analytics = ref.read(analyticsLoggerProvider);
+  final DateTime _openedAt = DateTime.now();
+  bool _startLogged = false;
+
+  void _trackStep() =>
+      _analytics.logEvent(ProductEvent.checkInStepViewed, props: {'step': step, 'count': _steps.length});
+
+  @override
+  void initState() {
+    super.initState();
+    _analytics; // resolve while ref is usable
+  }
+
+  @override
+  void dispose() {
+    if (_startLogged && !submitted) {
+      _analytics.logEvent(ProductEvent.checkInAbandoned, props: {'step': step, 'count': _steps.length});
+    }
+    super.dispose();
+  }
+
   String get cur => (step >= 0 && step < _steps.length) ? _steps[step] : '';
 
   bool get canNext {
@@ -122,6 +147,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   void next() {
     if (step < _steps.length - 1) {
       setState(() => step++);
+      _trackStep();
     } else {
       _finish();
     }
@@ -130,6 +156,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   void back() {
     if (step > 0) {
       setState(() => step--);
+      _trackStep();
     } else {
       Navigator.pop(context);
     }
@@ -250,6 +277,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       saving = false;
       submitted = true;
     });
+    _analytics.logEvent(ProductEvent.checkInCompleted, props: {
+      'count': _steps.length,
+      'duration_ms': DateTime.now().difference(_openedAt).inMilliseconds,
+    });
   }
 
   void _close(AppTab tab) {
@@ -271,6 +302,11 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       );
     }
     if (step >= _steps.length) step = _steps.isEmpty ? 0 : _steps.length - 1;
+    if (!_startLogged && _steps.isNotEmpty) {
+      _startLogged = true;
+      _analytics.logEvent(ProductEvent.checkInStarted, props: {'count': _steps.length});
+      _trackStep();
+    }
 
     if (submitted) return _Summary(state: this);
 
@@ -521,15 +557,7 @@ class _Summary extends StatelessWidget {
                 const SizedBox(height: 18),
                 Text(s.strings.common.saved_t, style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
-                    const SizedBox(width: 8),
-                    Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                  ]),
-                ),
+                SavedLocallyNote(s: s),
               ]),
             )),
             Padding(
@@ -595,6 +623,37 @@ class _Summary extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// The "saved on this device" pill under the check-in's closing tick.
+///
+/// Its own widget so the overflow it used to cause can be pumped on its own:
+/// the screen around it needs a half-finished check-in to reach.
+///
+/// The row is [MainAxisSize.min] so the pill hugs its label rather than
+/// stretching across the screen, and the label is [Flexible] so that when the
+/// label is wider than the screen — "Saved locally. Will sync when you
+/// reconnect." wants more than the ~261pt a 360pt phone leaves it, and the
+/// Arabic more again — the pill wraps instead of running off the right edge.
+/// Without the Flexible the row asked for the full single-line width and the
+/// hug became an overflow.
+class SavedLocallyNote extends StatelessWidget {
+  const SavedLocallyNote({super.key, required this.s});
+
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          ),
+        ]),
+      );
 }
 
 (IconData, PillKind) _summaryIcon(String id) {

@@ -45,6 +45,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
+import '../theme.dart';
 
 /// Default preview context: English, LTR, the app's violet accent.
 ///
@@ -81,7 +82,7 @@ Widget _harness(Widget child, {required LanguageCode lang}) {
         // them individually now collides with that package's own names.
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         supportedLocales: const [Locale('en'), Locale('ar', 'EG')],
-        theme: ThemeData(scaffoldBackgroundColor: Colors.white, useMaterial3: true),
+        theme: balsmTheme(),
         home: Directionality(
           textDirection: state.dir,
           // Publishes `--app-accent` to the kit, the same as the real shell —
