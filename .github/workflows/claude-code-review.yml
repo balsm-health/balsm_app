@@ -20,7 +20,9 @@ jobs:
 
     # Skip pushes made by Claude itself (the version raise): there is nothing
     # of the author's to review, and the action refuses bot-started runs.
-    if: github.actor != 'claude[bot]'
+    # Copilot's pushes are skipped too: it has no write access, so the action's
+    # token exchange fails with a 401. The next push by a person reviews them.
+    if: github.actor != 'claude[bot]' && github.actor != 'Copilot'
     runs-on: ubuntu-latest
     permissions:
       contents: read
