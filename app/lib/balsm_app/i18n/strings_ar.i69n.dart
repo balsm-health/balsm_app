@@ -783,7 +783,7 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_no_results => "لا توجد نتائج";
   String get ql_vitals => "العلامات الحيوية";
   String get ql_wellbeing => "الحالة العامة";
-  String get ql_add_records => "أضف إلى السجلات";
+  String get ql_add_document => "أضف مستندًا";
   String get full_checkin => "المتابعة الكاملة";
   String get ql_full_sub => "المزاج · ضغط الدم · السكر · الأدوية";
   String get quick_log_or => "أو سجّل قراءة واحدة";
@@ -817,6 +817,15 @@ class CheckinStrings_ar extends CheckinStrings {
   String get q_vitals_t => "مؤشراتك الحيوية";
   String get q_vitals_h => "أدخل أي قياسات أخذتها اليوم — كلها اختيارية.";
   String get unit_spo2 => "%";
+  String get unit_bpm => "نبضة/د";
+  String get pulse_count => "عُدّ نبضك معي";
+  String get pulse_how =>
+      "ضع إصبعين على معصمك أو جانب رقبتك، ثم انقر الدائرة مع كل نبضة. يبدأ العدّ مع أول نقرة لمدة 15 ثانية.";
+  String get pulse_keep => "استمر في النقر مع كل نبضة.";
+  String get pulse_beat => "نبضة";
+  String pulse_left(String n) => "$n ث متبقية";
+  String get pulse_start => "انقر للبدء";
+  String get pulse_type => "إدخال الرقم يدويًا";
   String get sym_headache => "صداع";
   String get sym_dizzy => "دوخة";
   String get sym_fatigue => "إرهاق";
@@ -962,8 +971,8 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_vitals;
       case 'ql_wellbeing':
         return ql_wellbeing;
-      case 'ql_add_records':
-        return ql_add_records;
+      case 'ql_add_document':
+        return ql_add_document;
       case 'full_checkin':
         return full_checkin;
       case 'ql_full_sub':
@@ -1028,6 +1037,22 @@ class CheckinStrings_ar extends CheckinStrings {
         return q_vitals_h;
       case 'unit_spo2':
         return unit_spo2;
+      case 'unit_bpm':
+        return unit_bpm;
+      case 'pulse_count':
+        return pulse_count;
+      case 'pulse_how':
+        return pulse_how;
+      case 'pulse_keep':
+        return pulse_keep;
+      case 'pulse_beat':
+        return pulse_beat;
+      case 'pulse_left':
+        return pulse_left;
+      case 'pulse_start':
+        return pulse_start;
+      case 'pulse_type':
+        return pulse_type;
       case 'sym_headache':
         return sym_headache;
       case 'sym_dizzy':
@@ -2442,6 +2467,7 @@ class ProfileStrings_ar extends ProfileStrings {
   String get m_pain => "الألم";
   String get m_weight => "الوزن";
   String get m_o2 => "الأكسجين";
+  String get m_pulse => "النبض";
   String get pc_title => "أكمل ملفك الشخصي";
   String get pc_help => "أضف اسمك وتاريخ ميلادك وبياناتك";
   String pc_missing(String fields) => "الناقص: $fields";
@@ -2525,6 +2551,8 @@ class ProfileStrings_ar extends ProfileStrings {
         return m_weight;
       case 'm_o2':
         return m_o2;
+      case 'm_pulse':
+        return m_pulse;
       case 'pc_title':
         return pc_title;
       case 'pc_help':

@@ -10,7 +10,7 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.4.3] - Unreleased
+## [0.6.0] - Unreleased
 
 ### Added
 
@@ -22,6 +22,45 @@ what changed and why it matters.
   happened (a vital, a symptom), never which reading, symptom or search
   text, and they still respect the analytics switch in Privacy & data.
   ([#135](https://github.com/balsm-health/balsm_app/pull/135))
+
+## [0.5.3] - Unreleased
+
+### Fixed
+
+- Dropdown menus — medication frequency, duration and dose unit, the body
+  map's layer picker — open white, like the field they drop out of, instead
+  of the pale lilac Material gives an app that does not say otherwise.
+  ([#128](https://github.com/balsm-health/balsm_app/issues/128))
+- The date and time pickers open white as well, instead of lilac.
+  ([#128](https://github.com/balsm-health/balsm_app/issues/128))
+- On the screen that closes a check-in, the grey "saved on this device"
+  note no longer runs off the right edge of the phone. It wraps onto a
+  second line instead, in both languages and at every text size.
+  ([#129](https://github.com/balsm-health/balsm_app/issues/129))
+
+## [0.5.1] - Unreleased
+
+### Fixed
+
+- Adding someone to your care team from your phone's contacts on Android
+  asked you to find and tap the same person twice. It asks once now.
+  ([#127](https://github.com/balsm-health/balsm_app/issues/127))
+
+## [0.5.0] - Unreleased
+
+### Added
+
+- Pulse can be logged from the quick-log sheet, under Vitals after Oxygen.
+  Type the rate in beats per minute, or tap "Count with me" and tap each
+  beat for 15 seconds; Balsm multiplies the count by four. Only 30 to 220
+  bpm saves. Saved readings show in the day's records.
+  ([#134](https://github.com/balsm-health/balsm_app/pull/134))
+
+### Changed
+
+- The quick-log sheet groups lab, scan and report shortcuts as "Add a
+  document", right after Vitals, and lists symptoms A to Z in the app's
+  language. ([#134](https://github.com/balsm-health/balsm_app/pull/134))
 
 ## [0.4.2] - Unreleased
 
@@ -37,6 +76,10 @@ what changed and why it matters.
 
 ### Fixed
 
+- On the screen that closes a check-in, the grey "saved on this device"
+  note no longer runs off the right edge of the phone. It wraps onto a
+  second line instead, in both languages and at every text size.
+  ([#129](https://github.com/balsm-health/balsm_app/issues/129))
 - Service status in Profile shows whether Balsm's servers are working again:
   it always said the status was unknown, even when everything was up. It now
   speaks the app's language, so in Arabic it reads in Arabic instead of

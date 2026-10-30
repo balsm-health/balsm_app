@@ -60,6 +60,15 @@ class DayRecordsScreen extends StatelessWidget {
           color: T.hueBlue,
           bg: T.hueBlue50,
         ),
+      if (v.heartRate != null)
+        _MetricRow(
+          icon: LucideIcons.heartPulse,
+          label: s.strings.profile.m_pulse,
+          value: '${v.heartRate}',
+          unit: s.strings.checkin.unit_bpm,
+          color: T.hueViolet,
+          bg: T.hueViolet50,
+        ),
       if (v.weightKg != null)
         _MetricRow(
           icon: LucideIcons.scale,

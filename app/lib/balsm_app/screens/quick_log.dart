@@ -48,7 +48,7 @@ void showQuickLog(BuildContext context, {String source = ProductSource.tabBar}) 
 }
 
 /// One-metric flows in the design's order (symptoms are their own rows).
-enum _Metric { bp, glucose, o2, weight, mood, pain }
+enum _Metric { bp, glucose, o2, pulse, weight, mood, pain }
 
 enum _QlKind { vital, wellbeing, symptom }
 
@@ -58,6 +58,7 @@ const _metricStyles = <_Metric, _MetricStyle>{
   _Metric.bp: (icon: LucideIcons.activity, color: T.hueViolet, bg: T.hueViolet50, kind: _QlKind.vital),
   _Metric.glucose: (icon: LucideIcons.droplet, color: T.hueMint600, bg: T.hueMint50, kind: _QlKind.vital),
   _Metric.o2: (icon: LucideIcons.wind, color: T.hueAqua, bg: T.hueAqua50, kind: _QlKind.vital),
+  _Metric.pulse: (icon: LucideIcons.heartPulse, color: T.hueViolet, bg: T.hueViolet50, kind: _QlKind.vital),
   _Metric.weight: (icon: LucideIcons.scale, color: T.hueBlue, bg: T.hueBlue50, kind: _QlKind.vital),
   _Metric.mood: (icon: LucideIcons.smile, color: T.hueAqua, bg: T.hueAqua50, kind: _QlKind.wellbeing),
   _Metric.pain: (icon: LucideIcons.zap, color: T.danger, bg: T.dangerBg, kind: _QlKind.wellbeing),
@@ -70,6 +71,7 @@ String _metricLabel(PatientAppState s, _Metric m) => switch (m) {
       _Metric.bp => s.strings.profile.m_bp,
       _Metric.glucose => s.strings.profile.m_glucose,
       _Metric.o2 => s.strings.profile.m_o2,
+      _Metric.pulse => s.strings.profile.m_pulse,
       _Metric.mood => s.strings.profile.m_mood,
       _Metric.pain => s.strings.profile.m_pain,
       _Metric.weight => s.strings.profile.m_weight,
@@ -79,6 +81,7 @@ CheckInMetric _catalogMetric(_Metric m) => switch (m) {
       _Metric.bp => CheckInMetric.bloodPressure,
       _Metric.glucose => CheckInMetric.glucose,
       _Metric.o2 => CheckInMetric.spo2,
+      _Metric.pulse => CheckInMetric.heartRate,
       _Metric.mood => CheckInMetric.mood,
       _Metric.pain => CheckInMetric.pain,
       _Metric.weight => CheckInMetric.weight,
@@ -467,7 +470,9 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         metric: m,
       );
     });
-    final symptoms = [...symptomIcons]..sort((a, b) => symptomLabel(s, a.$1).compareTo(symptomLabel(s, b.$1)));
+    // A–Z by the label the patient reads, so the order follows the language.
+    final symptoms = [...symptomIcons]
+      ..sort((a, b) => symptomLabel(s, a.$1).toLowerCase().compareTo(symptomLabel(s, b.$1).toLowerCase()));
     return [
       ...metrics,
       ...symptoms.map((e) => _QlItem(
@@ -499,11 +504,13 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       if (empty)
         _noResults()
       else ...[
-        ..._groupItems(filtered).map(_groupCard),
-        if (records.isNotEmpty) ...[
-          _labelledRule(s.strings.checkin.ql_add_records, top: 14, bottom: 12),
-          _recordRow(records),
+        // quicklog.jsx: documents are their own group, right after Vitals —
+        // or last, when a search leaves no vitals.
+        for (final g in _groupItems(filtered)) ...[
+          _groupCard(g),
+          if (g.kind == _QlKind.vital && records.isNotEmpty) _documentsGroup(records),
         ],
+        if (records.isNotEmpty && !filtered.any((it) => it.kind == _QlKind.vital)) _documentsGroup(records),
       ],
     ]);
   }
@@ -613,6 +620,23 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         ]),
       );
 
+  /// `text-transform: uppercase` on the group header (quicklog.jsx). Applied
+  /// here, not baked into the bundle: `symptoms` is shared with rows and chips
+  /// that must stay sentence case.
+  Widget _groupLabel(String label) => Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 2, 12, 8),
+        child: Text(label.toUpperCase(), style: Typo.eyebrow(T.fg4, ar: ar).copyWith(letterSpacing: ar ? 0 : 0.88)),
+      );
+
+  /// "Add a document" — lab, scan and report shortcuts as a group of their own.
+  Widget _documentsGroup(List<RecordType> types) => Padding(
+        padding: const EdgeInsetsDirectional.only(bottom: 16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _groupLabel(s.strings.checkin.ql_add_document),
+          _recordRow(types),
+        ]),
+      );
+
   Widget _groupCard(_QlGroup g) {
     final label = switch (g.kind) {
       _QlKind.vital => s.strings.checkin.ql_vitals,
@@ -622,13 +646,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 2, 12, 8),
-          // `text-transform: uppercase` on the group header (quicklog.jsx).
-          // Applied here, not baked into the bundle: `symptoms` is shared
-          // with rows and chips that must stay sentence case.
-          child: Text(label.toUpperCase(), style: Typo.eyebrow(T.fg4, ar: ar).copyWith(letterSpacing: ar ? 0 : 0.88)),
-        ),
+        _groupLabel(label),
         PCard(
           padding: EdgeInsets.zero,
           child: Column(
@@ -706,15 +724,16 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         widget.onAddRecord(type);
       },
       radius: T.rLg,
+      color: Colors.white,
       border: Border.all(color: T.border, width: 1.5),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 14),
+        padding: const EdgeInsetsDirectional.symmetric(horizontal: 6, vertical: 12),
         child: Column(children: [
-          IconSquare(style.icon, bg: style.bg, fg: style.fg, size: 40, iconSize: 20),
-          const SizedBox(height: 8),
+          IconSquare(style.icon, bg: style.bg, fg: style.fg, size: 36, iconSize: 18),
+          const SizedBox(height: 6),
           Text(recordTypeLabelOne(s, type),
               textAlign: TextAlign.center,
-              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg2, height: 1.25)),
         ]),
       ),
     );

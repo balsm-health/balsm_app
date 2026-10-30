@@ -557,15 +557,7 @@ class _Summary extends StatelessWidget {
                 const SizedBox(height: 18),
                 Text(s.strings.common.saved_t, style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
-                    const SizedBox(width: 8),
-                    Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                  ]),
-                ),
+                SavedLocallyNote(s: s),
               ]),
             )),
             Padding(
@@ -633,6 +625,37 @@ class _Summary extends StatelessWidget {
   }
 }
 
+/// The "saved on this device" pill under the check-in's closing tick.
+///
+/// Its own widget so the overflow it used to cause can be pumped on its own:
+/// the screen around it needs a half-finished check-in to reach.
+///
+/// The row is [MainAxisSize.min] so the pill hugs its label rather than
+/// stretching across the screen, and the label is [Flexible] so that when the
+/// label is wider than the screen — "Saved locally. Will sync when you
+/// reconnect." wants more than the ~261pt a 360pt phone leaves it, and the
+/// Arabic more again — the pill wraps instead of running off the right edge.
+/// Without the Flexible the row asked for the full single-line width and the
+/// hug became an overflow.
+class SavedLocallyNote extends StatelessWidget {
+  const SavedLocallyNote({super.key, required this.s});
+
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          ),
+        ]),
+      );
+}
+
 (IconData, PillKind) _summaryIcon(String id) {
   final metric = CheckInMetric.fromId(id);
   if (metric == CheckInMetric.mood) return (LucideIcons.smile, PillKind.info);
@@ -640,6 +663,7 @@ class _Summary extends StatelessWidget {
   if (metric == CheckInMetric.glucose) return (LucideIcons.droplet, PillKind.success);
   if (metric == CheckInMetric.weight) return (LucideIcons.scale, PillKind.info);
   if (metric == CheckInMetric.spo2) return (LucideIcons.wind, PillKind.info);
+  if (metric == CheckInMetric.heartRate) return (LucideIcons.heartPulse, PillKind.violet);
   if (metric == CheckInMetric.pain) return (LucideIcons.zap, PillKind.warn);
   if (metric == CheckInMetric.symptoms) return (LucideIcons.stethoscope, PillKind.neutral);
   return (LucideIcons.activity, PillKind.neutral);
@@ -652,6 +676,7 @@ String _summaryLabel(PatientAppState s, String id) {
   if (metric == CheckInMetric.glucose) return s.strings.profile.m_glucose;
   if (metric == CheckInMetric.weight) return s.strings.profile.m_weight;
   if (metric == CheckInMetric.spo2) return s.strings.profile.m_o2;
+  if (metric == CheckInMetric.heartRate) return s.strings.profile.m_pulse;
   if (metric == CheckInMetric.pain) return s.strings.profile.m_pain;
   if (metric == CheckInMetric.symptoms) return s.strings.checkin.symptoms;
   return id;

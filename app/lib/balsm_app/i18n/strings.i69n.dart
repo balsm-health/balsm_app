@@ -784,7 +784,7 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get ql_no_results => "No matches";
   String get ql_vitals => "Vitals";
   String get ql_wellbeing => "Wellbeing";
-  String get ql_add_records => "add to records";
+  String get ql_add_document => "Add a document";
   String get full_checkin => "Full check-in";
   String get ql_full_sub => "Mood · BP · glucose · meds";
   String get quick_log_or => "or log just one";
@@ -818,6 +818,15 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get q_vitals_t => "Your vitals";
   String get q_vitals_h => "Enter any readings you took today — all optional.";
   String get unit_spo2 => "%";
+  String get unit_bpm => "bpm";
+  String get pulse_count => "Count with me";
+  String get pulse_how =>
+      "Place two fingers on your wrist or the side of your neck, then tap the circle with each beat. The 15-second count starts on your first tap.";
+  String get pulse_keep => "Keep tapping with every beat.";
+  String get pulse_beat => "Beat";
+  String pulse_left(String n) => "${n}s left";
+  String get pulse_start => "Tap to start";
+  String get pulse_type => "Type the number instead";
   String get sym_headache => "Headache";
   String get sym_dizzy => "Dizziness";
   String get sym_fatigue => "Fatigue";
@@ -958,8 +967,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_vitals;
       case 'ql_wellbeing':
         return ql_wellbeing;
-      case 'ql_add_records':
-        return ql_add_records;
+      case 'ql_add_document':
+        return ql_add_document;
       case 'full_checkin':
         return full_checkin;
       case 'ql_full_sub':
@@ -1024,6 +1033,22 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return q_vitals_h;
       case 'unit_spo2':
         return unit_spo2;
+      case 'unit_bpm':
+        return unit_bpm;
+      case 'pulse_count':
+        return pulse_count;
+      case 'pulse_how':
+        return pulse_how;
+      case 'pulse_keep':
+        return pulse_keep;
+      case 'pulse_beat':
+        return pulse_beat;
+      case 'pulse_left':
+        return pulse_left;
+      case 'pulse_start':
+        return pulse_start;
+      case 'pulse_type':
+        return pulse_type;
       case 'sym_headache':
         return sym_headache;
       case 'sym_dizzy':
@@ -2428,6 +2453,7 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get m_pain => "Pain";
   String get m_weight => "Weight";
   String get m_o2 => "Oxygen";
+  String get m_pulse => "Pulse";
   String get pc_title => "Complete your profile";
   String get pc_help => "Add your name, date of birth and details";
   String pc_missing(String fields) => "Missing: $fields";
@@ -2511,6 +2537,8 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return m_weight;
       case 'm_o2':
         return m_o2;
+      case 'm_pulse':
+        return m_pulse;
       case 'pc_title':
         return pc_title;
       case 'pc_help':

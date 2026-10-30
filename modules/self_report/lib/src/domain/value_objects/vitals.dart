@@ -41,6 +41,34 @@ class Vitals {
       glucosePostMeal == null &&
       glucoseRandom == null;
 
+  /// Value equality: two snapshots holding the same readings are the same
+  /// vitals. Identity equality made an unchanged entry look edited.
+  @override
+  bool operator ==(Object other) =>
+      other is Vitals &&
+      other.systolic == systolic &&
+      other.diastolic == diastolic &&
+      other.heartRate == heartRate &&
+      other.temperature == temperature &&
+      other.weightKg == weightKg &&
+      other.spo2 == spo2 &&
+      other.glucoseFasting == glucoseFasting &&
+      other.glucosePostMeal == glucosePostMeal &&
+      other.glucoseRandom == glucoseRandom;
+
+  @override
+  int get hashCode => Object.hash(
+        systolic,
+        diastolic,
+        heartRate,
+        temperature,
+        weightKg,
+        spo2,
+        glucoseFasting,
+        glucosePostMeal,
+        glucoseRandom,
+      );
+
   Vitals copyWith({
     int? systolic,
     int? diastolic,

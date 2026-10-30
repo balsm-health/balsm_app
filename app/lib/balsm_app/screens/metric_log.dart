@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -168,6 +169,10 @@ class MetricLog extends StatelessWidget {
     }
     if (metric == CheckInMetric.spo2) {
       return _O2Log(s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+    }
+    if (metric == CheckInMetric.heartRate) {
+      return _PulseLog(
+          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
     }
     if (metric == CheckInMetric.pain) {
       return _PainLog(
@@ -851,6 +856,207 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
           NumPad(onKey: _key, onBack: _back),
         ]),
       );
+}
+
+// ── Pulse ────────────────────────────────────────────────────
+
+/// quicklog.jsx `QuickPulse` — type the rate in bpm, or "Count with me": tap
+/// each beat for [_pulseSecs] seconds and the rate is the count × 4.
+class _PulseLog extends StatefulWidget {
+  const _PulseLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  final PatientAppState s;
+  final Widget? belowField;
+  final MetricLogHost host;
+  final MetricLogSave? onSave;
+  final VoidCallback? onCancel;
+  final MetricLogChanged? onChanged;
+  @override
+  State<_PulseLog> createState() => _PulseLogState();
+}
+
+const _pulseSecs = 15;
+
+class _PulseLogState extends State<_PulseLog> with _MetricLogState {
+  @override
+  PatientAppState get s => widget.s;
+  @override
+  Widget? get belowField => widget.belowField;
+  @override
+  MetricLogHost get host => widget.host;
+  @override
+  MetricLogSave? get onSave => widget.onSave;
+  @override
+  VoidCallback? get onCancel => widget.onCancel;
+  @override
+  MetricLogChanged? get onChanged => widget.onChanged;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+
+  String digits = '';
+
+  /// Tapping beats instead of typing.
+  bool counting = false;
+  int beats = 0;
+
+  /// Seconds left in the count; null until the first tap starts it.
+  int? left;
+  Timer? _tick;
+
+  int? get _bpm => digits.isEmpty ? null : int.tryParse(digits);
+
+  /// The design's plausible range: a rate outside it is a mistyped digit.
+  @override
+  bool get valid {
+    final n = _bpm;
+    return !counting && digits.length >= 2 && n != null && n >= 30 && n <= 220;
+  }
+
+  @override
+  MetricLogCapture get capture => MetricLogCapture(
+        summary: valid ? s.strings.checkin.reading_unit(digits, s.strings.checkin.unit_bpm) : '',
+        note: _trimmedNote(noteCtrl),
+        vitals: valid ? Vitals(heartRate: _bpm) : Vitals.empty,
+        when: when,
+        photoBytes: photo?.bytes,
+      );
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    noteCtrl.dispose();
+    super.dispose();
+  }
+
+  void _key(String d) => setState(() {
+        if (digits.length >= 3) return;
+        digits += d;
+        emit();
+      });
+
+  void _back() => setState(() {
+        if (digits.isNotEmpty) digits = digits.substring(0, digits.length - 1);
+        emit();
+      });
+
+  void _startCounting() => setState(() {
+        _tick?.cancel();
+        counting = true;
+        beats = 0;
+        left = null;
+        emit();
+      });
+
+  void _typeInstead() => setState(() {
+        _tick?.cancel();
+        counting = false;
+        beats = 0;
+        left = null;
+        emit();
+      });
+
+  /// The first tap starts the clock and is itself the first beat.
+  void _beat() => setState(() {
+        if (left == null) {
+          left = _pulseSecs;
+          beats = 1;
+          _tick = Timer.periodic(const Duration(seconds: 1), (_) => _second());
+        } else if (left! > 0) {
+          beats++;
+        }
+      });
+
+  void _second() {
+    if (!mounted) return;
+    setState(() {
+      left = left! - 1;
+      if (left! > 0) return;
+      _tick?.cancel();
+      digits = '${beats * (60 ~/ _pulseSecs)}';
+      counting = false;
+      left = null;
+      emit();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = s.strings.checkin;
+    final ar = s.rtl;
+    if (!counting) {
+      return chrome(
+        child: Column(children: [
+          _BigReading(value: digits, s: s, width: 150),
+          const SizedBox(height: 8),
+          Text(c.unit_bpm,
+              style: Typo.bodySm(ar: ar).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 4, bottom: 12),
+            child: PButton(c.pulse_count,
+                icon: LucideIcons.timer,
+                variant: BtnVariant.secondary,
+                accent: s.accent,
+                ar: ar,
+                onTap: _startCounting),
+          ),
+          NumPad(onKey: _key, onBack: _back),
+        ]),
+      );
+    }
+    final running = left != null;
+    final progress = running ? (_pulseSecs - left!) / _pulseSecs : 0.0;
+    return chrome(
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(top: 4, bottom: 8),
+        child: Column(children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 300),
+            child: Text(running ? c.pulse_keep : c.pulse_how,
+                textAlign: TextAlign.center, style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.5)),
+          ),
+          const SizedBox(height: 14),
+          Semantics(
+            button: true,
+            label: c.pulse_beat,
+            child: Pressable(
+              onTap: _beat,
+              scale: 0.97,
+              child: SizedBox.square(
+                dimension: 196,
+                child: Stack(alignment: Alignment.center, children: [
+                  Container(decoration: const BoxDecoration(color: T.hueViolet50, shape: BoxShape.circle)),
+                  Positioned.fill(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(end: progress),
+                      duration: const Duration(seconds: 1),
+                      builder: (_, p, __) => CircularProgressIndicator(
+                        value: p,
+                        strokeWidth: 6,
+                        strokeCap: StrokeCap.round,
+                        color: T.hueViolet,
+                        backgroundColor: T.ink100,
+                      ),
+                    ),
+                  ),
+                  Column(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(LucideIcons.heart, size: 30, color: T.hueViolet),
+                    const SizedBox(height: 4),
+                    Text('$beats',
+                        style: Typo.num(size: 44, weight: FontWeight.w800, color: T.fg1).copyWith(height: 1)),
+                    const SizedBox(height: 4),
+                    Text(running ? c.pulse_left('$left') : c.pulse_start,
+                        style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+                  ]),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          PButton(c.pulse_type, variant: BtnVariant.ghost, accent: s.accent, ar: ar, onTap: _typeInstead),
+        ]),
+      ),
+    );
+  }
 }
 
 // ── Pain ─────────────────────────────────────────────────────
