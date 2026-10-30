@@ -41,6 +41,7 @@ class _RecordingLogger implements AnalyticsLogger {
 /// anything, so it gets its own test.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  late ReplayConsent replay;
 
   Future<
       ({
@@ -70,6 +71,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         analyticsConsentProvider.overrideWith((ref) => consent),
+        replayConsentProvider.overrideWith((ref) => replay = ReplayConsent(enabled: false, prefs: TelemetryPrefs(kv))),
         analyticsLoggerProvider.overrideWithValue(logger),
       ],
       child: AppScope(
@@ -125,5 +127,27 @@ void main() {
     expect(env.sink.applied, [false, true]);
     expect(env.logger.events, contains('analytics_consent_changed'));
     expect(await env.prefs.analyticsEnabled(), isTrue);
+  });
+
+  Finder replaySwitch(PatientAppState s) {
+    final row = find.ancestor(of: find.text(s.strings.privacy.pv_replay), matching: find.byType(Row));
+    return find.descendant(of: row.last, matching: find.byType(GestureDetector)).first;
+  }
+
+  testWidgets('screen recordings start off and can be switched on with analytics on', (tester) async {
+    final r = await pump(tester);
+    expect(replay.enabled, isFalse);
+    await tester.tap(replaySwitch(r.state));
+    await tester.pumpAndSettle();
+    expect(replay.enabled, isTrue);
+    expect(await r.prefs.replayEnabled(), isTrue);
+  });
+
+  testWidgets('with analytics off, the recordings switch does nothing', (tester) async {
+    final r = await pump(tester, seed: {'telemetry.analyticsEnabled': false});
+    expect(r.consent.enabled, isFalse);
+    await tester.tap(replaySwitch(r.state));
+    await tester.pumpAndSettle();
+    expect(replay.enabled, isFalse);
   });
 }

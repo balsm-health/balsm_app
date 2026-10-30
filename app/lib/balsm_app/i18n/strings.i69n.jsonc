@@ -696,6 +696,9 @@
     "pv_share_team_h": "Your doctors can see your daily readings",
     "pv_analytics": "Anonymous analytics",
     "pv_analytics_h": "Help us improve the app",
+    // Screen recording: opt-in, needs analytics on, sign-in screens only, fully masked.
+    "pv_replay": "Share screen recordings",
+    "pv_replay_h": "Masked recordings of sign-in screens only — never your health screens",
     "pv_research": "Research contributions",
     "pv_research_h": "De-identified data for medical studies",
     "pv_security": "Security",

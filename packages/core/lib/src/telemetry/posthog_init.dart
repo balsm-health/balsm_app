@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
 import '../config/flavor.dart';
 import 'campaign_attribution.dart';
 import 'posthog_analytics_logger.dart';
+import 'session_replay.dart';
 
 /// Initialises the PostHog SDK for product analytics. No-op when no project
 /// token is configured (`POSTHOG_API_KEY`), so dev builds and tests emit nothing.
@@ -39,9 +41,18 @@ Future<void> initPostHog({
     // Sessions / DAU / retention come from these; non-PHI and captured
     // natively, which is why the consent flag has to reach the SDK itself.
     ..captureApplicationLifecycleEvents = true
-    // Screenshot-mode replay of a patient's own health screens is exactly the
-    // PHI egress this app exists to prevent. Never enable.
-    ..sessionReplay = false
+    // Screen recording is configured but held stopped: it is stopped right
+    // after setup, before the first frame, and only SessionReplayGate starts
+    // it — with analytics consent, screen-recording consent (opt-in), and on
+    // an allowed, health-free screen. Everything is masked regardless, and
+    // touches are not captured: on a known keypad they spell out what was
+    // typed, masks or not.
+    ..sessionReplay = true
+    ..sessionReplayConfig = (PostHogSessionReplayConfig()
+      ..maskAllTexts = true
+      ..maskAllImages = true
+      ..maskCustomPaint = true
+      ..captureTouches = false)
     // Choice-only surveys (thumbs, ratings, fixed answers) for "how did this
     // feel" feedback. ChoiceOnlySurveyPlatform refuses any survey with typed
     // answers and any survey while analytics consent is off; PosthogObserver
@@ -76,6 +87,8 @@ Future<void> initPostHog({
     ];
 
   await Posthog().setup(config);
+  // Deny by default: nothing records until SessionReplayGate says so.
+  await Posthog().stopSessionRecording();
 
   // Register AFTER setup — super properties need an initialised SDK.
   final superProperties = <String, Object>{
@@ -109,3 +122,19 @@ Map<String, Object> postHogBuildProperties(FlavorConfig config) => {
       'brand': config.brand.name,
       'flavor': config.flavor.name,
     };
+
+/// [ReplayRecorder] over PostHog's session recording; driven by
+/// [SessionReplayGate].
+class PostHogReplayRecorder implements ReplayRecorder {
+  const PostHogReplayRecorder();
+
+  @override
+  Future<void> start() => Posthog().startSessionRecording();
+
+  @override
+  Future<void> stop() => Posthog().stopSessionRecording();
+}
+
+/// The root PostHog takes replay screenshots from. Capture still only runs
+/// while [SessionReplayGate] has the recorder started.
+Widget sessionReplayRoot(Widget child) => PostHogWidget(child: child);

@@ -2323,6 +2323,9 @@ class PrivacyStrings_ar extends PrivacyStrings {
   String get pv_share_team_h => "يرى أطباؤك قراءاتك اليومية";
   String get pv_analytics => "تحليلات مجهولة";
   String get pv_analytics_h => "ساعدنا على تحسين التطبيق";
+  String get pv_replay => "مشاركة تسجيلات الشاشة";
+  String get pv_replay_h =>
+      "تسجيلات مُخفاة لشاشات تسجيل الدخول فقط — وليس شاشاتك الصحية أبدًا";
   String get pv_research => "المساهمة في الأبحاث";
   String get pv_research_h => "بيانات مجهولة للأبحاث الطبية";
   String get pv_security => "الأمان";
@@ -2382,6 +2385,10 @@ class PrivacyStrings_ar extends PrivacyStrings {
         return pv_analytics;
       case 'pv_analytics_h':
         return pv_analytics_h;
+      case 'pv_replay':
+        return pv_replay;
+      case 'pv_replay_h':
+        return pv_replay_h;
       case 'pv_research':
         return pv_research;
       case 'pv_research_h':

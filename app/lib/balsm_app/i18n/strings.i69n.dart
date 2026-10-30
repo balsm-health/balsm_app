@@ -2309,6 +2309,9 @@ class PrivacyStrings implements i69n.I69nMessageBundle {
   String get pv_share_team_h => "Your doctors can see your daily readings";
   String get pv_analytics => "Anonymous analytics";
   String get pv_analytics_h => "Help us improve the app";
+  String get pv_replay => "Share screen recordings";
+  String get pv_replay_h =>
+      "Masked recordings of sign-in screens only — never your health screens";
   String get pv_research => "Research contributions";
   String get pv_research_h => "De-identified data for medical studies";
   String get pv_security => "Security";
@@ -2368,6 +2371,10 @@ class PrivacyStrings implements i69n.I69nMessageBundle {
         return pv_analytics;
       case 'pv_analytics_h':
         return pv_analytics_h;
+      case 'pv_replay':
+        return pv_replay;
+      case 'pv_replay_h':
+        return pv_replay_h;
       case 'pv_research':
         return pv_research;
       case 'pv_research_h':

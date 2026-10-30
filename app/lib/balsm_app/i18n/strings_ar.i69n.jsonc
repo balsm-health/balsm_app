@@ -694,6 +694,9 @@
     "pv_share_team_h": "يرى أطباؤك قراءاتك اليومية",
     "pv_analytics": "تحليلات مجهولة",
     "pv_analytics_h": "ساعدنا على تحسين التطبيق",
+    // Screen recording: opt-in, needs analytics on, sign-in screens only, fully masked.
+    "pv_replay": "مشاركة تسجيلات الشاشة",
+    "pv_replay_h": "تسجيلات مُخفاة لشاشات تسجيل الدخول فقط — وليس شاشاتك الصحية أبدًا",
     "pv_research": "المساهمة في الأبحاث",
     "pv_research_h": "بيانات مجهولة للأبحاث الطبية",
     "pv_security": "الأمان",
