@@ -130,6 +130,8 @@ void main() {
       '/packages/core/lib/src/dev/dev_diagnostics.dart',
       // PostHog as a feature-flag source, behind FeatureFlagSource.
       '/packages/core/lib/src/flags/posthog_flag_source.dart',
+      // Choice-only, consent-gated PostHog surveys and their context observer.
+      '/packages/core/lib/src/telemetry/survey_guard.dart',
     ];
 
     test('no vendor SDK is imported outside its adapter', () {
