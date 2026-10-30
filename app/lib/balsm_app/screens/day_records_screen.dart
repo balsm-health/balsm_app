@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
@@ -21,10 +22,10 @@ import 'checkin_shared.dart';
 /// [CheckIn.recordedAt]; the domain does not store per-metric clocks, so we
 /// never invent them.
 ///
-/// Every reading is the patient's own, so each row's menu deletes it. The row
-/// goes at once with an Undo toast; the edit is stored when the toast closes,
-/// another reading is deleted, or the screen is left. A check-in emptied this
-/// way is deleted, photo included.
+/// Every reading is the patient's own, so it can be deleted three ways: its
+/// `⋮` menu, a swipe toward the start edge, or Select for several at once.
+/// Each asks first, then stores the edit straight away. A check-in emptied
+/// this way is deleted, photo included.
 class DayRecordsScreen extends ConsumerStatefulWidget {
   const DayRecordsScreen({super.key, required this.checkIn});
   final CheckIn checkIn;
@@ -37,18 +38,20 @@ class DayRecordsScreen extends ConsumerStatefulWidget {
   ConsumerState<DayRecordsScreen> createState() => _DayRecordsScreenState();
 }
 
-/// The check-in as it was before the last delete, kept while Undo is offered.
-typedef _Undo = ({CheckIn before, String label});
-
 class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
-  static const _undoFor = Duration(seconds: 5);
+  static const _toastFor = Duration(milliseconds: 2500);
 
   late CheckIn _shown = widget.checkIn;
-  _Undo? _undo;
-  Timer? _undoTimer;
 
-  // Read once up front: the last edit is stored from dispose, where ref is
-  // no longer usable.
+  /// The row swiped open, showing its Delete.
+  CheckInMetric? _open;
+  bool _selecting = false;
+  final _selected = <CheckInMetric>{};
+  String? _toast;
+  Timer? _toastTimer;
+
+  // Read once up front: a store still running when the screen closes must
+  // not reach for ref.
   late final UpdateCheckInUseCase _update;
   late final RecordsDataSource _records;
   late final DeleteRecordDocumentUseCase _deleteRecord;
@@ -68,13 +71,8 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
 
   @override
   void dispose() {
-    _undoTimer?.cancel();
-    if (_undo != null) _store(_shown);
+    _toastTimer?.cancel();
     super.dispose();
-  }
-
-  void _store(CheckIn edited) {
-    _saving = _saving.then((_) => _persist(edited));
   }
 
   /// An emptied check-in loses its photo first, so a failure part-way never
@@ -89,46 +87,104 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
     await _update(edited);
   }
 
-  void _remove(CheckInMetric metric, String label) {
-    _undoTimer?.cancel();
-    // A second delete closes the first one's Undo, so store that one now.
-    if (_undo != null) _store(_shown);
+  void _startSelect([CheckInMetric? first]) => setState(() {
+        _open = null;
+        _selecting = true;
+        _selected
+          ..clear()
+          ..addAll([if (first != null) first]);
+      });
+
+  void _endSelect() => setState(() {
+        _selecting = false;
+        _selected.clear();
+      });
+
+  void _toggle(CheckInMetric m) => setState(() => _selected.contains(m) ? _selected.remove(m) : _selected.add(m));
+
+  /// Asks before deleting [readings]; nothing changes on Cancel.
+  Future<void> _askDelete(List<_Reading> readings, {required String day, required String time}) async {
+    if (readings.isEmpty) return;
+    final c = AppScope.of(context).strings.checkin;
+    final one = readings.length == 1 ? readings.single : null;
+    // English names sit mid-sentence; lowercasing leaves Arabic untouched.
+    final title = c.rec_del_title(one?.label.toLowerCase() ?? c.rec_count(readings.length));
+    final body = one != null ? c.rec_del_body_one(day, time) : c.rec_del_body_n(day);
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierColor: const Color(0x6114202B),
+      builder: (_) => _ConfirmDelete(title: title, body: body),
+    );
+    if (!mounted) return;
+    if (ok != true) {
+      setState(() => _open = null);
+      return;
+    }
+    final edited = readings.fold(_shown, (ci, r) => ci.without(r.metric));
+    _saving = _saving.then((_) => _persist(edited));
+    _toastTimer?.cancel();
     setState(() {
-      _undo = (before: _shown, label: label);
-      _shown = _shown.without(metric);
+      _shown = edited;
+      _open = null;
+      _selecting = false;
+      _selected.clear();
+      _toast = c.rec_deleted(one?.label ?? c.rec_count(readings.length));
     });
-    _undoTimer = Timer(_undoFor, () {
-      if (!mounted) return;
-      _store(_shown);
-      setState(() => _undo = null);
+    _toastTimer = Timer(_toastFor, () {
+      if (mounted) setState(() => _toast = null);
     });
   }
 
-  void _restore() {
-    final undo = _undo;
-    if (undo == null) return;
-    _undoTimer?.cancel();
-    setState(() {
-      _shown = undo.before;
-      _undo = null;
-    });
-  }
-
-  Future<void> _openMenu(_Reading r, String when) async {
-    final delete = await showAppSheet<bool>(context, builder: (_) => _ReadingSheet(reading: r, when: when));
-    if (delete == true && mounted) _remove(r.metric, r.label);
+  /// The `⋮` popover, opened under its button and aligned to its end edge.
+  /// True when the patient picked Delete.
+  Future<bool> _openMenu(BuildContext button, _Reading r) async {
+    setState(() => _open = null);
+    final s = AppScope.of(context);
+    final box = button.findRenderObject()! as RenderBox;
+    final overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
+    final x = s.rtl ? rect.left : rect.right;
+    final delete = await showMenu<bool>(
+      context: context,
+      position: RelativeRect.fromLTRB(x, rect.bottom + 4, overlay.size.width - x, overlay.size.height - rect.bottom),
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 8,
+      shadowColor: const Color(0x3314202B),
+      menuPadding: const EdgeInsets.all(6),
+      constraints: const BoxConstraints(minWidth: 184),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(T.rLg),
+        side: const BorderSide(color: T.ink100),
+      ),
+      popUpAnimationStyle: const AnimationStyle(duration: Duration(milliseconds: 120), curve: Motion.easeOut),
+      items: [
+        PopupMenuItem<bool>(
+          value: true,
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(children: [
+            const Icon(LucideIcons.trash2, size: 18, color: T.danger),
+            const SizedBox(width: 10),
+            Text(s.strings.checkin.rec_delete,
+                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.danger)),
+          ]),
+        ),
+      ],
+    );
+    return delete == true;
   }
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final c = s.strings.checkin;
     final checkIn = _shown;
     final d = checkIn.recordedAt.toLocal();
     final v = checkIn.vitals;
     final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
     final time = MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(d));
     final day = '${d.day} ${checkInMonthShort(s, d)}';
-    final when = '$day · $time';
     final mood = checkIn.mood;
 
     final rows = <_Reading>[
@@ -138,7 +194,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
           icon: LucideIcons.activity,
           label: s.strings.profile.m_bp,
           value: '${v.systolic}/${v.diastolic}',
-          unit: s.strings.checkin.unit_bp,
+          unit: c.unit_bp,
           color: T.hueViolet,
           bg: T.hueViolet50,
         ),
@@ -148,7 +204,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
           icon: LucideIcons.droplet,
           label: s.strings.profile.m_glucose,
           value: '$glucose',
-          unit: s.strings.checkin.unit_glu,
+          unit: c.unit_glu,
           color: T.hueMint600,
           bg: T.hueMint50,
         ),
@@ -158,7 +214,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
           icon: LucideIcons.wind,
           label: s.strings.profile.m_o2,
           value: '${v.spo2}',
-          unit: s.strings.checkin.unit_spo2,
+          unit: c.unit_spo2,
           color: T.hueBlue,
           bg: T.hueBlue50,
         ),
@@ -168,7 +224,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
           icon: LucideIcons.heartPulse,
           label: s.strings.profile.m_pulse,
           value: '${v.heartRate}',
-          unit: s.strings.checkin.unit_bpm,
+          unit: c.unit_bpm,
           color: T.hueViolet,
           bg: T.hueViolet50,
         ),
@@ -178,7 +234,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
           icon: LucideIcons.scale,
           label: s.strings.profile.m_weight,
           value: _weight(v.weightKg!),
-          unit: s.strings.checkin.unit_kg,
+          unit: c.unit_kg,
           color: T.hueBlue,
           bg: T.hueBlue50,
         ),
@@ -209,132 +265,233 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
         : _Reading(
             metric: CheckInMetric.symptoms,
             icon: LucideIcons.stethoscope,
-            label: s.strings.checkin.symptoms_n('${checkIn.symptoms.length}'),
+            label: c.symptoms_n('${checkIn.symptoms.length}'),
             value: '',
             unit: '',
             color: const Color(0xFF9A6E00),
             bg: const Color(0xFFFDF5DC),
           );
-    final undo = _undo;
+    final all = [if (moodReading != null) moodReading, ...rows, if (symptoms != null) symptoms];
+    final allOn = all.isNotEmpty && all.every((r) => _selected.contains(r.metric));
+    final toast = _toast;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: ContentColumn(
-        maxWidth: 720,
-        child: Stack(children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const PadTop(),
-            AppBarRow(children: [
-              RoundBtn(
-                  icon: backArrow(context),
-                  semanticLabel: s.strings.common.a11y_back,
-                  onTap: () => Navigator.of(context).pop()),
-              const SizedBox(width: 12),
-              Expanded(child: Text(day, style: Typo.heading(ar: s.rtl))),
-            ]),
-            Expanded(
-              child: ListView(padding: EdgeInsets.zero, children: [
-                if (moodReading != null)
-                  Container(
-                    margin: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(T.rLg),
-                      border: Border.all(color: s.accent.bg),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        stops: const [0.0, 0.65],
-                        colors: [s.accent.bg, T.cream50],
+    void ask(List<_Reading> rs) => _askDelete(rs, day: day, time: time);
+
+    Widget swipe(_Reading r, {double radius = 0, required Widget child}) => _SwipeRow(
+          open: _open == r.metric,
+          radius: radius,
+          deleteLabel: c.rec_delete_short,
+          selecting: _selecting,
+          selected: _selected.contains(r.metric),
+          label: r.label,
+          onOpen: () => setState(() => _open = r.metric),
+          onClose: () => setState(() => _open = _open == r.metric ? null : _open),
+          onDelete: () => ask([r]),
+          onLongPress: () => _startSelect(r.metric),
+          onToggle: () => _toggle(r.metric),
+          child: child,
+        );
+
+    Widget lead(_Reading r) => _selecting
+        ? Padding(
+            padding: const EdgeInsetsDirectional.only(end: 10),
+            child: _Check(on: _selected.contains(r.metric)),
+          )
+        : const SizedBox.shrink();
+
+    Widget more(_Reading r) => _selecting
+        ? const SizedBox(width: 8)
+        : _MoreBtn(
+            reading: r,
+            onTap: (button) async {
+              if (await _openMenu(button, r)) ask([r]);
+            },
+          );
+
+    return PopScope(
+      canPop: !_selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _selecting) _endSelect();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: ContentColumn(
+          maxWidth: 720,
+          child: Stack(children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              const PadTop(),
+              if (!_selecting)
+                AppBarRow(children: [
+                  RoundBtn(
+                      icon: backArrow(context),
+                      semanticLabel: s.strings.common.a11y_back,
+                      onTap: () => Navigator.of(context).pop()),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(day, style: Typo.heading(ar: s.rtl))),
+                  if (all.isNotEmpty)
+                    PButton(c.rec_select,
+                        variant: BtnVariant.ghost, size: BtnSize.sm, ar: s.rtl, onTap: () => _startSelect()),
+                ])
+              else
+                AppBarRow(children: [
+                  RoundBtn(icon: LucideIcons.x, semanticLabel: c.rec_select_done, onTap: _endSelect),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        _selected.isEmpty ? c.rec_select_title : c.rec_selected(_selected.length),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Typo.heading(ar: s.rtl),
                       ),
                     ),
-                    child: Row(children: [
-                      MoodFace(level: mood!.score, size: 40, color: moodColors[mood.score - 1]),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(moodReading.value,
-                              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                          const SizedBox(height: 2),
-                          _TimeMeta(time: time, prefix: '${moodReading.label} · '),
-                        ]),
-                      ),
-                      _MoreBtn(reading: moodReading, onTap: () => _openMenu(moodReading, when)),
-                    ]),
                   ),
-                if (rows.isNotEmpty)
-                  PCard(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      children: rows.indexed
-                          .map((e) => _MetricLine(
-                                row: e.$2,
-                                last: e.$1 == rows.length - 1,
-                                time: time,
-                                onMore: () => _openMenu(e.$2, when),
-                              ))
-                          .toList(),
+                  PButton(allOn ? c.rec_clear_all : c.rec_select_all,
+                      variant: BtnVariant.ghost,
+                      size: BtnSize.sm,
+                      ar: s.rtl,
+                      onTap: () => setState(() {
+                            if (allOn) {
+                              _selected.clear();
+                            } else {
+                              _selected.addAll(all.map((r) => r.metric));
+                            }
+                          })),
+                ]),
+              Expanded(
+                child: ListView(padding: EdgeInsets.zero, children: [
+                  if (moodReading != null)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 16),
+                      child: swipe(
+                        moodReading,
+                        radius: T.rLg,
+                        child: Container(
+                          padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 8, 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(T.rLg),
+                            border: Border.all(color: s.accent.bg),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              stops: const [0.0, 0.65],
+                              colors: [s.accent.bg, T.cream50],
+                            ),
+                          ),
+                          child: Row(children: [
+                            lead(moodReading),
+                            MoodFace(level: mood!.score, size: 40, color: moodColors[mood.score - 1]),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(moodReading.value,
+                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                                const SizedBox(height: 2),
+                                _TimeMeta(time: time, prefix: '${moodReading.label} · '),
+                              ]),
+                            ),
+                            more(moodReading),
+                          ]),
+                        ),
+                      ),
                     ),
-                  ),
-                if (symptoms != null)
-                  PCard(
-                    margin: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                    padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
-                    child: Row(children: [
-                      IconSquare(symptoms.icon,
-                          bg: symptoms.bg, fg: symptoms.color, size: 38, iconSize: 19, radius: T.rMd),
-                      const SizedBox(width: 13),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(symptoms.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                          const SizedBox(height: 2),
-                          _TimeMeta(time: time),
-                        ]),
+                  if (rows.isNotEmpty)
+                    PCard(
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: EdgeInsets.zero,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(T.rLg - 1),
+                        child: Column(
+                          children: rows.indexed
+                              .map((e) => swipe(
+                                    e.$2,
+                                    child: _MetricLine(
+                                      row: e.$2,
+                                      last: e.$1 == rows.length - 1,
+                                      time: time,
+                                      lead: lead(e.$2),
+                                      trail: more(e.$2),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
                       ),
-                      _MoreBtn(reading: symptoms, onTap: () => _openMenu(symptoms, when)),
-                    ]),
-                  ),
-                // Where it hurt — the body map as the patient marked it.
-                if (checkIn.painSites.isNotEmpty)
-                  PCard(
-                    margin: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      Text(s.strings.checkin.body_marked,
-                          style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                      const SizedBox(height: 12),
-                      BodyMapPreview(sites: checkIn.painSites),
-                    ]),
-                  ),
-                // The check-in's photo (records-vault back-reference) — design
-                // DayRecordsScreen renders attachments inline with the readings.
-                if (checkIn.photoRecordId != null && !checkIn.isEmpty)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                    child: RecordAttachmentThumb(recordId: checkIn.photoRecordId!, height: 160),
-                  ),
-                if (checkIn.isEmpty) _EmptyDay(text: s.strings.checkin.day_empty),
-                // Room for the Undo toast over the last row.
-                const SizedBox(height: 96),
-              ]),
-            ),
-          ]),
-          if (undo != null)
-            PositionedDirectional(
-              start: 16,
-              end: 16,
-              bottom: 24 + MediaQuery.paddingOf(context).bottom,
-              child: _UndoToast(
-                text: s.strings.checkin.rec_deleted(undo.label),
-                action: s.strings.common.undo,
-                onUndo: _restore,
+                    ),
+                  if (symptoms != null)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                      child: swipe(
+                        symptoms,
+                        radius: T.rLg,
+                        child: PCard(
+                          flat: true,
+                          padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
+                          child: Row(children: [
+                            lead(symptoms),
+                            IconSquare(symptoms.icon,
+                                bg: symptoms.bg, fg: symptoms.color, size: 38, iconSize: 19, radius: T.rMd),
+                            const SizedBox(width: 13),
+                            Expanded(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(symptoms.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                                const SizedBox(height: 2),
+                                _TimeMeta(time: time),
+                              ]),
+                            ),
+                            more(symptoms),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  // Where it hurt — the body map as the patient marked it.
+                  if (checkIn.painSites.isNotEmpty)
+                    PCard(
+                      margin: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        Text(c.body_marked,
+                            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                        const SizedBox(height: 12),
+                        BodyMapPreview(sites: checkIn.painSites),
+                      ]),
+                    ),
+                  // The check-in's photo (records-vault back-reference) — design
+                  // DayRecordsScreen renders attachments inline with the readings.
+                  if (checkIn.photoRecordId != null && !checkIn.isEmpty)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                      child: RecordAttachmentThumb(recordId: checkIn.photoRecordId!, height: 160),
+                    ),
+                  if (checkIn.isEmpty) _EmptyDay(text: c.day_empty),
+                  // Room for the toast and the selection bar over the last row.
+                  const SizedBox(height: 112),
+                ]),
               ),
-            ),
-        ]),
+            ]),
+            if (_selecting)
+              PositionedDirectional(
+                start: 0,
+                end: 0,
+                bottom: 0,
+                child: _SelectionBar(
+                  label: _selected.isEmpty ? c.rec_delete_short : c.rec_delete_n(c.rec_count(_selected.length)),
+                  onDelete:
+                      _selected.isEmpty ? null : () => ask(all.where((r) => _selected.contains(r.metric)).toList()),
+                ),
+              ),
+            if (toast != null)
+              PositionedDirectional(
+                start: 16,
+                end: 16,
+                bottom: 24 + MediaQuery.paddingOf(context).bottom,
+                child: _DoneToast(text: toast),
+              ),
+          ]),
+        ),
       ),
     );
   }
@@ -362,20 +519,172 @@ class _Reading {
   final Color bg;
 }
 
+/// Design `SwipeRow`: dragging toward the start edge reveals Delete; a swipe
+/// past half the width asks to delete at once. Long-press starts Select; while
+/// selecting, a tap toggles the row instead.
+class _SwipeRow extends StatefulWidget {
+  const _SwipeRow({
+    required this.open,
+    required this.radius,
+    required this.deleteLabel,
+    required this.selecting,
+    required this.selected,
+    required this.label,
+    required this.onOpen,
+    required this.onClose,
+    required this.onDelete,
+    required this.onLongPress,
+    required this.onToggle,
+    required this.child,
+  });
+  final bool open;
+  final double radius;
+  final String deleteLabel;
+  final bool selecting;
+  final bool selected;
+  final String label;
+  final VoidCallback onOpen;
+  final VoidCallback onClose;
+  final VoidCallback onDelete;
+  final VoidCallback onLongPress;
+  final VoidCallback onToggle;
+  final Widget child;
+
+  @override
+  State<_SwipeRow> createState() => _SwipeRowState();
+}
+
+class _SwipeRowState extends State<_SwipeRow> {
+  static const _reveal = 88.0;
+
+  /// Signed offset while a finger is down; null when the row rests.
+  double? _drag;
+  double _base = 0;
+  double _dx = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    // The row slides toward the start edge: left in English, right in Arabic.
+    final dir = Directionality.of(context) == TextDirection.rtl ? 1.0 : -1.0;
+    final rest = widget.open ? dir * _reveal : 0.0;
+    return LayoutBuilder(builder: (context, box) {
+      final w = box.maxWidth;
+      final content = TweenAnimationBuilder<double>(
+        tween: Tween(end: _drag ?? rest),
+        duration: _drag != null ? Duration.zero : const Duration(milliseconds: 200),
+        curve: Motion.easeOut,
+        builder: (context, offset, child) {
+          final amt = math.max(0.0, offset * dir);
+          return Stack(children: [
+            if (amt > 0)
+              PositionedDirectional(
+                top: 0,
+                bottom: 0,
+                end: 0,
+                width: math.max(_reveal, amt),
+                child: ExcludeSemantics(
+                  child: GestureDetector(
+                    onTap: widget.onDelete,
+                    child: Container(
+                      color: T.danger,
+                      alignment: Alignment.center,
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(LucideIcons.trash2, size: 20, color: Colors.white),
+                        const SizedBox(height: 4),
+                        Text(widget.deleteLabel,
+                            style: Typo.meta(ar: s.rtl)
+                                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
+            Transform.translate(offset: Offset(offset, 0), child: child),
+          ]);
+        },
+        child: widget.child,
+      );
+      final row = widget.selecting
+          ? Semantics(
+              checked: widget.selected,
+              label: widget.label,
+              child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: widget.onToggle, child: content),
+            )
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.open ? widget.onClose : null,
+              onLongPress: widget.onLongPress,
+              onHorizontalDragStart: (_) {
+                _base = rest;
+                _dx = 0;
+                setState(() => _drag = rest);
+              },
+              onHorizontalDragUpdate: (e) {
+                _dx += e.delta.dx;
+                setState(() => _drag = ((_base + _dx) * dir).clamp(0.0, w) * dir);
+              },
+              onHorizontalDragEnd: (_) => _settle(w),
+              onHorizontalDragCancel: () => _settle(w),
+              child: content,
+            );
+      return ClipRRect(borderRadius: BorderRadius.circular(widget.radius), child: row);
+    });
+  }
+
+  void _settle(double w) {
+    final a = (_drag ?? 0).abs();
+    setState(() => _drag = null);
+    if (a > w * 0.5) {
+      widget.onDelete();
+    } else if (a > _reveal / 2) {
+      widget.onOpen();
+    } else {
+      widget.onClose();
+    }
+  }
+}
+
+/// Design `Check`: the row's tick box while selecting.
+class _Check extends StatelessWidget {
+  const _Check({required this.on});
+  final bool on;
+
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Motion.easeOut,
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: on ? AccentScope.of(context).main : Colors.white,
+          borderRadius: BorderRadius.circular(7),
+          border: on ? null : Border.all(color: T.ink300, width: 2),
+        ),
+        child: on ? const Icon(LucideIcons.check, size: 16, color: Colors.white) : null,
+      );
+}
+
 class _MetricLine extends StatelessWidget {
-  const _MetricLine({required this.row, required this.last, required this.time, required this.onMore});
+  const _MetricLine(
+      {required this.row, required this.last, required this.time, required this.lead, required this.trail});
   final _Reading row;
   final bool last;
   final String time;
-  final VoidCallback onMore;
+  final Widget lead;
+  final Widget trail;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 8, 14),
-      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink50))),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: last ? null : const Border(bottom: BorderSide(color: T.ink50)),
+      ),
       child: Row(children: [
+        lead,
         IconSquare(row.icon, bg: row.bg, fg: row.color, size: 42, iconSize: 20, radius: T.rMd),
         const SizedBox(width: 10),
         Expanded(
@@ -390,7 +699,7 @@ class _MetricLine extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         _ValueText(row: row),
-        _MoreBtn(reading: row, onTap: onMore),
+        trail,
       ]),
     );
   }
@@ -440,11 +749,11 @@ class _TimeMeta extends StatelessWidget {
   }
 }
 
-/// The row's `⋮` (design `More`): opens the reading's actions.
+/// The row's `⋮` (design `More`): opens the reading's menu under itself.
 class _MoreBtn extends StatelessWidget {
   const _MoreBtn({required this.reading, required this.onTap});
   final _Reading reading;
-  final VoidCallback onTap;
+  final void Function(BuildContext button) onTap;
 
   @override
   Widget build(BuildContext context) => RoundBtn(
@@ -453,47 +762,78 @@ class _MoreBtn extends StatelessWidget {
         ghost: true,
         iconSize: 18,
         fg: T.fg3,
-        onTap: onTap,
+        onTap: () => onTap(context),
       );
 }
 
-/// The reading's action sheet: its name, when and what it was, and delete.
-/// Pops `true` to delete.
-class _ReadingSheet extends StatelessWidget {
-  const _ReadingSheet({required this.reading, required this.when});
-  final _Reading reading;
-  final String when;
+/// Design's delete alert: what goes and when it was recorded, then Delete or
+/// Cancel. Pops `true` to delete.
+class _ConfirmDelete extends StatelessWidget {
+  const _ConfirmDelete({required this.title, required this.body});
+  final String title;
+  final String body;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final value = [reading.value, reading.unit].where((x) => x.isNotEmpty).join(' ');
+    return Dialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(T.rXl)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 340),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 22, 20, 18),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Align(
+              alignment: AlignmentDirectional.centerStart,
+              child:
+                  IconSquare(LucideIcons.trash2, bg: T.dangerBg, fg: T.danger, size: 44, iconSize: 22, radius: T.rMd),
+            ),
+            const SizedBox(height: 14),
+            Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+            const SizedBox(height: 6),
+            Text(body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5)),
+            const SizedBox(height: 20),
+            PButton(s.strings.checkin.rec_delete_short,
+                variant: BtnVariant.danger,
+                large: true,
+                block: true,
+                ar: s.rtl,
+                onTap: () => Navigator.pop(context, true)),
+            const SizedBox(height: 10),
+            PButton(s.strings.common.cancel,
+                variant: BtnVariant.secondary,
+                large: true,
+                block: true,
+                ar: s.rtl,
+                onTap: () => Navigator.pop(context, false)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pinned under the list while selecting; disabled until a row is ticked.
+class _SelectionBar extends StatelessWidget {
+  const _SelectionBar({required this.label, required this.onDelete});
+  final String label;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
     return Container(
-      decoration:
-          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-      padding: EdgeInsetsDirectional.fromSTEB(20, 10, 20, sheetBottomInset(context, base: 32)),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const Center(child: SheetGrab()),
-        const SizedBox(height: 6),
-        Text(reading.label, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-        const SizedBox(height: 2),
-        Text(value.isEmpty ? when : '$when · $value', style: Typo.meta(ar: s.rtl)),
-        const SizedBox(height: 16),
-        PButton(s.strings.checkin.rec_delete,
-            icon: LucideIcons.trash2,
-            variant: BtnVariant.danger,
-            large: true,
-            block: true,
-            ar: s.rtl,
-            onTap: () => Navigator.pop(context, true)),
-        const SizedBox(height: 10),
-        PButton(s.strings.common.cancel,
-            variant: BtnVariant.secondary,
-            large: true,
-            block: true,
-            ar: s.rtl,
-            onTap: () => Navigator.pop(context, false)),
-      ]),
+      padding: EdgeInsetsDirectional.fromSTEB(16, 12, 16, 24 + MediaQuery.paddingOf(context).bottom),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: T.ink100)),
+        boxShadow: [BoxShadow(color: Color(0x0F14202B), offset: Offset(0, -6), blurRadius: 18)],
+      ),
+      child: PButton(label,
+          icon: LucideIcons.trash2, variant: BtnVariant.danger, large: true, block: true, ar: s.rtl, onTap: onDelete),
     );
   }
 }
@@ -516,37 +856,27 @@ class _EmptyDay extends StatelessWidget {
   }
 }
 
-/// Design's dark Undo toast, announced to screen readers as it appears.
-class _UndoToast extends StatelessWidget {
-  const _UndoToast({required this.text, required this.action, required this.onUndo});
+/// Design's dark "deleted" notice, announced to screen readers as it appears.
+class _DoneToast extends StatelessWidget {
+  const _DoneToast({required this.text});
   final String text;
-  final String action;
-  final VoidCallback onUndo;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final label = Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: Colors.white);
     return Semantics(
       liveRegion: true,
       child: Container(
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 10, 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(color: T.ink800, borderRadius: BorderRadius.circular(T.rLg), boxShadow: T.shadowLg),
         child: Row(children: [
-          const Icon(LucideIcons.trash2, size: 17, color: Color(0xD9FFFFFF)),
+          const Icon(LucideIcons.check, size: 17, color: T.hueMint),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: label)),
-          const SizedBox(width: 12),
-          TextButton(
-            onPressed: onUndo,
-            style: TextButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              backgroundColor: const Color(0x24FFFFFF),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(T.rMd)),
-            ),
-            child: Text(action, style: label.copyWith(fontWeight: FontWeight.w700)),
+          Expanded(
+            child: Text(text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
           ),
         ]),
       ),

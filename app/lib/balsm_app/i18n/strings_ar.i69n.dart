@@ -8,6 +8,15 @@ import 'package:core/core.dart';
 String get _languageCode => 'ar';
 String get _localeName => 'ar';
 
+String _plural(int count,
+        {String? zero,
+        String? one,
+        String? two,
+        String? few,
+        String? many,
+        String? other}) =>
+    i69n.plural(count, _languageCode,
+        zero: zero, one: one, two: two, few: few, many: many, other: other);
 String _select(Object? value, Map<String, String> cases) =>
     i69n.select(value, cases);
 
@@ -806,6 +815,21 @@ class CheckinStrings_ar extends CheckinStrings {
   String rec_more(String label) => "خيارات $label";
   String get rec_delete => "حذف السجل";
   String rec_deleted(String label) => "تم حذف $label";
+  String get rec_delete_short => "حذف";
+  String rec_delete_n(String what) => "حذف $what";
+  String rec_del_title(String what) => "حذف $what؟";
+  String rec_del_body_one(String day, String time) =>
+      "سيُحذف هذا السجل من $day، $time. لا يمكن التراجع عن ذلك.";
+  String rec_del_body_n(String day) =>
+      "ستُحذف هذه السجلات من $day. لا يمكن التراجع عن ذلك.";
+  String rec_count(int n) =>
+      "${_plural(n, one: 'سجل واحد', two: 'سجلين', few: '$n سجلات', other: '$n سجلات')}";
+  String get rec_select => "تحديد";
+  String get rec_select_title => "حدد السجلات";
+  String get rec_select_done => "إنهاء التحديد";
+  String rec_selected(int n) => "$n محدد";
+  String get rec_select_all => "تحديد الكل";
+  String get rec_clear_all => "إلغاء الكل";
   String get day_empty => "لا توجد سجلات في هذا اليوم.";
   String get list_sep => "، ";
   String get list_mid => " · ";
@@ -1021,6 +1045,30 @@ class CheckinStrings_ar extends CheckinStrings {
         return rec_delete;
       case 'rec_deleted':
         return rec_deleted;
+      case 'rec_delete_short':
+        return rec_delete_short;
+      case 'rec_delete_n':
+        return rec_delete_n;
+      case 'rec_del_title':
+        return rec_del_title;
+      case 'rec_del_body_one':
+        return rec_del_body_one;
+      case 'rec_del_body_n':
+        return rec_del_body_n;
+      case 'rec_count':
+        return rec_count;
+      case 'rec_select':
+        return rec_select;
+      case 'rec_select_title':
+        return rec_select_title;
+      case 'rec_select_done':
+        return rec_select_done;
+      case 'rec_selected':
+        return rec_selected;
+      case 'rec_select_all':
+        return rec_select_all;
+      case 'rec_clear_all':
+        return rec_clear_all;
       case 'day_empty':
         return day_empty;
       case 'list_sep':

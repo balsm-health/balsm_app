@@ -7,6 +7,16 @@ import 'package:core/core.dart';
 String get _languageCode => 'en';
 String get _localeName => 'en';
 
+String _plural(int count,
+        {String? zero,
+        String? one,
+        String? two,
+        String? few,
+        String? many,
+        String? other}) =>
+    i69n.plural(count, _languageCode,
+        zero: zero, one: one, two: two, few: few, many: many, other: other);
+
 class Strings implements i69n.I69nMessageBundle {
   const Strings();
   AuthStrings get auth => AuthStrings(this);
@@ -807,6 +817,21 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String rec_more(String label) => "$label options";
   String get rec_delete => "Delete record";
   String rec_deleted(String label) => "$label deleted";
+  String get rec_delete_short => "Delete";
+  String rec_delete_n(String what) => "Delete $what";
+  String rec_del_title(String what) => "Delete $what?";
+  String rec_del_body_one(String day, String time) =>
+      "This record from $day, $time will be removed. This can’t be undone.";
+  String rec_del_body_n(String day) =>
+      "These records from $day will be removed. This can’t be undone.";
+  String rec_count(int n) =>
+      "${_plural(n, one: '1 record', other: '$n records')}";
+  String get rec_select => "Select";
+  String get rec_select_title => "Select records";
+  String get rec_select_done => "Done selecting";
+  String rec_selected(int n) => "$n selected";
+  String get rec_select_all => "Select all";
+  String get rec_clear_all => "Clear all";
   String get day_empty => "No records on this day.";
   String get list_sep => ", ";
   String get list_mid => " · ";
@@ -1017,6 +1042,30 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return rec_delete;
       case 'rec_deleted':
         return rec_deleted;
+      case 'rec_delete_short':
+        return rec_delete_short;
+      case 'rec_delete_n':
+        return rec_delete_n;
+      case 'rec_del_title':
+        return rec_del_title;
+      case 'rec_del_body_one':
+        return rec_del_body_one;
+      case 'rec_del_body_n':
+        return rec_del_body_n;
+      case 'rec_count':
+        return rec_count;
+      case 'rec_select':
+        return rec_select;
+      case 'rec_select_title':
+        return rec_select_title;
+      case 'rec_select_done':
+        return rec_select_done;
+      case 'rec_selected':
+        return rec_selected;
+      case 'rec_select_all':
+        return rec_select_all;
+      case 'rec_clear_all':
+        return rec_clear_all;
       case 'day_empty':
         return day_empty;
       case 'list_sep':

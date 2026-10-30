@@ -9,8 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:self_report/self_report.dart';
 
-/// `home.jsx` DayRecordsScreen — each reading's ⋮ menu deletes it, with Undo
-/// before anything is stored.
+/// `home.jsx` DayRecordsScreen — a reading is deleted from its ⋮ menu, by
+/// swiping it, or with Select; each asks first, then stores at once.
 ///
 /// The readings are invented by the test; nothing here is real patient data.
 class _Recorder implements UpdateCheckInUseCase {
@@ -55,13 +55,23 @@ void main() {
         userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
         updateCheckInUseCaseProvider.overrideWithValue(recorder),
       ],
-      child: AppScope(state: state, child: MaterialApp(home: DayRecordsScreen(checkIn: checkIn))),
+      child: AppScope(
+        state: state,
+        // The app sets direction above the navigator (shell.dart), so dialogs
+        // and menus follow it too.
+        child: MaterialApp(
+          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+          home: DayRecordsScreen(checkIn: checkIn),
+        ),
+      ),
     ));
     await tester.pumpAndSettle();
     return (recorder, state);
   }
 
-  Future<void> deleteReading(WidgetTester tester, PatientAppState s, String label) async {
+  Finder value(String text) => find.textContaining(text, findRichText: true);
+
+  Future<void> openMenu(WidgetTester tester, PatientAppState s, String label) async {
     await tester
         .tap(find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == s.strings.checkin.rec_more(label)));
     await tester.pumpAndSettle();
@@ -69,52 +79,88 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> confirm(WidgetTester tester, PatientAppState s) async {
+    await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.text(s.strings.checkin.rec_delete_short)));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('a quick BP log shows no pain row', (tester) async {
     final (_, s) = await pump(tester, bpOnly);
     expect(find.text(s.strings.profile.m_pain), findsNothing);
-    expect(find.textContaining('118/76', findRichText: true), findsOne);
+    expect(value('118/76'), findsOne);
   });
 
-  testWidgets('delete hides the reading, and Undo brings it back unstored', (tester) async {
+  testWidgets('the menu asks first, then stores the delete at once', (tester) async {
     final (recorder, s) = await pump(tester, bpOnly);
-    await deleteReading(tester, s, s.strings.profile.m_bp);
+    await openMenu(tester, s, s.strings.profile.m_bp);
 
-    expect(find.textContaining('118/76', findRichText: true), findsNothing);
-    expect(find.text(s.strings.checkin.rec_deleted(s.strings.profile.m_bp)), findsOne);
+    final c = s.strings.checkin;
+    expect(find.text(c.rec_del_title(s.strings.profile.m_bp.toLowerCase())), findsOne);
+    expect(recorder.stored, isEmpty);
+    await confirm(tester, s);
 
-    await tester.tap(find.text(s.strings.common.undo));
-    await tester.pump(const Duration(seconds: 6));
-    expect(find.textContaining('118/76', findRichText: true), findsOne);
+    expect(value('118/76'), findsNothing);
+    expect(find.text(c.rec_deleted(s.strings.profile.m_bp)), findsOne);
+    expect(recorder.stored.single.vitals.systolic, isNull);
+    expect(recorder.stored.single.vitals.glucoseFasting, 95);
+
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text(c.rec_deleted(s.strings.profile.m_bp)), findsNothing);
+  });
+
+  testWidgets('Cancel keeps the reading and stores nothing', (tester) async {
+    final (recorder, s) = await pump(tester, bpOnly);
+    await openMenu(tester, s, s.strings.profile.m_bp);
+    await tester.tap(find.text(s.strings.common.cancel));
+    await tester.pumpAndSettle();
+
+    expect(value('118/76'), findsOne);
     expect(recorder.stored, isEmpty);
   });
 
-  testWidgets('the edit is stored once the Undo toast closes', (tester) async {
+  testWidgets('a short swipe reveals Delete; a long one asks at once', (tester) async {
     final (recorder, s) = await pump(tester, bpOnly);
-    await deleteReading(tester, s, s.strings.profile.m_bp);
-    await tester.pump(const Duration(seconds: 6));
+    final c = s.strings.checkin;
 
-    expect(find.text(s.strings.checkin.rec_deleted(s.strings.profile.m_bp)), findsNothing);
+    await tester.drag(find.text(s.strings.profile.m_glucose), const Offset(-70, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(c.rec_delete_short));
+    await tester.pumpAndSettle();
+    expect(find.byType(Dialog), findsOne);
+    await tester.tap(find.text(s.strings.common.cancel));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.text(s.strings.profile.m_bp), const Offset(-300, 0));
+    await tester.pumpAndSettle();
+    await confirm(tester, s);
     expect(recorder.stored.single.vitals.systolic, isNull);
     expect(recorder.stored.single.vitals.glucoseFasting, 95);
   });
 
-  testWidgets('deleting the last reading empties the day', (tester) async {
+  testWidgets('Select deletes several readings in one store and empties the day', (tester) async {
     final (recorder, s) = await pump(tester, bpOnly);
-    await deleteReading(tester, s, s.strings.profile.m_bp);
-    await deleteReading(tester, s, s.strings.profile.m_glucose);
+    final c = s.strings.checkin;
+    await tester.tap(find.text(c.rec_select));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(c.rec_select_all));
+    await tester.pumpAndSettle();
+    expect(find.text(c.rec_selected(2)), findsOne);
 
-    expect(find.text(s.strings.checkin.day_empty), findsOne);
-    await tester.pump(const Duration(seconds: 6));
-    // The first delete is stored when the second closes its Undo.
-    expect(recorder.stored.length, 2);
-    expect(recorder.stored.last.isEmpty, isTrue);
+    await tester.tap(find.text(c.rec_delete_n(c.rec_count(2))));
+    await tester.pumpAndSettle();
+    expect(find.text(c.rec_del_title(c.rec_count(2))), findsOne);
+    await confirm(tester, s);
+
+    expect(find.text(c.day_empty), findsOne);
+    expect(recorder.stored.single.isEmpty, isTrue);
   });
 
-  testWidgets('the menu and Undo lay out right to left in Arabic', (tester) async {
+  testWidgets('in Arabic the row swipes the other way', (tester) async {
     final (recorder, s) = await pump(tester, bpOnly, ar: true);
-    await deleteReading(tester, s, s.strings.profile.m_bp);
+    await tester.drag(find.text(s.strings.profile.m_bp), const Offset(300, 0));
+    await tester.pumpAndSettle();
+    await confirm(tester, s);
     expect(find.text(s.strings.checkin.rec_deleted(s.strings.profile.m_bp)), findsOne);
-    await tester.pump(const Duration(seconds: 6));
     expect(recorder.stored.single.vitals.systolic, isNull);
   });
 }
