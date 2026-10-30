@@ -1,5 +1,8 @@
+import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
 import '../kit.dart';
@@ -15,7 +18,10 @@ import 'checkin_shared.dart';
 /// Port of the Claude Design `DayRecordsScreen`. Times come from the single
 /// [CheckIn.recordedAt]; the domain does not store per-metric clocks, so we
 /// never invent them.
-class DayRecordsScreen extends StatelessWidget {
+///
+/// The check-in is the patient's own entry, so the app bar offers to delete
+/// it, photo included.
+class DayRecordsScreen extends ConsumerWidget {
   const DayRecordsScreen({super.key, required this.checkIn});
   final CheckIn checkIn;
 
@@ -23,8 +29,44 @@ class DayRecordsScreen extends StatelessWidget {
     return Navigator.of(context).push(MaterialPageRoute(builder: (_) => DayRecordsScreen(checkIn: checkIn)));
   }
 
+  /// Asks first, since deleting PHI cannot be undone. The photo goes before
+  /// the check-in, so a failure part-way never leaves a hidden photo with no
+  /// check-in pointing at it.
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final s = AppScope.of(context);
+    final c = s.strings.checkin;
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(c.del_title, style: Typo.subhead(ar: s.rtl)),
+            content: Text(c.del_body, style: Typo.body(ar: s.rtl)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.strings.common.cancel)),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(c.del_confirm, style: const TextStyle(color: T.danger)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !context.mounted) return;
+
+    final photoId = RecordDocumentId.fromString(checkIn.photoRecordId);
+    final userId = ref.read(currentUserIdProvider);
+    if (photoId != null && userId != null) {
+      final photo = await ref.read(recordsDataSourceProvider).find(photoId, scope: userId);
+      if (photo != null) await ref.read(deleteRecordDocumentUseCaseProvider)(photo, scope: userId);
+    }
+    await ref.read(deleteCheckInUseCaseProvider)(checkIn.id);
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    messenger.showSnackBar(SnackBar(content: Text(c.deleted)));
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final d = checkIn.recordedAt.toLocal();
     final v = checkIn.vitals;
@@ -103,6 +145,11 @@ class DayRecordsScreen extends StatelessWidget {
             Expanded(
               child: Text('${d.day} ${checkInMonthShort(s, d)}', style: Typo.heading(ar: s.rtl)),
             ),
+            RoundBtn(
+                icon: LucideIcons.trash2,
+                semanticLabel: s.strings.checkin.del,
+                fg: T.danger,
+                onTap: () => _delete(context, ref)),
           ]),
           Expanded(
             child: ListView(padding: EdgeInsets.zero, children: [

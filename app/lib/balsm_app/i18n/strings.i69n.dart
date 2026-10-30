@@ -804,6 +804,12 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String body_remove(String label) => "Remove $label";
   String get body_clear_all => "Clear all";
   String get body_marked => "Marked areas";
+  String get del => "Delete check-in";
+  String get del_title => "Delete this check-in?";
+  String get del_body =>
+      "Its readings, symptoms and photo are removed from this device. This cannot be undone.";
+  String get del_confirm => "Delete";
+  String get deleted => "Check-in deleted";
   String get list_sep => ", ";
   String get list_mid => " · ";
   String pain_n(String n) => "$n/10";
@@ -1007,6 +1013,16 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return body_clear_all;
       case 'body_marked':
         return body_marked;
+      case 'del':
+        return del;
+      case 'del_title':
+        return del_title;
+      case 'del_body':
+        return del_body;
+      case 'del_confirm':
+        return del_confirm;
+      case 'deleted':
+        return deleted;
       case 'list_sep':
         return list_sep;
       case 'list_mid':
