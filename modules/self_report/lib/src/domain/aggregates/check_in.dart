@@ -40,6 +40,12 @@ class CheckIn {
   /// about how they felt, and inventing a score would invent PHI.
   final Mood? mood;
   final PainLevel painLevel;
+
+  /// Whether this entry says anything about pain. A quick log of one metric
+  /// (a blood-pressure reading, say) stores [PainLevel.none] because the
+  /// column cannot be empty, so a zero with no marked sites means "not asked",
+  /// and showing it as 0/10 would invent a report.
+  bool get reportsPain => !painLevel.isNone || painSites.isNotEmpty;
   final Set<PainSite> painSites;
   final Set<SymptomId> symptoms;
 

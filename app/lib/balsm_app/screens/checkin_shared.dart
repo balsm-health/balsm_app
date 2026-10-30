@@ -185,7 +185,7 @@ class CheckInHistoryRow extends StatelessWidget {
           MoodFace(level: checkIn.mood!.score, size: 26, color: moodColors[checkIn.mood!.score - 1]),
           const SizedBox(width: 10),
         ],
-        Pill('$pain', kind: painBadgeKind(pain), small: true, dot: false, ar: s.rtl),
+        if (checkIn.reportsPain) Pill('$pain', kind: painBadgeKind(pain), small: true, dot: false, ar: s.rtl),
       ]),
     );
     if (onTap == null) return row;

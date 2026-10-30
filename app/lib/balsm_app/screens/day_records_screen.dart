@@ -120,14 +120,15 @@ class DayRecordsScreen extends ConsumerWidget {
           color: T.hueBlue,
           bg: T.hueBlue50,
         ),
-      _MetricRow(
-        icon: LucideIcons.zap,
-        label: s.strings.profile.m_pain,
-        value: '${checkIn.painLevel.value}/10',
-        unit: '',
-        color: T.danger,
-        bg: T.dangerBg,
-      ),
+      if (checkIn.reportsPain)
+        _MetricRow(
+          icon: LucideIcons.zap,
+          label: s.strings.profile.m_pain,
+          value: '${checkIn.painLevel.value}/10',
+          unit: '',
+          color: T.danger,
+          bg: T.dangerBg,
+        ),
     ];
 
     return Scaffold(
@@ -184,15 +185,16 @@ class DayRecordsScreen extends ConsumerWidget {
                     ]),
                   ]),
                 ),
-              PCard(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: rows.indexed
-                      .map((e) => _MetricLine(row: e.$2, last: e.$1 == rows.length - 1, time: time))
-                      .toList(),
+              if (rows.isNotEmpty)
+                PCard(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: rows.indexed
+                        .map((e) => _MetricLine(row: e.$2, last: e.$1 == rows.length - 1, time: time))
+                        .toList(),
+                  ),
                 ),
-              ),
               if (checkIn.symptoms.isNotEmpty)
                 PCard(
                   margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
