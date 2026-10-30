@@ -10,7 +10,7 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
-## [0.5.2] - Unreleased
+## [0.5.3] - Unreleased
 
 ### Fixed
 
@@ -20,6 +20,10 @@ what changed and why it matters.
   ([#128](https://github.com/balsm-health/balsm_app/issues/128))
 - The date and time pickers open white as well, instead of lilac.
   ([#128](https://github.com/balsm-health/balsm_app/issues/128))
+- On the screen that closes a check-in, the grey "saved on this device"
+  note no longer runs off the right edge of the phone. It wraps onto a
+  second line instead, in both languages and at every text size.
+  ([#129](https://github.com/balsm-health/balsm_app/issues/129))
 
 ## [0.5.1] - Unreleased
 
@@ -59,6 +63,10 @@ what changed and why it matters.
 
 ### Fixed
 
+- On the screen that closes a check-in, the grey "saved on this device"
+  note no longer runs off the right edge of the phone. It wraps onto a
+  second line instead, in both languages and at every text size.
+  ([#129](https://github.com/balsm-health/balsm_app/issues/129))
 - Service status in Profile shows whether Balsm's servers are working again:
   it always said the status was unknown, even when everything was up. It now
   speaks the app's language, so in Arabic it reads in Arabic instead of
