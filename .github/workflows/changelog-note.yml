@@ -1,0 +1,30 @@
+name: Changelog note
+
+# Every pull request that changes what ships in the app adds a note to
+# changelog.d/ and leaves the version alone (CODING_STANDARDS.md §9). Promote
+# collects the notes and raises the version when the team releases, so two
+# pull requests never fight over app/pubspec.yaml or CHANGELOG.md.
+# claude-changelog-note.yml writes the note for the author; this is the gate.
+# A change a patient would not notice (a pure refactor) can carry the
+# skip-changelog label instead.
+
+on:
+  pull_request:
+    branches: [main, develop, 'release/**']
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  merge_group:
+
+jobs:
+  note:
+    name: Changelog note
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check the notes in changelog.d
+        run: python3 -I .github/scripts/changelog.py check "$BASE_SHA"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          SKIP_CHANGELOG: ${{ contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}

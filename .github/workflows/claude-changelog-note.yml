@@ -1,0 +1,92 @@
+name: Claude changelog note
+
+# Writes the changelog note a pull request is missing, for its author
+# (CODING_STANDARDS.md §9), so nobody has to remember. Claude runs only when
+# the shared check fails: a PR whose note is fine costs one shell step, and
+# Claude's own commit re-triggers this workflow, finds the note and stops.
+# The version is never raised here; Promote does that when it releases.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    branches: [main, develop, 'release/**']
+
+concurrency:
+  group: claude-changelog-note-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  note:
+    # Forks get no secrets and no write access; their author writes the note.
+    # Copilot has no write access either, so the action's token exchange fails
+    # with a 401 on its pushes; the Changelog note gate still flags a missing
+    # note, and the next push by a person writes it.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'Copilot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Is the note there?
+        id: check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SKIP_CHANGELOG: ${{ contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+        run: |
+          if python3 -I .github/scripts/changelog.py check "$BASE_SHA"; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write it
+        if: steps.check.outputs.needed == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Commits through GitHub's API, so they are signed and pass the
+          # signed-commits rule on main. The commit tool this adds
+          # (mcp__github_file_ops__commit_files) must also be in --allowedTools
+          # below: with an explicit prompt the action does not allow it itself.
+          use_commit_signing: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            PR TITLE: ${{ github.event.pull_request.title }}
+            BASE: ${{ github.event.pull_request.base.ref }} at ${{ github.event.pull_request.base.sha }}
+
+            The changelog note check failed for this pull request. Fix it,
+            following CODING_STANDARDS.md §9 and changelog.d/README.md exactly.
+            The PR branch is checked out.
+
+            1. Run `python3 -I .github/scripts/changelog.py check ${{ github.event.pull_request.base.sha }}`
+               and read what it reports.
+            2. A missing note: read `git diff ${{ github.event.pull_request.base.sha }}...HEAD`
+               and the PR title, and add one file
+               `changelog.d/${{ github.event.pull_request.number }}.<group>.md`
+               (group: added | changed | fixed | removed | security; add
+               `.major` before `.md` for a breaking change, `.minor` for new
+               behaviour a patient can notice that is not under added). Its
+               text is one changelog line: what changed and why it matters to
+               a patient, ending with its ticket as a link (the linked issue,
+               else this PR's /pull/ link).
+            3. Lines the PR added to CHANGELOG.md: move them into the note
+               instead and take them out of CHANGELOG.md.
+            4. A changed `version:` in app/pubspec.yaml: set the line back to
+               the base's (`git show ${{ github.event.pull_request.base.sha }}:app/pubspec.yaml`).
+            5. A malformed note: fix its name or text.
+            6. Run the check again and make sure it passes.
+            7. Commit only the files above, with the message
+               `[Changelog] Add the note`. Change nothing else.
+            8. Post one short PR comment: the note's file name and the group
+               you chose, with a one-line reason.
+          claude_args: |
+            --allowedTools "Read,Edit,Write,mcp__github_file_ops__commit_files,Bash(git diff:*),Bash(git show:*),Bash(git log:*),Bash(git status:*),Bash(python3 -I .github/scripts/changelog.py check:*),Bash(gh pr comment:*),Bash(gh pr view:*)"

@@ -4,7 +4,10 @@ name: Promote
 # build on that tag. Run it from Actions → Promote → Run workflow.
 #
 #   alpha       source: a branch or commit on main (or on a release/** hotfix
-#               branch). Tagged v<pubspec version>-alpha.<next>.
+#               branch). First collects the changelog notes (changelog.d/)
+#               into CHANGELOG.md and raises the version in app/pubspec.yaml
+#               by the largest change among them, committed to that branch;
+#               then tags v<version>-alpha.<next>.
 #   beta        source: an alpha tag. Same commit, tagged
 #               v<version>-beta.<next>.
 #   production  source: the alpha or beta tag QA approved. Same commit, tagged
@@ -13,6 +16,10 @@ name: Promote
 #
 # The version always comes from app/pubspec.yaml at the commit, and the next
 # number from the tags that already exist, so neither is typed by hand.
+# Pull requests never raise the version; this is the only place it rises
+# (CODING_STANDARDS.md §9). The commit goes straight to the branch, so the
+# GitHub Actions app must be on the bypass list of the branch's ruleset
+# (docs/releasing.md, "Setup").
 # release.yml checks the same rules again, so a tag pushed by hand is held to
 # them too. See docs/releasing.md.
 on:
@@ -40,6 +47,9 @@ jobs:
   plan:
     name: Plan ${{ inputs.channel }}
     runs-on: ubuntu-latest
+    # Alpha commits the collected changelog and version to the source branch.
+    permissions:
+      contents: write
     outputs:
       tag: ${{ steps.p.outputs.tag }}
       sha: ${{ steps.p.outputs.sha }}
@@ -72,6 +82,40 @@ jobs:
                 git merge-base --is-ancestor "$SHA" "$b" && { ON="${b#refs/remotes/origin/}"; break; }
               done
               [ -n "$ON" ] || { echo "::error::$SHA is not on main or a release/** branch."; exit 1; }
+
+              # Collect the changelog notes into the release: CHANGELOG.md,
+              # the raised version, the notes deleted. Committed through the
+              # API, so GitHub signs it as the signed-commits rule requires.
+              git checkout -q "$SHA"
+              COLLECT=$(python3 -I .github/scripts/changelog.py collect)
+              echo "$COLLECT"
+              if grep -qx 'changed=true' <<<"$COLLECT"; then
+                # Only a branch's newest commit can take the release commit.
+                BRANCH=""
+                if git rev-parse -q --verify "refs/remotes/origin/$SOURCE" >/dev/null \
+                  && [ "$(git rev-parse "refs/remotes/origin/$SOURCE")" = "$SHA" ]; then
+                  BRANCH="$SOURCE"
+                fi
+                [ -n "$BRANCH" ] || { echo "::error::$SHA has changelog notes to collect but is not the newest commit of a branch. Promote the branch ($ON) instead."; exit 1; }
+                VER=$(sed -n 's/^version=//p' <<<"$COLLECT")
+                TREE_JSON=$(git status --porcelain=v1 --no-renames | while read -r st path; do
+                  if [ "$st" = D ]; then
+                    jq -n --arg p "$path" '{path: $p, mode: "100644", type: "blob", sha: null}'
+                  else
+                    jq -n --arg p "$path" --rawfile c "$path" '{path: $p, mode: "100644", type: "blob", content: $c}'
+                  fi
+                done | jq -s --arg base "$SHA" '{base_tree: $base, tree: .}')
+                TREE=$(gh api "repos/$GITHUB_REPOSITORY/git/trees" --input - <<<"$TREE_JSON" -q .sha)
+                SHA=$(jq -n --arg t "$TREE" --arg p "$SHA" --arg m "[Release] $VER: collect the changelog" \
+                  '{message: $m, tree: $t, parents: [$p]}' \
+                  | gh api "repos/$GITHUB_REPOSITORY/git/commits" --input - -q .sha)
+                # Not forced: if the branch moved since the checkout, this
+                # fails instead of dropping what landed. Run Promote again.
+                gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH" -f sha="$SHA" -F force=false >/dev/null \
+                  || { echo "::error::Could not commit the release to $BRANCH. If it moved, run Promote again; if refused, add GitHub Actions to its ruleset's bypass list (docs/releasing.md)."; exit 1; }
+                echo "Committed $VER to $BRANCH as $SHA"
+                git fetch -q origin "$BRANCH"
+              fi
               ;;
             beta|production)
               if [ "$CHANNEL" = beta ]; then FROM='alpha'; else FROM='alpha|beta'; fi
@@ -92,10 +136,13 @@ jobs:
             echo "::error::$SOURCE does not match app/pubspec.yaml ($VER) at its commit."; exit 1
           fi
 
+          if [ "$CHANNEL" = alpha ] && git rev-parse -q --verify "refs/tags/v$VER" >/dev/null; then
+            echo "::error::$VER is already released and there are no changelog notes to raise it. Merge a change with a note in changelog.d/ first."; exit 1
+          fi
           if [ "$CHANNEL" = production ]; then
             TAG="v$VER"
             if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-              echo "::error::$TAG already exists. Raise the version for a new release."; exit 1
+              echo "::error::$TAG already exists. Promote a newer alpha first."; exit 1
             fi
           else
             LAST=$(git tag -l "v$VER-$CHANNEL.*" | sed "s/^v$VER-$CHANNEL\.//" | { grep -E '^[0-9]+$' || true; } | sort -n | tail -1)

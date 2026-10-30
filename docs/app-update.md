@@ -169,9 +169,9 @@ A manifest can send the link elsewhere with a top-level
 ## Releasing
 
 1. Ship the build and wait until the store actually serves it.
-2. In `CHANGELOG.md`, date that release's section and open a new
-   `Unreleased` one above it. The changelog is for the team; write the short
-   patient-facing notes for the manifest from it.
+2. In `CHANGELOG.md`, date that release's section (Promote already wrote
+   it). The next Promote opens the next section. The changelog is for the
+   team; write the short patient-facing notes for the manifest from it.
 3. Add the release, with those notes, to that brand's `app/web/version/<brand>.json` on the
    source branch (`feature/mvp` today; `main` once mvp is merged there —
    see `VERSION_SOURCE_BASE`) (a commit on GitHub is
