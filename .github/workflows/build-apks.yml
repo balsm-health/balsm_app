@@ -1,12 +1,10 @@
 name: Build APKs (all apps)
 
 # Release APK artifacts for every buildable app (brand), across environments.
-# Manual (workflow_dispatch) or on a version tag. Kept separate from CI so it
-# doesn't run on every push.
+# Manual only (Actions → Build APKs → Run workflow): artifacts are uploaded
+# only by a run someone on the team starts, never by a push or a tag.
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
 
 env:
   FLUTTER_VERSION: '3.47.4'

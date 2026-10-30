@@ -12,12 +12,8 @@ name: Release
 # Promote workflow (promote.yml), which checks the same and then starts this
 # workflow on the tag; see docs/releasing.md.
 #
-# A branch push is a pre-release of that commit, versioned from
-# app/pubspec.yaml, with its tag made by the release itself:
-#   main        → v<version>-main.<run> (prod backend)
-#   release/**  → v<version>-rc.<run>   (staging backend)
-# Branch builds are never sent to Firebase testers and never deploy the web
-# app; that stays with a tag someone chose to push.
+# Only a release someone on the team starts runs here: Promote, or a release
+# tag pushed by hand. Branch pushes do not release and upload nothing.
 #
 # Signing + Firebase steps are guarded on secrets — absent secrets skip the
 # step and still upload an unsigned artifact. See docs/ci-secrets.md.
@@ -26,16 +22,14 @@ on:
   # workflow, but a dispatch does. Only a tag is accepted (see setup).
   workflow_dispatch:
   push:
-    branches: [main, 'release/**']
-    # The tags branch pushes create are made with GITHUB_TOKEN, which starts no
-    # workflow; the exclusions keep it that way if a person pushes one by hand.
+    # A release tag pushed by hand. The -main/-rc tags older branch releases
+    # made are not release tags; the exclusions keep them from starting one.
     tags: ['v*', '!v*-main.*', '!v*-rc.*']
 
-# Two pushes to one branch: the newer release replaces the build in flight.
-# Tags each get their own run.
+# Each tag gets its own run.
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type == 'branch' }}
+  cancel-in-progress: false
 
 # Builds go through the balsm CLI (bin/balsm → tool/build.dart), the single
 # source of truth for flavor/entrypoint/dart-define wiring. Only channel
@@ -67,59 +61,47 @@ jobs:
           set -e
           PUBSPEC_NAME=$(sed -n 's/^version: *\([0-9][0-9.]*\).*/\1/p' app/pubspec.yaml)
           [ -n "$PUBSPEC_NAME" ] || { echo "::error::no version in app/pubspec.yaml"; exit 1; }
-          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF_TYPE" != tag ]; then
+          if [ "$GITHUB_REF_TYPE" != tag ]; then
             echo "::error::Run this on a release tag, not a branch. To release a commit, use the Promote workflow."
             exit 1
           fi
-          if [ "$GITHUB_REF_TYPE" = tag ]; then
-            TAG="${GITHUB_REF_NAME}"
-            # Exact shapes only: a typo such as v1.2.0-alpa must not fall
-            # through to a production release.
-            if [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-(alpha|beta)\.[0-9]+$ ]]; then
-              BUILD_NAME="${BASH_REMATCH[1]}"; CH="${BASH_REMATCH[2]}"
-              ENVF=staging; GRP="${CH}-testers"; PRE=true
-            elif [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-              BUILD_NAME="${BASH_REMATCH[1]}"; CH=production
-              ENVF=prod; GRP=production; PRE=false
-            else
-              echo "::error::$TAG is not a release tag: use v1.2.0-alpha.N, v1.2.0-beta.N or v1.2.0."
-              exit 1
-            fi
-            if [ "$BUILD_NAME" != "$PUBSPEC_NAME" ]; then
-              echo "::error::$TAG says $BUILD_NAME but app/pubspec.yaml at this commit is $PUBSPEC_NAME."
-              exit 1
-            fi
-            # Production ships only what testers already had: the same
-            # commit must carry an alpha or beta tag of the same version
-            # whose release finished. A tag alone is not enough, since a
-            # failed build leaves its tag behind; the GitHub Release is made
-            # only once every build of that tag succeeded.
-            if [ "$CH" = production ]; then
-              QA=$(git ls-remote --tags origin "v${BUILD_NAME}-alpha.*" "v${BUILD_NAME}-beta.*" \
-                | awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2 }' | sort -u)
-              TESTED=""
-              for q in $QA; do
-                gh release view "$q" -R "$GITHUB_REPOSITORY" --json isDraft -q 'select(.isDraft | not) | 1' 2>/dev/null | grep -q 1 \
-                  && TESTED="$TESTED $q"
-              done
-              if [ -z "$TESTED" ]; then
-                echo "::error::$TAG is on a commit with no finished alpha or beta release${QA:+ (tagged $(echo $QA), but none released)}. Release it to testers first."
-                exit 1
-              fi
-              echo "Tested as:$TESTED"
-            fi
-            DIST=true
+          TAG="${GITHUB_REF_NAME}"
+          # Exact shapes only: a typo such as v1.2.0-alpa must not fall
+          # through to a production release.
+          if [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-(alpha|beta)\.[0-9]+$ ]]; then
+            BUILD_NAME="${BASH_REMATCH[1]}"; CH="${BASH_REMATCH[2]}"
+            ENVF=staging; GRP="${CH}-testers"; PRE=true
+          elif [[ "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            BUILD_NAME="${BASH_REMATCH[1]}"; CH=production
+            ENVF=prod; GRP=production; PRE=false
           else
-            # `version: 0.1.0+9` → 0.1.0. The run number, not the pubspec build
-            # number, keeps the tag unique: a doc-only push does not raise it.
-            BUILD_NAME="$PUBSPEC_NAME"
-            case "$GITHUB_REF_NAME" in
-              main) CH=main; ENVF=prod;    SUFFIX=main ;;
-              *)    CH=rc;   ENVF=staging; SUFFIX=rc ;;
-            esac
-            TAG="v${BUILD_NAME}-${SUFFIX}.${{ github.run_number }}"
-            GRP=""; PRE=true; DIST=false
+            echo "::error::$TAG is not a release tag: use v1.2.0-alpha.N, v1.2.0-beta.N or v1.2.0."
+            exit 1
           fi
+          if [ "$BUILD_NAME" != "$PUBSPEC_NAME" ]; then
+            echo "::error::$TAG says $BUILD_NAME but app/pubspec.yaml at this commit is $PUBSPEC_NAME."
+            exit 1
+          fi
+          # Production ships only what testers already had: the same
+          # commit must carry an alpha or beta tag of the same version
+          # whose release finished. A tag alone is not enough, since a
+          # failed build leaves its tag behind; the GitHub Release is made
+          # only once every build of that tag succeeded.
+          if [ "$CH" = production ]; then
+            QA=$(git ls-remote --tags origin "v${BUILD_NAME}-alpha.*" "v${BUILD_NAME}-beta.*" \
+              | awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2 }' | sort -u)
+            TESTED=""
+            for q in $QA; do
+              gh release view "$q" -R "$GITHUB_REPOSITORY" --json isDraft -q 'select(.isDraft | not) | 1' 2>/dev/null | grep -q 1 \
+                && TESTED="$TESTED $q"
+            done
+            if [ -z "$TESTED" ]; then
+              echo "::error::$TAG is on a commit with no finished alpha or beta release${QA:+ (tagged $(echo $QA), but none released)}. Release it to testers first."
+              exit 1
+            fi
+            echo "Tested as:$TESTED"
+          fi
+          DIST=true
           echo "channel=$CH"            >> "$GITHUB_OUTPUT"
           echo "env_file=$ENVF"         >> "$GITHUB_OUTPUT"
           echo "firebase_group=$GRP"    >> "$GITHUB_OUTPUT"
@@ -472,8 +454,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # On a branch push the tag does not exist yet; the release creates
-          # it at the commit that was built.
           tag_name: ${{ needs.setup.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Balsm ${{ needs.setup.outputs.tag }}
