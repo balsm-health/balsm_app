@@ -144,8 +144,9 @@ pubspec `version:` line skips them, and the pull request keeps its last green st
 
 ## 9. Versioning and the Changelog
 
-These apply to every change, whoever or whatever writes it. An AI agent does
-both steps itself, in the same change, without being asked.
+These apply to every change, whoever or whatever writes it. An AI agent
+writes the changelog note itself, in the same change, without being asked,
+and never raises the version.
 
 ### The version
 
@@ -153,33 +154,38 @@ both steps itself, in the same change, without being asked.
 only version in the repo: the packages under `packages/` and `modules/` ship
 inside the app, never on their own, so they carry none.
 
-**Every pull request that changes what ships raises it**, compared with the
-base branch it merges into, released or not. What ships is everything under
-`app/`, `packages/` and `modules/` except tests and docs.
+**Pull requests never change it.** It rises when the team sends a build to
+testers: the Promote workflow (alpha) collects the changelog notes, raises the
+version by the largest change among them, and commits both to the branch
+before tagging. One release takes one raise, however many pull requests it
+holds.
 
-| The change | Raise | Example |
-|---|---|---|
-| Bug fix, hotfix, security fix, copy or visual correction, refactor, dependency bump | PATCH | `0.1.0` → `0.1.1` |
-| New feature, or new behaviour a patient can notice | MINOR, PATCH back to 0 | `0.1.1` → `0.2.0` |
-| Breaking: data that cannot be read by the previous version, a removed feature, a raised minimum OS | MAJOR, the rest back to 0 | `0.2.0` → `1.0.0` |
-| Only docs, tests, CI or tooling | nothing | |
+| The change | Its note | Raise | Example |
+|---|---|---|---|
+| Bug fix, hotfix, security fix, copy or visual correction, refactor a patient notices, dependency bump | `fixed`, `changed`, `security`, `removed` | PATCH | `0.1.0` → `0.1.1` |
+| New feature, or new behaviour a patient can notice | `added`, or `.minor` on another group | MINOR, PATCH back to 0 | `0.1.1` → `0.2.0` |
+| Breaking: data that cannot be read by the previous version, a removed feature, a raised minimum OS | `.major` on its group | MAJOR, the rest back to 0 | `0.2.0` → `1.0.0` |
+| Only docs, tests, CI or tooling, or a pure refactor | none (`skip-changelog` label for a refactor) | nothing | |
 
-- **`+BUILD` goes up by one with every raise**, and never goes down or resets.
-  Stores reject a build number they have already seen.
-- A pull request raises once, by its largest change: a fix and a feature
-  together is one MINOR raise.
-- A hotfix is a PATCH raise on the released line.
-- When another pull request raised the version first, merge the base branch,
-  take its version and raise again from there.
-- The **Version raised** check (`.github/workflows/version-bump.yml`) fails a
-  pull request, or a merge-queue entry, whose shipped code changed while the
-  name or build number did not rise above the base branch.
-- You rarely raise it by hand: on every push to a pull request,
-  `.github/workflows/claude-version-bump.yml` runs the same check and, when
-  the raise is missing, has Claude pick the type from the diff, raise the
-  version, open its changelog section, and commit them (signed) to the branch.
+- The raise is counted from the **last production release** in the branch's
+  history (its `vX.Y.Z` tag). A version already sent to testers but not yet
+  released takes later notes without rising again, unless they need a bigger
+  raise: fixes during QA stay on `0.2.0`; a breaking note makes it `1.0.0`.
+  Before the first production release, the version being built takes every
+  note.
+- `+BUILD` goes up by one with every collect. Store builds take their build
+  number from the release workflow's run number, which only rises.
+- A hotfix is a pull request with a note into a `release/**` branch cut from
+  the released tag; Promote it and it becomes a PATCH on that line.
+- The **Changelog note** check (`.github/workflows/changelog-note.yml`) fails a
+  pull request, or a merge-queue entry, that changes what ships without a
+  note, has a malformed note, or changes the version. What ships is
+  everything under `app/`, `packages/` and `modules/` except tests and docs.
+- You rarely write the note by hand: on every push to a pull request,
+  `.github/workflows/claude-changelog-note.yml` runs the same check and, when
+  it fails, has Claude write the note and commit it (signed) to the branch.
   Pull from the branch before your next push. Pull requests from forks are
-  skipped and raise it by hand.
+  skipped and write it by hand.
 
 - **Releases are tags, not branches.** QA tests a `v0.2.0-alpha.N` tag and
   production is the same commit tagged `v0.2.0`, both made by the Promote
@@ -187,15 +193,16 @@ base branch it merges into, released or not. What ships is everything under
 
 ### The changelog
 
-- **Every version has its own section**, newest first. A change that raises
-  the version opens a new `## [0.2.0] - Unreleased` section above the others
-  and puts its lines there; the sections below are never renamed or merged
-  into it, so the changelog lists every version that was ever built.
-- **Every change adds one line to `CHANGELOG.md`**, in the same change, under
-  the top section, in the group that fits: **Added**, **Changed**, **Fixed**,
-  **Removed** or **Security** (only the groups a section uses). That includes
-  changes that raise no version, when they affect how the app is built,
-  released or secured.
+- **A pull request writes a note, not `CHANGELOG.md`.** One file in
+  `changelog.d/`, named `<pr or issue>.<group>[.major|.minor].md`, whose text
+  is the line; `changelog.d/README.md` has the details. Promote moves it into
+  `CHANGELOG.md` at release, under the version it raised to.
+- **Every version has its own section**, newest first, with its lines grouped
+  as **Added**, **Changed**, **Fixed**, **Removed** or **Security** (only the
+  groups a section uses). The sections below the top are never renamed or
+  merged, so the changelog lists every version that was ever built.
+- A note is needed for every change a patient could notice, and for changes
+  to how the app is built, released or secured when they touch shipped code.
 - Not recorded: a pure refactor, a test-only or comment-only change, a typo.
 - **The top section's heading is the pubspec version.**
 - Write for someone who was not there: what changed and why it matters, not

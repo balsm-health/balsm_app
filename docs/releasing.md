@@ -13,7 +13,7 @@ approves a tag, and production is that same commit tagged again.
 | `v0.2.0` | production | prod | Firebase `production`, the stores, app.balsm.health |
 
 `N` counts up from 1 for each version. The version in a tag is always the
-`version:` in `app/pubspec.yaml` at that commit.
+`version:` in `app/pubspec.yaml` at that commit, and only Promote raises it.
 
 Every push to `main` also builds every platform, to prove it still builds.
 It uploads nothing and makes no release: only a release the team starts
@@ -21,15 +21,21 @@ does.
 
 ## The flow
 
-1. **Merge to `main`.** Pull requests raise the version as usual
-   (`CODING_STANDARDS.md` §9). Unfinished work stays behind a feature flag, so
-   `main` can be released at any commit.
+1. **Merge to `main`.** Each pull request adds a changelog note in
+   `changelog.d/` and leaves the version alone (`CODING_STANDARDS.md` §9).
+   Unfinished work stays behind a feature flag, so `main` can be released at
+   any commit.
 2. **Send a build to QA.** Actions → **Promote** → Run workflow, channel
-   `alpha`, source `main` (or a commit SHA on it). It tags the commit
+   `alpha`, source `main`. It collects the notes into `CHANGELOG.md`, raises
+   the version in `app/pubspec.yaml` by the largest change among them (from
+   the last production release), and commits that to `main` as
+   `[Release] <version>: collect the changelog`. Then it tags that commit
    `v<version>-alpha.<next>` and starts the release build, which uploads to
-   the `alpha-testers` group.
-3. **QA finds a bug:** fix it on `main` with a pull request, then promote to
-   alpha again. The new build is `alpha.<next>`.
+   the `alpha-testers` group. A commit SHA as the source works only when
+   there are no notes left to collect.
+3. **QA finds a bug:** fix it on `main` with a pull request and its note,
+   then promote to alpha again. The fix joins the same version (it is not
+   released yet), and the new build is `alpha.<next>`.
 4. **Wider testing (optional):** Promote, channel `beta`, source the alpha tag
    QA approved, e.g. `v0.2.0-alpha.3`. Same commit, tagged `v0.2.0-beta.1`.
 5. **Release:** Promote, channel `production`, source the approved alpha or
@@ -57,19 +63,21 @@ so a tag pushed by hand is held to the same rules:
   only when every build succeeded), so nothing reaches the stores that testers
   never had.
 - Promote only sends commits on `main` (or a `release/**` hotfix branch) to
-  testers, and never reuses a tag that exists.
+  testers, never reuses a tag that exists, and refuses an alpha of a version
+  already released when there are no notes to raise it.
 
 The build number is `release.yml`'s run number, so it rises with every
 release and the stores never see one twice.
 
 ## Hotfixing a released version
 
-Usually not needed: fix on `main`, raise the patch version, and release as
-above. Only when `main` already holds work that must not ship yet:
+Usually not needed: fix on `main` with a note, and release as above. Only
+when `main` already holds work that must not ship yet:
 
 ```
 git switch -c release/0.2.x v0.2.0      # branch from the released tag
-# fix, raise the version to 0.2.1+<next build>, push, open a PR into release/0.2.x
+git push origin release/0.2.x
+# fix with a changelog note, open a PR into release/0.2.x
 ```
 
 Then Promote alpha with source `release/0.2.x`, and on to production as
@@ -92,6 +100,12 @@ actors can still create, move or delete release tags.
 
 ## Setup (once, repo admin)
 
+- **Promote commits to `main`**: Settings → Rules → the `main` ruleset →
+  Bypass list → add **GitHub Actions** (always allow). Promote pushes the
+  collected changelog and raised version straight to the branch; without the
+  bypass the ruleset refuses it and Promote stops before tagging. Do the same
+  for any `release/**` ruleset. Every workflow with `contents: write` can then
+  push to `main`, so keep that permission to Promote and Release.
 - **Environment `release-production`**: Settings → Environments → New
   environment, add the required reviewers. Without reviewers, production
   promotions run without waiting.

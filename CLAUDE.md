@@ -20,18 +20,20 @@ Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm
 - UI strings live in i69n bundles (`app/lib/balsm_app/i18n/*.json`, core's
   `localization/i18n/`); after editing JSON run `dart run build_runner build`
   in that package. No inline bilingual `ar ? … : …` ternaries.
-- **Every code change keeps the version and the changelog current**, in the
-  same change and without being asked: every pull request that touches
-  shipped code under `app/`, `packages/` or `modules/` raises `version:` in
-  `app/pubspec.yaml` above the base branch, by the rule in
-  `CODING_STANDARDS.md` §9 (fix → patch, feature → minor, breaking → major,
-  build number +1; packages carry no version), and opens a new
-  `## [<version>] - Unreleased` section at the top of `CHANGELOG.md` for its
-  lines, each ending with its ticket as a link,
+- **Every code change adds a changelog note**, in the same change and without
+  being asked: a pull request that touches shipped code under `app/`,
+  `packages/` or `modules/` adds one file,
+  `changelog.d/<pr or issue>.<group>[.major|.minor].md` (group: added,
+  changed, fixed, removed, security), whose text is the changelog line ending
+  with its ticket as a link,
   `([#99](https://github.com/balsm-health/balsm_app/issues/99))` (the PR's
-  `/pull/` link when there is no issue); older sections are never renamed. CI's **Version raised** check
-  enforces the raise, and the Claude version-bump workflow commits it to the
-  pull request when it is missing. Never add a version to the live
+  `/pull/` link when there is no issue). See `changelog.d/README.md` and
+  `CODING_STANDARDS.md` §9.
+- **Never change `version:` in `app/pubspec.yaml` or add lines to
+  `CHANGELOG.md` in a pull request.** The Promote workflow collects the notes
+  and raises the version when the team releases. CI's **Changelog note** check
+  requires the note and refuses a changed version, and the Claude
+  changelog-note workflow writes a missing note on the pull request. Never add a version to the live
   `app/web/version/<brand>.json` outside a release.
 - A feature that may need switching off without a release goes behind a flag
   (`CODING_STANDARDS.md` §8, `docs/feature-flags.md`).
