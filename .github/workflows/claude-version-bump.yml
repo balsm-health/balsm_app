@@ -21,7 +21,12 @@ concurrency:
 jobs:
   bump:
     # Forks get no secrets and no write access; their author raises it by hand.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Copilot has no write access either, so the action's token exchange fails
+    # with a 401 on its pushes; the Version bump gate still flags a missing
+    # raise, and the next push by a person raises it.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'Copilot'
     runs-on: ubuntu-latest
     permissions:
       contents: write
