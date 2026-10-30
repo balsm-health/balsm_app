@@ -21,6 +21,7 @@ import 'kit.dart';
 import 'offline_banner.dart';
 import 'widgets/beta_banner.dart';
 import 'responsive.dart';
+import 'theme.dart';
 import 'tokens.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
@@ -306,7 +307,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
         case 'storage':
           showStorageSync(next);
         case 'quicklog':
-          showQuickLog(next);
+          showQuickLog(next, source: ProductSource.menu);
         case 'checkin':
           openCheckin(next);
         case 'addRx':
@@ -359,7 +360,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
             Locale('ar', 'AE'),
           ],
           locale: Locale(state.lang.value),
-          theme: ThemeData(scaffoldBackgroundColor: Colors.white, useMaterial3: true),
+          theme: balsmTheme(),
           // Clamp Dynamic Type so large system text never breaks layouts.
           builder: (context, child) {
             final mq = MediaQuery.of(context);
