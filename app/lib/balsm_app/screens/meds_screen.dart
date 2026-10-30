@@ -11,6 +11,7 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../storage_target.dart';
 import '../widgets/data_loc_pill.dart';
+import '../widgets/delete_kit.dart';
 import '../widgets/med_plan_form.dart';
 
 /// Medications tab (home.jsx MedsScreen).
@@ -21,6 +22,10 @@ import '../widgets/med_plan_form.dart';
 /// invalidate-after-write. Signed out → empty/disabled, no crash. PHI (drug
 /// names/doses) never leaves the device.
 ///
+/// Each dose row deletes its medication through the shared [DeleteKit]
+/// (swipe, `⋮`, Select). Deleting ends the medication (its dose history
+/// stays), so every dose row of it leaves today's schedule.
+///
 /// Also hosts the FR-023 / gap-G9 timezone-shift confirm modal: on app
 /// foreground it compares the device timezone to the last-seen one and, if it
 /// changed, asks whether to recompute reminder times before rebuilding.
@@ -30,7 +35,7 @@ class MedsScreen extends ConsumerStatefulWidget {
   ConsumerState<MedsScreen> createState() => _MedsScreenState();
 }
 
-class _MedsScreenState extends ConsumerState<MedsScreen> {
+class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScreen, MedicationId> {
   // ── Real writes (on-device only; nothing sent to the cloud) ──────────────
 
   Future<void> _recordDose(TodayDose dose, DoseOutcome outcome) async {
@@ -52,6 +57,29 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
     if (!mounted) return;
     ref.invalidate(todayDosesProvider);
     ref.invalidate(medicationListProvider);
+  }
+
+  /// Asks before ending [meds]; nothing changes on Cancel.
+  void _askDelete(UserId userId, List<Medication> meds) {
+    if (meds.isEmpty) return;
+    final s = AppScope.of(context);
+    final m = s.strings.meds;
+    final one = meds.length == 1 ? meds.single : null;
+    final what = one?.name ?? m.med_count(meds.length);
+    confirmDelete(
+      title: s.strings.common.del_title(what),
+      body: one != null ? m.med_del_body_one : m.med_del_body_n,
+      done: what,
+      onConfirmed: () async {
+        final delete = ref.read(deleteMedicationUseCaseProvider(userId));
+        for (final med in meds) {
+          await delete(med.id);
+        }
+        if (!mounted) return;
+        ref.invalidate(todayDosesProvider);
+        ref.invalidate(medicationListProvider);
+      },
+    );
   }
 
   // ── UI actions ───────────────────────────────────────────────────────────
@@ -83,7 +111,11 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
     final s = AppScope.of(context);
     final userId = ref.watch(currentUserIdProvider);
     final doses = ref.watch(todayDosesProvider).valueOrNull ?? const <TodayDose>[];
-    final medCount = ref.watch(medicationListProvider).valueOrNull?.length ?? 0;
+    // A deleted medication is ended, not removed, so count the current ones.
+    final medCount =
+        (ref.watch(medicationListProvider).valueOrNull ?? const <Medication>[]).where((m) => !m.isExpired()).length;
+    // Each medication once, in schedule order — what Select can tick.
+    final scheduled = {for (final d in doses) d.medication.id: d.medication}.values.toList();
     // The prescriptions row counts *prescriptions* still in force — not meds.
     final activeRxCount =
         (ref.watch(prescriptionListProvider).valueOrNull ?? const <Prescription>[]).where((rx) => rx.isActive()).length;
@@ -102,115 +134,149 @@ class _MedsScreenState extends ConsumerState<MedsScreen> {
     final adherence = week?.ratio ?? 0.0;
     final adherencePct = week?.percent ?? 0;
 
-    return ContentColumn(
-      maxWidth: 720,
-      child: ListView(padding: EdgeInsets.zero, children: [
-        const PadTop(),
-        AppBarRow(children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.strings.meds.medications, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-              const SizedBox(height: 2),
-              Text(s.strings.meds.regimen, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
-          ),
-          const DataLocPill(category: DataCategory.meds),
-          const SizedBox(width: 8),
-          // Add medication — disabled (hidden) when signed out.
-          if (userId != null)
-            RoundBtn(
-                icon: LucideIcons.plus,
-                semanticLabel: s.strings.common.a11y_add,
-                iconSize: 20,
-                onTap: () => _openAddMedication(userId)),
-        ]),
-
-        // Adherence (last 7 days). Gradient card from the Claude Design.
-        Container(
-          margin: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(color: T.hueMint50),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: [0.0, 0.65],
-              colors: [T.hueMint50, Colors.white],
-            ),
-            boxShadow: T.shadowSm,
-          ),
-          child: Row(children: [
-            RingProgress(
-                progress: adherence,
-                size: 68,
-                color: T.hueMint,
-                label: '$adherencePct%',
-                labelStyle: Typo.num(size: FS.base, weight: FontWeight.w700)),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.strings.meds.adherence, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(s.strings.meds.last_7d, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                const SizedBox(height: 8),
-                if (total > 0 && adherencePct >= 80) Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
+    return PopScope(
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && selecting) endSelect();
+      },
+      child: ContentColumn(
+        maxWidth: 720,
+        child: Stack(children: [
+          ListView(padding: EdgeInsets.zero, children: [
+            const PadTop(),
+            if (selecting)
+              kitSelectAppBar(scheduled.map((m) => m.id))
+            else
+              AppBarRow(children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.strings.meds.medications, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
+                    const SizedBox(height: 2),
+                    Text(s.strings.meds.regimen, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                  ]),
+                ),
+                const DataLocPill(category: DataCategory.meds),
+                const SizedBox(width: 8),
+                if (userId != null && scheduled.isNotEmpty) ...[kitSelectButton(), const SizedBox(width: 8)],
+                // Add medication — disabled (hidden) when signed out.
+                if (userId != null)
+                  RoundBtn(
+                      icon: LucideIcons.plus,
+                      semanticLabel: s.strings.common.a11y_add,
+                      iconSize: 20,
+                      onTap: () => _openAddMedication(userId)),
               ]),
-            ),
-          ]),
-        ),
 
-        // Prescriptions link (navigates to the separate rx tab).
-        PCard(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-          onTap: () => s.setTab(AppTab.prescriptions),
-          child: Row(children: [
-            const IconSquare(LucideIcons.fileText,
-                bg: T.hueViolet50, fg: T.hueViolet, size: 34, iconSize: 19, radius: T.rSm),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(s.strings.records.prescriptions,
-                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                const SizedBox(height: 1),
-                Text(s.strings.meds.rx_manage, style: Typo.meta(ar: s.rtl)),
-              ]),
-            ),
-            Pill('$activeRxCount ${s.strings.meds.rx_active.toLowerCase()}', kind: PillKind.success, ar: s.rtl),
-            const SizedBox(width: 8),
-            Chevron(rtl: s.rtl),
-          ]),
-        ),
-
-        if (userId == null)
-          _EmptyState(s: s, text: s.strings.meds.meds_signin_help)
-        else if (doses.isEmpty)
-          _EmptyState(s: s, text: medCount == 0 ? s.strings.meds.meds_empty_help : s.strings.meds.meds_none_today)
-        else
-          for (final (key, icon, list) in groups) ...[
-            if (list.isNotEmpty) ...[
-              _GroupHead(
-                label: key == 'morning' ? s.strings.meds.morning : s.strings.meds.evening,
-                icon: icon,
-                count: list.length,
-                ar: s.rtl,
+            // Adherence (last 7 days). Gradient card from the Claude Design.
+            Container(
+              margin: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(T.rLg),
+                border: Border.all(color: T.hueMint50),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: [0.0, 0.65],
+                  colors: [T.hueMint50, Colors.white],
+                ),
+                boxShadow: T.shadowSm,
               ),
-              PCard(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                    children: list.indexed
-                        .map((e) => _MedDoseRow(
+              child: Row(children: [
+                RingProgress(
+                    progress: adherence,
+                    size: 68,
+                    color: T.hueMint,
+                    label: '$adherencePct%',
+                    labelStyle: Typo.num(size: FS.base, weight: FontWeight.w700)),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.strings.meds.adherence,
+                        style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(s.strings.meds.last_7d, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+                    const SizedBox(height: 8),
+                    if (total > 0 && adherencePct >= 80)
+                      Pill(s.strings.home.on_track, kind: PillKind.success, ar: s.rtl),
+                  ]),
+                ),
+              ]),
+            ),
+
+            // Prescriptions link (navigates to the separate rx tab).
+            PCard(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+              onTap: () => s.setTab(AppTab.prescriptions),
+              child: Row(children: [
+                const IconSquare(LucideIcons.fileText,
+                    bg: T.hueViolet50, fg: T.hueViolet, size: 34, iconSize: 19, radius: T.rSm),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.strings.records.prescriptions,
+                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                    const SizedBox(height: 1),
+                    Text(s.strings.meds.rx_manage, style: Typo.meta(ar: s.rtl)),
+                  ]),
+                ),
+                Pill('$activeRxCount ${s.strings.meds.rx_active.toLowerCase()}', kind: PillKind.success, ar: s.rtl),
+                const SizedBox(width: 8),
+                Chevron(rtl: s.rtl),
+              ]),
+            ),
+
+            if (userId == null)
+              _EmptyState(s: s, text: s.strings.meds.meds_signin_help)
+            else if (doses.isEmpty)
+              _EmptyState(s: s, text: medCount == 0 ? s.strings.meds.meds_empty_help : s.strings.meds.meds_none_today)
+            else
+              for (final (key, icon, list) in groups) ...[
+                if (list.isNotEmpty) ...[
+                  _GroupHead(
+                    label: key == 'morning' ? s.strings.meds.morning : s.strings.meds.evening,
+                    icon: icon,
+                    count: list.length,
+                    ar: s.rtl,
+                  ),
+                  PCard(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(T.rLg - 1),
+                      child: Column(
+                          children: list.indexed.map((e) {
+                        final med = e.$2.medication;
+                        void ask() => _askDelete(userId, [med]);
+                        return kitSwipe(
+                          item: med.id,
+                          rowKey: (med.id, e.$2.scheduledAt),
+                          label: med.name,
+                          onDelete: ask,
+                          child: _MedDoseRow(
                             s: s,
                             dose: e.$2,
                             first: e.$1 == 0,
-                            onTap: e.$2.isPending ? () => _openDoseActions(e.$2) : null))
-                        .toList()),
-              ),
-            ],
-          ],
-        const SizedBox(height: 24),
-      ]),
+                            lead: kitCheck(med.id),
+                            trail: kitMore(label: med.name, onDelete: ask),
+                            onTap: e.$2.isPending ? () => _openDoseActions(e.$2) : null,
+                          ),
+                        );
+                      }).toList()),
+                    ),
+                  ),
+                ],
+              ],
+            SizedBox(height: selecting ? kitBottomRoom : 24),
+          ]),
+          ...deleteKitOverlays(
+            count: s.strings.meds.med_count,
+            onDeleteSelected: () {
+              if (userId != null) _askDelete(userId, scheduled.where((m) => selected.contains(m.id)).toList());
+            },
+          ),
+        ]),
+      ),
     );
   }
 }
@@ -271,10 +337,15 @@ String _hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toS
 /// status pill reflects the real recorded outcome and a pending row is tappable
 /// to record taken/skip/snooze.
 class _MedDoseRow extends StatelessWidget {
-  const _MedDoseRow({required this.s, required this.dose, required this.first, this.onTap});
+  const _MedDoseRow(
+      {required this.s, required this.dose, required this.first, required this.lead, required this.trail, this.onTap});
   final PatientAppState s;
   final TodayDose dose;
   final bool first;
+
+  /// Select's tick box, and the row's `⋮` (design MedsScreen row).
+  final Widget lead;
+  final Widget trail;
   final VoidCallback? onTap;
 
   @override
@@ -298,9 +369,13 @@ class _MedDoseRow extends StatelessWidget {
       onTap: onTap,
       scale: onTap == null ? 1.0 : 0.99,
       child: Container(
-        decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: first ? null : const Border(top: BorderSide(color: T.ink100)),
+        ),
+        padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 8, 14),
         child: Row(children: [
+          lead,
           Container(
               width: 42,
               height: 42,
@@ -314,10 +389,7 @@ class _MedDoseRow extends StatelessWidget {
             Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ])),
           Pill(label, kind: kind, ar: s.rtl),
-          if (onTap != null) ...[
-            const SizedBox(width: 8),
-            Chevron(rtl: s.rtl),
-          ],
+          trail,
         ]),
       ),
     );

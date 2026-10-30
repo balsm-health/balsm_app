@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +10,7 @@ import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/attachment_thumb.dart';
 import '../widgets/body_map.dart';
+import '../widgets/delete_kit.dart';
 import '../widgets/mood_face.dart';
 import 'checkin_shared.dart';
 
@@ -23,10 +21,10 @@ import 'checkin_shared.dart';
 /// check-in's [CheckIn.recordedAt]; the domain does not store per-metric
 /// clocks, so we never invent them.
 ///
-/// Every reading is the patient's own, so it can be deleted three ways: its
-/// `⋮` menu, a swipe toward the start edge, or Select for several at once.
-/// Each asks first, then stores the edit straight away. A check-in emptied
-/// this way is deleted, photo included.
+/// Every reading is the patient's own, so it can be deleted with the shared
+/// [DeleteKit]: its `⋮` menu, a swipe toward the start edge, or Select for
+/// several at once. Each asks first, then stores the edit straight away. A
+/// check-in emptied this way is deleted, photo included.
 class DayRecordsScreen extends ConsumerStatefulWidget {
   const DayRecordsScreen({super.key, required this.checkIns});
 
@@ -44,17 +42,8 @@ class DayRecordsScreen extends ConsumerStatefulWidget {
 /// A reading on the day: which check-in, and which of its metrics.
 typedef _Key = (CheckInId, CheckInMetric);
 
-class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
-  static const _toastFor = Duration(milliseconds: 2500);
-
+class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with DeleteKit<DayRecordsScreen, _Key> {
   late List<CheckIn> _shown = widget.checkIns;
-
-  /// The row swiped open, showing its Delete.
-  _Key? _open;
-  bool _selecting = false;
-  final _selected = <_Key>{};
-  String? _toast;
-  Timer? _toastTimer;
 
   // Read once up front: a store still running when the screen closes must
   // not reach for ref.
@@ -75,12 +64,6 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
     _userId = ref.read(currentUserIdProvider);
   }
 
-  @override
-  void dispose() {
-    _toastTimer?.cancel();
-    super.dispose();
-  }
-
   /// An emptied check-in loses its photo first, so a failure part-way never
   /// leaves a hidden photo with no check-in pointing at it.
   Future<void> _persist(CheckIn edited) async {
@@ -93,102 +76,33 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
     await _update(edited);
   }
 
-  void _startSelect([_Key? first]) => setState(() {
-        _open = null;
-        _selecting = true;
-        _selected
-          ..clear()
-          ..addAll([if (first != null) first]);
-      });
-
-  void _endSelect() => setState(() {
-        _selecting = false;
-        _selected.clear();
-      });
-
-  void _toggle(_Key k) => setState(() => _selected.contains(k) ? _selected.remove(k) : _selected.add(k));
-
   /// Asks before deleting [readings]; nothing changes on Cancel.
-  Future<void> _askDelete(List<_Reading> readings, {required String day}) async {
+  void _ask(List<_Reading> readings, {required String day}) {
     if (readings.isEmpty) return;
     final c = AppScope.of(context).strings.checkin;
     final one = readings.length == 1 ? readings.single : null;
-    // English names sit mid-sentence; lowercasing leaves Arabic untouched.
-    final title = c.rec_del_title(one?.label.toLowerCase() ?? c.rec_count(readings.length));
-    final body = one != null ? c.rec_del_body_one(day, one.time) : c.rec_del_body_n(day);
-    final ok = await showDialog<bool>(
-      context: context,
-      barrierColor: const Color(0x6114202B),
-      builder: (_) => _ConfirmDelete(title: title, body: body),
+    final what = one?.label ?? c.rec_count(readings.length);
+    confirmDelete(
+      // English names sit mid-sentence; lowercasing leaves Arabic untouched.
+      title: AppScope.of(context).strings.common.del_title(one?.label.toLowerCase() ?? what),
+      body: one != null ? c.rec_del_body_one(day, one.time) : c.rec_del_body_n(day),
+      done: what,
+      onConfirmed: () {
+        // One store per check-in touched, however many of its readings went.
+        final gone = <CheckInId, List<CheckInMetric>>{};
+        for (final r in readings) {
+          (gone[r.checkIn.id] ??= []).add(r.metric);
+        }
+        final shown = [
+          for (final ci in _shown)
+            if (gone[ci.id] case final metrics?) metrics.fold(ci, (x, m) => x.without(m)) else ci,
+        ];
+        for (final edited in shown.where((ci) => gone.containsKey(ci.id))) {
+          _saving = _saving.then((_) => _persist(edited));
+        }
+        setState(() => _shown = shown);
+      },
     );
-    if (!mounted) return;
-    if (ok != true) {
-      setState(() => _open = null);
-      return;
-    }
-    // One store per check-in touched, however many of its readings went.
-    final gone = <CheckInId, List<CheckInMetric>>{};
-    for (final r in readings) {
-      (gone[r.checkIn.id] ??= []).add(r.metric);
-    }
-    final shown = [
-      for (final ci in _shown)
-        if (gone[ci.id] case final metrics?) metrics.fold(ci, (x, m) => x.without(m)) else ci,
-    ];
-    for (final edited in shown.where((ci) => gone.containsKey(ci.id))) {
-      _saving = _saving.then((_) => _persist(edited));
-    }
-    _toastTimer?.cancel();
-    setState(() {
-      _shown = shown;
-      _open = null;
-      _selecting = false;
-      _selected.clear();
-      _toast = c.rec_deleted(one?.label ?? c.rec_count(readings.length));
-    });
-    _toastTimer = Timer(_toastFor, () {
-      if (mounted) setState(() => _toast = null);
-    });
-  }
-
-  /// The `⋮` popover, opened under its button and aligned to its end edge.
-  /// True when the patient picked Delete.
-  Future<bool> _openMenu(BuildContext button, _Reading r) async {
-    setState(() => _open = null);
-    final s = AppScope.of(context);
-    final box = button.findRenderObject()! as RenderBox;
-    final overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
-    final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
-    final x = s.rtl ? rect.left : rect.right;
-    final delete = await showMenu<bool>(
-      context: context,
-      position: RelativeRect.fromLTRB(x, rect.bottom + 4, overlay.size.width - x, overlay.size.height - rect.bottom),
-      color: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      elevation: 8,
-      shadowColor: const Color(0x3314202B),
-      menuPadding: const EdgeInsets.all(6),
-      constraints: const BoxConstraints(minWidth: 184),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(T.rLg),
-        side: const BorderSide(color: T.ink100),
-      ),
-      popUpAnimationStyle: const AnimationStyle(duration: Duration(milliseconds: 120), curve: Motion.easeOut),
-      items: [
-        PopupMenuItem<bool>(
-          value: true,
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(children: [
-            const Icon(LucideIcons.trash2, size: 18, color: T.danger),
-            const SizedBox(width: 10),
-            Text(s.strings.checkin.rec_delete,
-                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.danger)),
-          ]),
-        ),
-      ],
-    );
-    return delete == true;
   }
 
   /// [checkIn]'s vitals and pain as metric rows, in the design's order.
@@ -270,47 +184,19 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
           ),
     ];
     final all = [...moods, ...rows, ...symptoms];
-    final allOn = all.isNotEmpty && all.every((r) => _selected.contains(r.key));
     final empty = _shown.every((ci) => ci.isEmpty);
-    final toast = _toast;
 
-    void ask(List<_Reading> rs) => _askDelete(rs, day: day);
+    void ask(List<_Reading> rs) => _ask(rs, day: day);
 
-    Widget swipe(_Reading r, {double radius = 0, required Widget child}) => _SwipeRow(
-          open: _open == r.key,
-          radius: radius,
-          deleteLabel: c.rec_delete_short,
-          selecting: _selecting,
-          selected: _selected.contains(r.key),
-          label: r.label,
-          onOpen: () => setState(() => _open = r.key),
-          onClose: () => setState(() => _open = _open == r.key ? null : _open),
-          onDelete: () => ask([r]),
-          onLongPress: () => _startSelect(r.key),
-          onToggle: () => _toggle(r.key),
-          child: child,
-        );
+    Widget swipe(_Reading r, {double radius = 0, required Widget child}) =>
+        kitSwipe(item: r.key, label: r.label, onDelete: () => ask([r]), radius: radius, child: child);
 
-    Widget lead(_Reading r) => _selecting
-        ? Padding(
-            padding: const EdgeInsetsDirectional.only(end: 10),
-            child: _Check(on: _selected.contains(r.key)),
-          )
-        : const SizedBox.shrink();
-
-    Widget more(_Reading r) => _selecting
-        ? const SizedBox(width: 8)
-        : _MoreBtn(
-            reading: r,
-            onTap: (button) async {
-              if (await _openMenu(button, r)) ask([r]);
-            },
-          );
+    Widget more(_Reading r) => kitMore(label: r.label, menuLabel: c.rec_delete, onDelete: () => ask([r]));
 
     return PopScope(
-      canPop: !_selecting,
+      canPop: !selecting,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _selecting) _endSelect();
+        if (!didPop && selecting) endSelect();
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -319,7 +205,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
           child: Stack(children: [
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               const PadTop(),
-              if (!_selecting)
+              if (!selecting)
                 AppBarRow(children: [
                   RoundBtn(
                       icon: backArrow(context),
@@ -328,36 +214,11 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                   const SizedBox(width: 12),
                   Expanded(child: Text(day, style: Typo.heading(ar: s.rtl))),
                   if (all.isNotEmpty)
-                    PButton(c.rec_select,
-                        variant: BtnVariant.ghost, size: BtnSize.sm, ar: s.rtl, onTap: () => _startSelect()),
+                    PButton(s.strings.common.del_select,
+                        variant: BtnVariant.ghost, size: BtnSize.sm, ar: s.rtl, onTap: () => startSelect()),
                 ])
               else
-                AppBarRow(children: [
-                  RoundBtn(icon: LucideIcons.x, semanticLabel: c.rec_select_done, onTap: _endSelect),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        _selected.isEmpty ? c.rec_select_title : c.rec_selected(_selected.length),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Typo.heading(ar: s.rtl),
-                      ),
-                    ),
-                  ),
-                  PButton(allOn ? c.rec_clear_all : c.rec_select_all,
-                      variant: BtnVariant.ghost,
-                      size: BtnSize.sm,
-                      ar: s.rtl,
-                      onTap: () => setState(() {
-                            if (allOn) {
-                              _selected.clear();
-                            } else {
-                              _selected.addAll(all.map((r) => r.key));
-                            }
-                          })),
-                ]),
+                kitSelectAppBar(all.map((r) => r.key), title: c.rec_select_title),
               Expanded(
                 child: ListView(padding: EdgeInsets.zero, children: [
                   for (final m in moods)
@@ -379,7 +240,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                             ),
                           ),
                           child: Row(children: [
-                            lead(m),
+                            kitCheck(m.key),
                             MoodFace(
                                 level: m.checkIn.mood!.score, size: 40, color: moodColors[m.checkIn.mood!.score - 1]),
                             const SizedBox(width: 14),
@@ -410,7 +271,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                                     child: _MetricLine(
                                       row: e.$2,
                                       last: e.$1 == rows.length - 1,
-                                      lead: lead(e.$2),
+                                      lead: kitCheck(e.$2.key),
                                       trail: more(e.$2),
                                     ),
                                   ))
@@ -428,7 +289,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                           flat: true,
                           padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
                           child: Row(children: [
-                            lead(sym),
+                            kitCheck(sym.key),
                             IconSquare(sym.icon, bg: sym.bg, fg: sym.color, size: 38, iconSize: 19, radius: T.rMd),
                             const SizedBox(width: 13),
                             Expanded(
@@ -473,28 +334,15 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                       ),
                   ],
                   if (empty) _EmptyDay(text: c.day_empty),
-                  // Room for the toast and the selection bar over the last row.
+                  // Room for the notice and the selection bar over the last row.
                   const SizedBox(height: 112),
                 ]),
               ),
             ]),
-            if (_selecting)
-              PositionedDirectional(
-                start: 0,
-                end: 0,
-                bottom: 0,
-                child: _SelectionBar(
-                  label: _selected.isEmpty ? c.rec_delete_short : c.rec_delete_n(c.rec_count(_selected.length)),
-                  onDelete: _selected.isEmpty ? null : () => ask(all.where((r) => _selected.contains(r.key)).toList()),
-                ),
-              ),
-            if (toast != null)
-              PositionedDirectional(
-                start: 16,
-                end: 16,
-                bottom: 24 + MediaQuery.paddingOf(context).bottom,
-                child: _DoneToast(text: toast),
-              ),
+            ...deleteKitOverlays(
+              count: c.rec_count,
+              onDeleteSelected: () => ask(all.where((r) => selected.contains(r.key)).toList()),
+            ),
           ]),
         ),
       ),
@@ -530,152 +378,6 @@ class _Reading {
   final Color bg;
 
   _Key get key => (checkIn.id, metric);
-}
-
-/// Design `SwipeRow`: dragging toward the start edge reveals Delete; a swipe
-/// past half the width asks to delete at once. Long-press starts Select; while
-/// selecting, a tap toggles the row instead.
-class _SwipeRow extends StatefulWidget {
-  const _SwipeRow({
-    required this.open,
-    required this.radius,
-    required this.deleteLabel,
-    required this.selecting,
-    required this.selected,
-    required this.label,
-    required this.onOpen,
-    required this.onClose,
-    required this.onDelete,
-    required this.onLongPress,
-    required this.onToggle,
-    required this.child,
-  });
-  final bool open;
-  final double radius;
-  final String deleteLabel;
-  final bool selecting;
-  final bool selected;
-  final String label;
-  final VoidCallback onOpen;
-  final VoidCallback onClose;
-  final VoidCallback onDelete;
-  final VoidCallback onLongPress;
-  final VoidCallback onToggle;
-  final Widget child;
-
-  @override
-  State<_SwipeRow> createState() => _SwipeRowState();
-}
-
-class _SwipeRowState extends State<_SwipeRow> {
-  static const _reveal = 88.0;
-
-  /// Signed offset while a finger is down; null when the row rests.
-  double? _drag;
-  double _base = 0;
-  double _dx = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    // The row slides toward the start edge: left in English, right in Arabic.
-    final dir = Directionality.of(context) == TextDirection.rtl ? 1.0 : -1.0;
-    final rest = widget.open ? dir * _reveal : 0.0;
-    return LayoutBuilder(builder: (context, box) {
-      final w = box.maxWidth;
-      final content = TweenAnimationBuilder<double>(
-        tween: Tween(end: _drag ?? rest),
-        duration: _drag != null ? Duration.zero : const Duration(milliseconds: 200),
-        curve: Motion.easeOut,
-        builder: (context, offset, child) {
-          final amt = math.max(0.0, offset * dir);
-          return Stack(children: [
-            if (amt > 0)
-              PositionedDirectional(
-                top: 0,
-                bottom: 0,
-                end: 0,
-                width: math.max(_reveal, amt),
-                child: ExcludeSemantics(
-                  child: GestureDetector(
-                    onTap: widget.onDelete,
-                    child: Container(
-                      color: T.danger,
-                      alignment: Alignment.center,
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(LucideIcons.trash2, size: 20, color: Colors.white),
-                        const SizedBox(height: 4),
-                        Text(widget.deleteLabel,
-                            style: Typo.meta(ar: s.rtl)
-                                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, color: Colors.white)),
-                      ]),
-                    ),
-                  ),
-                ),
-              ),
-            Transform.translate(offset: Offset(offset, 0), child: child),
-          ]);
-        },
-        child: widget.child,
-      );
-      final row = widget.selecting
-          ? Semantics(
-              checked: widget.selected,
-              label: widget.label,
-              child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: widget.onToggle, child: content),
-            )
-          : GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: widget.open ? widget.onClose : null,
-              onLongPress: widget.onLongPress,
-              onHorizontalDragStart: (_) {
-                _base = rest;
-                _dx = 0;
-                setState(() => _drag = rest);
-              },
-              onHorizontalDragUpdate: (e) {
-                _dx += e.delta.dx;
-                setState(() => _drag = ((_base + _dx) * dir).clamp(0.0, w) * dir);
-              },
-              onHorizontalDragEnd: (_) => _settle(w),
-              onHorizontalDragCancel: () => _settle(w),
-              child: content,
-            );
-      return ClipRRect(borderRadius: BorderRadius.circular(widget.radius), child: row);
-    });
-  }
-
-  void _settle(double w) {
-    final a = (_drag ?? 0).abs();
-    setState(() => _drag = null);
-    if (a > w * 0.5) {
-      widget.onDelete();
-    } else if (a > _reveal / 2) {
-      widget.onOpen();
-    } else {
-      widget.onClose();
-    }
-  }
-}
-
-/// Design `Check`: the row's tick box while selecting.
-class _Check extends StatelessWidget {
-  const _Check({required this.on});
-  final bool on;
-
-  @override
-  Widget build(BuildContext context) => AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        curve: Motion.easeOut,
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: on ? AccentScope.of(context).main : Colors.white,
-          borderRadius: BorderRadius.circular(7),
-          border: on ? null : Border.all(color: T.ink300, width: 2),
-        ),
-        child: on ? const Icon(LucideIcons.check, size: 16, color: Colors.white) : null,
-      );
 }
 
 class _MetricLine extends StatelessWidget {
@@ -760,95 +462,6 @@ class _TimeMeta extends StatelessWidget {
   }
 }
 
-/// The row's `⋮` (design `More`): opens the reading's menu under itself.
-class _MoreBtn extends StatelessWidget {
-  const _MoreBtn({required this.reading, required this.onTap});
-  final _Reading reading;
-  final void Function(BuildContext button) onTap;
-
-  @override
-  Widget build(BuildContext context) => RoundBtn(
-        icon: LucideIcons.ellipsisVertical,
-        semanticLabel: AppScope.of(context).strings.checkin.rec_more(reading.label),
-        ghost: true,
-        iconSize: 18,
-        fg: T.fg3,
-        onTap: () => onTap(context),
-      );
-}
-
-/// Design's delete alert: what goes and when it was recorded, then Delete or
-/// Cancel. Pops `true` to delete.
-class _ConfirmDelete extends StatelessWidget {
-  const _ConfirmDelete({required this.title, required this.body});
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return Dialog(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(T.rXl)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 340),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 22, 20, 18),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const Align(
-              alignment: AlignmentDirectional.centerStart,
-              child:
-                  IconSquare(LucideIcons.trash2, bg: T.dangerBg, fg: T.danger, size: 44, iconSize: 22, radius: T.rMd),
-            ),
-            const SizedBox(height: 14),
-            Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-            const SizedBox(height: 6),
-            Text(body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5)),
-            const SizedBox(height: 20),
-            PButton(s.strings.checkin.rec_delete_short,
-                variant: BtnVariant.danger,
-                large: true,
-                block: true,
-                ar: s.rtl,
-                onTap: () => Navigator.pop(context, true)),
-            const SizedBox(height: 10),
-            PButton(s.strings.common.cancel,
-                variant: BtnVariant.secondary,
-                large: true,
-                block: true,
-                ar: s.rtl,
-                onTap: () => Navigator.pop(context, false)),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
-/// Pinned under the list while selecting; disabled until a row is ticked.
-class _SelectionBar extends StatelessWidget {
-  const _SelectionBar({required this.label, required this.onDelete});
-  final String label;
-  final VoidCallback? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return Container(
-      padding: EdgeInsetsDirectional.fromSTEB(16, 12, 16, 24 + MediaQuery.paddingOf(context).bottom),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: T.ink100)),
-        boxShadow: [BoxShadow(color: Color(0x0F14202B), offset: Offset(0, -6), blurRadius: 18)],
-      ),
-      child: PButton(label,
-          icon: LucideIcons.trash2, variant: BtnVariant.danger, large: true, block: true, ar: s.rtl, onTap: onDelete),
-    );
-  }
-}
-
 class _EmptyDay extends StatelessWidget {
   const _EmptyDay({required this.text});
   final String text;
@@ -863,34 +476,6 @@ class _EmptyDay extends StatelessWidget {
         const SizedBox(height: 8),
         Text(text, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
       ]),
-    );
-  }
-}
-
-/// Design's dark "deleted" notice, announced to screen readers as it appears.
-class _DoneToast extends StatelessWidget {
-  const _DoneToast({required this.text});
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: T.ink800, borderRadius: BorderRadius.circular(T.rLg), boxShadow: T.shadowLg),
-        child: Row(children: [
-          const Icon(LucideIcons.check, size: 17, color: T.hueMint),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
-          ),
-        ]),
-      ),
     );
   }
 }

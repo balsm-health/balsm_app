@@ -9,6 +9,8 @@
 /// Regenerate after editing the JSON: `dart run build_runner build` (in app/).
 library;
 
+import 'package:i69n/i69n.dart' as i69n;
+
 import 'i18n/strings.i69n.dart';
 import 'i18n/strings_ar.i69n.dart';
 
@@ -32,10 +34,36 @@ const _alias = <String, String>{
 /// [tr] / `state.t()` for STATIC keys: a typo fails to compile instead of
 /// silently returning the key string at runtime. Use [tr] only when the key is
 /// computed at runtime.
-Strings stringsFor(String lang) => _bundles[lang] ?? _bundles['en']!;
+Strings stringsFor(String lang) {
+  _arabicPluralsRegistered;
+  return _bundles[lang] ?? _bundles['en']!;
+}
+
+/// i69n ships no Arabic plural rules, so `_plural` in the Arabic bundle would
+/// fall back to a generic resolver (3–4 few, 5+ other). Registers CLDR's
+/// cardinal rules once, on first lookup (a top-level final is lazy).
+final _arabicPluralsRegistered = () {
+  i69n.registerResolver('ar', arabicPluralCategory);
+  return true;
+}();
+
+/// CLDR Arabic cardinal categories: 0 zero, 1 one, 2 two, n % 100 in 3–10
+/// few, n % 100 in 11–99 many, everything else other.
+i69n.QuantityCategory arabicPluralCategory(int n, i69n.QuantityType type) {
+  final r = n % 100;
+  return switch (n) {
+    0 => i69n.QuantityCategory.zero,
+    1 => i69n.QuantityCategory.one,
+    2 => i69n.QuantityCategory.two,
+    _ when r >= 3 && r <= 10 => i69n.QuantityCategory.few,
+    _ when r >= 11 => i69n.QuantityCategory.many,
+    _ => i69n.QuantityCategory.other,
+  };
+}
 
 /// Translate [key] for [lang], falling back to English then the key itself.
 String tr(String key, String lang) {
+  _arabicPluralsRegistered;
   final bundle = _bundles[lang] ?? _bundles['en']!;
   try {
     final value = bundle[_alias[key] ?? key];

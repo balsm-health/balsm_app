@@ -11,6 +11,7 @@ import '../tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/attachment_thumb.dart';
+import '../widgets/delete_kit.dart';
 import '../widgets/vault_file_viewer.dart';
 import 'add_prescription_sheet.dart';
 
@@ -18,69 +19,155 @@ import 'add_prescription_sheet.dart';
 ///
 /// Reached from the medications tab. Patient-entered on-device; the reference
 /// code is rendered as a QR for a pharmacy to scan.
-class PrescriptionsScreen extends ConsumerWidget {
+///
+/// The patient's own prescriptions delete through the shared [DeleteKit]
+/// (swipe, `⋮`, Select, or the detail page's bin). Clinic-issued ones are a
+/// record of what a prescriber wrote and stay ([DeletePrescriptionUseCase]).
+class PrescriptionsScreen extends ConsumerStatefulWidget {
   const PrescriptionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PrescriptionsScreen> createState() => _PrescriptionsScreenState();
+}
+
+class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen>
+    with DeleteKit<PrescriptionsScreen, PrescriptionId> {
+  /// Asks before deleting [rxs] (the patient's own); nothing changes on Cancel.
+  void _askDelete(List<Prescription> rxs) {
+    if (rxs.isEmpty) return;
+    final s = AppScope.of(context);
+    final m = s.strings.meds;
+    final one = rxs.length == 1 ? rxs.single : null;
+    final what = one != null ? _rxLabel(one) : m.rx_count(rxs.length);
+    confirmDelete(
+      title: s.strings.common.del_title(what),
+      body: one != null ? m.rx_del_body_one : m.rx_del_body_n,
+      done: what,
+      onConfirmed: () async {
+        final delete = ref.read(deletePrescriptionUseCaseProvider);
+        for (final rx in rxs) {
+          await delete(rx);
+        }
+      },
+    );
+  }
+
+  Future<void> _openDetail(Prescription rx) async {
+    final deleted =
+        await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => PrescriptionDetailScreen(rx: rx)));
+    if (deleted == true && mounted) showDeleted(_rxLabel(rx));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final all = ref.watch(prescriptionListProvider).valueOrNull ?? const <Prescription>[];
     final now = DateTime.now();
     final clinic = all.where((r) => !r.isSelf && r.isActive(now)).toList();
     final mine = all.where((r) => r.isSelf && r.isActive(now)).toList();
     final expired = all.where((r) => !r.isActive(now)).toList();
+    final deletable = all.where((r) => r.isSelf).toList();
 
-    return ContentColumn(
-      maxWidth: 720,
-      child: ListView(padding: EdgeInsets.zero, children: [
-        const PadTop(),
-        AppBarRow(children: [
-          RoundBtn(
-              icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => s.setTab(AppTab.meds)),
-          const SizedBox(width: 12),
-          Expanded(child: Text(s.strings.records.prescriptions, style: Typo.heading(ar: s.rtl))),
-          RoundBtn(
-            icon: LucideIcons.plus,
-            semanticLabel: s.strings.common.a11y_add,
-            onTap: () => showAddPrescription(context),
+    Widget card(Prescription rx, {required bool dim}) {
+      final plain = _RxCard(
+        rx: rx,
+        dim: dim,
+        lead: rx.isSelf ? kitCheck(rx.id) : null,
+        trail: rx.isSelf ? kitMore(label: _rxLabel(rx), onDelete: () => _askDelete([rx])) : null,
+        onTap: selecting ? null : () => _openDetail(rx),
+      );
+      if (!rx.isSelf) return plain;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        child: kitSwipe(
+          item: rx.id,
+          label: _rxLabel(rx),
+          onDelete: () => _askDelete([rx]),
+          radius: T.rLg,
+          child: plain,
+        ),
+      );
+    }
+
+    return PopScope(
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && selecting) endSelect();
+      },
+      child: ContentColumn(
+        maxWidth: 720,
+        child: Stack(children: [
+          ListView(padding: EdgeInsets.zero, children: [
+            const PadTop(),
+            if (selecting)
+              kitSelectAppBar(deletable.map((r) => r.id))
+            else
+              AppBarRow(children: [
+                RoundBtn(
+                    icon: backArrow(context),
+                    semanticLabel: s.strings.common.a11y_back,
+                    onTap: () => s.setTab(AppTab.meds)),
+                const SizedBox(width: 12),
+                Expanded(child: Text(s.strings.records.prescriptions, style: Typo.heading(ar: s.rtl))),
+                if (deletable.isNotEmpty) ...[kitSelectButton(), const SizedBox(width: 8)],
+                RoundBtn(
+                  icon: LucideIcons.plus,
+                  semanticLabel: s.strings.common.a11y_add,
+                  onTap: () => showAddPrescription(context),
+                ),
+              ]),
+            if (all.isEmpty)
+              PCard(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(children: [
+                  const Icon(LucideIcons.fileText, size: 36, color: T.fg4),
+                  const SizedBox(height: 14),
+                  Text(s.strings.meds.rx_empty,
+                      textAlign: TextAlign.center,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+                  const SizedBox(height: 8),
+                  Text(s.strings.meds.rx_empty_h, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                ]),
+              ),
+            if (clinic.isNotEmpty) ...[
+              RowHead(s.strings.meds.rx_active, ar: s.rtl),
+              for (final rx in clinic) card(rx, dim: false),
+            ],
+            if (mine.isNotEmpty) ...[
+              RowHead(s.strings.meds.rx_my_prescriptions, ar: s.rtl),
+              for (final rx in mine) card(rx, dim: false),
+            ],
+            if (expired.isNotEmpty) ...[
+              RowHead(s.strings.meds.rx_expired, ar: s.rtl),
+              for (final rx in expired) card(rx, dim: true),
+            ],
+            SizedBox(height: kitBottomRoom),
+          ]),
+          ...deleteKitOverlays(
+            count: s.strings.meds.rx_count,
+            onDeleteSelected: () => _askDelete(deletable.where((r) => selected.contains(r.id)).toList()),
           ),
         ]),
-        if (all.isEmpty)
-          PCard(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(children: [
-              const Icon(LucideIcons.fileText, size: 36, color: T.fg4),
-              const SizedBox(height: 14),
-              Text(s.strings.meds.rx_empty,
-                  textAlign: TextAlign.center,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-              const SizedBox(height: 8),
-              Text(s.strings.meds.rx_empty_h, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
-            ]),
-          ),
-        if (clinic.isNotEmpty) ...[
-          RowHead(s.strings.meds.rx_active, ar: s.rtl),
-          for (final rx in clinic) _RxCard(rx: rx, dim: false),
-        ],
-        if (mine.isNotEmpty) ...[
-          RowHead(s.strings.meds.rx_my_prescriptions, ar: s.rtl),
-          for (final rx in mine) _RxCard(rx: rx, dim: false),
-        ],
-        if (expired.isNotEmpty) ...[
-          RowHead(s.strings.meds.rx_expired, ar: s.rtl),
-          for (final rx in expired) _RxCard(rx: rx, dim: true),
-        ],
-        const SizedBox(height: 28),
-      ]),
+      ),
     );
   }
 }
 
+/// What a prescription is called in a delete prompt: its title, else the
+/// prescriber's name.
+String _rxLabel(Prescription rx) => rx.title ?? rx.clinician;
+
 class _RxCard extends StatelessWidget {
-  const _RxCard({required this.rx, required this.dim});
+  const _RxCard({required this.rx, required this.dim, this.lead, this.trail, this.onTap});
   final Prescription rx;
   final bool dim;
+
+  /// Select's tick box and the `⋮`, on the patient's own prescriptions;
+  /// those cards sit in a swipe row, which owns their margin.
+  final Widget? lead;
+  final Widget? trail;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -89,12 +176,11 @@ class _RxCard extends StatelessWidget {
     return Opacity(
       opacity: dim ? 0.7 : 1,
       child: PCard(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-        padding: const EdgeInsets.all(14),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => PrescriptionDetailScreen(rx: rx)),
-        ),
+        margin: lead == null ? const EdgeInsets.fromLTRB(20, 0, 20, 10) : null,
+        padding: EdgeInsetsDirectional.fromSTEB(14, 14, trail == null ? 14 : 4, 14),
+        onTap: onTap,
         child: Row(children: [
+          if (lead != null) lead!,
           rx.isSelf
               ? Container(
                   width: 46,
@@ -124,7 +210,7 @@ class _RxCard extends StatelessWidget {
             ar: s.rtl,
           ),
           const SizedBox(width: 6),
-          Chevron(rtl: s.rtl),
+          trail ?? Chevron(rtl: s.rtl),
         ]),
       ),
     );
@@ -146,9 +232,18 @@ class PrescriptionDetailScreen extends ConsumerWidget {
   /// Deletion is domain policy (patient-entered rows only), so it goes through
   /// the use case rather than the data source. Reaching for the container off
   /// the BuildContext bypassed both the widget's own `ref` and that policy.
+  /// Asks first (design delete-kit); pops `true` so the list confirms it.
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final s = AppScope.of(context);
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierColor: const Color(0x6114202B),
+      builder: (_) =>
+          ConfirmDeleteDialog(title: s.strings.common.del_title(_rxLabel(rx)), body: s.strings.meds.rx_del_body_one),
+    );
+    if (ok != true) return;
     await ref.read(deletePrescriptionUseCaseProvider)(rx);
-    if (context.mounted) Navigator.of(context).pop();
+    if (context.mounted) Navigator.of(context).pop(true);
   }
 
   @override
@@ -173,6 +268,7 @@ class PrescriptionDetailScreen extends ConsumerWidget {
                 semanticLabel: s.strings.common.a11y_delete,
                 ghost: true,
                 iconSize: 18,
+                fg: T.danger,
                 onTap: () => _delete(context, ref),
               )
             else
