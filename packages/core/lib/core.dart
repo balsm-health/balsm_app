@@ -79,6 +79,7 @@ export 'src/telemetry/sentry_analytics_logger.dart';
 export 'src/telemetry/posthog_analytics_logger.dart';
 export 'src/telemetry/posthog_init.dart';
 export 'src/telemetry/survey_guard.dart';
+export 'src/telemetry/session_replay.dart';
 export 'src/telemetry/analytics_consent.dart';
 export 'src/telemetry/campaign_attribution.dart';
 export 'src/telemetry/console_analytics_logger.dart';

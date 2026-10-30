@@ -10,6 +10,17 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.7.0] - Unreleased
+
+### Added
+
+- Patients can choose to share screen recordings, in Privacy & data. The
+  switch is off until they turn it on and needs analytics on too. Even then,
+  Balsm records only the walkthrough and sign-in screens, never once you
+  are signed in, and every recording has all text and images masked and no
+  taps captured.
+  ([#137](https://github.com/balsm-health/balsm_app/pull/137))
+
 ## [0.6.0] - Unreleased
 
 ### Added

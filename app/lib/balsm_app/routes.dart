@@ -76,3 +76,13 @@ abstract final class PublicQrPaths {
   /// that confirms the request: `/delete-account-cancel`.
   static const deleteAccountCancel = 'delete-account-cancel';
 }
+
+/// The routes screen recording may run on: the walkthrough and sign-in
+/// funnel, before any health data exists on screen. Profile setup (date of
+/// birth), unlock and the whole signed-in app are deliberately absent.
+const Set<String> kReplayAllowedRoutes = {
+  AppRoutes.walkthrough,
+  AppRoutes.welcome,
+  AppRoutes.phone,
+  AppRoutes.otp,
+};

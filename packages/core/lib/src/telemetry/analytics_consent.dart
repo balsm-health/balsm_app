@@ -26,6 +26,11 @@ class TelemetryPrefs extends ModulePreferences {
 
   Future<void> setAnalyticsEnabled(bool v) => write('analyticsEnabled', v);
 
+  /// Screen-recording consent; see `kReplayConsentDefault` (off).
+  Future<bool> replayEnabled() async => await read<bool>('replayEnabled') ?? false;
+
+  Future<void> setReplayEnabled(bool v) => write('replayEnabled', v);
+
   /// First-touch campaign parameters, as captured from the link that first
   /// opened the app. Raw here; `CampaignAttribution` does the filtering.
   Future<Map<String, dynamic>?> campaign() => read<Map<String, dynamic>>('campaign');

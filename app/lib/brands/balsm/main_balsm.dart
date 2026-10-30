@@ -118,6 +118,10 @@ Future<void> bootstrap({
     analyticsConsent.addSink(surveyGuard);
   }
   await initPostHog(analyticsEnabled: analyticsConsent.enabled, campaign: campaign);
+  // Screen recording: opt-in, separate from analytics, Android and iOS only.
+  final replayConsent = await ReplayConsent.load(globalKV);
+  final replayOnThisPlatform =
+      !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
 
   // Feature flags. Sources are asked in order and the first that knows a flag
   // wins: PostHog (remote, consent-gated), then this build's FEATURE_FLAGS
@@ -181,6 +185,18 @@ Future<void> bootstrap({
     hasOfflinePassword: boot.hasOfflinePassword,
   );
   state.attachFlags(flags);
+  // Records only the sign-in funnel — screens with no health data — and only
+  // with both consents; everything else, including the whole signed-in app,
+  // keeps the recorder stopped (SessionReplayGate).
+  if (replayOnThisPlatform) {
+    final replayGate = SessionReplayGate(
+      recorder: const PostHogReplayRecorder(),
+      allowedRoutes: kReplayAllowedRoutes,
+    )..update(replayEnabled: replayConsent.enabled, route: state.route);
+    analyticsConsent.addSink(replayGate);
+    replayConsent.addListener(() => replayGate.update(replayEnabled: replayConsent.enabled));
+    state.addListener(() => replayGate.update(route: state.route));
+  }
   final fileStore = await createUserFileStore(
     activeUser: () => containerUserId,
     keychain: keychain,
@@ -207,6 +223,7 @@ Future<void> bootstrap({
     feedbackReporterProvider.overrideWithValue(const SentryFeedbackReporter()),
     // The patient's product-analytics choice, so Privacy & data can flip it.
     analyticsConsentProvider.overrideWith((ref) => analyticsConsent),
+    replayConsentProvider.overrideWith((ref) => replayConsent),
     // Bind the account module's adapter into core's cross-module read port so
     // other modules (e.g. home) read the account summary without importing it.
     readAccountRepositoryProvider.overrideWith(buildAccountAdapter),
@@ -426,11 +443,14 @@ Future<void> bootstrap({
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: PatientApp(navObservers: [
-        AnalyticsRouteObserver(analytics),
-        // Where a survey sheet opens; sends no screen events of its own.
-        surveyContextObserver(),
-      ]),
+      child: _replayRoot(
+        replayOnThisPlatform,
+        PatientApp(navObservers: [
+          AnalyticsRouteObserver(analytics),
+          // Where a survey sheet opens; sends no screen events of its own.
+          surveyContextObserver(),
+        ]),
+      ),
     ),
   );
 }
@@ -561,3 +581,5 @@ class _AuthReauthPort implements ReauthPort {
     };
   }
 }
+
+Widget _replayRoot(bool enabled, Widget app) => enabled ? sessionReplayRoot(app) : app;

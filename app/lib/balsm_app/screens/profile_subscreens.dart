@@ -777,9 +777,19 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
     ref.read(analyticsLoggerProvider).logEvent('analytics_consent_changed', props: {'enabled': enabled});
   }
 
+  /// Screen-recording consent: opt-in, and only meaningful with analytics on
+  /// — off analytics, the switch shows off and does nothing.
+  void _setReplay(bool enabled) {
+    if (!ref.read(analyticsConsentProvider).enabled) return;
+    ref.read(replayConsentProvider).set(enabled);
+    ref.read(analyticsLoggerProvider).logEvent('replay_consent_changed', props: {'enabled': enabled});
+  }
+
   @override
   Widget build(BuildContext context) {
     final analytics = ref.watch(analyticsConsentProvider).enabled;
+    final replayConsent = ref.watch(replayConsentProvider).enabled;
+    final replay = analytics && replayConsent;
     return SubScreen(
       s: s,
       title: s.strings.profile.p_privacy,
@@ -789,6 +799,7 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
           _toggle(s.strings.privacy.pv_share_team, s.strings.privacy.pv_share_team_h, shareTeam,
               (v) => setState(() => shareTeam = v)),
           _toggle(s.strings.privacy.pv_analytics, s.strings.privacy.pv_analytics_h, analytics, _setAnalytics),
+          _toggle(s.strings.privacy.pv_replay, s.strings.privacy.pv_replay_h, replay, _setReplay),
           _toggle(s.strings.privacy.pv_research, s.strings.privacy.pv_research_h, research,
               (v) => setState(() => research = v),
               last: true),
