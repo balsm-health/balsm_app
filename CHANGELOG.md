@@ -10,6 +10,17 @@ Entries are grouped as **Added**, **Changed**, **Fixed**, **Removed** and
 **Security**, one line each, written so someone who was not there understands
 what changed and why it matters.
 
+## [0.5.2] - Unreleased
+
+### Fixed
+
+- Dropdown menus — medication frequency, duration and dose unit, the body
+  map's layer picker — open white, like the field they drop out of, instead
+  of the pale lilac Material gives an app that does not say otherwise.
+  ([#128](https://github.com/balsm-health/balsm_app/issues/128))
+- The date and time pickers open white as well, instead of lilac.
+  ([#128](https://github.com/balsm-health/balsm_app/issues/128))
+
 ## [0.5.1] - Unreleased
 
 ### Fixed
@@ -48,12 +59,6 @@ what changed and why it matters.
 
 ### Fixed
 
-- Dropdown menus — medication frequency, duration and dose unit, the body
-  map's layer picker — open white, like the field they drop out of, instead
-  of the pale lilac Material gives an app that does not say otherwise.
-  ([#128](https://github.com/balsm-health/balsm_app/issues/128))
-- The date and time pickers open white as well, instead of lilac.
-  ([#128](https://github.com/balsm-health/balsm_app/issues/128))
 - Service status in Profile shows whether Balsm's servers are working again:
   it always said the status was unknown, even when everything was up. It now
   speaks the app's language, so in Arabic it reads in Arabic instead of
