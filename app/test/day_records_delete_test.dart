@@ -37,7 +37,7 @@ void main() {
     vitals: const Vitals(systolic: 118, diastolic: 76, glucoseFasting: 95),
   );
 
-  Future<(_Recorder, PatientAppState)> pump(WidgetTester tester, CheckIn checkIn, {bool ar = false}) async {
+  Future<(_Recorder, PatientAppState)> pump(WidgetTester tester, List<CheckIn> checkIns, {bool ar = false}) async {
     final recorder = _Recorder();
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
@@ -61,7 +61,7 @@ void main() {
         // and menus follow it too.
         child: MaterialApp(
           builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: DayRecordsScreen(checkIn: checkIn),
+          home: DayRecordsScreen(checkIns: checkIns),
         ),
       ),
     ));
@@ -85,13 +85,13 @@ void main() {
   }
 
   testWidgets('a quick BP log shows no pain row', (tester) async {
-    final (_, s) = await pump(tester, bpOnly);
+    final (_, s) = await pump(tester, [bpOnly]);
     expect(find.text(s.strings.profile.m_pain), findsNothing);
     expect(value('118/76'), findsOne);
   });
 
   testWidgets('the menu asks first, then stores the delete at once', (tester) async {
-    final (recorder, s) = await pump(tester, bpOnly);
+    final (recorder, s) = await pump(tester, [bpOnly]);
     await openMenu(tester, s, s.strings.profile.m_bp);
 
     final c = s.strings.checkin;
@@ -109,7 +109,7 @@ void main() {
   });
 
   testWidgets('Cancel keeps the reading and stores nothing', (tester) async {
-    final (recorder, s) = await pump(tester, bpOnly);
+    final (recorder, s) = await pump(tester, [bpOnly]);
     await openMenu(tester, s, s.strings.profile.m_bp);
     await tester.tap(find.text(s.strings.common.cancel));
     await tester.pumpAndSettle();
@@ -119,7 +119,7 @@ void main() {
   });
 
   testWidgets('a short swipe reveals Delete; a long one asks at once', (tester) async {
-    final (recorder, s) = await pump(tester, bpOnly);
+    final (recorder, s) = await pump(tester, [bpOnly]);
     final c = s.strings.checkin;
 
     await tester.drag(find.text(s.strings.profile.m_glucose), const Offset(-70, 0));
@@ -138,7 +138,7 @@ void main() {
   });
 
   testWidgets('Select deletes several readings in one store and empties the day', (tester) async {
-    final (recorder, s) = await pump(tester, bpOnly);
+    final (recorder, s) = await pump(tester, [bpOnly]);
     final c = s.strings.checkin;
     await tester.tap(find.text(c.rec_select));
     await tester.pumpAndSettle();
@@ -156,11 +156,68 @@ void main() {
   });
 
   testWidgets('in Arabic the row swipes the other way', (tester) async {
-    final (recorder, s) = await pump(tester, bpOnly, ar: true);
+    final (recorder, s) = await pump(tester, [bpOnly], ar: true);
     await tester.drag(find.text(s.strings.profile.m_bp), const Offset(300, 0));
     await tester.pumpAndSettle();
     await confirm(tester, s);
     expect(find.text(s.strings.checkin.rec_deleted(s.strings.profile.m_bp)), findsOne);
     expect(recorder.stored.single.vitals.systolic, isNull);
+  });
+
+  group('a day with two check-ins', () {
+    final morning = CheckIn(
+      id: const CheckInId.value('chk-am'),
+      healthProfileId: const HealthProfileId.value('hp-1'),
+      recordedAt: DateTime(2026, 7, 24, 8, 15),
+      painLevel: PainLevel.none,
+      painSites: const {},
+      symptoms: const {},
+      vitals: const Vitals(systolic: 118, diastolic: 76, glucoseFasting: 95),
+    );
+    final evening = CheckIn(
+      id: const CheckInId.value('chk-pm'),
+      healthProfileId: const HealthProfileId.value('hp-1'),
+      recordedAt: DateTime(2026, 7, 24, 19, 40),
+      painLevel: const PainLevel(4),
+      painSites: const {},
+      symptoms: const {},
+      vitals: const Vitals(systolic: 131, diastolic: 84),
+    );
+
+    testWidgets('shows every reading, each at its own time', (tester) async {
+      final (_, s) = await pump(tester, [morning, evening]);
+      expect(value('118/76'), findsOne);
+      expect(value('131/84'), findsOne);
+      expect(find.text(s.strings.profile.m_pain), findsOne);
+      expect(find.text(s.strings.profile.m_bp), findsNWidgets(2));
+    });
+
+    testWidgets('Select across both stores each check-in once', (tester) async {
+      final (recorder, s) = await pump(tester, [morning, evening]);
+      final c = s.strings.checkin;
+      await tester.tap(find.text(c.rec_select));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(c.rec_select_all));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(c.rec_delete_n(c.rec_count(4))));
+      await tester.pumpAndSettle();
+      await confirm(tester, s);
+
+      expect(find.text(c.day_empty), findsOne);
+      expect(recorder.stored.map((x) => x.id.value), ['chk-am', 'chk-pm']);
+      expect(recorder.stored.every((x) => x.isEmpty), isTrue);
+    });
+
+    testWidgets('deleting one reading leaves the other check-in alone', (tester) async {
+      final (recorder, s) = await pump(tester, [morning, evening]);
+      await tester.drag(find.text(s.strings.profile.m_pain), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      await confirm(tester, s);
+
+      expect(recorder.stored.single.id.value, 'chk-pm');
+      expect(recorder.stored.single.reportsPain, isFalse);
+      expect(value('131/84'), findsOne);
+      expect(value('118/76'), findsOne);
+    });
   });
 }

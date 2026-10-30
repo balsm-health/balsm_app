@@ -390,7 +390,8 @@ class _LatestMetrics extends ConsumerWidget {
   }
 }
 
-/// Last three check-ins — Claude Design "recent reports"; each row opens
+/// Last three days with check-ins — Claude Design "recent reports"; one row
+/// per day, so several logs on the same date share it. Each row opens
 /// [DayRecordsScreen]. Hidden until the patient has logged at least once.
 class _RecentReports extends ConsumerWidget {
   const _RecentReports();
@@ -400,7 +401,7 @@ class _RecentReports extends ConsumerWidget {
     final s = AppScope.of(context);
     final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
     if (history.isEmpty) return const SizedBox.shrink();
-    final recent = history.take(3).toList();
+    final recent = groupCheckInsByDay(history).take(3).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       HomeSectionHead(s.strings.common.recent,
           action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends)),
@@ -408,8 +409,8 @@ class _RecentReports extends ConsumerWidget {
         padding: EdgeInsets.zero,
         child: Column(
           children: recent.indexed
-              .map((e) => CheckInHistoryRow(
-                    checkIn: e.$2,
+              .map((e) => CheckInDayRow(
+                    day: e.$2,
                     first: e.$1 == 0,
                     onTap: () => DayRecordsScreen.open(context, e.$2),
                   ))
