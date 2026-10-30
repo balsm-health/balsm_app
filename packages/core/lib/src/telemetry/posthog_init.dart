@@ -42,9 +42,12 @@ Future<void> initPostHog({
     // Screenshot-mode replay of a patient's own health screens is exactly the
     // PHI egress this app exists to prevent. Never enable.
     ..sessionReplay = false
-    // Surveys render PostHog-controlled UI over the app and need
-    // `PosthogObserver` (which would bypass the scrubbed AnalyticsRouteObserver).
-    ..surveys = false
+    // Choice-only surveys (thumbs, ratings, fixed answers) for "how did this
+    // feel" feedback. ChoiceOnlySurveyPlatform refuses any survey with typed
+    // answers and any survey while analytics consent is off; PosthogObserver
+    // is installed with screen capture switched off, so screen views still
+    // go only through the scrubbed AnalyticsRouteObserver.
+    ..surveys = true
     // Balsm has no PostHog-delivered push; leaving these on would register the
     // device's notification subscription with PostHog for nothing.
     ..capturePushNotificationSubscriptions = false

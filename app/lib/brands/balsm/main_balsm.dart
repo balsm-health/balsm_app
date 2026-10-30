@@ -104,6 +104,19 @@ Future<void> bootstrap({
     globalKV,
     launchUri: await _launchUri(),
   );
+  // Surveys: choice-only, and only with analytics consent. The guard sits
+  // between the native SDK and the survey UI, so a survey configured in
+  // PostHog with a free-text question is refused here and reported, never
+  // shown. Android and iOS only — elsewhere no native-triggered survey renders.
+  AnalyticsLogger? surveyRefusals; // bound once the app logger exists, below
+  if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+    final surveyGuard = ChoiceOnlySurveyPlatform.install(
+      onRefused: (reason) => surveyRefusals?.log('PostHog survey refused', level: LogLevel.warning, props: {
+        'reason': reason,
+      }),
+    );
+    analyticsConsent.addSink(surveyGuard);
+  }
   await initPostHog(analyticsEnabled: analyticsConsent.enabled, campaign: campaign);
 
   // Feature flags. Sources are asked in order and the first that knows a flag
@@ -280,6 +293,7 @@ Future<void> bootstrap({
     ...extraOverrides,
   ]);
   final analytics = container.read(analyticsLoggerProvider);
+  surveyRefusals = analytics;
 
   // Every framework error → telemetry (still shown in debug console).
   FlutterError.onError = (details) {
@@ -412,7 +426,11 @@ Future<void> bootstrap({
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: PatientApp(navObserver: AnalyticsRouteObserver(analytics)),
+      child: PatientApp(navObservers: [
+        AnalyticsRouteObserver(analytics),
+        // Where a survey sheet opens; sends no screen events of its own.
+        surveyContextObserver(),
+      ]),
     ),
   );
 }
