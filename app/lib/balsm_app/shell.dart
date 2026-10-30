@@ -307,7 +307,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
         case 'storage':
           showStorageSync(next);
         case 'quicklog':
-          showQuickLog(next);
+          showQuickLog(next, source: ProductSource.menu);
         case 'checkin':
           openCheckin(next);
         case 'addRx':
