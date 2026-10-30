@@ -100,5 +100,12 @@ v1.2.0           # production  (prod backend), only on a commit already
                  #             tagged alpha or beta
 ```
 
-Branch pushes do not release and upload no artifacts; only a release tag,
-started through Promote or pushed by hand, does.
+Branch pushes build every platform too, but upload no artifacts, make no
+release, send nothing to Firebase and deploy nothing:
+
+```
+git push origin main            # builds against the prod backend
+git push origin release/1.0     # builds against the staging backend
+```
+
+A newer push to the same branch cancels the build still running for it.
