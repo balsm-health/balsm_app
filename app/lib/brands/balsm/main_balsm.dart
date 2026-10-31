@@ -226,7 +226,10 @@ Future<void> bootstrap({
     replayConsentProvider.overrideWith((ref) => replayConsent),
     // Bind the account module's adapter into core's cross-module read port so
     // other modules (e.g. home) read the account summary without importing it.
-    readAccountRepositoryProvider.overrideWith(buildAccountAdapter),
+    readAccountRepositoryProvider.overrideWith((ref) => buildAccountAdapter(ref, locale: () {
+          final s = ref.read(patientAppStateProvider);
+          return (country: s.country.value, language: s.lang.value);
+        })),
     globalKVDataSourceProvider.overrideWithValue(globalKV),
     // ── Real P001 module provider seams (recovered from bootstrap.dart) ─────
     appDatabaseProvider.overrideWithValue(db),

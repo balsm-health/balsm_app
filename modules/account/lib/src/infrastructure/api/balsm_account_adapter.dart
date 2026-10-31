@@ -6,6 +6,8 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/use_cases/account_profile_use_case.dart';
+
 /// How long a retained summary is used without asking the server.
 ///
 /// An hour, not a day: the summary changes only when the user changes it, and
@@ -15,6 +17,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 const _accountTtl = Duration(hours: 1);
 
 const _accountNamespace = 'account';
+
+/// The signed-in id in secure storage (the auth module's `kUserId`).
+const _kUserId = 'balsm.user_id';
 
 /// .NET REST adapter for the account read-model.
 ///
@@ -27,17 +32,34 @@ const _accountNamespace = 'account';
 /// literal `'self'`, since that is what `accountSummaryProvider` asks for — so
 /// account separation rests on the cache being cleared at every session
 /// boundary (sign-in, sign-out and expiry all clear it in `bootstrap()`).
+///
+/// A device-only account has no server summary and may not call the API, so
+/// [deviceOnlySummary] builds it from what the device holds — its id, the
+/// profile details saved there, and the app's country and language — instead
+/// of a request that could only fail and leave screens offering Retry.
 class BalsmAccountAdapter implements ReadAccountRepository {
-  BalsmAccountAdapter(this._api, this._cache);
+  BalsmAccountAdapter(this._api, this._cache, {SecureStorageWrapper? storage, this.deviceOnlySummary})
+      : _storage = storage;
 
   final AccountApi _api;
   final CachedValue<AccountSummary> _cache;
+  final SecureStorageWrapper? _storage;
+  final Future<AccountSummary?> Function()? deviceOnlySummary;
 
   /// Local fan-out so [watchAccount] re-emits after mutations re-fetch.
   final _controller = StreamController<AccountSummary>.broadcast();
 
   @override
   Future<AccountSummary?> getAccount(String userId) async {
+    final local = deviceOnlySummary;
+    final storage = _storage;
+    if (local != null &&
+        storage != null &&
+        AccountMode.fromWire(await storage.readToken(kAccountModeKey)) == AccountMode.deviceOnly) {
+      final summary = await local();
+      if (summary != null && !_controller.isClosed) _controller.add(summary);
+      return summary;
+    }
     final AccountSummary? summary;
     try {
       summary = await _cache.read(userId, fetch: () async {
@@ -84,7 +106,11 @@ class BalsmAccountAdapter implements ReadAccountRepository {
 /// Builds the account read-repository from the typed account client. The app
 /// composition root binds this into core's `readAccountRepositoryProvider`
 /// (see `bootstrap()`), so consumers depend on the core port, not this module.
-BalsmAccountAdapter buildAccountAdapter(Ref ref) {
+///
+/// [locale] gives a device-only account's summary its country and language,
+/// which live in the app's own settings rather than on a server.
+BalsmAccountAdapter buildAccountAdapter(Ref ref, {({String country, String language}) Function()? locale}) {
+  final storage = ref.watch(secureStorageProvider);
   final adapter = BalsmAccountAdapter(
     ref.watch(accountApiProvider),
     CachedValue<AccountSummary>(
@@ -94,6 +120,22 @@ BalsmAccountAdapter buildAccountAdapter(Ref ref) {
       decode: AccountSummary.fromJson,
       encode: (s) => s.toJson(),
     ),
+    storage: storage,
+    deviceOnlySummary: locale == null
+        ? null
+        : () async {
+            final id = await storage.readToken(_kUserId);
+            if (id == null || id.isEmpty) return null;
+            final details = await ref.read(accountProfileUseCaseProvider).localDetails();
+            final l = locale();
+            return AccountSummary(
+              id: UserId.value(id),
+              displayName: details?.displayName,
+              countryCode: l.country,
+              preferredLanguage: l.language,
+              deletionState: 'ACTIVE',
+            );
+          },
   );
   ref.onDispose(adapter.dispose);
   return adapter;

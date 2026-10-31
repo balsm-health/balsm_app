@@ -163,6 +163,10 @@ class AccountProfileUseCase {
     return r;
   }
 
+  /// The details a device-only account saved on the device, or null when
+  /// there are none yet.
+  Future<ProfileDetails?> localDetails() => _readLocal();
+
   /// Forgets the device-only details without sending them — after merging
   /// into an account that already has its own profile on the server.
   Future<void> dropLocal() => _storage.deleteToken(kLocalProfileKey);
