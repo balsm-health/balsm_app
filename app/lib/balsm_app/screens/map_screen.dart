@@ -23,6 +23,18 @@ import 'map_packs_sheet.dart';
 /// entity pins, a searchable/filterable list, and a per-entity detail card.
 /// Data comes from [careDirectoryProvider] (a placeholder until the
 /// care-directory backend exists); no PHI is involved.
+/// Where the map was looking, kept for the session so switching tabs and back
+/// returns to the same view. [placed] is true once the camera is somewhere the
+/// patient chose — their own position, or wherever they panned — rather than
+/// the fallback shown before the location resolved.
+typedef MapView = ({LatLng center, double zoom, bool placed});
+
+final mapViewProvider = StateProvider<MapView?>((ref) => null);
+
+/// Zoom the map opens at on the patient's own position, as the recenter
+/// button does.
+const double _kUserZoom = 14;
+
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key, this.filterRequest});
 
@@ -54,7 +66,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   static const _debounceDelay = Duration(milliseconds: 400);
 
   /// Last reported camera zoom, so the empty state can say WHY it is empty.
-  double _zoom = 13;
+  late double _zoom = ref.read(mapViewProvider)?.zoom ?? 13;
+
+  /// The FlutterMap has laid out, so [_mapController] can move it.
+  bool _mapReady = false;
+
+  /// The view to open at: the last one this session, else the patient's own
+  /// position when already known. Null falls back to the map's own default.
+  MapView? get _openingView {
+    final saved = ref.read(mapViewProvider);
+    if (saved != null && saved.placed) return saved;
+    final me = ref.read(deviceLocationProvider).valueOrNull?.position;
+    if (me != null && kCareCoverage.contains(me)) return (center: me, zoom: _kUserZoom, placed: true);
+    return saved;
+  }
+
+  /// Centres on the patient once both the map and their position are ready,
+  /// unless the view is already placed (restored, or they have panned).
+  void _focusUserIfUnplaced() {
+    if (!_mapReady || (ref.read(mapViewProvider)?.placed ?? false)) return;
+    final me = ref.read(deviceLocationProvider).valueOrNull?.position;
+    if (me == null || !kCareCoverage.contains(me)) return;
+    _mapController.move(me, _kUserZoom);
+    _remember(me, _kUserZoom, placed: true);
+    setState(() => _zoom = _kUserZoom);
+  }
+
+  void _remember(LatLng center, double zoom, {required bool placed}) =>
+      ref.read(mapViewProvider.notifier).state = (center: center, zoom: zoom, placed: placed);
 
   /// Camera as of the last pan, and the centre the current results were fetched
   /// for. [_areaDirty] is what shows the "Search this area" button.
@@ -115,6 +154,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// the map is free and fetching is a decision — the behaviour people already
   /// know from other map apps.
   void _onMapMoved(MapCamera camera, bool hasGesture) {
+    _remember(camera.center, camera.zoom, placed: hasGesture || (ref.read(mapViewProvider)?.placed ?? false));
     if (!hasGesture) return;
     final movedFar = _lastSearched == null ||
         const Distance().as(LengthUnit.Meter, _lastSearched!, camera.center) > _researchThresholdMeters;
@@ -176,7 +216,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _explainNoLocation(device.issue);
       return;
     }
-    _mapController.move(loc, 14);
+    _mapController.move(loc, _kUserZoom);
+    _remember(loc, _kUserZoom, placed: true);
     setState(() {
       _lastSearched = loc;
       _areaDirty = false;
@@ -254,6 +295,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // The position can land after the map is up; centre on it then.
+    ref.listen(deviceLocationProvider, (prev, next) => _focusUserIfUnplaced());
     final entities = ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[];
     final filtered = _filter(entities);
 
@@ -420,6 +463,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       Positioned.fill(
           child: _TileMap(
               controller: _mapController,
+              initialView: _openingView,
+              onReady: () {
+                _mapReady = true;
+                // Ready fires mid-layout; move and rebuild after the frame.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _focusUserIfUnplaced();
+                });
+              },
               pins: pins,
               selectedId: _selectedId,
               onPin: _selectPin,
@@ -780,6 +831,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 class _TileMap extends StatefulWidget {
   const _TileMap({
     required this.controller,
+    required this.initialView,
+    required this.onReady,
     required this.pins,
     required this.selectedId,
     required this.onPin,
@@ -787,6 +840,12 @@ class _TileMap extends StatefulWidget {
     this.userLocation,
   });
   final MapController controller;
+
+  /// Where to open; null opens on the first pin, else the covered area's centre.
+  final MapView? initialView;
+
+  /// The map has laid out and [controller] can move it.
+  final VoidCallback onReady;
   final List<CarePin> pins;
   final String? selectedId;
   final void Function(CarePin) onPin;
@@ -849,12 +908,13 @@ class _TileMapState extends State<_TileMap> {
     final first = widget.pins.isNotEmpty ? widget.pins.first.position : kCareFallbackCenter;
     // A first pin outside the covered area would be rejected by the constraint
     // and land the map somewhere arbitrary.
-    final center = kCareCoverage.contains(first) ? first : kCareFallbackCenter;
+    final center = widget.initialView?.center ?? (kCareCoverage.contains(first) ? first : kCareFallbackCenter);
     return FlutterMap(
       mapController: widget.controller,
       options: MapOptions(
         initialCenter: center,
-        initialZoom: 13,
+        initialZoom: widget.initialView?.zoom ?? 13,
+        onMapReady: widget.onReady,
         minZoom: 3,
         maxZoom: 18,
         interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
