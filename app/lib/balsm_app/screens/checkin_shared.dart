@@ -139,20 +139,51 @@ PillKind painBadgeKind(int pain) {
   return PillKind.danger;
 }
 
-/// `.history-row` — day chip, vitals summary, mood face, pain badge.
-class CheckInHistoryRow extends StatelessWidget {
-  const CheckInHistoryRow({super.key, required this.checkIn, required this.first, this.onTap});
-  final CheckIn checkIn;
+/// Groups newest-first [history] by the patient's local calendar day: days
+/// newest first, each day's check-ins oldest first (the order the day screen
+/// lists them).
+List<List<CheckIn>> groupCheckInsByDay(Iterable<CheckIn> history) {
+  final days = <List<CheckIn>>[];
+  DateTime? current;
+  for (final c in history) {
+    final d = c.recordedAt.toLocal();
+    final day = DateTime(d.year, d.month, d.day);
+    if (day != current) {
+      days.add([]);
+      current = day;
+    }
+    days.last.insert(0, c);
+  }
+  return days;
+}
+
+/// `.history-row` for one day — day chip, then the day's newest blood
+/// pressure, glucose, mood and pain, whichever check-in each came from.
+class CheckInDayRow extends StatelessWidget {
+  const CheckInDayRow({super.key, required this.day, required this.first, this.onTap});
+
+  /// The day's check-ins, oldest first, as [groupCheckInsByDay] gives them.
+  final List<CheckIn> day;
   final bool first;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final d = checkIn.recordedAt.toLocal();
-    final v = checkIn.vitals;
-    final pain = checkIn.painLevel.value;
-    final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
+    final d = day.first.recordedAt.toLocal();
+    final newestFirst = day.reversed;
+    R? newest<R>(R? Function(CheckIn c) pick) {
+      for (final c in newestFirst) {
+        final x = pick(c);
+        if (x != null) return x;
+      }
+      return null;
+    }
+
+    final bp = newest((c) => c.vitals.systolic != null && c.vitals.diastolic != null ? c.vitals : null);
+    final glucose = newest((c) => c.vitals.glucoseFasting ?? c.vitals.glucosePostMeal ?? c.vitals.glucoseRandom);
+    final mood = newest((c) => c.mood);
+    final pain = newest((c) => c.reportsPain ? c.painLevel.value : null);
 
     final row = Container(
       decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
@@ -170,9 +201,9 @@ class CheckInHistoryRow extends StatelessWidget {
         const SizedBox(width: 14),
         Expanded(
           child: Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-            if (v.systolic != null && v.diastolic != null) ...[
+            if (bp != null) ...[
               const Icon(LucideIcons.activity, size: 14, color: T.hueViolet),
-              Text('${v.systolic}/${v.diastolic}',
+              Text('${bp.systolic}/${bp.diastolic}',
                   textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg1)),
             ],
             if (glucose != null) ...[
@@ -181,11 +212,11 @@ class CheckInHistoryRow extends StatelessWidget {
             ],
           ]),
         ),
-        if (checkIn.mood != null) ...[
-          MoodFace(level: checkIn.mood!.score, size: 26, color: moodColors[checkIn.mood!.score - 1]),
+        if (mood != null) ...[
+          MoodFace(level: mood.score, size: 26, color: moodColors[mood.score - 1]),
           const SizedBox(width: 10),
         ],
-        if (checkIn.reportsPain) Pill('$pain', kind: painBadgeKind(pain), small: true, dot: false, ar: s.rtl),
+        if (pain != null) Pill('$pain', kind: painBadgeKind(pain), small: true, dot: false, ar: s.rtl),
       ]),
     );
     if (onTap == null) return row;

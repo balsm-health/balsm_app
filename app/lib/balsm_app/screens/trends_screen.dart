@@ -174,9 +174,10 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: EdgeInsets.zero,
             child: Column(
-              children: history.indexed
-                  .map((e) => CheckInHistoryRow(
-                        checkIn: e.$2,
+              children: groupCheckInsByDay(history)
+                  .indexed
+                  .map((e) => CheckInDayRow(
+                        day: e.$2,
                         first: e.$1 == 0,
                         onTap: () => DayRecordsScreen.open(context, e.$2),
                       ))

@@ -16,37 +16,43 @@ import '../widgets/body_map.dart';
 import '../widgets/mood_face.dart';
 import 'checkin_shared.dart';
 
-/// One check-in's readings — mood hero, metric rows, optional symptoms card.
+/// One day's readings — mood heroes, metric rows, symptoms cards — from every
+/// check-in logged that date, in the order they were logged.
 ///
-/// Port of the Claude Design `DayRecordsScreen`. Times come from the single
-/// [CheckIn.recordedAt]; the domain does not store per-metric clocks, so we
-/// never invent them.
+/// Port of the Claude Design `DayRecordsScreen`. Each reading shows its own
+/// check-in's [CheckIn.recordedAt]; the domain does not store per-metric
+/// clocks, so we never invent them.
 ///
 /// Every reading is the patient's own, so it can be deleted three ways: its
 /// `⋮` menu, a swipe toward the start edge, or Select for several at once.
 /// Each asks first, then stores the edit straight away. A check-in emptied
 /// this way is deleted, photo included.
 class DayRecordsScreen extends ConsumerStatefulWidget {
-  const DayRecordsScreen({super.key, required this.checkIn});
-  final CheckIn checkIn;
+  const DayRecordsScreen({super.key, required this.checkIns});
 
-  static Future<void> open(BuildContext context, CheckIn checkIn) {
-    return Navigator.of(context).push(MaterialPageRoute(builder: (_) => DayRecordsScreen(checkIn: checkIn)));
+  /// The day's check-ins, oldest first (see `groupCheckInsByDay`). Never empty.
+  final List<CheckIn> checkIns;
+
+  static Future<void> open(BuildContext context, List<CheckIn> day) {
+    return Navigator.of(context).push(MaterialPageRoute(builder: (_) => DayRecordsScreen(checkIns: day)));
   }
 
   @override
   ConsumerState<DayRecordsScreen> createState() => _DayRecordsScreenState();
 }
 
+/// A reading on the day: which check-in, and which of its metrics.
+typedef _Key = (CheckInId, CheckInMetric);
+
 class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
   static const _toastFor = Duration(milliseconds: 2500);
 
-  late CheckIn _shown = widget.checkIn;
+  late List<CheckIn> _shown = widget.checkIns;
 
   /// The row swiped open, showing its Delete.
-  CheckInMetric? _open;
+  _Key? _open;
   bool _selecting = false;
-  final _selected = <CheckInMetric>{};
+  final _selected = <_Key>{};
   String? _toast;
   Timer? _toastTimer;
 
@@ -87,7 +93,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
     await _update(edited);
   }
 
-  void _startSelect([CheckInMetric? first]) => setState(() {
+  void _startSelect([_Key? first]) => setState(() {
         _open = null;
         _selecting = true;
         _selected
@@ -100,16 +106,16 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
         _selected.clear();
       });
 
-  void _toggle(CheckInMetric m) => setState(() => _selected.contains(m) ? _selected.remove(m) : _selected.add(m));
+  void _toggle(_Key k) => setState(() => _selected.contains(k) ? _selected.remove(k) : _selected.add(k));
 
   /// Asks before deleting [readings]; nothing changes on Cancel.
-  Future<void> _askDelete(List<_Reading> readings, {required String day, required String time}) async {
+  Future<void> _askDelete(List<_Reading> readings, {required String day}) async {
     if (readings.isEmpty) return;
     final c = AppScope.of(context).strings.checkin;
     final one = readings.length == 1 ? readings.single : null;
     // English names sit mid-sentence; lowercasing leaves Arabic untouched.
     final title = c.rec_del_title(one?.label.toLowerCase() ?? c.rec_count(readings.length));
-    final body = one != null ? c.rec_del_body_one(day, time) : c.rec_del_body_n(day);
+    final body = one != null ? c.rec_del_body_one(day, one.time) : c.rec_del_body_n(day);
     final ok = await showDialog<bool>(
       context: context,
       barrierColor: const Color(0x6114202B),
@@ -120,11 +126,21 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
       setState(() => _open = null);
       return;
     }
-    final edited = readings.fold(_shown, (ci, r) => ci.without(r.metric));
-    _saving = _saving.then((_) => _persist(edited));
+    // One store per check-in touched, however many of its readings went.
+    final gone = <CheckInId, List<CheckInMetric>>{};
+    for (final r in readings) {
+      (gone[r.checkIn.id] ??= []).add(r.metric);
+    }
+    final shown = [
+      for (final ci in _shown)
+        if (gone[ci.id] case final metrics?) metrics.fold(ci, (x, m) => x.without(m)) else ci,
+    ];
+    for (final edited in shown.where((ci) => gone.containsKey(ci.id))) {
+      _saving = _saving.then((_) => _persist(edited));
+    }
     _toastTimer?.cancel();
     setState(() {
-      _shown = edited;
+      _shown = shown;
       _open = null;
       _selecting = false;
       _selected.clear();
@@ -175,83 +191,59 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
     return delete == true;
   }
 
+  /// [checkIn]'s vitals and pain as metric rows, in the design's order.
+  List<_Reading> _metricRows(PatientAppState s, CheckIn checkIn, String time) {
+    final c = s.strings.checkin;
+    final v = checkIn.vitals;
+    final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
+    _Reading row(CheckInMetric metric, IconData icon, String label, String value, String unit, Color color, Color bg) =>
+        _Reading(
+            checkIn: checkIn,
+            time: time,
+            metric: metric,
+            icon: icon,
+            label: label,
+            value: value,
+            unit: unit,
+            color: color,
+            bg: bg);
+    return [
+      if (v.systolic != null && v.diastolic != null)
+        row(CheckInMetric.bloodPressure, LucideIcons.activity, s.strings.profile.m_bp, '${v.systolic}/${v.diastolic}',
+            c.unit_bp, T.hueViolet, T.hueViolet50),
+      if (glucose != null)
+        row(CheckInMetric.glucose, LucideIcons.droplet, s.strings.profile.m_glucose, '$glucose', c.unit_glu,
+            T.hueMint600, T.hueMint50),
+      if (v.spo2 != null)
+        row(CheckInMetric.spo2, LucideIcons.wind, s.strings.profile.m_o2, '${v.spo2}', c.unit_spo2, T.hueBlue,
+            T.hueBlue50),
+      if (v.heartRate != null)
+        row(CheckInMetric.heartRate, LucideIcons.heartPulse, s.strings.profile.m_pulse, '${v.heartRate}', c.unit_bpm,
+            T.hueViolet, T.hueViolet50),
+      if (v.weightKg != null)
+        row(CheckInMetric.weight, LucideIcons.scale, s.strings.profile.m_weight, _weight(v.weightKg!), c.unit_kg,
+            T.hueBlue, T.hueBlue50),
+      if (checkIn.reportsPain)
+        row(CheckInMetric.pain, LucideIcons.zap, s.strings.profile.m_pain, '${checkIn.painLevel.value}/10', '',
+            T.danger, T.dangerBg),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final c = s.strings.checkin;
-    final checkIn = _shown;
-    final d = checkIn.recordedAt.toLocal();
-    final v = checkIn.vitals;
-    final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
-    final time = MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(d));
+    final d = _shown.first.recordedAt.toLocal();
     final day = '${d.day} ${checkInMonthShort(s, d)}';
-    final mood = checkIn.mood;
+    final localizations = MaterialLocalizations.of(context);
+    String timeOf(CheckIn ci) => localizations.formatTimeOfDay(TimeOfDay.fromDateTime(ci.recordedAt.toLocal()));
 
-    final rows = <_Reading>[
-      if (v.systolic != null && v.diastolic != null)
-        _Reading(
-          metric: CheckInMetric.bloodPressure,
-          icon: LucideIcons.activity,
-          label: s.strings.profile.m_bp,
-          value: '${v.systolic}/${v.diastolic}',
-          unit: c.unit_bp,
-          color: T.hueViolet,
-          bg: T.hueViolet50,
-        ),
-      if (glucose != null)
-        _Reading(
-          metric: CheckInMetric.glucose,
-          icon: LucideIcons.droplet,
-          label: s.strings.profile.m_glucose,
-          value: '$glucose',
-          unit: c.unit_glu,
-          color: T.hueMint600,
-          bg: T.hueMint50,
-        ),
-      if (v.spo2 != null)
-        _Reading(
-          metric: CheckInMetric.spo2,
-          icon: LucideIcons.wind,
-          label: s.strings.profile.m_o2,
-          value: '${v.spo2}',
-          unit: c.unit_spo2,
-          color: T.hueBlue,
-          bg: T.hueBlue50,
-        ),
-      if (v.heartRate != null)
-        _Reading(
-          metric: CheckInMetric.heartRate,
-          icon: LucideIcons.heartPulse,
-          label: s.strings.profile.m_pulse,
-          value: '${v.heartRate}',
-          unit: c.unit_bpm,
-          color: T.hueViolet,
-          bg: T.hueViolet50,
-        ),
-      if (v.weightKg != null)
-        _Reading(
-          metric: CheckInMetric.weight,
-          icon: LucideIcons.scale,
-          label: s.strings.profile.m_weight,
-          value: _weight(v.weightKg!),
-          unit: c.unit_kg,
-          color: T.hueBlue,
-          bg: T.hueBlue50,
-        ),
-      if (checkIn.reportsPain)
-        _Reading(
-          metric: CheckInMetric.pain,
-          icon: LucideIcons.zap,
-          label: s.strings.profile.m_pain,
-          value: '${checkIn.painLevel.value}/10',
-          unit: '',
-          color: T.danger,
-          bg: T.dangerBg,
-        ),
-    ];
-    final moodReading = mood == null
-        ? null
-        : _Reading(
+    final moods = [
+      for (final ci in _shown)
+        if (ci.mood case final mood?)
+          _Reading(
+            checkIn: ci,
+            time: timeOf(ci),
             metric: CheckInMetric.mood,
             icon: LucideIcons.smile,
             label: s.strings.profile.m_mood,
@@ -259,43 +251,50 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
             unit: '',
             color: T.fg1,
             bg: T.ink50,
-          );
-    final symptoms = checkIn.symptoms.isEmpty
-        ? null
-        : _Reading(
+          ),
+    ];
+    final rows = [for (final ci in _shown) ..._metricRows(s, ci, timeOf(ci))];
+    final symptoms = [
+      for (final ci in _shown)
+        if (ci.symptoms.isNotEmpty)
+          _Reading(
+            checkIn: ci,
+            time: timeOf(ci),
             metric: CheckInMetric.symptoms,
             icon: LucideIcons.stethoscope,
-            label: c.symptoms_n('${checkIn.symptoms.length}'),
+            label: c.symptoms_n('${ci.symptoms.length}'),
             value: '',
             unit: '',
             color: const Color(0xFF9A6E00),
             bg: const Color(0xFFFDF5DC),
-          );
-    final all = [if (moodReading != null) moodReading, ...rows, if (symptoms != null) symptoms];
-    final allOn = all.isNotEmpty && all.every((r) => _selected.contains(r.metric));
+          ),
+    ];
+    final all = [...moods, ...rows, ...symptoms];
+    final allOn = all.isNotEmpty && all.every((r) => _selected.contains(r.key));
+    final empty = _shown.every((ci) => ci.isEmpty);
     final toast = _toast;
 
-    void ask(List<_Reading> rs) => _askDelete(rs, day: day, time: time);
+    void ask(List<_Reading> rs) => _askDelete(rs, day: day);
 
     Widget swipe(_Reading r, {double radius = 0, required Widget child}) => _SwipeRow(
-          open: _open == r.metric,
+          open: _open == r.key,
           radius: radius,
           deleteLabel: c.rec_delete_short,
           selecting: _selecting,
-          selected: _selected.contains(r.metric),
+          selected: _selected.contains(r.key),
           label: r.label,
-          onOpen: () => setState(() => _open = r.metric),
-          onClose: () => setState(() => _open = _open == r.metric ? null : _open),
+          onOpen: () => setState(() => _open = r.key),
+          onClose: () => setState(() => _open = _open == r.key ? null : _open),
           onDelete: () => ask([r]),
-          onLongPress: () => _startSelect(r.metric),
-          onToggle: () => _toggle(r.metric),
+          onLongPress: () => _startSelect(r.key),
+          onToggle: () => _toggle(r.key),
           child: child,
         );
 
     Widget lead(_Reading r) => _selecting
         ? Padding(
             padding: const EdgeInsetsDirectional.only(end: 10),
-            child: _Check(on: _selected.contains(r.metric)),
+            child: _Check(on: _selected.contains(r.key)),
           )
         : const SizedBox.shrink();
 
@@ -355,17 +354,17 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                             if (allOn) {
                               _selected.clear();
                             } else {
-                              _selected.addAll(all.map((r) => r.metric));
+                              _selected.addAll(all.map((r) => r.key));
                             }
                           })),
                 ]),
               Expanded(
                 child: ListView(padding: EdgeInsets.zero, children: [
-                  if (moodReading != null)
+                  for (final m in moods)
                     Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 16),
+                      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 12),
                       child: swipe(
-                        moodReading,
+                        m,
                         radius: T.rLg,
                         child: Container(
                           padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 8, 16),
@@ -380,22 +379,24 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                             ),
                           ),
                           child: Row(children: [
-                            lead(moodReading),
-                            MoodFace(level: mood!.score, size: 40, color: moodColors[mood.score - 1]),
+                            lead(m),
+                            MoodFace(
+                                level: m.checkIn.mood!.score, size: 40, color: moodColors[m.checkIn.mood!.score - 1]),
                             const SizedBox(width: 14),
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(moodReading.value,
+                                Text(m.value,
                                     style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                                 const SizedBox(height: 2),
-                                _TimeMeta(time: time, prefix: '${moodReading.label} · '),
+                                _TimeMeta(time: m.time, prefix: '${m.label} · '),
                               ]),
                             ),
-                            more(moodReading),
+                            more(m),
                           ]),
                         ),
                       ),
                     ),
+                  if (moods.isNotEmpty) const SizedBox(height: 4),
                   if (rows.isNotEmpty)
                     PCard(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -409,7 +410,6 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                                     child: _MetricLine(
                                       row: e.$2,
                                       last: e.$1 == rows.length - 1,
-                                      time: time,
                                       lead: lead(e.$2),
                                       trail: more(e.$2),
                                     ),
@@ -418,55 +418,61 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                         ),
                       ),
                     ),
-                  if (symptoms != null)
+                  for (final sym in symptoms)
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
                       child: swipe(
-                        symptoms,
+                        sym,
                         radius: T.rLg,
                         child: PCard(
                           flat: true,
                           padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
                           child: Row(children: [
-                            lead(symptoms),
-                            IconSquare(symptoms.icon,
-                                bg: symptoms.bg, fg: symptoms.color, size: 38, iconSize: 19, radius: T.rMd),
+                            lead(sym),
+                            IconSquare(sym.icon, bg: sym.bg, fg: sym.color, size: 38, iconSize: 19, radius: T.rMd),
                             const SizedBox(width: 13),
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(symptoms.label,
+                                Text(sym.label,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
                                 const SizedBox(height: 2),
-                                _TimeMeta(time: time),
+                                _TimeMeta(time: sym.time),
                               ]),
                             ),
-                            more(symptoms),
+                            more(sym),
                           ]),
                         ),
                       ),
                     ),
-                  // Where it hurt — the body map as the patient marked it.
-                  if (checkIn.painSites.isNotEmpty)
-                    PCard(
-                      margin: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        Text(c.body_marked,
-                            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                        const SizedBox(height: 12),
-                        BodyMapPreview(sites: checkIn.painSites),
-                      ]),
-                    ),
-                  // The check-in's photo (records-vault back-reference) — design
-                  // DayRecordsScreen renders attachments inline with the readings.
-                  if (checkIn.photoRecordId != null && !checkIn.isEmpty)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                      child: RecordAttachmentThumb(recordId: checkIn.photoRecordId!, height: 160),
-                    ),
-                  if (checkIn.isEmpty) _EmptyDay(text: c.day_empty),
+                  for (final ci in _shown) ...[
+                    // Where it hurt — the body map as the patient marked it.
+                    if (ci.painSites.isNotEmpty)
+                      PCard(
+                        margin: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                          Row(children: [
+                            Expanded(
+                              child: Text(c.body_marked,
+                                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                            ),
+                            _TimeMeta(time: timeOf(ci)),
+                          ]),
+                          const SizedBox(height: 12),
+                          BodyMapPreview(sites: ci.painSites),
+                        ]),
+                      ),
+                    // The check-in's photo (records-vault back-reference) — design
+                    // DayRecordsScreen renders attachments inline with the readings.
+                    if (ci.photoRecordId != null && !ci.isEmpty)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                        child: RecordAttachmentThumb(recordId: ci.photoRecordId!, height: 160),
+                      ),
+                  ],
+                  if (empty) _EmptyDay(text: c.day_empty),
                   // Room for the toast and the selection bar over the last row.
                   const SizedBox(height: 112),
                 ]),
@@ -479,8 +485,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
                 bottom: 0,
                 child: _SelectionBar(
                   label: _selected.isEmpty ? c.rec_delete_short : c.rec_delete_n(c.rec_count(_selected.length)),
-                  onDelete:
-                      _selected.isEmpty ? null : () => ask(all.where((r) => _selected.contains(r.metric)).toList()),
+                  onDelete: _selected.isEmpty ? null : () => ask(all.where((r) => _selected.contains(r.key)).toList()),
                 ),
               ),
             if (toast != null)
@@ -502,6 +507,8 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> {
 /// One deletable reading as the day screen shows it.
 class _Reading {
   const _Reading({
+    required this.checkIn,
+    required this.time,
     required this.metric,
     required this.icon,
     required this.label,
@@ -510,6 +517,10 @@ class _Reading {
     required this.color,
     required this.bg,
   });
+
+  /// The check-in it was logged in, and that check-in's clock time.
+  final CheckIn checkIn;
+  final String time;
   final CheckInMetric metric;
   final IconData icon;
   final String label;
@@ -517,6 +528,8 @@ class _Reading {
   final String unit;
   final Color color;
   final Color bg;
+
+  _Key get key => (checkIn.id, metric);
 }
 
 /// Design `SwipeRow`: dragging toward the start edge reveals Delete; a swipe
@@ -666,11 +679,9 @@ class _Check extends StatelessWidget {
 }
 
 class _MetricLine extends StatelessWidget {
-  const _MetricLine(
-      {required this.row, required this.last, required this.time, required this.lead, required this.trail});
+  const _MetricLine({required this.row, required this.last, required this.lead, required this.trail});
   final _Reading row;
   final bool last;
-  final String time;
   final Widget lead;
   final Widget trail;
 
@@ -694,7 +705,7 @@ class _MetricLine extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
             const SizedBox(height: 2),
-            _TimeMeta(time: time),
+            _TimeMeta(time: row.time),
           ]),
         ),
         const SizedBox(width: 10),
