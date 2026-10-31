@@ -660,8 +660,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           large: true,
                           block: true,
                           ar: s.rtl,
-                          onTap: () => _launch(
-                              'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(e.name.en)}')),
+                          onTap: () => _launch(careDirectionsUrl(e))),
                     ),
                   ]),
                 ]),
