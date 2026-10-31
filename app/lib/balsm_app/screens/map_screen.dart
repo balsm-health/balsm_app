@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:fluster/fluster.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path;
@@ -670,9 +671,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ]),
       );
 
+  /// Hands a facility's map link or number to whatever app handles it.
+  ///
+  /// No `canLaunchUrl` gate. It asks Android which apps handle the link, and
+  /// from Android 11 the answer is filtered to apps the manifest declares in
+  /// `<queries>` — this one declares no `https:` handler, so the answer was
+  /// "none" and every Directions tap was dropped without a word (logcat:
+  /// `component name for https://… is null`). Launching is not filtered, only
+  /// asking, which is why the care-team screen, launching without asking, was
+  /// never affected. `launchUrl` returns false when nothing can open it.
   Future<void> _launch(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } on PlatformException {
+      // No handler on this phone. Nothing about the destination is logged.
+    }
   }
 
   // ── Small pieces ──────────────────────────────────────────
