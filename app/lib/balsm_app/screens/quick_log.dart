@@ -499,7 +499,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       _searchField(),
       if (showCta) ...[
         _fullCheckinCta(),
-        if (filtered.isNotEmpty) _labelledRule(s.strings.checkin.quick_log_or, top: 0, bottom: 10),
+        if (filtered.isNotEmpty) _labelledRule(s.strings.checkin.quick_log_or(s.gender), top: 0, bottom: 10),
       ],
       if (empty)
         _noResults()
@@ -632,7 +632,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   Widget _documentsGroup(List<RecordType> types) => Padding(
         padding: const EdgeInsetsDirectional.only(bottom: 16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _groupLabel(s.strings.checkin.ql_add_document),
+          _groupLabel(s.strings.checkin.ql_add_document(s.gender)),
           _recordRow(types),
         ]),
       );

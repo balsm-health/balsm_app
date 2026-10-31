@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:core/core.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/widgets/attachment_thumb.dart';
@@ -50,13 +51,13 @@ void main() {
   testWidgets('an empty care team invites the first entry, with no search', (tester) async {
     final s = await pump(tester, const []);
     expect(find.text(s.strings.care.care_empty), findsOne);
-    expect(find.text(s.strings.care.care_add_help), findsOne);
+    expect(find.text(s.strings.care.care_add_help(Gender.other)), findsOne);
     // Nothing to search or filter yet.
     expect(find.byType(TextField), findsNothing);
     expect(find.text(s.strings.care.care_all), findsNothing);
     // The way in is always offered — the FAB, which now opens the phone's
     // contacts rather than the blank form.
-    expect(find.bySemanticsLabel(s.strings.care.care_import_fab), findsOne);
+    expect(find.bySemanticsLabel(s.strings.care.care_import_fab(Gender.other)), findsOne);
   });
 
   testWidgets('one provider type needs no filter row', (tester) async {
@@ -107,7 +108,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'zzz');
     await tester.pumpAndSettle();
     expect(find.text(s.strings.care.care_no_match), findsOne);
-    expect(find.text(s.strings.care.care_no_match_h), findsOne);
+    expect(find.text(s.strings.care.care_no_match_h(Gender.other)), findsOne);
     // The team is not empty, so the "add your first" card must not appear.
     expect(find.text(s.strings.care.care_empty), findsNothing);
   });

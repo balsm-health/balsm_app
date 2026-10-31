@@ -473,7 +473,9 @@ class _EmptyState extends StatelessWidget {
               style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
           const SizedBox(height: 8),
           Text(
-            filtering ? (query.isNotEmpty ? '${r.rec_no_results_h} "$query"' : r.rec_no_results_h2) : r.rec_empty_h,
+            filtering
+                ? (query.isNotEmpty ? '${r.rec_no_results_h} "$query"' : r.rec_no_results_h2)
+                : r.rec_empty_h(s.gender),
             textAlign: TextAlign.center,
             style: Typo.meta(ar: s.rtl),
           ),

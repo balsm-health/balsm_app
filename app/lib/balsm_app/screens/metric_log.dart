@@ -280,7 +280,7 @@ class _NoteField extends StatelessWidget {
         textDirection: s.dir,
         style: Typo.body(ar: ar).copyWith(color: T.fg1),
         decoration: InputDecoration(
-          hintText: s.strings.checkin.note_ph,
+          hintText: s.strings.checkin.note_ph(s.gender),
           hintStyle: Typo.body(ar: ar).copyWith(color: T.fg4),
           filled: true,
           fillColor: Colors.white,
@@ -323,7 +323,7 @@ class _FlowSubmit extends StatelessWidget {
         if (!valid)
           Padding(
             padding: const EdgeInsetsDirectional.only(top: 8),
-            child: Text(s.strings.checkin.ql_save_hint,
+            child: Text(s.strings.checkin.ql_save_hint(s.gender),
                 textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(color: T.fg3)),
           ),
         const SizedBox(height: 10),
@@ -1011,7 +1011,7 @@ class _PulseLogState extends State<_PulseLog> with _MetricLogState {
         child: Column(children: [
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 300),
-            child: Text(running ? c.pulse_keep : c.pulse_how,
+            child: Text(running ? c.pulse_keep : c.pulse_how(s.gender),
                 textAlign: TextAlign.center, style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.5)),
           ),
           const SizedBox(height: 14),
@@ -1044,7 +1044,7 @@ class _PulseLogState extends State<_PulseLog> with _MetricLogState {
                     Text('$beats',
                         style: Typo.num(size: 44, weight: FontWeight.w800, color: T.fg1).copyWith(height: 1)),
                     const SizedBox(height: 4),
-                    Text(running ? c.pulse_left('$left') : c.pulse_start,
+                    Text(running ? c.pulse_left('$left') : c.pulse_start(s.gender),
                         style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
                   ]),
                 ]),

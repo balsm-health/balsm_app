@@ -69,7 +69,7 @@ void main() {
     // Two outbound pages (providers, contributors) carry the external mark.
     expect(find.byIcon(LucideIcons.externalLink), findsNWidgets(2));
     // Feedback stays in-app, so it keeps the chevron.
-    expect(find.text(e.eco_a2h), findsOne);
+    expect(find.text(e.eco_a2h(Gender.other)), findsOne);
     // The share row's own trailing mark.
     expect(find.byIcon(LucideIcons.share), findsOne);
   });

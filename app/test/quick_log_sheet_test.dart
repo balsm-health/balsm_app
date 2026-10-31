@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:core/core.dart';
 import 'package:app/balsm_app/screens/metric_log.dart';
 import 'package:app/balsm_app/screens/quick_log.dart';
 import 'package:app/balsm_app/kit.dart';
@@ -49,12 +50,12 @@ void main() {
     expect(find.byIcon(LucideIcons.x), findsNothing);
     expect(saveBtn(tester).onTap, isNull);
     expect(find.text(s.strings.checkin.ql_save), findsOneWidget);
-    expect(find.text(s.strings.checkin.ql_save_hint), findsOneWidget);
+    expect(find.text(s.strings.checkin.ql_save_hint(Gender.other)), findsOneWidget);
     expect(find.text(s.strings.common.cancel), findsOneWidget);
 
     await pickMood(tester);
     expect(saveBtn(tester).onTap, isNotNull);
-    expect(find.text(s.strings.checkin.ql_save_hint), findsNothing);
+    expect(find.text(s.strings.checkin.ql_save_hint(Gender.other)), findsNothing);
   });
 
   testWidgets('system back steps out of a flow, then closes the sheet', (tester) async {
@@ -171,7 +172,7 @@ void main() {
   testWidgets('documents sit in their own group, between Vitals and Wellbeing', (tester) async {
     await openList(tester);
     final c = s.strings.checkin;
-    final docs = top(tester, c.ql_add_document.toUpperCase());
+    final docs = top(tester, c.ql_add_document(Gender.other).toUpperCase());
     expect(docs, greaterThan(top(tester, s.strings.profile.m_weight)));
     expect(docs, lessThan(top(tester, c.ql_wellbeing.toUpperCase())));
   });
@@ -182,7 +183,7 @@ void main() {
     await tester.enterText(find.byType(TextField), s.strings.records.rec_scan_one);
     await tester.pumpAndSettle();
     expect(find.text(s.strings.checkin.ql_vitals.toUpperCase()), findsNothing);
-    expect(find.text(s.strings.checkin.ql_add_document.toUpperCase()), findsOneWidget);
+    expect(find.text(s.strings.checkin.ql_add_document(Gender.other).toUpperCase()), findsOneWidget);
     // The search field and the tile.
     expect(find.text(s.strings.records.rec_scan_one), findsNWidgets(2));
   });

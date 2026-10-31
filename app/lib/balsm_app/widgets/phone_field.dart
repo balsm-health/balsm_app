@@ -292,7 +292,8 @@ class _DialCodeSheetState extends State<_DialCodeSheet> {
             padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
             child: Row(children: [
               Expanded(
-                child: Text(c.ph_country, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                child:
+                    Text(c.ph_country(s.gender), style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
               ),
               RoundBtn(
                   icon: LucideIcons.x,

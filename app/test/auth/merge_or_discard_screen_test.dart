@@ -139,14 +139,14 @@ void main() {
 
     await tester.tap(find.text(st.merge_btn));
     await tester.pumpAndSettle();
-    expect(find.text(st.merge_failed), findsOneWidget);
+    expect(find.text(st.merge_failed(Gender.other)), findsOneWidget);
     expect(state.route, AppRoutes.mergeOrDiscard);
     expect(state.accountMode, AccountMode.deviceOnly);
 
     when(() => controller.merge()).thenThrow(Exception('keychain'));
     await tester.tap(find.text(st.merge_btn));
     await tester.pumpAndSettle();
-    expect(find.text(st.merge_failed), findsOneWidget);
+    expect(find.text(st.merge_failed(Gender.other)), findsOneWidget);
     expect(find.textContaining('keychain'), findsNothing);
   });
 
@@ -170,7 +170,7 @@ void main() {
     when(() => controller.pendingChoice()).thenAnswer((_) async => MergeChoice.merge);
     await tester.tap(find.text(st.merge_btn));
     await tester.pumpAndSettle();
-    expect(find.text(st.merge_failed), findsOneWidget);
+    expect(find.text(st.merge_failed(Gender.other)), findsOneWidget);
     expect(find.text(st.merge_btn), findsOneWidget);
     expect(find.text(st.discard_btn), findsNothing);
   });

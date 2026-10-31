@@ -131,14 +131,14 @@ class _EcosystemSheetState extends State<_EcosystemSheet> {
     final actions = <({IconData icon, String head, String body, VoidCallback? onTap, _RowAffordance kind})>[
       (
         icon: LucideIcons.share2,
-        head: e.eco_a1h,
+        head: e.eco_a1h(s.gender),
         body: e.eco_a1b,
         onTap: _shareApp,
         kind: _RowAffordance.share,
       ),
       (
         icon: LucideIcons.messageSquare,
-        head: e.eco_a2h,
+        head: e.eco_a2h(s.gender),
         body: e.eco_a2b,
         onTap: () {
           Navigator.of(context).pop();

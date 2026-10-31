@@ -182,7 +182,7 @@ class _AddPrescriptionSheetState extends ConsumerState<AddPrescriptionSheet> {
         url: _url.text,
         onAttach: (a) => setState(() => _attach = a),
         onUrl: (v) => setState(() => _url.text = v),
-        orPasteLabel: m.rx_or_paste_url,
+        orPasteLabel: m.rx_or_paste_url(s.gender),
         urlHint: m.rx_url_ph,
       ),
       const SizedBox(height: 18),

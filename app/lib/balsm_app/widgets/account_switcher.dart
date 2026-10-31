@@ -413,7 +413,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
 
   List<Widget> _body(dynamic c) => switch (_mode) {
         _AddMode.choose => [
-            _chooseCard(c.fam_scan_qr, c.fam_scan_qr_sub, LucideIcons.qrCode,
+            _chooseCard(c.fam_scan_qr(s.gender), c.fam_scan_qr_sub, LucideIcons.qrCode,
                 accent: true, onTap: () => setState(() => _mode = _AddMode.scan)),
             const SizedBox(height: 10),
             _chooseCard(c.fam_manual, c.fam_manual_sub, LucideIcons.pencilLine,
@@ -529,7 +529,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
           },
           child: InputDecorator(
             decoration: _dec(s, null),
-            child: Text(_relation.isEmpty ? c.select_relation : _relation,
+            child: Text(_relation.isEmpty ? c.select_relation(s.gender) : _relation,
                 style: Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? T.fg4 : T.fg1)),
           ),
         ),
@@ -629,7 +629,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
       },
       child: InputDecorator(
         decoration: _dec(s, null),
-        child: Text(_relation.isEmpty ? c.select_relation : _relation,
+        child: Text(_relation.isEmpty ? c.select_relation(s.gender) : _relation,
             style: Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? T.fg4 : T.fg1)),
       ),
     );

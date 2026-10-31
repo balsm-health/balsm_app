@@ -982,7 +982,7 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      if (!ok) _error = s.strings.offline.merge_failed;
+      if (!ok) _error = s.strings.offline.merge_failed(s.gender);
     });
   }
 
@@ -1157,7 +1157,7 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
     unawaited(HapticFeedback.heavyImpact());
     setState(() {
       _busy = false;
-      _error = s.strings.offline.merge_failed;
+      _error = s.strings.offline.merge_failed(s.gender);
     });
     await _loadStarted();
   }
@@ -1180,7 +1180,7 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Semantics(header: true, child: Text(st.merge_title, style: Typo.title(ar: s.rtl))),
                 const SizedBox(height: 8),
-                Text(st.merge_help, style: Typo.body(ar: s.rtl)),
+                Text(st.merge_help(s.gender), style: Typo.body(ar: s.rtl)),
                 const SizedBox(height: 24),
                 _DeviceOnlyWarning(text: st.merge_note, ar: s.rtl),
               ]),

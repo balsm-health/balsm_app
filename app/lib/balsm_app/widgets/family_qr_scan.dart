@@ -93,7 +93,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
     final payload = resolved?.payload;
     if (payload == null) {
       setState(() => _busy = false);
-      _note(s.strings.common.fam_scan_failed);
+      _note(s.strings.common.fam_scan_failed(s.gender));
       return;
     }
     setState(() => _found = true);
@@ -123,7 +123,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      s.strings.common.fam_scan_failed,
+                      s.strings.common.fam_scan_failed(s.gender),
                       textAlign: TextAlign.center,
                       style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white70),
                     ),

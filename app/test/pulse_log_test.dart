@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:core/core.dart';
 import 'package:app/balsm_app/screens/metric_log.dart';
 import 'package:app/balsm_app/widgets/num_pad.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,7 +69,7 @@ void main() {
     await pump(tester);
     await tester.tap(find.text(s.strings.checkin.pulse_count));
     await tester.pumpAndSettle();
-    expect(find.text(s.strings.checkin.pulse_start), findsOneWidget);
+    expect(find.text(s.strings.checkin.pulse_start(Gender.other)), findsOneWidget);
 
     final circle = find.byIcon(LucideIcons.heart);
     for (var i = 0; i < 18; i++) {

@@ -230,7 +230,8 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
             if (userId == null)
               _EmptyState(s: s, text: s.strings.meds.meds_signin_help)
             else if (doses.isEmpty)
-              _EmptyState(s: s, text: medCount == 0 ? s.strings.meds.meds_empty_help : s.strings.meds.meds_none_today)
+              _EmptyState(
+                  s: s, text: medCount == 0 ? s.strings.meds.meds_empty_help(s.gender) : s.strings.meds.meds_none_today)
             else
               for (final (key, icon, list) in groups) ...[
                 if (list.isNotEmpty) ...[

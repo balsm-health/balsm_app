@@ -88,9 +88,9 @@ void main() {
       // `home.jsx` swapped the full-width dashed "Add a care provider" button
       // for a FAB, and then pointed that FAB at the phone's contacts.
       expect(find.byIcon(LucideIcons.userPlus), findsOne);
-      expect(find.bySemanticsLabel(s.strings.care.care_import_fab), findsOne);
-      expect(find.widgetWithText(DashedBorder, s.strings.care.care_add), findsNothing);
-      expect(find.text(s.strings.care.care_add), findsNothing, reason: 'the dashed row is gone');
+      expect(find.bySemanticsLabel(s.strings.care.care_import_fab(Gender.other)), findsOne);
+      expect(find.widgetWithText(DashedBorder, s.strings.care.care_add(Gender.other)), findsNothing);
+      expect(find.text(s.strings.care.care_add(Gender.other)), findsNothing, reason: 'the dashed row is gone');
       // The standalone "From contacts" button went with it: one entry point.
       expect(find.text(s.strings.care.care_import), findsNothing);
     });
@@ -118,7 +118,7 @@ void main() {
       await tester.pumpAndSettle();
       // The import sheet's own escape hatch is the only route to the blank
       // form now that the FAB is the picker.
-      await tester.tap(find.text(s.strings.care.care_import_manual));
+      await tester.tap(find.text(s.strings.care.care_import_manual(Gender.other)));
       await tester.pumpAndSettle();
       expect(find.text(s.strings.care.care_add_title), findsOne);
     });
@@ -262,7 +262,7 @@ void main() {
       await tester.tap(find.byIcon(LucideIcons.userPlus));
       await tester.pumpAndSettle();
       final c = s.strings.care;
-      await tester.tap(find.text(c.care_import_manual));
+      await tester.tap(find.text(c.care_import_manual(Gender.other)));
       await tester.pumpAndSettle();
       expect(find.text(c.care_add_title), findsOne);
       expect(find.text(c.care_save), findsOne);

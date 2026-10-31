@@ -191,7 +191,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final (message, settings) = switch (issue) {
       DeviceLocationIssue.serviceOff => (c.loc_off, Geolocator.openLocationSettings),
       DeviceLocationIssue.denied || DeviceLocationIssue.deniedForever => (c.loc_denied, Geolocator.openAppSettings),
-      _ => (c.loc_unavailable, null),
+      _ => (c.loc_unavailable(AppScope.of(context).gender), null),
     };
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
       content: Text(message),

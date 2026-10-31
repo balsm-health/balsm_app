@@ -624,7 +624,7 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
             ),
             const SizedBox(height: 8),
           ],
-          _input(s, _tagDraft, r.rec_tags_ph, onSubmitted: (v) {
+          _input(s, _tagDraft, r.rec_tags_ph(s.gender), onSubmitted: (v) {
             final t = v.trim();
             if (t.isEmpty || _tags.contains(t)) return;
             setState(() {

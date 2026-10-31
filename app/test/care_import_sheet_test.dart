@@ -103,7 +103,7 @@ void main() {
     await tester.tap(find.text('Dr. Sara Kamal'));
     await tester.pumpAndSettle();
     // Nothing ticked: the primary button says so rather than lying about zero.
-    expect(find.text(s.strings.care.care_import_none), findsOne);
+    expect(find.text(s.strings.care.care_import_none(Gender.other)), findsOne);
   });
 
   testWidgets('a contact already on the team is shown as such, not offered again', (tester) async {
@@ -117,7 +117,7 @@ void main() {
     );
 
     expect(find.text(s.strings.care.care_import_on_team), findsOne);
-    expect(find.text(s.strings.care.care_import_none), findsOne);
+    expect(find.text(s.strings.care.care_import_none(Gender.other)), findsOne);
   });
 
   testWidgets('a cancelled pick leaves the empty card, not a blank sheet', (tester) async {
@@ -132,7 +132,7 @@ void main() {
 
     expect(find.text(s.strings.care.care_import_unavailable), findsOne);
     expect(find.text(s.strings.care.care_import_pick), findsNothing);
-    expect(find.text(s.strings.care.care_import_manual), findsOne);
+    expect(find.text(s.strings.care.care_import_manual(Gender.other)), findsOne);
   });
 
   testWidgets('the count eyebrow says how many rows are listed', (tester) async {
@@ -155,7 +155,7 @@ void main() {
 
     await tester.tap(find.text(s.strings.care.care_import_clear));
     await tester.pumpAndSettle();
-    expect(find.text(s.strings.care.care_import_none), findsOne);
+    expect(find.text(s.strings.care.care_import_none(Gender.other)), findsOne);
     expect(find.text(s.strings.care.care_import_select_all), findsOne);
 
     await tester.tap(find.text(s.strings.care.care_import_select_all));
@@ -178,7 +178,7 @@ void main() {
 
     await tester.tap(find.text(s.strings.care.care_import_clear));
     await tester.pumpAndSettle();
-    expect(find.text(s.strings.care.care_import_none), findsOne);
+    expect(find.text(s.strings.care.care_import_none(Gender.other)), findsOne);
 
     await tester.tap(find.text(s.strings.care.care_import_select_all));
     await tester.pumpAndSettle();

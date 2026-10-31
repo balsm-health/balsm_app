@@ -189,7 +189,7 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text(
-                  picker.isAvailable ? c.care_import_note : c.care_import_unavailable,
+                  picker.isAvailable ? c.care_import_note(s.gender) : c.care_import_unavailable,
                   style: Typo.meta(ar: s.rtl).copyWith(height: 1.5),
                 ),
                 const SizedBox(height: 14),
@@ -275,7 +275,7 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
             padding: EdgeInsets.fromLTRB(20, 12, 20, sheetBottomInset(context, base: 28)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               PButton(
-                count == 0 ? c.care_import_none : c.care_import_cta('$count'),
+                count == 0 ? c.care_import_none(s.gender) : c.care_import_cta('$count'),
                 variant: BtnVariant.primary,
                 large: true,
                 block: true,
@@ -285,7 +285,7 @@ class _CareImportSheetState extends ConsumerState<CareImportSheet> {
               ),
               const SizedBox(height: 6),
               PButton(
-                c.care_import_manual,
+                c.care_import_manual(s.gender),
                 icon: LucideIcons.pencilLine,
                 variant: BtnVariant.ghost,
                 block: true,
@@ -370,7 +370,7 @@ class _EmptyPick extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          c.care_import_empty_h,
+          c.care_import_empty_h(s.gender),
           textAlign: TextAlign.center,
           style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5),
         ),

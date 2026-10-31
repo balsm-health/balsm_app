@@ -209,7 +209,7 @@ class MedPlanCard extends StatelessWidget {
           ]),
           if (d.freqType == 'other') ...[
             const SizedBox(height: 8),
-            _Input(controller: d.freqOther, hint: m.freq_other_ph, onChanged: onChanged),
+            _Input(controller: d.freqOther, hint: m.freq_other_ph(s.gender), onChanged: onChanged),
           ],
           const SizedBox(height: 12),
           _FieldLabel(m.rx_duration),
@@ -242,7 +242,7 @@ class MedPlanCard extends StatelessWidget {
           ],
           if (d.durType == 'other') ...[
             const SizedBox(height: 8),
-            _Input(controller: d.durOther, hint: m.dur_other_ph, onChanged: onChanged),
+            _Input(controller: d.durOther, hint: m.dur_other_ph(s.gender), onChanged: onChanged),
           ],
           const SizedBox(height: 14),
           _Timing(draft: d, onChanged: onChanged),

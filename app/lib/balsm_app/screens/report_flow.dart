@@ -399,11 +399,11 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   (String, String) _question(CheckInMetric metric) {
     final c = s.strings.checkin;
     return switch (metric) {
-      CheckInMetric.mood => (c.q_mood_t(s.gender), c.q_mood_h),
-      CheckInMetric.bloodPressure => (c.q_bp_t, c.q_bp_h),
-      CheckInMetric.glucose => (c.q_glu_t, c.q_glu_h),
+      CheckInMetric.mood => (c.q_mood_t(s.gender), c.q_mood_h(s.gender)),
+      CheckInMetric.bloodPressure => (c.q_bp_t, c.q_bp_h(s.gender)),
+      CheckInMetric.glucose => (c.q_glu_t, c.q_glu_h(s.gender)),
       CheckInMetric.pain || CheckInMetric.symptoms => (c.q_sym_t, c.q_sym_h(s.gender)),
-      _ => (c.q_vitals_t, c.q_vitals_h),
+      _ => (c.q_vitals_t, c.q_vitals_h(s.gender)),
     };
   }
 
@@ -417,7 +417,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   Widget _stepBody(String id) {
     if (id == kMedsCheckInStepId) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h),
+        _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h(s.gender)),
         ..._meds.map(_medCheck),
       ]);
     }

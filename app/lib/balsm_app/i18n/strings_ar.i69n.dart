@@ -349,7 +349,10 @@ class CareStrings_ar extends CareStrings {
   const CareStrings_ar(this._parent) : super(_parent);
   String get loc_off => "خدمة الموقع متوقفة على هذا الهاتف.";
   String get loc_denied => "لا يملك بلسم إذن استخدام موقعك.";
-  String get loc_unavailable => "تعذّر تحديد موقعك. حاول مرة أخرى في مكان مفتوح.";
+  String loc_unavailable(Gender gender) => "${_select(gender, {
+            'female': 'تعذّر تحديد موقعك. حاولي مرة أخرى في مكان مفتوح.',
+            'other': 'تعذّر تحديد موقعك. حاول مرة أخرى في مكان مفتوح.'
+          })}";
   String get loc_settings => "الإعدادات";
   String get map_sub => "مكان بالقرب منك";
   String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
@@ -375,35 +378,54 @@ class CareStrings_ar extends CareStrings {
   String map_n_types(String n) => "$n أنواع";
   String get map_clear => "مسح البحث";
   String get care_empty => "لا يوجد فريق رعاية بعد";
-  String get care_add_help =>
-      "أضف الأطباء والصيدليات ومقدّمي الرعاية الذين تتعامل معهم. كل ما تضيفه يبقى على هذا الجهاز.";
+  String care_add_help(Gender gender) => "${_select(gender, {
+            'female':
+                'أضيفي الأطباء والصيدليات ومقدّمي الرعاية الذين تتعاملين معهم. كل ما تضيفينه يبقى على هذا الجهاز.',
+            'other': 'أضف الأطباء والصيدليات ومقدّمي الرعاية الذين تتعامل معهم. كل ما تضيفه يبقى على هذا الجهاز.'
+          })}";
   String get care_search_ph => "ابحث بالاسم أو التخصص أو العيادة";
   String get care_all => "الكل";
   String get care_no_match => "لا توجد نتائج";
-  String get care_no_match_h => "جرّب اسمًا آخر، أو أضف مقدّم الرعاية بنفسك.";
+  String care_no_match_h(Gender gender) => "${_select(gender, {
+            'female': 'جرّبي اسمًا آخر، أو أضيفي مقدّم الرعاية بنفسك.',
+            'other': 'جرّب اسمًا آخر، أو أضف مقدّم الرعاية بنفسك.'
+          })}";
   String get care_import => "من جهات الاتصال";
   String get care_import_title => "مراجعة جهات الاتصال";
-  String get care_import_note =>
-      "راجع النوع لكل جهة اتصال، ثم أضفها. تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت هذا الهاتف.";
+  String care_import_note(Gender gender) => "${_select(gender, {
+            'female':
+                'راجعي النوع لكل جهة اتصال، ثم أضيفيها. تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدتِ هذا الهاتف.',
+            'other':
+                'راجع النوع لكل جهة اتصال، ثم أضفها. تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت هذا الهاتف.'
+          })}";
   String get care_import_pick => "الاختيار من جهات الاتصال";
   String get care_import_more => "اختيار المزيد من جهات الاتصال";
   String get care_import_empty => "لم تختر جهات اتصال بعد.";
-  String get care_import_empty_h => "افتح جهات اتصال هاتفك لاختيار من يرعاك.";
+  String care_import_empty_h(Gender gender) => "${_select(gender, {
+            'female': 'افتحي جهات اتصال هاتفك لاختيار من يرعاك.',
+            'other': 'افتح جهات اتصال هاتفك لاختيار من يرعاك.'
+          })}";
   String get care_import_search => "ابحث في جهات الاتصال";
   String care_import_count(String n) => "جهات الاتصال · $n";
   String get care_import_select_all => "تحديد الكل";
   String get care_import_clear => "إلغاء التحديد";
   String get care_import_no_match => "لا توجد جهات اتصال مطابقة.";
   String get care_import_on_team => "في فريقك";
-  String get care_import_fab => "أضف من جهات الاتصال";
-  String care_import_banner(String n) => "أُضيف $n إلى فريق الرعاية. اضغط تعديل لإضافة التخصص والعنوان.";
-  String get care_import_manual => "ليس في جهات الاتصال؟ أضف يدويًا";
-  String get care_import_none => "اختر جهات اتصال";
+  String care_import_fab(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي من جهات الاتصال', 'other': 'أضف من جهات الاتصال'})}";
+  String care_import_banner(String n, Gender gender) => "${_select(gender, {
+            'female': 'أُضيف $n إلى فريق الرعاية. اضغطي تعديل لإضافة التخصص والعنوان.',
+            'other': 'أُضيف $n إلى فريق الرعاية. اضغط تعديل لإضافة التخصص والعنوان.'
+          })}";
+  String care_import_manual(Gender gender) =>
+      "${_select(gender, {'female': 'ليس في جهات الاتصال؟ أضيفي يدويًا', 'other': 'ليس في جهات الاتصال؟ أضف يدويًا'})}";
+  String care_import_none(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري جهات اتصال', 'other': 'اختر جهات اتصال'})}";
   String get care_import_unavailable => "جهات اتصال هاتفك غير متاحة هنا. يمكنك إضافة مقدّم رعاية يدويًا.";
   String care_import_cta(String n) => "إضافة $n إلى فريق الرعاية";
   String care_import_done(String n) => "تمت إضافة $n إلى فريق الرعاية";
   String care_import_skipped(String n) => "$n موجودون بالفعل في فريقك";
-  String get care_add => "أضف مقدّم رعاية";
+  String care_add(Gender gender) => "${_select(gender, {'female': 'أضيفي مقدّم رعاية', 'other': 'أضف مقدّم رعاية'})}";
   String get care_call => "اتصال";
   String get care_remove => "حذف";
   String get care_t_doctor => "طبيب";
@@ -441,7 +463,8 @@ class CareStrings_ar extends CareStrings {
   String get care_save => "حفظ";
   String get care_saved => "أُضيف إلى فريق الرعاية";
   String get care_removed => "أُزيل من فريق الرعاية";
-  String get care_save_failed => "تعذّر الحفظ. حاول مرة أخرى.";
+  String care_save_failed(Gender gender) =>
+      "${_select(gender, {'female': 'تعذّر الحفظ. حاولي مرة أخرى.', 'other': 'تعذّر الحفظ. حاول مرة أخرى.'})}";
   String get care_edit_title => "تعديل مقدّم الرعاية";
   String get care_save_changes => "حفظ التغييرات";
   String get care_edit => "تعديل";
@@ -463,7 +486,8 @@ class CareStrings_ar extends CareStrings {
   String get care_attach => "إرفاق";
   String get care_attach_empty => "أرفق بطاقة العمل أو صورة";
   String get care_attach_empty_h => "صور، فيديو أو PDF";
-  String get care_link_opens => "افتح الرابط على";
+  String care_link_opens(Gender gender) =>
+      "${_select(gender, {'female': 'افتحي الرابط على', 'other': 'افتح الرابط على'})}";
   String get care_link_remove => "إزالة الرابط إلى";
   String get care_attach_add => "إضافة";
   Object operator [](String key) {
@@ -721,23 +745,31 @@ class CheckinStrings_ar extends CheckinStrings {
   String get unit_kg => "كجم";
   String get bp_normal => "ضمن المعدل";
   String get bp_high => "أعلى قليلاً";
-  String get q_mood_h => "اختاري الوجه الأقرب لحالتك.";
-  String get mood_1 => "متعبة";
-  String get mood_2 => "ضعيفة";
-  String get mood_3 => "عادية";
-  String get mood_4 => "جيدة";
-  String get mood_5 => "ممتازة";
+  String q_mood_h(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري الوجه الأقرب لحالتك.', 'other': 'اختر الوجه الأقرب لحالتك.'})}";
+  String mood_1(Gender gender) => "${_select(gender, {'female': 'متعبة', 'other': 'متعب'})}";
+  String mood_2(Gender gender) => "${_select(gender, {'female': 'ضعيفة', 'other': 'ضعيف'})}";
+  String mood_3(Gender gender) => "${_select(gender, {'female': 'عادية', 'other': 'عادي'})}";
+  String mood_4(Gender gender) => "${_select(gender, {'female': 'جيدة', 'other': 'جيد'})}";
+  String mood_5(Gender gender) => "${_select(gender, {'female': 'ممتازة', 'other': 'ممتاز'})}";
   String get q_bp_t => "كم ضغط دمك؟";
-  String get q_bp_h => "اضغطي على الرقم ثم استخدمي لوحة الأرقام.";
+  String q_bp_h(Gender gender) => "${_select(gender, {
+            'female': 'اضغطي على الرقم ثم استخدمي لوحة الأرقام.',
+            'other': 'اضغط على الرقم ثم استخدم لوحة الأرقام.'
+          })}";
   String get sys => "الانقباضي";
   String get dia => "الانبساطي";
   String get q_glu_t => "وكم نسبة السكر؟";
-  String get q_glu_h => "أدخلي القراءة من جهاز قياس السكر.";
+  String q_glu_h(Gender gender) => "${_select(gender, {
+            'female': 'أدخلي القراءة من جهاز قياس السكر.',
+            'other': 'أدخل القراءة من جهاز قياس السكر.'
+          })}";
   String get glu_fast => "صائمة";
   String get glu_meal => "بعد الأكل";
   String get glu_random => "عشوائي";
   String get q_med_t => "هل أخذتِ أدويتك؟";
-  String get q_med_h => "اضغطي على كل دواء أخذتِه اليوم.";
+  String q_med_h(Gender gender) =>
+      "${_select(gender, {'female': 'اضغطي على كل دواء أخذتِه اليوم.', 'other': 'اضغط على كل دواء أخذته اليوم.'})}";
   String get q_sym_t => "هل لديك ألم أو أعراض؟";
   String get pain_0 => "لا ألم";
   String get pain_mild => "خفيف";
@@ -745,7 +777,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get pain_sev => "شديد";
   String get pain_worst => "الأسوأ";
   String get note_lbl => "أي شيء آخر؟ (اختياري)";
-  String get note_ph => "اكتبي ملاحظة لطبيبك…";
+  String note_ph(Gender gender) =>
+      "${_select(gender, {'female': 'اكتبي ملاحظة لطبيبك…', 'other': 'اكتب ملاحظة لطبيبك…'})}";
   String get s_none => "لا شيء";
   String get view_trends => "عرض الرسوم";
   String get trends => "الرسوم البيانية";
@@ -764,13 +797,17 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_no_results => "لا توجد نتائج";
   String get ql_vitals => "العلامات الحيوية";
   String get ql_wellbeing => "الحالة العامة";
-  String get ql_add_document => "أضف مستندًا";
+  String ql_add_document(Gender gender) => "${_select(gender, {'female': 'أضيفي مستندًا', 'other': 'أضف مستندًا'})}";
   String get full_checkin => "المتابعة الكاملة";
   String get ql_full_sub => "المزاج · ضغط الدم · السكر · الأدوية";
-  String get quick_log_or => "أو سجّل قراءة واحدة";
+  String quick_log_or(Gender gender) =>
+      "${_select(gender, {'female': 'أو سجّلي قراءة واحدة', 'other': 'أو سجّل قراءة واحدة'})}";
   String get ql_save => "حفظ";
   String get ql_saved => "تم الحفظ";
-  String get ql_save_hint => "أكمل الحقول المطلوبة لتتمكن من الحفظ.";
+  String ql_save_hint(Gender gender) => "${_select(gender, {
+            'female': 'أكملي الحقول المطلوبة لتتمكني من الحفظ.',
+            'other': 'أكمل الحقول المطلوبة لتتمكن من الحفظ.'
+          })}";
   String get ql_discard_title => "تجاهل هذا التسجيل؟";
   String get ql_discard_body => "لن يُحفظ ما أدخلته.";
   String get ql_discard => "تجاهل";
@@ -778,9 +815,11 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_location => "أين يؤلمك؟";
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
-  String get body_tap => "انقر لتحديد الموقع";
+  String body_tap(Gender gender) =>
+      "${_select(gender, {'female': 'انقري لتحديد الموقع', 'other': 'انقر لتحديد الموقع'})}";
   String get body_layer => "الطبقة";
-  String get body_layer_locked => "امسح التحديد لتغيير نوع الجسم";
+  String body_layer_locked(Gender gender) =>
+      "${_select(gender, {'female': 'امسحي التحديد لتغيير نوع الجسم', 'other': 'امسح التحديد لتغيير نوع الجسم'})}";
   String body_remove(String label) => "إزالة $label";
   String get body_clear_all => "مسح الكل";
   String get body_marked => "المناطق المحددة";
@@ -802,16 +841,23 @@ class CheckinStrings_ar extends CheckinStrings {
   String get cond_icd10_hint => "رمز ICD-10 (اختياري)";
   String get cond_onset_hint => "سنة البدء";
   String get q_vitals_t => "مؤشراتك الحيوية";
-  String get q_vitals_h => "أدخل أي قياسات أخذتها اليوم — كلها اختيارية.";
+  String q_vitals_h(Gender gender) => "${_select(gender, {
+            'female': 'أدخلي أي قياسات أخذتِها اليوم — كلها اختيارية.',
+            'other': 'أدخل أي قياسات أخذتها اليوم — كلها اختيارية.'
+          })}";
   String get unit_spo2 => "%";
   String get unit_bpm => "نبضة/د";
   String get pulse_count => "عُدّ نبضك معي";
-  String get pulse_how =>
-      "ضع إصبعين على معصمك أو جانب رقبتك، ثم انقر الدائرة مع كل نبضة. يبدأ العدّ مع أول نقرة لمدة 15 ثانية.";
+  String pulse_how(Gender gender) => "${_select(gender, {
+            'female':
+                'ضعي إصبعين على معصمك أو جانب رقبتك، ثم انقري الدائرة مع كل نبضة. يبدأ العدّ مع أول نقرة لمدة 15 ثانية.',
+            'other':
+                'ضع إصبعين على معصمك أو جانب رقبتك، ثم انقر الدائرة مع كل نبضة. يبدأ العدّ مع أول نقرة لمدة 15 ثانية.'
+          })}";
   String get pulse_keep => "استمر في النقر مع كل نبضة.";
   String get pulse_beat => "نبضة";
   String pulse_left(String n) => "$n ث متبقية";
-  String get pulse_start => "انقر للبدء";
+  String pulse_start(Gender gender) => "${_select(gender, {'female': 'انقري للبدء', 'other': 'انقر للبدء'})}";
   String get pulse_type => "إدخال الرقم يدويًا";
   String get sym_headache => "صداع";
   String get sym_dizzy => "دوخة";
@@ -1144,7 +1190,7 @@ class CommonStrings_ar extends CommonStrings {
   String get a11y_code_field => "رمز التحقق";
   String a11y_code_progress(String n) => "أُدخل $n من 6 أرقام";
   String get a11y_error => "خطأ";
-  String get ph_country => "اختر الدولة";
+  String ph_country(Gender gender) => "${_select(gender, {'female': 'اختاري الدولة', 'other': 'اختر الدولة'})}";
   String get ph_country_search => "ابحث بالاسم أو الرمز";
   String get ph_no_match => "لا توجد نتائج";
   String ph_country_of(String dial) => "رمز الدولة، الحالي $dial";
@@ -1177,13 +1223,15 @@ class CommonStrings_ar extends CommonStrings {
   String get date => "التاريخ";
   String get time => "الوقت";
   String get details => "التفاصيل";
-  String get select_date => "اختر تاريخاً";
+  String select_date(Gender gender) => "${_select(gender, {'female': 'اختاري تاريخاً', 'other': 'اختر تاريخاً'})}";
   String get roadmap => "قريباً";
   String get member_name => "الاسم";
   String get member_name_ph => "اسم فرد الأسرة";
   String get relation => "صلة القرابة";
-  String get select_relation => "اختر صلة القرابة";
-  String get fam_scan_qr => "امسح رمز QR الخاص بهم";
+  String select_relation(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري صلة القرابة', 'other': 'اختر صلة القرابة'})}";
+  String fam_scan_qr(Gender gender) =>
+      "${_select(gender, {'female': 'امسحي رمز QR الخاص بهم', 'other': 'امسح رمز QR الخاص بهم'})}";
   String get fam_scan_qr_sub => "اربط حسابًا موجودًا على بلسم في ثوانٍ.";
   String get fam_manual => "الإدخال يدويًا";
   String get fam_manual_sub => "لمن لا يملك حسابًا بعد.";
@@ -1205,7 +1253,10 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_self_add => "لا يمكنك إضافة نفسك — هذا رمزك أنت";
   String get fam_self_add_manual => "هذا اسمك أنت — أفراد الأسرة أشخاص آخرون";
   String get fam_scan_invalid => "هذا ليس رمز ملف بلسم";
-  String get fam_scan_failed => "تعذّرت قراءة الرمز — حاول مجددًا";
+  String fam_scan_failed(Gender gender) => "${_select(gender, {
+            'female': 'تعذّرت قراءة الرمز — حاولي مجددًا',
+            'other': 'تعذّرت قراءة الرمز — حاول مجددًا'
+          })}";
   String get rel_default => "فرد من الأسرة";
   String get member_dob => "تاريخ الميلاد";
   String get member_dob_ph => "يوم / شهر / سنة";
@@ -1447,8 +1498,11 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get em_ph => "you@example.com";
   String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
   String get em_eg => "مصر";
-  String get em_intro => "خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.";
-  String get em_tap_call => "اضغط للاتصال";
+  String em_intro(Gender gender) => "${_select(gender, {
+            'female': 'خطوط الطوارئ على مستوى مصر. اضغطي أي رقم للاتصال فوراً.',
+            'other': 'خطوط الطوارئ على مستوى مصر. اضغط أي رقم للاتصال فوراً.'
+          })}";
+  String em_tap_call(Gender gender) => "${_select(gender, {'female': 'اضغطي للاتصال', 'other': 'اضغط للاتصال'})}";
   String get em_ambulance => "إسعاف";
   String get em_police => "شرطة";
   String get em_fire => "الإطفاء والإنقاذ";
@@ -1475,13 +1529,27 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_ttl_6h => "٦ س";
   String get eqr_ttl_24h => "٢٤ س";
   String get eqr_ttl_7d => "٧ أيام";
-  String get eqr_help_empty =>
-      "هذا الرمز هو هويّتك في بلسم — للطوارئ والحجوزات، ولكي يضيفك أحد أفراد أسرتك إلى حسابه. أضف فصيلة الدم أو الحساسيات أو جهة اتصال طوارئ لتضمينها في البطاقة.";
-  String get eqr_help_active =>
-      "اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.";
+  String eqr_help_empty(Gender gender) => "${_select(gender, {
+            'female':
+                'هذا الرمز هو هويّتك في بلسم — للطوارئ والحجوزات، ولكي يضيفك أحد أفراد أسرتك إلى حسابه. أضيفي فصيلة الدم أو الحساسيات أو جهة اتصال طوارئ لتضمينها في البطاقة.',
+            'other':
+                'هذا الرمز هو هويّتك في بلسم — للطوارئ والحجوزات، ولكي يضيفك أحد أفراد أسرتك إلى حسابه. أضف فصيلة الدم أو الحساسيات أو جهة اتصال طوارئ لتضمينها في البطاقة.'
+          })}";
+  String eqr_help_active(Gender gender) => "${_select(gender, {
+            'female':
+                'اعرضي هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.',
+            'other':
+                'اعرض هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.'
+          })}";
   String get eqr_help_signin => "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
-  String get eqr_help_incomplete => "أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.";
-  String get eqr_help_create => "أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.";
+  String eqr_help_incomplete(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.',
+            'other': 'أضف فصيلة دمك أو الحساسية أو الحالات أو جهة اتصال للطوارئ لمشاركة بطاقة الطوارئ.'
+          })}";
+  String eqr_help_create(Gender gender) => "${_select(gender, {
+            'female': 'أنشئي رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.',
+            'other': 'أنشئ رمز QR مشفّرًا لملفك الصحي للطوارئ. يبقى مفتاح فك التشفير على جهازك.'
+          })}";
   String get eqr_expired => "منتهي";
   String eqr_expires_in(String t) => "ينتهي خلال $t";
   String get eqr_copy => "نسخ";
@@ -1493,10 +1561,16 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_revoke => "إلغاء الرمز";
   String get eqr_revoked_toast => "تم إلغاء الرمز";
   String get eqr_rotate => "استبدال الرمز";
-  String get eqr_rotate_confirm => "هل تريد استبدال هذا الرمز؟ ستتوقف النسخ المطبوعة أو المشاركة عن العمل فورًا.";
+  String eqr_rotate_confirm(Gender gender) => "${_select(gender, {
+            'female': 'هل تريدين استبدال هذا الرمز؟ ستتوقف النسخ المطبوعة أو المشاركة عن العمل فورًا.',
+            'other': 'هل تريد استبدال هذا الرمز؟ ستتوقف النسخ المطبوعة أو المشاركة عن العمل فورًا.'
+          })}";
   String get eqr_rotate_yes => "استبدال";
   String get eqr_rotated_toast => "الرمز الجديد جاهز";
-  String get eqr_rotate_failed => "تعذّر استبدال الرمز — تحقق من الاتصال";
+  String eqr_rotate_failed(Gender gender) => "${_select(gender, {
+            'female': 'تعذّر استبدال الرمز — تحققي من الاتصال',
+            'other': 'تعذّر استبدال الرمز — تحقق من الاتصال'
+          })}";
   String get eqr_scan_history => "سجلّ المسح";
   String get eqr_scans_empty => "لا عمليات مسح بعد";
   String get eqr_scan_client_web => "متصفح ويب";
@@ -1647,10 +1721,11 @@ class HomeStrings_ar extends HomeStrings {
   final Strings_ar _parent;
   const HomeStrings_ar(this._parent) : super(_parent);
   String get nudge_handle => "احجز معرّفك";
-  String get nudge_handle_sub => "ابدأ الإعداد";
-  String get nudge_ec => "أضف بطاقة الطوارئ";
-  String get nudge_ec_sub => "كن مستعداً";
-  String get nudge_med => "أضف دواءً";
+  String nudge_handle_sub(Gender gender) => "${_select(gender, {'female': 'ابدئي الإعداد', 'other': 'ابدأ الإعداد'})}";
+  String nudge_ec(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي بطاقة الطوارئ', 'other': 'أضف بطاقة الطوارئ'})}";
+  String nudge_ec_sub(Gender gender) => "${_select(gender, {'female': 'كوني مستعدة', 'other': 'كن مستعداً'})}";
+  String nudge_med(Gender gender) => "${_select(gender, {'female': 'أضيفي دواءً', 'other': 'أضف دواءً'})}";
   String get nudge_med_sub => "واظب على المتابعة";
   String get greet => "صباح الخير";
   String get hero_time => "حوالي دقيقتين";
@@ -1670,7 +1745,10 @@ class HomeStrings_ar extends HomeStrings {
   String get sc_places => "مكان قريب";
   String get sc_records => "السجلات";
   String viewing_member(String name) => "$name محدد";
-  String get viewing_own_data => "سجلّه غير متاح على هذا الجهاز بعد — ما تراه هو سجلّك أنت.";
+  String viewing_own_data(Gender gender) => "${_select(gender, {
+            'female': 'سجلّه غير متاح على هذا الجهاز بعد — ما ترينه هو سجلّك أنتِ.',
+            'other': 'سجلّه غير متاح على هذا الجهاز بعد — ما تراه هو سجلّك أنت.'
+          })}";
   String get viewing_switch_back => "العودة";
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -1749,7 +1827,10 @@ class MedsStrings_ar extends MedsStrings {
   String get last_7d => "آخر ٧ أيام";
   String get rx_manage => "الوصفات والملفات";
   String get rx_empty => "لا توجد وصفات بعد";
-  String get rx_empty_h => "أضف وصفة للاحتفاظ بنسخك في مكان واحد.";
+  String rx_empty_h(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي وصفة للاحتفاظ بنسخك في مكان واحد.',
+            'other': 'أضف وصفة للاحتفاظ بنسخك في مكان واحد.'
+          })}";
   String get rx_active => "فعّالة";
   String get rx_expired => "منتهية";
   String get rx_valid_until => "صالحة حتى";
@@ -1768,7 +1849,8 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_added => "تمت إضافة الروشتة";
   String get rx_upload => "رفع ملف";
   String get rx_manual => "كتابتها يدوياً";
-  String get rx_or_paste_url => "أو أضف رابطاً";
+  String rx_or_paste_url(Gender gender) =>
+      "${_select(gender, {'female': 'أو أضيفي رابطاً', 'other': 'أو أضف رابطاً'})}";
   String get rx_url_ph => "https://…";
   String get rx_med_name_ph => "اسم الدواء";
   String get rx_med_dose_ph => "الجرعة (مثال: 500 ملجم)";
@@ -1781,7 +1863,7 @@ class MedsStrings_ar extends MedsStrings {
   String get freq_every => "كل";
   String get unit_hours => "ساعات";
   String get unit_days => "أيام";
-  String get freq_other_ph => "اكتب التكرار";
+  String freq_other_ph(Gender gender) => "${_select(gender, {'female': 'اكتبي التكرار', 'other': 'اكتب التكرار'})}";
   String freq_n_per_day(String n) => "$n×/يوم";
   String get rx_duration => "المدة";
   String get dur_days => "لعدد من الأيام";
@@ -1792,7 +1874,7 @@ class MedsStrings_ar extends MedsStrings {
   String get dur_until_empty => "حتى انتهاء العلبة";
   String get dur_ongoing => "مستمر";
   String get dur_other => "أخرى";
-  String get dur_other_ph => "اكتب المدة";
+  String dur_other_ph(Gender gender) => "${_select(gender, {'female': 'اكتبي المدة', 'other': 'اكتب المدة'})}";
   String get rx_add_med => "إضافة دواء آخر";
   String get rx_self_added => "أضفتها أنت";
   String med_count(int n) =>
@@ -1837,7 +1919,10 @@ class MedsStrings_ar extends MedsStrings {
   String get dur_period => "لفترة محددة";
   String get dur_count => "العدد";
   String get meds_signin_help => "سجّل الدخول لعرض أدويتك.";
-  String get meds_empty_help => "لا توجد أدوية بعد. أضف دواءً للبدء.";
+  String meds_empty_help(Gender gender) => "${_select(gender, {
+            'female': 'لا توجد أدوية بعد. أضيفي دواءً للبدء.',
+            'other': 'لا توجد أدوية بعد. أضف دواءً للبدء.'
+          })}";
   String get meds_none_today => "لا جرعات مجدولة اليوم.";
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -2341,7 +2426,8 @@ class PrivacyStrings_ar extends PrivacyStrings {
   String get pv_research_h => "بيانات مجهولة للأبحاث الطبية";
   String get pv_security => "الأمان";
   String get pv_bio => "قفل بالبصمة / الوجه";
-  String get pv_bio_h => "افتح التطبيق ببصمتك";
+  String pv_bio_h(Gender gender) =>
+      "${_select(gender, {'female': 'افتحي التطبيق ببصمتك', 'other': 'افتح التطبيق ببصمتك'})}";
   String get pv_pin => "طلب رمز PIN عند الفتح";
   String get pv_pin_h => "طبقة حماية إضافية";
   String get pv_yourdata => "بياناتك";
@@ -2478,8 +2564,9 @@ class ProfileStrings_ar extends ProfileStrings {
   String get m_weight => "الوزن";
   String get m_o2 => "الأكسجين";
   String get m_pulse => "النبض";
-  String get pc_title => "أكمل ملفك الشخصي";
-  String get pc_help => "أضف اسمك وتاريخ ميلادك وبياناتك";
+  String pc_title(Gender gender) => "${_select(gender, {'female': 'أكملي ملفك الشخصي', 'other': 'أكمل ملفك الشخصي'})}";
+  String pc_help(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي اسمك وتاريخ ميلادك وبياناتك', 'other': 'أضف اسمك وتاريخ ميلادك وبياناتك'})}";
   String pc_missing(String fields) => "الناقص: $fields";
   String get pc_f_name => "الاسم";
   String get pc_f_dob => "تاريخ الميلاد";
@@ -2503,7 +2590,8 @@ class ProfileStrings_ar extends ProfileStrings {
   String get pd_save => "حفظ التغييرات";
   String get pd_saved => "تم الحفظ";
   String get pd_saving => "جارٍ الحفظ…";
-  String get pd_number_invalid => "أدخل رقماً صالحاً";
+  String pd_number_invalid(Gender gender) =>
+      "${_select(gender, {'female': 'أدخلي رقماً صالحاً', 'other': 'أدخل رقماً صالحاً'})}";
   String get hc_title => "تغيير اسم المستخدم؟";
   String get hc_body =>
       "يتوقف رابطك القديم عن العمل فوراً. كل من يحتفظ به — طبيب أو أحد أفراد العائلة — سيحتاج إلى الرابط الجديد.";
@@ -2530,8 +2618,8 @@ class ProfileStrings_ar extends ProfileStrings {
   String get pd_conditions => "الحالات المزمنة";
   String get pd_allergies => "الحساسية";
   String get pd_measurements => "القياسات";
-  String get pd_add_cond => "أضف حالة…";
-  String get pd_add_alg => "أضف حساسية…";
+  String pd_add_cond(Gender gender) => "${_select(gender, {'female': 'أضيفي حالة…', 'other': 'أضف حالة…'})}";
+  String pd_add_alg(Gender gender) => "${_select(gender, {'female': 'أضيفي حساسية…', 'other': 'أضف حساسية…'})}";
   String get bmi_label => "كتلة الجسم";
   String get bmi_under => "نقص وزن";
   String get bmi_normal => "صحي";
@@ -2709,9 +2797,10 @@ class EcosystemStrings_ar extends EcosystemStrings {
   String get eco_help_t => "ساعد بلسم على الانتشار";
   String get eco_help_sub => "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
   String get eco_tagline => "مفتوح · عربي · موثوق";
-  String get eco_a1h => "أخبر شخصاً تثق به";
+  String eco_a1h(Gender gender) =>
+      "${_select(gender, {'female': 'أخبري شخصاً تثقين به', 'other': 'أخبر شخصاً تثق به'})}";
   String get eco_a1b => "العائلة والجيران هم طريق انتشار بلسم — توصية واحدة في كل مرة.";
-  String get eco_a2h => "شارك ملاحظاتك";
+  String eco_a2h(Gender gender) => "${_select(gender, {'female': 'شاركي ملاحظاتك', 'other': 'شارك ملاحظاتك'})}";
   String get eco_a2b => "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
   String get eco_a3h => "اسأل صيدليتك أو عيادتك";
   String get eco_a3b => "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بلسم في زيارتك القادمة — فهو مجاني وملك لهم.";
@@ -2784,7 +2873,8 @@ class FeedbackStrings_ar extends FeedbackStrings {
   const FeedbackStrings_ar(this._parent) : super(_parent);
   String get fb_row => "التقييم والملاحظات";
   String get fb_title => "كيف تجد بلسم؟";
-  String get fb_rate_q => "اضغط على زهرة للتقييم";
+  String fb_rate_q(Gender gender) =>
+      "${_select(gender, {'female': 'اضغطي على زهرة للتقييم', 'other': 'اضغط على زهرة للتقييم'})}";
   String get fb_r1 => "يحتاج تحسيناً";
   String get fb_r2 => "يمكن أن يكون أفضل";
   String get fb_r3 => "مقبول";
@@ -2797,7 +2887,10 @@ class FeedbackStrings_ar extends FeedbackStrings {
   String get fb_ph => "ما الذي أعجبك؟ وما الذي لم يعجبك؟";
   String get fb_privacy =>
       "تُرسل إلى فريق بلسم، وليس إلى متجر التطبيقات. من فضلك لا تكتب تفاصيل صحية — بياناتك الصحية تبقى على جهازك.";
-  String get fb_failed => "تعذّر إرسال ملاحظتك. حاول مرة أخرى.";
+  String fb_failed(Gender gender) => "${_select(gender, {
+            'female': 'تعذّر إرسال ملاحظتك. حاولي مرة أخرى.',
+            'other': 'تعذّر إرسال ملاحظتك. حاول مرة أخرى.'
+          })}";
   String get fb_send => "إرسال الملاحظات";
   String get fb_thanks => "وصلتنا. شكراً لك.";
   String get fb_thanks_sub => "فريق بلسم يقرأ كل ملاحظة، وملاحظتك تساعد بلسم على خدمة الجميع بشكل أفضل.";
@@ -2874,7 +2967,8 @@ class RecordsStrings_ar extends RecordsStrings {
   String get reports => "التقارير السابقة";
   String get rec_search_ph => "ابحث في السجلات والوسوم والنتائج…";
   String get rec_tags => "الوسوم";
-  String get rec_tags_ph => "أضف وسماً واضغط Enter";
+  String rec_tags_ph(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي وسماً واضغطي Enter', 'other': 'أضف وسماً واضغط Enter'})}";
   String get rec_no_results => "لا سجلات مطابقة";
   String get rec_no_results_h => "لا سجلات تطابق";
   String get rec_no_results_h2 => "لا شيء في هذه الفئة بعد.";
@@ -2895,7 +2989,10 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_preview => "معاينة المستند";
   String get rec_preview_failed => "تعذّر فتح هذا الملف";
   String get rec_share => "مشاركة مع الطبيب";
-  String get rec_empty_h => "أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.";
+  String rec_empty_h(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي تحليلاً أو أشعة أو تقريراً لتحتفظي بتاريخك كاملاً في مكان واحد.',
+            'other': 'أضف تحليلاً أو أشعة أو تقريراً لتحتفظ بتاريخك كاملاً في مكان واحد.'
+          })}";
   String get rec_pick_type => "ما الذي تضيفه؟";
   String get rec_title => "العنوان";
   String get rec_title_ph => "مثال: تحليل السكر التراكمي";
@@ -2922,11 +3019,13 @@ class RecordsStrings_ar extends RecordsStrings {
   String get att_src_files => "الملفات";
   String get att_src_files_h => "ملف PDF أو صورة محفوظة على هذا الجهاز";
   String get att_src_gallery => "الصور";
-  String get att_src_gallery_h => "اختر من مكتبة الصور";
+  String att_src_gallery_h(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري من مكتبة الصور', 'other': 'اختر من مكتبة الصور'})}";
   String get att_src_paste => "لصق";
   String get att_src_paste_h => "صورة أو رابط نسخته";
   String get att_src_url => "رابط";
-  String get att_src_url_h => "اكتب أو الصق عنوان ويب";
+  String att_src_url_h(Gender gender) =>
+      "${_select(gender, {'female': 'اكتبي أو الصقي عنوان ويب', 'other': 'اكتب أو الصق عنوان ويب'})}";
   String get att_url_title => "إضافة رابط";
   String get att_url_hint => "https://…";
   String get att_url_bad => "لا يبدو أن هذا عنوان ويب.";
@@ -3098,14 +3197,14 @@ class SettingsStrings_ar extends SettingsStrings {
   String get trust_device => "ملكك دائماً";
   String get add_photo => "إضافة صورة";
   String get add_member => "إضافة فرد من الأسرة";
-  String get choose_lang => "اختر اللغة";
+  String choose_lang(Gender gender) => "${_select(gender, {'female': 'اختاري اللغة', 'other': 'اختر اللغة'})}";
   String get choose_country => "أين أنت الآن؟";
   String get travel_help => "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
   String get lang_full => "دعم كامل";
   String get lang_beta => "تجريبي";
   String get home_country => "بلدك";
   String get add_record => "إضافة سجل";
-  String get add_calendar => "أضف للتقويم";
+  String add_calendar(Gender gender) => "${_select(gender, {'female': 'أضيفي للتقويم', 'other': 'أضف للتقويم'})}";
   String get na_not_available => "غير متاح بعد";
   String get na_notify_me => "أبلغني عند التوفر";
   String get na_status_support => "حالة الخدمة والدعم";
@@ -3448,25 +3547,35 @@ class OfflineStrings_ar extends OfflineStrings {
   String get go_title => "الاتصال بالإنترنت";
   String get go_help => "نرسل رمزًا إلى بريدك للتحقق منه. تبقى بياناتك على هذا الجهاز.";
   String get go_send => "إرسال الرمز";
-  String get go_code_help => "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
-  String get go_verify => "تحقق واتصل";
-  String get go_done_title => "أنت متصل الآن";
+  String go_code_help(Gender gender) => "${_select(gender, {
+            'female': 'أدخلي الرمز المكوّن من 6 أرقام الذي أرسلناه إلى',
+            'other': 'أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى'
+          })}";
+  String go_verify(Gender gender) => "${_select(gender, {'female': 'تحققي واتصلي', 'other': 'تحقق واتصل'})}";
+  String go_done_title(Gender gender) => "${_select(gender, {'female': 'أنتِ متصلة الآن', 'other': 'أنت متصل الآن'})}";
   String get go_done_help =>
       "تم التحقق من بريدك. حسابك الآن على بلسم ويمكن استعادة كلمة المرور. تبقى بياناتك الصحية على هذا الجهاز.";
   String get go_done => "تم";
   String get go_row => "الاتصال بالإنترنت";
   String get go_row_sub => "تحقّق من بريدك لاستعادة كلمة المرور واستخدام المشاركة";
-  String get go_cloud_pill => "اتصل";
-  String get go_failed => "تعذّر الاتصال الآن. حاول مرة أخرى.";
+  String go_cloud_pill(Gender gender) => "${_select(gender, {'female': 'اتصلي', 'other': 'اتصل'})}";
+  String go_failed(Gender gender) => "${_select(gender, {
+            'female': 'تعذّر الاتصال الآن. حاولي مرة أخرى.',
+            'other': 'تعذّر الاتصال الآن. حاول مرة أخرى.'
+          })}";
   String get merge_title => "هذا البريد لديه حساب في بلسم بالفعل";
-  String get merge_help => "تم تسجيل دخولك إلى ذلك الحساب. اختر ما تفعله بالبيانات الموجودة على هذا الهاتف.";
+  String merge_help(Gender gender) => "${_select(gender, {
+            'female': 'تم تسجيل دخولك إلى ذلك الحساب. اختاري ما تفعلينه بالبيانات الموجودة على هذا الهاتف.',
+            'other': 'تم تسجيل دخولك إلى ذلك الحساب. اختر ما تفعله بالبيانات الموجودة على هذا الهاتف.'
+          })}";
   String get merge_btn => "أضِف بيانات هذا الهاتف إلى حسابي";
   String get merge_note => "يحتفظ حسابك بكلمة مروره الحالية. لن تُستخدم كلمة المرور التي عيّنتها على هذا الهاتف.";
   String get discard_btn => "احذف بيانات هذا الهاتف";
   String get discard_confirm_title => "حذف البيانات الموجودة على هذا الهاتف؟";
   String get discard_confirm_body => "سيُحذف كل ما أضفته دون اتصال على هذا الهاتف. لا يمكن التراجع عن ذلك.";
   String get discard_confirm_btn => "احذف";
-  String get merge_failed => "تعذّر الإكمال. حاول مرة أخرى.";
+  String merge_failed(Gender gender) =>
+      "${_select(gender, {'female': 'تعذّر الإكمال. حاولي مرة أخرى.', 'other': 'تعذّر الإكمال. حاول مرة أخرى.'})}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
