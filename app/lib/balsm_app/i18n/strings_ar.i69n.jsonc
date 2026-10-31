@@ -1,4 +1,4 @@
-// Arabic bundle — gendered copy uses _select(gender, …); see checkin.q_sym_h.
+// Arabic bundle — copy addressed to the patient is gendered: select only the changing part, e.g. حاول${_select(gender, female: 'ي', other: '')}. See CODING_STANDARDS.md §4.
 {
   "_i69n": "nothrow",
   "_i69n_language": "ar",
@@ -116,7 +116,7 @@
     "care_no_match_h(Gender gender)": "جرّب${_select(gender, female: 'ي', other: '')} اسمًا آخر، أو ${_select(gender, female: 'أضيفي', other: 'أضف')} مقدّم الرعاية بنفسك.",
     "care_import": "من جهات الاتصال",
     "care_import_title": "مراجعة جهات الاتصال",
-    "care_import_note(Gender gender)": "راجع${_select(gender, female: 'ي', other: '')} النوع لكل جهة اتصال، ثم ${_select(gender, female: 'أضيفيها.', other: 'أضفها.')} تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت${_select(gender, female: 'ِ', other: '')} هذا الهاتف.",
+    "care_import_note(Gender gender)": "راجع${_select(gender, female: 'ي', other: '')} النوع لكل جهة اتصال، ثم ${_select(gender, female: 'أضيفيها', other: 'أضفها')}. تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت${_select(gender, female: 'ِ', other: '')} هذا الهاتف.",
     "care_import_pick": "الاختيار من جهات الاتصال",
     "care_import_more": "اختيار المزيد من جهات الاتصال",
     "care_import_empty": "لم تختر جهات اتصال بعد.",
@@ -306,8 +306,8 @@
     "sym_chest_tightness": "ضيق بالصدر",
     "sym_nausea": "غثيان",
     "sym_thirst": "عطش زائد",
-    "q_mood_t(Gender gender)": "كيف تشعر${_select(gender, female: 'ين')} اليوم؟",
-    "q_sym_h(Gender gender)": "حرّك${_select(gender, female: 'ي')} المؤشر لمستوى الألم، ثم ${_select(gender, female: 'اختاري', other: 'اختر')} ما تشعر${_select(gender, female: 'ين')} به.",
+    "q_mood_t(Gender gender)": "كيف تشعر${_select(gender, female: 'ين', other: '')} اليوم؟",
+    "q_sym_h(Gender gender)": "حرّك${_select(gender, female: 'ي', other: '')} المؤشر لمستوى الألم، ثم ${_select(gender, female: 'اختاري', other: 'اختر')} ما تشعر${_select(gender, female: 'ين', other: '')} به.",
     "sd_color": "اللون",
     "sd_quantity": "الكمية",
     "sd_ml": "مل",
@@ -523,7 +523,7 @@
     "sc_places": "مكان قريب",
     "sc_records": "السجلات",
     "viewing_member(String name)": "$name محدد",
-    "viewing_own_data(Gender gender)": "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, female: 'ترينه', other: 'تراه')} هو سجلّك ${_select(gender, female: 'أنتِ.', other: 'أنت.')}",
+    "viewing_own_data(Gender gender)": "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, female: 'ترينه', other: 'تراه')} هو سجلّك أنت${_select(gender, female: 'ِ', other: '')}.",
     "viewing_switch_back": "العودة"
   },
   "meds": {

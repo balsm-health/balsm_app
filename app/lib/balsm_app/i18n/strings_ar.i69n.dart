@@ -428,9 +428,9 @@ class CareStrings_ar extends CareStrings {
             'female': 'ي',
             'other': ''
           })} النوع لكل جهة اتصال، ثم ${_select(gender, {
-            'female': 'أضيفيها.',
-            'other': 'أضفها.'
-          })} تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت${_select(gender, {
+            'female': 'أضيفيها',
+            'other': 'أضفها'
+          })}. تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت${_select(gender, {
             'female': 'ِ',
             'other': ''
           })} هذا الهاتف.";
@@ -944,13 +944,14 @@ class CheckinStrings_ar extends CheckinStrings {
   String get sym_nausea => "غثيان";
   String get sym_thirst => "عطش زائد";
   String q_mood_t(Gender gender) =>
-      "كيف تشعر${_select(gender, {'female': 'ين'})} اليوم؟";
+      "كيف تشعر${_select(gender, {'female': 'ين', 'other': ''})} اليوم؟";
   String q_sym_h(Gender gender) => "حرّك${_select(gender, {
-            'female': 'ي'
+            'female': 'ي',
+            'other': ''
           })} المؤشر لمستوى الألم، ثم ${_select(gender, {
             'female': 'اختاري',
             'other': 'اختر'
-          })} ما تشعر${_select(gender, {'female': 'ين'})} به.";
+          })} ما تشعر${_select(gender, {'female': 'ين', 'other': ''})} به.";
   String get sd_color => "اللون";
   String get sd_quantity => "الكمية";
   String get sd_ml => "مل";
@@ -1856,10 +1857,7 @@ class HomeStrings_ar extends HomeStrings {
       "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, {
             'female': 'ترينه',
             'other': 'تراه'
-          })} هو سجلّك ${_select(gender, {
-            'female': 'أنتِ.',
-            'other': 'أنت.'
-          })}";
+          })} هو سجلّك أنت${_select(gender, {'female': 'ِ', 'other': ''})}.";
   String get viewing_switch_back => "العودة";
   Object operator [](String key) {
     var index = key.indexOf('.');

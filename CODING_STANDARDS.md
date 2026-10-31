@@ -39,6 +39,12 @@
 
 - all user-visible strings live in i69n bundles — `.i69n.jsonc` (JSON **with comments**: annotate keys, gender rules, RTL notes inline) in `app/lib/balsm_app/i18n/`, `packages/core/lib/src/localization/i18n/`, and `modules/*/lib/src/i18n/`; regenerate with `dart run tool/build.dart gen` after editing
 - no inline bilingual ternaries (`ar ? '…' : '…'`)
+- **gendered Arabic**: Arabic addresses women and men with different forms (اختر / اختاري, متعب / متعبة, تشعر / تشعرين). Any message that speaks to, or describes, the signed-in patient takes `Gender gender` (from `core`) and is called with `s.gender`; the English key declares the same parameter and ignores it. Select **only the part that changes**, never the whole sentence:
+  - a feminine suffix: `"حاول${_select(gender, female: 'ي', other: '')} مرة أخرى"`, `"متعب${_select(gender, female: 'ة', other: '')}"`
+  - a word that changes shape: `"${_select(gender, female: 'أضيفي', other: 'أضف')} دواءً"`
+  - always write both `female:` and `other:`; `male` and unknown fall to `other`, which is the masculine
+  - leave fixed: copy shown before sign-in (the gender is not known yet), copy addressed to someone else (a pharmacist, a responder), and words spelt the same in both forms without vowel marks (بياناتك، يمكنك)
+  - never hard-code one gender in a message that addresses the patient — the check-in copy once read feminine to every man
 - reference data (countries, languages) comes from core value objects + `CountryRegistry` — no private lists in screens
 - prefer typed `s.strings.key` over stringly `s.t('key')`; `t()` only for keys computed at runtime
 
