@@ -214,7 +214,17 @@ typedef DeviceLocation = ({LatLng? position, DeviceLocationIssue? issue});
 /// The device's real position. Never a stand-in: the map's "you are here" dot
 /// and the recenter button read this, and drawing the Cairo fallback as the
 /// user's position put them somewhere they were not. Never throws.
+///
+/// Kept for the session once found, so leaving the map tab and coming back
+/// does not wait on a fresh GPS fix; the recenter button invalidates it to ask
+/// again. A miss is not kept, so the next visit retries.
 final deviceLocationProvider = FutureProvider.autoDispose<DeviceLocation>((ref) async {
+  final found = await _locate();
+  if (found.position != null) ref.keepAlive();
+  return found;
+});
+
+Future<DeviceLocation> _locate() async {
   try {
     if (!await Geolocator.isLocationServiceEnabled()) return (position: null, issue: DeviceLocationIssue.serviceOff);
     var perm = await Geolocator.checkPermission();
@@ -237,14 +247,17 @@ final deviceLocationProvider = FutureProvider.autoDispose<DeviceLocation>((ref) 
     // Fall through.
   }
   return (position: null, issue: DeviceLocationIssue.unavailable);
-});
+}
 
 /// The center for directory queries: the device position, or
 /// [kCareFallbackCenter] when it is unknown so the directory still returns
 /// something. A search center only — never show it as the user's position.
-final userLatLngProvider = FutureProvider.autoDispose<LatLng>(
-  (ref) async => (await ref.watch(deviceLocationProvider.future)).position ?? kCareFallbackCenter,
-);
+final userLatLngProvider = FutureProvider.autoDispose<LatLng>((ref) async {
+  final position = (await ref.watch(deviceLocationProvider.future)).position;
+  // Kept alive with the position it follows, so the queries built on it are too.
+  if (position != null) ref.keepAlive();
+  return position ?? kCareFallbackCenter;
+});
 
 /// Default search radius. The directory holds ~19k Egyptian places, so an
 /// unbounded query would return the entire country distance-sorted — the server
@@ -393,7 +406,12 @@ final careDirectoryProvider = FutureProvider.autoDispose<CareResults>((ref) asyn
   final cancel = CancelToken();
   ref.onDispose(cancel.cancel);
 
-  return ref.watch(careDirectoryRepositoryProvider).nearby(center, search, cancelToken: cancel);
+  final results = await ref.watch(careDirectoryRepositoryProvider).nearby(center, search, cancelToken: cancel);
+  // Kept once answered, so switching tabs and back shows the same places
+  // instead of reloading them. A new search still rebuilds it; a failure is
+  // not kept, so the next visit retries.
+  ref.keepAlive();
+  return results;
 });
 
 /// Map pins for the current search.
@@ -417,7 +435,12 @@ final carePinsProvider = FutureProvider.autoDispose<CarePinResults>((ref) async 
   final cancel = CancelToken();
   ref.onDispose(cancel.cancel);
 
-  return ref.watch(careDirectoryRepositoryProvider).pins(center, search, noFloor: noFloor, cancelToken: cancel);
+  final pins =
+      await ref.watch(careDirectoryRepositoryProvider).pins(center, search, noFloor: noFloor, cancelToken: cancel);
+  // As careDirectoryProvider: kept once answered, so a tab switch does not
+  // redraw the map from empty.
+  ref.keepAlive();
+  return pins;
 });
 
 /// Full detail for one place, fetched when its pin is tapped.
