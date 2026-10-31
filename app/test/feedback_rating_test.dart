@@ -43,7 +43,7 @@ void main() {
 
   testWidgets('every mark starts unlit, and the prompt stands in for a score', (tester) async {
     final s = await pump(tester);
-    expect(find.text(s.strings.feedback.fb_rate_q), findsOne);
+    expect(find.text(s.strings.feedback.fb_rate_q(Gender.other)), findsOne);
     // All five marks wear the flat ink wash.
     const ink = ColorFilter.mode(T.ink200, BlendMode.srcIn);
     expect(markFilters(tester).where((f) => f == ink).length, 5);

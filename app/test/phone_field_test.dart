@@ -143,7 +143,7 @@ void main() {
 
       await tester.tap(find.text('+20'));
       await tester.pumpAndSettle();
-      expect(find.text(s.strings.common.ph_country), findsOne);
+      expect(find.text(s.strings.common.ph_country(Gender.other)), findsOne);
 
       // Search by dial code, which is the fastest route for someone who knows
       // it and does not know how Balsm spells their country.

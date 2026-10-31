@@ -264,11 +264,11 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     final w = wText.isEmpty ? null : double.tryParse(wText);
     final h = hText.isEmpty ? null : double.tryParse(hText);
     if (wText.isNotEmpty && w == null) {
-      _snack(s.strings.profile.pd_number_invalid);
+      _snack(s.strings.profile.pd_number_invalid(s.gender));
       return;
     }
     if (hText.isNotEmpty && h == null) {
-      _snack(s.strings.profile.pd_number_invalid);
+      _snack(s.strings.profile.pd_number_invalid(s.gender));
       return;
     }
     setState(() => saving = true);
@@ -350,7 +350,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
             s: s,
             labels: allergyList.map((a) => a.name).toList(),
             ctrl: algInput,
-            hint: s.strings.profile.pd_add_alg,
+            hint: s.strings.profile.pd_add_alg(s.gender),
             bg: const Color(0xFFFBEBE7),
             fg: T.danger,
             onAdd: _addAllergy,
@@ -681,7 +681,7 @@ class _ConditionEditorState extends State<_ConditionEditor> {
           Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Wrap(spacing: 8, runSpacing: 8, children: widget.conditions.map(_chip).toList())),
-        _field(_name, s.strings.profile.pd_add_cond, s.dir),
+        _field(_name, s.strings.profile.pd_add_cond(s.gender), s.dir),
         const SizedBox(height: 8),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: _field(_icd10, s.strings.checkin.cond_icd10_hint, TextDirection.ltr)),
@@ -812,7 +812,8 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
             s.authEmail.isEmpty ? '—' : s.authEmail,
             ltrDesc: true,
           ),
-          _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h, bioLock, (v) => setState(() => bioLock = v)),
+          _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h(s.gender), bioLock,
+              (v) => setState(() => bioLock = v)),
           _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v),
               last: true),
         ]),
@@ -909,7 +910,7 @@ class EmergencyScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 2, 0, 16),
-            child: Text(s.strings.emergency.em_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+            child: Text(s.strings.emergency.em_intro(s.gender), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
           ),
           // `.emergency-grid` — two thumb-sized call targets per row on a
           // phone, `repeat(4, minmax(0, 1fr))` once the window reaches the
@@ -931,7 +932,7 @@ class EmergencyScreen extends StatelessWidget {
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(LucideIcons.phoneCall, size: 15, color: T.fg3),
               const SizedBox(width: 6),
-              Text(s.strings.emergency.em_tap_call, style: Typo.meta(ar: s.rtl)),
+              Text(s.strings.emergency.em_tap_call(s.gender), style: Typo.meta(ar: s.rtl)),
             ]),
           ),
         ],

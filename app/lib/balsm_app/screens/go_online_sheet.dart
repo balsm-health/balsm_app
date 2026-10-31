@@ -158,7 +158,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
       setState(() {
         _busy = false;
         _code.clear();
-        _error = s.strings.offline.go_failed;
+        _error = s.strings.offline.go_failed(s.gender);
       });
       return;
     }
@@ -191,7 +191,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
           s.strings.auth.auth_locked_retry(until.difference(DateTime.now()).inSeconds.clamp(0, 3600).toString()),
         // Server text (invalid/expired code), display-safe as in sign-in.
         NetworkFailure(:final message) => message,
-        _ => s.strings.offline.go_failed,
+        _ => s.strings.offline.go_failed(s.gender),
       };
     });
   }
@@ -257,7 +257,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     return [
       RichText(
           text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
-        TextSpan(text: '${s.strings.offline.go_code_help} '),
+        TextSpan(text: '${s.strings.offline.go_code_help(s.gender)} '),
         TextSpan(text: _email.text.trim(), style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
       ])),
       const SizedBox(height: 20),
@@ -335,7 +335,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
           ),
         ),
         const SizedBox(height: 14),
-        Text(s.strings.offline.go_done_title,
+        Text(s.strings.offline.go_done_title(s.gender),
             textAlign: TextAlign.center, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Text(s.strings.offline.go_done_help,
@@ -346,7 +346,7 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
     final st = s.strings.offline;
     final (label, enabled, onTap) = switch (_step) {
       _Step.email => (st.go_send, _emailOk && !_busy, _send),
-      _Step.code => (st.go_verify, _code.text.length == 6 && !_busy, _verify),
+      _Step.code => (st.go_verify(s.gender), _code.text.length == 6 && !_busy, _verify),
       _Step.done => (st.go_done, true, () async => Navigator.pop(context)),
     };
     return Opacity(

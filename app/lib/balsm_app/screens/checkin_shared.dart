@@ -34,11 +34,11 @@ const symptomIcons = <(SymptomId, IconData)>[
 ];
 
 String moodLabel(PatientAppState s, int lv) => switch (lv) {
-      1 => s.strings.checkin.mood_1,
-      2 => s.strings.checkin.mood_2,
-      3 => s.strings.checkin.mood_3,
-      4 => s.strings.checkin.mood_4,
-      _ => s.strings.checkin.mood_5,
+      1 => s.strings.checkin.mood_1(s.gender),
+      2 => s.strings.checkin.mood_2(s.gender),
+      3 => s.strings.checkin.mood_3(s.gender),
+      4 => s.strings.checkin.mood_4(s.gender),
+      _ => s.strings.checkin.mood_5(s.gender),
     };
 
 String symptomLabel(PatientAppState s, SymptomId id) {

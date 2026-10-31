@@ -148,7 +148,7 @@ class _BodyMapState extends State<BodyMap> {
       if (locked) ...[
         const SizedBox(height: 4),
         Text(
-          c.body_layer_locked,
+          c.body_layer_locked(s.gender),
           textAlign: TextAlign.center,
           style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg4),
         ),
@@ -158,7 +158,7 @@ class _BodyMapState extends State<BodyMap> {
         constraints: const BoxConstraints(minHeight: 16),
         child: widget.selected.isEmpty
             ? Text(
-                c.body_tap,
+                c.body_tap(s.gender),
                 textAlign: TextAlign.center,
                 style: Typo.meta(ar: s.rtl).copyWith(
                     fontSize: FS.xs,

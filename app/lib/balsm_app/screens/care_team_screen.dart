@@ -183,7 +183,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
   Future<void> _directions(CareProvider p) async {
     final uri = Uri.parse(p.mapUrl!.trim());
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) _snack(AppScope.of(context).strings.care.care_save_failed);
+      if (mounted) _snack(AppScope.of(context).strings.care.care_save_failed(AppScope.of(context).gender));
     }
   }
 
@@ -192,7 +192,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
   Future<void> _call(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone.replaceAll(' ', ''));
     if (!await launchUrl(uri)) {
-      if (mounted) _snack(AppScope.of(context).strings.care.care_save_failed);
+      if (mounted) _snack(AppScope.of(context).strings.care.care_save_failed(AppScope.of(context).gender));
     }
   }
 
@@ -276,7 +276,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
                   textAlign: TextAlign.center,
                   style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
               const SizedBox(height: 4),
-              Text(c.care_add_help,
+              Text(c.care_add_help(s.gender),
                   textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
             ]),
           )
@@ -290,7 +290,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
               const SizedBox(height: 6),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 240),
-                child: Text(c.care_no_match_h, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                child: Text(c.care_no_match_h(s.gender), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
               ),
             ]),
           ),
@@ -338,7 +338,7 @@ class _ImportedBanner extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  s.strings.care.care_import_banner('$count'),
+                  s.strings.care.care_import_banner('$count', s.gender),
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1, height: 1.4),
                 ),
               ),
@@ -358,7 +358,7 @@ class _CareFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Semantics(
-      label: s.strings.care.care_import_fab,
+      label: s.strings.care.care_import_fab(s.gender),
       button: true,
       child: Pressable(
         onTap: onTap,
@@ -897,7 +897,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   }
 
   void _fail() => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppScope.of(context).strings.care.care_save_failed)),
+        SnackBar(content: Text(AppScope.of(context).strings.care.care_save_failed(AppScope.of(context).gender))),
       );
 
   @override
@@ -1162,7 +1162,7 @@ class _LinkRow extends StatelessWidget {
         Expanded(
           child: Semantics(
             button: true,
-            label: '${s.strings.care.care_link_opens} $host',
+            label: '${s.strings.care.care_link_opens(s.gender)} $host',
             excludeSemantics: true,
             child: GestureDetector(
               onTap: onOpen,

@@ -268,6 +268,13 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       await Future<void>.delayed(const Duration(milliseconds: 420));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'lang': code}));
     });
+    registerExtensionOnce('ext.balsm.setGender', (method, params) async {
+      // Gendered Arabic copy (CODING_STANDARDS.md §4) is checked by capturing
+      // each screen once per gender in one run.
+      state.setGender(Gender.fromString(params['gender']));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'gender': state.gender.name}));
+    });
     registerExtensionOnce('ext.balsm.checkinNext', (method, params) async {
       state.qaCheckinAdvance?.call();
       await Future<void>.delayed(const Duration(milliseconds: 80));

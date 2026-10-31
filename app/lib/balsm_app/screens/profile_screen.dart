@@ -259,7 +259,7 @@ class ProfileScreen extends ConsumerWidget {
                 if (!await confirmRemoveDeviceAccount(context, s)) return;
                 if (!await removeDeviceAccount(ref, s) && context.mounted) {
                   ScaffoldMessenger.maybeOf(context)
-                      ?.showSnackBar(SnackBar(content: Text(s.strings.offline.merge_failed)));
+                      ?.showSnackBar(SnackBar(content: Text(s.strings.offline.merge_failed(s.gender))));
                 }
               }),
             ),
@@ -595,7 +595,7 @@ class _CompleteProfileCard extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.strings.profile.pc_title,
+                  Text(s.strings.profile.pc_title(s.gender),
                       style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
                   const SizedBox(height: 2),
                   Text(missing, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
@@ -643,7 +643,7 @@ void _showLanguageSheet(BuildContext context) {
   showAppSheet<void>(
     context,
     textDirection: s.dir,
-    builder: (ctx) => _SheetShell(title: s.strings.settings.choose_lang, children: [
+    builder: (ctx) => _SheetShell(title: s.strings.settings.choose_lang(s.gender), children: [
       ...LanguageCode.supported.indexed.map((e) => _SelectRow(
             label: e.$2.nativeName,
             sub: e.$2.name(kCatalog),

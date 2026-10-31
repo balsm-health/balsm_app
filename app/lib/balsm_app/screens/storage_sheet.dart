@@ -390,7 +390,7 @@ class _CloudAccountRow extends StatelessWidget {
             // control here would start a flow that cannot finish.
             Pill(
                 goOnline
-                    ? s.strings.offline.go_cloud_pill
+                    ? s.strings.offline.go_cloud_pill(s.gender)
                     : available
                         ? st.store_connect
                         : st.store_coming_soon,

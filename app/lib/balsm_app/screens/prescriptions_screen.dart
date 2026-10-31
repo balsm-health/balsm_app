@@ -127,7 +127,7 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen>
                       textAlign: TextAlign.center,
                       style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
                   const SizedBox(height: 8),
-                  Text(s.strings.meds.rx_empty_h, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                  Text(s.strings.meds.rx_empty_h(s.gender), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
                 ]),
               ),
             if (clinic.isNotEmpty) ...[

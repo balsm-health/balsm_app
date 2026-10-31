@@ -1,4 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:core/core.dart';
 import 'package:app/balsm_app/screens/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,13 +38,13 @@ void main() {
   testWidgets('no banner while viewing your own record', (tester) async {
     final s = await pump(tester);
     expect(find.text(s.strings.home.viewing_member('Karim Hassan')), findsNothing);
-    expect(find.text(s.strings.home.viewing_own_data), findsNothing);
+    expect(find.text(s.strings.home.viewing_own_data(Gender.other)), findsNothing);
   });
 
   testWidgets('selecting a member says plainly whose record is on screen', (tester) async {
     final s = await pump(tester, selectMember: true);
     expect(find.text(s.strings.home.viewing_member('Karim Hassan')), findsOne);
-    expect(find.text(s.strings.home.viewing_own_data), findsOne);
+    expect(find.text(s.strings.home.viewing_own_data(Gender.other)), findsOne);
   });
 
   testWidgets('the greeting never renames to the selected member', (tester) async {

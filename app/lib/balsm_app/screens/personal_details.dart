@@ -1115,7 +1115,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        content: Text(s.strings.emergency.eqr_rotate_confirm),
+        content: Text(s.strings.emergency.eqr_rotate_confirm(s.gender)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.strings.common.cancel)),
           TextButton(
@@ -1127,7 +1127,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     if (confirmed != true || !mounted) return;
     final ok = await ref.read(qrShareControllerProvider.notifier).rotate();
     if (!mounted) return;
-    _showToast(ok ? s.strings.emergency.eqr_rotated_toast : s.strings.emergency.eqr_rotate_failed);
+    _showToast(ok ? s.strings.emergency.eqr_rotated_toast : s.strings.emergency.eqr_rotate_failed(s.gender));
   }
 
   String _scanClientLabel(QrScanEntry e) => switch (e.client) {
@@ -1251,13 +1251,13 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
     final String desc;
     if (hasToken) {
-      desc = s.strings.emergency.eqr_help_active;
+      desc = s.strings.emergency.eqr_help_active(s.gender);
     } else if (userId == null) {
       desc = s.strings.emergency.eqr_help_signin;
     } else if (!hasHealthData) {
-      desc = s.strings.emergency.eqr_help_empty;
+      desc = s.strings.emergency.eqr_help_empty(s.gender);
     } else {
-      desc = s.strings.emergency.eqr_help_create;
+      desc = s.strings.emergency.eqr_help_create(s.gender);
     }
 
     return Container(

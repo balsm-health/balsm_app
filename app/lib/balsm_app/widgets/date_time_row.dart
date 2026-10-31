@@ -41,7 +41,7 @@ class DateTimeWhen extends StatelessWidget {
     final timeText = TimeOfDay.fromDateTime(when).format(context);
     final expiryDay = expiry == null ? null : DateTime(expiry!.year, expiry!.month, expiry!.day);
     final expiryText = expiryDay == null
-        ? s.strings.common.select_date
+        ? s.strings.common.select_date(s.gender)
         : expiryDay == today
             ? s.strings.common.today
             : '${expiry!.day} ${_shortMonth(expiry!.month, s)}';

@@ -97,7 +97,7 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
     if (!mounted) return;
     if (!ok) {
       setState(() => _sending = false);
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(s.strings.feedback.fb_failed)));
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(s.strings.feedback.fb_failed(s.gender))));
       return;
     }
     await s.prefs?.setFeedbackRating(_rating);
@@ -111,7 +111,7 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
         3 => s.strings.feedback.fb_r3,
         4 => s.strings.feedback.fb_r4,
         5 => s.strings.feedback.fb_r5,
-        _ => s.strings.feedback.fb_rate_q,
+        _ => s.strings.feedback.fb_rate_q(s.gender),
       };
 
   @override

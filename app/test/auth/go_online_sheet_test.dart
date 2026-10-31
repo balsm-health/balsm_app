@@ -75,18 +75,18 @@ void main() {
     await tester.tap(find.text(st.go_send));
     await tester.pumpAndSettle();
     verify(() => controller.sendCode('a@b.co')).called(1);
-    expect(find.textContaining(st.go_code_help, findRichText: true), findsOneWidget);
+    expect(find.textContaining(st.go_code_help(Gender.other), findRichText: true), findsOneWidget);
 
     // Sixth digit auto-submits.
     await tester.enterText(find.byType(TextField), '123456');
     await tester.pumpAndSettle();
     verify(() => controller.verify(email: 'a@b.co', code: '123456')).called(1);
-    expect(find.text(st.go_done_title), findsOneWidget);
+    expect(find.text(st.go_done_title(Gender.other)), findsOneWidget);
     expect(state.accountMode, AccountMode.online);
 
     await tester.tap(find.text(st.go_done));
     await tester.pumpAndSettle();
-    expect(find.text(st.go_done_title), findsNothing);
+    expect(find.text(st.go_done_title(Gender.other)), findsNothing);
   });
 
   testWidgets('existing account closes the sheet and routes to merge-or-discard', (tester) async {
@@ -122,7 +122,7 @@ void main() {
     await tester.enterText(find.byType(TextField), '123456');
     await tester.pumpAndSettle();
 
-    expect(find.text(state.strings.offline.go_failed), findsOneWidget);
+    expect(find.text(state.strings.offline.go_failed(Gender.other)), findsOneWidget);
     expect(state.accountMode, AccountMode.online);
     // Not stuck busy: a new code can be entered and submitted again.
     await tester.enterText(find.byType(TextField), '654321');
@@ -162,12 +162,12 @@ void main() {
     await tester.pumpAndSettle();
     final st = state.strings;
 
-    expect(find.text(st.offline.go_cloud_pill), findsOneWidget);
+    expect(find.text(st.offline.go_cloud_pill(Gender.other)), findsOneWidget);
     expect(find.text(st.offline.go_row_sub), findsOneWidget); // not "Available soon"
     expect(find.text(st.storage.store_available_soon), findsNWidgets(2));
     expect(find.text(st.storage.store_coming_soon), findsNWidgets(2)); // iCloud + Google Drive
 
-    await tester.tap(find.text(st.offline.go_cloud_pill));
+    await tester.tap(find.text(st.offline.go_cloud_pill(Gender.other)));
     await tester.pumpAndSettle();
     expect(find.text(st.offline.go_help), findsOneWidget);
   });
@@ -176,7 +176,7 @@ void main() {
     final state = await pump(tester, mode: AccountMode.online, onTap: (context, _) async => showStorageSync(context));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    expect(find.text(state.strings.offline.go_cloud_pill), findsNothing);
+    expect(find.text(state.strings.offline.go_cloud_pill(Gender.other)), findsNothing);
     expect(find.text(state.strings.storage.store_coming_soon), findsNWidgets(3));
   });
 }
