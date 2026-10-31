@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 
+import '../value_objects/check_in_metric.dart';
 import '../value_objects/pain_site.dart';
 import '../value_objects/ids.dart';
 import '../value_objects/mood.dart';
@@ -59,4 +60,42 @@ class CheckIn {
 
   /// Back-reference to a photo in the records vault (never the bytes).
   final String? photoRecordId;
+
+  /// Nothing left worth keeping: no reading, no symptom, no note. A check-in
+  /// the patient has emptied reading by reading is removed, not kept blank.
+  bool get isEmpty =>
+      mood == null && !reportsPain && symptoms.isEmpty && vitals.isEmpty && (note == null || note!.trim().isEmpty);
+
+  /// This check-in with one reading removed, as the patient deletes it from
+  /// the day screen. Removing pain clears the marked sites with the score;
+  /// removing symptoms clears their details.
+  CheckIn without(CheckInMetric metric) {
+    final v = vitals;
+    Vitals vitalsWithout() => Vitals(
+          systolic: metric == CheckInMetric.bloodPressure ? null : v.systolic,
+          diastolic: metric == CheckInMetric.bloodPressure ? null : v.diastolic,
+          heartRate: metric == CheckInMetric.heartRate ? null : v.heartRate,
+          temperature: metric == CheckInMetric.temperature ? null : v.temperature,
+          weightKg: metric == CheckInMetric.weight ? null : v.weightKg,
+          spo2: metric == CheckInMetric.spo2 ? null : v.spo2,
+          glucoseFasting: metric == CheckInMetric.glucose ? null : v.glucoseFasting,
+          glucosePostMeal: metric == CheckInMetric.glucose ? null : v.glucosePostMeal,
+          glucoseRandom: metric == CheckInMetric.glucose ? null : v.glucoseRandom,
+        );
+    final pain = metric == CheckInMetric.pain;
+    final symptomsGone = metric == CheckInMetric.symptoms;
+    return CheckIn(
+      id: id,
+      healthProfileId: healthProfileId,
+      recordedAt: recordedAt,
+      mood: metric == CheckInMetric.mood ? null : mood,
+      painLevel: pain ? PainLevel.none : painLevel,
+      painSites: pain ? const {} : painSites,
+      symptoms: symptomsGone ? const {} : symptoms,
+      symptomDetails: symptomsGone ? const {} : symptomDetails,
+      vitals: vitalsWithout(),
+      note: note,
+      photoRecordId: photoRecordId,
+    );
+  }
 }
