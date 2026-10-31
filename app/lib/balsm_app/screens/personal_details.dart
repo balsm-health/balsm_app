@@ -151,7 +151,12 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       handle.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
     }
     _debounce?.cancel();
-    if (v.isEmpty || v == _origHandle) {
+    // A profile always has a handle: clearing it is not "unchanged".
+    if (v.isEmpty) {
+      setState(() => unStatus = UsernameStatus.required);
+      return;
+    }
+    if (v == _origHandle) {
       setState(() => unStatus = UsernameStatus.idle);
       return;
     }
@@ -207,8 +212,13 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   /// Save entry point. A changed handle retires the patient's public link, so
   /// it is confirmed first (`hc_*` sheet) rather than swapped silently.
   Future<void> _requestSave() async {
-    if (!_canSave || _saving || !_loaded) return;
+    if (_saving || !_loaded) return;
     final next = handle.text.trim();
+    if (next.isEmpty) {
+      setState(() => unStatus = UsernameStatus.required);
+      return;
+    }
+    if (!_canSave) return;
     if (next == _origHandle) return _save();
     final confirmed = await _confirmHandleChange(next);
     if (!confirmed) {
@@ -245,6 +255,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           phone: _phoneCtrl.text.trim(),
           dateOfBirth: _fmtDob(),
           nationalId: _nidCtrl.text.trim(),
+          // Kept on the device for a device-only account, which cannot claim
+          // one on the server; online, the claim below sets it.
+          handle: handle.text.trim(),
         ));
     if (!mounted) return;
     if (profileResult.isFailure) {
@@ -255,6 +268,8 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
     // 2) Handle claim, only when the handle actually changed and is available.
     final newHandle = handle.text.trim();
+    // A device-only account has just stored it on the device; nothing to claim.
+    if (s.accountMode == AccountMode.deviceOnly) _origHandle = newHandle;
     if (newHandle != _origHandle && unStatus == UsernameStatus.available) {
       final claim = await ref.read(claimHandleUseCaseProvider).execute(newHandle);
       if (!mounted) return;
@@ -344,7 +359,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
   Color get _handleStatusColor => switch (unStatus) {
         UsernameStatus.available => T.hueMint600,
-        UsernameStatus.taken => T.danger,
+        UsernameStatus.taken || UsernameStatus.required => T.danger,
         UsernameStatus.invalid => T.sun500,
         _ => s.accent.main,
       };
@@ -354,6 +369,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         UsernameStatus.available => s.strings.auth.un_avail,
         UsernameStatus.taken => s.strings.auth.un_taken,
         UsernameStatus.invalid => s.strings.auth.un_invalid,
+        UsernameStatus.required => s.strings.auth.un_required,
         _ => null,
       };
 
@@ -364,7 +380,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     final ico = switch (unStatus) {
       UsernameStatus.available => LucideIcons.checkCircle2,
       UsernameStatus.taken => LucideIcons.xCircle,
-      UsernameStatus.invalid => LucideIcons.alertCircle,
+      UsernameStatus.invalid || UsernameStatus.required => LucideIcons.alertCircle,
       _ => null,
     };
     if (ico == null) return null;

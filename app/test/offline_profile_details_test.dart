@@ -55,6 +55,12 @@ void main() {
     verifyZeroInteractions(api);
   });
 
+  test('keeps the handle on the device, since it cannot be claimed offline', () async {
+    await profile.update(const UpdateProfileInput(handle: 'test_person'));
+    expect((await profile.load())!.handle, 'test_person');
+    verifyZeroInteractions(api);
+  });
+
   test('a null field stays, an empty one clears', () async {
     await profile.update(const UpdateProfileInput(firstName: 'Test', phone: '+20 100 000 0000'));
     await profile.update(const UpdateProfileInput(phone: ''));

@@ -31,7 +31,7 @@ enum AuthMethod { phone, email }
 
 /// Handle-availability check state shared by the profile-setup and personal-
 /// details username fields.
-enum UsernameStatus { idle, checking, available, taken, invalid }
+enum UsernameStatus { idle, checking, available, taken, invalid, required }
 
 class PatientAppState extends ChangeNotifier {
   LanguageCode lang = LanguageCode.en;

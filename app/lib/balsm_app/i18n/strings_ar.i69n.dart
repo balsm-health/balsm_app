@@ -110,6 +110,7 @@ class AuthStrings_ar extends AuthStrings {
   String get un_taken => "مأخوذ بالفعل";
   String get un_checking => "جارٍ التحقق…";
   String get un_invalid => "أحرف وأرقام و_ فقط (3–20 حرفاً)";
+  String get un_required => "اسم المستخدم مطلوب";
   String get ph_terms_pre => "بالمتابعة فإنك توافق على";
   String get ph_terms_link => "شروط بلسم";
   String get ph_terms_and => "و";
@@ -209,6 +210,8 @@ class AuthStrings_ar extends AuthStrings {
         return un_checking;
       case 'un_invalid':
         return un_invalid;
+      case 'un_required':
+        return un_required;
       case 'ph_terms_pre':
         return ph_terms_pre;
       case 'ph_terms_link':

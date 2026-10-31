@@ -48,6 +48,7 @@ class UpdateProfileInput {
     this.phone,
     this.dateOfBirth,
     this.nationalId,
+    this.handle,
   });
 
   // Server derives display_name from first + last; never sent by the client.
@@ -59,6 +60,10 @@ class UpdateProfileInput {
   final String? phone;
   final String? dateOfBirth;
   final String? nationalId;
+
+  /// Stored only for a device-only account, which cannot claim a handle on
+  /// the server. Online the handle is claimed separately, never by PATCH.
+  final String? handle;
 }
 
 /// Reads and writes the signed-in user's full profile.
@@ -90,6 +95,7 @@ class AccountProfileUseCase {
     if (raw == null || raw.isEmpty) return null;
     final j = jsonDecode(raw) as Map<String, dynamic>;
     return ProfileDetails(
+      handle: j['handle'] as String?,
       firstName: j['first_name'] as String?,
       lastName: j['last_name'] as String?,
       displayName: _joinName(j['first_name'] as String?, j['last_name'] as String?),
@@ -128,6 +134,7 @@ class AccountProfileUseCase {
       await _storage.writeToken(
           kLocalProfileKey,
           jsonEncode({
+            'handle': _merge(cur.handle, input.handle),
             'first_name': _merge(cur.firstName, input.firstName),
             'last_name': _merge(cur.lastName, input.lastName),
             'bio': _merge(cur.bio, input.bio),
