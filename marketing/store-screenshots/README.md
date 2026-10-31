@@ -25,23 +25,28 @@ Six screens per set: home, nearby, meds, trends, profile, brand.
 ## Re-export
 
 1. Open the design file above and press **Download all (ZIP)**. It renders
-   every frame at its exact store size and saves `Balsm Store Assets.zip`.
+   every frame at its exact store size and saves `Balsm Store Assets.zip`
+   wherever your browser keeps downloads.
 2. Unzip it over this folder:
 
    ```sh
-   unzip -o ~/Downloads/"Balsm Store Assets.zip" -d /tmp/store
+   unzip -o "<downloads>/Balsm Store Assets.zip" -d /tmp/store
    cp -R "/tmp/store/Balsm Store Assets/." marketing/store-screenshots/
    ```
 
-3. Remove the alpha channel. The browser saves RGBA even though every frame
-   is opaque, and App Store Connect rejects screenshots that have one:
+3. Check nothing has an alpha channel — App Store Connect rejects screenshots
+   that do. The export writes opaque RGB, so this should print only `srgb 3.0`:
 
    ```sh
-   find marketing/store-screenshots -name '*.png' -print0 | while IFS= read -r -d '' f; do
-     magick "$f" -background white -alpha remove -alpha off -strip \
-       -define png:exclude-chunk=date,time "PNG24:$f"
-   done
+   find marketing/store-screenshots -name '*.png' -print0 \
+     | xargs -0 magick identify -format '%[channels]\n' | sort | uniq -c
    ```
+
+   If a frame ever comes out `srgba`, flatten it with
+   `magick "$f" -background white -alpha remove -alpha off "PNG24:$f"`.
+
+Two exports of an unchanged design differ by a few hundred anti-aliased edge
+pixels, so only commit a re-export when the design actually changed.
 
 The app screens inside the frames are the design project's own captures
 (`screenshots/crop-*.png`, `tabP-*.png` there). To show newer UI, recapture
