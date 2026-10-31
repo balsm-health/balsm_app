@@ -29,6 +29,20 @@ String pick(L10nText t, {required bool ar}) {
   return ar ? t.en : t.ar;
 }
 
+/// Where the map card's Directions button sends the patient: Google Maps'
+/// documented `api=1` directions URL, routed to the facility's own coordinates.
+///
+/// Coordinates, not the name. Directory data carries ONE name per place (see
+/// [pick]) — `name.en` is empty for every entry the directory knows only in
+/// Arabic, which is most of them — so a URL built from `name.en` searched for
+/// an empty string and Maps opened on nothing. [CareEntity.position] is always
+/// a real lat/lng and needs no language.
+///
+/// `/dir/` rather than `/search/`: the button says Directions, and this is the
+/// endpoint that actually plots a route rather than just finding the place.
+String careDirectionsUrl(CareEntity e) =>
+    'https://www.google.com/maps/dir/?api=1&destination=${e.position.latitude},${e.position.longitude}';
+
 /// Kind of nearby health place. Icon/colour/label are presentation config that
 /// mirrors the design's `ENTITY_TYPES`. [wire] is the API `type` value.
 enum CareEntityType {
