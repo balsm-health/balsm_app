@@ -8,6 +8,7 @@
     "un_taken": "Already taken",
     "un_checking": "Checking…",
     "un_invalid": "Only letters, numbers, and _ (3–20 chars)",
+    "un_required": "A handle is required",
     "ph_terms_pre": "By continuing you agree to Balsm's",
     "ph_terms_link": "terms",
     "ph_terms_and": "and",

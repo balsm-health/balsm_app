@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:account/account.dart';
 import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:auth/auth.dart';
+import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart';
 import 'package:drift/drift.dart';
@@ -16,6 +18,10 @@ class _MockOffline extends Mock implements OfflineAccountService {}
 class _MockDisclosure extends Mock implements AcceptDisclosureUseCase {}
 
 class _MockFiles extends Mock implements UserFileStore {}
+
+class _MockAccountApi extends Mock implements AccountApi {}
+
+class _FakeUpdate extends Fake implements UpdateProfileRequest {}
 
 /// In-memory secure store — the controller reads `balsm.user_id` and writes
 /// `balsm.pending_merge_target` through it.
@@ -43,11 +49,14 @@ Future<List<String?>> owners(GeneratedDatabase db) async =>
         .toList();
 
 void main() {
+  setUpAll(() => registerFallbackValue(_FakeUpdate()));
+
   late _MockSignIn signIn;
   late _MockOffline offline;
   late _MockDisclosure disclosure;
   late _MockFiles files;
   late _MemStorage storage;
+  late _MockAccountApi accountApi;
   late EventBus bus;
   late List<AppEvent> events;
   late _Db db;
@@ -66,6 +75,8 @@ void main() {
     when(() => files.mergeOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {});
     when(() => files.deleteOwnerFiles(owner: any(named: 'owner'))).thenAnswer((_) async {});
     storage = _MemStorage();
+    accountApi = _MockAccountApi();
+    when(() => accountApi.updateProfile(any())).thenAnswer((_) async {});
     bus = EventBus();
     events = [];
     bus.events.listen(events.add);
@@ -85,6 +96,7 @@ void main() {
       storage: storage,
       eventBus: bus,
       countryCode: () => 'EG',
+      profile: AccountProfileUseCase(accountApi, storage),
     );
   });
 
@@ -121,6 +133,21 @@ void main() {
     // Flow complete: the pin and the disclosure retry flag are gone.
     expect(storage.data.containsKey('balsm.offline.local_id'), isFalse);
     expect(storage.data.containsKey('balsm.offline.disclosure_pending'), isFalse);
+  });
+
+  test('details saved while device-only become the new account\'s, then are forgotten', () async {
+    storage.data[AccountProfileUseCase.kLocalProfileKey] = '{"first_name":"Test","gender":"female"}';
+    await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
+    when(() => signIn.goOnline(email: 'a@b.co', code: '123456', clientAccountId: 'off-1'))
+        .thenAnswer((_) async => AppResult.success(const GoOnlineAdopted()));
+    when(() => signIn.setPassword(password: 'correct-horse')).thenAnswer((_) async => AppResult.success(null));
+
+    await controller.verify(email: 'a@b.co', code: '123456');
+
+    final sent = verify(() => accountApi.updateProfile(captureAny())).captured.single as UpdateProfileRequest;
+    expect(sent.firstName, 'Test');
+    expect(sent.gender, 'female');
+    expect(storage.data.containsKey(AccountProfileUseCase.kLocalProfileKey), isFalse);
   });
 
   test('new id: re-keys local rows before publishing sign-in', () async {

@@ -1,3 +1,4 @@
+import 'package:account/account.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart';
@@ -40,7 +41,9 @@ class GoOnlineController {
     required SecureStorageWrapper storage,
     required EventBus eventBus,
     required String Function() countryCode,
+    required AccountProfileUseCase profile,
   })  : _signIn = signIn,
+        _profile = profile,
         _offline = offline,
         _disclosure = disclosure,
         _db = db,
@@ -57,6 +60,7 @@ class GoOnlineController {
   final SecureStorageWrapper _storage;
   final EventBus _bus;
   final String Function() _countryCode;
+  final AccountProfileUseCase _profile;
 
   static const kUserId = 'balsm.user_id';
   static const kPendingMergeTarget = 'balsm.pending_merge_target';
@@ -138,6 +142,8 @@ class GoOnlineController {
     _bus.publish(UserSignedIn(userId: UserId.value(finalId), email: email, provider: 'email'));
     await finishPasswordIfPending();
     await _resyncDisclosure();
+    // The profile details saved while device-only become the new account's.
+    await _profile.publishLocal();
     await _storage.deleteToken(kLocalId);
     return AppResult.success(GoOnlineOutcome.online);
   }
@@ -214,6 +220,9 @@ class GoOnlineController {
     final email = await _storage.readToken(OfflineAccountService.kEmail) ?? '';
     await _storage.writeToken(kUserId, target);
     await _offline.clearPlainPassword();
+    // The account already has its own profile on the server; the details
+    // saved while device-only do not overwrite it.
+    await _profile.dropLocal();
     await _offline.markOnline();
     if (resync) await _storage.writeToken(kDisclosurePending, 'true');
     _bus.publish(UserSignedIn(userId: UserId.value(target), email: email, provider: 'email'));
@@ -276,5 +285,6 @@ final goOnlineControllerProvider = Provider<GoOnlineController>((ref) {
     storage: ref.watch(secureStorageProvider),
     eventBus: ref.watch(eventBusProvider),
     countryCode: () => ref.read(patientAppStateProvider).country.value,
+    profile: ref.watch(accountProfileUseCaseProvider),
   );
 });
