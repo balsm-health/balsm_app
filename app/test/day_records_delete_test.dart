@@ -73,14 +73,14 @@ void main() {
 
   Future<void> openMenu(WidgetTester tester, PatientAppState s, String label) async {
     await tester
-        .tap(find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == s.strings.checkin.rec_more(label)));
+        .tap(find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == s.strings.common.del_options(label)));
     await tester.pumpAndSettle();
     await tester.tap(find.text(s.strings.checkin.rec_delete));
     await tester.pumpAndSettle();
   }
 
   Future<void> confirm(WidgetTester tester, PatientAppState s) async {
-    await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.text(s.strings.checkin.rec_delete_short)));
+    await tester.tap(find.descendant(of: find.byType(Dialog), matching: find.text(s.strings.common.del)));
     await tester.pumpAndSettle();
   }
 
@@ -94,18 +94,17 @@ void main() {
     final (recorder, s) = await pump(tester, [bpOnly]);
     await openMenu(tester, s, s.strings.profile.m_bp);
 
-    final c = s.strings.checkin;
-    expect(find.text(c.rec_del_title(s.strings.profile.m_bp.toLowerCase())), findsOne);
+    expect(find.text(s.strings.common.del_title(s.strings.profile.m_bp.toLowerCase())), findsOne);
     expect(recorder.stored, isEmpty);
     await confirm(tester, s);
 
     expect(value('118/76'), findsNothing);
-    expect(find.text(c.rec_deleted(s.strings.profile.m_bp)), findsOne);
+    expect(find.text(s.strings.common.del_done(s.strings.profile.m_bp)), findsOne);
     expect(recorder.stored.single.vitals.systolic, isNull);
     expect(recorder.stored.single.vitals.glucoseFasting, 95);
 
     await tester.pump(const Duration(seconds: 3));
-    expect(find.text(c.rec_deleted(s.strings.profile.m_bp)), findsNothing);
+    expect(find.text(s.strings.common.del_done(s.strings.profile.m_bp)), findsNothing);
   });
 
   testWidgets('Cancel keeps the reading and stores nothing', (tester) async {
@@ -120,11 +119,10 @@ void main() {
 
   testWidgets('a short swipe reveals Delete; a long one asks at once', (tester) async {
     final (recorder, s) = await pump(tester, [bpOnly]);
-    final c = s.strings.checkin;
 
     await tester.drag(find.text(s.strings.profile.m_glucose), const Offset(-70, 0));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(c.rec_delete_short));
+    await tester.tap(find.text(s.strings.common.del));
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsOne);
     await tester.tap(find.text(s.strings.common.cancel));
@@ -140,15 +138,15 @@ void main() {
   testWidgets('Select deletes several readings in one store and empties the day', (tester) async {
     final (recorder, s) = await pump(tester, [bpOnly]);
     final c = s.strings.checkin;
-    await tester.tap(find.text(c.rec_select));
+    await tester.tap(find.text(s.strings.common.del_select));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(c.rec_select_all));
+    await tester.tap(find.text(s.strings.common.del_select_all));
     await tester.pumpAndSettle();
-    expect(find.text(c.rec_selected(2)), findsOne);
+    expect(find.text(s.strings.common.del_selected(2)), findsOne);
 
-    await tester.tap(find.text(c.rec_delete_n(c.rec_count(2))));
+    await tester.tap(find.text(s.strings.common.del_n(c.rec_count(2))));
     await tester.pumpAndSettle();
-    expect(find.text(c.rec_del_title(c.rec_count(2))), findsOne);
+    expect(find.text(s.strings.common.del_title(c.rec_count(2))), findsOne);
     await confirm(tester, s);
 
     expect(find.text(c.day_empty), findsOne);
@@ -160,7 +158,7 @@ void main() {
     await tester.drag(find.text(s.strings.profile.m_bp), const Offset(300, 0));
     await tester.pumpAndSettle();
     await confirm(tester, s);
-    expect(find.text(s.strings.checkin.rec_deleted(s.strings.profile.m_bp)), findsOne);
+    expect(find.text(s.strings.common.del_done(s.strings.profile.m_bp)), findsOne);
     expect(recorder.stored.single.vitals.systolic, isNull);
   });
 
@@ -195,11 +193,11 @@ void main() {
     testWidgets('Select across both stores each check-in once', (tester) async {
       final (recorder, s) = await pump(tester, [morning, evening]);
       final c = s.strings.checkin;
-      await tester.tap(find.text(c.rec_select));
+      await tester.tap(find.text(s.strings.common.del_select));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(c.rec_select_all));
+      await tester.tap(find.text(s.strings.common.del_select_all));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(c.rec_delete_n(c.rec_count(4))));
+      await tester.tap(find.text(s.strings.common.del_n(c.rec_count(4))));
       await tester.pumpAndSettle();
       await confirm(tester, s);
 
