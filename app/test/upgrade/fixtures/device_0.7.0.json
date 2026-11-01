@@ -1,0 +1,37 @@
+{
+  "_comment": "What a 0.7.0 phone holds outside the database, for the app-update tests. Every value is synthetic and differs from the code's default, so a setting that is silently dropped (renamed key, changed type) reads back as the default and fails the test.",
+  "prefs": {
+    "pa._v": 1,
+    "pa.lang": "ar",
+    "pa.accent": "fixture-accent",
+    "pa.country": "SA",
+    "pa.storage": "balsm-cloud",
+    "pa.signedIn": true,
+    "pa.walkthroughSeen": true,
+    "pa.fbRating": 4,
+    "pa.fbSentAt": "2026-10-20T10:00:00.000Z",
+    "pa.careCloudSync": false,
+    "pa.lastTz": "EET",
+    "telemetry.analyticsEnabled": false,
+    "telemetry.campaign": "{\"utm_source\":\"fixture\"}",
+    "update.manifest": "{\"fixture\":true}",
+    "update.skipped": "0.7.1"
+  },
+  "keychain": {
+    "online": {
+      "balsm.account_mode": "online",
+      "balsm.user_id": "00000000-0000-4000-8000-000000000001",
+      "balsm.access_token": "fixture-access-token",
+      "balsm.refresh_token": "fixture-refresh-token",
+      "balsm.device_id": "fixture-device-id",
+      "balsm.db.key.v2": "0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "deviceOnly": {
+      "balsm.account_mode": "deviceOnly",
+      "balsm.user_id": "00000000-0000-4000-8000-000000000002",
+      "balsm.offline.email": "fixture@example.invalid",
+      "balsm.offline.pw_hash": "fixture-hash",
+      "balsm.db.key.v2": "0000000000000000000000000000000000000000000000000000000000000002"
+    }
+  }
+}
