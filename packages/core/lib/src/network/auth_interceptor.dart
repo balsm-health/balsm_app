@@ -74,10 +74,18 @@ class AuthInterceptor extends Interceptor {
       path == ApiRoutes.auth_password_sign_in ||
       path == ApiRoutes.auth_password_reset;
 
+  /// The care directory: Balsm-owned, NON-PHI reference data about public
+  /// places, served anonymously. A device-only account must still reach it —
+  /// refusing it leaves the map and the map-pack catalogue empty for no
+  /// privacy gain. `/care-team` (the patient's own providers, PHI) is a
+  /// different prefix and stays refused.
+  bool _isPublicReference(String path) => path == '/care' || path.startsWith('/care/');
+
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     if (!_isBootstrap(options.path)) {
-      if (AccountMode.fromWire(await _storage.read(key: kAccountModeKey)) == AccountMode.deviceOnly) {
+      if (!_isPublicReference(options.path) &&
+          AccountMode.fromWire(await _storage.read(key: kAccountModeKey)) == AccountMode.deviceOnly) {
         return handler.reject(DioException(
           requestOptions: options,
           // connectionError (not cancel): ApiException.fromDioException short-

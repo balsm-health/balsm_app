@@ -311,6 +311,32 @@ void main() {
       expect(h.adapter.requests, hasLength(1));
     });
 
+    test('care-directory requests still go out — public, non-PHI reference data', () async {
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly'});
+      final h = harness(storage, (o) => _json('{"data":[]}'));
+
+      for (final path in [
+        ApiRoutes.care_pins,
+        ApiRoutes.care_entities,
+        ApiRoutes.careEntity('x'),
+        ApiRoutes.care_packs
+      ]) {
+        await h.controller.client.dio.get<void>(path);
+      }
+      expect(h.adapter.requests.map((o) => o.path), hasLength(4));
+    });
+
+    test('care-team requests (PHI) are still refused', () async {
+      final storage = storageWith({'balsm.account_mode': 'deviceOnly'});
+      final h = harness(storage, (o) => _json('{}'));
+
+      await expectLater(
+        h.controller.client.dio.get<void>(ApiRoutes.care_team_providers),
+        throwsA(isA<DioException>().having((e) => e.error, 'error', isA<DeviceOnlyAccountException>())),
+      );
+      expect(h.adapter.requests, isEmpty);
+    });
+
     test('surfaces to ApiException.fromDioException as offline, not cancelled', () async {
       // Callers never see the raw DioException — NetworkManager funnels every
       // failure through ApiException.fromDioException first. `cancel` is
