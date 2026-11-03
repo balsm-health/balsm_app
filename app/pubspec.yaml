@@ -43,6 +43,8 @@ dependencies:
     path: ../modules/geofence_block
   family:
     path: ../modules/family
+  pregnancy:
+    path: ../modules/pregnancy
   flutter_riverpod: ^2.6.1
   go_router: ^14.0.0
   app_links: ^6.3.0
