@@ -181,7 +181,9 @@ class RecordAttachmentThumb extends ConsumerWidget {
 /// All vault rows including check-in photos — [RecordAttachmentThumb] resolves
 /// back-references that the document-library list deliberately filters out.
 final _allRecordsProvider = StreamProvider.autoDispose<List<RecordDocument>>((ref) {
-  return ref.watch(recordsDataSourceProvider).watchAll();
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return Stream.value(const []);
+  return ref.watch(recordsDataSourceProvider).watchAll(scope: profileId);
 });
 
 /// Design `attachments.jsx AttachmentGallery`: a lead thumb, then the rest as

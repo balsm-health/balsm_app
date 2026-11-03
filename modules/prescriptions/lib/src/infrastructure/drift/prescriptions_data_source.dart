@@ -10,18 +10,20 @@ import '../../application/ports/prescriptions_data_source.dart';
 import '../../domain/aggregates/prescription.dart';
 import '../../domain/value_objects/ids.dart';
 
-/// Drift-backed [UserDataSource] for prescriptions. PHI, on-device only.
+/// Drift-backed [ProfileDataSource] for prescriptions. PHI, on-device only.
 ///
 /// Scope semantics match the records vault: `scope == null` resolves the
-/// ACTIVE user; no active user → mutations throw [NoActiveUserException] and
-/// reads return null/empty. Every query filters on `user_id`.
+/// ACTIVE health profile; no active profile → mutations throw
+/// [NoActiveProfileException] and reads return null/empty. Every query
+/// filters on `health_profile_id`; `user_id` keeps the owning account.
 class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
-  DriftPrescriptionsDataSource(this._db, this.activeUser);
+  DriftPrescriptionsDataSource(this._db, this.activeProfile);
 
   final AppDatabase _db;
 
-  /// Resolves the active user at call time (null = signed out).
-  final UserId? Function() activeUser;
+  /// Resolves the active health profile at call time (null = signed out, or
+  /// the self profile is not ensured yet).
+  final HealthProfileId? Function() activeProfile;
 
   static const _table = 'prescription';
 
@@ -33,12 +35,24 @@ class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
     if (!_changes.isClosed) _changes.add(null);
   }
 
-  UserId? _resolve(UserId? scope) => scope ?? activeUser();
+  HealthProfileId? _resolve(HealthProfileId? scope) => scope ?? activeProfile();
 
-  UserId _require(UserId? scope) {
-    final user = _resolve(scope);
-    if (user == null) throw const NoActiveUserException();
-    return user;
+  HealthProfileId _require(HealthProfileId? scope) {
+    final profile = _resolve(scope);
+    if (profile == null) throw const NoActiveProfileException();
+    return profile;
+  }
+
+  /// A prescription is filed under a profile of the account that owns it —
+  /// never under another account's person.
+  Future<void> _requireOwnedBy(HealthProfileId profile, UserId owner, String what) async {
+    final rows = await _db.customSelect(
+      'SELECT 1 FROM health_profile WHERE id = ? AND user_id = ?',
+      variables: [Variable<String>(profile.value), Variable<String>(owner.value)],
+    ).get();
+    if (rows.isEmpty) {
+      throw StorageWriteException('$what: profile ${profile.value} is not owned by ${owner.value}');
+    }
   }
 
   Prescription _hydrate(Map<String, dynamic> row) => Prescription(
@@ -66,29 +80,29 @@ class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
   // ── Reads ────────────────────────────────────────────────────────────────
 
   @override
-  Future<Prescription?> find(PrescriptionId key, {UserId? scope}) async {
-    final user = _resolve(scope);
-    if (user == null) return null;
+  Future<Prescription?> find(PrescriptionId key, {HealthProfileId? scope}) async {
+    final profile = _resolve(scope);
+    if (profile == null) return null;
     final rows = await _db.customSelect(
-      'SELECT * FROM $_table WHERE id = ? AND user_id = ? LIMIT 1',
-      variables: [Variable<String>(key.value), Variable<String>(user.value)],
+      'SELECT * FROM $_table WHERE id = ? AND health_profile_id = ? LIMIT 1',
+      variables: [Variable<String>(key.value), Variable<String>(profile.value)],
     ).get();
     return rows.isEmpty ? null : _hydrate(rows.first.data);
   }
 
   @override
-  Future<List<Prescription>> findAll({UserId? scope}) async {
-    final user = _resolve(scope);
-    if (user == null) return const [];
+  Future<List<Prescription>> findAll({HealthProfileId? scope}) async {
+    final profile = _resolve(scope);
+    if (profile == null) return const [];
     final rows = await _db.customSelect(
-      'SELECT * FROM $_table WHERE user_id = ? ORDER BY issued_at DESC',
-      variables: [Variable<String>(user.value)],
+      'SELECT * FROM $_table WHERE health_profile_id = ? ORDER BY issued_at DESC',
+      variables: [Variable<String>(profile.value)],
     ).get();
     return [for (final r in rows) _hydrate(r.data)];
   }
 
   @override
-  Future<List<Prescription>> findMany(Iterable<PrescriptionId> keys, {UserId? scope}) async {
+  Future<List<Prescription>> findMany(Iterable<PrescriptionId> keys, {HealthProfileId? scope}) async {
     final out = <Prescription>[];
     for (final k in keys) {
       final a = await find(k, scope: scope);
@@ -98,42 +112,45 @@ class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
   }
 
   @override
-  Future<bool> exists(PrescriptionId key, {UserId? scope}) async => await find(key, scope: scope) != null;
+  Future<bool> exists(PrescriptionId key, {HealthProfileId? scope}) async => await find(key, scope: scope) != null;
 
   // ── Watch ────────────────────────────────────────────────────────────────
 
   @override
-  Stream<Prescription?> watch(PrescriptionId key, {UserId? scope}) {
-    final user = _resolve(scope);
-    if (user == null) return Stream.value(null);
+  Stream<Prescription?> watch(PrescriptionId key, {HealthProfileId? scope}) {
+    final profile = _resolve(scope);
+    if (profile == null) return Stream.value(null);
     return Stream<Prescription?>.multi((emitter) async {
-      emitter.add(await find(key, scope: user));
-      emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: user)));
+      emitter.add(await find(key, scope: profile));
+      emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: profile)));
     });
   }
 
   @override
-  Stream<List<Prescription>> watchAll({UserId? scope}) {
-    final user = _resolve(scope);
-    if (user == null) return Stream.value(const []);
+  Stream<List<Prescription>> watchAll({HealthProfileId? scope}) {
+    final profile = _resolve(scope);
+    if (profile == null) return Stream.value(const []);
     return Stream<List<Prescription>>.multi((emitter) async {
-      emitter.add(await findAll(scope: user));
-      emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: user)));
+      emitter.add(await findAll(scope: profile));
+      emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: profile)));
     });
   }
 
   // ── Writes ───────────────────────────────────────────────────────────────
 
   @override
-  Future<void> put(PrescriptionId key, Prescription value, {UserId? scope}) async {
-    final user = _require(scope);
+  Future<void> put(PrescriptionId key, Prescription value, {HealthProfileId? scope}) async {
+    final profile = _require(scope);
+    await _requireOwnedBy(profile, value.userId, 'prescription ${key.value}');
     await _db.customInsert(
       'INSERT OR REPLACE INTO $_table '
-      '(id, user_id, clinician, title, specialty, reference, source, attachment_path, attachment_kind, items, issued_at, valid_until, created_at) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      '(id, user_id, health_profile_id, clinician, title, specialty, reference, source, attachment_path, '
+      'attachment_kind, items, issued_at, valid_until, created_at) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(key.value),
-        Variable<String>(user.value),
+        Variable<String>(value.userId.value),
+        Variable<String>(profile.value),
         Variable<String>(value.clinician),
         Variable<String>(value.title),
         Variable<String>(value.specialty),
@@ -151,39 +168,39 @@ class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
   }
 
   @override
-  Future<void> putBulk(Map<PrescriptionId, Prescription> values, {UserId? scope}) async {
-    final user = _require(scope);
+  Future<void> putBulk(Map<PrescriptionId, Prescription> values, {HealthProfileId? scope}) async {
+    final profile = _require(scope);
     for (final e in values.entries) {
-      await put(e.key, e.value, scope: user);
+      await put(e.key, e.value, scope: profile);
     }
   }
 
   @override
-  Future<void> delete(PrescriptionId key, {UserId? scope}) async {
-    final user = _require(scope);
+  Future<void> delete(PrescriptionId key, {HealthProfileId? scope}) async {
+    final profile = _require(scope);
     await _db.customUpdate(
-      'DELETE FROM $_table WHERE id = ? AND user_id = ?',
-      variables: [Variable<String>(key.value), Variable<String>(user.value)],
+      'DELETE FROM $_table WHERE id = ? AND health_profile_id = ?',
+      variables: [Variable<String>(key.value), Variable<String>(profile.value)],
       updateKind: UpdateKind.delete,
     );
     _notifyChanged();
   }
 
   @override
-  Future<void> deleteMany(Iterable<PrescriptionId> keys, {UserId? scope}) async {
+  Future<void> deleteMany(Iterable<PrescriptionId> keys, {HealthProfileId? scope}) async {
     for (final k in keys) {
       await delete(k, scope: scope);
     }
   }
 
   @override
-  Future<void> clear({UserId? scope}) async {
+  Future<void> clear({HealthProfileId? scope}) async {
     // Idempotent: logout may run twice, and signed-out has nothing to clear.
-    final user = _resolve(scope);
-    if (user == null) return;
+    final profile = _resolve(scope);
+    if (profile == null) return;
     await _db.customUpdate(
-      'DELETE FROM $_table WHERE user_id = ?',
-      variables: [Variable<String>(user.value)],
+      'DELETE FROM $_table WHERE health_profile_id = ?',
+      variables: [Variable<String>(profile.value)],
       updateKind: UpdateKind.delete,
     );
     _notifyChanged();
@@ -197,17 +214,18 @@ class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
   }
 }
 
-/// DI: user-partitioned prescriptions bound to the active user port.
+/// DI: profile-partitioned prescriptions bound to the active-profile port.
 final prescriptionsDataSourceProvider = Provider<PrescriptionsDataSource>((ref) {
   return DriftPrescriptionsDataSource(
     ref.watch(appDatabaseProvider),
-    () => ref.read(currentUserIdProvider),
+    () => ref.read(currentProfileIdProvider),
   );
 });
 
-/// Live prescriptions for the signed-in user, newest first.
+/// Live prescriptions for the active profile, newest first. Re-subscribes
+/// when the active profile changes.
 final prescriptionListProvider = StreamProvider.autoDispose<List<Prescription>>((ref) {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return Stream.value(const []);
-  return ref.watch(prescriptionsDataSourceProvider).watchAll();
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return Stream.value(const []);
+  return ref.watch(prescriptionsDataSourceProvider).watchAll(scope: profileId);
 });

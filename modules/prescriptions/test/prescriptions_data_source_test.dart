@@ -7,6 +7,10 @@ void main() {
   late AppDatabase db;
   late DriftPrescriptionsDataSource ds;
   const user = UserId.value('u-1');
+  late HealthProfileId self;
+  // A second person on the same account (a managed dependent). Synthetic.
+  const child = HealthProfileId.value('hp-child');
+  HealthProfileId? active;
 
   Prescription sample(String id, {DateTime? until}) => Prescription(
         id: PrescriptionId.value(id),
@@ -23,9 +27,13 @@ void main() {
         createdAt: DateTime.utc(2026, 8, 1),
       );
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    ds = DriftPrescriptionsDataSource(db, () => user);
+    self = await db.ensureSelfHealthProfile(user);
+    await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) "
+        "VALUES ('${child.value}', '${user.value}', 0, 'dependent', 0)");
+    active = self;
+    ds = DriftPrescriptionsDataSource(db, () => active);
   });
   tearDown(() => db.close());
 
@@ -54,7 +62,7 @@ void main() {
     expect(sample('b', until: DateTime.utc(2026, 1, 1)).isActive(now), isFalse);
   });
 
-  test('findAll is newest-first and user-scoped', () async {
+  test('findAll is newest-first and profile-scoped', () async {
     await ds.put(
         const PrescriptionId.value('old'),
         Prescription(
@@ -73,7 +81,25 @@ void main() {
             createdAt: DateTime.utc(2026, 1, 1)));
 
     expect((await ds.findAll()).map((r) => r.id.value), ['new', 'old']);
-    expect(await ds.findAll(scope: const UserId.value('u-2')), isEmpty);
+    expect(await ds.findAll(scope: child), isEmpty);
+  });
+
+  test('two profiles of one account are isolated from each other', () async {
+    await ds.put(const PrescriptionId.value('mine'), sample('mine'));
+    active = child;
+    await ds.put(const PrescriptionId.value('kid'), sample('kid'));
+
+    expect((await ds.findAll()).map((r) => r.id.value), ['kid']);
+    expect(await ds.find(const PrescriptionId.value('mine')), isNull);
+    await ds.delete(const PrescriptionId.value('mine')); // other partition: no-op
+    expect((await ds.findAll(scope: self)).map((r) => r.id.value), ['mine']);
+    expect((await ds.find(const PrescriptionId.value('kid')))!.userId, user);
+  });
+
+  test('put refuses a profile the prescription\'s account does not own', () async {
+    final other = await db.ensureSelfHealthProfile(const UserId.value('u-2'));
+    active = other;
+    expect(() => ds.put(const PrescriptionId.value('x'), sample('x')), throwsA(isA<StorageWriteException>()));
   });
 
   test('self-added scripts keep title, source, and attachment', () async {
@@ -102,9 +128,9 @@ void main() {
     expect(sample('clinic').isSelf, isFalse);
   });
 
-  test('mutations with no active user throw', () async {
+  test('mutations with no active profile throw', () async {
     final signedOut = DriftPrescriptionsDataSource(db, () => null);
-    expect(() => signedOut.put(const PrescriptionId.value('x'), sample('x')), throwsA(isA<NoActiveUserException>()));
+    expect(() => signedOut.put(const PrescriptionId.value('x'), sample('x')), throwsA(isA<NoActiveProfileException>()));
     expect(await signedOut.findAll(), isEmpty);
   });
 }

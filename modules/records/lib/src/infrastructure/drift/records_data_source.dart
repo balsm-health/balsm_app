@@ -10,26 +10,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/aggregates/record_document.dart';
 import '../../domain/value_objects/ids.dart';
 
-/// Drift-backed [UserDataSource] for the health-record vault — the first
-/// concrete implementation of core's scoped data-source contract.
+/// Drift-backed [ProfileDataSource] for the health-record vault.
 ///
 /// Scope semantics (per `ScopedDataSource`):
-/// - `scope == null` → the ACTIVE user from the injected [activeUser]
-///   callback (bound to `currentUserIdProvider` in the provider below).
-/// - no active user → mutations throw [NoActiveUserException]; reads return
-///   null/empty; [clear] is an idempotent no-op (logout may run twice).
-/// - rows are isolated per partition: every query filters on `user_id`, so
-///   one user's records are invisible to another's session.
+/// - `scope == null` → the ACTIVE health profile from the injected
+///   [activeProfile] callback (bound to `currentProfileIdProvider` in the
+///   provider below) — the person the records are about.
+/// - no active profile → mutations throw [NoActiveProfileException]; reads
+///   return null/empty; [clear] is an idempotent no-op (logout may run twice).
+/// - rows are isolated per partition: every query filters on
+///   `health_profile_id`, so one person's records are invisible while another
+///   profile is active — a parent's own vault never mixes with a child's.
+///
+/// `user_id` still records the owning account (from `RecordDocument.userId`)
+/// so account-level operations (re-key, merge, discard) keep working.
 ///
 /// Fail-loud: backend failures surface as [StorageWriteException]; a row
 /// whose json/enum fields don't decode throws [StorageDecodeException].
-class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocument> implements RecordsDataSource {
-  DriftRecordsDataSource(this._db, this.activeUser);
+class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordDocument> implements RecordsDataSource {
+  DriftRecordsDataSource(this._db, this.activeProfile);
 
   final AppDatabase _db;
 
-  /// Resolves the active user at call time (null = signed out).
-  final UserId? Function() activeUser;
+  /// Resolves the active health profile at call time (null = signed out, or
+  /// the self profile is not ensured yet).
+  final HealthProfileId? Function() activeProfile;
 
   static const _table = 'health_record';
 
@@ -42,49 +47,49 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
     if (!_changes.isClosed) _changes.add(null);
   }
 
-  UserId? _resolve(UserId? scope) => scope ?? activeUser();
+  HealthProfileId? _resolve(HealthProfileId? scope) => scope ?? activeProfile();
 
-  UserId _require(UserId? scope) {
-    final user = _resolve(scope);
-    if (user == null) throw const NoActiveUserException();
-    return user;
+  HealthProfileId _require(HealthProfileId? scope) {
+    final profile = _resolve(scope);
+    if (profile == null) throw const NoActiveProfileException();
+    return profile;
   }
 
   // ── Reads ────────────────────────────────────────────────────────────────
 
   @override
-  Future<RecordDocument?> find(RecordDocumentId key, {UserId? scope}) async {
-    final user = _resolve(scope);
-    if (user == null) return null;
+  Future<RecordDocument?> find(RecordDocumentId key, {HealthProfileId? scope}) async {
+    final profile = _resolve(scope);
+    if (profile == null) return null;
     final rows = await _db.customSelect(
-      'SELECT * FROM $_table WHERE id = ? AND user_id = ? LIMIT 1',
-      variables: [Variable<String>(key.value), Variable<String>(user.value)],
+      'SELECT * FROM $_table WHERE id = ? AND health_profile_id = ? LIMIT 1',
+      variables: [Variable<String>(key.value), Variable<String>(profile.value)],
     ).get();
     return rows.isEmpty ? null : _fromRow(rows.first.data);
   }
 
   @override
-  Future<List<RecordDocument>> findAll({UserId? scope}) async {
-    final user = _resolve(scope);
-    if (user == null) return const [];
+  Future<List<RecordDocument>> findAll({HealthProfileId? scope}) async {
+    final profile = _resolve(scope);
+    if (profile == null) return const [];
     final rows = await _db.customSelect(
-      'SELECT * FROM $_table WHERE user_id = ? ORDER BY taken_at DESC',
-      variables: [Variable<String>(user.value)],
+      'SELECT * FROM $_table WHERE health_profile_id = ? ORDER BY taken_at DESC',
+      variables: [Variable<String>(profile.value)],
     ).get();
     return rows.map((r) => _fromRow(r.data)).toList();
   }
 
   @override
-  Future<List<RecordDocument>> findMany(Iterable<RecordDocumentId> keys, {UserId? scope}) async {
-    final user = _resolve(scope);
-    if (user == null || keys.isEmpty) return const [];
+  Future<List<RecordDocument>> findMany(Iterable<RecordDocumentId> keys, {HealthProfileId? scope}) async {
+    final profile = _resolve(scope);
+    if (profile == null || keys.isEmpty) return const [];
     final ids = keys.map((k) => k.value).toList();
     final placeholders = List.filled(ids.length, '?').join(', ');
     final rows = await _db.customSelect(
-      'SELECT * FROM $_table WHERE user_id = ? AND id IN ($placeholders) '
+      'SELECT * FROM $_table WHERE health_profile_id = ? AND id IN ($placeholders) '
       'ORDER BY taken_at DESC',
       variables: [
-        Variable<String>(user.value),
+        Variable<String>(profile.value),
         ...ids.map((id) => Variable<String>(id)),
       ],
     ).get();
@@ -92,30 +97,30 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 
   @override
-  Future<bool> exists(RecordDocumentId key, {UserId? scope}) async => await find(key, scope: scope) != null;
+  Future<bool> exists(RecordDocumentId key, {HealthProfileId? scope}) async => await find(key, scope: scope) != null;
 
   // ── Watch ────────────────────────────────────────────────────────────────
 
   @override
-  Stream<RecordDocument?> watch(RecordDocumentId key, {UserId? scope}) {
-    final user = _resolve(scope);
-    if (user == null) return Stream.value(null);
+  Stream<RecordDocument?> watch(RecordDocumentId key, {HealthProfileId? scope}) {
+    final profile = _resolve(scope);
+    if (profile == null) return Stream.value(null);
     return Stream<RecordDocument?>.multi((emitter) async {
-      emitter.add(await find(key, scope: user));
+      emitter.add(await find(key, scope: profile));
       emitter.addStream(
-        _changes.stream.asyncMap((_) => find(key, scope: user)),
+        _changes.stream.asyncMap((_) => find(key, scope: profile)),
       );
     });
   }
 
   @override
-  Stream<List<RecordDocument>> watchAll({UserId? scope}) {
-    final user = _resolve(scope);
-    if (user == null) return Stream.value(const []);
+  Stream<List<RecordDocument>> watchAll({HealthProfileId? scope}) {
+    final profile = _resolve(scope);
+    if (profile == null) return Stream.value(const []);
     return Stream<List<RecordDocument>>.multi((emitter) async {
-      emitter.add(await findAll(scope: user));
+      emitter.add(await findAll(scope: profile));
       emitter.addStream(
-        _changes.stream.asyncMap((_) => findAll(scope: user)),
+        _changes.stream.asyncMap((_) => findAll(scope: profile)),
       );
     });
   }
@@ -123,29 +128,19 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   // ── Writes ───────────────────────────────────────────────────────────────
 
   @override
-  Future<void> put(RecordDocumentId key, RecordDocument value, {UserId? scope}) async {
-    final user = _require(scope);
-    if (value.userId != user) {
-      throw StorageWriteException(
-        'record ${key.value}: aggregate userId ${value.userId.value} does not '
-        'match the target partition ${user.value}',
-      );
-    }
+  Future<void> put(RecordDocumentId key, RecordDocument value, {HealthProfileId? scope}) async {
+    final profile = _require(scope);
+    await _requireOwnedBy(profile, value.userId, 'record ${key.value}');
     try {
-      // health_profile_id: dependants seam — anchor to the user's (self)
-      // profile row when it exists; NULL otherwise (convergent backfill on a
-      // later open fills it). Queries still filter on user_id until F1.
       await _db.customInsert(
         'INSERT OR REPLACE INTO $_table '
         '(id, user_id, health_profile_id, type, title, tags, source, '
         'file_type, file_path, pages, result_note, taken_at, created_at) '
-        'VALUES (?, ?, '
-        '(SELECT id FROM health_profile WHERE user_id = ?), '
-        '?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         variables: [
           Variable<String>(key.value),
-          Variable<String>(user.value),
-          Variable<String>(user.value),
+          Variable<String>(value.userId.value),
+          Variable<String>(profile.value),
           Variable<String>(value.type.name),
           Variable<String>(value.title),
           Variable<String>(jsonEncode(value.tags)),
@@ -166,37 +161,37 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 
   @override
-  Future<void> putBulk(Map<RecordDocumentId, RecordDocument> values, {UserId? scope}) async {
-    final user = _require(scope);
+  Future<void> putBulk(Map<RecordDocumentId, RecordDocument> values, {HealthProfileId? scope}) async {
+    final profile = _require(scope);
     await _db.transaction(() async {
       for (final entry in values.entries) {
-        await put(entry.key, entry.value, scope: user);
+        await put(entry.key, entry.value, scope: profile);
       }
     });
     _notifyChanged();
   }
 
   @override
-  Future<void> delete(RecordDocumentId key, {UserId? scope}) async {
-    final user = _require(scope);
+  Future<void> delete(RecordDocumentId key, {HealthProfileId? scope}) async {
+    final profile = _require(scope);
     await _db.customUpdate(
-      'DELETE FROM $_table WHERE id = ? AND user_id = ?',
-      variables: [Variable<String>(key.value), Variable<String>(user.value)],
+      'DELETE FROM $_table WHERE id = ? AND health_profile_id = ?',
+      variables: [Variable<String>(key.value), Variable<String>(profile.value)],
       updateKind: UpdateKind.delete,
     );
     _notifyChanged();
   }
 
   @override
-  Future<void> deleteMany(Iterable<RecordDocumentId> keys, {UserId? scope}) async {
-    final user = _require(scope);
+  Future<void> deleteMany(Iterable<RecordDocumentId> keys, {HealthProfileId? scope}) async {
+    final profile = _require(scope);
     if (keys.isEmpty) return;
     final ids = keys.map((k) => k.value).toList();
     final placeholders = List.filled(ids.length, '?').join(', ');
     await _db.customUpdate(
-      'DELETE FROM $_table WHERE user_id = ? AND id IN ($placeholders)',
+      'DELETE FROM $_table WHERE health_profile_id = ? AND id IN ($placeholders)',
       variables: [
-        Variable<String>(user.value),
+        Variable<String>(profile.value),
         ...ids.map((id) => Variable<String>(id)),
       ],
       updateKind: UpdateKind.delete,
@@ -205,12 +200,12 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 
   @override
-  Future<void> clear({UserId? scope}) async {
-    final user = _resolve(scope);
-    if (user == null) return; // idempotent logout cleanup
+  Future<void> clear({HealthProfileId? scope}) async {
+    final profile = _resolve(scope);
+    if (profile == null) return; // idempotent logout cleanup
     await _db.customUpdate(
-      'DELETE FROM $_table WHERE user_id = ?',
-      variables: [Variable<String>(user.value)],
+      'DELETE FROM $_table WHERE health_profile_id = ?',
+      variables: [Variable<String>(profile.value)],
       updateKind: UpdateKind.delete,
     );
     _notifyChanged();
@@ -220,6 +215,18 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   Future<void> clearAll() async {
     await _db.customUpdate('DELETE FROM $_table', updateKind: UpdateKind.delete);
     _notifyChanged();
+  }
+
+  /// A record is filed under a profile of the account that owns it — never
+  /// under another account's person.
+  Future<void> _requireOwnedBy(HealthProfileId profile, UserId owner, String what) async {
+    final rows = await _db.customSelect(
+      'SELECT 1 FROM health_profile WHERE id = ? AND user_id = ?',
+      variables: [Variable<String>(profile.value), Variable<String>(owner.value)],
+    ).get();
+    if (rows.isEmpty) {
+      throw StorageWriteException('$what: profile ${profile.value} is not owned by ${owner.value}');
+    }
   }
 
   // ── Mapping ──────────────────────────────────────────────────────────────
@@ -247,13 +254,13 @@ class DriftRecordsDataSource extends UserDataSource<RecordDocumentId, RecordDocu
   }
 }
 
-/// DI: user-partitioned records vault bound to the active user port.
+/// DI: profile-partitioned records vault bound to the active-profile port.
 /// The app composition root only needs `appDatabaseProvider` overridden.
 /// Exposed as the port, not the Drift class — callers must not be able to
 /// reach past the contract into the storage engine.
 final recordsDataSourceProvider = Provider<RecordsDataSource>((ref) {
   return DriftRecordsDataSource(
     ref.watch(appDatabaseProvider),
-    () => ref.read(currentUserIdProvider),
+    () => ref.read(currentProfileIdProvider),
   );
 });

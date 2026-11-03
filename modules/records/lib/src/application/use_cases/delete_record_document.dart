@@ -17,12 +17,15 @@ class DeleteRecordDocumentUseCase {
   final RecordsDataSource records;
   final UserFileStore files;
 
-  Future<void> call(RecordDocument record, {required UserId scope}) async {
+  /// [scope] is the account whose encrypted file store holds the blob;
+  /// [profile] the person the record is filed under (null = the active
+  /// profile, which is whose records the caller is showing).
+  Future<void> call(RecordDocument record, {required UserId scope, HealthProfileId? profile}) async {
     final path = record.filePath;
     if (path != null && path.isNotEmpty) {
       await files.delete(path, scope: scope);
     }
-    await records.delete(record.id, scope: scope);
+    await records.delete(record.id, scope: profile);
   }
 }
 

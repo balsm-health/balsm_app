@@ -51,6 +51,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
   late final RecordsDataSource _records;
   late final DeleteRecordDocumentUseCase _deleteRecord;
   late final UserId? _userId;
+  late final HealthProfileId? _profileId;
 
   /// Stores run one after another, so a later edit never lands first.
   Future<void> _saving = Future.value();
@@ -62,6 +63,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
     _records = ref.read(recordsDataSourceProvider);
     _deleteRecord = ref.read(deleteRecordDocumentUseCaseProvider);
     _userId = ref.read(currentUserIdProvider);
+    _profileId = ref.read(currentProfileIdProvider);
   }
 
   /// An emptied check-in loses its photo first, so a failure part-way never
@@ -69,9 +71,10 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
   Future<void> _persist(CheckIn edited) async {
     final photoId = RecordDocumentId.fromString(edited.photoRecordId);
     final user = _userId;
-    if (edited.isEmpty && photoId != null && user != null) {
-      final photo = await _records.find(photoId, scope: user);
-      if (photo != null) await _deleteRecord(photo, scope: user);
+    final profile = _profileId;
+    if (edited.isEmpty && photoId != null && user != null && profile != null) {
+      final photo = await _records.find(photoId, scope: profile);
+      if (photo != null) await _deleteRecord(photo, scope: user, profile: profile);
     }
     await _update(edited);
   }

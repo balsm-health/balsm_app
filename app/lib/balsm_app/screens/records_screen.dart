@@ -17,18 +17,19 @@ import 'records_detail.dart';
 bool _isLegacyCheckInPhoto(RecordDocument r) =>
     r.source.isSelf && r.type == RecordType.scan && (r.title == 'Add a photo' || r.title == 'إضافة صورة');
 
-/// Live vault contents for the signed-in user, newest first. Empty when signed
+/// Live vault contents for the active profile, newest first. Empty when signed
 /// out rather than throwing — the screen is reachable before a profile exists.
+/// Re-subscribes when the active profile changes.
 ///
 /// Check-in photos live in the same vault but belong to their check-in, not
 /// the document library — they are filtered out here (and from the home-screen
 /// count, which watches this provider).
 final recordListProvider = StreamProvider.autoDispose<List<RecordDocument>>((ref) {
-  final userId = ref.watch(currentUserIdProvider);
-  if (userId == null) return Stream.value(const []);
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return Stream.value(const []);
   return ref
       .watch(recordsDataSourceProvider)
-      .watchAll()
+      .watchAll(scope: profileId)
       .map((rows) => rows.where((r) => !r.source.isCheckIn && !_isLegacyCheckInPhoto(r)).toList());
 });
 

@@ -18,6 +18,10 @@ Future<String?> persistPhotoRecord(
 }) async {
   final userId = ref.read(currentUserIdProvider);
   if (userId == null) return null;
+  // The photo is filed under the active person; awaited, not read, so a cold
+  // session that has not resolved the profile yet still stores it.
+  final profileId = await ref.read(activeProfileProvider.future);
+  if (profileId == null) return null;
   final id = RecordDocumentId.value('rec-${DateTime.now().microsecondsSinceEpoch}');
   final path = await saveVaultBytes(ref, fileName: '${id.value}.jpg', bytes: bytes);
   await ref.read(recordsDataSourceProvider).put(
@@ -33,6 +37,7 @@ Future<String?> persistPhotoRecord(
           takenAt: DateTime.now(),
           createdAt: DateTime.now(),
         ),
+        scope: profileId,
       );
   return id.value;
 }
