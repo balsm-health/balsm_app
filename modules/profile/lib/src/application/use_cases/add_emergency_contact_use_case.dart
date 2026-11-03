@@ -35,6 +35,11 @@ class AddEmergencyContactUseCase {
   /// Validates input, persists the contact, and emits an event.
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
+
+    /// The person to change: a member profile of [userId], or null for the
+    /// account holder's own (self) profile. A missing or closed member fails
+    /// with [NotFoundFailure].
+    HealthProfileId? profileId,
     required String name,
     required String phone,
     String? relation,
@@ -54,8 +59,11 @@ class AddEmergencyContactUseCase {
     }
 
     try {
-      var profile = await _dao.getProfile(userId);
+      var profile = await _dao.resolveProfile(userId, profileId: profileId);
 
+      if (profile == null && profileId != null) {
+        return AppResult.failure(const NotFoundFailure('Health profile not found'));
+      }
       if (profile == null) {
         profile = HealthProfile(
           id: HealthProfileId.uuid(),
@@ -96,7 +104,7 @@ class AddEmergencyContactUseCase {
         HealthProfileUpdated(userId: userId, fieldChanged: 'contact_added'),
       );
 
-      final updated = await _dao.getProfile(userId);
+      final updated = await _dao.resolveProfile(userId, profileId: profileId);
       return AppResult.success(updated ?? profile);
     } catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));

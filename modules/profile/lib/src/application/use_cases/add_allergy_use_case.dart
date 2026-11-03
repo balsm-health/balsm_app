@@ -33,6 +33,11 @@ class AddAllergyUseCase {
   /// Validates input, persists the allergy, and emits an event.
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
+
+    /// The person to change: a member profile of [userId], or null for the
+    /// account holder's own (self) profile. A missing or closed member fails
+    /// with [NotFoundFailure].
+    HealthProfileId? profileId,
     required String name,
     required String severity,
     bool isControlledSubstance = false,
@@ -55,8 +60,11 @@ class AddAllergyUseCase {
     }
 
     try {
-      var profile = await _dao.getProfile(userId);
+      var profile = await _dao.resolveProfile(userId, profileId: profileId);
 
+      if (profile == null && profileId != null) {
+        return AppResult.failure(const NotFoundFailure('Health profile not found'));
+      }
       if (profile == null) {
         // First save — create the profile aggregate before adding children.
         profile = HealthProfile(
@@ -97,7 +105,7 @@ class AddAllergyUseCase {
         HealthProfileUpdated(userId: userId, fieldChanged: 'allergy_added'),
       );
 
-      final updated = await _dao.getProfile(userId);
+      final updated = await _dao.resolveProfile(userId, profileId: profileId);
       // Fall back to a locally-patched aggregate if the re-read fails.
       return AppResult.success(
         updated ??

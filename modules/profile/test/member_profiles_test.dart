@@ -242,5 +242,74 @@ void main() {
 
       expect(await db.resolveActiveHealthProfile(user), selfId);
     });
+
+    test('watchMembers re-emits after a member is added, edited and closed', () async {
+      final seen = <List<String?>>[];
+      final sub = ds.watchMembers().listen((rows) => seen.add([for (final p in rows) p.displayName]));
+      await pumpEventQueue();
+
+      await ds.createMember(member(id: 'hp-late', name: 'Test Late'));
+      await pumpEventQueue();
+      final late = (await ds.find(const HealthProfileId.value('hp-late')))!;
+      await ds.updateMember(late
+          .withMemberDetails(
+            displayName: 'Test Renamed',
+            dateOfBirth: null,
+            sex: null,
+            relationship: Relationship.child,
+            groupId: null,
+            tone: null,
+            sequence: null,
+            now: now,
+          )
+          .value);
+      await pumpEventQueue();
+      await ds.closeMember(late.id, now);
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(seen, [
+        [null, 'Test Early'],
+        [null, 'Test Early', 'Test Late'],
+        [null, 'Test Early', 'Test Renamed'],
+        [null, 'Test Early'],
+      ]);
+    });
+
+    test('resolveProfile reads self by default, a member by id, and never a closed one', () async {
+      final early = const HealthProfileId.value('hp-early');
+
+      expect((await ds.resolveProfile(user))!.id, selfId);
+      expect((await ds.resolveProfile(user, profileId: early))!.id, early);
+      expect(await ds.resolveProfile(const UserId.value('u-other'), profileId: early), isNull);
+      await ds.closeMember(early, now);
+      expect(await ds.resolveProfile(user, profileId: early), isNull);
+    });
+
+    test('profile use cases edit the member they are given, never self', () async {
+      final early = const HealthProfileId.value('hp-early');
+      final bus = EventBus();
+      final allergies = DriftAllergiesDataSource(db: db, activeProfile: () => selfId);
+
+      final blood = await UpdateHealthProfileUseCase(dao: ds, eventBus: bus)
+          .execute(userId: user, profileId: early, bloodType: BloodType.oPositive);
+      final added = await AddAllergyUseCase(dao: ds, allergies: allergies, eventBus: bus)
+          .execute(userId: user, profileId: early, name: 'Test allergen', severity: 'mild');
+
+      expect(blood.isSuccess, isTrue);
+      expect(added.value.id, early);
+      final self = (await ds.getProfile(user))!;
+      final child = (await ds.find(early))!;
+      expect(self.bloodType, isNull);
+      expect(self.allergies, isEmpty);
+      expect(child.bloodType, BloodType.oPositive);
+      expect(child.allergies.single.name, 'Test allergen');
+
+      await ds.closeMember(early, now);
+      final refused = await AddAllergyUseCase(dao: ds, allergies: allergies, eventBus: bus)
+          .execute(userId: user, profileId: early, name: 'Another', severity: 'mild');
+      expect(refused.error, isA<NotFoundFailure>());
+      bus.dispose();
+    });
   });
 }

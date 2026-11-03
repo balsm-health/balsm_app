@@ -25,6 +25,11 @@ class UpdateHealthProfileUseCase {
   /// keep the current stored value.
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
+
+    /// The person to change: a member profile of [userId], or null for the
+    /// account holder's own (self) profile. A missing or closed member fails
+    /// with [NotFoundFailure].
+    HealthProfileId? profileId,
     BloodType? bloodType,
     bool clearBloodType = false,
     double? weightKg,
@@ -45,8 +50,11 @@ class UpdateHealthProfileUseCase {
     }
 
     try {
-      var profile = await _dao.getProfile(userId);
+      var profile = await _dao.resolveProfile(userId, profileId: profileId);
 
+      if (profile == null && profileId != null) {
+        return AppResult.failure(const NotFoundFailure('Health profile not found'));
+      }
       if (profile == null) {
         // First save — create a new profile aggregate.
         profile = HealthProfile(

@@ -29,10 +29,15 @@ class RemoveChronicConditionUseCase {
 
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
+
+    /// The person to change: a member profile of [userId], or null for the
+    /// account holder's own (self) profile. A missing or closed member fails
+    /// with [NotFoundFailure].
+    HealthProfileId? profileId,
     required ChronicConditionId conditionId,
   }) async {
     try {
-      final profile = await _dao.getProfile(userId);
+      final profile = await _dao.resolveProfile(userId, profileId: profileId);
       if (profile == null) {
         return AppResult.failure(
           const NotFoundFailure('Health profile not found'),
@@ -45,7 +50,7 @@ class RemoveChronicConditionUseCase {
         HealthProfileUpdated(userId: userId, fieldChanged: 'condition_removed'),
       );
 
-      final updated = await _dao.getProfile(userId);
+      final updated = await _dao.resolveProfile(userId, profileId: profileId);
       return AppResult.success(updated ?? profile);
     } catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));

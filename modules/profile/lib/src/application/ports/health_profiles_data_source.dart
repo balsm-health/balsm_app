@@ -25,8 +25,17 @@ abstract class HealthProfilesDataSource extends UserDataSource<HealthProfileId, 
   /// member profile, however many the account has.
   Future<HealthProfile?> getProfile(UserId userId);
 
-  /// Emits the self profile and updates whenever the row changes.
+  /// Emits the self profile and again after each write through this source.
   Stream<HealthProfile?> watchProfile(UserId userId);
+
+  /// The profile a use case acts on: the self profile when [profileId] is
+  /// null, otherwise that profile of [userId] — null when it is missing,
+  /// another account's, or closed (a closed profile is read-only).
+  Future<HealthProfile?> resolveProfile(UserId userId, {HealthProfileId? profileId}) async {
+    if (profileId == null) return getProfile(userId);
+    final profile = await find(profileId, scope: userId);
+    return profile == null || profile.isClosed ? null : profile;
+  }
 
   /// Inserts or updates the head row for [profile]. Does NOT persist child
   /// collections — use the individual add*/remove* methods.
@@ -36,6 +45,10 @@ abstract class HealthProfilesDataSource extends UserDataSource<HealthProfileId, 
   /// first, then members in creation order. Closed members only when
   /// [includeClosed].
   Future<List<HealthProfile>> findMembers({UserId? scope, bool includeClosed = false});
+
+  /// [findMembers], live: emits now and again after every profile write made
+  /// through this source (create, details, close, head-row puts).
+  Stream<List<HealthProfile>> watchMembers({UserId? scope, bool includeClosed = false});
 
   /// Stores a new member profile built by `HealthProfile.createMember`
   /// (dependent or prenatal; never self). Throws [StorageWriteException] when

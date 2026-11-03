@@ -120,6 +120,7 @@ class AppDatabase extends _$AppDatabase {
     await _ensureColumn('health_profile', 'closed_on', 'TEXT');
     await _ensureColumn('health_profile', 'pregnancy_id', 'TEXT');
     await _ensureColumn('health_profile', 'sequence', 'INTEGER');
+    await _ensureColumn('member_group', 'system_key', 'TEXT');
     if (addedIsSelf) {
       await customStatement(
           'UPDATE health_profile SET is_self = 1 WHERE rowid IN (SELECT MIN(rowid) FROM health_profile GROUP BY user_id)');
@@ -352,11 +353,15 @@ const _phiSchema = <String>[
   )''',
   'CREATE INDEX IF NOT EXISTS idx_active_profile_user ON active_profile(user_id, selected_at)',
   // Family groups ("My family", "Neighbours", user-added) the member profiles
-  // are filed under (`health_profile.group_id`). Soft-delete only.
+  // are filed under (`health_profile.group_id`). Soft-delete only. A default
+  // group carries a `system_key` (`family`, `neighbours`) and is named at
+  // display time in the patient's language; `name` holds the patient's own
+  // text for a group they added.
   '''
   CREATE TABLE IF NOT EXISTS member_group (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
+    system_key TEXT,
     name TEXT NOT NULL,
     sort INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL,

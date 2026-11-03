@@ -32,6 +32,23 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   /// Resolves the active user at call time (null = signed out).
   final UserId? Function() activeUser;
 
+  /// Change signal for the watch streams. The schema is raw SQL (no
+  /// generated TableInfo), so drift's table-based stream invalidation cannot
+  /// fire — every write through this source pings it and watchers re-query.
+  /// Child collections (allergies, conditions, contacts) are written by their
+  /// own sources and do not ping it.
+  final _changes = StreamController<void>.broadcast();
+
+  void _notifyChanged() {
+    if (!_changes.isClosed) _changes.add(null);
+  }
+
+  /// Emits [read] now and again after every write through this source.
+  Stream<T> _live<T>(Future<T> Function() read) => Stream<T>.multi((emitter) async {
+        emitter.add(await read());
+        emitter.addStream(_changes.stream.asyncMap((_) => read()));
+      });
+
   UserId? _resolve(UserId? scope) => scope ?? activeUser();
 
   UserId _require(UserId? scope) {
@@ -109,6 +126,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
         weight_kg = excluded.weight_kg,
         height_cm = excluded.height_cm,
         updated_at = excluded.updated_at''');
+    _notifyChanged();
   }
 
   Future<void> _insert(HealthProfileId key, HealthProfile value, UserId user, {String onConflict = ''}) async {
@@ -168,6 +186,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       ],
       updateKind: UpdateKind.delete,
     );
+    _notifyChanged();
   }
 
   @override
@@ -186,11 +205,13 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       variables: [Variable.withString(user.value)],
       updateKind: UpdateKind.delete,
     );
+    _notifyChanged();
   }
 
   @override
   Future<void> clearAll() async {
     await _db.customUpdate('DELETE FROM health_profile', updateKind: UpdateKind.delete);
+    _notifyChanged();
   }
 
   // --- WatchableScopedDataSource -------------------------------------------
@@ -199,31 +220,14 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   Stream<HealthProfile?> watch(HealthProfileId key, {UserId? scope}) {
     final user = _resolve(scope);
     if (user == null) return Stream.value(null);
-    return _db
-        .customSelect(
-          'SELECT * FROM health_profile WHERE id = ? AND user_id = ? LIMIT 1',
-          variables: [
-            Variable.withString(key.value),
-            Variable.withString(user.value),
-          ],
-          readsFrom: {},
-        )
-        .watch()
-        .asyncMap((rows) async => rows.isEmpty ? null : _hydrateProfile(rows.first));
+    return _live(() => find(key, scope: user));
   }
 
   @override
   Stream<List<HealthProfile>> watchAll({UserId? scope}) {
     final user = _resolve(scope);
     if (user == null) return Stream.value(const []);
-    return _db
-        .customSelect(
-          'SELECT * FROM health_profile WHERE user_id = ? $_memberOrder',
-          variables: [Variable.withString(user.value)],
-          readsFrom: {},
-        )
-        .watch()
-        .asyncMap((rows) async => [for (final row in rows) await _hydrateProfile(row)]);
+    return _live(() => findAll(scope: user));
   }
 
   // --- Aggregate conveniences (pre-contract API, kept for callers) ---------
@@ -238,16 +242,9 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     return rows.isEmpty ? null : _hydrateProfile(rows.first);
   }
 
-  /// Emits the self profile and updates whenever the row changes.
+  /// Emits the self profile and again after every write through this source.
   @override
-  Stream<HealthProfile?> watchProfile(UserId userId) => _db
-      .customSelect(
-        '$_selfQuery LIMIT 1',
-        variables: [Variable.withString(userId.value)],
-        readsFrom: {},
-      )
-      .watch()
-      .asyncMap((rows) async => rows.isEmpty ? null : _hydrateProfile(rows.first));
+  Stream<HealthProfile?> watchProfile(UserId userId) => _live(() => getProfile(userId));
 
   /// The earliest self row wins — the same rule as core's
   /// `AppDatabase.selfHealthProfileId`.
@@ -268,6 +265,13 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   }
 
   @override
+  Stream<List<HealthProfile>> watchMembers({UserId? scope, bool includeClosed = false}) {
+    final user = _resolve(scope);
+    if (user == null) return Stream.value(const []);
+    return _live(() => findMembers(scope: user, includeClosed: includeClosed));
+  }
+
+  @override
   Future<void> createMember(HealthProfile member, {UserId? scope}) async {
     final user = _require(scope);
     if (member.isSelf) {
@@ -278,6 +282,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     } catch (e) {
       throw StorageWriteException('profile ${member.id.value}: member insert failed', e);
     }
+    _notifyChanged();
   }
 
   @override
@@ -298,6 +303,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       ],
       updateKind: UpdateKind.update,
     );
+    if (changed > 0) _notifyChanged();
     return changed > 0;
   }
 
@@ -317,6 +323,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
       ],
       updateKind: UpdateKind.update,
     );
+    if (changed > 0) _notifyChanged();
     return changed > 0;
   }
 
