@@ -286,13 +286,14 @@ function MapScreen({ onBack }) {
       {offlineOpen && <OfflineMapSheet onClose={() => setOfflineOpen(false)} />}
 
       {/* Search */}
-      <div style={{ padding: '0 20px 10px', flexShrink: 0, position: 'relative' }}>
-        <Icon name="search" size={17} style={{ position: 'absolute', inlineStart: 34, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg4)', pointerEvents: 'none' }} />
+      <div style={{ padding: '0 20px 10px', flexShrink: 0 }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <Icon name="search" size={17} style={{ position: 'absolute', insetInlineStart: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg4)', pointerEvents: 'none' }} />
         <input className="b-input" style={{ paddingInlineStart: 40, paddingInlineEnd: query ? 36 : 12 }} placeholder={t('map_search_ph')}
           value={query} onChange={e => { setQuery(e.target.value); setSelected(null); }} />
         {query && (
           <button onClick={() => { setQuery(''); setSelected(null); }} style={{
-            position: 'absolute', inlineEnd: 34, top: '50%', transform: 'translateY(-50%)',
+            position: 'absolute', insetInlineEnd: 12, top: '50%', transform: 'translateY(-50%)',
             background: 'var(--balsm-ink-200)', border: 'none', borderRadius: 999,
             width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', padding: 0,
@@ -300,6 +301,7 @@ function MapScreen({ onBack }) {
             <Icon name="x" size={11} style={{ color: 'var(--fg2)' }} />
           </button>
         )}
+        </div>
       </div>
 
       {/* Filter dropdown */}
@@ -364,7 +366,7 @@ function MapScreen({ onBack }) {
             position: 'absolute', top: 12, right: lang === 'ar' ? 'auto' : 14, left: lang === 'ar' ? 14 : 'auto',
             background: 'rgba(255,255,255,0.94)', borderRadius: 'var(--radius-pill)',
             padding: '5px 13px', fontSize: 'var(--pt-xs)', fontWeight: 700, color: 'var(--fg2)',
-            boxShadow: 'var(--shadow-sm)', backdropFilter: 'blur(6px)',
+            boxShadow: 'var(--shadow-sm)', backdropFilter: 'blur(6px)', whiteSpace: 'nowrap',
           }}>
             {filtered.length} {t('map_found')}
           </div>

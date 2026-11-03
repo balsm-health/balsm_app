@@ -18,7 +18,7 @@ const WT_PETALS = {
 const WT_SLIDES = [
   {
     id: 'vision', petal: 'emerald', icon: 'petal',
-    eyebrow: { en: 'Open · Arab · Trusted',  ar: 'مفتوح · عربي · موثوق' },
+    eyebrow: { en: 'Community-driven. Independent. Trusted.',  ar: 'مُجتمعي. مستقل. موثوق.' },
     title:   { en: 'Healthcare that finally belongs to us.',
                ar: 'رعاية صحية تخصّنا أخيراً.' },
     body:    { en: 'Balsm is the first and largest open-source health platform built in Egypt and the Arab world — Arabic-first, and owned by the people who use it.',
@@ -117,7 +117,7 @@ function useWtSwipe({ dir, onNext, onPrev }) {
      renderSlide(slide, i, lang, active),
      renderNext(props)                 // custom Next/CTA button
    }                                                                */
-function WalkthroughShell({ skin, lang, label }) {
+function WalkthroughShell({ skin, lang, label, onDone, onLang }) {
   const total = WT_SLIDES.length;
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);       // animation direction
@@ -128,15 +128,17 @@ function WalkthroughShell({ skin, lang, label }) {
   const idxRef = useRef(0);
   useEffect(() => { idxRef.current = index; }, [index]);
 
+  const finish = () => { if (onDone) onDone(); else setDone(true); };
+
   const go = (i) => {
     const cur = idxRef.current;
     if (i < 0 || i === cur) return;
-    if (i >= total) { setDone(true); return; }
+    if (i >= total) { finish(); return; }
     setDir(i > cur ? 1 : -1); idxRef.current = i; setIndex(i);
   };
   const next = () => {
     const cur = idxRef.current;
-    if (cur >= total - 1) { setDone(true); return; }
+    if (cur >= total - 1) { finish(); return; }
     setDir(1); idxRef.current = cur + 1; setIndex(cur + 1);
   };
   const prev = () => {
@@ -146,7 +148,7 @@ function WalkthroughShell({ skin, lang, label }) {
   };
   const reset = () => { setDone(false); setDir(-1); idxRef.current = 0; setIndex(0); };
 
-  const onSkip = () => { setFlash(true); setTimeout(() => setDone(true), 220); };
+  const onSkip = () => { setFlash(true); setTimeout(finish, 220); };
 
   const { dx, handlers } = useWtSwipe({ dir: rtl ? 'rtl' : 'ltr', onNext: next, onPrev: prev });
 
@@ -185,12 +187,27 @@ function WalkthroughShell({ skin, lang, label }) {
           : (
             <React.Fragment>
               {skin.showLogo
-                ? <img className="wt-logo" src={window.__resources ? window.__resources['logo-vertical'] : 'assets/logo-vertical.svg?v=5'} alt="Balsm.health"
-                       style={{ filter: skin.logoDark ? 'brightness(0) invert(1)' : 'none' }} />
+                ? <img className="wt-logo" alt="Balsm.health"
+                       src={(() => {
+                         const id = skin.logoDark ? 'logo-vertical-mono-white' : 'logo-vertical';
+                         return window.__resources ? window.__resources[id] : `assets/${id}.svg?v=7`;
+                       })()} />
                 : <span />}
-              <button className="wt-skip" onClick={onSkip} style={{ color: skipColor }}>
-                {wtx('skip', lang)}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {onLang && (
+                  <button type="button" onClick={() => onLang(rtl ? 'en' : 'ar')}
+                    aria-label={rtl ? 'Switch to English' : 'التبديل إلى العربية'}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 12px', borderRadius: 999, cursor: 'pointer',
+                             background: 'transparent', border: `1px solid ${tone === 'dark' ? 'rgba(255,255,255,0.4)' : 'var(--balsm-ink-200)'}`,
+                             color: skipColor, fontWeight: 600, fontSize: 'var(--pt-sm)', fontFamily: rtl ? 'var(--font-body)' : 'var(--font-arabic)' }}>
+                    <Icon name="languages" size={16} />
+                    {rtl ? 'English' : 'العربية'}
+                  </button>
+                )}
+                <button className="wt-skip" onClick={onSkip} style={{ color: skipColor }}>
+                  {wtx('skip', lang)}
+                </button>
+              </div>
             </React.Fragment>
           )}
       </div>

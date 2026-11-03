@@ -5,7 +5,7 @@ const PETAL_TONE = {
   'var(--petal-mint)': 'mint', 'var(--petal-mint-600)': 'mint', 'var(--petal-violet)': 'violet',
 };
 function DoctorAvatar({ doctor, size = 44 }) {
-  const { Avatar } = window.BalsmDesignSystem_51cdbf || {};
+  const { Avatar } = window.BalsmDesignSystem_1cf4c7 || {};
   if (!Avatar) return null;
   const dsSize = size >= 56 ? 'xl' : size >= 42 ? 'lg' : size >= 30 ? 'md' : size >= 24 ? 'sm' : 'xs';
   return <Avatar name={doctor.name.en} initials={doctor.initials} tone={PETAL_TONE[doctor.color]} size={dsSize} />;
@@ -67,11 +67,10 @@ function PrescriptionDetail({ rx, onBack, onDelete }) {
       <div className="appbar">
         <button className="round-btn" onClick={onBack} aria-label="Back"><Icon name="arrow-left" /></button>
         <div style={{ flex: 1 }} />
-        {isSelf
-          ? <button className="round-btn ghost" onClick={onDelete} aria-label={t('rx_delete')}><Icon name="trash-2" size={18} style={{ color: 'var(--balsm-danger)' }} /></button>
-          : <span className={cx('b-badge', isActive ? 'b-badge--success' : 'b-badge--neutral')}>
+        {!isSelf && <span className={cx('b-badge', isActive ? 'b-badge--success' : 'b-badge--neutral')}>
               <span className="b-badge__dot" />{t(isActive ? 'rx_active' : 'rx_expired')}
             </span>}
+        <button className="round-btn ghost" onClick={onDelete} aria-label={t('rx_delete')}><Icon name="trash-2" size={18} style={{ color: 'var(--balsm-danger)' }} /></button>
       </div>
 
       <div className="screen-scroll">
@@ -280,19 +279,26 @@ function MedRow({ m, i, setMed, onRemove, canRemove }) {
 
       <div>
         <label style={{ fontSize: 'var(--pt-xs)', fontWeight: 600, color: 'var(--fg3)', display: 'block', marginBottom: 6 }}>{t('rx_duration')}</label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <SelectField value={m.durType} onChange={v => set('durType', v)} options={[
-            { value: 'days', label: t('dur_days') },
-            { value: 'weeks', label: t('dur_weeks') },
-            { value: 'months', label: t('dur_months') },
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {(() => { const isPeriod = ['days', 'weeks', 'months'].includes(m.durType); return (<>
+          <SelectField value={isPeriod ? 'period' : m.durType} onChange={v => set('durType', v === 'period' ? (isPeriod ? m.durType : 'days') : v)} options={[
+            { value: 'period', label: t('dur_period') },
             { value: 'until_empty', label: t('dur_until_empty') },
             { value: 'ongoing', label: t('dur_ongoing') },
             { value: 'other', label: t('dur_other') },
           ]} />
-          {['days', 'weeks', 'months'].includes(m.durType) && (
-            <input className="b-input num" dir="ltr" type="number" min="1" value={m.durN}
-              onChange={e => set('durN', e.target.value.replace(/\D/g, ''))} style={{ width: 64, textAlign: 'center', flexShrink: 0 }} />
+          {isPeriod && (
+            <div style={{ display: 'flex', gap: 8, flex: '1 1 100%' }}>
+              <input className="b-input num" dir="ltr" type="number" min="1" value={m.durN} placeholder="1" aria-label={t('dur_count')}
+                onChange={e => set('durN', e.target.value.replace(/\D/g, ''))} style={{ width: 56, textAlign: 'center', flexShrink: 0 }} />
+              <SelectField value={m.durType} onChange={v => set('durType', v)} style={{ flex: 1 }} options={[
+                { value: 'days', label: t('unit_days') },
+                { value: 'weeks', label: t('unit_weeks') },
+                { value: 'months', label: t('unit_months') },
+              ]} />
+            </div>
           )}
+          </>); })()}
         </div>
         {m.durType === 'other' && (
           <input className="b-input" value={m.durOther} onChange={e => set('durOther', e.target.value)} placeholder={t('dur_other_ph')} style={{ marginTop: 8 }} />
@@ -447,30 +453,147 @@ function AddPrescriptionSheet({ onClose, onAdd }) {
   );
 }
 
+/* Add a medication with no prescription (OTC, supplements, carried-over meds) */
+function AddMedSheet({ onClose, onAdd }) {
+  const { t, lang } = useApp();
+  const [m, setM] = useState({ name: '', dose: '', desc: '', freqType: 'once', freqN: '2', freqUnit: 'hours', freqOther: '', durType: 'ongoing', durN: '', durOther: '' });
+  const [times, setTimes] = useState(['08:00']);
+  const [done, setDone] = useState(false);
+  const DEFAULT_TIMES = { 1: ['08:00'], 2: ['08:00', '20:00'], 3: ['08:00', '14:00', '20:00'], 4: ['08:00', '12:00', '16:00', '20:00'] };
+  const nTimes = m.freqType === 'per_day' ? Math.min(6, Math.max(1, parseInt(m.freqN, 10) || 1)) : 1;
+  useEffect(() => { setTimes(prev => prev.length === nTimes ? prev : (DEFAULT_TIMES[nTimes] || Array.from({ length: nTimes }, (_, i) => prev[i] || '08:00'))); }, [nTimes]);
+  const fmtTime = (v) => { const [h, mi] = v.split(':').map(Number); const pm = h >= 12, h12 = ((h + 11) % 12) + 1; return lang === 'ar' ? `${h12}:${String(mi).padStart(2, '0')} ${pm ? 'م' : 'ص'}` : `${h12}:${String(mi).padStart(2, '0')} ${pm ? 'PM' : 'AM'}`; };
+  const when = parseInt(times[0], 10) < 15 ? 'morning' : 'evening';
+  const setMed = (_, key, val) => setM(p => ({ ...p, [key]: val }));
+  const ready = !!m.name.trim();
+  const save = () => {
+    if (!ready) return;
+    const freq = m.freqType === 'once' ? t('freq_once') : m.freqType === 'per_day' ? `${m.freqN || 1}\u00d7/${lang === 'ar' ? 'يوم' : 'day'}` : m.freqType === 'every_x' ? `${t('freq_every')} ${m.freqN || 1} ${t('unit_' + m.freqUnit)}` : (m.freqOther.trim() || t('freq_other'));
+    const dose = [m.dose.trim(), freq].filter(Boolean).join(' \u00b7 ');
+    onAdd({ id: 'medself' + Date.now(), self: true, when, times, time: fmtTime(times[0]), icon: 'pill', tone: 'info',
+      name: { en: m.name.trim(), ar: m.name.trim() }, dose: { en: dose, ar: dose },
+      frequency: { type: m.freqType, n: m.freqN, unit: m.freqUnit, other: m.freqOther },
+      duration: { type: m.durType, n: m.durN, other: m.durOther } });
+    setDone(true); setTimeout(onClose, 1200);
+  };
+  const seg = (on) => ({ flex: 1, height: 44, borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+    border: `1.5px solid ${on ? 'var(--app-accent)' : 'var(--balsm-border)'}`, background: on ? 'var(--app-accent-50)' : '#fff', color: on ? 'var(--app-accent-600)' : 'var(--fg2)',
+    fontFamily: 'inherit', fontSize: 'var(--pt-sm)', fontWeight: 600 });
+  return (
+    <>
+      <style>{`@keyframes rxSlideUp{from{transform:translateY(110%)}to{transform:none}}`}</style>
+      <div className="app-scrim" onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 40, background: 'rgba(20,32,43,0.36)', backdropFilter: 'blur(2px)' }} />
+      <div className="app-sheet app-sheet--lg" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 41, background: '#fff', borderRadius: '20px 20px 0 0', maxHeight: '90%', display: 'flex', flexDirection: 'column', animation: 'rxSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both' }}>
+        <div style={{ padding: '10px 16px 0', flexShrink: 0 }}>
+          {!done && <div className="sheet-grab" />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 10, borderBottom: '1px solid var(--balsm-ink-100)' }}>
+            <div style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-lg)', color: 'var(--fg1)' }}>{done ? '' : (lang === 'ar' ? 'إضافة دواء' : 'Add medication')}</div>
+            <button className="round-btn ghost" onClick={onClose}><Icon name="x" size={18} /></button>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 38px' }}>
+          {!done ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div className="card card-pad" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--balsm-cream-50)', padding: 12 }}>
+                <Icon name="info" size={16} style={{ color: 'var(--fg3)', flexShrink: 0, marginTop: 2 }} />
+                <div style={{ fontSize: 'var(--pt-sm)', color: 'var(--fg2)', lineHeight: 1.45 }}>{lang === 'ar' ? 'لأدوية بدون روشتة، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.' : 'For medicines without a prescription, like pain relief or vitamins. Saved as added by you.'}</div>
+              </div>
+              <MedRow m={m} i={0} setMed={setMed} onRemove={() => {}} canRemove={false} />
+              <div>
+                <label style={{ fontSize: 'var(--pt-sm)', fontWeight: 600, color: 'var(--fg2)', display: 'block', marginBottom: 8 }}>{lang === 'ar' ? (nTimes > 1 ? 'مواعيد الجرعات' : 'موعد الجرعة') : (nTimes > 1 ? 'Dose times' : 'What time do you take it?')}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: nTimes > 1 ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)', gap: 8 }}>
+                  {times.map((v, i) => {
+                    const h = parseInt(v, 10), ico = h >= 5 && h < 12 ? 'sunrise' : h >= 12 && h < 18 ? 'sun' : 'moon';
+                    return (
+                      <label key={i} style={{ ...seg(false), position: 'relative', justifyContent: 'flex-start', padding: '0 12px', color: 'var(--fg1)', cursor: 'pointer' }}>
+                        <Icon name={ico} size={16} style={{ color: 'var(--app-accent-600)', flexShrink: 0 }} />
+                        <span dir="ltr" style={{ flex: 1, textAlign: 'start', fontVariantNumeric: 'tabular-nums' }}>{fmtTime(v)}</span>
+                        {nTimes > 1 && <span style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', fontWeight: 600 }}>{lang === 'ar' ? `الجرعة ${i + 1}` : `Dose ${i + 1}`}</span>}
+                        <Icon name="clock" size={15} style={{ color: 'var(--fg3)', flexShrink: 0 }} />
+                        <input type="time" value={v} aria-label={lang === 'ar' ? `موعد الجرعة ${i + 1}` : `Dose ${i + 1} time`}
+                          onChange={e => { const nv = e.target.value; if (nv) setTimes(p => p.map((x, j) => j === i ? nv : x)); }}
+                          onClick={e => { try { e.currentTarget.showPicker(); } catch (_) {} }}
+                          style={{ position: 'absolute', inset: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer', border: 0 }} />
+                      </label>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', marginTop: 6 }}>{lang === 'ar' ? 'سيذكّرك بلسم في هذا الموعد، حتى دون إنترنت.' : 'Balsm reminds you at this time, even offline.'}</div>
+              </div>
+              <button className={cx('b-btn b-btn-lg b-btn-primary b-btn--full', !ready && 'is-disabled')} disabled={!ready} onClick={save}>{lang === 'ar' ? 'إضافة الدواء' : 'Add medication'}</button>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '20px 0 12px' }}>
+              <div className="confirm-mark" style={{ width: 72, height: 72, margin: '0 auto 14px' }}><Icon name="check" size={36} /></div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', color: 'var(--fg1)' }}>{lang === 'ar' ? 'تمت إضافة الدواء' : 'Medication added'}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function PrescriptionsScreen({ onBack }) {
   const { t, lang } = useApp();
   const [selected, setSelected] = useState(null);
   const [selfRx, setSelfRx]     = useState([]);
   const [addOpen, setAddOpen]   = useState(false);
+  const [removedRx, setRemovedRx] = useState(() => new Set());
+  const ar = lang === 'ar';
+  const rxLab = (rx) => {
+    if (rx.source === 'self') return rx.title[lang];
+    const doc = DOCTORS.find(d => d.id === rx.doctorId);
+    const name = doc ? doc.name[lang] : '';
+    return ar ? `وصفة ${name}` : `${name}’s prescription`;
+  };
+  const active  = PRESCRIPTIONS.filter(r => r.status === 'active' && !removedRx.has(r.id));
+  const expired = PRESCRIPTIONS.filter(r => r.status === 'expired' && !removedRx.has(r.id));
+  const allRx = [...active, ...selfRx, ...expired];
+  const kit = useDeleteKit({
+    ar, items: allRx.map(rx => ({ key: rx.id, lab: rxLab(rx) })),
+    onDelete: (keys) => {
+      setRemovedRx(s => { const n = new Set(s); keys.forEach(k => n.add(k)); return n; });
+      setSelfRx(prev => prev.filter(r => !keys.includes(r.id)));
+      if (selected && keys.includes(selected.id)) setSelected(null);
+    },
+    nounAr: { one: 'وصفة واحدة', two: 'وصفتين', few: 'وصفات', many: 'وصفة' }, nounEn: { one: 'prescription', other: 'prescriptions' },
+    titleOne: (it) => ar ? `حذف ${it.lab}؟` : `Delete ${it.lab}?`,
+    bodyFor: (keys) => {
+      const many = keys.length > 1;
+      const fromDoc = keys.some(k => { const r = allRx.find(x => x.id === k); return r && r.source !== 'self'; });
+      if (ar) return (many ? 'ستُحذف من هذا الجهاز مع رموز QR الخاصة بها.' : 'ستُحذف من هذا الجهاز مع رمز QR الخاص بها.') + (fromDoc ? ' لا تتأثر نسخة الطبيب.' : '') + ' لا يمكن التراجع عن ذلك.';
+      return (many ? 'They’ll be removed from this device, along with their QR codes.' : 'It’ll be removed from this device, along with its QR code.') + (fromDoc ? ' The doctor’s copy isn’t affected.' : '') + ' This can’t be undone.';
+    },
+  });
 
   if (selected) {
-    return <PrescriptionDetail rx={selected} onBack={() => setSelected(null)}
-      onDelete={() => { setSelfRx(prev => prev.filter(r => r.id !== selected.id)); setSelected(null); }} />;
+    return (
+      <div ref={kit.wrapRef} style={{ position: 'relative', height: '100%' }}>
+        <PrescriptionDetail rx={selected} onBack={() => setSelected(null)} onDelete={() => kit.askDel({ key: selected.id, lab: rxLab(selected) })} />
+        {kit.overlays}
+      </div>
+    );
   }
 
-  const active  = PRESCRIPTIONS.filter(r => r.status === 'active');
-  const expired = PRESCRIPTIONS.filter(r => r.status === 'expired');
-
   const RxCard = ({ rx, dim }) => {
-    const { Card } = window.BalsmDesignSystem_51cdbf || {};
+    const { Card } = window.BalsmDesignSystem_1cf4c7 || {};
     if (!Card) return null;
     const isSelf = rx.source === 'self';
     const doc = isSelf ? null : DOCTORS.find(d => d.id === rx.doctorId);
     const isActive = rx.status === 'active';
     const medCount = rx.meds ? rx.meds.length : 0;
+    const it = { key: rx.id, lab: rxLab(rx) };
     return (
-      <Card interactive size="sm" onClick={() => setSelected(rx)} style={{ opacity: dim ? 0.6 : 1, filter: dim ? 'saturate(0.6)' : 'none' }}>
+      <SwipeRow {...kit.swipe(it)} radius="var(--radius-lg)">
+      <div role={kit.selecting ? undefined : 'button'} tabIndex={kit.selecting ? undefined : 0}
+        aria-label={kit.selecting ? undefined : it.lab}
+        onClick={() => !kit.selecting && setSelected(rx)}
+        onKeyDown={e => { if (!kit.selecting && e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSelected(rx); } }}
+        style={{ cursor: 'pointer', borderRadius: 'var(--radius-lg)' }}>
+      <Card size="sm" style={{ background: '#fff', opacity: dim && !kit.selecting ? 0.6 : 1, filter: dim ? 'saturate(0.6)' : 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {kit.selecting && <kit.Check k={rx.id} />}
           {doc ? <DoctorAvatar doctor={doc} size={46} /> : isSelf && (
             <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--petal-blue-50)', color: 'var(--petal-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Icon name={rx.file ? 'file-text' : 'pill'} size={21} />
@@ -495,22 +618,28 @@ function PrescriptionsScreen({ onBack }) {
                   <span className="b-badge__dot" />{t(isActive ? 'rx_active' : 'rx_expired')}
                 </span>}
           </div>
-          <Icon name="chevron-right" size={17} style={{ color: 'var(--fg4)', flexShrink: 0 }} />
+          {!kit.selecting && <kit.More it={it} />}
         </div>
       </Card>
+      </div>
+      </SwipeRow>
     );
   };
 
   return (
-    <div className="screen fade-in">
+    <div ref={kit.wrapRef} className="screen fade-in" style={{ position: 'relative' }}>
       <div className="pad-top" />
-      <div className="appbar">
-        <button className="round-btn" onClick={onBack} aria-label="Back"><Icon name="arrow-left" /></button>
-        <h1 style={{ flex: 1, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', letterSpacing: '-0.01em', color: 'var(--fg1)' }}>
+      {kit.selecting ? kit.selectAppbar : (
+      <div className="appbar" style={{ gap: 8 }}>
+        <button className="round-btn" onClick={onBack} aria-label={ar ? 'رجوع' : 'Back'}><Icon name="arrow-left" style={{ transform: ar ? 'scaleX(-1)' : 'none' }} /></button>
+        <h1 style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', letterSpacing: '-0.01em', color: 'var(--fg1)' }}>
           {t('prescriptions')}
         </h1>
+        <DataLocPill cat="rx" compact />
+        {kit.selectButton}
         <button className="round-btn" onClick={() => setAddOpen(true)} aria-label={t('rx_add')}><Icon name="plus" size={19} /></button>
       </div>
+      )}
 
       <div className="screen-scroll">
         {active.length > 0 && <>
@@ -534,12 +663,16 @@ function PrescriptionsScreen({ onBack }) {
           </div>
         </>}
 
-        <div style={{ height: 28 }} />
+        {allRx.length === 0 && (
+          <div style={{ margin: '32px 20px', textAlign: 'center', color: 'var(--fg3)', fontSize: 'var(--pt-sm)' }}>{ar ? 'لا توجد وصفات.' : 'No prescriptions.'}</div>
+        )}
+        <div style={{ height: kit.selecting ? 104 : 28 }} />
       </div>
+      {kit.overlays}
 
       {addOpen && <AddPrescriptionSheet onClose={() => setAddOpen(false)} onAdd={(rx) => setSelfRx(prev => [rx, ...prev])} />}
     </div>
   );
 }
 
-Object.assign(window, { PrescriptionsScreen, PrescriptionDetail, QRCode, DoctorAvatar, AddPrescriptionSheet });
+Object.assign(window, { PrescriptionsScreen, PrescriptionDetail, QRCode, DoctorAvatar, AddPrescriptionSheet, AddMedSheet });

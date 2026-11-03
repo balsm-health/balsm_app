@@ -129,14 +129,14 @@ function QRShareSheet({ onClose, handle, name }) {
           }}>
             <div style={{ position: 'relative', width: 240, height: 240 }}>
               <QRCanvas value={url} size={240} fg="#14202B" clearCenter={0.37} />
-              {/* Center flower mark (wordmark cropped) with white halo */}
+              {/* Center brand mark — icon-only asset, so no crop needed */}
               <div style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                width: 86, height: 60, borderRadius: 16, background: '#fff',
-                display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-                overflow: 'hidden', boxShadow: '0 0 0 6px #fff',
+                width: 70, height: 70, borderRadius: 18, background: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 0 6px #fff',
               }}>
-                <img src={window.__resources ? window.__resources['icon'] : 'assets/icon.svg?v=5'} alt="Balsm" style={{ width: 86, height: 86, objectFit: 'contain', marginTop: 1, flexShrink: 0 }} />
+                <img src={window.__resources ? window.__resources['icon'] : 'assets/icon.svg?v=7'} alt="Balsm" style={{ width: 54, height: 54, objectFit: 'contain', display: 'block' }} />
               </div>
             </div>
             <div style={{ marginTop: 18, textAlign: 'center' }}>

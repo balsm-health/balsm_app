@@ -166,37 +166,67 @@ function BodyMap({ selected, onToggle, color, initialGender, showControls = true
     display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, whiteSpace: 'nowrap',
   });
 
-  const chosen = [...sel].map(id => regionLabel(id, lang));
+  const chosenIds = [...sel];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {showControls && <>
-        <div style={{ display: 'flex', gap: 5 }}>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
           {[['front', lang === 'ar' ? 'أمامي' : 'Front'], ['back', lang === 'ar' ? 'خلفي' : 'Back']].map(([id, lbl]) => (
             <button key={id} style={chip(view === id)} onClick={() => setView(id)}>{lbl}</button>
           ))}
-        </div>
-        <div style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}>
-          {layerChoices.map(l => (
-            <button key={l.id} style={chip(layer === l.id)} onClick={() => setLayer(l.id)}>
-              <Icon name={l.icon} size={12} />{l.label[lang]}
-            </button>
-          ))}
+          {layerChoices.length > 1 && (() => {
+            const DSSelect = window.BalsmDesignSystem_1cf4c7 && window.BalsmDesignSystem_1cf4c7.Select;
+            const opts = layerChoices.map(l => ({ value: l.id, label: l.label[lang] }));
+            return (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {DSSelect
+                  ? <DSSelect options={opts} value={layer} onChange={setLayer} size="sm" fullWidth dir={lang === 'ar' ? 'rtl' : 'ltr'} />
+                  : <select className="b-input" value={layer} onChange={e => setLayer(e.target.value)} aria-label={lang === 'ar' ? 'الطبقة' : 'Layer'} style={{ width: '100%' }}>
+                      {opts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>}
+              </div>);
+          })()}
         </div>
       </>}
 
-      <div style={{ fontSize: 'var(--pt-xs)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: chosen.length ? 'var(--fg2)' : 'var(--fg4)', minHeight: 16, textAlign: 'center', lineHeight: 1.4 }}>
-        {chosen.length === 0 ? (lang === 'ar' ? 'انقر لتحديد الموقع' : 'Tap to mark location') : chosen.join(' · ')}
-      </div>
 
-      <div className={cx('bm-host', layer === 'skin' && 'bm-skin', sel.size > 0 && 'bm-has-sel')} ref={hostRef} onClick={click}
-        style={{ '--bm-accent': accent, minHeight: 220, height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}
-        aria-label="Anatomy diagram">
-        {markup
-          ? <div style={{ width: '100%', maxWidth: 190 }} dangerouslySetInnerHTML={{ __html: markup }} />
-          : <span className="meta">{failed
-              ? (lang === 'ar' ? 'تعذّر تحميل الرسم' : 'Diagram unavailable')
-              : (lang === 'ar' ? 'جارٍ التحميل…' : 'Loading…')}</span>}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+          <div className={cx('bm-host', layer === 'skin' && 'bm-skin', sel.size > 0 && 'bm-has-sel')} ref={hostRef} onClick={click}
+            style={{ '--bm-accent': accent, flex: 1, minHeight: 220, height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}
+            aria-label="Anatomy diagram">
+            {markup
+              ? <div style={{ width: '100%', maxWidth: 190 }} dangerouslySetInnerHTML={{ __html: markup }} />
+              : <span className="meta">{failed
+                  ? (lang === 'ar' ? 'تعذّر تحميل الرسم' : 'Diagram unavailable')
+                  : (lang === 'ar' ? 'جارٍ التحميل…' : 'Loading…')}</span>}
+          </div>
+        </div>
+      </div>
+      <div style={{ minHeight: 32, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {chosenIds.length === 0
+        ? <div style={{ fontSize: 'var(--pt-xs)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--fg4)', textAlign: 'center', lineHeight: 1.4 }}>
+            {lang === 'ar' ? 'انقر لتحديد الموقع' : 'Tap to mark location'}
+          </div>
+        : <div className="bm-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
+            {chosenIds.map(id => (
+              <span key={id} style={{ ...chip(true), height: 32, padding: '0 6px 0 12px', paddingInlineStart: 12, paddingInlineEnd: 4, cursor: 'default' }}>
+                {regionLabel(id, lang)}
+                <button type="button" onClick={() => onToggle && onToggle(id)}
+                  aria-label={(lang === 'ar' ? 'إزالة ' : 'Remove ') + regionLabel(id, lang)}
+                  style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'transparent', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+                  <Icon name="x" size={14} />
+                </button>
+              </span>
+            ))}
+            {chosenIds.length > 1 && (
+              <button type="button" onClick={() => onToggle && chosenIds.forEach(id => onToggle(id))}
+                style={{ height: 32, flexShrink: 0, whiteSpace: 'nowrap', padding: '0 10px', border: 'none', background: 'transparent', color: 'var(--fg3)', fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'var(--font-body)', fontSize: 'var(--pt-xs)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                {lang === 'ar' ? 'مسح الكل' : 'Clear all'}
+              </button>
+            )}
+          </div>}
       </div>
     </div>
   );

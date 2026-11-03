@@ -97,9 +97,20 @@ function dcNorm(s) {
 }
 
 function DialCodePicker({ onClose, onPick, current, lang }) {
+  // Portal to the app root: rendered in place, the sheet's absolute positioning
+  // would resolve 82%/bottom:0 against whatever sheet or card holds the field.
+  const anchor = useRef(null);
+  const [host, setHost] = useState(null);
+  useEffect(() => { setHost(anchor.current ? anchor.current.closest('.app-body') : null); }, []);
+  return <><span ref={anchor} style={{ display: 'none' }} />{host ? ReactDOM.createPortal(
+    <DialCodePickerBody onClose={onClose} onPick={onPick} current={current} lang={lang} />, host) : null}</>;
+}
+
+function DialCodePickerBody({ onClose, onPick, current, lang }) {
   const [q, setQ] = useState('');
   const inputRef = useRef(null);
-  useEffect(() => { const id = setTimeout(() => inputRef.current?.focus(), 350); return () => clearTimeout(id); }, []);
+  // preventScroll: the field that opened this may sit inside a scrollable sheet
+  useEffect(() => { const id = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 350); return () => clearTimeout(id); }, []);
 
   const nq = dcNorm(q.trim());
   const list = !nq ? DIAL_CODES : DIAL_CODES.filter(c =>
@@ -164,4 +175,53 @@ function DialCodePicker({ onClose, onPick, current, lang }) {
   );
 }
 
-Object.assign(window, { DIAL_CODES, DialCodePicker });
+/* ── PhoneInput ───────────────────────────────────────────────
+   One phone control for the whole app: dial-code button (opens the
+   country picker) + national number. Value is a single string so call
+   sites keep storing "+20 10 1234 5678"; the dial code is parsed back
+   out on load, longest-prefix first so +20 never shadows +201. */
+const DIAL_BY_LENGTH = [...DIAL_CODES].sort((a, b) => b.dial.length - a.dial.length);
+
+function splitPhone(value, fallback = 'EG') {
+  const v = (value || '').trim();
+  const hit = v.startsWith('+') ? DIAL_BY_LENGTH.find(c => v.startsWith(c.dial)) : null;
+  if (hit) return { code: hit.code, number: v.slice(hit.dial.length).trim() };
+  return { code: fallback, number: v };
+}
+
+function PhoneInput({ value, onChange, placeholder = '10 1234 5678', autoFocus, defaultCountry = 'EG', onEnter }) {
+  const { lang } = useApp();
+  const parsed = splitPhone(value, defaultCountry);
+  const [code, setCode] = useState(parsed.code);
+  const [open, setOpen] = useState(false);
+  const dc = DIAL_CODES.find(c => c.code === code) || DIAL_CODES[0];
+  // the number the field shows always follows the incoming value
+  const number = splitPhone(value, code).number;
+
+  const emit = (dial, num) => onChange(num.trim() ? `${dial} ${num.trim()}` : '');
+
+  return (
+    <>
+      <div className="phone-field">
+        <button type="button" className="dial-code" onClick={() => setOpen(true)}
+          aria-label={lang === 'ar' ? 'اختر الدولة' : 'Select country'}
+          style={{ cursor: 'pointer', background: '#fff' }}>
+          <span className="flag">{dc.flag}</span>
+          <span className="num" style={{ direction: 'ltr' }}>{dc.dial}</span>
+          <Icon name="chevron-down" size={15} style={{ color: 'var(--fg3)', marginInlineStart: 1 }} />
+        </button>
+        <input className="b-input num" dir="ltr" inputMode="tel" autoFocus={autoFocus}
+          placeholder={placeholder} value={number}
+          onChange={e => emit(dc.dial, e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && onEnter) onEnter(); }} />
+      </div>
+      {open && (
+        <DialCodePicker lang={lang} current={code}
+          onPick={c => { setCode(c.code); emit(c.dial, number); }}
+          onClose={() => setOpen(false)} />
+      )}
+    </>
+  );
+}
+
+Object.assign(window, { DIAL_CODES, DialCodePicker, DialCodePickerBody, PhoneInput, splitPhone, dcNorm });

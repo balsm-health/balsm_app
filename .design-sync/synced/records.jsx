@@ -1,6 +1,6 @@
 /* records.jsx — health records vault: labs, scans, reports + add flow + detail */
 
-const { Modal } = window.BalsmDesignSystem_51cdbf;
+const { Modal } = window.BalsmDesignSystem_1cf4c7;
 
 const REC_FILTERS = ['all', 'lab', 'scan', 'report'];
 
@@ -167,7 +167,7 @@ function RecordDetail({ rec: recProp, onBack, onDelete, onStorageChange }) {
 
 /* ── Manage-storage action sheet (per record) ──────────── */
 function ManageStorageSheet({ rec, onClose, onAction }) {
-  const { t, lang, storageProviders } = useApp();
+  const { t, lang, storageProviders, accountMode } = useApp();
   const cfg = STORAGE_CFG[rec.storage || 'local'];
   const isCloud = rec.storage === 'icloud' || rec.storage === 'gdrive' || rec.storage === 'balsmcloud';
   const [confirm, setConfirm] = useState(null); // 'remove_dev' | 'delete_all'
@@ -178,7 +178,7 @@ function ManageStorageSheet({ rec, onClose, onAction }) {
     setTimeout(() => { setToast(null); onClose(); }, 1600);
   };
 
-  const connectedClouds = ['icloud', 'gdrive', 'balsmcloud'].filter(p => storageProviders[p]);
+  const connectedClouds = ['icloud', 'gdrive', 'balsmcloud'].filter(p => storageProviders[p] && !(p === 'balsmcloud' && accountMode === 'offline'));
 
   if (confirm) {
     const isDev = confirm === 'remove_dev';
@@ -207,7 +207,7 @@ function ManageStorageSheet({ rec, onClose, onAction }) {
             <div style={{ flex:1, fontSize:'var(--pt-sm)', fontWeight:600, color:'var(--fg1)' }}>
               {isCloud ? t('store_backed') : t('store_local_only')}
               <span style={{ fontWeight:400, color:'var(--fg3)', marginInlineStart:6 }}>· {cfg.label[lang]}</span>
-              {isCloud && <div style={{ fontWeight:400, color:'var(--fg3)', fontSize:'var(--pt-xs)', marginTop:2 }}>{lang==='ar' ? 'ملاحظة: يتوفر التخزين على الجهاز فقط حالياً — آي كلاود وجوجل درايف وبلسم كلاود قادمون قريباً.' : 'Note: only local storage is available right now — iCloud, Google Drive, and Balsm Cloud are coming later.'}</div>}
+              
             </div>
             <StorageBadge storage={rec.storage || 'local'} size="xs" />
           </div>
@@ -220,7 +220,7 @@ function ManageStorageSheet({ rec, onClose, onAction }) {
           {!isCloud && connectedClouds.map(p => (
             <button key={p} className="b-btn b-btn-md b-btn-soft b-btn--full" style={{ height:52, justifyContent:'flex-start', gap:14, paddingInlineStart:16 }}
               onClick={() => { onAction('backup', p); showToast(t('store_backed_up')); }}>
-              <div style={{ width:34, height:34, borderRadius:'var(--radius-md)', background:STORAGE_CFG[p].bg, color:STORAGE_CFG[p].color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <div style={{ width:34, height:34, borderRadius:'var(--radius-md)', background:STORAGE_CFG[p].icon.startsWith('brand-') ? '#fff' : STORAGE_CFG[p].bg, boxShadow:STORAGE_CFG[p].icon.startsWith('brand-') ? 'inset 0 0 0 1px var(--balsm-ink-200)' : 'none', color:STORAGE_CFG[p].color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                 <Icon name={STORAGE_CFG[p].icon} size={18} />
               </div>
               <span style={{ flex:1, textAlign:'start', fontWeight:600, fontSize:'var(--pt-md)' }}>
@@ -234,7 +234,7 @@ function ManageStorageSheet({ rec, onClose, onAction }) {
           {!isCloud && connectedClouds.length === 0 && (
             <div style={{ padding:'12px 14px', borderRadius:'var(--radius-lg)', background:'var(--balsm-ink-50)', display:'flex', alignItems:'center', gap:10 }}>
               <Icon name="info" size={16} style={{ color:'var(--fg3)', flexShrink:0 }} />
-              <span className="meta" style={{ lineHeight:1.4 }}>Only local storage is available right now. iCloud, Google Drive, and Balsm Cloud are all coming later.</span>
+              <span className="meta" style={{ lineHeight:1.4 }}>{lang==='ar' ? 'اربط سحابة من «التخزين والمزامنة» في ملفك الشخصي لنسخ هذا السجل إليها.' : 'Connect a cloud in Profile → Storage & sync to back this record up.'}</span>
             </div>
           )}
 
@@ -242,7 +242,7 @@ function ManageStorageSheet({ rec, onClose, onAction }) {
           {isCloud && connectedClouds.filter(p => p !== rec.storage).map(p => (
             <button key={p} className="b-btn b-btn-md b-btn-soft b-btn--full" style={{ height:52, justifyContent:'flex-start', gap:14, paddingInlineStart:16 }}
               onClick={() => { onAction('move', p); showToast(t('store_backed_up')); }}>
-              <div style={{ width:34, height:34, borderRadius:'var(--radius-md)', background:STORAGE_CFG[p].bg, color:STORAGE_CFG[p].color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <div style={{ width:34, height:34, borderRadius:'var(--radius-md)', background:STORAGE_CFG[p].icon.startsWith('brand-') ? '#fff' : STORAGE_CFG[p].bg, boxShadow:STORAGE_CFG[p].icon.startsWith('brand-') ? 'inset 0 0 0 1px var(--balsm-ink-200)' : 'none', color:STORAGE_CFG[p].color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                 <Icon name={STORAGE_CFG[p].icon} size={18} />
               </div>
               <span style={{ flex:1, textAlign:'start', fontWeight:600, fontSize:'var(--pt-md)' }}>
@@ -541,6 +541,7 @@ function RecordsScreen({ onBack }) {
           <Icon name="arrow-left" style={{ transform: lang === 'ar' ? 'scaleX(-1)' : 'none' }} />
         </button>
         <h1 style={{ flex: 1, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', letterSpacing: '-0.01em', color: 'var(--fg1)' }}>{t('records')}</h1>
+        <DataLocPill cat="records" />
       </div>
 
       {/* Search */}

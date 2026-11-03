@@ -310,6 +310,7 @@ body {
   border-top: 1px solid var(--balsm-border);
   background: var(--balsm-surface);
   padding-bottom: 22px;       /* sits above home indicator */
+  position: relative; z-index: 20; /* keep the raised FAB above scrolling content */
 }
 .nav-brand, .tabbar .tab-fab .fab-label { display: none; }
 .tabbar.nav-hidden { display: none; }
@@ -566,7 +567,9 @@ input.vital-num.active, input.vital-num.active:read-only:focus { border-color: v
 .chart-card { margin: 0 20px; padding: 18px; }
 .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .chart-head .ctitle { font-family: var(--font-display); font-weight: 700; font-size: var(--pt-md); color: var(--fg1); }
-.chart-head .cval { font-family: var(--font-mono); font-size: var(--pt-sm); color: var(--fg3); }
+.chart-head .cval { font-family: var(--font-mono); font-size: var(--pt-sm); color: var(--fg3); white-space: nowrap; }
+[dir="rtl"] .chart-head .cval { font-family: var(--font-arabic); }
+[dir="rtl"] .chart-head .cval .num { font-family: var(--font-mono); }
 .range-tabs { display: flex; gap: 6px; }
 .range-tabs button { border: 0; background: transparent; font-size: var(--pt-xs); font-weight: 600; color: var(--fg3); padding: 5px 10px; border-radius: 999px; cursor: pointer; }
 .range-tabs button.on { background: var(--balsm-ink-100); color: var(--fg1); }
@@ -604,16 +607,16 @@ input.vital-num.active, input.vital-num.active:read-only:focus { border-color: v
 .welcome .wgrad { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(250,250,247,0.08) 0%, rgba(250,250,247,0.34) 30%, rgba(250,250,247,0.94) 62%, var(--balsm-cream-50) 88%); }
 .welcome .wbody { position: relative; z-index: 2; margin-top: auto; padding: 0 28px 36px; text-align: center; }
 .welcome .wlogo { width: 168px; height: 168px; margin: 0 auto 26px; }
-.welcome .wtitle { font-family: var(--font-display); font-weight: 800; font-size: var(--pt-3xl); letter-spacing: -0.02em; color: var(--fg1); line-height: 1.1; }
-[dir="rtl"] .welcome .wtitle { font-family: var(--font-arabic); }
-.welcome .wsub { font-size: var(--pt-md); color: var(--fg2); line-height: 1.5; margin: 14px auto 30px; max-width: 34ch; }
+.welcome .wtitle { font-family: var(--font-display); font-weight: 800; font-size: var(--pt-3xl); letter-spacing: -0.02em; color: var(--fg1); line-height: 1.3; min-height: 2.6em; display: flex; align-items: flex-end; justify-content: center; }
+[dir="rtl"] .welcome .wtitle { font-family: var(--font-arabic); font-weight: 700; letter-spacing: 0; }
+.welcome .wsub { font-size: var(--pt-md); color: var(--fg2); line-height: 1.5; margin: 14px auto 30px; max-width: 34ch; min-height: 4.5em; }
 .welcome .wactions { display: flex; flex-direction: column; gap: 12px; }
 .welcome .signin-link { font-size: var(--pt-md); color: var(--fg2); margin-top: 6px; }
 .welcome .signin-link b { color: var(--app-accent); font-weight: 700; }
 
 /* trust strip on welcome */
 .trust { position: relative; z-index: 2; display: flex; justify-content: center; gap: 22px; padding: 0 24px 22px; }
-.trust .ti { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--fg3); font-size: var(--pt-2xs); font-weight: 600; text-align: center; max-width: 84px; }
+.trust .ti { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; color: var(--fg3); font-size: var(--pt-2xs); font-weight: 600; line-height: 1.3; text-align: center; max-width: 84px; min-height: calc(22px + 6px + 2.6em); }
 .trust .ti i { width: 22px; height: 22px; color: var(--app-accent); }
 
 /* fade-in helper — transform-only so content is never hidden if the
@@ -1027,3 +1030,59 @@ input.vital-num.active, input.vital-num.active:read-only:focus { border-color: v
   .pad-top { height: 12px; }
   .appbar { padding-bottom: 6px; }
 }
+
+/* Store-screenshot capture mode: no frame chrome, no scrollbars */
+html.cap-clean .vp-frame{border-radius:0!important;box-shadow:none!important}
+html.cap-clean *{scrollbar-width:none!important}
+html.cap-clean *::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+
+/* Success mark — calm scale-in, soft ring, check draws on */
+.success-mark{position:relative;width:64px;height:64px;margin:0 auto 16px;border-radius:50%;background:var(--petal-mint-50);color:var(--petal-mint-600);display:flex;align-items:center;justify-content:center;animation:smIn .42s var(--ease-out) both}
+.success-mark::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--petal-mint);opacity:0;animation:smRing .9s .25s var(--ease-out) both}
+.success-mark svg{width:30px;height:30px;overflow:visible}
+.success-mark path{fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;animation:smDraw .38s .2s var(--ease-out) forwards}
+.success-mark + *{animation:smFade .32s .3s var(--ease-out) both}
+@keyframes smIn{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes smRing{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.45);opacity:0}}
+@keyframes smDraw{to{stroke-dashoffset:0}}
+@keyframes smFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.success-mark,.success-mark::after,.success-mark + *{animation:none}.success-mark path{animation:none;stroke-dashoffset:0}}
+
+
+/* Check-in card — ported from v2 */
+:root{--v2-line:rgba(31,45,61,.08);--v2-line-2:rgba(31,45,61,.05);--v2-card-sh:0 1px 2px rgba(20,32,43,.04),0 8px 24px rgba(20,32,43,.045)}
+.h2-checkin{margin:0 var(--g);padding:16px;border-radius:22px;background:#fff;border:1px solid var(--v2-line-2);box-shadow:var(--v2-card-sh);position:relative;overflow:hidden}
+.h2-checkin::before{content:"";position:absolute;inset-inline-end:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(closest-side,var(--app-accent-50),transparent);pointer-events:none}
+.h2-ci-top{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.h2-eyebrow{font-size:var(--pt-2xs);font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--app-accent-600)}
+[dir="rtl"] .h2-eyebrow{letter-spacing:0;font-size:var(--pt-xs)}
+.h2-streak{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:var(--balsm-sun-50,#FDF5DC);color:#7A5A00;font-size:var(--pt-xs);font-weight:600;white-space:nowrap}
+.h2-ci-q{position:relative;margin:0 0 6px;font-family:var(--font-display);font-weight:800;font-size:var(--pt-xl);line-height:1.2;letter-spacing:-.02em;color:var(--fg1);text-wrap:balance}
+[dir="rtl"] .h2-ci-q{font-family:var(--font-arabic);letter-spacing:0}
+.h2-ci-note{position:relative;margin:0 0 12px;font-size:var(--pt-xs);color:var(--fg3);line-height:1.45}
+.h2-ci-actions{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.h2-ci-time{display:inline-flex;align-items:center;gap:6px;font-size:var(--pt-xs);color:var(--fg3);font-weight:600}
+.h2-ci-done{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:0;border:0;background:none;font:inherit;text-align:start;cursor:pointer;color:var(--fg4)}
+.h2-ci-done .grow{flex:1;font-family:var(--font-display);font-weight:800;font-size:var(--pt-xl);color:var(--fg1);letter-spacing:-.02em}
+[dir="rtl"] .h2-ci-done .grow{font-family:var(--font-arabic);letter-spacing:0}
+.h2-ci-check{width:42px;height:42px;border-radius:999px;background:var(--petal-mint-50);color:var(--petal-mint-600);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.h2-checkin.is-done .h2-eyebrow{color:var(--petal-mint-600)}
+.h2-week{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--v2-line)}
+.h2-day{display:flex;flex-direction:column;align-items:center;gap:4px}
+.h2-dot{width:24px;height:24px;border-radius:999px;border:1.5px dashed var(--balsm-ink-200);display:flex;align-items:center;justify-content:center;color:#fff}
+.h2-day.on .h2-dot{border:0;background:var(--app-accent)}
+.h2-day.today:not(.on) .h2-dot{border:1.5px solid var(--app-accent);border-style:solid}
+.h2-dl{font-size:var(--pt-2xs);font-weight:600;color:var(--fg4)}
+.h2-day.today .h2-dl{color:var(--fg1)}
+.h2-checkin.v1{margin:0 20px}
+
+/* Check-in FAB — v2 colour + inline position (compact bar only) */
+@container app (max-width:599px){
+  .tabbar .tab-fab{align-self:center}
+  .tab-fab .fab{width:52px;height:52px;margin:0 auto;border:0;background:var(--balsm-ink-800);box-shadow:0 6px 16px rgba(31,45,61,.28)}
+}
+
+/* keep uppercase eyebrows on one line; hide scrollbars inside the phone */
+.h2-eyebrow, .h2-sec h2 { white-space: nowrap; }
+.vp-app .screen-scroll, .vp-app .app-main { scrollbar-width: none; }
+.vp-app .screen-scroll::-webkit-scrollbar, .vp-app .app-main::-webkit-scrollbar { display: none; }

@@ -1,12 +1,52 @@
 # Design drift — claude.ai/design "Balsm App" vs Flutter
 
-Baseline: live project fetched 2026-09-22 (`get_file`, byte-exact via the
-persisted tool results; see `.claude/skills/apply-design/SKILL.md`).
-Regenerate with `.claude/skills/apply-design/scripts/ds_sync.py status`.
+Baseline: the migrated design canvas (claude.ai artifact
+`101891dd-3027-43a1-928e-4105c4c1e25d`), read 2026-11-03 with the Artifact
+tool (byte-exact saves). Regenerate with
+`.claude/skills/apply-design/scripts/ds_sync.py status`.
 
-30 of 31 source files compared; 29 clean, 1 outstanding on purpose.
+40 of 40 source files compared; all clean after this run. The design system
+moved from `_ds/balsm-design-system-51cdbf29…/brand/` to
+`_ds/balsm-design-system-1cf4c786…/`; its `colors_and_type.css` is cached under
+the old path so the diff history stays continuous.
 
-## Ported this run (2026-09-23c) — the UX enhancement screens
+## Ported this run (2026-11-03)
+
+The baseline had not been promoted since 2026-09-23, so most of the 27
+drifted files were already shipped (Home v2, quick-log sheet + pulse, delete
+kit, care import, update gate, device-only account). Only the gaps landed:
+
+| Design | Landed in |
+|---|---|
+| DS a11y token pass (danger `#B83A2E`, focus = blue-600, `--fg-placeholder`, `--balsm-border-control`, success/expiring strong) | `tokens.dart`, core `_tokens.dart`; every `hintStyle` → `T.fgPlaceholder` |
+| Body map — hint + chips under the plate | `widgets/body_map.dart` |
+| Records / Prescriptions — data-location pill | `records_screen.dart`, `prescriptions_screen.dart` |
+| Nearby — search insets, count pill nowrap | `map_screen.dart` |
+| Emergency QR — icon-only centre mark (70/18/54) | `personal_details.dart` (`T.rQrMark`) |
+| Add medication — one time slot per dose | `widgets/med_plan_form.dart` |
+| Success mark animation | `kit.dart` `SuccessMark`; go-online + reset-password done steps |
+| Welcome copy heights, walkthrough language pill + eyebrow | `auth_flow.dart`, `walkthrough_screen.dart` |
+| Help & support (help.jsx) | `screens/help_screen.dart` (new) |
+| Sign-in email in Account details; no condition chips in profile head | `personal_details.dart`, `profile_screen.dart`, `profile_subscreens.dart` |
+
+### Not ported, with reasons
+
+- **Cloud sync UI** (storage.jsx connect/sync/"synced N min ago", per-record
+  backup/move to a cloud). No cloud accepts data in this build — same reason as
+  the 2026-09-23 run.
+- **Deleting clinic-issued prescriptions.** `DeletePrescriptionUseCase` allows
+  patient-added only; a product decision, not a port.
+- **"Balsm reminds you at this time, even offline"** and the 6-dose cap — no
+  local dose reminders exist; the cap would tighten the app's 1–12.
+- **"No account with this email"** — the server deliberately does not reveal
+  whether an email is registered.
+- **Help: report-a-problem form, readings sharing, GitHub row, version footer**
+  — no channel that honours the promised reply; sharing toggle is a
+  placeholder; version would need a new app dependency.
+- **`ink-400`** stays `0xFF677281` (app's earlier contrast fix) rather than the
+  DS `#9BA4AD`; placeholders now use `fgPlaceholder` either way.
+
+## Previous run (2026-09-23c) (2026-09-23c) — the UX enhancement screens
 
 | Design screen | Landed in |
 |---|---|

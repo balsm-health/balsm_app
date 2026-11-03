@@ -1,6 +1,6 @@
 /* appointments.jsx — Appointments screen, read-only for MVP */
 
-const { Avatar, Table } = window.BalsmDesignSystem_51cdbf;
+const { Avatar, Table } = window.BalsmDesignSystem_1cf4c7;
 
 /* petal CSS-var → DS Avatar tone (doctors/family are already assigned petal colors) */
 const PETAL_TONE = {
@@ -29,6 +29,7 @@ function AppointmentsScreen({ onBack }) {
         <h1 style={{ flex: 1, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', letterSpacing: '-0.01em', color: 'var(--fg1)' }}>
           {t('appts')}
         </h1>
+        <DataLocPill cat="appts" />
       </div>
 
       {/* Upcoming hero */}
@@ -42,7 +43,6 @@ function AppointmentsScreen({ onBack }) {
           }}>
             <img src={window.__resources ? window.__resources['icon-mono-white'] : 'assets/icon-mono-white.svg?v=7'} alt="" style={{
               position: 'absolute', right: -20, top: -20, width: 120, opacity: 0.12, pointerEvents: 'none',
-              filter: 'brightness(0) invert(1)',
             }} />
             <div style={{ fontSize: 'var(--pt-xs)', fontWeight: 700, opacity: 0.85, letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 14 }}>
               {t('upcoming_appt')}

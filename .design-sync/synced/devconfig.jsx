@@ -71,7 +71,11 @@ function DevConfigOverlay({ onClose, screenshot }) {
   const [newUrl,       setNewUrl]       = useState('');
   const [editName,     setEditName]     = useState('');
   const [editUrl,      setEditUrl]      = useState('');
-  const [encKey]                        = useState(() => {
+  const [confirmRegen, setConfirmRegen] = useState(false);
+  const [keyFlash, setKeyFlash]         = useState('');
+  const newKey = () => Array.from(crypto.getRandomValues(new Uint8Array(20))).map(b => b.toString(16).padStart(2,'0')).join('');
+  const regenKey = () => { const k = newKey(); localStorage.setItem('balsm_dev_log_key', k); setEncKey(k); setConfirmRegen(false); setKeyFlash('regenerated'); setTimeout(() => setKeyFlash(''), 2200); };
+  const [encKey, setEncKey]             = useState(() => {
     let k = localStorage.getItem('balsm_dev_log_key');
     if (!k) { k = Array.from(crypto.getRandomValues(new Uint8Array(20))).map(b => b.toString(16).padStart(2,'0')).join(''); localStorage.setItem('balsm_dev_log_key', k); }
     return k;
@@ -109,6 +113,18 @@ function DevConfigOverlay({ onClose, screenshot }) {
 
   /* log the open event once */
   useEffect(() => { console.info('[DevConfig] overlay opened'); }, []);
+
+  const currentUrl = (DC_ENVS.find(e => e.id === envId) || savedEnvs.find(se => se.id === envId) || {}).url;
+  const [healthState, setHealthState] = useState('idle'); // idle | checking | ok | fail
+  const [healthMsg,   setHealthMsg]   = useState('');
+  const checkHealth = () => {
+    setHealthState('checking'); setHealthMsg('');
+    setTimeout(() => {
+      const ok = Math.random() > 0.2;
+      setHealthState(ok ? 'ok' : 'fail');
+      setHealthMsg(ok ? `200 OK · ${Math.round(80 + Math.random()*140)}ms` : 'Request timed out');
+    }, 900);
+  };
 
   const pickEnv = id => {
     if (id === 'prod' && envId !== 'prod') { setConfProd(true); return; }
@@ -243,11 +259,11 @@ function DevConfigOverlay({ onClose, screenshot }) {
       `}</style>
 
       {/* Backdrop */}
-      <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:50,
+      <div className="app-scrim" onClick={onClose} style={{ position:'absolute', inset:0, zIndex:50,
         background:'rgba(26,26,23,.55)', backdropFilter:'blur(4px)' }} />
 
       {/* Sheet */}
-      <div style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:51,
+      <div className="app-sheet" style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:51,
         background:'#FAFAF7', borderRadius:'20px 20px 0 0',
         height:'90%', display:'flex', flexDirection:'column',
         animation:'dcUp .3s cubic-bezier(0.16,1,0.3,1) both' }}>
@@ -308,6 +324,21 @@ function DevConfigOverlay({ onClose, screenshot }) {
           {/* ── ENVIRONMENT ─────────────────────────────────────────────── */}
           {tab==='env' && <>
             <div className="eyebrow-l" style={{ marginBottom:10 }}>Backend</div>
+
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12, padding:'10px 12px', borderRadius:'var(--radius-lg)', border:'1px solid var(--balsm-border)', background:'#fff' }}>
+              <button onClick={checkHealth} disabled={healthState==='checking'}
+                style={{ display:'flex', alignItems:'center', gap:6, border:'none', background:'var(--balsm-ink-800)', color:'#F4F3EC', cursor: healthState==='checking' ? 'default' : 'pointer', borderRadius:6, padding:'6px 12px', fontFamily:'var(--font-mono)', fontSize:11, fontWeight:700, opacity: healthState==='checking' ? .6 : 1, flexShrink:0 }}>
+                <Icon name={healthState==='checking' ? 'loader-2' : 'activity'} size={13} style={healthState==='checking' ? { animation:'spin 0.8s linear infinite' } : undefined} />
+                {healthState==='checking' ? 'Checking…' : 'Check connection'}
+              </button>
+              <div style={{ minWidth:0, flex:1, fontFamily:'var(--font-mono)', fontSize:11 }}>
+                {healthState==='idle' && <span style={{ color:'var(--fg4)' }}>Not checked yet</span>}
+                {healthState==='ok' && <span style={{ color:'#1A6033', display:'flex', alignItems:'center', gap:5 }}><Icon name="check-circle-2" size={13} />{healthMsg}</span>}
+                {healthState==='fail' && <span style={{ color:'#D44A3C', display:'flex', alignItems:'center', gap:5 }}><Icon name="x-circle" size={13} />{healthMsg}</span>}
+                {healthState==='checking' && <span style={{ color:'var(--fg4)' }}>{currentUrl}</span>}
+              </div>
+            </div>
+
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {/* ── Presets ── */}
               {DC_ENVS.map(e => {
@@ -518,11 +549,25 @@ function DevConfigOverlay({ onClose, screenshot }) {
                 letterSpacing:'0.06em', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                 {encKey}
               </span>
-              <button onClick={() => navigator.clipboard?.writeText(encKey)}
+              <button onClick={() => { navigator.clipboard?.writeText(encKey); setKeyFlash('copied'); setTimeout(() => setKeyFlash(''), 1600); }}
                 style={{ border:'none', background:'rgba(255,255,255,.07)', cursor:'pointer',
                   borderRadius:5, padding:'3px 8px', fontFamily:'var(--font-mono)',
-                  fontSize:10, color:'#888', flexShrink:0 }}>copy</button>
+                  fontSize:10, color: keyFlash ? '#A3FF6E' : '#888', flexShrink:0 }}>{keyFlash || 'copy'}</button>
+              <button onClick={() => setConfirmRegen(true)} aria-label="Regenerate key" title="Regenerate key"
+                style={{ border:'none', background:'rgba(255,255,255,.07)', cursor:'pointer',
+                  borderRadius:5, padding:'3px 6px', color:'#888', flexShrink:0, display:'flex', alignItems:'center' }}>
+                <Icon name="refresh-cw" size={12} />
+              </button>
             </div>
+            {confirmRegen && (
+              <div style={{ margin:'-12px 0 20px', padding:'11px 14px', borderRadius:10, border:'1px solid rgba(212,74,60,.35)', background:'rgba(212,74,60,.08)', display:'flex', flexDirection:'column', gap:10 }}>
+                <div style={{ fontSize:12, lineHeight:1.5, color:'var(--fg1)' }}>Replace this key? Log files saved with the current key can no longer be opened with the new one.</div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button className="b-btn b-btn-sm b-btn-danger" onClick={regenKey}>Regenerate</button>
+                  <button className="b-btn b-btn-sm b-btn-ghost" onClick={() => setConfirmRegen(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="eyebrow-l" style={{ marginBottom:10 }}>Export</div>

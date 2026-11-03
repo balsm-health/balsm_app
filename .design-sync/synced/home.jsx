@@ -1,6 +1,6 @@
 /* home.jsx — main app screens: Home, Trends, Meds, Profile */
 
-const { Switch } = window.BalsmDesignSystem_51cdbf;
+const { Switch } = window.BalsmDesignSystem_1cf4c7;
 
 function LineChart({ series, rtl, yPad = 8, height = 96 }) {
   const W = 320, H = height;
@@ -414,53 +414,45 @@ function HomeScreen() {
           </div>
         )}
 
-        {/* Hero check-in */}
-        {!checkedIn ? (
-          <div className="hero-card">
-            <img className="petal-wm" src={window.__resources ? window.__resources['icon-mono-white'] : 'assets/icon-mono-white.svg?v=7'} alt="" />
-            <div className="label">{t('today_lbl')}</div>
-            <div className="h" style={{ textWrap: 'balance' }}>{t('hero_q')}</div>
-            <div style={{ fontSize: 'var(--pt-xs)', opacity: 0.85, marginTop: 2 }}>{lang === 'ar' ? 'تقييمك الخاص — لا يعتمد على قياس طبي' : 'Your own self-report — not a clinical measurement'}</div>
-            <div className="cta" onClick={openFlow} style={{ whiteSpace: 'nowrap' }}>
-              <Icon name="plus-circle" size={20} />{t('hero_cta')}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 'var(--pt-sm)', opacity: 0.9 }}>
-              <Icon name="clock" size={15} />{t('hero_time')}
-            </div>
-          </div>
-        ) : (
-          <div className="hero-card done">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div className="confirm-mark" style={{ width: 52, height: 52, margin: 0 }}><Icon name="check" size={28} /></div>
-              <div className="grow">
-                <div className="label">{t('done_lbl')}</div>
-                <div className="subhead" style={{ marginTop: 2 }}>{t('done_q')}</div>
+        {/* Check-in (v2 style) */}
+        {(() => {
+          const ar = lang === 'ar';
+          const days = ar ? ['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+          const done = [1, 1, 1, 1, 1, 1, checkedIn ? 1 : 0];
+          const streakN = checkedIn ? 7 : 6;
+          return (
+            <section className={'h2-checkin v1' + (checkedIn ? ' is-done' : '')}>
+              <div className="h2-ci-top">
+                <span className="h2-eyebrow">{checkedIn ? t('done_lbl') : t('today_lbl')}</span>
+                <span className="h2-streak"><Icon name="flame" size={14} /><b className="num">{streakN}</b> {t('streak')}</span>
               </div>
-              <button className="round-btn" onClick={() => setTab('trends')}>
-                <Icon name="chevron-right" style={{ transform: lang === 'ar' ? 'scaleX(-1)' : 'none' }} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Streak */}
-        <div className="card" style={{ margin: '14px 20px 0', padding: 16 }}>
-          <div className="streak">
-            <div className="ring">
-              <svg width="56" height="56">
-                <circle cx="28" cy="28" r="24" fill="none" stroke="var(--balsm-ink-100)" strokeWidth="6" />
-                <circle cx="28" cy="28" r="24" fill="none" stroke="var(--app-accent)" strokeWidth="6" strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 24} strokeDashoffset={2 * Math.PI * 24 * (1 - 6 / 7)} />
-              </svg>
-              <div className="rtxt">6</div>
-            </div>
-            <div className="grow">
-              <div className="subhead" style={{ fontSize: 'var(--pt-md)' }}><b className="num">6</b> {t('streak')}</div>
-              <div className="meta" style={{ marginTop: 2 }}>{t('streak_help')}</div>
-            </div>
-            <Icon name="flame" size={24} style={{ color: 'var(--balsm-sun-500)' }} />
-          </div>
-        </div>
+              {!checkedIn ? (
+                <React.Fragment>
+                  <h2 className="h2-ci-q">{t('hero_q')}</h2>
+                  <p className="h2-ci-note">{ar ? 'تقييمك الخاص — لا يعتمد على قياس طبي' : 'Your own self-report — not a clinical measurement'}</p>
+                  <div className="h2-ci-actions">
+                    <button className="b-btn b-btn-md b-btn-primary" onClick={openFlow}><Icon name="plus" size={18} />{t('hero_cta')}</button>
+                    <span className="h2-ci-time"><Icon name="clock" size={14} />{t('hero_time')}</span>
+                  </div>
+                </React.Fragment>
+              ) : (
+                <button className="h2-ci-done" onClick={() => setTab('trends')}>
+                  <span className="h2-ci-check"><Icon name="check" size={22} stroke={2.6} /></span>
+                  <span className="grow">{t('done_q')}</span>
+                  <Icon name="chevron-right" size={18} style={{ transform: ar ? 'scaleX(-1)' : 'none' }} />
+                </button>
+              )}
+              <div className="h2-week" aria-label={t('streak_help')}>
+                {days.map((d, i) => (
+                  <div key={i} className={'h2-day' + (done[i] ? ' on' : '') + (i === 6 ? ' today' : '')}>
+                    <span className="h2-dot">{done[i] ? <Icon name="check" size={12} stroke={3} /> : null}</span>
+                    <span className="h2-dl">{d}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Care team shortcut */}
         <div className="card" style={{ margin: '14px 20px 0', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 13, cursor: 'pointer' }}
@@ -559,70 +551,268 @@ function HistoryRow({ h, onClick }) {
 /* ── Day records (single day detail) ───────────────────────── */
 function DayRecordsScreen({ h, onBack }) {
   const { t, lang } = useApp();
+  const ar = lang === 'ar';
   const atts = DAY_ATTACHMENTS[h.d] || {};
-  const rows = [
-    { key: 'bp',   icon: 'activity',    lab: t('m_bp'),      val: h.bp,                 unit: t('unit_bp'), time: '08:15 AM', color: 'var(--petal-violet)',   bg: 'var(--petal-violet-50)' },
-    { key: 'glu',  icon: 'droplet',     lab: t('m_glucose'), val: h.glu,                unit: t('unit_glu'), time: '08:20 AM', color: 'var(--petal-mint-600)', bg: 'var(--petal-mint-50)' },
-    { key: 'pain', icon: 'zap',         lab: t('m_pain'),    val: h.pain + '/10',       unit: '',            time: '07:40 PM', color: 'var(--balsm-danger)',   bg: 'var(--balsm-danger-bg)' },
+  const [gone, setGone] = useState(() => new Set());
+  const [openKey, setOpenKey] = useState(null);  // row swiped open
+  const [menu, setMenu] = useState(null);        // { r, pos }
+  const [undo, setUndo] = useState(null);        // { label, id } — brief "deleted" notice
+  const [confirm, setConfirm] = useState(null);  // { keys, lab?, time? } awaiting confirmation
+  const [selecting, setSelecting] = useState(false);
+  const [sel, setSel] = useState(() => new Set());
+  const startSelect = (k) => { setMenu(null); setOpenKey(null); setSelecting(true); setSel(new Set(k ? [k] : [])); };
+  const exitSelect = () => { setSelecting(false); setSel(new Set()); };
+  const toggle = (k) => setSel(x => { const n = new Set(x); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const countAr = (n) => n === 1 ? 'سجل واحد' : n === 2 ? 'سجلين' : n <= 10 ? `${n} سجلات` : `${n} سجلًا`;
+  const countEn = (n) => n === 1 ? '1 record' : `${n} records`;
+  const undoTimer = useRef(null);
+  const wrapRef = useRef(null);
+  useEffect(() => () => clearTimeout(undoTimer.current), []);
+  useEffect(() => {
+    if (!menu && !confirm && !selecting) return;
+    const k = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      if (confirm) { setConfirm(null); setOpenKey(null); } else if (menu) setMenu(null); else exitSelect();
+    };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [menu, confirm, selecting]);
+
+  const all = [
+    { key: 'mood', lab: t('m_mood'), val: t('mood_' + h.mood), time: '07:00 AM' },
+    { key: 'bp',   icon: 'activity', lab: t('m_bp'),      val: h.bp,           unit: t('unit_bp'),  time: '08:15 AM', color: 'var(--petal-violet)',   bg: 'var(--petal-violet-50)' },
+    { key: 'glu',  icon: 'droplet',  lab: t('m_glucose'), val: h.glu,          unit: t('unit_glu'), time: '08:20 AM', color: 'var(--petal-mint-600)', bg: 'var(--petal-mint-50)' },
+    { key: 'pain', icon: 'zap',      lab: t('m_pain'),    val: h.pain + '/10', unit: '',            time: '07:40 PM', color: 'var(--balsm-danger)',   bg: 'var(--balsm-danger-bg)' },
+    ...(h.sym > 0 ? [{ key: 'sym', icon: 'stethoscope', lab: `${h.sym} ${t('symptoms').toLowerCase()}`, val: '', time: '09:30 PM', color: '#9A6E00', bg: '#FDF5DC' }] : []),
   ];
+  const live = all.filter(r => !gone.has(r.key));
+  const mood = live.find(r => r.key === 'mood');
+  const rows = live.filter(r => r.key !== 'mood' && r.key !== 'sym');
+  const sym = live.find(r => r.key === 'sym');
+
+  const askDel = (r) => { setMenu(null); setConfirm({ keys: [r.key], lab: r.lab, time: r.time }); };
+  const askDelSelected = () => {
+    const keys = live.filter(x => sel.has(x.key)).map(x => x.key);
+    if (!keys.length) return;
+    const one = keys.length === 1 ? live.find(x => x.key === keys[0]) : null;
+    setConfirm(one ? { keys, lab: one.lab, time: one.time } : { keys });
+  };
+  const cancelDel = () => { setConfirm(null); setOpenKey(null); };
+  const del = () => {
+    const c = confirm; if (!c) return;
+    setConfirm(null); setOpenKey(null);
+    setGone(g => { const n = new Set(g); c.keys.forEach(k => n.add(k)); return n; });
+    setUndo({ label: c.keys.length === 1 && c.lab ? c.lab : (ar ? countAr(c.keys.length) : countEn(c.keys.length)), id: Date.now() });
+    exitSelect();
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndo(null), 2500);
+  };
+  const openMenu = (r, e) => {
+    setOpenKey(null);
+    const wEl = wrapRef.current; if (!wEl) return;
+    const w = wEl.getBoundingClientRect(), b = e.currentTarget.getBoundingClientRect();
+    const sc = w.width / wEl.offsetWidth || 1;
+    const below = (b.bottom - w.top) / sc + 4;
+    const end = ar ? (b.left - w.left) / sc : (w.right - b.right) / sc;
+    const pos = below + 64 > wEl.offsetHeight - 16
+      ? { bottom: (w.bottom - b.top) / sc + 4, end }
+      : { top: below, end };
+    setMenu({ r, pos });
+  };
+  const swipe = (r) => ({
+    rtl: ar, open: openKey === r.key,
+    onOpen: () => setOpenKey(r.key), onClose: () => setOpenKey(k => k === r.key ? null : k),
+    onDelete: () => askDel(r), deleteLabel: ar ? 'حذف' : 'Delete',
+    disabled: selecting, onLongPress: selecting ? null : () => startSelect(r.key),
+    contentProps: selecting ? {
+      role: 'checkbox', 'aria-checked': sel.has(r.key), 'aria-label': r.lab, tabIndex: 0,
+      onClick: () => toggle(r.key),
+      onKeyDown: (ev) => { if (ev.key === ' ' || ev.key === 'Enter') { ev.preventDefault(); toggle(r.key); } },
+    } : null,
+  });
+  const Check = ({ k }) => {
+    const on = sel.has(k);
+    return (
+      <span aria-hidden="true" style={{
+        width: 24, height: 24, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: on ? 'none' : '2px solid var(--balsm-ink-300)', background: on ? 'var(--balsm-primary)' : '#fff', color: '#fff',
+        transition: 'background 120ms cubic-bezier(0.16,1,0.3,1)',
+      }}>{on && <Icon name="check" size={16} strokeWidth={2.5} />}</span>
+    );
+  };
+  const allOn = live.length > 0 && live.every(x => sel.has(x.key));
+  const More = ({ r }) => (
+    <button type="button" className="round-btn ghost" onClick={(e) => openMenu(r, e)}
+      aria-haspopup="menu" aria-expanded={menu && menu.r.key === r.key ? true : false}
+      aria-label={ar ? `خيارات ${r.lab}` : `${r.lab} options`} style={{ flexShrink: 0, marginInlineEnd: -10, width: 36 }}>
+      <Icon name="ellipsis-vertical" size={18} style={{ color: 'var(--fg3)' }} />
+    </button>
+  );
+
   return (
-    <div className="screen-scroll fade-in">
+    <div ref={wrapRef} style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <div className="screen-scroll fade-in" style={{ flex: 1, minHeight: 0 }} onScroll={() => menu && setMenu(null)}>
       <div className="pad-top" />
-      <div className="appbar">
-        <button className="round-btn" onClick={onBack} aria-label="Back">
-          <Icon name="arrow-left" style={{ transform: lang === 'ar' ? 'scaleX(-1)' : 'none' }} />
-        </button>
-        <h1 className="grow">{h.d} {h.m[lang]}</h1>
-      </div>
-      <div className="card" style={{
-        margin: '4px 20px 16px', padding: 16, display: 'flex', alignItems: 'center', gap: 14,
-        background: 'linear-gradient(135deg, var(--app-accent-50), var(--balsm-surface) 65%)',
-        border: '1px solid var(--app-accent-50)',
-      }}>
-        <MoodFace level={h.mood} size={40} color={MOOD_COLORS[h.mood - 1]} />
-        <div className="grow">
-          <div style={{ fontWeight: 700, fontSize: 'var(--pt-md)', color: 'var(--fg1)' }}>{t('mood_' + h.mood)}</div>
-          <div style={{ fontSize: 'var(--pt-sm)', color: 'var(--fg3)' }}>{t('m_mood')}</div>
+      {!selecting ? (
+        <div className="appbar">
+          <button className="round-btn" onClick={onBack} aria-label={ar ? 'رجوع' : 'Back'}>
+            <Icon name="arrow-left" style={{ transform: ar ? 'scaleX(-1)' : 'none' }} />
+          </button>
+          <h1 className="grow">{h.d} {h.m[lang]}</h1>
+          {live.length > 0 && (
+            <button type="button" className="b-btn b-btn-sm b-btn-ghost" onClick={() => startSelect(null)} style={{ flexShrink: 0, minHeight: 44 }}>
+              {ar ? 'تحديد' : 'Select'}
+            </button>
+          )}
         </div>
-        <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-          <Icon name="clock" size={13} />07:00 AM
-        </div>
-      </div>
-      <div className="card" style={{ margin: '0 20px', padding: 0 }}>
-        {rows.map((r, i) => (
-          <div key={r.lab} style={{ borderBottom: i < rows.length - 1 ? '1px solid var(--balsm-ink-50)' : 'none' }}>
-            <div className="med-row" style={{ borderBottom: 'none' }}>
-              <div className="med-ico" style={{ background: r.bg, color: r.color }}><Icon name={r.icon} /></div>
-              <div className="grow">
-                <div className="mname">{r.lab}</div>
-                <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}><Icon name="clock" size={12} />{r.time}</div>
-              </div>
-              <div className="num" style={{ fontWeight: 700, fontSize: 'var(--pt-md)', color: 'var(--fg1)' }}>{r.val} <span style={{ fontWeight: 500, fontSize: 'var(--pt-xs)', color: 'var(--fg4)' }}>{r.unit}</span></div>
-            </div>
-            {atts[r.key] && (
-              <div style={{ padding: '0 16px 14px' }}>
-                <AttachmentGallery atts={[].concat(atts[r.key])} height={120} />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      {h.sym > 0 && (
-        <div className="card" style={{ margin: '14px 20px 0', padding: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 'var(--radius-md)', background: '#FDF5DC', color: '#9A6E00', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Icon name="stethoscope" size={19} />
-            </div>
-            <div className="grow">
-              <div style={{ fontWeight: 600, fontSize: 'var(--pt-md)', color: 'var(--fg1)' }}>{h.sym} {t('symptoms').toLowerCase()}</div>
-              <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}><Icon name="clock" size={12} />09:30 PM</div>
-            </div>
-          </div>
-          {atts.sym && <div style={{ padding: '0 16px 14px' }}><AttachmentGallery atts={[].concat(atts.sym)} height={120} /></div>}
+      ) : (
+        <div className="appbar">
+          <button className="round-btn" onClick={exitSelect} aria-label={ar ? 'إنهاء التحديد' : 'Done selecting'}>
+            <Icon name="x" />
+          </button>
+          <h1 className="grow" aria-live="polite">{sel.size > 0 ? (ar ? `${sel.size} محدد` : `${sel.size} selected`) : (ar ? 'حدد السجلات' : 'Select records')}</h1>
+          <button type="button" className="b-btn b-btn-sm b-btn-ghost" onClick={() => setSel(allOn ? new Set() : new Set(live.map(x => x.key)))} style={{ flexShrink: 0, minHeight: 44 }}>
+            {allOn ? (ar ? 'إلغاء الكل' : 'Clear all') : (ar ? 'تحديد الكل' : 'Select all')}
+          </button>
         </div>
       )}
-      {/* mood attachment, if one was saved with the check-in */}
-      <div style={{ height: 24 }} />
+      {mood && (
+        <SwipeRow {...swipe(mood)} radius="var(--radius-lg)" style={{ margin: '4px 20px 16px' }}>
+          <div className="card" style={{
+            margin: 0, padding: 16, display: 'flex', alignItems: 'center', gap: 14,
+            background: 'linear-gradient(135deg, var(--app-accent-50), var(--balsm-surface) 65%), #fff',
+            border: '1px solid var(--app-accent-50)',
+          }}>
+            {selecting && <Check k="mood" />}
+            <MoodFace level={h.mood} size={40} color={MOOD_COLORS[h.mood - 1]} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 'var(--pt-md)', color: 'var(--fg1)' }}>{mood.val}</div>
+              <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2, whiteSpace: 'nowrap' }}>{t('m_mood')} · <Icon name="clock" size={12} />{mood.time}</div>
+            </div>
+            {!selecting && <More r={mood} />}
+          </div>
+        </SwipeRow>
+      )}
+      {rows.length > 0 && (
+        <div className="card" style={{ margin: '0 20px', padding: 0, overflow: 'hidden' }}>
+          {rows.map((r, i) => (
+            <SwipeRow key={r.key} {...swipe(r)} style={{ borderBottom: i < rows.length - 1 ? '1px solid var(--balsm-ink-50)' : 'none' }}>
+              <div style={{ background: '#fff' }}>
+                <div className="med-row" style={{ borderBottom: 'none', gap: 10 }}>
+                  {selecting && <Check k={r.key} />}
+                  <div className="med-ico" style={{ background: r.bg, color: r.color }}><Icon name={r.icon} /></div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="mname" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.lab}</div>
+                    <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}><Icon name="clock" size={12} />{r.time}</div>
+                  </div>
+                  <div className="num" style={{ fontWeight: 700, fontSize: 'var(--pt-md)', color: 'var(--fg1)', whiteSpace: 'nowrap' }}>{r.val} <span style={{ fontWeight: 500, fontSize: 'var(--pt-xs)', color: 'var(--fg4)' }}>{r.unit}</span></div>
+                  {!selecting && <More r={r} />}
+                </div>
+                {atts[r.key] && (
+                  <div style={{ padding: '0 16px 14px' }}>
+                    <AttachmentGallery atts={[].concat(atts[r.key])} height={120} />
+                  </div>
+                )}
+              </div>
+            </SwipeRow>
+          ))}
+        </div>
+      )}
+      {sym && (
+        <SwipeRow {...swipe(sym)} radius="var(--radius-lg)" style={{ margin: '14px 20px 0' }}>
+          <div className="card" style={{ margin: 0, padding: 0, background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 16px' }}>
+              {selecting && <Check k="sym" />}
+              <div style={{ width: 38, height: 38, borderRadius: 'var(--radius-md)', background: sym.bg, color: sym.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name="stethoscope" size={19} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 'var(--pt-md)', color: 'var(--fg1)' }}>{sym.lab}</div>
+                <div className="meta" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}><Icon name="clock" size={12} />{sym.time}</div>
+              </div>
+              {!selecting && <More r={sym} />}
+            </div>
+            {atts.sym && <div style={{ padding: '0 16px 14px' }}><AttachmentGallery atts={[].concat(atts.sym)} height={120} /></div>}
+          </div>
+        </SwipeRow>
+      )}
+      {live.length === 0 && (
+        <div style={{ margin: '40px 20px', textAlign: 'center', color: 'var(--fg3)', fontSize: 'var(--pt-sm)', lineHeight: 1.5 }}>
+          <Icon name="calendar-x" size={28} style={{ color: 'var(--fg4)', marginBottom: 8 }} />
+          <div>{ar ? 'لا توجد سجلات في هذا اليوم.' : 'No records on this day.'}</div>
+        </div>
+      )}
+      <div style={{ height: 96 }} />
+    </div>
+
+      {menu && (
+        <>
+          <div onClick={() => setMenu(null)} style={{ position: 'absolute', inset: 0, zIndex: 40 }} />
+          <div role="menu" aria-label={menu.r.lab} style={{
+            position: 'absolute', zIndex: 41, insetInlineEnd: menu.pos.end, top: menu.pos.top, bottom: menu.pos.bottom,
+            minWidth: 184, padding: 6, background: '#fff', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
+            border: '1px solid var(--balsm-ink-100)', animation: 'drMenuIn 120ms cubic-bezier(0.16,1,0.3,1) both',
+          }}>
+            <style>{`@keyframes drMenuIn{from{opacity:0;transform:scale(0.98)}to{opacity:1;transform:none}}`}</style>
+            <button type="button" role="menuitem" autoFocus onClick={() => askDel(menu.r)} style={{
+              width: '100%', height: 44, display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', border: 'none', borderRadius: 'var(--radius-md)',
+              background: 'transparent', color: 'var(--balsm-danger)', fontWeight: 600, fontSize: 'var(--pt-md)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'start',
+            }}
+            onPointerEnter={e => e.currentTarget.style.background = 'var(--balsm-danger-bg)'}
+            onPointerLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <Icon name="trash-2" size={18} />{ar ? 'حذف السجل' : 'Delete record'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {selecting && (
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 20, background: '#fff', borderTop: '1px solid var(--balsm-ink-100)', padding: '12px 16px 24px', boxShadow: '0 -6px 18px rgba(20,32,43,0.06)' }}>
+          <button className={cx('b-btn b-btn-lg b-btn-danger b-btn--full', sel.size === 0 && 'is-disabled')} disabled={sel.size === 0} onClick={askDelSelected}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon name="trash-2" size={18} />
+            {sel.size === 0 ? (ar ? 'حذف' : 'Delete') : (ar ? `حذف ${countAr(sel.size)}` : `Delete ${countEn(sel.size)}`)}
+          </button>
+        </div>
+      )}
+
+      {confirm && (
+        <div onClick={cancelDel} style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(20,32,43,0.38)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, animation: 'drFade 160ms cubic-bezier(0.16,1,0.3,1) both' }}>
+          <style>{`@keyframes drFade{from{opacity:0}to{opacity:1}}`}</style>
+          <div role="alertdialog" aria-modal="true" aria-labelledby="dr-del-t" aria-describedby="dr-del-d" onClick={ev => ev.stopPropagation()}
+            style={{ width: '100%', maxWidth: 340, background: '#fff', borderRadius: 'var(--radius-xl)', padding: '22px 20px 18px', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: 'var(--balsm-danger-bg)', color: 'var(--balsm-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+              <Icon name="trash-2" size={22} />
+            </div>
+            <div id="dr-del-t" style={{ fontFamily: ar ? 'var(--font-arabic)' : 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-lg)', color: 'var(--fg1)', marginBottom: 6 }}>
+              {confirm.lab
+                ? (ar ? `حذف ${confirm.lab}؟` : `Delete ${confirm.lab.toLowerCase()}?`)
+                : (ar ? `حذف ${countAr(confirm.keys.length)}؟` : `Delete ${countEn(confirm.keys.length)}?`)}
+            </div>
+            <div id="dr-del-d" style={{ fontSize: 'var(--pt-sm)', color: 'var(--fg2)', lineHeight: 1.5, marginBottom: 20 }}>
+              {confirm.lab
+                ? (ar ? `سيُحذف هذا السجل من ${h.d} ${h.m[lang]}، ${confirm.time}. لا يمكن التراجع عن ذلك.` : `This record from ${h.d} ${h.m[lang]}, ${confirm.time} will be removed. This can’t be undone.`)
+                : (ar ? `ستُحذف هذه السجلات من ${h.d} ${h.m[lang]}. لا يمكن التراجع عن ذلك.` : `These records from ${h.d} ${h.m[lang]} will be removed. This can’t be undone.`)}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button className="b-btn b-btn-lg b-btn-danger b-btn--full" onClick={del}>{ar ? 'حذف' : 'Delete'}</button>
+              <button className="b-btn b-btn-lg b-btn-secondary b-btn--full" autoFocus onClick={cancelDel}>{ar ? 'إلغاء' : 'Cancel'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {undo && (
+        <div role="status" aria-live="polite" key={undo.id} style={{
+          position: 'absolute', bottom: 24, insetInline: 16, zIndex: 30, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+          background: 'var(--balsm-ink-800)', color: '#fff', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
+        }}>
+          <Icon name="check" size={17} style={{ flexShrink: 0, color: 'var(--petal-mint)' }} />
+          <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--pt-sm)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {ar ? `تم حذف ${undo.label}` : `${undo.label} deleted`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -656,26 +846,28 @@ function TrendsScreen() {
         <button className="round-btn" onClick={() => setTab('home')} aria-label="Back">
           <Icon name="arrow-left" style={{ transform: lang === 'ar' ? 'scaleX(-1)' : 'none' }} />
         </button>
-        <h1 className="grow">{t('trends')}</h1>
-        <div className="range-tabs">
+        <h1 style={{ flex: 1, minWidth: 0, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', letterSpacing: '-0.01em', color: 'var(--fg1)', textAlign: 'start' }}>{t('trends')}</h1>
+        <DataLocPill cat="vitals" />
+      </div>
+      <div style={{ padding: '0 20px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="range-tabs" style={{ flexShrink: 0 }}>
           {['range_w','range_m','range_3m'].map(r => <button key={r} className={cx(range===r&&'on')} onClick={() => setRange(r)}>{t(r)}</button>)}
         </div>
-      </div>
-      <div style={{ position: 'relative', padding: '0 20px 14px' }} ref={metricsRef}>
+      <div style={{ position: 'relative', flex: 1, minWidth: 0 }} ref={metricsRef}>
         <button onClick={() => setMetricsOpen(v => !v)} style={{
-          display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 14px', borderRadius: 'var(--radius-md)',
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 12px', borderRadius: 'var(--radius-md)',
           border: '1.5px solid var(--balsm-border)', background: '#fff', color: 'var(--fg1)', fontWeight: 600, fontSize: 'var(--pt-sm)', cursor: 'pointer',
           fontFamily: lang === 'ar' ? 'var(--font-arabic)' : 'var(--font-body)',
         }}>
           <Icon name="sliders-horizontal" size={15} style={{ color: 'var(--fg3)' }} />
-          <span className="grow" style={{ textAlign: 'start' }}>
-            {visible.size === ALL_METRICS.length ? (lang === 'ar' ? 'كل المقاييس' : 'All metrics') : `${visible.size} ${lang === 'ar' ? 'من المقاييس' : 'metrics'}`}
+          <span className="grow" style={{ textAlign: 'start', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {visible.size === ALL_METRICS.length ? (lang === 'ar' ? 'الكل' : 'All') : `${visible.size} ${lang === 'ar' ? 'من المقاييس' : 'metrics'}`}
           </span>
           <Icon name="chevron-down" size={15} style={{ color: 'var(--fg3)', transform: metricsOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--dur-fast) var(--ease-out)' }} />
         </button>
         {metricsOpen && (
           <div style={{
-            position: 'absolute', top: 46, insetInlineStart: 0, zIndex: 20, minWidth: 210,
+            position: 'absolute', top: 46, insetInlineEnd: 0, zIndex: 20, minWidth: 210,
             background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--balsm-border)',
             boxShadow: 'var(--shadow-md, 0 8px 24px rgba(20,32,43,0.14))', padding: 6,
           }}>
@@ -695,6 +887,7 @@ function TrendsScreen() {
             ))}
           </div>
         )}
+      </div>
       </div>
       {visible.has('m_bp') && <div className="card chart-card">
         <div className="chart-head">
@@ -741,31 +934,54 @@ function TrendsScreen() {
 function MedsScreen() {
   const { t, lang } = useApp();
   const [rxOpen, setRxOpen] = useState(false);
+  const [addMed, setAddMed] = useState(false);
+  const [selfMeds, setSelfMeds] = useState([]);
+  const [removedMeds, setRemovedMeds] = useState(() => new Set());
+  const ar = lang === 'ar';
+  const allMeds = [...MEDS, ...selfMeds].filter(m => !removedMeds.has(m.id));
+  const kit = useDeleteKit({
+    ar, items: allMeds.map(m => ({ key: m.id, lab: m.name[lang] })),
+    onDelete: (keys) => { setRemovedMeds(s => { const n = new Set(s); keys.forEach(k => n.add(k)); return n; }); setSelfMeds(p => p.filter(m => !keys.includes(m.id))); },
+    nounAr: { one: 'دواء واحد', two: 'دواءين', few: 'أدوية', many: 'دواءً' }, nounEn: { one: 'medication', other: 'medications' },
+    titleOne: (it) => ar ? `حذف ${it.lab}؟` : `Delete ${it.lab}?`,
+    bodyFor: (keys) => {
+      const many = keys.length > 1;
+      const rx = keys.some(k => { const m = allMeds.find(x => x.id === k); return m && !m.self; });
+      if (ar) return (many ? 'ستُزال من جدولك اليومي وتتوقف تذكيراتها.' : 'سيُزال من جدولك اليومي وتتوقف تذكيراته.') + (rx ? ' تبقى الوصفة كما هي.' : '') + ' لا يمكن التراجع عن ذلك.';
+      return (many ? 'They’ll be removed from your daily schedule and their reminders will stop.' : 'It’ll be removed from your daily schedule and its reminders will stop.') + (rx ? ' The prescription stays as it is.' : '') + ' This can’t be undone.';
+    },
+  });
   if (rxOpen) return <PrescriptionsScreen onBack={() => setRxOpen(false)} />;
 
   const groups = [
-    { key: 'morning', icon: 'sunrise', meds: MEDS.filter(m => m.when === 'morning') },
-    { key: 'evening', icon: 'moon',    meds: MEDS.filter(m => m.when === 'evening') },
+    { key: 'morning', icon: 'sunrise', meds: allMeds.filter(m => m.when === 'morning') },
+    { key: 'evening', icon: 'moon',    meds: allMeds.filter(m => m.when === 'evening') },
   ];
   const activeRxCount = PRESCRIPTIONS.filter(r => r.status === 'active').length;
 
   return (
-    <div className="screen-scroll fade-in">
+    <div ref={kit.wrapRef} style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <div className="screen-scroll fade-in" style={{ flex: 1, minHeight: 0 }}>
       <div className="pad-top" />
+      {kit.selecting ? kit.selectAppbar : (
       <div className="appbar">
-        <div className="grow">
-          <h1 style={{ marginBottom: 2 }}>{t('medications')}</h1>
+        <div className="grow" style={{ flex: 1, minWidth: 0 }}>
+          <h1 style={{ marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('medications')}</h1>
           <div style={{ fontSize: 'var(--pt-sm)', color: 'var(--fg3)' }}>{lang === 'ar' ? 'نظامك اليومي' : 'Your daily regimen'}</div>
         </div>
+        <DataLocPill cat="meds" compact />
+        {kit.selectButton}
+        <button className="round-btn" onClick={() => setAddMed(true)} aria-label={lang === 'ar' ? 'إضافة دواء' : 'Add medication'}><Icon name="plus" size={20} /></button>
       </div>
+      )}
 
       <div className="card" style={{
         margin: '4px 20px 16px', padding: 20, display: 'flex', alignItems: 'center', gap: 18,
         background: 'linear-gradient(135deg, var(--petal-mint-50), var(--balsm-surface) 65%)',
         border: '1px solid var(--petal-mint-50)',
       }}>
-        <div className="ring" style={{ position: 'relative', flexShrink: 0 }}>
-          <svg width="68" height="68">
+        <div className="ring" style={{ position: 'relative', flexShrink: 0, width: 68, height: 68 }}>
+          <svg width="68" height="68" style={{ display: 'block' }}>
             <circle cx="34" cy="34" r="29" fill="none" stroke="var(--balsm-ink-100)" strokeWidth="7" />
             <circle cx="34" cy="34" r="29" fill="none" stroke="var(--petal-mint)" strokeWidth="7" strokeLinecap="round"
               strokeDasharray={2 * Math.PI * 29} strokeDashoffset={2 * Math.PI * 29 * (1 - 0.92)} />
@@ -791,7 +1007,7 @@ function MedsScreen() {
         </div>
       </div>
 
-      {groups.map(g => (
+      {groups.filter(g => g.meds.length > 0).map(g => (
         <div key={g.key}>
           <div className="row-head" style={{ margin: '20px 0 10px', display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px' }}>
             <div style={{ width: 26, height: 26, borderRadius: 'var(--radius-sm)', background: 'var(--app-accent-50)', color: 'var(--app-accent-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -800,28 +1016,40 @@ function MedsScreen() {
             <h2 style={{ fontSize: 'var(--pt-md)', fontWeight: 700, color: 'var(--fg1)', margin: 0 }}>{t(g.key)}</h2>
             <span style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)' }}>· {g.meds.length}</span>
           </div>
-          <div className="card" style={{ margin: '0 20px' }}>
-            {g.meds.map(m => {
+          <div className="card" style={{ margin: '0 20px', padding: 0, overflow: 'hidden' }}>
+            {g.meds.map((m, mi) => {
               const bg = { info:'var(--petal-blue-50)', violet:'var(--petal-violet-50)', success:'var(--petal-mint-50)' }[m.tone];
               const fg = { info:'var(--petal-blue)',    violet:'var(--petal-violet)',    success:'var(--petal-mint-600)' }[m.tone];
               const taken = m.id === 'metformin';
+              const it = { key: m.id, lab: m.name[lang] };
               return (
-                <div key={m.id} className="med-row">
+                <SwipeRow key={m.id} {...kit.swipe(it)} style={{ borderBottom: mi < g.meds.length - 1 ? '1px solid var(--balsm-ink-50)' : 'none' }}>
+                <div className="med-row" style={{ background: '#fff', borderBottom: 'none', gap: 10 }}>
+                  {kit.selecting && <kit.Check k={m.id} />}
                   <div className="med-ico" style={{ background: bg, color: fg }}><Icon name={m.icon} /></div>
-                  <div className="grow">
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="mname">{m.name[lang]}</div>
                     <div className="mdose">{m.dose[lang]}</div>
+                    {m.self && <span className="b-badge b-badge--neutral" style={{ marginTop: 4 }}>{lang === 'ar' ? 'بدون روشتة' : 'No prescription'}</span>}
                   </div>
                   {taken
                     ? <span className="b-badge b-badge--success"><span className="b-badge__dot" />{t('taken')}</span>
                     : <span className="b-badge b-badge--neutral"><span className="b-badge__dot" />{t('due')}</span>}
+                  {!kit.selecting && <kit.More it={it} />}
                 </div>
+                </SwipeRow>
               );
             })}
           </div>
         </div>
       ))}
-      <div style={{ height: 24 }} />
+      {allMeds.length === 0 && (
+        <div style={{ margin: '32px 20px', textAlign: 'center', color: 'var(--fg3)', fontSize: 'var(--pt-sm)' }}>{ar ? 'لا توجد أدوية في جدولك.' : 'No medications in your schedule.'}</div>
+      )}
+      <div style={{ height: kit.selecting ? 104 : 24 }} />
+    </div>
+      {kit.overlays}
+      {addMed && <AddMedSheet onClose={() => setAddMed(false)} onAdd={(med) => setSelfMeds(p => [...p, med])} />}
     </div>
   );
 }
@@ -829,8 +1057,10 @@ function MedsScreen() {
 
 /* ── Personal details screen ──────────────────────────────── */
 function PersonalDetailsScreen({ onBack }) {
-  const { t, lang, setNavHidden, setProfileComplete } = useApp();
+  const { t, lang, setNavHidden, setProfileComplete, authEmail, accountMode } = useApp();
   const [saved, setSaved]         = useState(false);
+  const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+  const [goOnlineOpen, setGoOnlineOpen] = useState(false);
   useEffect(() => { setNavHidden(true); return () => setNavHidden(false); }, []);
   const [firstName, setFirstName] = useState(PATIENT.firstName[lang] || PATIENT.firstName.en);
   const [lastName,  setLastName]  = useState(PATIENT.lastName[lang]  || PATIENT.lastName.en);
@@ -907,6 +1137,25 @@ function PersonalDetailsScreen({ onBack }) {
             <Icon name="info" size={12} />
             <span dir="ltr" style={{ fontFamily: 'var(--font-mono)', color: 'var(--fg3)' }}>balsm.health/@{handle || '…'}</span>
           </div>
+          <Field label={t('em_label')}>
+            <button type="button" className="b-input" onClick={() => accountMode === 'offline' ? setGoOnlineOpen(true) : setChangeEmailOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'start' }}>
+              <Icon name="mail" size={17} style={{ color: 'var(--fg3)', flexShrink: 0 }} />
+              <span dir="ltr" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--fg1)', textAlign: 'start' }}>{authEmail || '—'}</span>
+              {accountMode === 'offline'
+                ? <span className="b-badge b-badge--warning" style={{ flexShrink: 0 }}>{lang === 'ar' ? 'غير مُتحقَّق' : 'Not verified'}</span>
+                : <Icon name={lang === 'ar' ? 'chevron-left' : 'chevron-right'} size={15} style={{ color: 'var(--fg3)', flexShrink: 0 }} />}
+            </button>
+          </Field>
+          {accountMode === 'offline' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, borderRadius: 'var(--radius-md)', background: 'var(--balsm-cream-50)', marginTop: -4 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <Icon name="smartphone" size={16} style={{ color: 'var(--fg3)', flexShrink: 0, marginTop: 2 }} />
+                <div style={{ fontSize: 'var(--pt-sm)', color: 'var(--fg2)', lineHeight: 1.45 }}>{lang === 'ar' ? 'حسابك على هذا الجهاز فقط. اتصل بالإنترنت لتأكيد بريدك ومزامنة بياناتك.' : 'Your account is on this device only. Go online to verify your email and sync your data.'}</div>
+              </div>
+              <button className="b-btn b-btn-md b-btn-primary b-btn--full" onClick={() => setGoOnlineOpen(true)}><Icon name="cloud-upload" size={16} />{lang === 'ar' ? 'الاتصال بالإنترنت' : 'Go online'}</button>
+            </div>
+          )}
         </div>
 
         {/* Connected accounts */}
@@ -1024,6 +1273,8 @@ function PersonalDetailsScreen({ onBack }) {
           <button className="b-btn b-btn-md b-btn-ghost b-btn--full" style={{ marginTop: 10 }} onClick={() => { setHandle(committedHandle.current); setHandleConfirmOpen(false); }}>{t('hc_cancel')}</button>
         </SettingsSheet>
       )}
+      {changeEmailOpen && <ChangeEmailSheet onClose={() => setChangeEmailOpen(false)} />}
+      {goOnlineOpen && <GoOnlineSheet onClose={() => setGoOnlineOpen(false)} />}
     </div>
   );
 }
@@ -1083,6 +1334,9 @@ function CareTeamScreen({ onBack }) {
   const [openId, setOpenId] = useState(null);
   const [viewer, setViewer] = useState(null); /* { id, i } */
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState(0);
+  useEffect(() => { if (!imported) return; const t = setTimeout(() => setImported(0), 5000); return () => clearTimeout(t); }, [imported]);
   const [query, setQuery]   = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [form, setForm]     = useState({ type: 'doctor', name: '', specialty: '', phone: '', phone2: '', email: '', clinic: '', address: '', mapUrl: '', notes: '' });
@@ -1172,6 +1426,7 @@ function CareTeamScreen({ onBack }) {
           <Icon name="arrow-left" style={{ transform: lang === 'ar' ? 'scaleX(-1)' : 'none' }} />
         </button>
         <h1 style={{ flex: 1, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', letterSpacing: '-0.01em', color: 'var(--fg1)' }}>{t('p_care')}</h1>
+        <DataLocPill cat="care" />
       </div>
       <AttachmentInput inputRef={pickRef} onPick={(atts) => {
         if (pickFor.current === NEW) setFormAtts(a => [...a, ...atts]);
@@ -1216,6 +1471,12 @@ function CareTeamScreen({ onBack }) {
           </div>
         )}
 
+        {imported > 0 && (
+          <div className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', marginBottom: 12, borderRadius: 'var(--radius-lg)', background: 'var(--petal-mint-50, #EAF9EF)', color: 'var(--fg1)', fontSize: 'var(--pt-sm)' }}>
+            <Icon name="check-circle-2" size={17} style={{ color: 'var(--petal-mint-600, #3DB866)', flexShrink: 0 }} />
+            <span style={{ flex: 1, lineHeight: 1.4 }}>{lang === 'ar' ? `أُضيف ${imported} إلى فريق الرعاية. اضغط تعديل لإضافة التخصص والعنوان.` : `${imported} added to your care team. Tap edit to add specialty and address.`}</span>
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {shown.map((r) => {
             const atts = files[r.id] || [];
@@ -1250,7 +1511,7 @@ function CareTeamScreen({ onBack }) {
                     <Icon name="pencil" size={16} />
                   </button>
                 </div>
-                {atts.length > 0 && !expanded && (
+                {atts.length > 0 && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 14, overflowX: 'auto', paddingBottom: 2 }}>
                     {atts.map((a, i) => (
                       <AttachmentThumb key={i} att={a} compact height={64} onOpen={() => setViewer({ id: r.id, i })}
@@ -1263,32 +1524,7 @@ function CareTeamScreen({ onBack }) {
                     style={{ height: 40, gap: 7, fontSize: 'var(--pt-sm)', textDecoration: 'none' }}>
                     <Icon name="phone" size={15} />{lang === 'ar' ? 'اتصال' : 'Call'}
                   </a>
-                  <button className="b-btn b-btn-md b-btn-secondary" onClick={() => atts.length ? setOpenId(expanded ? null : r.id) : attach(r.id)}
-                    style={{ height: 40, gap: 7, fontSize: 'var(--pt-sm)', paddingInline: 14, flexShrink: 0 }}>
-                    <Icon name={atts.length ? (expanded ? 'check' : 'pencil') : 'paperclip'} size={15} />
-                    {atts.length ? (expanded ? (lang === 'ar' ? 'تم' : 'Done') : (lang === 'ar' ? 'إدارة الملفات' : 'Manage files')) : (lang === 'ar' ? 'إرفاق ملف' : 'Attach file')}
-                  </button>
                 </div>
-                {expanded && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--balsm-ink-100)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: atts.length ? 10 : 0 }}>
-                      <Icon name="paperclip" size={13} style={{ color: 'var(--fg3)' }} />
-                      <span style={{ flex: 1, fontSize: 'var(--pt-xs)', fontWeight: 700, color: 'var(--fg3)' }}>
-                        {lang === 'ar' ? 'بطاقة العمل والملفات' : 'Business card & files'}
-                      </span>
-                      <button className="b-btn b-btn-sm b-btn-ghost" onClick={() => attach(r.id)}
-                        style={{ height: 28, padding: '0 8px', gap: 5, fontSize: 'var(--pt-xs)', color: 'var(--app-accent)', fontWeight: 700 }}>
-                        <Icon name="plus" size={13} />{lang === 'ar' ? 'إرفاق' : 'Attach'}
-                      </button>
-                    </div>
-                    {atts.length > 0 && (
-                      <AttachmentGallery atts={atts} height={150}
-                        onRemove={(i) => dropFile(r.id, i)}
-                        onAdd={() => attach(r.id)}
-                        addLabel={lang === 'ar' ? 'إضافة' : 'Add'} />
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -1317,9 +1553,22 @@ function CareTeamScreen({ onBack }) {
         <div style={{ height: 72 }} />
       </div>
 
-      <button className="rec-fab" onClick={() => setAdding(true)} aria-label={lang === 'ar' ? 'أضف مقدّم رعاية' : 'Add a care provider'}>
+      <button className="rec-fab" onClick={async () => {
+          if (!ciHasNative()) { setImporting(true); return; }
+          const list = await pickNativeContacts();
+          if (list && list.length) setImporting(list);
+        }} aria-label={lang === 'ar' ? 'أضف من جهات الاتصال' : 'Add from contacts'}>
         <Icon name="user-plus" size={22} stroke={2.2} />
       </button>
+
+      {importing && (
+        <ContactImportSheet
+          initial={Array.isArray(importing) ? importing : null}
+          existing={roster.flatMap(r => [r.phone, r.phone2, r.doctor && r.doctor.phone]).filter(Boolean)}
+          onClose={() => setImporting(false)}
+          onManual={() => { setImporting(false); resetForm(); setAdding(true); }}
+          onImport={(recs) => { setMine(m => [...m, ...recs]); setImporting(false); setTypeFilter('all'); setQuery(''); setImported(recs.length); }} />
+      )}
 
       {adding && (
         <SettingsSheet title={editingId ? (lang === 'ar' ? 'تعديل مقدّم الرعاية' : 'Edit provider') : (lang === 'ar' ? 'إضافة مقدّم رعاية' : 'Add a provider')} onClose={closeSheet}>
@@ -1508,7 +1757,7 @@ function CareTeamScreen({ onBack }) {
 
 /* Privacy & data screen */
 function PrivacyDataScreen({ onBack }) {
-  const { t, lang, setNavHidden, authEmail } = useApp();
+  const { t, lang, setNavHidden, authEmail, accountMode } = useApp();
   useEffect(() => { setNavHidden(true); return () => setNavHidden(false); }, []);
   const [shareTeam, setShareTeam]   = useState(true);
   const [analytics, setAnalytics]   = useState(false);
@@ -1516,6 +1765,7 @@ function PrivacyDataScreen({ onBack }) {
   const [bioLock,   setBioLock]     = useState(true);
   const [pinOpen,   setPinOpen]     = useState(false);
   const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+  const [goOnlineOpen, setGoOnlineOpen] = useState(false);
 
   const PvSection = ({ icon, title }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '18px 0 10px', color: 'var(--fg2)', fontWeight: 700, fontSize: 'var(--pt-sm)' }}>
@@ -1568,7 +1818,6 @@ function PrivacyDataScreen({ onBack }) {
 
         <PvSection icon="lock" title={lang === 'ar' ? 'الأمان' : 'Security'} />
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <ActionRow icon="mail" title={t('sec_email')} desc={authEmail || '—'} onClick={() => setChangeEmailOpen(true)} />
           <ToggleRow on={bioLock} set={setBioLock}
             title={lang === 'ar' ? 'قفل بالبصمة / الوجه' : 'Biometric app lock'}
             desc={lang === 'ar' ? 'افتح التطبيق ببصمتك' : 'Unlock the app with Face ID / fingerprint'} />
@@ -1593,7 +1842,6 @@ function PrivacyDataScreen({ onBack }) {
           <Icon name="shield-check" size={14} />{lang === 'ar' ? 'بياناتك مشفّرة ومحمية' : 'Your data is encrypted and protected'}
         </p>
       </div>
-      {changeEmailOpen && <ChangeEmailSheet onClose={() => setChangeEmailOpen(false)} />}
     </div>
   );
 }
@@ -1666,6 +1914,7 @@ function MedicalProfileScreen({ onBack }) {
           <Icon name="arrow-left" style={{ transform: lang === 'ar' ? 'scaleX(-1)' : 'none' }} />
         </button>
         <h1 style={{ flex: 1, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--pt-xl)', letterSpacing: '-0.01em', color: 'var(--fg1)' }}>{t('p_cond')}</h1>
+        <DataLocPill cat="medical" />
         {saved && <span className="b-badge b-badge--success"><span className="b-badge__dot" />{t('pd_saved')}</span>}
       </div>
       <div className="screen-scroll" style={{ padding: '0 20px 28px' }}>
@@ -1791,6 +2040,8 @@ function ProfileScreen() {
   const [fbOpen, setFbOpen]             = useState(false);
   const [ecoOpen, setEcoOpen]           = useState(false);
   const [qrOpen, setQrOpen]             = useState(false);
+  const [helpOpen, setHelpOpen]         = useState(false);
+  if (helpOpen)     return <HelpSupportScreen onBack={() => setHelpOpen(false)} />;
   if (personalOpen) return <PersonalDetailsScreen onBack={() => setPersonalOpen(false)} />;
   if (careOpen)     return <CareTeamScreen onBack={() => setCareOpen(false)} />;
   if (privacyOpen)  return <PrivacyDataScreen onBack={() => setPrivacyOpen(false)} />;
@@ -1807,7 +2058,7 @@ function ProfileScreen() {
     { icon: 'shield-check',   key: 'p_privacy',  action: () => setPrivacyOpen(true) },
     { icon: 'star',           key: 'fb_row',     action: () => setFbOpen(true) },
     { icon: 'flower-2',       key: 'eco_row',    action: () => setEcoOpen(true) },
-    { icon: 'life-buoy',      key: 'p_help'     },
+    { icon: 'life-buoy',      key: 'p_help',     action: () => setHelpOpen(true) },
   ];
   return (
     <div className="screen-scroll fade-in">
@@ -1827,11 +2078,6 @@ function ProfileScreen() {
           <Icon name="qr-code" size={15} />
           <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>@{HANDLE_STORE.value}</span>
         </button>
-        <div className="chip-wrap" style={{ justifyContent: 'center', marginTop: 12 }}>
-          {account.conditions.map((c, i) => (
-            <span key={i} className="b-badge" style={{ background: 'var(--balsm-ink-100)', color: 'var(--balsm-ink-700)' }}>{c[lang]}</span>
-          ))}
-        </div>
       </div>
 
       {!profileComplete && (

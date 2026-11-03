@@ -1,15 +1,19 @@
 /* ============================================================
    Balsm Design System — Colors & Typography
-   Community-Owned Healthcare OS · Open. Arab. Trusted.
-   Brand promise: "Your care. Your data. Your system."
-   بلسم · مفتوح. عربي. موثوق.
+   Community-Driven Healthcare OS
+   رعايةٌ تمتد .. وأثرٌ يبقىٰ   · slogan     (Care that reaches, impact that lasts)
+   قريبٌ منك، باقٍ معك      · promise    (Close to you. Here to stay.)
+   مُجتمعي. مستقل. موثوق.      · descriptor (Community-driven. Independent. Trusted.)
+   Copy tokens: copy-tokens.json · rules: BRAND_MESSAGING.md
 
    Egypt-first · Arabic-RTL native · Offline-default
-   Canonical brand: brand/balsm-brand-canvas.md
+   Canonical brand: balsm-brand-canvas.md
    ============================================================ */
 
-/* Webfonts — Montserrat + IBM Plex Sans (+ Arabic + Cairo for بلسم RTL) */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Cairo:wght@400;600;700;800&display=swap');
+/* Webfonts — self-hosted, see fonts.css + fonts/README.md.
+   Deliberately NOT a Google Fonts @import: this product is
+   offline-default and community-driven, and a CDN honours neither. */
+@import url('./fonts.css');
 
 :root {
   /* ── Brand petals (official 5-color flower mark) ───────────────
@@ -29,6 +33,8 @@
   --petal-aqua-600:    #029E99;
   --petal-emerald-600: #019A7F;
   --petal-blue-600:    #0F6BCC;
+  --petal-blue-700:    #0B58A8;   /* a11y — hover of the UI primary (7.06:1 on white) */
+  --petal-blue-800:    #0A4E96;   /* a11y — pressed of the UI primary (8.26:1) */
   --petal-mint-600:    #3FC366;
   --petal-violet-600:  #5C3AB0;
 
@@ -43,8 +49,13 @@
      PRIMARY = blue  (the action color — CTAs, links, focus)
      ACCENT  = teal  (the calmer healing color — surfaces, success-y moments)
      The brand has no single "primary"; these are convenience aliases. */
-  --balsm-primary:    var(--petal-blue);
-  --balsm-primary-hover: var(--petal-blue-600);
+  /* A11Y (2026-09): the UI primary is the 600 step, not the petal itself.
+     #1283FF is 3.67:1 with white — fails AA for 14px button labels and link
+     text. #0F6BCC is 5.26:1. --petal-blue stays #1283FF for the mark,
+     illustration and charts. See ACCESSIBILITY.md §1. */
+  --balsm-primary:    var(--petal-blue-600);
+  --balsm-primary-hover: var(--petal-blue-700);
+  --balsm-primary-active: var(--petal-blue-800);
   --balsm-primary-bg: var(--petal-blue-50);
   --balsm-accent:     var(--petal-aqua);
   --balsm-accent-bg:  var(--petal-aqua-50);
@@ -55,8 +66,7 @@
      #6B6B60). It shares a hue with the ".health" TLD — 267° vs 268° —
      so the two are one colour at two lightnesses, not two colours.
      Keep them in step: restating the wordmark means restating the TLD.
-     Matches brand/logo-*.svg + brand/wordmark.svg.
-     Comparison sheet: brand/wordmark-color-study.html */
+     Matches brand/logo-*.svg + brand/wordmark.svg. */
   --balsm-wordmark:     #1F2D3D;   /* بلسم · Balsm — navy slate, L* 17.9 */
   --balsm-wordmark-tld: #526174;   /* .health — same hue, L* 40.5 */
 
@@ -88,10 +98,13 @@
 
   /* ── Semantic clinical state ───────────────────────────────── */
   --balsm-success: var(--petal-mint);          /* mint green — dispensed, vitals normal */
+  --balsm-success-strong: #2E9E57;             /* a11y — mint for fills that must hit 3:1 (switch on, step done) */
   --balsm-success-bg: var(--petal-mint-50);
   --balsm-warning: #E5B428;                    /* sun — low stock, approval */
   --balsm-warning-bg: #FDF5DC;
-  --balsm-danger:  #D44A3C;                    /* warm red — expired, recall */
+  --balsm-danger:  #B83A2E;                    /* warm red — expired, recall. a11y: was #D44A3C (4.34:1, failed AA as error text + button); now 5.70:1 on white, 4.93:1 on danger-bg */
+  --balsm-danger-hover:  #9E2F24;
+  --balsm-danger-active: #8A281F;
   --balsm-danger-bg:  #FBEBE7;
   --balsm-info:    var(--petal-blue);          /* blue — informational, sync */
   --balsm-info-bg:    var(--petal-blue-50);
@@ -102,6 +115,7 @@
   --balsm-controlled: var(--petal-violet);     /* purple is OUR purple now — Schedule II/III */
   --balsm-controlled-bg: var(--petal-violet-50);
   --balsm-expiring: #D97A20;                   /* amber — expiring soon */
+  --balsm-expiring-strong: #B06212;            /* a11y — amber for icons on expiring-bg (3.99:1); never as body text */
   --balsm-expiring-bg: #FBEEDC;
 
   /* ── Surfaces & elevation ──────────────────────────────────── */
@@ -111,15 +125,17 @@
   --balsm-surface-inverse:var(--balsm-ink-900);
   --balsm-border:         var(--balsm-ink-200);
   --balsm-border-strong:  var(--balsm-ink-300);
-  --balsm-border-focus:   var(--petal-blue);
+  --balsm-border-focus:   var(--balsm-primary);
+  --balsm-border-control: var(--balsm-ink-500);  /* a11y — boundary of inputs, checkboxes, switches: 3.86:1 (WCAG 1.4.11 needs 3:1; ink-200 was 1.34) */
 
   /* ── Foreground tokens (semantic) ──────────────────────────── */
   --fg1: var(--balsm-ink-900);         /* primary text */
   --fg2: var(--balsm-ink-700);         /* secondary text */
   --fg3: var(--balsm-ink-600);         /* tertiary / meta */
-  --fg4: var(--balsm-ink-400);         /* placeholder, disabled */
+  --fg4: var(--balsm-ink-400);         /* DISABLED only (exempt from contrast). Never placeholder or live text. */
+  --fg-placeholder: var(--balsm-ink-600); /* a11y — placeholder is text: 6.32:1. Was fg4 (2.53:1) */
   --fg-on-brand: #FFFFFF;
-  --fg-link: var(--petal-blue);
+  --fg-link: var(--balsm-primary);     /* 5.26:1 — was petal-blue 3.67:1 */
 
   /* ── Type families ─────────────────────────────────────────── */
   --font-display: 'Montserrat', 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -140,16 +156,17 @@
   --fs-5xl:  56px;
   --fs-6xl:  72px;
 
-  --lh-tight:   1.15;
-  --lh-snug:    1.3;
-  --lh-normal:  1.5;
-  --lh-relaxed: 1.65;
+  --lh-tight:    1.15; /* @kind other */
+  --lh-snug:     1.3; /* @kind other */
+  --lh-normal:   1.5; /* @kind other */
+  --lh-relaxed:  1.65; /* @kind other */
+  --lh-arabic-marked: 1.9; /* @kind other */ /* Arabic lines carrying tanween (brand.slogan / brand.promise) — marks clear overflow:hidden */
 
-  --tracking-tighter: -0.02em;
-  --tracking-tight:   -0.01em;
-  --tracking-normal:  0;
-  --tracking-wide:    0.04em;
-  --tracking-widest:  0.16em;     /* eyebrows, all-caps labels */
+  --tracking-tighter:  -0.02em; /* @kind other */
+  --tracking-tight:    -0.01em; /* @kind other */
+  --tracking-normal:   0; /* @kind other */
+  --tracking-wide:     0.04em; /* @kind other */
+  --tracking-widest:   0.16em; /* @kind other */ /* eyebrows, all-caps labels */
 
   /* ── Spacing (4px base) ────────────────────────────────────── */
   --space-1:  4px;
@@ -184,20 +201,50 @@
   --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.6);
 
   /* ── Motion ───────────────────────────────────────────────── */
-  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);     /* default — calm */
-  --ease-in:    cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-in-out:cubic-bezier(0.65, 0, 0.35, 1);
-  --dur-fast:  120ms;
-  --dur-base:  200ms;
-  --dur-slow:  320ms;
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */      /* default — calm */
+  --ease-in:     cubic-bezier(0.7, 0, 0.84, 0); /* @kind other */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* @kind other */
+  --dur-fast: 120ms; /* @kind other */
+  --dur-base: 200ms; /* @kind other */
+  --dur-slow: 320ms; /* @kind other */
 
   /* ── Gradients (signature) ─────────────────────────────────── */
-  --grad-petal: linear-gradient(135deg, #02BBB5 0%, #1283FF 60%, #724DD0 100%);   /* the FULL petal sweep */
-  --grad-mint:  linear-gradient(135deg, #55D77F 0%, #01C4A2 100%);
-  --grad-sky:   linear-gradient(135deg, #1283FF 0%, #0F6BCC 100%);
-  --grad-violet:linear-gradient(135deg, #8E6FE0 0%, #724DD0 100%);
-  --grad-ink:   linear-gradient(135deg, #1F2D3D 0%, #14202B 100%);
-  --grad-cream: linear-gradient(180deg, #FAFAF7 0%, #F4F3EC 100%);
+  --grad-petal: linear-gradient(135deg, #02BBB5 0%, #1283FF 60%, #724DD0 100%); /* @kind color */ /* the FULL petal sweep */
+  --grad-mint:   linear-gradient(135deg, #55D77F 0%, #01C4A2 100%); /* @kind color */
+  --grad-sky:    linear-gradient(135deg, #1283FF 0%, #0F6BCC 100%); /* @kind color */
+  --grad-violet: linear-gradient(135deg, #8E6FE0 0%, #724DD0 100%); /* @kind color */
+  --grad-ink:    linear-gradient(135deg, #1F2D3D 0%, #14202B 100%); /* @kind color */
+  --grad-cream:  linear-gradient(180deg, #FAFAF7 0%, #F4F3EC 100%); /* @kind color */
+
+  /* ── Responsive breakpoints ─────────────────────────────────
+     CSS custom properties can't be used in @media queries.
+     Reference these VALUES directly in media queries.
+     Tokens below expose them for JS consumption.
+     ──────────────────────────────────────────────────────────── */
+  --bp-xs:    375; /* @kind other */ /* px — small phone */
+  --bp-sm:    480; /* @kind other */ /* px — large phone */
+  --bp-md:    768; /* @kind other */ /* px — tablet portrait */
+  --bp-lg:    1024; /* @kind other */ /* px — tablet landscape / small laptop */
+  --bp-xl:    1280; /* @kind other */ /* px — desktop */
+  --bp-2xl:   1536; /* @kind other */ /* px — wide desktop */
+
+  /* ── Container widths ──────────────────────────────────────── */
+  --container-xs:   480px; /* @kind spacing */ /* full-width up to this */
+  --container-sm:   640px; /* @kind spacing */
+  --container-md:   768px; /* @kind spacing */
+  --container-lg:   1024px; /* @kind spacing */
+  --container-xl:   1200px; /* @kind spacing */
+  --container-2xl:  1440px; /* @kind spacing */
+
+  /* ── Adaptive gutters ───────────────────────────────────────── */
+  --gutter:          16px; /* @kind spacing */ /* mobile default */
+  --gutter-md:       24px; /* @kind spacing */ /* tablet */
+  --gutter-lg:       48px; /* @kind spacing */ /* desktop */
+
+  /* ── Grid columns ─────────────────────────────────────────── */
+  --cols-mobile:   4; /* @kind other */
+  --cols-tablet:   8; /* @kind other */
+  --cols-desktop:  12; /* @kind other */
 
   /* ── Legacy aliases (point old tokens at new petals) ──────────
      Older preview cards & UI kits may still reference these.
@@ -331,3 +378,100 @@ body {
   font-weight: 700;
   color: var(--balsm-wordmark);
 }
+
+/* ============================================================
+   Responsive utilities
+   Breakpoints: xs 375 · sm 480 · md 768 · lg 1024 · xl 1280
+   ============================================================ */
+
+/* Adaptive container */
+.container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+@media (min-width: 768px)  { .container { padding-inline: var(--gutter-md); } }
+@media (min-width: 1024px) { .container { max-width: var(--container-xl); padding-inline: var(--gutter-lg); } }
+
+/* Responsive grid */
+.grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (min-width: 768px)  { .grid { grid-template-columns: repeat(8, 1fr);  gap: var(--space-6); } }
+@media (min-width: 1024px) { .grid { grid-template-columns: repeat(12, 1fr); gap: var(--space-8); } }
+
+/* Show/hide helpers */
+.show-mobile  { display: block; }  .hide-mobile  { display: none; }
+@media (min-width: 768px) {
+  .show-mobile  { display: none; }
+  .hide-mobile  { display: block; }
+  .show-tablet  { display: block; }
+  .hide-tablet  { display: none; }
+}
+@media (min-width: 1024px) {
+  .show-desktop { display: block; }
+  .hide-desktop { display: none; }
+}
+
+/* Fluid type — display headline scales with viewport */
+.fluid-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tighter);
+  font-size: clamp(var(--fs-3xl), 4.5vw, var(--fs-6xl));
+}
+[dir="rtl"] .fluid-display { font-family: var(--font-arabic); letter-spacing: 0; }
+
+/* Fluid body — comfortable reading at any width */
+.fluid-body {
+  font-size: clamp(var(--fs-sm), 1.5vw, var(--fs-lg));
+  line-height: var(--lh-relaxed);
+  max-width: 68ch;
+}
+
+/* Responsive type scale overrides — tablet and up */
+@media (min-width: 768px) {
+  :root {
+    --fs-base: 15px;
+    --fs-md:   17px;
+    --gutter:  24px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --fs-base: 16px;
+    --fs-md:   18px;
+    --gutter:  48px;
+  }
+}
+
+/* Safe-area insets for mobile notches */
+.safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-x      { padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px); }
+
+/* Stack / row flex helpers */
+.stack   { display: flex; flex-direction: column; }
+.row     { display: flex; flex-direction: row; align-items: center; }
+.row-md  { display: flex; flex-direction: column; }
+@media (min-width: 768px) { .row-md { flex-direction: row; } }
+
+/* Card grid — 1 col mobile → 2 tablet → 3/4 desktop */
+.card-grid {
+  display: grid; gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 480px)  { .card-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-6); } }
+@media (min-width: 1024px) { .card-grid { grid-template-columns: repeat(3, 1fr); gap: var(--space-8); } }
+@media (min-width: 1280px) { .card-grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* RTL mirror helpers */
+[dir="rtl"] .chevron-end { transform: scaleX(-1); }
+[dir="rtl"] .text-start  { text-align: right; }
+[dir="rtl"] .text-end    { text-align: left; }
+
+/* Arabic brand lines with official tanween — never clip the marks */
+.b-brand-line { font-family: var(--font-arabic); line-height: var(--lh-arabic-marked); padding-block: 0.08em; overflow: visible; letter-spacing: 0; text-transform: none; }

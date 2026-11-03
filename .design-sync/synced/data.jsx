@@ -161,6 +161,8 @@ const STR = {
   m_pain:     { en: "Pain", ar: "الألم" },
   m_weight:   { en: "Weight", ar: "الوزن" },
   m_o2:       { en: "Oxygen (SpO2)", ar: "الأكسجين" },
+  m_pulse:    { en: "Pulse", ar: "النبض" },
+  unit_bpm:   { en: "bpm", ar: "نبضة/د" },
   unit_bp:    { en: "mmHg", ar: "ملم زئبق" },
   unit_glu:   { en: "mg/dL", ar: "مجم/دل" },
   bp_normal:  { en: "In range", ar: "ضمن المعدل" },
@@ -258,7 +260,7 @@ const STR = {
 
   /* Profile */
   profile:    { en: "Profile",    ar: "الملف الشخصي" },
-  since:      { en: "Balsm patient since", ar: "مريضة بَلسَم منذ" },
+  since:      { en: "Balsm member since", ar: "عضو في بلسم منذ" },
   p_personal: { en: "Account details",    ar: "بيانات الحساب"   },
   p_cond:     { en: "Medical profile", ar: "الملف الطبي" },
 
@@ -323,7 +325,7 @@ const STR = {
   eco_row:   { en: "About Balsm & community", ar: "عن بَلسَم والمجتمع" },
   eco_title: { en: "The Balsm ecosystem", ar: "منظومة بَلسَم" },
   eco_hero:  { en: "Balsm is bigger than this app", ar: "بَلسَم أكبر من هذا التطبيق" },
-  eco_sub:   { en: "A community-owned healthcare system for the Arab world. Open code, your data, no vendor in between.", ar: "نظام صحي مملوك للمجتمع في العالم العربي. شيفرة مفتوحة، وبياناتك ملكك، ولا وسيط بينك وبين رعايتك." },
+  eco_sub:   { en: "A community-driven, open-source healthcare system for the Arab world. Your data, no vendor in between.", ar: "نظام صحي يحرّكه المجتمع ومفتوح المصدر للعالم العربي. بياناتك لك، بلا وسيط." },
   eco_p1h:   { en: "This app — for you", ar: "هذا التطبيق — لك" },
   eco_p1b:   { en: "Your records, medications and appointments, whole and in your language.", ar: "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك." },
   eco_p2h:   { en: "Balsm Pro — for pharmacies & clinics", ar: "بَلسَم برو — للصيدليات والعيادات" },
@@ -428,6 +430,8 @@ const STR = {
   dur_months:        { en: "For X months",                   ar: "لعدد من الأشهر" },
   unit_weeks:        { en: "weeks",                          ar: "أسابيع" },
   unit_months:       { en: "months",                         ar: "أشهر" },
+  dur_period:        { en: "For a set period",               ar: "لفترة محددة" },
+  dur_count:         { en: "Count",                          ar: "العدد" },
   dur_until_empty:   { en: "Until package finishes",         ar: "حتى انتهاء العلبة" },
   dur_ongoing:       { en: "Ongoing",                        ar: "مستمر" },
   dur_other:         { en: "Other",                          ar: "أخرى" },
@@ -610,7 +614,7 @@ const PATIENT = {
   height:     162,
   emergency:  { name: "Ahmed Hassan", relation: { en: "Son", ar: "ابن" }, phone: "+20 10 9876 5432" },
   age:        58,
-  since:      { en: "Mar 2025", ar: "مارس 2025" },
+  since:      { en: "Oct 2026", ar: "أكتوبر 2026" },
   conditions: [
     { en: "Type 2 diabetes",  ar: "السكري من النوع الثاني" },
     { en: "Hypertension",     ar: "ارتفاع ضغط الدم" },
@@ -696,19 +700,15 @@ const PRESCRIPTIONS = [
 
 /* ── Family accounts ────────────────────────────────────── */
 const FAMILY_ACCOUNTS = [
-  { id: 'layla', name: { en: 'Layla Hassan', ar: 'ليلى حسن'  }, initials: 'LH', color: 'var(--petal-aqua)',   relation: { en: 'You',      ar: 'أنتِ'   }, age: 58, since: { en: 'Mar 2025', ar: 'مارس 2025'  }, conditions: [{ en: 'Type 2 diabetes', ar: 'السكري من النوع الثاني' }, { en: 'Hypertension', ar: 'ارتفاع ضغط الدم' }] },
-  { id: 'karim', name: { en: 'Karim Hassan', ar: 'كريم حسن'  }, initials: 'KH', color: 'var(--petal-blue)',   relation: { en: 'Husband',  ar: 'الزوج'  }, age: 63, since: { en: 'Mar 2025', ar: 'مارس 2025'  }, conditions: [{ en: 'Hypertension', ar: 'ارتفاع ضغط الدم' }] },
-  { id: 'nadia', name: { en: 'Nadia Hassan', ar: 'ناديا حسن' }, initials: 'NH', color: 'var(--petal-violet)', relation: { en: 'Daughter', ar: 'الابنة' }, age: 28, since: { en: 'Apr 2025', ar: 'أبريل 2025' }, conditions: [] },
+  { id: 'layla', name: { en: 'Layla Hassan', ar: 'ليلى حسن'  }, initials: 'LH', color: 'var(--petal-aqua)',   relation: { en: 'You',      ar: 'أنتِ'   }, age: 58, since: { en: 'Oct 2026', ar: 'أكتوبر 2026' }, conditions: [{ en: 'Type 2 diabetes', ar: 'السكري من النوع الثاني' }, { en: 'Hypertension', ar: 'ارتفاع ضغط الدم' }] },
+  { id: 'karim', name: { en: 'Karim Hassan', ar: 'كريم حسن'  }, initials: 'KH', color: 'var(--petal-blue)',   relation: { en: 'Husband',  ar: 'الزوج'  }, age: 63, since: { en: 'Oct 2026', ar: 'أكتوبر 2026' }, conditions: [{ en: 'Hypertension', ar: 'ارتفاع ضغط الدم' }] },
+  { id: 'nadia', name: { en: 'Nadia Hassan', ar: 'ناديا حسن' }, initials: 'NH', color: 'var(--petal-violet)', relation: { en: 'Daughter', ar: 'الابنة' }, age: 28, since: { en: 'Oct 2026', ar: 'أكتوبر 2026' }, conditions: [] },
 ];
 
-/* ── Languages (en + ar fully translated; others preview) ─ */
+/* ── Languages (supported: ar + en) ─────────────────────── */
 const LANGUAGES = [
   { code: 'ar', native: 'العربية',   en: 'Arabic',   rtl: true,  full: true  },
   { code: 'en', native: 'English',   en: 'English',  rtl: false, full: true  },
-  { code: 'fr', native: 'Français',  en: 'French',   rtl: false, full: false },
-  { code: 'ur', native: 'اردو',      en: 'Urdu',     rtl: true,  full: false },
-  { code: 'fa', native: 'فارسی',     en: 'Persian',  rtl: true,  full: false },
-  { code: 'tr', native: 'Türkçe',    en: 'Turkish',  rtl: false, full: false },
 ];
 
 /* ── Countries (travel mode) ─────────────────────────────── */

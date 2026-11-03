@@ -23,8 +23,17 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "splashAnim": "spin",
   "numpad": "custom",
   "vpW": 390,
-  "vpH": 844
+  "vpH": 844,
+  "onlineAccounts": "layla@balsm.health",
+  "deviceAccounts": ""
 }/*EDITMODE-END*/;
+
+/* Mirror the account tweaks into the auth lookup sets (comma/space separated). */
+const parseEmails = (s) => (s || '').split(/[\s,;]+/).map(e => e.trim().toLowerCase()).filter(e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+function syncAccounts(online, device) {
+  if (window.KNOWN_ACCOUNTS) { window.KNOWN_ACCOUNTS.clear(); parseEmails(online).forEach(e => window.KNOWN_ACCOUNTS.add(e)); }
+  if (window.DEVICE_ACCOUNTS) { window.DEVICE_ACCOUNTS.clear(); parseEmails(device).forEach(e => window.DEVICE_ACCOUNTS.add(e)); }
+}
 
 /* Viewport presets — DS window-class reference sizes (RESPONSIVE.md §0) */
 const VIEWPORTS = [
@@ -229,7 +238,10 @@ function MainApp() {
 /* ── Root app ────────────────────────────────────────────── */
 function App() {
   const [tw, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const lang   = tw.lang;
+  useEffect(() => { syncAccounts(tw.onlineAccounts, tw.deviceAccounts); }, [tw.onlineAccounts, tw.deviceAccounts]);
+  /* Capture override (store screenshots): window.__balsmCap({ w, h, lang, tab }) — session only, never persisted */
+  const [cap, setCap] = useState(null);
+  const lang   = (cap && cap.lang) || tw.lang;
   const dir    = lang === 'ar' ? 'rtl' : 'ltr';
   const accentKey = tw.accent in ACCENTS ? tw.accent : 'blue';
   const A = ACCENTS[accentKey];
@@ -242,6 +254,7 @@ function App() {
   const replaySplash = useCallback(() => setBooting(true), []);
   const replayWalkthrough = useCallback(() => { setWtReturnTo('app'); setRoute('walkthrough'); }, []);
   const [authEmail, setAuthEmail]   = useState('');
+  const [accountMode, setAccountMode] = useState('online'); // 'online' | 'offline' (device-only, no email)
   const [authIntent, setAuthIntent] = useState('signup'); // 'signup' | 'signin'
   const [profileComplete, setProfileComplete] = useState(true); // false right after signup until Personal details is saved
   const [today, setToday]               = useState(null);
@@ -298,9 +311,19 @@ function App() {
   const [countryCode, setCountryCode] = useState('EG');
   const country = COUNTRIES.find(c => c.code === countryCode) || COUNTRIES[0];
 
-  const [storageProviders, setStorageProviders] = useState({ active: 'local' });
+  const [storageProviders, setStorageProviders] = useState({ active: 'local', icloud: false, gdrive: false, balsmcloud: false });
+  /* Per-category sync targets — this device always holds a copy */
+  const [dataSync, setDataSync] = useState({});
+  const syncData = (cats, targets) => setDataSync(d => { const n = { ...d }; cats.forEach(c => { n[c] = { targets: [...targets], at: targets.length ? Date.now() : null }; }); return n; });
+  const connectCloud = (p) => setStorageProviders(s => ({ ...s, [p]: true, active: s.active === 'local' ? p : s.active }));
+  const disconnectCloud = (p) => {
+    setStorageProviders(s => { const n = { ...s, [p]: false }; if (n.active === p) n.active = ['icloud','gdrive','balsmcloud'].find(x => n[x]) || 'local'; return n; });
+    setDataSync(d => { const n = {}; Object.keys(d).forEach(k => { const t = d[k].targets.filter(x => x !== p); n[k] = { targets: t, at: t.length ? d[k].at : null }; }); return n; });
+    setRecordStorageMap(m => { const n = { ...m }; HEALTH_RECORDS.forEach(r => { if ((m[r.id] || r.storage) === p) n[r.id] = 'local'; }); return n; });
+  };
 
   /* ── Dev config ──────────────────────────────────────── */
+  const [updateMode, setUpdateMode] = useState(null); // null · 'optional' · 'required'
   const [devOpen, setDevOpen] = useState(false);
   const [devShot, setDevShot] = useState(null);
   const devCbRef = useRef(null);
@@ -381,7 +404,7 @@ function App() {
     numpad: tw.numpad === 'native' ? 'native' : 'custom',
     splashAnim: tw.splashAnim || 'bloom',
     setLang: (l) => setTweak('lang', l),
-    authEmail, setAuthEmail, authIntent, setAuthIntent,
+    authEmail, setAuthEmail, authIntent, setAuthIntent, accountMode, setAccountMode,
     profileComplete, setProfileComplete,
     go, tab, setTab,
     today, completeCheckin: setToday,
@@ -398,14 +421,15 @@ function App() {
     account, switchAccount: setActiveAccountId, familyAccounts, addFamilyMember,
     linkRequests, approveLinkRequest, declineLinkRequest, cancelPendingLink,
     country, setCountry: setCountryCode,
-    storageProviders, switchCloudProvider,
+    storageProviders, switchCloudProvider, connectCloud, disconnectCloud, dataSync, syncData,
     recordStorageMap, setRecordStorage, migrateRecords,
     replaySplash,
     replayWalkthrough,
     finishFlow: (toTab) => { setFlowOpen(false); setTab(toTab); },
   };
 
-  const vpW = Number(tw.vpW) || 390, vpH = Number(tw.vpH) || 844;
+  const vpW = (cap && cap.w) || Number(tw.vpW) || 390, vpH = (cap && cap.h) || Number(tw.vpH) || 844;
+  useEffect(() => { window.__balsmCap = (o) => { setCap(c => ({ ...(c || {}), ...o })); if (o.tab) { setTab(o.tab); setToday(null); } if (o.route) setRoute(o.route); }; });
   const setViewport = (w, h) => { setTweak('vpW', w); setTweak('vpH', h); };
   const scale = useFit(vpW, vpH + 44, 40);
 
@@ -436,7 +460,8 @@ function App() {
               <ViewportFrame w={vpW} h={vpH} scale={scale} onResize={setViewport}>
                 <div dir={dir} className="vp-app" style={{ height: '100%', position: 'absolute', inset: 0 }}>
                   <div className="app-body">
-                  {route === 'app' ? <MainApp /> : route === 'walkthrough' ? <WalkthroughShell skin={WT_SKINS.petal} lang={lang} onDone={() => go(wtReturnTo)} /> : <AuthScreen />}
+                  {route === 'app' ? <MainApp /> : route === 'walkthrough' ? <WalkthroughShell skin={WT_SKINS.petal} lang={lang} onLang={setLang} onDone={() => go(wtReturnTo)} /> : <AuthScreen />}
+                  {updateMode && <UpdateSheet lang={lang} required={updateMode === 'required'} onClose={() => setUpdateMode(null)} />}
                   {devOpen && <DevConfigOverlay onClose={() => setDevOpen(false)} screenshot={devShot} />}
                   {booting && <SplashScreen onDone={finishBoot} />}
                   </div>
@@ -514,8 +539,9 @@ function App() {
         <div className="stage-full">
           <div dir={dir} className="vp-app" style={{ position: 'absolute', inset: 0, background: 'var(--balsm-surface, #fff)' }}>
             <div className="app-body">
-            {route === 'app' ? <MainApp /> : route === 'walkthrough' ? <WalkthroughShell skin={WT_SKINS.petal} lang={lang} onDone={() => go(wtReturnTo)} /> : <AuthScreen />}
-            {devOpen && <DevConfigOverlay onClose={() => setDevOpen(false)} screenshot={devShot} />}
+            {route === 'app' ? <MainApp /> : route === 'walkthrough' ? <WalkthroughShell skin={WT_SKINS.petal} lang={lang} onLang={setLang} onDone={() => go(wtReturnTo)} /> : <AuthScreen />}
+            {updateMode && <UpdateSheet lang={lang} required={updateMode === 'required'} onClose={() => setUpdateMode(null)} />}
+                  {devOpen && <DevConfigOverlay onClose={() => setDevOpen(false)} screenshot={devShot} />}
             {booting && <SplashScreen onDone={finishBoot} />}
             </div>
           </div>
@@ -565,6 +591,11 @@ function App() {
         <TweakSection label={t('p_lang')} />
         <TweakRadio label="Language" value={lang === 'ar' ? 'العربية' : 'English'} options={['English', 'العربية']}
           onChange={(v) => setTweak('lang', v === 'العربية' ? 'ar' : 'en')} />
+        <TweakSection label="Sign-in accounts" />
+        <TweakText label="Online accounts" value={tw.onlineAccounts ?? ''} placeholder="name@example.com, …"
+          onChange={(v) => setTweak('onlineAccounts', v)} />
+        <TweakText label="Device-only accounts" value={tw.deviceAccounts ?? ''} placeholder="name@example.com, …"
+          onChange={(v) => setTweak('deviceAccounts', v)} />
         <TweakSection label="Accent petal" />
         <TweakColor label="Accent" value={A.main}
           options={Object.values(ACCENTS).map(a => a.main)}
@@ -582,6 +613,9 @@ function App() {
           onChange={(v) => setTweak('splashAnim', v.toLowerCase())} />
         <TweakButton label="Replay splash screen" onClick={replaySplash} secondary />
         <TweakButton label="Replay walkthrough" onClick={replayWalkthrough} secondary />
+        <TweakSection label="App update" />
+        <TweakButton label="Show optional update" onClick={() => setUpdateMode('optional')} secondary />
+        <TweakButton label="Show required update" onClick={() => setUpdateMode('required')} secondary />
       </TweaksPanel>
     </AppCtx.Provider>
   );

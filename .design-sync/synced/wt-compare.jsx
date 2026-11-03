@@ -94,7 +94,7 @@ function WalkthroughCompare() {
       {/* Toolbar */}
       <div className="wtc-bar">
         <div className="wtc-brand">
-          <img src={window.__resources ? window.__resources['logo-vertical'] : 'assets/logo-vertical.svg?v=5'} alt="Balsm" />
+          <img src={window.__resources ? window.__resources['logo-vertical'] : 'assets/logo-vertical.svg?v=7'} alt="Balsm" />
           <span className="wtc-brand-name">Balsm<span className="dot">.health</span></span>
         </div>
         <span className="wtc-title">{lang === 'ar' ? 'جولة الترحيب — اختر التصميم' : 'Onboarding walkthrough — pick a treatment'}</span>

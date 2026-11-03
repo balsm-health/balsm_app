@@ -64,7 +64,7 @@ function SplashScreen({ onDone }) {
           <div className="splash-sheen" />
         </div>
         <div className="splash-promise" style={{ textWrap: 'balance' }}>
-          {lang === 'ar' ? 'رعايتك. بياناتك. نطامك.' : 'Your care. Your data. Your system.'}
+          {lang === 'ar' ? 'قريبٌ منك، باقٍ معك' : 'Close to you. Here to stay.'}
         </div>
       </div>
       <div className="splash-foot">
@@ -82,17 +82,23 @@ function WelcomeScreen() {
       <div className="wbg" style={{ backgroundImage: `url(${window.__resources ? window.__resources['balsm-bg'] : 'assets/balsm-background.png?v=7'})` }} />
       <div className="wgrad" />
       <div className="pad-top" />
+      <button type="button" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+        aria-label={lang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+        style={{ position: 'absolute', top: 56, insetInlineEnd: 16, zIndex: 3, display: 'flex', alignItems: 'center', gap: 6, height: 40, padding: '0 14px', borderRadius: 999, cursor: 'pointer',
+                 background: 'rgba(255,255,255,0.85)', border: '1px solid var(--balsm-ink-200)', color: 'var(--fg1)', fontWeight: 600, fontSize: 'var(--pt-sm)',
+                 fontFamily: lang === 'ar' ? 'var(--font-body)' : 'var(--font-arabic)' }}>
+        <Icon name="languages" size={17} />
+        {lang === 'ar' ? 'English' : 'العربية'}
+      </button>
       <div className="wbody">
         <img className="wlogo" src={window.__resources ? window.__resources['logo-vertical'] : 'assets/logo-vertical.svg?v=7'} alt="Balsm.health" />
         <div className="wtitle" style={{ textWrap: 'balance' }}>{t('w_title')}</div>
         <div className="wsub" style={{ textWrap: 'pretty' }}>{t('w_sub')}</div>
         <div className="wactions">
           {/* Email is the only sign-in route in this release — Apple/Google not yet supported on iOS */}
-          <button className="b-btn b-btn-lg b-btn-primary b-btn--full" onClick={() => { setAuthIntent('signup'); go('phone'); }}>{t('w_start')}</button>
-
-          <div className="signin-link" onClick={() => { setAuthIntent('signin'); go('phone'); }}>
-            {t('w_have')} <b>{t('w_signin')}</b>
-          </div>
+          <button className="b-btn b-btn-lg b-btn-primary b-btn--full" onClick={() => { setAuthIntent('signup'); go('phone'); }}>{lang === 'ar' ? 'إنشاء حساب' : 'Create an account'}</button>
+          <button className="b-btn b-btn-lg b-btn-secondary b-btn--full" onClick={() => { setAuthIntent('signin'); go('phone'); }}>{lang === 'ar' ? 'تسجيل الدخول' : 'Sign in'}</button>
+          <button className="b-btn b-btn-md b-btn-ghost b-btn--full" onClick={() => { setAuthIntent('offline'); go('phone'); }}><Icon name="smartphone" size={17} />{lang === 'ar' ? 'استخدمه على هذا الجهاز فقط' : 'Use on this device only'}</button>
         </div>
       </div>
       <div className="trust">
@@ -121,14 +127,14 @@ function WelcomeScreen() {
   );
 }
 
-function AuthHeader({ onBack, step }) {
+function AuthHeader({ onBack, step, total = 3 }) {
   return (
     <div className="appbar">
       <button className="round-btn" onClick={onBack} aria-label="Back"><Icon name="arrow-left" /></button>
       <div className="grow" />
       {step && (
         <div className="segmented" style={{ padding: 4, gap: 4, background: 'transparent', border: 'none' }}>
-          {[0,1,2].map(i => (
+          {Array.from({ length: total }, (_, i) => i).map(i => (
             <span key={i} style={{
               width: i === step - 1 ? 22 : 7, height: 7, borderRadius: 999,
               background: i <= step - 1 ? 'var(--app-accent)' : 'var(--balsm-ink-200)',
@@ -141,75 +147,111 @@ function AuthHeader({ onBack, step }) {
   );
 }
 
+/* Basic auth. Register: email → code → password. Sign in: email + password. */
+const KNOWN_ACCOUNTS = new Set(['layla@balsm.health']);
+const DEVICE_ACCOUNTS = new Set(); // device-only accounts created on this phone
+const authNorm = (e) => (e || '').trim().toLowerCase();
+
+function PwInput({ value, onChange, onEnter, autoComplete, autoFocus }) {
+  const { t } = useApp();
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <input className="b-input" type={show ? 'text' : 'password'} dir="ltr" autoComplete={autoComplete} autoFocus={autoFocus}
+        placeholder={t('pw_ph')} value={value} onChange={e => onChange(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && onEnter()} style={{ paddingInlineEnd: 44 }} />
+      <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? t('pw_hide') : t('pw_show')}
+        style={{ position: 'absolute', insetInlineEnd: 4, background: 'none', border: 'none', cursor: 'pointer', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg3)' }}>
+        <Icon name={show ? 'eye-off' : 'eye'} size={17} />
+      </button>
+    </div>
+  );
+}
+
+function AuthNote({ children }) {
+  return (
+    <div className="card card-pad" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, background: 'var(--balsm-cream-50)' }}>
+      <Icon name="info" size={16} style={{ color: 'var(--fg3)', flexShrink: 0, marginTop: 2 }} />
+      <div style={{ fontSize: 'var(--pt-sm)', color: 'var(--fg2)', lineHeight: 1.45 }}>{children}</div>
+    </div>
+  );
+}
+
+const linkBtn = { background: 'none', border: 'none', padding: 0, fontSize: 'var(--pt-sm)', fontWeight: 700, color: 'var(--app-accent)', cursor: 'pointer', fontFamily: 'inherit' };
+
 function PhoneScreen() {
-  const { t, lang, go, authEmail, setAuthEmail, authIntent } = useApp();
-  const isSignup = authIntent !== 'signin';
+  const { t, lang, go, authEmail, setAuthEmail, authIntent, setAuthIntent, setAccountMode, setProfileComplete, disconnectCloud } = useApp();
+  const ar = lang === 'ar';
+  const offline = authIntent === 'offline';
+  const signup = authIntent === 'signup';
   const [val, setVal] = useState(authEmail || '');
   const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [err, setErr] = useState(null); // null | 'exists' | 'none' | 'wrong'
+  const [busy, setBusy] = useState(false);
 
-  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val);
-  const passwordOk = password.length >= 6;
-  const ok = emailOk && passwordOk;
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val.trim());
+  const ok = emailOk && password.length >= 6;
+  const switchTo = (intent) => { setErr(null); setAuthIntent(intent); };
 
-  const [signingIn, setSigningIn] = useState(false);
   const submit = () => {
-    if (!ok || signingIn) return;
-    setAuthEmail(val);
-    if (isSignup) { go('otp'); return; } // registration must be verified by code before entering the app
-    setSigningIn(true); setTimeout(() => go('app'), 900);
+    if (!ok || busy) return;
+    const email = authNorm(val);
+    setAuthEmail(email); setErr(null); setBusy(true);
+    setTimeout(() => {
+      setBusy(false);
+      if (offline) { DEVICE_ACCOUNTS.add(email); setAccountMode('offline'); disconnectCloud && disconnectCloud('balsmcloud'); setProfileComplete(false); return go('app'); }
+      if (signup) { setAccountMode('online'); return KNOWN_ACCOUNTS.has(email) ? setErr('exists') : go('otp'); }
+      if (DEVICE_ACCOUNTS.has(email)) { setAccountMode('offline'); return go('app'); }
+      if (KNOWN_ACCOUNTS.has(email)) { setAccountMode('online'); return go('app'); }
+      setErr('none');
+    }, 800);
   };
-
-  const title = isSignup ? t('em_pw_signup_title') : t('em_pw_title');
-  const help  = isSignup ? t('em_pw_signup_help')  : t('em_pw_help');
 
   return (
     <div className="screen cream fade-in">
       <div className="pad-top" />
-      <AuthHeader onBack={() => go('welcome')} step={1} />
+      <AuthHeader onBack={() => go('welcome')} step={signup ? 1 : null} total={2} />
       <div className="screen-scroll px-20">
-        <h1 className="title" style={{ margin: '18px 0 8px' }}>{title}</h1>
-        <p className="body" style={{ margin: '0 0 24px' }}>{help}</p>
+        <h1 className="title" style={{ margin: '8px 0 8px' }}>{offline ? (ar ? 'حساب على هذا الجهاز' : 'Account on this device') : signup ? (ar ? 'إنشاء حساب' : 'Create an account') : (ar ? 'تسجيل الدخول' : 'Sign in')}</h1>
+        <p className="body" style={{ margin: '0 0 24px' }}>{offline
+          ? (ar ? 'بدون إنترنت وبدون رمز تحقق. تبقى بياناتك على هذا الجهاز فقط، ويمكنك الاتصال بالإنترنت لاحقًا من الإعدادات.' : 'No internet or code needed. Your data stays on this device only, and you can go online later from Settings.')
+          : signup
+          ? (ar ? 'أدخل بريدك واختر كلمة مرور، وسنرسل رمزًا من 6 أرقام لتأكيد بريدك.' : 'Enter your email and choose a password. We’ll send a 6-digit code to confirm your email.')
+          : (ar ? 'أدخل بريدك وكلمة المرور.' : 'Enter your email and password.')}</p>
         <div className="gap-16">
           <div className="field">
             <label>{t('em_label')}</label>
             <input className="b-input" type="email" inputMode="email" autoFocus dir="ltr" autoComplete="email"
               placeholder={t('em_ph')} value={val}
-              onChange={e => setVal(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && submit()}
-            />
+              onChange={e => { setVal(e.target.value); setErr(null); }}
+              onKeyDown={e => e.key === 'Enter' && submit()} />
           </div>
-          <div className="field">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <label style={{ fontSize: 'var(--pt-sm)', fontWeight: 600, color: 'var(--fg2)' }}>{t('pw_label')}</label>
-              {!isSignup && (
-                <button type="button" onClick={() => setForgotOpen(true)}
-                  style={{ background: 'none', border: 'none', padding: 0, fontSize: 'var(--pt-xs)', fontWeight: 700, color: 'var(--app-accent)', cursor: 'pointer' }}>
-                  {t('forgot_pw')}
-                </button>
-              )}
+          {(
+            <div className="field">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <label style={{ fontSize: 'var(--pt-sm)', fontWeight: 600, color: 'var(--fg2)' }}>{offline ? (ar ? 'كلمة مرور لقفل التطبيق' : 'Password to lock the app') : t('pw_label')}</label>
+                {!offline && !signup && <button type="button" onClick={() => setForgotOpen(true)} style={{ ...linkBtn, fontSize: 'var(--pt-xs)' }}>{t('forgot_pw')}</button>}
+              </div>
+              <PwInput value={password} onChange={setPassword} onEnter={submit} autoComplete={offline || signup ? 'new-password' : 'current-password'} />
+              {(offline || signup) && <div className="meta" style={{ fontSize: 'var(--pt-xs)', marginTop: 6 }}>{ar ? '6 أحرف على الأقل' : 'At least 6 characters'}</div>}
             </div>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <input className="b-input" type={showPw ? 'text' : 'password'} dir="ltr" autoComplete={isSignup ? 'new-password' : 'current-password'}
-                placeholder={t('pw_ph')} value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && submit()}
-                style={{ paddingInlineEnd: 44 }}
-              />
-              <button type="button" onClick={() => setShowPw(s => !s)} aria-label={showPw ? t('pw_hide') : t('pw_show')}
-                style={{ position: 'absolute', insetInlineEnd: 4, background: 'none', border: 'none', cursor: 'pointer', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg3)' }}>
-                <Icon name={showPw ? 'eye-off' : 'eye'} size={17} />
-              </button>
-            </div>
-          </div>
+          )}
+          {offline && <AuthNote>{ar ? 'بريدك غير مُتحقَّق منه بعد، لذا لا يمكن استعادة كلمة المرور حتى تتصل بالإنترنت. إن فقدت جهازك قبل ذلك، تُفقد بياناتك.' : 'Your email isn’t verified yet, so your password can’t be recovered until you go online. If you lose this device before then, your data goes with it.'}</AuthNote>}
+          {err === 'exists' && <AuthNote>{ar ? 'هذا البريد لديه حساب بالفعل. ' : 'This email already has an account. '}<button type="button" style={linkBtn} onClick={() => switchTo('signin')}>{ar ? 'سجّل الدخول' : 'Sign in'}</button></AuthNote>}
+          {err === 'none' && <AuthNote>{ar ? 'لا يوجد حساب بهذا البريد. ' : 'There’s no account with this email. '}<button type="button" style={linkBtn} onClick={() => switchTo('signup')}>{ar ? 'أنشئ حسابًا' : 'Create an account'}</button></AuthNote>}
         </div>
       </div>
       <div className="flow-foot" style={{ flexDirection: 'column', gap: 14 }}>
-        <DSProgressButton block variant="primary" loading={signingIn} disabled={!ok} onClick={submit}>
-          {signingIn ? (lang === 'ar' ? 'جارٍ تسجيل الدخول…' : 'Signing in…') : (isSignup ? t('pw_signup') : t('pw_signin'))}
+        <DSProgressButton block variant="primary" loading={busy} disabled={!ok} onClick={submit}>
+          {offline ? (ar ? 'إنشاء الحساب على الجهاز' : 'Create account on device') : signup ? (ar ? 'إرسال الرمز' : 'Send code') : (ar ? 'تسجيل الدخول' : 'Sign in')}
         </DSProgressButton>
-        <TermsLine />
+        {!offline && <div className="meta" style={{ textAlign: 'center' }}>
+          {signup ? (ar ? 'لديك حساب؟ ' : 'Have an account? ') : (ar ? 'جديد في بلسم؟ ' : 'New to Balsm? ')}
+          <button type="button" style={linkBtn} onClick={() => switchTo(signup ? 'signin' : 'signup')}>{signup ? (ar ? 'تسجيل الدخول' : 'Sign in') : (ar ? 'إنشاء حساب' : 'Create an account')}</button>
+        </div>}
+        {!offline && !signup && <div className="meta" style={{ textAlign: 'center', marginTop: -6 }}>{ar ? 'حسابك على الجهاز فقط؟ سجّل الدخول ببريدك وكلمة مرور القفل.' : 'Device-only account? Sign in with your email and lock password.'}</div>}
+        {(signup || offline) && <TermsLine />}
       </div>
       {forgotOpen && <ForgotPasswordSheet email={val} onClose={() => setForgotOpen(false)} />}
     </div>
@@ -300,9 +342,7 @@ function ForgotPasswordSheet({ email, onClose }) {
       )}
       {step === 'done' && (
         <div style={{ textAlign: 'center', padding: '10px 4px 4px' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--petal-mint-50)', color: 'var(--petal-mint-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <Icon name="check-circle-2" size={26} />
-          </div>
+          <div className="success-mark" role="img" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
           <p className="body" style={{ margin: '0 0 20px', lineHeight: 1.6 }}>{t('fp_done_help')}</p>
           <button className="b-btn b-btn-lg b-btn-primary b-btn--full" onClick={onClose}>{t('fp_done')}</button>
         </div>
@@ -343,17 +383,17 @@ function OtpScreen() {
   }, [secs]);
   const ok = code.length === 6;
   const [verifying, setVerifying] = useState(false);
-  const submit = () => { if (!ok || verifying) return; setVerifying(true); setTimeout(() => { setProfileComplete(false); go('app'); }, 950); };
+  const submit = () => { if (!ok || verifying) return; setVerifying(true); setTimeout(() => { KNOWN_ACCOUNTS.add(authNorm(authEmail)); setProfileComplete(false); go('app'); }, 900); };
   // auto-submit on 6th digit
   useEffect(() => { if (code.length === 6) { const id = setTimeout(submit, 280); return () => clearTimeout(id); } }, [code]);
   return (
     <div className="screen cream fade-in">
       <div className="pad-top" />
-      <AuthHeader onBack={() => go('phone')} step={2} />
+      <AuthHeader onBack={() => go('phone')} step={2} total={2} />
       <div className="screen-scroll px-20">
-        <h1 className="title mt-8" style={{ margin: '8px 0 8px' }}>{t('otp_title')}</h1>
+        <h1 className="title mt-8" style={{ margin: '8px 0 8px' }}>{lang === 'ar' ? 'أكّد بريدك' : 'Confirm your email'}</h1>
         <p className="body" style={{ margin: '0 0 28px' }}>
-          {t('em_otp_h')} <b style={{ color: 'var(--fg1)', direction: 'ltr', display: 'inline-block' }}>{authEmail}</b>
+          {lang === 'ar' ? 'أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى' : 'Enter the 6-digit code we sent to'} <b style={{ color: 'var(--fg1)', direction: 'ltr', display: 'inline-block' }}>{authEmail}</b>
         </p>
         <OtpBoxes code={code} setCode={setCode} autoFocus />
         <div style={{ textAlign: 'center', marginTop: 24 }}>
@@ -368,6 +408,91 @@ function OtpScreen() {
         </DSProgressButton>
       </div>
     </div>
+  );
+}
+
+/* Offline (device-only) account → go online: email → OTP → verified, data starts syncing */
+function GoOnlineSheet({ onClose }) {
+  const { t, lang, authEmail, setAuthEmail, setAccountMode } = useApp();
+  const ar = lang === 'ar';
+  const [step, setStep] = useState('email'); // email | taken | code | done
+  const [merge, setMerge] = useState(false);
+  const [val, setVal] = useState(authEmail || '');
+  const [code, setCode] = useState('');
+  const [secs, setSecs] = useState(28);
+  const [busy, setBusy] = useState(false);
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val);
+  useEffect(() => {
+    if (step !== 'code' || secs <= 0) return;
+    const id = setTimeout(() => setSecs(s => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [step, secs]);
+  const sendCode = () => { if (!emailOk || busy) return; setBusy(true); setTimeout(() => { setBusy(false); setCode('');
+    if (KNOWN_ACCOUNTS.has(authNorm(val))) { setStep('taken'); return; }
+    setMerge(false); setStep('code'); setSecs(28); }, 800); };
+  const mergeInto = () => { setMerge(true); setCode(''); setStep('code'); setSecs(28); };
+  const verify = () => { if (code.length !== 6 || busy) return; setBusy(true); setTimeout(() => { setBusy(false); const e = authNorm(val); KNOWN_ACCOUNTS.add(e); setAuthEmail(e); setAccountMode('online'); setStep('done'); }, 900); };
+  useEffect(() => { if (step === 'code' && code.length === 6) { const id = setTimeout(verify, 260); return () => clearTimeout(id); } }, [code]);
+  const titles = { email: ar ? 'الاتصال بالإنترنت' : 'Go online', taken: ar ? 'هذا البريد مستخدم' : 'This email is already in use', code: t('otp_title'), done: merge ? (ar ? 'تم دمج حسابك' : 'Accounts merged') : (ar ? 'أنت متصل الآن' : 'You’re online') };
+  return (
+    <SettingsSheet title={titles[step]} onClose={onClose}>
+      {step === 'email' && (
+        <>
+          <p className="body" style={{ margin: '0 0 20px', lineHeight: 1.6 }}>{ar ? 'نرسل رمزًا إلى بريدك للتحقق منه، ثم تبدأ مزامنة بياناتك الموجودة على هذا الجهاز.' : 'We’ll send a code to your email to verify it, then the data on this device starts syncing.'}</p>
+          <div className="field" style={{ marginBottom: 20 }}>
+            <label>{t('em_label')}</label>
+            <input className="b-input" type="email" inputMode="email" dir="ltr" autoComplete="email"
+              placeholder={t('em_ph')} value={val} onChange={e => setVal(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendCode()} />
+          </div>
+          <DSProgressButton block variant="primary" loading={busy} disabled={!emailOk} onClick={sendCode}>{ar ? 'إرسال الرمز' : 'Send code'}</DSProgressButton>
+        </>
+      )}
+      {step === 'taken' && (
+        <>
+          <p className="body" style={{ margin: '0 0 16px', lineHeight: 1.6 }}>
+            {ar ? 'يوجد حساب بلسم مرتبط بالفعل بـ' : 'A Balsm account already uses'} <b style={{ color: 'var(--fg1)', direction: 'ltr', display: 'inline-block' }}>{val}</b>{ar ? '.' : '.'}
+          </p>
+          <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
+            {[
+              { k: 'merge', icon: 'git-merge', title: ar ? 'هذا حسابي — ادمج البيانات' : 'It’s my account — merge', desc: ar ? 'نرسل رمزًا لإثبات ملكيتك، ثم تُضاف بيانات هذا الجهاز إلى حسابك. لا يُحذف شيء.' : 'We’ll send a code to prove it’s yours, then this device’s data is added to that account. Nothing is deleted.', on: mergeInto },
+              { k: 'other', icon: 'mail', title: ar ? 'استخدم بريدًا آخر' : 'Use a different email', desc: ar ? 'أنشئ حسابًا متصلًا جديدًا ببريد مختلف.' : 'Create a new online account with another email.', on: () => { setVal(''); setStep('email'); } },
+            ].map((o, i) => (
+              <button key={o.k} type="button" onClick={o.on} style={{ width: '100%', display: 'flex', gap: 14, alignItems: 'flex-start', padding: '14px 16px', background: '#fff', border: 'none', borderTop: i ? '1px solid var(--balsm-ink-100)' : 'none', cursor: 'pointer', textAlign: 'start', fontFamily: 'inherit' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 'var(--radius-md)', background: i ? 'var(--balsm-ink-50)' : 'var(--app-accent-50)', color: i ? 'var(--fg2)' : 'var(--app-accent-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={o.icon} size={18} /></div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--pt-md)', color: 'var(--fg1)' }}>{o.title}</div>
+                  <div style={{ fontSize: 'var(--pt-xs)', color: 'var(--fg3)', marginTop: 3, lineHeight: 1.45 }}>{o.desc}</div>
+                </div>
+                <Icon name={ar ? 'chevron-left' : 'chevron-right'} size={18} style={{ color: 'var(--fg3)', flexShrink: 0, marginTop: 10 }} />
+              </button>
+            ))}
+          </div>
+          <p className="meta" style={{ margin: 0, display: 'flex', gap: 6, alignItems: 'flex-start', lineHeight: 1.45 }}><Icon name="smartphone" size={14} style={{ flexShrink: 0, marginTop: 2 }} />{ar ? 'حتى تختار، تبقى بياناتك على هذا الجهاز كما هي.' : 'Until you choose, your data stays on this device as it is.'}</p>
+        </>
+      )}
+      {step === 'code' && (
+        <>
+          <p className="body" style={{ margin: '0 0 24px', lineHeight: 1.6 }}>
+            {merge ? (ar ? 'لإثبات أن الحساب لك، أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى' : 'To prove the account is yours, enter the 6-digit code we sent to') : (ar ? 'أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى' : 'Enter the 6-digit code we sent to')} <b style={{ color: 'var(--fg1)', direction: 'ltr', display: 'inline-block' }}>{val}</b>
+          </p>
+          <OtpBoxes code={code} setCode={setCode} autoFocus />
+          <div style={{ textAlign: 'center', margin: '20px 0 4px' }}>
+            {secs > 0
+              ? <span className="meta">{t('otp_in')} <b className="num">{secs}s</b></span>
+              : <button className="b-btn b-btn-md b-btn-ghost" onClick={() => setSecs(28)}>{t('otp_resend')}</button>}
+          </div>
+          <DSProgressButton block variant="primary" loading={busy} disabled={code.length !== 6} onClick={verify} style={{ marginTop: 16 }}>{merge ? (ar ? 'تحقق وادمج' : 'Verify and merge') : (ar ? 'تحقق واتصل' : 'Verify and go online')}</DSProgressButton>
+        </>
+      )}
+      {step === 'done' && (
+        <div style={{ textAlign: 'center', padding: '10px 4px 4px' }}>
+          <div className="success-mark" role="img" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+          <p className="body" style={{ margin: '0 0 20px', lineHeight: 1.6 }}>{merge ? (ar ? 'تمت إضافة بيانات هذا الجهاز إلى حسابك. عند وجود نفس السجل في المكانين، نحتفظ بالنسختين لتراجعهما.' : 'This device’s data has been added to your account. Where the same record exists in both, we kept both copies for you to review.') : (ar ? 'تم التحقق من بريدك. بياناتك تُزامَن الآن، ويمكنك اختيار مكان حفظ كل نوع من البيانات.' : 'Email verified. Your data is syncing now, and you can choose where each type of data is stored.')}</p>
+          <button className="b-btn b-btn-lg b-btn-primary b-btn--full" onClick={onClose}>{ar ? 'تم' : 'Done'}</button>
+        </div>
+      )}
+    </SettingsSheet>
   );
 }
 
@@ -426,9 +551,7 @@ function ChangeEmailSheet({ onClose }) {
       )}
       {step === 'done' && (
         <div style={{ textAlign: 'center', padding: '10px 4px 4px' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--petal-mint-50)', color: 'var(--petal-mint-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <Icon name="check-circle-2" size={26} />
-          </div>
+          <div className="success-mark" role="img" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
           <p className="body" style={{ margin: '0 0 4px', lineHeight: 1.6 }}>
             {t('ce_done_help')} <b style={{ color: 'var(--fg1)', direction: 'ltr', display: 'inline-block' }}>{val}</b>
           </p>
@@ -701,4 +824,4 @@ function DobPicker({ onClose, onPick, value, lang, title, initialYearsBack = 25 
   );
 }
 
-Object.assign(window, { MoodFace, SplashScreen, WelcomeScreen, PhoneScreen, OtpScreen, OtpBoxes, ProfileSetupScreen, UsernameField, useUsername, AppleIcon, GoogleIcon, TAKEN_HANDLES, DobPicker, fmtDob, ForgotPasswordSheet, ChangeEmailSheet });
+Object.assign(window, { GoOnlineSheet, KNOWN_ACCOUNTS, DEVICE_ACCOUNTS, MoodFace, SplashScreen, WelcomeScreen, PhoneScreen, OtpScreen, OtpBoxes, ProfileSetupScreen, UsernameField, useUsername, AppleIcon, GoogleIcon, TAKEN_HANDLES, DobPicker, fmtDob, ForgotPasswordSheet, ChangeEmailSheet });

@@ -9,7 +9,7 @@
 
    DS components are resolved lazily at render time because the DS bundle
    loads after the app scripts. */
-const dsCheck = () => window.BalsmDesignSystem_51cdbf || {};
+const dsCheck = () => window.BalsmDesignSystem_1cf4c7 || {};
 
 /* ── Canonical symptom list (was duplicated in both files) ─────── */
 const SYMPTOMS = [
