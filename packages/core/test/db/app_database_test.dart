@@ -139,18 +139,16 @@ void main() {
   });
 
   test('backfill statement anchors NULL rows and never overwrites', () async {
-    await db.customStatement("INSERT INTO health_profile (id, user_id, updated_at) VALUES ('hp1','u1','t')");
+    await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, updated_at) VALUES ('hp1','u1',1,'t')");
+    // A dependent of the same account must never be picked as the anchor.
+    await db.customStatement(
+        "INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) VALUES ('hp0','u1',0,'dependent','t')");
     await db.customStatement('''
       INSERT INTO medications (id, user_id, health_profile_id, name,
         schedule_type, schedule_config, start_date)
       VALUES ('m1', 'u1', NULL, 'A', 'daily', '{}', 't'),
              ('m2', 'u1', 'hp-existing', 'B', 'daily', '{}', 't')''');
-    // Byte-identical to the convergent backfill in AppDatabase.beforeOpen.
-    await db.customStatement('''
-      UPDATE medications SET health_profile_id =
-        (SELECT hp.id FROM health_profile hp
-          WHERE hp.user_id = medications.user_id)
-      WHERE health_profile_id IS NULL''');
+    await db.runProfileAnchorBackfill();
     final rows = await db.customSelect('SELECT id, health_profile_id FROM medications ORDER BY id').get();
     expect(rows[0].read<String>('health_profile_id'), 'hp1');
     expect(rows[1].read<String>('health_profile_id'), 'hp-existing');

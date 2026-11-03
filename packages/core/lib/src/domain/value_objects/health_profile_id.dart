@@ -2,9 +2,8 @@ import '../../extensions/type_extensions.dart';
 import 'unique_id.dart';
 
 /// Typed id of a health profile — the on-device PHI partition for one
-/// **person**. Today every account has exactly one (its self profile,
-/// ensured at session start); the dependants feature (P00X) adds sibling
-/// profiles owned by the same account.
+/// **person**. Every account has one self profile (ensured at session
+/// start) and may own member profiles (dependent / prenatal) beside it.
 ///
 /// Lives in core (not the profile module) because it is the *scope* type of
 /// `ProfileDataSource` — medications, records, and any future PHI store

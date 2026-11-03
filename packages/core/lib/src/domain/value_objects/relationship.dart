@@ -20,6 +20,7 @@ enum Relationship {
   friend('Friend'),
   guardian('Guardian'),
   caregiver('Caregiver'),
+  neighbour('Neighbour'),
   other('Other');
 
   const Relationship(this.englishLabel);

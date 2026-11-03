@@ -184,7 +184,8 @@ void main2() {
     Future<AppDatabase> seedReal() async {
       final db = AppDatabase(NativeDatabase.memory());
       for (final u in ['off', 'srv']) {
-        await db.customStatement("INSERT INTO health_profile (id, user_id, updated_at) VALUES ('p-$u','$u','t')");
+        await db.customStatement(
+            "INSERT INTO health_profile (id, user_id, is_self, updated_at) VALUES ('p-$u','$u',1,'t')");
         await db.customStatement("INSERT INTO allergy (id, health_profile_id, name, severity, created_at) "
             "VALUES ('a-$u','p-$u','n','mild','t')");
         await db.customStatement('INSERT INTO medications (id, user_id, health_profile_id, name, schedule_type, '
@@ -194,6 +195,21 @@ void main2() {
       }
       return db;
     }
+
+    test('mergeOwner folds only the self profiles; a dependent moves across whole', () async {
+      final db = await seedReal();
+      addTearDown(db.close);
+      await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) "
+          "VALUES ('p-kid','off',0,'dependent','t')");
+      await db.customStatement("INSERT INTO allergy (id, health_profile_id, name, severity, created_at) "
+          "VALUES ('a-kid','p-kid','n','mild','t')");
+      await mergeOwner(db, from: 'off', to: 'srv');
+      final profiles = await db.customSelect('SELECT id, user_id, is_self FROM health_profile ORDER BY id').get();
+      expect(profiles.map((r) => '${r.data['id']}|${r.data['user_id']}|${r.data['is_self']}'),
+          ['p-kid|srv|0', 'p-srv|srv|1']);
+      final kid = await db.customSelect("SELECT health_profile_id AS p FROM allergy WHERE id = 'a-kid'").getSingle();
+      expect(kid.read<String>('p'), 'p-kid');
+    });
 
     test('mergeOwner consolidates into the existing profile', () async {
       final db = await seedReal();

@@ -654,6 +654,7 @@ class RelationMessages_ar extends RelationMessages {
   String get friend => "صديق";
   String get guardian => "ولي الأمر";
   String get caregiver => "مقدّم الرعاية";
+  String get neighbour => "جار/جارة";
   String get other => "أخرى";
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -682,6 +683,8 @@ class RelationMessages_ar extends RelationMessages {
         return guardian;
       case 'caregiver':
         return caregiver;
+      case 'neighbour':
+        return neighbour;
       case 'other':
         return other;
       default:

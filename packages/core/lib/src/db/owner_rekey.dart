@@ -35,8 +35,9 @@ Future<int> rekeyOwner(
 ///
 /// `health_profile` has no UNIQUE(user_id), so a plain re-key could leave the
 /// merged account with two self profiles. When [to] already owns one, every
-/// `health_profile_id` column pointing at [from]'s profile is re-pointed to
-/// [to]'s, and [from]'s now-empty profile row is deleted — after copying its
+/// `health_profile_id` column pointing at [from]'s self profile is re-pointed
+/// to [to]'s, and [from]'s now-empty self row is deleted (dependent profiles
+/// move across unchanged) — after copying its
 /// blood type, weight and height into any of those [to] has left NULL, and
 /// demoting [from]'s primary emergency contact if [to] already has one. Then every
 /// `user_id` row moves, dropping [from]'s outbox rows. All in one
@@ -47,18 +48,25 @@ Future<int> mergeOwner(GeneratedDatabase db, {required String from, required Str
     var changed = 0;
     final owned = await ownedTables(db);
     if (owned.contains('health_profile')) {
+      final headCols = await _columnsOf(db, 'health_profile');
+      // Only the two accounts' SELF profiles fold together. The offline
+      // account's dependent profiles (family members) are other people: they
+      // move across whole with the user_id re-key below, never merged into the
+      // target's self. A schema without `is_self` predates dependents, so
+      // every row there is a self row.
+      final hasSelfFlag = headCols.contains('is_self');
+      final selfOnly = hasSelfFlag ? ' AND is_self = 1' : '';
       final target = await db.customSelect(
-        'SELECT id FROM health_profile WHERE user_id = ? ORDER BY rowid LIMIT 1',
+        'SELECT id FROM health_profile WHERE user_id = ?$selfOnly ORDER BY rowid LIMIT 1',
         variables: [Variable.withString(to)],
       ).get();
       if (target.isNotEmpty) {
         final targetId = target.first.read<String>('id');
         final offline = await db.customSelect(
-          'SELECT id FROM health_profile WHERE user_id = ?',
+          'SELECT id FROM health_profile WHERE user_id = ?$selfOnly',
           variables: [Variable.withString(from)],
         ).get();
         final children = await tablesWithColumn(db, 'health_profile_id');
-        final headCols = await _columnsOf(db, 'health_profile');
         final hasPrimaryFlag = (await _columnsOf(db, 'emergency_contact')).contains('is_primary');
         for (final p in offline) {
           final pid = p.read<String>('id');

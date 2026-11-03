@@ -3,9 +3,9 @@ import 'data_source.dart';
 
 /// Data partitioned by health profile — the **person** the PHI is about
 /// (subject), not the account that recorded it (actor). Null scope = the
-/// active profile (`currentProfileIdProvider` — the signed-in user's self
-/// profile until the dependants feature adds a switcher); explicit
-/// [HealthProfileId] overrides.
+/// active profile (`currentProfileIdProvider` — the profile selected through
+/// `activeProfileSwitcherProvider`, else the signed-in user's self profile);
+/// explicit [HealthProfileId] overrides.
 ///
 /// This is the PHI-subject sibling of [UserDataSource]: medications, dose
 /// history, and health records belong to the person they describe, so a

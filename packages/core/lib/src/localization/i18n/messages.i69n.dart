@@ -653,6 +653,7 @@ class RelationMessages implements i69n.I69nMessageBundle {
   String get friend => "Friend";
   String get guardian => "Guardian";
   String get caregiver => "Caregiver";
+  String get neighbour => "Neighbour";
   String get other => "Other";
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -681,6 +682,8 @@ class RelationMessages implements i69n.I69nMessageBundle {
         return guardian;
       case 'caregiver':
         return caregiver;
+      case 'neighbour':
+        return neighbour;
       case 'other':
         return other;
       default:
