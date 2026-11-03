@@ -10,7 +10,9 @@ import '../responsive.dart';
 import '../tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../storage_target.dart';
 import '../widgets/attachment_thumb.dart';
+import '../widgets/data_loc_pill.dart';
 import '../widgets/delete_kit.dart';
 import '../widgets/vault_file_viewer.dart';
 import 'add_prescription_sheet.dart';
@@ -72,6 +74,8 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen>
       final plain = _RxCard(
         rx: rx,
         dim: dim,
+        // Select shows every row at full strength (design `dim && !selecting`).
+        faded: dim && !selecting,
         lead: rx.isSelf ? kitCheck(rx.id) : null,
         trail: rx.isSelf ? kitMore(label: _rxLabel(rx), onDelete: () => _askDelete([rx])) : null,
         onTap: selecting ? null : () => _openDetail(rx),
@@ -108,7 +112,12 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen>
                     semanticLabel: s.strings.common.a11y_back,
                     onTap: () => s.setTab(AppTab.meds)),
                 const SizedBox(width: 12),
-                Expanded(child: Text(s.strings.records.prescriptions, style: Typo.heading(ar: s.rtl))),
+                Expanded(
+                    child: Text(s.strings.records.prescriptions,
+                        maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.heading(ar: s.rtl))),
+                const SizedBox(width: 8),
+                const DataLocPill(category: DataCategory.rx),
+                const SizedBox(width: 8),
                 if (deletable.isNotEmpty) ...[kitSelectButton(), const SizedBox(width: 8)],
                 RoundBtn(
                   icon: LucideIcons.plus,
@@ -159,9 +168,10 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen>
 String _rxLabel(Prescription rx) => rx.title ?? rx.clinician;
 
 class _RxCard extends StatelessWidget {
-  const _RxCard({required this.rx, required this.dim, this.lead, this.trail, this.onTap});
+  const _RxCard({required this.rx, required this.dim, required this.faded, this.lead, this.trail, this.onTap});
   final Prescription rx;
   final bool dim;
+  final bool faded;
 
   /// Select's tick box and the `⋮`, on the patient's own prescriptions;
   /// those cards sit in a swipe row, which owns their margin.
@@ -174,7 +184,7 @@ class _RxCard extends StatelessWidget {
     final s = AppScope.of(context);
     final active = !dim;
     return Opacity(
-      opacity: dim ? 0.7 : 1,
+      opacity: faded ? 0.7 : 1,
       child: PCard(
         margin: lead == null ? const EdgeInsets.fromLTRB(20, 0, 20, 10) : null,
         padding: EdgeInsetsDirectional.fromSTEB(14, 14, trail == null ? 14 : 4, 14),
