@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:records/records.dart';
 import '../app_state.dart';
+import '../flags.dart';
+import 'family/profile_bar.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
@@ -196,6 +198,8 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
               ],
               Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
             ]),
+          // Mother & Child: whose records these are (records-mc.jsx).
+          if (s.flags.isOn(AppFlags.motherChild)) const ProfileBar(family: true),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: _SearchField(controller: _query, onChanged: () => setState(() {})),

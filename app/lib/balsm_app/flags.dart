@@ -44,7 +44,18 @@ abstract final class AppFlags {
     description: 'Corner ribbon marking this release as a beta.',
   );
 
-  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner];
+  /// Mother & Child (P003b): family member profiles on this device, the
+  /// people picker that re-points the whole app to one of them, and their
+  /// emergency cards. Off keeps today's single-profile app, including the
+  /// session-only account switcher.
+  static const motherChild = FeatureFlag(
+    'mother_child',
+    fallback: false,
+    label: 'Mother & Child',
+    description: 'Family profiles, the people picker and per-member emergency cards.',
+  );
+
+  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner, motherChild];
 }
 
 extension DataCategorySync on DataCategory {

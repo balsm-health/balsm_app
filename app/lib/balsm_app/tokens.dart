@@ -26,6 +26,14 @@ class T {
   static const hueMint50 = Color(0xFFE8F9EE);
   static const hueViolet50 = Color(0xFFECE6FA);
 
+  // Member-tone "ink" (Mother & Child `MC_TONES.ink`): text and icon colour
+  // on a petal-50 wash, darker than the -600 step so it reads on the tint.
+  static const hueAquaInk = Color(0xFF0B6B66);
+  static const hueEmeraldInk = Color(0xFF0A6B58);
+  static const hueBlueInk = Color(0xFF10508F);
+  static const hueVioletInk = Color(0xFF4B2F95);
+  static const hueMintInk = Color(0xFF1F6A36);
+
   // ── Cool navy-slate neutrals (siblings of the wordmark) ────
   static const ink900 = Color(0xFF14202B);
   static const ink800 = Color(0xFF1F2D3D); // = wordmark

@@ -13,6 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'app_state.dart';
+import 'family/family_flag_guard.dart';
+import 'flags.dart';
 import 'routes.dart';
 import 'desktop_menu.dart';
 import 'dev/log_buffer.dart';
@@ -212,6 +214,19 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   /// Fire-and-forget: the care-team screen reads from drift, so a failed sync
   /// costs the patient nothing visible — [CareTeamSyncService] records it on
   /// the sync-status provider and retries on the next trigger.
+  /// The Mother & Child flag as last built; null before the first build.
+  bool? _familyOn;
+
+  void _keepSelfWithoutFamily() {
+    if (!mounted) return;
+    unawaited(keepSelfActiveWithoutFamily(
+      familyOn: state.flags.isOn(AppFlags.motherChild),
+      active: ref.read(currentProfileIdProvider),
+      self: () => ref.read(selfProfileIdProvider.future),
+      selectSelf: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
+    ));
+  }
+
   void _syncCareTeam() {
     if (!mounted) return;
     final profileId = ref.read(currentProfileIdProvider);
@@ -337,7 +352,13 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // a restored device pulls its roster as soon as the profile resolves.
     ref.listen<HealthProfileId?>(currentProfileIdProvider, (previous, next) {
       if (next != null && next != previous) _syncCareTeam();
+      if (next != previous) _keepSelfWithoutFamily();
     });
+    final familyOn = state.flags.isOn(AppFlags.motherChild);
+    if (familyOn != _familyOn) {
+      _familyOn = familyOn;
+      if (!familyOn) scheduleMicrotask(_keepSelfWithoutFamily);
+    }
     return AppScope(
       state: state,
       child: Builder(

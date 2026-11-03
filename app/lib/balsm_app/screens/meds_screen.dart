@@ -5,6 +5,8 @@ import 'package:core/core.dart';
 import 'package:prescriptions/prescriptions.dart';
 import 'package:medications/medications.dart';
 import '../app_state.dart';
+import '../flags.dart';
+import 'family/profile_bar.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -166,6 +168,8 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
                       iconSize: 20,
                       onTap: () => _openAddMedication(userId)),
               ]),
+            // Mother & Child: whose medicines these are (records-mc.jsx).
+            if (s.flags.isOn(AppFlags.motherChild)) const ProfileBar(family: true),
 
             // Adherence (last 7 days). Gradient card from the Claude Design.
             Container(

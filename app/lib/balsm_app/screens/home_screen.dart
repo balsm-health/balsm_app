@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:emergency_card/emergency_card.dart';
+import 'package:family/family.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -13,6 +14,7 @@ import 'home_widgets.dart';
 import 'records_screen.dart';
 import '../care/care_entity.dart';
 import '../app_state.dart';
+import '../flags.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -22,6 +24,9 @@ import 'checkin_shared.dart';
 import 'personal_details.dart';
 import 'profile_subscreens.dart';
 import 'care_team_screen.dart';
+import 'family/family_account_sheet.dart';
+import 'family/member_screen.dart';
+import 'family/profile_bar.dart';
 
 /// Home tab — P001 patient-MVP scope.
 ///
@@ -34,6 +39,10 @@ import 'care_team_screen.dart';
 /// (care team, nearby, records), then recent reports that open the day
 /// detail. From 840 wide it is two columns. Appointments and today's meds
 /// live on their own tabs.
+///
+/// With Mother & Child on (home-mc.jsx), the profile bar sits under the
+/// header and, while a family member is the active profile, the member's
+/// home (`MCMemberHome`) replaces the patient's own cards.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -43,7 +52,9 @@ class HomeScreen extends ConsumerWidget {
     // Real account summary → greeting name. Null while loading / signed out;
     // the greeting label still renders, just without a name.
     final summary = ref.watch(accountSummaryProvider).valueOrNull;
-    final member = s.activeFamilyMember;
+    final family = s.flags.isOn(AppFlags.motherChild);
+    final member = family ? null : s.activeFamilyMember;
+    final activeMember = family ? ref.watch(activeFamilyMemberProvider) : null;
     // The greeting and avatar name whoever's record is actually on screen —
     // always the signed-in user, because `selectFamilyMember` is a
     // session-only visual switch that does not re-point the health profile.
@@ -70,8 +81,8 @@ class HomeScreen extends ConsumerWidget {
               _AvatarButton(
                 initials: accountInitials(displayName),
                 color: avatarColor,
-                showBadge: s.extraFamily.isNotEmpty,
-                onTap: () => showAccountSwitcher(context),
+                showBadge: !family && s.extraFamily.isNotEmpty,
+                onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -89,44 +100,59 @@ class HomeScreen extends ConsumerWidget {
             // accent": the design keeps whose-data-is-this permanently visible.
             // Here it says the true thing: the member is selected, but their
             // record is not on this device yet, so this is still your own.
+            // Without Mother & Child only. With it the data really re-points,
+            // and the profile bar below says whose it is.
             if (member != null) _ViewingBanner(member: member),
 
-            const AwayBanner(),
+            if (family) const ProfileBar(family: true),
 
-            Padding(
-              padding: EdgeInsetsDirectional.symmetric(horizontal: g),
-              child: wide
-                  ? const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Expanded(
-                        flex: 115,
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          _CheckInSection(),
-                          _NudgeSection(),
-                          _LatestMetrics(),
-                        ]),
-                      ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        flex: 100,
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          _Shortcuts(row: true),
-                          _RecentReports(),
-                        ]),
-                      ),
-                    ])
-                  : const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      _CheckInSection(),
-                      // Onboarding nudges — driven by real P001 providers
-                      // (handle / emergency card / first medication). Each
-                      // stays hidden until its provider resolves, so
-                      // signed-out never flashes a wrong nudge.
-                      _NudgeSection(),
-                      _LatestMetrics(),
-                      SizedBox(height: 10),
-                      _Shortcuts(),
-                      _RecentReports(),
-                    ]),
-            ),
+            if (activeMember != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                child: MemberBody(member: activeMember),
+              )
+            else ...[
+              const AwayBanner(),
+
+              // Stage 4 hook (pregnancy): the pregnancy card / "start pregnancy"
+              // prompt (design `MCHomeCards`) goes here, for the patient's own
+              // profile, when Mother & Child is on.
+
+              Padding(
+                padding: EdgeInsetsDirectional.symmetric(horizontal: g),
+                child: wide
+                    ? const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(
+                          flex: 115,
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                            _CheckInSection(),
+                            _NudgeSection(),
+                            _LatestMetrics(),
+                          ]),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          flex: 100,
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                            _Shortcuts(row: true),
+                            _RecentReports(),
+                          ]),
+                        ),
+                      ])
+                    : const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        _CheckInSection(),
+                        // Onboarding nudges — driven by real P001 providers
+                        // (handle / emergency card / first medication). Each
+                        // stays hidden until its provider resolves, so
+                        // signed-out never flashes a wrong nudge.
+                        _NudgeSection(),
+                        _LatestMetrics(),
+                        SizedBox(height: 10),
+                        _Shortcuts(),
+                        _RecentReports(),
+                      ]),
+              ),
+            ],
 
             const SizedBox(height: 28),
           ],

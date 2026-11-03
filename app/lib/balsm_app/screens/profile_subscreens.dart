@@ -134,15 +134,38 @@ final healthProfileProvider = FutureProvider.autoDispose<HealthProfile?>((ref) a
   return ref.watch(profileDataSourceProvider).getProfile(userId);
 });
 
+/// One member profile of the signed-in account by id (Mother & Child: the
+/// member's emergency card and medical details). Null when signed out, or
+/// when the profile is missing or closed. Child-collection writes do not
+/// notify, so editors invalidate this after a change, as they do
+/// [healthProfileProvider].
+final memberHealthProfileProvider =
+    FutureProvider.autoDispose.family<HealthProfile?, HealthProfileId>((ref, profileId) async {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return null;
+  return ref.watch(profileDataSourceProvider).resolveProfile(userId, profileId: profileId);
+});
+
 class MedicalProfileScreen extends ConsumerStatefulWidget {
-  const MedicalProfileScreen({super.key, required this.s});
+  const MedicalProfileScreen({super.key, required this.s, this.profileId, this.title});
   final PatientAppState s;
+
+  /// Replaces the screen title — a member's screen names the member.
+  final String? title;
+
+  /// The member profile to edit (Mother & Child); null edits the account
+  /// holder's own profile, as before.
+  final HealthProfileId? profileId;
   @override
   ConsumerState<MedicalProfileScreen> createState() => _MedicalProfileScreenState();
 }
 
 class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   PatientAppState get s => widget.s;
+
+  /// Whose profile this screen reads: self, or the member it was opened for.
+  AutoDisposeFutureProvider<HealthProfile?> get _source =>
+      widget.profileId == null ? healthProfileProvider : memberHealthProfileProvider(widget.profileId!);
   final algInput = TextEditingController();
   // Measurements persist on-device with the health profile (SQLCipher).
   // Empty until the patient enters them — never pre-fill sample PHI.
@@ -171,16 +194,17 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   Future<void> _setBloodType(BloodType bt) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
-    final current = ref.read(healthProfileProvider).valueOrNull?.bloodType;
+    final current = ref.read(_source).valueOrNull?.bloodType;
     final toClear = current == bt;
     final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
           userId: userId,
+          profileId: widget.profileId,
           bloodType: toClear ? null : bt,
           clearBloodType: toClear,
         );
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(healthProfileProvider);
+      ref.invalidate(_source);
     } else {
       _snack(result.error.message);
     }
@@ -193,12 +217,13 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     if (userId == null) return;
     final result = await ref.read(addAllergyUseCaseProvider).execute(
           userId: userId,
+          profileId: widget.profileId,
           name: name,
           severity: 'mild',
         );
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(healthProfileProvider);
+      ref.invalidate(_source);
     } else {
       _snack(result.error.message);
     }
@@ -207,10 +232,12 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   Future<void> _removeAllergy(AllergyId id) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
-    final result = await ref.read(removeAllergyUseCaseProvider).execute(userId: userId, allergyId: id);
+    final result = await ref
+        .read(removeAllergyUseCaseProvider)
+        .execute(userId: userId, profileId: widget.profileId, allergyId: id);
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(healthProfileProvider);
+      ref.invalidate(_source);
     } else {
       _snack(result.error.message);
     }
@@ -222,13 +249,14 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     if (userId == null) return;
     final result = await ref.read(addChronicConditionUseCaseProvider).execute(
           userId: userId,
+          profileId: widget.profileId,
           name: name,
           icd10Code: icd10Code,
           onsetYear: onsetYear,
         );
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(healthProfileProvider);
+      ref.invalidate(_source);
     } else {
       _snack(result.error.message);
     }
@@ -237,10 +265,12 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   Future<void> _removeCondition(ChronicConditionId id) async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
-    final result = await ref.read(removeChronicConditionUseCaseProvider).execute(userId: userId, conditionId: id);
+    final result = await ref
+        .read(removeChronicConditionUseCaseProvider)
+        .execute(userId: userId, profileId: widget.profileId, conditionId: id);
     if (!mounted) return;
     if (result.isSuccess) {
-      ref.invalidate(healthProfileProvider);
+      ref.invalidate(_source);
     } else {
       _snack(result.error.message);
     }
@@ -274,6 +304,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     setState(() => saving = true);
     final result = await ref.read(updateHealthProfileUseCaseProvider).execute(
           userId: userId,
+          profileId: widget.profileId,
           weightKg: w,
           clearWeight: wText.isEmpty,
           heightCm: h,
@@ -282,7 +313,7 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
     if (!mounted) return;
     setState(() => saving = false);
     if (result.isSuccess) {
-      ref.invalidate(healthProfileProvider);
+      ref.invalidate(_source);
       setState(() => saved = true);
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) setState(() => saved = false);
@@ -320,14 +351,14 @@ class _MedicalProfileScreenState extends ConsumerState<MedicalProfileScreen> {
   Widget build(BuildContext context) {
     final bmi = _bmi;
     // Real on-device PHI. `null` while loading or when signed out (empty state).
-    final profile = ref.watch(healthProfileProvider).valueOrNull;
+    final profile = ref.watch(_source).valueOrNull;
     _seedMeasurements(profile);
     final allergyList = profile?.allergies ?? const <Allergy>[];
     final conditionList = profile?.conditions ?? const <ChronicCondition>[];
     final selectedBlood = profile?.bloodType;
     return SubScreen(
       s: s,
-      title: s.strings.profile.p_cond,
+      title: widget.title ?? s.strings.profile.p_cond,
       maxWidth: 560,
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         const DataLocPill(category: DataCategory.medical),

@@ -56,6 +56,7 @@ the device.
 | Key | Default | Controls |
 |---|---|---|
 | `beta_banner` | on | The amber corner ribbon marking the release as a beta ("Beta" / "إطلاق تجريبي"). Turn it off when the app is declared stable. For store screenshots, build with `FEATURE_FLAGS=beta_banner=false`. |
+| `mother_child` | off | Mother & Child: family member profiles kept on this phone, the people picker under the Home header that switches every screen to one of them, and each member's emergency card. Off, the app keeps one profile and the account switcher's session-only family list, exactly as before. |
 
 ## Turning a flag on
 

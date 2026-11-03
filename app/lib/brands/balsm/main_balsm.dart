@@ -5,6 +5,7 @@ import 'package:app_links/app_links.dart';
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:emergency_card/emergency_card.dart';
+import 'package:family/family.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -14,6 +15,7 @@ import 'package:profile/profile.dart';
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/auth/boot_session.dart';
 import 'package:app/balsm_app/auth/go_online_controller.dart';
+import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/prefs.dart';
@@ -252,6 +254,9 @@ Future<void> bootstrap({
     ),
     secureStorageProvider.overrideWithValue(keychain),
     userFileStoreProvider.overrideWithValue(fileStore),
+    // Family (Mother & Child) reads and writes member profiles through the
+    // profile module; the two modules never import each other.
+    familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
     // Emergency card reads the on-device HealthProfile (PHI stays on-device).
     emergencySnapshotReaderProvider.overrideWith(
       (ref) => _ProfileEmergencySnapshotReader(ref),
