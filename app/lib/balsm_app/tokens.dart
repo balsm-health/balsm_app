@@ -143,6 +143,10 @@ class T {
   static const rTileV2 = 16.0;
   static const rIconV2 = 11.0;
 
+  // The white halo behind the brand mark in the centre of the emergency QR
+  // (qrshare.jsx: 70×70, `borderRadius: 18`).
+  static const rQrMark = 18.0;
+
   // ── Layout ─────────────────────────────────────────────────
   /// `--content-max` as the app body sets it at expanded and up (app.css
   /// `@container app (min-width: 1024px) .app-body`): the DS's 768 reading

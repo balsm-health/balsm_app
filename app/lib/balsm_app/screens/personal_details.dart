@@ -1376,16 +1376,18 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                   eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: T.ink900),
                   dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: T.ink900),
                 ),
-                // Center flower mark with white halo (clears QR dots).
+                // Centre brand mark — the icon-only asset on a 70px white
+                // halo with a 6px white ring, clearing the dots beneath it
+                // (qrshare.jsx).
                 Container(
-                  width: 58,
-                  height: 58,
+                  width: 70,
+                  height: 70,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: 5)]),
-                  child: const BalsmFlower(size: 42),
+                      borderRadius: BorderRadius.circular(T.rQrMark),
+                      boxShadow: const [BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: 6)]),
+                  child: const BalsmFlower(size: 54),
                 ),
               ]),
             ),

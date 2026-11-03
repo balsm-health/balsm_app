@@ -354,7 +354,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   filled: true,
                   fillColor: Colors.white,
                   hintText: s.strings.care.map_search_ph,
-                  prefixIcon: const Icon(LucideIcons.search, size: 18, color: T.fg4),
+                  // The design pins the glyph 14 in from the start edge and starts the
+                  // text at 40 (map.jsx `insetInlineStart: 14`, `paddingInlineStart: 40`);
+                  // the decorator adds its own 4 between the two.
+                  prefixIcon: const Padding(
+                    padding: EdgeInsetsDirectional.only(start: 14, end: 5),
+                    child: Icon(LucideIcons.search, size: 17, color: T.fg4),
+                  ),
+                  prefixIconConstraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
                   suffixIcon: _query.isEmpty
                       ? null
                       : Center(
@@ -370,12 +377,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               width: 20,
                               height: 20,
                               alignment: Alignment.center,
-                              margin: const EdgeInsetsDirectional.only(end: 10),
+                              margin: const EdgeInsetsDirectional.only(end: 12),
                               decoration: const BoxDecoration(color: T.ink200, shape: BoxShape.circle),
                               child: const Icon(LucideIcons.x, size: 11, color: T.fg2),
                             ),
                           ),
                         ),
+                  // Clear disc 12 in from the end edge (map.jsx `insetInlineEnd: 12`).
+                  suffixIconConstraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(T.rMd),
@@ -488,7 +497,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           decoration: BoxDecoration(
               color: const Color(0xF0FFFFFF), borderRadius: BorderRadius.circular(T.rPill), boxShadow: T.shadowSm),
           child: Text('${pins.length} ${s.strings.care.map_found}',
-              style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg2)),
+              maxLines: 1, softWrap: false, style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg2)),
         ),
       ),
       // Recenter on the device's position.

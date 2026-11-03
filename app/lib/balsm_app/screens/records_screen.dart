@@ -6,8 +6,10 @@ import 'package:records/records.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
+import '../storage_target.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
+import '../widgets/data_loc_pill.dart';
 import 'records_detail.dart';
 
 /// Rows written by `persistPhotoRecord` before the `check-in` source existed:
@@ -194,6 +196,7 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
                 const SizedBox(width: 12),
               ],
               Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
+              const DataLocPill(category: DataCategory.records),
             ]),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
