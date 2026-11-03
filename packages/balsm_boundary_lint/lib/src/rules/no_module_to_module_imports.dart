@@ -14,7 +14,8 @@ class NoModuleToModuleImports extends DartLintRule {
     'sessions',
     'account',
     'deletion',
-    'geofence_block'
+    'geofence_block',
+    'family'
   ];
   static const _code = LintCode(
       name: 'no_module_to_module_imports',
