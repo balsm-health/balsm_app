@@ -61,6 +61,13 @@ abstract class HealthProfilesDataSource extends UserDataSource<HealthProfileId, 
   /// member profile with that id exists in the partition.
   Future<bool> updateMember(HealthProfile member, {UserId? scope});
 
+  /// Stores a birth built by `HealthProfile.born`: the open prenatal profile
+  /// with [child]'s id becomes a dependent — kind, name, date of birth, sex,
+  /// relationship, blood type and tone are written; the id, pregnancy link,
+  /// sequence and every record stay. Returns false when no open prenatal
+  /// profile with that id exists in the partition.
+  Future<bool> recordBirth(HealthProfile child, {UserId? scope});
+
   /// Closes the member profile [id] on [closedOn] (soft: every record it
   /// holds is kept). Refuses the self profile and an already-closed one by
   /// returning false. Callers then refresh core's active profile

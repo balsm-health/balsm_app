@@ -1,10 +1,10 @@
 import 'package:core/core.dart';
 
 // HealthProfileId moved to core — it is the scope type of ProfileDataSource,
-// shared by every PHI store. MemberGroupId too — the family module owns the
-// groups a member is filed under. Re-exported so module-internal imports of
-// `ids.dart` keep resolving them.
-export 'package:core/core.dart' show HealthProfileId, MemberGroupId;
+// shared by every PHI store. MemberGroupId and PregnancyId too — the family
+// and pregnancy modules own the groups and pregnancies a member points to.
+// Re-exported so module-internal imports of `ids.dart` keep resolving them.
+export 'package:core/core.dart' show HealthProfileId, MemberGroupId, PregnancyId;
 
 /// Typed id of an [Allergy] entity within the health profile.
 class AllergyId extends UniqueId {
@@ -40,13 +40,4 @@ class CareProviderId extends UniqueId {
   CareProviderId.uuid() : super.uuidv7('cp');
 
   static CareProviderId? fromString(String? value) => value?.mapNotNull((v) => CareProviderId.value(v));
-}
-
-/// Typed id of the pregnancy a prenatal (baby) profile belongs to.
-class PregnancyId extends UniqueId {
-  const PregnancyId.value(super.value) : super.value();
-  const PregnancyId.empty() : super.empty();
-  PregnancyId.uuid() : super.uuidv7('preg');
-
-  static PregnancyId? fromString(String? value) => value?.mapNotNull((v) => PregnancyId.value(v));
 }
