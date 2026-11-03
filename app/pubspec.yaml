@@ -43,6 +43,8 @@ dependencies:
     path: ../modules/geofence_block
   family:
     path: ../modules/family
+  pregnancy:
+    path: ../modules/pregnancy
   vaccinations:
     path: ../modules/vaccinations
   flutter_riverpod: ^2.6.1

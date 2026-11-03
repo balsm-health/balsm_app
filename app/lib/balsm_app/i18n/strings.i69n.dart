@@ -43,6 +43,7 @@ class Strings implements i69n.I69nMessageBundle {
   WebStrings get web => WebStrings(this);
   VaccStrings get vacc => VaccStrings(this);
   GrowthStrings get growth => GrowthStrings(this);
+  PregnancyStrings get pregnancy => PregnancyStrings(this);
   FamilyStrings get family => FamilyStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -99,6 +100,8 @@ class Strings implements i69n.I69nMessageBundle {
         return vacc;
       case 'growth':
         return growth;
+      case 'pregnancy':
+        return pregnancy;
       case 'family':
         return family;
       default:
@@ -3871,6 +3874,399 @@ class GrowthStrings implements i69n.I69nMessageBundle {
         return tile_last;
       case 'tile_empty':
         return tile_empty;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class PregnancyStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const PregnancyStrings(this._parent);
+  String get title => "Pregnancy";
+  String week_n(int n) => "Week $n";
+  String week_lower(int n) => "week $n";
+  String get week => "Week";
+  String day_n(int n) => "Day $n";
+  String get tri_1 => "First trimester";
+  String get tri_2 => "Second trimester";
+  String get tri_3 => "Third trimester";
+  String get tri_short_1 => "First";
+  String get tri_short_2 => "Second";
+  String get tri_short_3 => "Third";
+  String days_to_go(int n) =>
+      "${_plural(n, one: '1 day to go', other: '$n days to go')}";
+  String get days_to_due => "days to your due date";
+  String get due_date => "Due date";
+  String get next_visit => "Next visit";
+  String get prompt_b =>
+      "If you're pregnant, add your due date and your obstetrician";
+  String get not_now => "Not now · you can turn it on later in Profile";
+  String get row_off => "Off";
+  String get next_visit_t => "Next antenatal visit";
+  String get add_visit => "Add your next antenatal visit";
+  String get visit_date => "Date";
+  String get visit_time => "Time";
+  String get visit_time_ph => "e.g. 10:30";
+  String get visit_clinic => "Clinic";
+  String get visit_remove => "Remove this visit";
+  String get babies => "Babies";
+  String get baby => "Baby";
+  String baby_lettered(String x) => "Baby $x";
+  String get baby_letters => "A|B|C|D|E|F|G|H";
+  String get attach => "Attach";
+  String get last_measure => "Last measurement";
+  String get hr => "Heart rate";
+  String get bpm => "bpm";
+  String get efw => "Est. weight";
+  String get grams => "g";
+  String born_on(String date) => "Born $date";
+  String get add_baby => "Add a baby";
+  String get my_records => "My pregnancy records";
+  String get my_records_empty => "Your own results appear here.";
+  String get card_row => "Emergency card in pregnancy mode";
+  String get birth_sec => "Birth and closing";
+  String get arrived_one => "My baby has arrived";
+  String get arrived_multi => "A baby has arrived";
+  String get end_t => "End this pregnancy";
+  String get end_b =>
+      "This pregnancy's records stay saved with it on your phone.";
+  String get end_cta => "End tracking";
+  String get go_back => "Go back";
+  String get options => "Options";
+  String get rename => "Rename";
+  String get stop_t => "Stop following this baby";
+  String get stop_b =>
+      "Their records stay saved inside this pregnancy on your phone, and the card will no longer show.";
+  String get stop_cta => "Stop following";
+  String get shared_all => "Shared by all babies";
+  String get shared => "Shared";
+  String get list_sep => ", ";
+  String get pregnant => "Pregnant";
+  String get type_2 => "Twin pregnancy";
+  String get type_3 => "Triplet pregnancy";
+  String get type_4 => "Quadruplet pregnancy";
+  String type_n(int n) => "Multiple pregnancy ($n)";
+  String card_due(String date) => "Due date $date";
+  String get rh_neg => "Rh negative";
+  String get rh_pos => "Rh positive";
+  String get ob => "Obstetrician";
+  String get card_note => "Show this card on your phone in an emergency.";
+  String get start_note =>
+      "Pregnancy tracking appears on your own profile only, never on family profiles.";
+  String get mode_due => "I know my due date";
+  String get mode_lmp => "I know my last period";
+  String get lmp => "First day of your last period";
+  String get est_due => "Estimated due date";
+  String get pick_date => "Choose a date";
+  String get how_many => "How many babies?";
+  String get more => "More";
+  String get add_later =>
+      "You can add a baby later at any time, for example if a later scan shows twins.";
+  String get ob_name_ph => "Name";
+  String get phone => "Phone";
+  String get start_cta => "Start tracking";
+  String get name_hint => "You can choose a name if you like. It's optional.";
+  String get sec_scan => "Scans & reports";
+  String get sec_measure => "Measurements";
+  String get sec_doc => "Tests & documents";
+  String get nothing_yet => "Nothing yet.";
+  String get as_entered =>
+      "Measurements are shown exactly as you entered them.";
+  String get add_record => "Add a record";
+  String get name_sub => "Optional. Leave it empty to use the default label.";
+  String get name_ph => "Name or nickname";
+  String get attach_t => "Attach a record";
+  String get who => "Who is this record about?";
+  String get me => "Me — my own results";
+  String get all_babies => "All babies — shared report";
+  String get clear_babies => "Clear babies";
+  String get type => "Type";
+  String get kind_scan => "Scan or report";
+  String get kind_measure => "Measurements";
+  String get kind_doc => "Test or document";
+  String get one_at_a_time =>
+      "Measurements are recorded for one baby at a time.";
+  String get title_l => "Title";
+  String get title_ph_measure => "e.g. Today's visit";
+  String get title_ph => "e.g. Week 24 scan";
+  String get date => "Date";
+  String get hr_field => "Heart rate (bpm)";
+  String get efw_field => "Est. weight (g)";
+  String get other_field => "Other measurement";
+  String get other_ph => "e.g. Femur length";
+  String get value => "Value";
+  String get value_ph => "e.g. 44 mm";
+  String get as_written =>
+      "Enter the numbers as written in the report. Balsm doesn't interpret them.";
+  String get file => "File";
+  String get file_pick => "Take a photo or choose a file";
+  String get file_local => "Saved on this phone only";
+  String get file_attached => "File attached";
+  String birth_title(String baby) => "$baby's profile";
+  String get birth_title_one => "Baby's profile";
+  String get arrived_t => "Your baby has arrived";
+  String get arrived_b_multi =>
+      "Create each baby's profile when they're born. Pregnancy tracking stays open for the others.";
+  String get arrived_b =>
+      "Create your baby's profile now and choose which records move into it.";
+  String get which => "Which baby?";
+  String get blood_if_known => "if known";
+  String get moves => "Records that move to the child's profile";
+  String get no_records => "No records for this baby.";
+  String get me_stay => "Your “Me” records stay on your own profile.";
+  String get create_cta => "Create profile";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'week_n':
+        return week_n;
+      case 'week_lower':
+        return week_lower;
+      case 'week':
+        return week;
+      case 'day_n':
+        return day_n;
+      case 'tri_1':
+        return tri_1;
+      case 'tri_2':
+        return tri_2;
+      case 'tri_3':
+        return tri_3;
+      case 'tri_short_1':
+        return tri_short_1;
+      case 'tri_short_2':
+        return tri_short_2;
+      case 'tri_short_3':
+        return tri_short_3;
+      case 'days_to_go':
+        return days_to_go;
+      case 'days_to_due':
+        return days_to_due;
+      case 'due_date':
+        return due_date;
+      case 'next_visit':
+        return next_visit;
+      case 'prompt_b':
+        return prompt_b;
+      case 'not_now':
+        return not_now;
+      case 'row_off':
+        return row_off;
+      case 'next_visit_t':
+        return next_visit_t;
+      case 'add_visit':
+        return add_visit;
+      case 'visit_date':
+        return visit_date;
+      case 'visit_time':
+        return visit_time;
+      case 'visit_time_ph':
+        return visit_time_ph;
+      case 'visit_clinic':
+        return visit_clinic;
+      case 'visit_remove':
+        return visit_remove;
+      case 'babies':
+        return babies;
+      case 'baby':
+        return baby;
+      case 'baby_lettered':
+        return baby_lettered;
+      case 'baby_letters':
+        return baby_letters;
+      case 'attach':
+        return attach;
+      case 'last_measure':
+        return last_measure;
+      case 'hr':
+        return hr;
+      case 'bpm':
+        return bpm;
+      case 'efw':
+        return efw;
+      case 'grams':
+        return grams;
+      case 'born_on':
+        return born_on;
+      case 'add_baby':
+        return add_baby;
+      case 'my_records':
+        return my_records;
+      case 'my_records_empty':
+        return my_records_empty;
+      case 'card_row':
+        return card_row;
+      case 'birth_sec':
+        return birth_sec;
+      case 'arrived_one':
+        return arrived_one;
+      case 'arrived_multi':
+        return arrived_multi;
+      case 'end_t':
+        return end_t;
+      case 'end_b':
+        return end_b;
+      case 'end_cta':
+        return end_cta;
+      case 'go_back':
+        return go_back;
+      case 'options':
+        return options;
+      case 'rename':
+        return rename;
+      case 'stop_t':
+        return stop_t;
+      case 'stop_b':
+        return stop_b;
+      case 'stop_cta':
+        return stop_cta;
+      case 'shared_all':
+        return shared_all;
+      case 'shared':
+        return shared;
+      case 'list_sep':
+        return list_sep;
+      case 'pregnant':
+        return pregnant;
+      case 'type_2':
+        return type_2;
+      case 'type_3':
+        return type_3;
+      case 'type_4':
+        return type_4;
+      case 'type_n':
+        return type_n;
+      case 'card_due':
+        return card_due;
+      case 'rh_neg':
+        return rh_neg;
+      case 'rh_pos':
+        return rh_pos;
+      case 'ob':
+        return ob;
+      case 'card_note':
+        return card_note;
+      case 'start_note':
+        return start_note;
+      case 'mode_due':
+        return mode_due;
+      case 'mode_lmp':
+        return mode_lmp;
+      case 'lmp':
+        return lmp;
+      case 'est_due':
+        return est_due;
+      case 'pick_date':
+        return pick_date;
+      case 'how_many':
+        return how_many;
+      case 'more':
+        return more;
+      case 'add_later':
+        return add_later;
+      case 'ob_name_ph':
+        return ob_name_ph;
+      case 'phone':
+        return phone;
+      case 'start_cta':
+        return start_cta;
+      case 'name_hint':
+        return name_hint;
+      case 'sec_scan':
+        return sec_scan;
+      case 'sec_measure':
+        return sec_measure;
+      case 'sec_doc':
+        return sec_doc;
+      case 'nothing_yet':
+        return nothing_yet;
+      case 'as_entered':
+        return as_entered;
+      case 'add_record':
+        return add_record;
+      case 'name_sub':
+        return name_sub;
+      case 'name_ph':
+        return name_ph;
+      case 'attach_t':
+        return attach_t;
+      case 'who':
+        return who;
+      case 'me':
+        return me;
+      case 'all_babies':
+        return all_babies;
+      case 'clear_babies':
+        return clear_babies;
+      case 'type':
+        return type;
+      case 'kind_scan':
+        return kind_scan;
+      case 'kind_measure':
+        return kind_measure;
+      case 'kind_doc':
+        return kind_doc;
+      case 'one_at_a_time':
+        return one_at_a_time;
+      case 'title_l':
+        return title_l;
+      case 'title_ph_measure':
+        return title_ph_measure;
+      case 'title_ph':
+        return title_ph;
+      case 'date':
+        return date;
+      case 'hr_field':
+        return hr_field;
+      case 'efw_field':
+        return efw_field;
+      case 'other_field':
+        return other_field;
+      case 'other_ph':
+        return other_ph;
+      case 'value':
+        return value;
+      case 'value_ph':
+        return value_ph;
+      case 'as_written':
+        return as_written;
+      case 'file':
+        return file;
+      case 'file_pick':
+        return file_pick;
+      case 'file_local':
+        return file_local;
+      case 'file_attached':
+        return file_attached;
+      case 'birth_title':
+        return birth_title;
+      case 'birth_title_one':
+        return birth_title_one;
+      case 'arrived_t':
+        return arrived_t;
+      case 'arrived_b_multi':
+        return arrived_b_multi;
+      case 'arrived_b':
+        return arrived_b;
+      case 'which':
+        return which;
+      case 'blood_if_known':
+        return blood_if_known;
+      case 'moves':
+        return moves;
+      case 'no_records':
+        return no_records;
+      case 'me_stay':
+        return me_stay;
+      case 'create_cta':
+        return create_cta;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

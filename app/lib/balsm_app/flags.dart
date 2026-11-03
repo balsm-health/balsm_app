@@ -52,7 +52,7 @@ abstract final class AppFlags {
     'mother_child',
     fallback: false,
     label: 'Mother & Child',
-    description: 'Family profiles, the people picker and per-member emergency cards.',
+    description: 'Family profiles, the people picker, per-member emergency cards, child vaccinations and growth, and pregnancy tracking.',
   );
 
   static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner, motherChild];

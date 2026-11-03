@@ -16,6 +16,7 @@ class NoModuleToModuleImports extends DartLintRule {
     'deletion',
     'geofence_block',
     'family',
+    'pregnancy',
     'vaccinations'
   ];
   static const _code = LintCode(

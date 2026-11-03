@@ -308,6 +308,30 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   }
 
   @override
+  Future<bool> recordBirth(HealthProfile child, {UserId? scope}) async {
+    final user = _require(scope);
+    if (child.kind != ProfileKind.dependent) return false;
+    final changed = await _db.customUpdate(
+      '''
+      UPDATE health_profile SET kind = ?, display_name = ?, date_of_birth = ?, sex = ?, relationship = ?,
+        group_id = ?, tone = ?, blood_type = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND is_self = 0 AND kind = 'prenatal' AND status = 'active'
+      ''',
+      variables: [
+        Variable.withString(child.kind.wire),
+        ..._detailVariables(child),
+        Variable<String>(child.bloodType?.code),
+        Variable.withInt(DateTime.now().millisecondsSinceEpoch),
+        Variable.withString(child.id.value),
+        Variable.withString(user.value),
+      ],
+      updateKind: UpdateKind.update,
+    );
+    if (changed > 0) _notifyChanged();
+    return changed > 0;
+  }
+
+  @override
   Future<bool> closeMember(HealthProfileId id, DateTime closedOn, {UserId? scope}) async {
     final user = _require(scope);
     final changed = await _db.customUpdate(

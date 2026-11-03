@@ -46,6 +46,7 @@ class Strings_ar extends Strings {
   WebStrings_ar get web => WebStrings_ar(this);
   VaccStrings_ar get vacc => VaccStrings_ar(this);
   GrowthStrings_ar get growth => GrowthStrings_ar(this);
+  PregnancyStrings_ar get pregnancy => PregnancyStrings_ar(this);
   FamilyStrings_ar get family => FamilyStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
@@ -102,6 +103,8 @@ class Strings_ar extends Strings {
         return vacc;
       case 'growth':
         return growth;
+      case 'pregnancy':
+        return pregnancy;
       case 'family':
         return family;
       default:
@@ -4080,6 +4083,396 @@ class GrowthStrings_ar extends GrowthStrings {
         return tile_last;
       case 'tile_empty':
         return tile_empty;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class PregnancyStrings_ar extends PregnancyStrings {
+  final Strings_ar _parent;
+  const PregnancyStrings_ar(this._parent) : super(_parent);
+  String get title => "متابعة الحمل";
+  String week_n(int n) => "الأسبوع $n";
+  String week_lower(int n) => "الأسبوع $n";
+  String get week => "الأسبوع";
+  String day_n(int n) => "اليوم $n";
+  String get tri_1 => "الثلث الأول";
+  String get tri_2 => "الثلث الثاني";
+  String get tri_3 => "الثلث الثالث";
+  String get tri_short_1 => "الأول";
+  String get tri_short_2 => "الثاني";
+  String get tri_short_3 => "الثالث";
+  String days_to_go(int n) =>
+      "${_plural(n, one: 'باقٍ يوم واحد', two: 'باقٍ يومان', few: 'باقٍ $n أيام', many: 'باقٍ $n يوماً', other: 'باقٍ $n يوم')}";
+  String get days_to_due => "يوماً على الموعد المتوقع";
+  String get due_date => "الموعد المتوقع للولادة";
+  String get next_visit => "الزيارة القادمة";
+  String get prompt_b =>
+      "إن كنتِ حاملاً، سجّلي موعد الولادة المتوقع واسم طبيبتك";
+  String get not_now => "ليس الآن · يمكنك تفعيلها لاحقاً من «الملف»";
+  String get row_off => "غير مفعّلة";
+  String get next_visit_t => "زيارة المتابعة القادمة";
+  String get add_visit => "أضيفي موعد زيارة المتابعة القادمة";
+  String get visit_date => "التاريخ";
+  String get visit_time => "الوقت";
+  String get visit_time_ph => "مثل: 10:30";
+  String get visit_clinic => "العيادة";
+  String get visit_remove => "حذف هذه الزيارة";
+  String get babies => "الأطفال";
+  String get baby => "الطفل";
+  String baby_lettered(String x) => "الطفل $x";
+  String get baby_letters =>
+      "الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن";
+  String get attach => "إرفاق";
+  String get last_measure => "آخر قياس";
+  String get hr => "نبض القلب";
+  String get bpm => "نبضة/د";
+  String get efw => "الوزن التقديري";
+  String get grams => "جم";
+  String born_on(String date) => "الميلاد $date";
+  String get add_baby => "إضافة طفل";
+  String get my_records => "سجلاتي في الحمل";
+  String get my_records_empty => "نتائج تحاليلك أنتِ تظهر هنا.";
+  String get card_row => "بطاقة الطوارئ في وضع الحمل";
+  String get birth_sec => "الولادة وإنهاء المتابعة";
+  String get arrived_one => "وصل المولود";
+  String get arrived_multi => "وصل مولود";
+  String get end_t => "إنهاء متابعة الحمل";
+  String get end_b => "تبقى سجلات هذا الحمل محفوظة فيه على جهازك.";
+  String get end_cta => "إنهاء المتابعة";
+  String get go_back => "تراجع";
+  String get options => "خيارات";
+  String get rename => "تغيير الاسم";
+  String get stop_t => "إيقاف متابعة هذا الطفل";
+  String get stop_b =>
+      "ستُحفظ سجلاته داخل هذا الحمل على جهازك، ولن تظهر بطاقته بعد ذلك.";
+  String get stop_cta => "إيقاف المتابعة";
+  String get shared_all => "مشترك بين الجميع";
+  String get shared => "مشترك";
+  String get list_sep => "، ";
+  String get pregnant => "حامل";
+  String get type_2 => "حمل بتوأم";
+  String get type_3 => "حمل بثلاثة توائم";
+  String get type_4 => "حمل بأربعة توائم";
+  String type_n(int n) => "حمل متعدد ($n)";
+  String card_due(String date) => "الموعد المتوقع للولادة $date";
+  String get rh_neg => "العامل الريسوسي سالب";
+  String get rh_pos => "العامل الريسوسي موجب";
+  String get ob => "طبيبة النساء والتوليد";
+  String get card_note => "اعرضي هذه البطاقة من هاتفك في حالة الطوارئ.";
+  String get start_note =>
+      "تظهر متابعة الحمل في ملفك أنتِ فقط، ولا تظهر في ملفات العائلة.";
+  String get mode_due => "أعرف الموعد المتوقع";
+  String get mode_lmp => "أعرف تاريخ آخر دورة";
+  String get lmp => "أول يوم في آخر دورة";
+  String get est_due => "الموعد المتوقع تقريباً";
+  String get pick_date => "اختاري التاريخ";
+  String get how_many => "عدد الأطفال";
+  String get more => "أكثر";
+  String get add_later =>
+      "يمكنك إضافة طفل لاحقاً في أي وقت، مثلاً إذا ظهر توأم في سونار لاحق.";
+  String get ob_name_ph => "الاسم";
+  String get phone => "رقم الهاتف";
+  String get start_cta => "ابدئي المتابعة";
+  String get name_hint => "يمكنك أن تختاري اسماً إن أردتِ، وهذا اختياري.";
+  String get sec_scan => "السونار والتقارير";
+  String get sec_measure => "القياسات";
+  String get sec_doc => "التحاليل والمستندات";
+  String get nothing_yet => "لا شيء بعد.";
+  String get as_entered => "تُعرض القياسات كما أدخلتِها تماماً.";
+  String get add_record => "إضافة سجل";
+  String get name_sub => "اختياري. اتركيه فارغاً ليظهر الاسم الافتراضي.";
+  String get name_ph => "الاسم أو اسم التدليل";
+  String get attach_t => "إرفاق سجل";
+  String get who => "هذا السجل عن مَن؟";
+  String get me => "عنّي — نتائجي أنا";
+  String get all_babies => "كل الأطفال — تقرير مشترك";
+  String get clear_babies => "إلغاء تحديد الكل";
+  String get type => "النوع";
+  String get kind_scan => "سونار أو تقرير";
+  String get kind_measure => "قياسات";
+  String get kind_doc => "تحليل أو مستند";
+  String get one_at_a_time => "القياسات تُسجَّل لكل طفل على حدة.";
+  String get title_l => "العنوان";
+  String get title_ph_measure => "مثل: قياسات زيارة اليوم";
+  String get title_ph => "مثل: سونار الأسبوع 24";
+  String get date => "التاريخ";
+  String get hr_field => "نبض القلب (نبضة/د)";
+  String get efw_field => "الوزن التقديري (جم)";
+  String get other_field => "قياس آخر";
+  String get other_ph => "مثل: طول الفخذ";
+  String get value => "القيمة";
+  String get value_ph => "مثل: 44 مم";
+  String get as_written => "اكتبي الأرقام كما في التقرير. لا يفسّرها بلسم.";
+  String get file => "الملف";
+  String get file_pick => "صوّري أو اختاري ملفاً";
+  String get file_local => "يُحفظ على هذا الجهاز فقط";
+  String get file_attached => "ملف مرفق";
+  String birth_title(String baby) => "ملف $baby";
+  String get birth_title_one => "ملف المولود";
+  String get arrived_t => "وصل مولودك بالسلامة";
+  String get arrived_b_multi =>
+      "أنشئي ملف كل طفل عند ولادته. تبقى متابعة الحمل مفتوحة للبقية.";
+  String get arrived_b =>
+      "أنشئي ملف طفلك الآن، واختاري السجلات التي تنتقل إليه.";
+  String get which => "أي طفل؟";
+  String get blood_if_known => "إن كانت معروفة";
+  String get moves => "سجلات تنتقل إلى ملف الطفل";
+  String get no_records => "لا توجد سجلات لهذا الطفل.";
+  String get me_stay => "سجلاتك «عنّي» تبقى في ملفك أنتِ.";
+  String get create_cta => "إنشاء الملف";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'week_n':
+        return week_n;
+      case 'week_lower':
+        return week_lower;
+      case 'week':
+        return week;
+      case 'day_n':
+        return day_n;
+      case 'tri_1':
+        return tri_1;
+      case 'tri_2':
+        return tri_2;
+      case 'tri_3':
+        return tri_3;
+      case 'tri_short_1':
+        return tri_short_1;
+      case 'tri_short_2':
+        return tri_short_2;
+      case 'tri_short_3':
+        return tri_short_3;
+      case 'days_to_go':
+        return days_to_go;
+      case 'days_to_due':
+        return days_to_due;
+      case 'due_date':
+        return due_date;
+      case 'next_visit':
+        return next_visit;
+      case 'prompt_b':
+        return prompt_b;
+      case 'not_now':
+        return not_now;
+      case 'row_off':
+        return row_off;
+      case 'next_visit_t':
+        return next_visit_t;
+      case 'add_visit':
+        return add_visit;
+      case 'visit_date':
+        return visit_date;
+      case 'visit_time':
+        return visit_time;
+      case 'visit_time_ph':
+        return visit_time_ph;
+      case 'visit_clinic':
+        return visit_clinic;
+      case 'visit_remove':
+        return visit_remove;
+      case 'babies':
+        return babies;
+      case 'baby':
+        return baby;
+      case 'baby_lettered':
+        return baby_lettered;
+      case 'baby_letters':
+        return baby_letters;
+      case 'attach':
+        return attach;
+      case 'last_measure':
+        return last_measure;
+      case 'hr':
+        return hr;
+      case 'bpm':
+        return bpm;
+      case 'efw':
+        return efw;
+      case 'grams':
+        return grams;
+      case 'born_on':
+        return born_on;
+      case 'add_baby':
+        return add_baby;
+      case 'my_records':
+        return my_records;
+      case 'my_records_empty':
+        return my_records_empty;
+      case 'card_row':
+        return card_row;
+      case 'birth_sec':
+        return birth_sec;
+      case 'arrived_one':
+        return arrived_one;
+      case 'arrived_multi':
+        return arrived_multi;
+      case 'end_t':
+        return end_t;
+      case 'end_b':
+        return end_b;
+      case 'end_cta':
+        return end_cta;
+      case 'go_back':
+        return go_back;
+      case 'options':
+        return options;
+      case 'rename':
+        return rename;
+      case 'stop_t':
+        return stop_t;
+      case 'stop_b':
+        return stop_b;
+      case 'stop_cta':
+        return stop_cta;
+      case 'shared_all':
+        return shared_all;
+      case 'shared':
+        return shared;
+      case 'list_sep':
+        return list_sep;
+      case 'pregnant':
+        return pregnant;
+      case 'type_2':
+        return type_2;
+      case 'type_3':
+        return type_3;
+      case 'type_4':
+        return type_4;
+      case 'type_n':
+        return type_n;
+      case 'card_due':
+        return card_due;
+      case 'rh_neg':
+        return rh_neg;
+      case 'rh_pos':
+        return rh_pos;
+      case 'ob':
+        return ob;
+      case 'card_note':
+        return card_note;
+      case 'start_note':
+        return start_note;
+      case 'mode_due':
+        return mode_due;
+      case 'mode_lmp':
+        return mode_lmp;
+      case 'lmp':
+        return lmp;
+      case 'est_due':
+        return est_due;
+      case 'pick_date':
+        return pick_date;
+      case 'how_many':
+        return how_many;
+      case 'more':
+        return more;
+      case 'add_later':
+        return add_later;
+      case 'ob_name_ph':
+        return ob_name_ph;
+      case 'phone':
+        return phone;
+      case 'start_cta':
+        return start_cta;
+      case 'name_hint':
+        return name_hint;
+      case 'sec_scan':
+        return sec_scan;
+      case 'sec_measure':
+        return sec_measure;
+      case 'sec_doc':
+        return sec_doc;
+      case 'nothing_yet':
+        return nothing_yet;
+      case 'as_entered':
+        return as_entered;
+      case 'add_record':
+        return add_record;
+      case 'name_sub':
+        return name_sub;
+      case 'name_ph':
+        return name_ph;
+      case 'attach_t':
+        return attach_t;
+      case 'who':
+        return who;
+      case 'me':
+        return me;
+      case 'all_babies':
+        return all_babies;
+      case 'clear_babies':
+        return clear_babies;
+      case 'type':
+        return type;
+      case 'kind_scan':
+        return kind_scan;
+      case 'kind_measure':
+        return kind_measure;
+      case 'kind_doc':
+        return kind_doc;
+      case 'one_at_a_time':
+        return one_at_a_time;
+      case 'title_l':
+        return title_l;
+      case 'title_ph_measure':
+        return title_ph_measure;
+      case 'title_ph':
+        return title_ph;
+      case 'date':
+        return date;
+      case 'hr_field':
+        return hr_field;
+      case 'efw_field':
+        return efw_field;
+      case 'other_field':
+        return other_field;
+      case 'other_ph':
+        return other_ph;
+      case 'value':
+        return value;
+      case 'value_ph':
+        return value_ph;
+      case 'as_written':
+        return as_written;
+      case 'file':
+        return file;
+      case 'file_pick':
+        return file_pick;
+      case 'file_local':
+        return file_local;
+      case 'file_attached':
+        return file_attached;
+      case 'birth_title':
+        return birth_title;
+      case 'birth_title_one':
+        return birth_title_one;
+      case 'arrived_t':
+        return arrived_t;
+      case 'arrived_b_multi':
+        return arrived_b_multi;
+      case 'arrived_b':
+        return arrived_b;
+      case 'which':
+        return which;
+      case 'blood_if_known':
+        return blood_if_known;
+      case 'moves':
+        return moves;
+      case 'no_records':
+        return no_records;
+      case 'me_stay':
+        return me_stay;
+      case 'create_cta':
+        return create_cta;
       default:
         return super[key];
     }

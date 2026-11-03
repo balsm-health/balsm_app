@@ -168,7 +168,7 @@ class HealthProfile {
 
   /// This member with new details, validated like [createMember]. Kind,
   /// status and pregnancy link are not details: they change only through
-  /// their own transitions ([close]; birth arrives with the pregnancy module).
+  /// their own transitions ([close], [born]).
   AppResult<HealthProfile> withMemberDetails({
     required String? displayName,
     required DateTime? dateOfBirth,
@@ -235,6 +235,49 @@ class HealthProfile {
       pregnancyId: pregnancyId,
       sequence: sequence,
     ));
+  }
+
+  /// Birth: this prenatal profile becomes the child — the **same** profile
+  /// (id, pregnancy link, sequence and every record it holds), now a
+  /// [ProfileKind.dependent] with a name, sex and date of birth, so the
+  /// prenatal records are the child's earliest history. Only an open prenatal
+  /// profile can be born; the result is validated like [createMember].
+  AppResult<HealthProfile> born({
+    required String displayName,
+    required Sex sex,
+    required DateTime dateOfBirth,
+    required Relationship relationship,
+    required BloodType? bloodType,
+    required String? tone,
+    required DateTime now,
+  }) {
+    if (kind != ProfileKind.prenatal) return AppResult.failure(ValidationFailure(MemberRuleViolation.notPrenatal.name));
+    if (isClosed) return AppResult.failure(ValidationFailure(MemberRuleViolation.closed.name));
+    return _checked(
+      HealthProfile(
+        id: id,
+        userId: userId,
+        bloodType: bloodType,
+        weightKg: weightKg,
+        heightCm: heightCm,
+        allergies: allergies,
+        conditions: conditions,
+        emergencyContacts: emergencyContacts,
+        updatedAt: now,
+        kind: ProfileKind.dependent,
+        displayName: displayName.trim(),
+        dateOfBirth: _day(dateOfBirth),
+        sex: sex,
+        relationship: relationship,
+        groupId: groupId,
+        tone: tone,
+        status: status,
+        closedOn: closedOn,
+        pregnancyId: pregnancyId,
+        sequence: sequence,
+      ),
+      now,
+    );
   }
 
   static AppResult<HealthProfile> _checked(HealthProfile p, DateTime now) {
@@ -315,6 +358,9 @@ enum MemberRuleViolation {
 
   /// The self profile is not created or edited as a member.
   selfNotAMember,
+
+  /// Only a prenatal profile can be born.
+  notPrenatal,
 }
 
 /// Allergy value within HealthProfile.

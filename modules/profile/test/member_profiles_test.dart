@@ -147,6 +147,44 @@ void main() {
     });
   });
 
+  group('HealthProfile birth', () {
+    const preg = PregnancyId.value('preg-1');
+    HealthProfile baby() => member(id: 'hp-baby', kind: ProfileKind.prenatal, name: null, pregnancy: preg, sequence: 2);
+
+    AppResult<HealthProfile> bear(HealthProfile p, {String name = 'Test Baby', DateTime? dob}) => p.born(
+          displayName: name,
+          sex: Sex.female,
+          dateOfBirth: dob ?? DateTime.utc(2026, 11, 2),
+          relationship: Relationship.child,
+          bloodType: BloodType.aPositive,
+          tone: 'mint',
+          now: now,
+        );
+
+    test('keeps the id, pregnancy link and sequence; the baby becomes a dependent', () {
+      final child = bear(baby()).value;
+
+      expect(child.id, const HealthProfileId.value('hp-baby'));
+      expect(child.kind, ProfileKind.dependent);
+      expect(child.pregnancyId, preg);
+      expect(child.sequence, 2);
+      expect(child.displayName, 'Test Baby');
+      expect(child.sex, Sex.female);
+      expect(child.dateOfBirth, DateTime.utc(2026, 11, 2));
+      expect(child.bloodType, BloodType.aPositive);
+    });
+
+    test('needs a name and a date of birth that is not in the future', () {
+      expect(bear(baby(), name: ' ').error.message, 'nameRequired');
+      expect(bear(baby(), dob: DateTime.utc(2026, 11, 4)).error.message, 'birthDateInFuture');
+    });
+
+    test('only an open prenatal profile is born', () {
+      expect(bear(member()).error.message, 'notPrenatal');
+      expect(bear(baby().close(now).value).error.message, 'closed');
+    });
+  });
+
   group('DriftProfileDataSource with several profiles', () {
     late AppDatabase db;
     late HealthProfilesDataSource ds;
@@ -228,6 +266,36 @@ void main() {
       await ds.put(closed.id, closed.copyWith(weightKg: 20));
       expect((await ds.find(closed.id))!.status, ProfileStatus.closed);
       expect((await ds.getProfile(user))!.id, selfId);
+    });
+
+    test('recordBirth turns the open prenatal row into the child, same id', () async {
+      const preg = PregnancyId.value('preg-1');
+      final baby = member(id: 'hp-baby', kind: ProfileKind.prenatal, name: null, pregnancy: preg, sequence: 1);
+      await ds.createMember(baby);
+      final child = baby
+          .born(
+            displayName: 'Test Baby',
+            sex: Sex.male,
+            dateOfBirth: DateTime.utc(2026, 11, 1),
+            relationship: Relationship.child,
+            bloodType: BloodType.oNegative,
+            tone: 'blue',
+            now: now,
+          )
+          .value;
+
+      expect(await ds.recordBirth(child), isTrue);
+      final stored = (await ds.find(baby.id))!;
+      expect(stored.kind, ProfileKind.dependent);
+      expect(stored.displayName, 'Test Baby');
+      expect(stored.sex, Sex.male);
+      expect(stored.dateOfBirth, DateTime.utc(2026, 11, 1));
+      expect(stored.bloodType, BloodType.oNegative);
+      expect(stored.tone, 'blue');
+      expect(stored.pregnancyId, preg);
+      expect(stored.sequence, 1);
+      expect(await ds.recordBirth(child), isFalse, reason: 'a dependent is not born twice');
+      expect(await ds.recordBirth(member(id: 'hp-early', name: 'Test Early')), isFalse);
     });
 
     test('a self aggregate cannot be stored as a member', () async {
