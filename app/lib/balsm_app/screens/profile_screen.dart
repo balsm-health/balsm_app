@@ -16,6 +16,7 @@ import 'personal_details.dart';
 import 'ecosystem_sheet.dart';
 import 'feedback_sheet.dart';
 import 'go_online_sheet.dart';
+import 'help_screen.dart';
 import 'remove_device_account.dart';
 import 'care_team_screen.dart';
 import 'profile_subscreens.dart';
@@ -53,7 +54,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       (LucideIcons.star, 'feedback.fb_row', () => showFeedbackSheet(context), false),
       (LucideIcons.flower2, 'ecosystem.eco_row', () => showEcosystemSheet(context), false),
-      (LucideIcons.lifeBuoy, 'profile.p_help', null, false),
+      (LucideIcons.lifeBuoy, 'profile.p_help', () => openHelpSupport(context), false),
     ];
     return ContentColumn(
         maxWidth: 720,
@@ -73,10 +74,11 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ]),
 
-          // Profile head — real account summary (name + handle) plus the
-          // patient's own chronic conditions (`.profile-head`). Everything here
-          // is real data: the design's "patient since" line has no counterpart
-          // on AccountSummary, so it is omitted rather than fabricated.
+          // Profile head — real account summary (name + handle)
+          // (`.profile-head`). Everything here is real data: the design's
+          // "member since" line has no counterpart on AccountSummary, so it is
+          // omitted rather than fabricated. The design dropped the conditions
+          // strip; they live on the Medical profile screen.
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             child: Column(children: [
@@ -107,13 +109,6 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 10),
                 _HandleQrPill(handle: summary.handle!, name: displayName),
               ],
-              // `.profile-head .chip-wrap` — the patient's own chronic
-              // conditions. Real on-device PHI shown to the data subject; the
-              // strip stays hidden until the profile actually has conditions,
-              // so nothing is ever fabricated. (There is no "patient since"
-              // line: AccountSummary carries no creation date, and inventing
-              // one would be fake data.)
-              const _ConditionChips(),
             ]),
           ),
 
@@ -547,12 +542,6 @@ class _ListRow extends StatelessWidget {
   }
 }
 
-/// `.profile-head .chip-wrap` — the patient's chronic conditions as centred
-/// badges (`--balsm-ink-100` on `--balsm-ink-700`). Renders nothing until the
-/// on-device health profile actually holds conditions.
-/// Post-signup "complete your profile" card (design: home.jsx ProfileScreen,
-/// `!profileComplete` accent card). Opens Personal details; disappears after
-/// the first successful save.
 /// Post-signup "complete your profile" card (design: home.jsx ProfileScreen,
 /// `!profileComplete` accent card). Opens Personal details; disappears once
 /// every mandatory field is filled.
@@ -605,33 +594,6 @@ class _CompleteProfileCard extends StatelessWidget {
             ]),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ConditionChips extends ConsumerWidget {
-  const _ConditionChips();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = AppScope.of(context);
-    final conditions = ref.watch(healthProfileProvider).valueOrNull?.conditions ?? const [];
-    if (conditions.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final c in conditions)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rPill)),
-              child: Text(c.name, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.ink700)),
-            ),
-        ],
       ),
     );
   }

@@ -780,6 +780,8 @@
     "p_personal": "Account details",
     "pd_account": "Account",
     "pd_handle_hint": "Your unique handle on Balsm",
+    "pd_email_unverified": "Not verified",
+    "pd_email_offline(Gender gender)": "Your account is on this device only. Go online to verify your email and sync your data.",
     "pd_share_qr": "Emergency QR",
     "pd_share_qr_h": "Show an encrypted code to staff",
     "pd_nationality": "Nationality",
@@ -838,7 +840,7 @@
     "eco_row": "About Balsm & community",
     "eco_title": "The Balsm ecosystem",
     "eco_hero": "Balsm is bigger than this app",
-    "eco_sub": "A community-owned healthcare system for the Arab world. Open code, your data, no vendor in between.",
+    "eco_sub": "A community-driven, open-source healthcare system for the Arab world. Your data, no vendor in between.",
     "eco_p1h": "This app — for you",
     "eco_p1b": "Your records, medications and appointments, whole and in your language.",
     "eco_p2h": "Balsm Pro — for pharmacies & clinics",
@@ -1104,6 +1106,22 @@
     "other_tab_t(String app)": "$app is open in another tab",
     "other_tab_b": "To keep your data safe, it can be open in one tab at a time. Close the other tab, then try again.",
     "other_tab_retry": "Try again"
+  },
+  "help": {
+    "hp_emergency_on(Gender gender)": "Balsm isn’t an emergency service. In an emergency, call an ambulance on",
+    "hp_emergency_local(Gender gender)": "Balsm isn’t an emergency service. In an emergency, call your local emergency number.",
+    "hp_faq": "Common questions",
+    "hp_q_data": "Where is my data stored?",
+    "hp_a_data": "On this device by default. Profile › Storage & sync shows where each kind of data is kept.",
+    "hp_q_offline": "Does Balsm work without internet?",
+    "hp_a_offline": "Yes. You can log readings, take medications and open your emergency card offline.",
+    "hp_q_password": "I forgot my password",
+    "hp_a_password(Gender gender)": "On the sign-in screen, tap “Forgot password?” and we’ll send a code to your email.",
+    "hp_q_delete": "How do I delete my account?",
+    "hp_a_delete": "Go to Profile › Privacy & data › Delete my account.",
+    "hp_contact": "Contact us",
+    "hp_email(Gender gender)": "Email us",
+    "hp_open_source": "Open source"
   },
   "_i69n_import": "package:core/core.dart"
 }

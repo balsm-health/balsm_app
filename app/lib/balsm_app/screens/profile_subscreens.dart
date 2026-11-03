@@ -805,13 +805,9 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
               last: true),
         ]),
         _SectionHead(LucideIcons.lock, s.strings.privacy.pv_security, s: s),
+        // The sign-in email moved to Account details (home.jsx
+        // PersonalDetailsScreen), so Security holds only the lock toggles.
         _listCard([
-          _action(
-            LucideIcons.mail,
-            s.strings.emergency.em_label,
-            s.authEmail.isEmpty ? '—' : s.authEmail,
-            ltrDesc: true,
-          ),
           _toggle(s.strings.privacy.pv_bio, s.strings.privacy.pv_bio_h(s.gender), bioLock,
               (v) => setState(() => bioLock = v)),
           _toggle(s.strings.privacy.pv_pin, s.strings.privacy.pv_pin_h, pin, (v) => setState(() => pin = v),
@@ -863,7 +859,7 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
       ], last);
 
   Widget _action(IconData icon, String title, String desc,
-      {bool danger = false, bool last = false, bool ltrDesc = false, VoidCallback? onTap}) {
+      {bool danger = false, bool last = false, VoidCallback? onTap}) {
     final row = _row([
       Container(
           width: 38,
@@ -877,7 +873,7 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
         Text(title,
             style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: danger ? T.danger : T.fg1)),
         const SizedBox(height: 2),
-        Text(desc, textDirection: ltrDesc ? TextDirection.ltr : null, style: Typo.meta(ar: s.rtl)),
+        Text(desc, style: Typo.meta(ar: s.rtl)),
       ])),
       if (onTap != null) Chevron(rtl: s.rtl),
     ], last);

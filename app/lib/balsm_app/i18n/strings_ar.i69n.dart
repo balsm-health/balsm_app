@@ -44,6 +44,7 @@ class Strings_ar extends Strings {
   OfflineStrings_ar get offline => OfflineStrings_ar(this);
   UpdateStrings_ar get update => UpdateStrings_ar(this);
   WebStrings_ar get web => WebStrings_ar(this);
+  HelpStrings_ar get help => HelpStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -95,6 +96,8 @@ class Strings_ar extends Strings {
         return update;
       case 'web':
         return web;
+      case 'help':
+        return help;
       default:
         return super[key];
     }
@@ -2722,6 +2725,12 @@ class ProfileStrings_ar extends ProfileStrings {
   String get p_personal => "تفاصيل الحساب";
   String get pd_account => "الحساب";
   String get pd_handle_hint => "معرّفك الفريد على بلسم";
+  String get pd_email_unverified => "غير مُتحقَّق";
+  String pd_email_offline(Gender gender) =>
+      "حسابك على هذا الجهاز فقط. اتصل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} بالإنترنت لتأكيد بريدك ومزامنة بياناتك.";
   String get pd_share_qr => "رمز الطوارئ";
   String get pd_share_qr_h => "أظهر رمزاً مشفراً للطاقم";
   String get pd_nationality => "الجنسية";
@@ -2820,6 +2829,10 @@ class ProfileStrings_ar extends ProfileStrings {
         return pd_account;
       case 'pd_handle_hint':
         return pd_handle_hint;
+      case 'pd_email_unverified':
+        return pd_email_unverified;
+      case 'pd_email_offline':
+        return pd_email_offline;
       case 'pd_share_qr':
         return pd_share_qr;
       case 'pd_share_qr_h':
@@ -2939,7 +2952,7 @@ class EcosystemStrings_ar extends EcosystemStrings {
   String get eco_title => "منظومة بلسم";
   String get eco_hero => "بلسم أكبر من هذا التطبيق";
   String get eco_sub =>
-      "نظام صحي مملوك للمجتمع في العالم العربي. شيفرة مفتوحة، وبياناتك ملكك، ولا وسيط بينك وبين رعايتك.";
+      "نظام صحي يحرّكه المجتمع ومفتوح المصدر للعالم العربي. بياناتك لك، بلا وسيط.";
   String get eco_p1h => "هذا التطبيق — لك";
   String get eco_p1b => "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك.";
   String get eco_p2h => "بَلسَم برو — للصيدليات والعيادات";
@@ -3916,6 +3929,79 @@ class WebStrings_ar extends WebStrings {
         return other_tab_b;
       case 'other_tab_retry':
         return other_tab_retry;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class HelpStrings_ar extends HelpStrings {
+  final Strings_ar _parent;
+  const HelpStrings_ar(this._parent) : super(_parent);
+  String hp_emergency_on(Gender gender) =>
+      "بلسم ليس خدمة طوارئ. في حالة الطوارئ اتصل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} بالإسعاف على";
+  String hp_emergency_local(Gender gender) =>
+      "بلسم ليس خدمة طوارئ. في حالة الطوارئ اتصل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} برقم الطوارئ المحلي.";
+  String get hp_faq => "الأسئلة الشائعة";
+  String get hp_q_data => "أين تُحفظ بياناتي؟";
+  String get hp_a_data =>
+      "على هذا الجهاز افتراضيًا. تجد في الملف الشخصي › التخزين والمزامنة أين يُحفظ كل نوع من بياناتك.";
+  String get hp_q_offline => "هل يعمل بلسم بدون إنترنت؟";
+  String get hp_a_offline =>
+      "نعم. يمكنك تسجيل القراءات وتناول الأدوية وفتح بطاقة الطوارئ بدون اتصال.";
+  String get hp_q_password => "نسيت كلمة المرور";
+  String hp_a_password(Gender gender) =>
+      "في شاشة تسجيل الدخول، انقر${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} «نسيت كلمة المرور؟» وسنرسل رمزًا إلى بريدك.";
+  String get hp_q_delete => "كيف أحذف حسابي؟";
+  String get hp_a_delete => "من الملف الشخصي › الخصوصية والبيانات › حذف حسابي.";
+  String get hp_contact => "تواصل معنا";
+  String hp_email(Gender gender) =>
+      "راسل${_select(gender, {'female': 'ي', 'other': ''})}نا عبر البريد";
+  String get hp_open_source => "مفتوح المصدر";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'hp_emergency_on':
+        return hp_emergency_on;
+      case 'hp_emergency_local':
+        return hp_emergency_local;
+      case 'hp_faq':
+        return hp_faq;
+      case 'hp_q_data':
+        return hp_q_data;
+      case 'hp_a_data':
+        return hp_a_data;
+      case 'hp_q_offline':
+        return hp_q_offline;
+      case 'hp_a_offline':
+        return hp_a_offline;
+      case 'hp_q_password':
+        return hp_q_password;
+      case 'hp_a_password':
+        return hp_a_password;
+      case 'hp_q_delete':
+        return hp_q_delete;
+      case 'hp_a_delete':
+        return hp_a_delete;
+      case 'hp_contact':
+        return hp_contact;
+      case 'hp_email':
+        return hp_email;
+      case 'hp_open_source':
+        return hp_open_source;
       default:
         return super[key];
     }

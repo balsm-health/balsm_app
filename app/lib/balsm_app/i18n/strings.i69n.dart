@@ -41,6 +41,7 @@ class Strings implements i69n.I69nMessageBundle {
   OfflineStrings get offline => OfflineStrings(this);
   UpdateStrings get update => UpdateStrings(this);
   WebStrings get web => WebStrings(this);
+  HelpStrings get help => HelpStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -92,6 +93,8 @@ class Strings implements i69n.I69nMessageBundle {
         return update;
       case 'web':
         return web;
+      case 'help':
+        return help;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -2573,6 +2576,9 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   String get p_personal => "Account details";
   String get pd_account => "Account";
   String get pd_handle_hint => "Your unique handle on Balsm";
+  String get pd_email_unverified => "Not verified";
+  String pd_email_offline(Gender gender) =>
+      "Your account is on this device only. Go online to verify your email and sync your data.";
   String get pd_share_qr => "Emergency QR";
   String get pd_share_qr_h => "Show an encrypted code to staff";
   String get pd_nationality => "Nationality";
@@ -2668,6 +2674,10 @@ class ProfileStrings implements i69n.I69nMessageBundle {
         return pd_account;
       case 'pd_handle_hint':
         return pd_handle_hint;
+      case 'pd_email_unverified':
+        return pd_email_unverified;
+      case 'pd_email_offline':
+        return pd_email_offline;
       case 'pd_share_qr':
         return pd_share_qr;
       case 'pd_share_qr_h':
@@ -2787,7 +2797,7 @@ class EcosystemStrings implements i69n.I69nMessageBundle {
   String get eco_title => "The Balsm ecosystem";
   String get eco_hero => "Balsm is bigger than this app";
   String get eco_sub =>
-      "A community-owned healthcare system for the Arab world. Open code, your data, no vendor in between.";
+      "A community-driven, open-source healthcare system for the Arab world. Your data, no vendor in between.";
   String get eco_p1h => "This app — for you";
   String get eco_p1b =>
       "Your records, medications and appointments, whole and in your language.";
@@ -3716,6 +3726,70 @@ class WebStrings implements i69n.I69nMessageBundle {
         return other_tab_b;
       case 'other_tab_retry':
         return other_tab_retry;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class HelpStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const HelpStrings(this._parent);
+  String hp_emergency_on(Gender gender) =>
+      "Balsm isn’t an emergency service. In an emergency, call an ambulance on";
+  String hp_emergency_local(Gender gender) =>
+      "Balsm isn’t an emergency service. In an emergency, call your local emergency number.";
+  String get hp_faq => "Common questions";
+  String get hp_q_data => "Where is my data stored?";
+  String get hp_a_data =>
+      "On this device by default. Profile › Storage & sync shows where each kind of data is kept.";
+  String get hp_q_offline => "Does Balsm work without internet?";
+  String get hp_a_offline =>
+      "Yes. You can log readings, take medications and open your emergency card offline.";
+  String get hp_q_password => "I forgot my password";
+  String hp_a_password(Gender gender) =>
+      "On the sign-in screen, tap “Forgot password?” and we’ll send a code to your email.";
+  String get hp_q_delete => "How do I delete my account?";
+  String get hp_a_delete =>
+      "Go to Profile › Privacy & data › Delete my account.";
+  String get hp_contact => "Contact us";
+  String hp_email(Gender gender) => "Email us";
+  String get hp_open_source => "Open source";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'hp_emergency_on':
+        return hp_emergency_on;
+      case 'hp_emergency_local':
+        return hp_emergency_local;
+      case 'hp_faq':
+        return hp_faq;
+      case 'hp_q_data':
+        return hp_q_data;
+      case 'hp_a_data':
+        return hp_a_data;
+      case 'hp_q_offline':
+        return hp_q_offline;
+      case 'hp_a_offline':
+        return hp_a_offline;
+      case 'hp_q_password':
+        return hp_q_password;
+      case 'hp_a_password':
+        return hp_a_password;
+      case 'hp_q_delete':
+        return hp_q_delete;
+      case 'hp_a_delete':
+        return hp_a_delete;
+      case 'hp_contact':
+        return hp_contact;
+      case 'hp_email':
+        return hp_email;
+      case 'hp_open_source':
+        return hp_open_source;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

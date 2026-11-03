@@ -504,6 +504,12 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         const SizedBox(width: 5),
                         Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
                       ]),
+                      const SizedBox(height: 14),
+                      _labeled(s.strings.emergency.em_label, _emailField()),
+                      if (s.accountMode == AccountMode.deviceOnly) ...[
+                        const SizedBox(height: 10),
+                        _offlineEmailNote(),
+                      ],
                     ]),
                     // Connected accounts — visual match of home.jsx. Hidden behind
                     // [_showConnectedAccounts] until Apple/Google sign-in is set up.
@@ -638,6 +644,66 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             border: Border.all(color: T.border),
             boxShadow: T.shadowSm),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+      );
+
+  /// The sign-in email, moved here from Privacy & data (home.jsx
+  /// PersonalDetailsScreen). Read-only: there is no change-email flow yet, so
+  /// an online account shows it without the design's chevron. A device-only
+  /// account's email was never verified — it says so, and the field opens
+  /// Go online, where verifying happens.
+  Widget _emailField() {
+    final offline = s.accountMode == AccountMode.deviceOnly;
+    final box = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(T.rMd),
+          border: Border.all(color: T.border, width: 1.5)),
+      child: Row(children: [
+        const Icon(LucideIcons.mail, size: 17, color: T.fg3),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(s.authEmail.isEmpty ? '—' : s.authEmail,
+              textDirection: TextDirection.ltr,
+              textAlign: TextAlign.start,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Typo.body(ar: s.rtl).copyWith(color: T.fg1)),
+        ),
+        if (offline) ...[
+          const SizedBox(width: 10),
+          Pill(s.strings.profile.pd_email_unverified, kind: PillKind.warn, dot: false, ar: s.rtl),
+        ],
+      ]),
+    );
+    if (!offline) return box;
+    return Pressable(onTap: () => showGoOnlineSheet(context), scale: 0.99, child: box);
+  }
+
+  /// `--balsm-cream-50` note under a device-only account's email, with the
+  /// Go online action.
+  Widget _offlineEmailNote() => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: T.cream50, borderRadius: BorderRadius.circular(T.rMd)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 10, children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(LucideIcons.smartphone, size: 16, color: T.fg3),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(s.strings.profile.pd_email_offline(s.gender),
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.45)),
+            ),
+          ]),
+          PButton(s.strings.offline.go_title,
+              icon: LucideIcons.cloudUpload,
+              block: true,
+              accent: s.accent,
+              ar: s.rtl,
+              onTap: () => showGoOnlineSheet(context)),
+        ]),
       );
 
   Widget _labeled(String label, Widget child) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
