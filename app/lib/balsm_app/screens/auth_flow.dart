@@ -161,11 +161,14 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                         SvgPicture.asset(Assets.brand_logo_vertical,
                             width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),
                         SizedBox(height: short ? 18 : 26),
+                        // `.wtitle { min-height: 2.6em; align-items: flex-end }` —
+                        // two lines held, a one-line title sitting on the lower.
                         _SteadyLines(
                           lines: 2,
-                          style: Typo.display(ar: s.rtl),
+                          alignment: Alignment.bottomCenter,
+                          style: _welcomeTitle(s.rtl),
                           child: Text(s.strings.onboarding.w_title,
-                              textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
+                              textAlign: TextAlign.center, style: _welcomeTitle(s.rtl)),
                         ),
                         const SizedBox(height: 14),
                         // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
@@ -175,6 +178,7 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
                           constraints: const BoxConstraints(maxWidth: 326),
                           child: _SteadyLines(
                             lines: 3,
+                            alignment: Alignment.topCenter,
                             style: Typo.body(ar: s.rtl),
                             child: Text(s.strings.onboarding.w_sub,
                                 textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
@@ -275,6 +279,10 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
     );
   }
 
+  /// `.welcome .wtitle` — line-height 1.3; Arabic at 700 with no tracking.
+  static TextStyle _welcomeTitle(bool ar) => Typo.display(ar: ar)
+      .copyWith(height: 1.3, fontWeight: ar ? FontWeight.w700 : FontWeight.w800, letterSpacing: ar ? 0 : null);
+
   Widget _trust(PatientAppState s, IconData icon, String label) => SizedBox(
         width: 84,
         child: Column(children: [
@@ -282,12 +290,15 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
           const SizedBox(height: 6),
           // Two lines held in both languages ("Private by / default" wraps in
           // English only), so the row does not change height on a switch.
+          // `.trust .ti { line-height: 1.3; justify-content: flex-start }`.
           _SteadyLines(
             lines: 2,
-            style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2),
+            alignment: Alignment.topCenter,
+            style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, height: 1.3),
             child: Text(label,
                 textAlign: TextAlign.center,
-                style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
+                style: Typo.meta(ar: s.rtl)
+                    .copyWith(fontSize: FS.xs2, height: 1.3, fontWeight: FontWeight.w600, color: T.fg3)),
           ),
         ]),
       );
@@ -2344,8 +2355,18 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Center(child: SheetGrab()),
             const SizedBox(height: 16),
-            Text(_step == ResetStep.done ? s.strings.auth.fp_success : s.strings.auth.fp_title,
-                style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            if (_step == ResetStep.done) ...[
+              // auth.jsx ForgotPasswordSheet `done`: the animated `.success-mark`.
+              const SizedBox(height: 10),
+              Center(
+                child: SuccessMark(
+                  child: Text(s.strings.auth.fp_success,
+                      textAlign: TextAlign.center,
+                      style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ] else
+              Text(s.strings.auth.fp_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             if (_step == ResetStep.email) ...[
               Text(s.strings.auth.fp_help, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
@@ -2550,7 +2571,7 @@ class _LanguagePill extends StatelessWidget {
   }
 }
 
-/// Holds [child] to at least [lines] lines of [style], centred inside.
+/// Holds [child] to at least [lines] lines of [style], placed by [alignment].
 ///
 /// The welcome column is bottom-anchored, so its height is its text: Arabic
 /// sets the title on one line and the sub on two where English takes two and
@@ -2558,8 +2579,10 @@ class _LanguagePill extends StatelessWidget {
 /// buttons by about 60dp. Reserving the English line counts keeps both
 /// languages in the same place; longer copy or larger system text still grows.
 class _SteadyLines extends StatelessWidget {
-  const _SteadyLines({required this.lines, required this.style, required this.child});
+  const _SteadyLines(
+      {required this.lines, required this.style, required this.child, this.alignment = Alignment.center});
   final int lines;
+  final AlignmentGeometry alignment;
   final TextStyle style;
   final Widget child;
 
@@ -2568,7 +2591,7 @@ class _SteadyLines extends StatelessWidget {
     final line = MediaQuery.textScalerOf(context).scale(style.fontSize!) * (style.height ?? 1.2);
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: line * lines),
-      child: Align(heightFactor: 1, child: child),
+      child: Align(alignment: alignment, heightFactor: 1, child: child),
     );
   }
 }

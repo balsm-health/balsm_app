@@ -4,7 +4,6 @@ import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
@@ -325,21 +324,16 @@ class _GoOnlineSheetState extends ConsumerState<_GoOnlineSheet> {
 
   Widget _done() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SizedBox(height: 8),
-        Center(
-          child: Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
-            child: const Icon(LucideIcons.check, size: 36, color: T.hueMint600),
-          ),
+        // auth.jsx GoOnlineSheet `done`: the animated `.success-mark`.
+        SuccessMark(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text(s.strings.offline.go_done_title(s.gender),
+                textAlign: TextAlign.center, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(s.strings.offline.go_done_help,
+                textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+          ]),
         ),
-        const SizedBox(height: 14),
-        Text(s.strings.offline.go_done_title(s.gender),
-            textAlign: TextAlign.center, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        Text(s.strings.offline.go_done_help,
-            textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
       ]);
 
   Widget _primary() {

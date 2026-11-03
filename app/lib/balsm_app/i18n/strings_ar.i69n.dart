@@ -2449,7 +2449,7 @@ class OnboardingStrings_ar extends OnboardingStrings {
 class WalkthroughStrings_ar extends WalkthroughStrings {
   final Strings_ar _parent;
   const WalkthroughStrings_ar(this._parent) : super(_parent);
-  String get wt_eyebrow_1 => "مفتوح · عربي · موثوق";
+  String get wt_eyebrow_1 => "مُجتمعي. مستقل. موثوق.";
   String get wt_title_1 => "رعاية صحية تخصّنا أخيراً.";
   String get wt_body_1 =>
       "بلسم أول وأكبر منصة صحية مفتوحة المصدر بُنيت في مصر والعالم العربي — بالعربية أولاً، ويملكها من يستخدمها.";

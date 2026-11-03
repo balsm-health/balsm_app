@@ -1010,6 +1010,117 @@ class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
   }
 }
 
+/// Success confirmation (`.success-mark` in app.css): a 64px mint disc that
+/// scales in, a soft ring that swells out once, and a check that draws on.
+/// [child] — the copy under it (`.success-mark + *`) — fades up just after.
+/// Under reduced motion everything is shown at rest.
+class SuccessMark extends StatefulWidget {
+  const SuccessMark({super.key, this.child});
+  final Widget? child;
+  @override
+  State<SuccessMark> createState() => _SuccessMarkState();
+}
+
+class _SuccessMarkState extends State<SuccessMark> with SingleTickerProviderStateMixin {
+  // The longest keyframe ends at 1.15s: `smRing .9s .25s`.
+  static const _total = 1150.0;
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1150))
+    ..forward();
+
+  /// `<duration> <delay>` in ms → the eased progress of that keyframe.
+  Animation<double> _seg(double delay, double dur) =>
+      CurvedAnimation(parent: _c, curve: Interval(delay / _total, (delay + dur) / _total, curve: Motion.easeOut));
+  late final _in = _seg(0, 420); // smIn .42s
+  late final _ring = _seg(250, 900); // smRing .9s .25s
+  late final _draw = _seg(200, 380); // smDraw .38s .2s
+  late final _fade = _seg(300, 320); // smFade .32s .3s
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        final tIn = reduce ? 1.0 : _in.value;
+        final tRing = reduce ? 1.0 : _ring.value;
+        final tDraw = reduce ? 1.0 : _draw.value;
+        final tFade = reduce ? 1.0 : _fade.value;
+        return Column(mainAxisSize: MainAxisSize.min, children: [
+          Opacity(
+            opacity: tIn,
+            child: Transform.scale(
+              scale: 0.6 + 0.4 * tIn,
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
+                  const DecoratedBox(
+                    decoration: BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
+                    child: SizedBox.expand(),
+                  ),
+                  // `::after` — the ring, gone once it has swelled out.
+                  if (tRing < 1)
+                    Transform.scale(
+                      scale: 1 + 0.45 * tRing,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: T.hueMint.withValues(alpha: 0.5 * (1 - tRing)), width: 2),
+                        ),
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                  CustomPaint(size: const Size.square(30), painter: _CheckDrawPainter(tDraw)),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (widget.child != null)
+            Opacity(
+              opacity: tFade,
+              child: Transform.translate(offset: Offset(0, 4 * (1 - tFade)), child: widget.child),
+            ),
+        ]);
+      },
+    );
+  }
+}
+
+/// `M5 12.5l4.5 4.5L19 7.5` on a 24 viewBox, stroke 2.6, drawn up to [t].
+class _CheckDrawPainter extends CustomPainter {
+  const _CheckDrawPainter(this.t);
+  final double t;
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (t <= 0) return;
+    final k = size.width / 24;
+    final path = Path()
+      ..moveTo(5 * k, 12.5 * k)
+      ..lineTo(9.5 * k, 17 * k)
+      ..lineTo(19 * k, 7.5 * k);
+    final metric = path.computeMetrics().first;
+    canvas.drawPath(
+      metric.extractPath(0, metric.length * t),
+      Paint()
+        ..color = T.hueMint600
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.6 * k
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CheckDrawPainter old) => old.t != t;
+}
+
 /// Linear progress bar (`.b-progress__track` + `__fill`): 8px pill track
 /// (`--balsm-ink-100`), fill whose width animates over `--dur-slow` ease-out.
 /// [value] is 0..1. Set [indeterminate] for the unknown-duration loader — a

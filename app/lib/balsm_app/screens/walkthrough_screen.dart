@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -151,7 +152,11 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
             child: Column(children: [
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(20, 5, 20, 0),
+                // wt-core.jsx WalkthroughShell: the language switch sits just
+                // before Skip, so the copy can be read in either language.
                 child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  _WtLangButton(s: s),
+                  const SizedBox(width: 6),
                   _SkipButton(label: wt.wt_skip, onTap: () => _finish(s)),
                 ]),
               ),
@@ -714,6 +719,43 @@ class _SkipButton extends StatelessWidget {
           child: Text(label, style: Typo.bodySm().copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
         ),
       );
+}
+
+/// The walkthrough's language switch (`onLang` in wt-core.jsx): an outlined
+/// pill in the Skip colour, labelled with the language it switches to.
+class _WtLangButton extends StatelessWidget {
+  const _WtLangButton({required this.s});
+  final PatientAppState s;
+  @override
+  Widget build(BuildContext context) {
+    final toEn = s.lang == LanguageCode.ar;
+    return Semantics(
+      button: true,
+      label: toEn ? s.strings.onboarding.lang_to_en : s.strings.onboarding.lang_to_ar,
+      excludeSemantics: true,
+      child: MinTapTarget(
+        child: Pressable(
+          onTap: () => s.setLang(toEn ? LanguageCode.en : LanguageCode.ar),
+          child: Container(
+            height: 36,
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(T.rPill),
+              border: Border.all(color: T.ink200),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(LucideIcons.languages, size: 16, color: T.fg3),
+              const SizedBox(width: 6),
+              Text(
+                toEn ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
+                style: Typo.bodySm(ar: !toEn).copyWith(fontWeight: FontWeight.w600, color: T.fg3),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _Dots extends StatelessWidget {

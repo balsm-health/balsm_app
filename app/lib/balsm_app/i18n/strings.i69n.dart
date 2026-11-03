@@ -2304,7 +2304,7 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
 class WalkthroughStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const WalkthroughStrings(this._parent);
-  String get wt_eyebrow_1 => "Open · Arab · Trusted";
+  String get wt_eyebrow_1 => "Community-driven. Independent. Trusted.";
   String get wt_title_1 => "Healthcare that finally belongs to us.";
   String get wt_body_1 =>
       "Balsm is the first and largest open-source health platform built in Egypt and the Arab world — Arabic-first, and owned by the people who use it.";
