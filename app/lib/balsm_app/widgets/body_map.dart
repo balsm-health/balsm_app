@@ -62,8 +62,9 @@ class _BodyRegionColorMapper extends ColorMapper {
   int get hashCode => Object.hash(selectedColor, Object.hashAllUnordered(selectedIds));
 }
 
-/// Tappable anatomical body figure. Front/back + tissue chips; tap toggles a
-/// [PainSite] on the current tissue layer.
+/// Tappable anatomical body figure (bodymap.jsx BodyMap). Front/back chips +
+/// layer select above the plate, marked sites as removable chips below it;
+/// tap toggles a [PainSite] on the current tissue layer.
 class BodyMap extends StatefulWidget {
   const BodyMap({
     super.key,
@@ -154,45 +155,6 @@ class _BodyMapState extends State<BodyMap> {
         ),
       ],
       const SizedBox(height: 8),
-      ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 16),
-        child: widget.selected.isEmpty
-            ? Text(
-                c.body_tap(s.gender),
-                textAlign: TextAlign.center,
-                style: Typo.meta(ar: s.rtl).copyWith(
-                    fontSize: FS.xs,
-                    fontWeight: FontWeight.w700,
-                    height: 1.4,
-                    letterSpacing: s.rtl ? 0 : FS.xs * 0.08,
-                    color: T.fg4),
-              )
-            : Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final site in widget.selected)
-                      _SelectedChip(
-                        label: site.label(messages, mid: c.list_mid),
-                        onRemove: () => widget.onToggle(site),
-                        removeLabel: c.body_remove(site.label(messages, mid: c.list_mid)),
-                      ),
-                    if (widget.selected.length > 1)
-                      _ClearAllButton(
-                        label: c.body_clear_all,
-                        onTap: () {
-                          for (final site in widget.selected.toList()) {
-                            widget.onToggle(site);
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              ),
-      ),
-      const SizedBox(height: 8),
       // `.bm-host` centres the plate; design caps height at min(320px, 40vh).
       Center(
         // Cap the height only. Pinning it makes AspectRatio derive a width the
@@ -228,6 +190,50 @@ class _BodyMapState extends State<BodyMap> {
             }),
           ),
         ),
+      ),
+      const SizedBox(height: 8),
+      // bodymap.jsx: the hint / marked-site chips sit under the plate, in a
+      // row that holds a chip's height even while empty so the plate does not
+      // jump when the first site is marked.
+      ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 32),
+        child: widget.selected.isEmpty
+            ? Center(
+                child: Text(
+                  c.body_tap(s.gender),
+                  textAlign: TextAlign.center,
+                  style: Typo.meta(ar: s.rtl).copyWith(
+                      fontSize: FS.xs,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                      letterSpacing: s.rtl ? 0 : FS.xs * 0.08,
+                      color: T.fg4),
+                ),
+              )
+            : Center(
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final site in widget.selected)
+                      _SelectedChip(
+                        label: site.label(messages, mid: c.list_mid),
+                        onRemove: () => widget.onToggle(site),
+                        removeLabel: c.body_remove(site.label(messages, mid: c.list_mid)),
+                      ),
+                    if (widget.selected.length > 1)
+                      _ClearAllButton(
+                        label: c.body_clear_all,
+                        onTap: () {
+                          for (final site in widget.selected.toList()) {
+                            widget.onToggle(site);
+                          }
+                        },
+                      ),
+                  ],
+                ),
+              ),
       ),
     ]);
   }
