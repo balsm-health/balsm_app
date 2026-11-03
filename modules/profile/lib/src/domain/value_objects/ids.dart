@@ -40,3 +40,22 @@ class CareProviderId extends UniqueId {
 
   static CareProviderId? fromString(String? value) => value?.mapNotNull((v) => CareProviderId.value(v));
 }
+
+/// Typed id of a family group (`member_group`) a member profile is filed
+/// under — "My family", "Neighbours", or one the patient added.
+class MemberGroupId extends UniqueId {
+  const MemberGroupId.value(super.value) : super.value();
+  const MemberGroupId.empty() : super.empty();
+  MemberGroupId.uuid() : super.uuidv7('grp');
+
+  static MemberGroupId? fromString(String? value) => value?.mapNotNull((v) => MemberGroupId.value(v));
+}
+
+/// Typed id of the pregnancy a prenatal (baby) profile belongs to.
+class PregnancyId extends UniqueId {
+  const PregnancyId.value(super.value) : super.value();
+  const PregnancyId.empty() : super.empty();
+  PregnancyId.uuid() : super.uuidv7('preg');
+
+  static PregnancyId? fromString(String? value) => value?.mapNotNull((v) => PregnancyId.value(v));
+}
