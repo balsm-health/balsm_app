@@ -2031,6 +2031,8 @@ class MedsStrings_ar extends MedsStrings {
   String get med_self_note =>
       "لأدوية بدون روشتة، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
   String get med_when => "موعد الجرعة";
+  String med_dose_n(int n) => "الجرعة $n";
+  String med_dose_n_time(int n) => "موعد الجرعة $n";
   String get med_dose_times => "مواعيد الجرعات";
   String get med_first_dose => "الجرعة الأولى";
   String get med_added => "تمت إضافة الدواء";
@@ -2242,6 +2244,10 @@ class MedsStrings_ar extends MedsStrings {
         return med_self_note;
       case 'med_when':
         return med_when;
+      case 'med_dose_n':
+        return med_dose_n;
+      case 'med_dose_n_time':
+        return med_dose_n_time;
       case 'med_dose_times':
         return med_dose_times;
       case 'med_first_dose':

@@ -28,8 +28,11 @@ void main() {
     expect(today(m), ['8:0']);
   });
 
-  test('one time → a single dose today, at the chosen half of the day', () {
-    final m = (draft('once')..evening = true).toMedication(user, now: now);
+  test('one time → a single dose today, at the chosen time', () {
+    final d = draft('once');
+    expect(d.timing, MedTiming.single);
+    d.times = ['20:00'];
+    final m = d.toMedication(user, now: now);
     expect(m.scheduleType, ScheduleType.once);
     expect(today(m), ['20:0']);
     expect(dosesOn(m, DateTime(2026, 10, 6)), isEmpty);
@@ -53,10 +56,12 @@ void main() {
     expect(d.times, ['08:00', '20:00']);
   });
 
-  test('once a day uses Morning / Evening, not time chips', () {
-    final d = draft('per_day', n: '1')..evening = true;
-    expect(d.timing, MedTiming.halfOfDay);
-    expect(today(d.toMedication(user, now: now)), ['20:0']);
+  test('once a day takes one chosen time', () {
+    final d = draft('per_day', n: '1');
+    expect(d.timing, MedTiming.single);
+    expect(d.times, ['08:00']);
+    d.times = ['21:15'];
+    expect(today(d.toMedication(user, now: now)), ['21:15']);
   });
 
   test('every 8 hours → counted from the first dose', () {
@@ -111,7 +116,7 @@ void main() {
     expect(m.notes, isNull);
   });
 
-  testWidgets('in the sheet, picking "Times per day" shows the dose-time chips', (tester) async {
+  testWidgets('in the sheet, picking "Times per day" shows a slot per dose', (tester) async {
     tester.view.physicalSize = const Size(1320, 2868);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -148,7 +153,8 @@ void main() {
     await tester.tap(find.text(m.freq_per_day).last);
     await tester.pumpAndSettle();
     expect(find.text(m.med_dose_times), findsOneWidget);
-    expect(find.text('08:00'), findsOneWidget);
-    expect(find.text('20:00'), findsOneWidget);
+    expect(find.text('8:00 AM'), findsOneWidget);
+    expect(find.text('8:00 PM'), findsOneWidget);
+    expect(find.text(m.med_dose_n(2)), findsOneWidget);
   });
 }

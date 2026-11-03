@@ -10,7 +10,7 @@ import '../tokens.dart';
 import 'select_field.dart';
 
 /// One medication as typed into a form (prescriptions.jsx `MedRow` +
-/// `AddMedSheet`'s "When do you take it?").
+/// `AddMedSheet`'s dose-time slots).
 ///
 /// Shared by Add medication and Add prescription, so a med typed into either
 /// lands in the Meds tab's daily list the same way. On-device PHI only.
@@ -37,16 +37,12 @@ class MedPlanDraft {
   /// `days` · `weeks` · `months`, for `period`.
   String durUnit = 'days';
 
-  /// Morning or evening, for a single daily dose. Mapped to [morningTime] /
-  /// [eveningTime].
-  bool evening = false;
-
-  /// Dose times for 2+ per day, or the first dose of "every X hours". Kept in
-  /// step with the count by [syncTimes].
+  /// Dose times: one for a single dose (or the first dose of "every X
+  /// hours"), one per dose for 2+ per day. Kept in step with the count by
+  /// [syncTimes].
   List<String> times = suggestedTimes(2);
 
   static const morningTime = '08:00';
-  static const eveningTime = '20:00';
 
   bool get isNamed => name.text.trim().isNotEmpty;
 
@@ -58,7 +54,7 @@ class MedPlanDraft {
   MedTiming get timing => switch (freqType) {
         'per_day' when perDay > 1 => MedTiming.times,
         'every_x' when freqUnit == 'hours' => MedTiming.firstDose,
-        _ => MedTiming.halfOfDay,
+        _ => MedTiming.single,
       };
 
   /// Re-suggests [times] when the dose count changes. A count the patient has
@@ -67,14 +63,12 @@ class MedPlanDraft {
     switch (timing) {
       case MedTiming.times:
         if (times.length != perDay) times = suggestedTimes(perDay);
-      case MedTiming.firstDose:
+      case MedTiming.firstDose || MedTiming.single:
         if (times.length != 1) times = [times.firstOrNull ?? morningTime];
-      case MedTiming.halfOfDay:
-        break;
     }
   }
 
-  String get _halfOfDay => evening ? eveningTime : morningTime;
+  String get _single => times.firstOrNull ?? morningTime;
 
   /// The scheduled medication. It starts at midnight today, so a dose due
   /// earlier today is listed as Due rather than silently skipped.
@@ -82,11 +76,11 @@ class MedPlanDraft {
     final today = DateUtils.dateOnly(now ?? DateTime.now());
     final text = freqOther.text.trim();
     final (type, times, interval) = switch (freqType) {
-      'once' => (ScheduleType.once, [_halfOfDay], null),
+      'once' => (ScheduleType.once, [_single], null),
       'per_day' when perDay > 1 => (ScheduleType.daily, [...this.times], null),
       'every_x' when freqUnit == 'hours' => (ScheduleType.everyHours, [this.times.first], _n),
-      'every_x' when _n > 1 => (ScheduleType.everyDays, [_halfOfDay], _n),
-      _ => (ScheduleType.daily, [_halfOfDay], null),
+      'every_x' when _n > 1 => (ScheduleType.everyDays, [_single], _n),
+      _ => (ScheduleType.daily, [_single], null),
     };
     final count = int.tryParse(durN.text) ?? 0;
     final period = durType == 'period' && count > 0;
@@ -140,7 +134,7 @@ class MedPlanDraft {
   }
 }
 
-enum MedTiming { halfOfDay, times, firstDose }
+enum MedTiming { single, times, firstDose }
 
 /// The medication fields card: name, dose, notes, frequency, duration and when
 /// it's taken. [onChanged] rebuilds the owner (its Save button depends on the
@@ -227,8 +221,11 @@ class MedPlanCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(children: [
               SizedBox(
-                width: 64,
-                child: _Input(controller: d.durN, hint: '1', number: true, onChanged: onChanged),
+                width: 56,
+                child: Semantics(
+                  label: m.dur_count,
+                  child: _Input(controller: d.durN, hint: '1', number: true, onChanged: onChanged),
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -273,20 +270,16 @@ class MedPlanCard extends StatelessWidget {
   }
 }
 
-/// When the doses happen: Morning/Evening for one dose a day (the design's
-/// segmented control), editable time chips for several, or the first dose of an
-/// hourly interval.
+/// When the doses happen (AddMedSheet's time slots): one time for a single
+/// dose or the first dose of an hourly interval, one slot per dose — two to a
+/// row — for several a day.
 class _Timing extends StatelessWidget {
   const _Timing({required this.draft, required this.onChanged});
   final MedPlanDraft draft;
   final VoidCallback onChanged;
 
   Future<void> _pick(BuildContext context, int i) async {
-    final parts = draft.times[i].split(':');
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1])),
-    );
+    final picked = await showTimePicker(context: context, initialTime: _timeOf(draft.times[i]));
     if (picked == null) return;
     draft.times = [...draft.times]..[i] =
         '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
@@ -297,90 +290,94 @@ class _Timing extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final m = s.strings.meds;
-    return switch (draft.timing) {
-      MedTiming.halfOfDay => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _FieldLabel(m.med_when, strong: true),
-          Row(children: [
-            for (final (evening, icon, label) in [
-              (false, LucideIcons.sunrise, m.morning),
-              (true, LucideIcons.moon, m.evening),
-            ]) ...[
-              if (evening) const SizedBox(width: 8),
-              Expanded(
-                child: _Choice(
-                  selected: draft.evening == evening,
-                  icon: icon,
-                  label: label,
-                  onTap: () {
-                    draft.evening = evening;
-                    onChanged();
-                  },
-                ),
-              ),
-            ],
-          ]),
-        ]),
-      MedTiming.times || MedTiming.firstDose => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          _FieldLabel(draft.timing == MedTiming.times ? m.med_dose_times : m.med_first_dose, strong: true),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (var i = 0; i < draft.times.length; i++)
-              _Choice(
-                selected: true,
-                icon: LucideIcons.clock,
-                label: draft.times[i],
-                numeric: true,
+    final several = draft.timing == MedTiming.times;
+    final label = switch (draft.timing) {
+      MedTiming.times => m.med_dose_times,
+      MedTiming.firstDose => m.med_first_dose,
+      MedTiming.single => m.med_when,
+    };
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _FieldLabel(label, strong: true),
+      LayoutBuilder(builder: (context, box) {
+        final w = several ? (box.maxWidth - 8) / 2 : box.maxWidth;
+        return Wrap(spacing: 8, runSpacing: 8, children: [
+          for (var i = 0; i < draft.times.length; i++)
+            SizedBox(
+              width: w,
+              child: _TimeSlot(
+                time: _timeOf(draft.times[i]),
+                dose: several ? i + 1 : null,
                 onTap: () => _pick(context, i),
               ),
-          ]),
-        ]),
-    };
+            ),
+        ]);
+      }),
+    ]);
   }
 }
 
-/// A 44px option button, accent-washed when selected (AddMedSheet `seg`).
-class _Choice extends StatelessWidget {
-  const _Choice({
-    required this.selected,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.numeric = false,
-  });
-  final bool selected;
-  final IconData icon;
-  final String label;
+TimeOfDay _timeOf(String hhmm) {
+  final parts = hhmm.split(':');
+  return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+}
+
+/// One dose time (AddMedSheet's time slot): the part of the day's icon, the
+/// time in the locale's clock, "Dose N" when there are several, and a clock.
+/// Tapping it opens the time picker.
+class _TimeSlot extends StatelessWidget {
+  const _TimeSlot({required this.time, required this.onTap, this.dose});
+  final TimeOfDay time;
+  final int? dose;
   final VoidCallback onTap;
-  final bool numeric;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final fg = selected ? s.accent.d : T.fg2;
+    final m = s.strings.meds;
+    final h = time.hour;
+    final icon = h >= 5 && h < 12
+        ? LucideIcons.sunrise
+        : h >= 12 && h < 18
+            ? LucideIcons.sun
+            : LucideIcons.moon;
+    final text = MaterialLocalizations.of(context).formatTimeOfDay(time);
+    final dose = this.dose;
     return Semantics(
       button: true,
-      selected: selected,
+      label: '${dose == null ? m.med_when : m.med_dose_n_time(dose)}: $text',
+      excludeSemantics: true,
       child: Pressable(
         onTap: onTap,
         scale: 0.97,
-        child: AnimatedContainer(
-          duration: Motion.base,
-          curve: Motion.easeOut,
+        child: Container(
           height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: selected ? s.accent.bg : Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
+            border: Border.all(color: T.border, width: 1.5),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon, size: 16, color: fg),
+          child: Row(children: [
+            Icon(icon, size: 16, color: s.accent.d),
             const SizedBox(width: 7),
-            Text(
-              label,
-              style: numeric
-                  ? Typo.num(size: FS.sm, weight: FontWeight.w600, color: fg)
-                  : Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: fg),
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  text,
+                  textDirection: TextDirection.ltr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: T.fg1),
+                ),
+              ),
             ),
+            if (dose != null) ...[
+              const SizedBox(width: 7),
+              Text(m.med_dose_n(dose), style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg3)),
+            ],
+            const SizedBox(width: 7),
+            const Icon(LucideIcons.clock, size: 15, color: T.fg3),
           ]),
         ),
       ),

@@ -1891,7 +1891,9 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get med_time_night => "Night";
   String get med_self_note =>
       "For medicines without a prescription, like pain relief or vitamins. Saved as added by you.";
-  String get med_when => "When do you take it?";
+  String get med_when => "What time do you take it?";
+  String med_dose_n(int n) => "Dose $n";
+  String med_dose_n_time(int n) => "Dose $n time";
   String get med_dose_times => "Dose times";
   String get med_first_dose => "First dose";
   String get med_added => "Medication added";
@@ -2100,6 +2102,10 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return med_self_note;
       case 'med_when':
         return med_when;
+      case 'med_dose_n':
+        return med_dose_n;
+      case 'med_dose_n_time':
+        return med_dose_n_time;
       case 'med_dose_times':
         return med_dose_times;
       case 'med_first_dose':
