@@ -14,7 +14,8 @@ class CoreMustNotDependOnModule extends DartLintRule {
     'account',
     'deletion',
     'geofence_block',
-    'family'
+    'family',
+    'pregnancy'
   ];
   static const _code = LintCode(
       name: 'core_must_not_depend_on_module', problemMessage: 'core package must not depend on module packages.');
