@@ -1,7 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../application/ports/pregnancies_data_source.dart';
 import '../application/ports/pregnancy_babies_port.dart';
 import '../application/use_cases/end_pregnancy_use_case.dart';
 import '../application/use_cases/pregnancy_babies_use_case.dart';
@@ -12,15 +11,6 @@ import '../domain/aggregates/pregnancy.dart';
 import '../domain/entities/pregnancy_baby.dart';
 import '../domain/entities/pregnancy_item.dart';
 import '../infrastructure/drift/drift_pregnancies_data_source.dart';
-
-/// Pregnancies live on the account holder's own (self) profile, whichever
-/// profile is active — so the data source is bound to the self profile.
-final pregnanciesDataSourceProvider = Provider<PregnanciesDataSource>((ref) {
-  return DriftPregnanciesDataSource(
-    db: ref.watch(appDatabaseProvider),
-    activeProfile: () => ref.read(selfProfileIdProvider).valueOrNull,
-  );
-});
 
 /// Every pregnancy on the self profile (active and closed), newest first,
 /// live. Empty while signed out.

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core/core.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/ports/pregnancies_data_source.dart';
 import '../../domain/aggregates/pregnancy.dart';
@@ -357,3 +358,13 @@ class DriftPregnanciesDataSource implements PregnanciesDataSource {
     return d == null ? null : DateTime.utc(d.year, d.month, d.day);
   }
 }
+
+/// Pregnancies live on the account holder's own (self) profile, whichever
+/// profile is active — so the data source is bound to the self profile.
+/// Requires [appDatabaseProvider] to be overridden at bootstrap.
+final pregnanciesDataSourceProvider = Provider<PregnanciesDataSource>((ref) {
+  return DriftPregnanciesDataSource(
+    db: ref.watch(appDatabaseProvider),
+    activeProfile: () => ref.read(selfProfileIdProvider).valueOrNull,
+  );
+});
