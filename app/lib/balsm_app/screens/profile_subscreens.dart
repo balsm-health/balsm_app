@@ -596,7 +596,7 @@ class _ChipEditor extends StatelessWidget {
             style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
+              hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fgPlaceholder),
               isDense: true,
               filled: true,
               fillColor: Colors.white,
@@ -738,7 +738,7 @@ class _ConditionEditorState extends State<_ConditionEditor> {
         style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fgPlaceholder, fontSize: FS.sm),
           isDense: true,
           filled: true,
           fillColor: Colors.white,

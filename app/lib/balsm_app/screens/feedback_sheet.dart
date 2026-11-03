@@ -224,7 +224,7 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
         style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
         decoration: InputDecoration(
           hintText: f.fb_ph,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
+          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fgPlaceholder),
           filled: true,
           fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

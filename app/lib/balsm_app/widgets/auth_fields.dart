@@ -65,7 +65,7 @@ class AuthInput extends StatelessWidget {
         suffixIcon: suffixIcon,
         prefixStyle: Typo.num(size: FS.sm, weight: FontWeight.w700, color: T.fg3),
         hintText: hint,
-        hintStyle: (mono ? Typo.num(size: FS.lg, color: T.fg4) : Typo.body().copyWith(fontSize: FS.lg, color: T.fg4)),
+        hintStyle: (mono ? Typo.num(size: FS.lg, color: T.fgPlaceholder) : Typo.body().copyWith(fontSize: FS.lg, color: T.fgPlaceholder)),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

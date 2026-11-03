@@ -643,7 +643,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
 
   InputDecoration _dec(PatientAppState s, String? hint) => InputDecoration(
         hintText: hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fgPlaceholder, fontSize: FS.lg),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),

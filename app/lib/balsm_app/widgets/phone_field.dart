@@ -210,7 +210,7 @@ class _PhoneFieldState extends State<PhoneField> {
             style: Typo.num(size: FS.lg, color: T.fg1),
             decoration: InputDecoration(
               hintText: widget.hint,
-              hintStyle: Typo.num(size: FS.lg, color: T.fg4),
+              hintStyle: Typo.num(size: FS.lg, color: T.fgPlaceholder),
               isDense: true,
               filled: true,
               fillColor: Colors.white,
@@ -312,7 +312,7 @@ class _DialCodeSheetState extends State<_DialCodeSheet> {
               style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1),
               decoration: InputDecoration(
                 hintText: c.ph_country_search,
-                hintStyle: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg4),
+                hintStyle: Typo.bodySm(ar: s.rtl).copyWith(color: T.fgPlaceholder),
                 isDense: true,
                 filled: true,
                 fillColor: Colors.white,

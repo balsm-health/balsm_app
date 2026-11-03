@@ -523,7 +523,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         style: Typo.body(ar: ar).copyWith(color: T.fg1, fontSize: FS.lg),
         decoration: InputDecoration(
           hintText: s.strings.checkin.ql_search,
-          hintStyle: Typo.body(ar: ar).copyWith(color: T.fg4, fontSize: FS.lg),
+          hintStyle: Typo.body(ar: ar).copyWith(color: T.fgPlaceholder, fontSize: FS.lg),
           filled: true,
           fillColor: Colors.white,
           isDense: true,

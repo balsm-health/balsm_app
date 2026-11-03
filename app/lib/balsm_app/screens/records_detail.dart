@@ -702,7 +702,7 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
         style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fgPlaceholder, fontSize: FS.lg),
           filled: true,
           fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),

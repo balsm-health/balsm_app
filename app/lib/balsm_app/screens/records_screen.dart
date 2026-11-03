@@ -269,7 +269,7 @@ class _SearchField extends StatelessWidget {
       style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
       decoration: InputDecoration(
         hintText: s.strings.records.rec_search_ph,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fgPlaceholder, fontSize: FS.lg),
         filled: true,
         fillColor: Colors.white,
         isDense: true,

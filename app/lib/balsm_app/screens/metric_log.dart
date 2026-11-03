@@ -281,7 +281,7 @@ class _NoteField extends StatelessWidget {
         style: Typo.body(ar: ar).copyWith(color: T.fg1),
         decoration: InputDecoration(
           hintText: s.strings.checkin.note_ph(s.gender),
-          hintStyle: Typo.body(ar: ar).copyWith(color: T.fg4),
+          hintStyle: Typo.body(ar: ar).copyWith(color: T.fgPlaceholder),
           filled: true,
           fillColor: Colors.white,
           contentPadding: const EdgeInsets.all(14),

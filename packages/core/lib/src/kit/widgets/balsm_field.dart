@@ -141,7 +141,7 @@ class _BalsmFieldState extends State<BalsmField> {
               ),
               decoration: InputDecoration(
                 hintText: widget.hint,
-                hintStyle: const TextStyle(color: BalsmColors.fg4),
+                hintStyle: const TextStyle(color: BalsmColors.fgPlaceholder),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 border: InputBorder.none,
                 isDense: true,

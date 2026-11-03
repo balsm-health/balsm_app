@@ -216,7 +216,7 @@ class _LinkPromptSheetState extends State<_LinkPromptSheet> {
                 style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
                 decoration: InputDecoration(
                   hintText: r.att_url_hint,
-                  hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+                  hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fgPlaceholder, fontSize: FS.sm),
                   isDense: true,
                   filled: true,
                   fillColor: Colors.white,
@@ -556,7 +556,7 @@ class UploadDropzone extends StatelessWidget {
               style: Typo.body(ar: false).copyWith(color: T.fg1, fontSize: FS.lg),
               decoration: InputDecoration(
                 hintText: urlHint,
-                hintStyle: Typo.body(ar: false).copyWith(color: T.fg4, fontSize: FS.lg),
+                hintStyle: Typo.body(ar: false).copyWith(color: T.fgPlaceholder, fontSize: FS.lg),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),

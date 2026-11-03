@@ -14,6 +14,8 @@ class BalsmColors {
   static const hueAqua600 = Color(0xFF029E99);
   static const hueEmerald600 = Color(0xFF019A7F);
   static const hueBlue600 = Color(0xFF0F6BCC);
+  static const hueBlue700 = Color(0xFF0B58A8); // a11y — hover of the UI primary
+  static const hueBlue800 = Color(0xFF0A4E96); // a11y — pressed of the UI primary
   static const hueMint600 = Color(0xFF3FC366);
   static const hueViolet600 = Color(0xFF5C3AB0);
 
@@ -45,14 +47,19 @@ class BalsmColors {
 
   // Semantic
   static const success = hueMint;
+  static const successStrong = Color(0xFF2E9E57); // a11y — mint fills that must reach 3:1
   static const successBg = hueMint50;
   static const warning = Color(0xFFE5B428);
   static const warningBg = Color(0xFFFDF5DC);
-  static const danger = Color(0xFFD44A3C);
+  // a11y: was 0xFFD44A3C (4.34:1 on white); 5.70:1 on white, 4.93:1 on dangerBg.
+  static const danger = Color(0xFFB83A2E);
+  static const dangerHover = Color(0xFF9E2F24);
+  static const dangerActive = Color(0xFF8A281F);
   static const dangerBg = Color(0xFFFBEBE7);
   static const controlled = hueViolet;
   static const controlledBg = hueViolet50;
   static const expiring = Color(0xFFD97A20);
+  static const expiringStrong = Color(0xFFB06212); // a11y — icons on expiringBg, never body text
   static const expiringBg = Color(0xFFFBEEDC);
   static const info = hueBlue;
   static const infoBg = hueBlue50;
@@ -63,13 +70,15 @@ class BalsmColors {
   static const surfaceInverse = ink900;
   static const border = ink200;
   static const borderStrong = ink300;
-  static const borderFocus = hueBlue;
+  static const borderFocus = hueBlue600; // follows the UI primary (a11y: 600 step)
+  static const borderControl = ink500; // a11y — input/checkbox/switch edge, 3.86:1
 
   // Foreground roles
   static const fg1 = ink900;
   static const fg2 = ink700;
   static const fg3 = ink600;
-  static const fg4 = ink400;
+  static const fg4 = ink400; // disabled only
+  static const fgPlaceholder = ink600; // a11y — placeholder is text, 6.32:1
 }
 
 class BalsmRadius {
