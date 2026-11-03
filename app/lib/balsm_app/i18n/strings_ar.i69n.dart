@@ -8,9 +8,17 @@ import 'package:core/core.dart';
 String get _languageCode => 'ar';
 String get _localeName => 'ar';
 
-String _plural(int count, {String? zero, String? one, String? two, String? few, String? many, String? other}) =>
-    i69n.plural(count, _languageCode, zero: zero, one: one, two: two, few: few, many: many, other: other);
-String _select(Object? value, Map<String, String> cases) => i69n.select(value, cases);
+String _plural(int count,
+        {String? zero,
+        String? one,
+        String? two,
+        String? few,
+        String? many,
+        String? other}) =>
+    i69n.plural(count, _languageCode,
+        zero: zero, one: one, two: two, few: few, many: many, other: other);
+String _select(Object? value, Map<String, String> cases) =>
+    i69n.select(value, cases);
 
 class Strings_ar extends Strings {
   const Strings_ar();
@@ -36,11 +44,13 @@ class Strings_ar extends Strings {
   OfflineStrings_ar get offline => OfflineStrings_ar(this);
   UpdateStrings_ar get update => UpdateStrings_ar(this);
   WebStrings_ar get web => WebStrings_ar(this);
+  PregnancyStrings_ar get pregnancy => PregnancyStrings_ar(this);
   FamilyStrings_ar get family => FamilyStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'auth':
@@ -87,6 +97,8 @@ class Strings_ar extends Strings {
         return update;
       case 'web':
         return web;
+      case 'pregnancy':
+        return pregnancy;
       case 'family':
         return family;
       default:
@@ -114,7 +126,8 @@ class AuthStrings_ar extends AuthStrings {
   String get legal_updated => "إصدار الإشعار";
   String get otp_title => "أدخل رمز التحقق";
   String get otp_resend => "إعادة إرسال الرمز";
-  String get link_used_or_expired => "رابط تسجيل الدخول هذا مُستخدَم من قبل أو انتهت صلاحيته. اطلب رمزًا جديدًا.";
+  String get link_used_or_expired =>
+      "رابط تسجيل الدخول هذا مُستخدَم من قبل أو انتهت صلاحيته. اطلب رمزًا جديدًا.";
   String get otp_in => "إعادة الإرسال خلال";
   String get verify => "تأكيد";
   String get pw_label => "كلمة المرور";
@@ -136,9 +149,11 @@ class AuthStrings_ar extends AuthStrings {
   String get device_warning =>
       "بريدك غير مُتحقَّق منه بعد، لذا لا يمكن استعادة كلمة المرور حتى تتصل بالإنترنت. إن فقدت جهازك قبل ذلك، تُفقد بياناتك.";
   String get device_create => "إنشاء الحساب على الجهاز";
-  String get device_create_failed => "تعذّر إنشاء الحساب على هذا الجهاز. حاول مرة أخرى.";
+  String get device_create_failed =>
+      "تعذّر إنشاء الحساب على هذا الجهاز. حاول مرة أخرى.";
   String get signup_title => "إنشاء حساب";
-  String get signup_help => "أدخل بريدك واختر كلمة مرور، وسنرسل رمزًا من 6 أرقام لتأكيد بريدك.";
+  String get signup_help =>
+      "أدخل بريدك واختر كلمة مرور، وسنرسل رمزًا من 6 أرقام لتأكيد بريدك.";
   String get signup_send => "إرسال الرمز";
   String get signin_title => "تسجيل الدخول";
   String get signin_help => "أدخل بريدك وكلمة المرور.";
@@ -147,29 +162,37 @@ class AuthStrings_ar extends AuthStrings {
   String get create_account => "إنشاء حساب";
   String get otp_confirm_title => "أكّد بريدك";
   String get otp_sent_to => "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
-  String get otp_existing_note => "إذا كان لهذا البريد حساب بالفعل، فسنُدخلك إليه.";
-  String get signup_email_registered => "هذا البريد مسجَّل بالفعل. سجّل الدخول بدلًا من ذلك.";
+  String get otp_existing_note =>
+      "إذا كان لهذا البريد حساب بالفعل، فسنُدخلك إليه.";
+  String get signup_email_registered =>
+      "هذا البريد مسجَّل بالفعل. سجّل الدخول بدلًا من ذلك.";
   String get fp_title => "إعادة تعيين كلمة المرور";
-  String get fp_help => "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
+  String get fp_help =>
+      "أدخل بريدك الإلكتروني — سنرسل رمزًا لإعادة تعيين كلمة المرور.";
   String get fp_send => "إرسال رمز إعادة التعيين";
   String get fp_code_label => "رمز إعادة التعيين";
   String get fp_new_pw => "كلمة المرور الجديدة";
   String get fp_reset => "إعادة تعيين كلمة المرور";
   String get fp_sent_help => "أرسلنا رمز إعادة التعيين إلى";
   String get fp_done => "تم";
-  String get fp_success => "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
+  String get fp_success =>
+      "تم تحديث كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.";
   String get social_failed => "تعذّر تسجيل الدخول. حاول مرة أخرى.";
-  String get social_unavailable => "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.";
-  String auth_locked_retry(String secs) => "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
+  String get social_unavailable =>
+      "تسجيل الدخول غير متاح حاليًا. استخدم بريدك الإلكتروني.";
+  String auth_locked_retry(String secs) =>
+      "الحساب مقفل مؤقتًا. حاول بعد $secs ثانية.";
   String get unlock_title => "افتح بلسم";
   String get unlock_help => "أدخل كلمة المرور التي عيّنتها على هذا الجهاز.";
   String get unlock_wrong => "كلمة مرور غير صحيحة.";
-  String unlock_locked(String secs) => "محاولات كثيرة. أعد المحاولة بعد $secs ث.";
+  String unlock_locked(String secs) =>
+      "محاولات كثيرة. أعد المحاولة بعد $secs ث.";
   String get unlock_btn => "فتح";
   String get unlock_failed => "تعذّر فتح التطبيق الآن. حاول مرة أخرى.";
   String get remove_device_account => "إزالة هذا الحساب من هذا الهاتف";
   String get remove_device_confirm_title => "إزالة هذا الحساب وبياناته؟";
-  String get remove_device_confirm_body => "هذا الحساب موجود على هذا الهاتف فقط. سيُحذف كل ما فيه ولا يمكن استعادته.";
+  String get remove_device_confirm_body =>
+      "هذا الحساب موجود على هذا الهاتف فقط. سيُحذف كل ما فيه ولا يمكن استعادته.";
   String get remove_device_confirm_btn => "إزالة";
   String get unlock_forgot => "نسيت كلمة المرور؟ ابدأ من جديد";
   String get unlock_forgot_confirm_body =>
@@ -177,7 +200,8 @@ class AuthStrings_ar extends AuthStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'un_label':
@@ -339,7 +363,8 @@ class BootStrings_ar extends BootStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'boot_preparing':
@@ -356,12 +381,16 @@ class CareStrings_ar extends CareStrings {
   String get loc_off => "خدمة الموقع متوقفة على هذا الهاتف.";
   String get loc_denied => "لا يملك بلسم إذن استخدام موقعك.";
   String loc_unavailable(Gender gender) =>
-      "تعذّر تحديد موقعك. حاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى في مكان مفتوح.";
+      "تعذّر تحديد موقعك. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى في مكان مفتوح.";
   String get loc_settings => "الإعدادات";
   String get map_sub => "مكان بالقرب منك";
   String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
   String get to_home => "العودة للرئيسية";
-  String get care_intro => "الأشخاص والأماكن التي ترعاك — أطباء وتمريض وصيدليات ومقدّمو رعاية وغيرهم.";
+  String get care_intro =>
+      "الأشخاص والأماكن التي ترعاك — أطباء وتمريض وصيدليات ومقدّمو رعاية وغيرهم.";
   String get care_find => "ابحث عن رعاية قريبة";
   String get follow_up => "متابعة";
   String get check_up => "فحص دوري";
@@ -388,18 +417,26 @@ class CareStrings_ar extends CareStrings {
           })} الأطباء والصيدليات ومقدّمي الرعاية الذين تتعامل${_select(gender, {
             'female': 'ين',
             'other': ''
-          })} معهم. كل ما ${_select(gender, {'female': 'تضيفينه', 'other': 'تضيفه'})} يبقى على هذا الجهاز.";
+          })} معهم. كل ما ${_select(gender, {
+            'female': 'تضيفينه',
+            'other': 'تضيفه'
+          })} يبقى على هذا الجهاز.";
   String get care_search_ph => "ابحث بالاسم أو التخصص أو العيادة";
   String get care_all => "الكل";
   String get care_no_match => "لا توجد نتائج";
   String care_no_match_h(Gender gender) => "جرّب${_select(gender, {
             'female': 'ي',
             'other': ''
-          })} اسمًا آخر، أو ${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} مقدّم الرعاية بنفسك.";
+          })} اسمًا آخر، أو ${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} مقدّم الرعاية بنفسك.";
   String get care_import => "من جهات الاتصال";
   String get care_import_title => "مراجعة جهات الاتصال";
-  String care_import_note(Gender gender) =>
-      "راجع${_select(gender, {'female': 'ي', 'other': ''})} النوع لكل جهة اتصال، ثم ${_select(gender, {
+  String care_import_note(Gender gender) => "راجع${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} النوع لكل جهة اتصال، ثم ${_select(gender, {
             'female': 'أضيفيها',
             'other': 'أضفها'
           })}. تُزامَن سجلات فريق الرعاية مع حسابك في بلسم حتى تبقى إذا فقدت${_select(gender, {
@@ -409,25 +446,37 @@ class CareStrings_ar extends CareStrings {
   String get care_import_pick => "الاختيار من جهات الاتصال";
   String get care_import_more => "اختيار المزيد من جهات الاتصال";
   String get care_import_empty => "لم تختر جهات اتصال بعد.";
-  String care_import_empty_h(Gender gender) =>
-      "افتح${_select(gender, {'female': 'ي', 'other': ''})} جهات اتصال هاتفك لاختيار من يرعاك.";
+  String care_import_empty_h(Gender gender) => "افتح${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} جهات اتصال هاتفك لاختيار من يرعاك.";
   String get care_import_search => "ابحث في جهات الاتصال";
   String care_import_count(String n) => "جهات الاتصال · $n";
   String get care_import_select_all => "تحديد الكل";
   String get care_import_clear => "إلغاء التحديد";
   String get care_import_no_match => "لا توجد جهات اتصال مطابقة.";
   String get care_import_on_team => "في فريقك";
-  String care_import_fab(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} من جهات الاتصال";
+  String care_import_fab(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} من جهات الاتصال";
   String care_import_banner(String n, Gender gender) =>
-      "أُضيف $n إلى فريق الرعاية. اضغط${_select(gender, {'female': 'ي', 'other': ''})} تعديل لإضافة التخصص والعنوان.";
+      "أُضيف $n إلى فريق الرعاية. اضغط${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} تعديل لإضافة التخصص والعنوان.";
   String care_import_manual(Gender gender) =>
-      "ليس في جهات الاتصال؟ ${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} يدويًا";
-  String care_import_none(Gender gender) => "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} جهات اتصال";
-  String get care_import_unavailable => "جهات اتصال هاتفك غير متاحة هنا. يمكنك إضافة مقدّم رعاية يدويًا.";
+      "ليس في جهات الاتصال؟ ${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} يدويًا";
+  String care_import_none(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} جهات اتصال";
+  String get care_import_unavailable =>
+      "جهات اتصال هاتفك غير متاحة هنا. يمكنك إضافة مقدّم رعاية يدويًا.";
   String care_import_cta(String n) => "إضافة $n إلى فريق الرعاية";
   String care_import_done(String n) => "تمت إضافة $n إلى فريق الرعاية";
   String care_import_skipped(String n) => "$n موجودون بالفعل في فريقك";
-  String care_add(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} مقدّم رعاية";
+  String care_add(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} مقدّم رعاية";
   String get care_call => "اتصال";
   String get care_remove => "حذف";
   String get care_t_doctor => "طبيب";
@@ -466,14 +515,18 @@ class CareStrings_ar extends CareStrings {
   String get care_saved => "أُضيف إلى فريق الرعاية";
   String get care_removed => "أُزيل من فريق الرعاية";
   String care_save_failed(Gender gender) =>
-      "تعذّر الحفظ. حاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى.";
+      "تعذّر الحفظ. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
   String get care_edit_title => "تعديل مقدّم الرعاية";
   String get care_save_changes => "حفظ التغييرات";
   String get care_edit => "تعديل";
   String get care_f_map => "رابط الموقع (اختياري)";
   String get care_ph_map => "https://maps.app.goo.gl/…";
   String get care_map_help => "من الخريطة: مشاركة ← نسخ الرابط.";
-  String get care_map_bad => "يبدو أن هذا ليس رابطًا. انسخ الرابط من خرائط Google أو Apple.";
+  String get care_map_bad =>
+      "يبدو أن هذا ليس رابطًا. انسخ الرابط من خرائط Google أو Apple.";
   String get care_paste => "لصق";
   String get care_directions => "الاتجاهات";
   String get care_delete => "حذف من فريق الرعاية";
@@ -488,13 +541,15 @@ class CareStrings_ar extends CareStrings {
   String get care_attach => "إرفاق";
   String get care_attach_empty => "أرفق بطاقة العمل أو صورة";
   String get care_attach_empty_h => "صور، فيديو أو PDF";
-  String care_link_opens(Gender gender) => "افتح${_select(gender, {'female': 'ي', 'other': ''})} الرابط على";
+  String care_link_opens(Gender gender) =>
+      "افتح${_select(gender, {'female': 'ي', 'other': ''})} الرابط على";
   String get care_link_remove => "إزالة الرابط إلى";
   String get care_attach_add => "إضافة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'loc_off':
@@ -746,26 +801,43 @@ class CheckinStrings_ar extends CheckinStrings {
   String get unit_kg => "كجم";
   String get bp_normal => "ضمن المعدل";
   String get bp_high => "أعلى قليلاً";
-  String q_mood_h(Gender gender) => "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} الوجه الأقرب لحالتك.";
-  String mood_1(Gender gender) => "متعب${_select(gender, {'female': 'ة', 'other': ''})}";
-  String mood_2(Gender gender) => "ضعيف${_select(gender, {'female': 'ة', 'other': ''})}";
-  String mood_3(Gender gender) => "عادي${_select(gender, {'female': 'ة', 'other': ''})}";
-  String mood_4(Gender gender) => "جيد${_select(gender, {'female': 'ة', 'other': ''})}";
-  String mood_5(Gender gender) => "ممتاز${_select(gender, {'female': 'ة', 'other': ''})}";
+  String q_mood_h(Gender gender) => "${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} الوجه الأقرب لحالتك.";
+  String mood_1(Gender gender) =>
+      "متعب${_select(gender, {'female': 'ة', 'other': ''})}";
+  String mood_2(Gender gender) =>
+      "ضعيف${_select(gender, {'female': 'ة', 'other': ''})}";
+  String mood_3(Gender gender) =>
+      "عادي${_select(gender, {'female': 'ة', 'other': ''})}";
+  String mood_4(Gender gender) =>
+      "جيد${_select(gender, {'female': 'ة', 'other': ''})}";
+  String mood_5(Gender gender) =>
+      "ممتاز${_select(gender, {'female': 'ة', 'other': ''})}";
   String get q_bp_t => "كم ضغط دمك؟";
   String q_bp_h(Gender gender) => "اضغط${_select(gender, {
             'female': 'ي',
             'other': ''
-          })} على الرقم ثم استخدم${_select(gender, {'female': 'ي', 'other': ''})} لوحة الأرقام.";
+          })} على الرقم ثم استخدم${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} لوحة الأرقام.";
   String get sys => "الانقباضي";
   String get dia => "الانبساطي";
   String get q_glu_t => "وكم نسبة السكر؟";
-  String q_glu_h(Gender gender) => "أدخل${_select(gender, {'female': 'ي', 'other': ''})} القراءة من جهاز قياس السكر.";
+  String q_glu_h(Gender gender) => "أدخل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} القراءة من جهاز قياس السكر.";
   String get glu_fast => "صائمة";
   String get glu_meal => "بعد الأكل";
   String get glu_random => "عشوائي";
   String get q_med_t => "هل أخذتِ أدويتك؟";
-  String q_med_h(Gender gender) => "اضغط${_select(gender, {'female': 'ي', 'other': ''})} على كل دواء ${_select(gender, {
+  String q_med_h(Gender gender) => "اضغط${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} على كل دواء ${_select(gender, {
             'female': 'أخذتِه',
             'other': 'أخذته'
           })} اليوم.";
@@ -776,7 +848,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get pain_sev => "شديد";
   String get pain_worst => "الأسوأ";
   String get note_lbl => "أي شيء آخر؟ (اختياري)";
-  String note_ph(Gender gender) => "اكتب${_select(gender, {'female': 'ي', 'other': ''})} ملاحظة لطبيبك…";
+  String note_ph(Gender gender) =>
+      "اكتب${_select(gender, {'female': 'ي', 'other': ''})} ملاحظة لطبيبك…";
   String get s_none => "لا شيء";
   String get view_trends => "عرض الرسوم";
   String get trends => "الرسوم البيانية";
@@ -795,16 +868,21 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_no_results => "لا توجد نتائج";
   String get ql_vitals => "العلامات الحيوية";
   String get ql_wellbeing => "الحالة العامة";
-  String ql_add_document(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} مستندًا";
+  String ql_add_document(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} مستندًا";
   String get full_checkin => "المتابعة الكاملة";
   String get ql_full_sub => "المزاج · ضغط الدم · السكر · الأدوية";
-  String quick_log_or(Gender gender) => "أو سجّل${_select(gender, {'female': 'ي', 'other': ''})} قراءة واحدة";
+  String quick_log_or(Gender gender) =>
+      "أو سجّل${_select(gender, {'female': 'ي', 'other': ''})} قراءة واحدة";
   String get ql_save => "حفظ";
   String get ql_saved => "تم الحفظ";
   String ql_save_hint(Gender gender) => "أكمل${_select(gender, {
             'female': 'ي',
             'other': ''
-          })} الحقول المطلوبة لتتمكن${_select(gender, {'female': 'ي', 'other': ''})} من الحفظ.";
+          })} الحقول المطلوبة لتتمكن${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} من الحفظ.";
   String get ql_discard_title => "تجاهل هذا التسجيل؟";
   String get ql_discard_body => "لن يُحفظ ما أدخلته.";
   String get ql_discard => "تجاهل";
@@ -812,16 +890,21 @@ class CheckinStrings_ar extends CheckinStrings {
   String get body_location => "أين يؤلمك؟";
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
-  String body_tap(Gender gender) => "انقر${_select(gender, {'female': 'ي', 'other': ''})} لتحديد الموقع";
+  String body_tap(Gender gender) =>
+      "انقر${_select(gender, {'female': 'ي', 'other': ''})} لتحديد الموقع";
   String get body_layer => "الطبقة";
-  String body_layer_locked(Gender gender) =>
-      "امسح${_select(gender, {'female': 'ي', 'other': ''})} التحديد لتغيير نوع الجسم";
+  String body_layer_locked(Gender gender) => "امسح${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} التحديد لتغيير نوع الجسم";
   String body_remove(String label) => "إزالة $label";
   String get body_clear_all => "مسح الكل";
   String get body_marked => "المناطق المحددة";
   String get rec_delete => "حذف السجل";
-  String rec_del_body_one(String day, String time) => "سيُحذف هذا السجل من $day، $time. لا يمكن التراجع عن ذلك.";
-  String rec_del_body_n(String day) => "ستُحذف هذه السجلات من $day. لا يمكن التراجع عن ذلك.";
+  String rec_del_body_one(String day, String time) =>
+      "سيُحذف هذا السجل من $day، $time. لا يمكن التراجع عن ذلك.";
+  String rec_del_body_n(String day) =>
+      "ستُحذف هذه السجلات من $day. لا يمكن التراجع عن ذلك.";
   String rec_count(int n) =>
       "${_plural(n, one: 'سجل واحد', two: 'سجلين', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
   String get rec_select_title => "حدد السجلات";
@@ -832,7 +915,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String pain_n_where(String n, String where) => "$n/10 · $where";
   String labeled_where(String label, String where) => "$label · $where";
   String reading_unit(String n, String unit) => "$n $unit";
-  String reading_unit_ctx(String n, String unit, String ctx) => "$n $unit · $ctx";
+  String reading_unit_ctx(String n, String unit, String ctx) =>
+      "$n $unit · $ctx";
   String bp_pair(String sys, String dia) => "$sys/$dia";
   String get cond_icd10_hint => "رمز ICD-10 (اختياري)";
   String get cond_onset_hint => "سنة البدء";
@@ -840,19 +924,25 @@ class CheckinStrings_ar extends CheckinStrings {
   String q_vitals_h(Gender gender) => "أدخل${_select(gender, {
             'female': 'ي',
             'other': ''
-          })} أي قياسات ${_select(gender, {'female': 'أخذتِها', 'other': 'أخذتها'})} اليوم — كلها اختيارية.";
+          })} أي قياسات ${_select(gender, {
+            'female': 'أخذتِها',
+            'other': 'أخذتها'
+          })} اليوم — كلها اختيارية.";
   String get unit_spo2 => "%";
   String get unit_bpm => "نبضة/د";
   String get pulse_count => "عُدّ نبضك معي";
-  String pulse_how(Gender gender) =>
-      "ضع${_select(gender, {'female': 'ي', 'other': ''})} إصبعين على معصمك أو جانب رقبتك، ثم انقر${_select(gender, {
+  String pulse_how(Gender gender) => "ضع${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} إصبعين على معصمك أو جانب رقبتك، ثم انقر${_select(gender, {
             'female': 'ي',
             'other': ''
           })} الدائرة مع كل نبضة. يبدأ العدّ مع أول نقرة لمدة 15 ثانية.";
   String get pulse_keep => "استمر في النقر مع كل نبضة.";
   String get pulse_beat => "نبضة";
   String pulse_left(String n) => "$n ث متبقية";
-  String pulse_start(Gender gender) => "انقر${_select(gender, {'female': 'ي', 'other': ''})} للبدء";
+  String pulse_start(Gender gender) =>
+      "انقر${_select(gender, {'female': 'ي', 'other': ''})} للبدء";
   String get pulse_type => "إدخال الرقم يدويًا";
   String get sym_headache => "صداع";
   String get sym_dizzy => "دوخة";
@@ -862,9 +952,12 @@ class CheckinStrings_ar extends CheckinStrings {
   String get sym_chest_tightness => "ضيق بالصدر";
   String get sym_nausea => "غثيان";
   String get sym_thirst => "عطش زائد";
-  String q_mood_t(Gender gender) => "كيف تشعر${_select(gender, {'female': 'ين', 'other': ''})} اليوم؟";
-  String q_sym_h(Gender gender) =>
-      "حرّك${_select(gender, {'female': 'ي', 'other': ''})} المؤشر لمستوى الألم، ثم ${_select(gender, {
+  String q_mood_t(Gender gender) =>
+      "كيف تشعر${_select(gender, {'female': 'ين', 'other': ''})} اليوم؟";
+  String q_sym_h(Gender gender) => "حرّك${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} المؤشر لمستوى الألم، ثم ${_select(gender, {
             'female': 'اختاري',
             'other': 'اختر'
           })} ما تشعر${_select(gender, {'female': 'ين', 'other': ''})} به.";
@@ -895,7 +988,8 @@ class CheckinStrings_ar extends CheckinStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'latest':
@@ -1186,7 +1280,8 @@ class CommonStrings_ar extends CommonStrings {
   String get a11y_code_field => "رمز التحقق";
   String a11y_code_progress(String n) => "أُدخل $n من 6 أرقام";
   String get a11y_error => "خطأ";
-  String ph_country(Gender gender) => "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} الدولة";
+  String ph_country(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} الدولة";
   String get ph_country_search => "ابحث بالاسم أو الرمز";
   String get ph_no_match => "لا توجد نتائج";
   String ph_country_of(String dial) => "رمز الدولة، الحالي $dial";
@@ -1219,13 +1314,16 @@ class CommonStrings_ar extends CommonStrings {
   String get date => "التاريخ";
   String get time => "الوقت";
   String get details => "التفاصيل";
-  String select_date(Gender gender) => "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} تاريخاً";
+  String select_date(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} تاريخاً";
   String get roadmap => "قريباً";
   String get member_name => "الاسم";
   String get member_name_ph => "اسم فرد الأسرة";
   String get relation => "صلة القرابة";
-  String select_relation(Gender gender) => "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} صلة القرابة";
-  String fam_scan_qr(Gender gender) => "امسح${_select(gender, {'female': 'ي', 'other': ''})} رمز QR الخاص بهم";
+  String select_relation(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} صلة القرابة";
+  String fam_scan_qr(Gender gender) =>
+      "امسح${_select(gender, {'female': 'ي', 'other': ''})} رمز QR الخاص بهم";
   String get fam_scan_qr_sub => "اربط حسابًا موجودًا على بلسم في ثوانٍ.";
   String get fam_manual => "الإدخال يدويًا";
   String get fam_manual_sub => "لمن لا يملك حسابًا بعد.";
@@ -1237,7 +1335,8 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_manual_instead => "الإدخال يدويًا بدلاً من ذلك";
   String get fam_scan_instead => "مسح رمز QR بدلاً من ذلك";
   String get fam_scan_other => "مسح رمز آخر";
-  String get fam_approval_note => "سيرى الطلب في تطبيقه ويوافق عليه مرة واحدة — لن تظهر أي بيانات صحية قبل موافقته.";
+  String get fam_approval_note =>
+      "سيرى الطلب في تطبيقه ويوافق عليه مرة واحدة — لن تظهر أي بيانات صحية قبل موافقته.";
   String get fam_send_request => "إرسال طلب الربط";
   String get fam_pending => "بانتظار الموافقة";
   String get fam_cancel_request => "إلغاء";
@@ -1248,7 +1347,10 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_self_add_manual => "هذا اسمك أنت — أفراد الأسرة أشخاص آخرون";
   String get fam_scan_invalid => "هذا ليس رمز ملف بلسم";
   String fam_scan_failed(Gender gender) =>
-      "تعذّرت قراءة الرمز — حاول${_select(gender, {'female': 'ي', 'other': ''})} مجددًا";
+      "تعذّرت قراءة الرمز — حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مجددًا";
   String get rel_default => "فرد من الأسرة";
   String get member_dob => "تاريخ الميلاد";
   String get member_dob_ph => "يوم / شهر / سنة";
@@ -1272,7 +1374,8 @@ class CommonStrings_ar extends CommonStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -1491,25 +1594,35 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get em_otp_h => "أرسلنا رمزاً من 6 أرقام إلى";
   String get em_eg => "مصر";
   String em_intro(Gender gender) =>
-      "خطوط الطوارئ على مستوى مصر. اضغط${_select(gender, {'female': 'ي', 'other': ''})} أي رقم للاتصال فوراً.";
-  String em_tap_call(Gender gender) => "اضغط${_select(gender, {'female': 'ي', 'other': ''})} للاتصال";
+      "خطوط الطوارئ على مستوى مصر. اضغط${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} أي رقم للاتصال فوراً.";
+  String em_tap_call(Gender gender) =>
+      "اضغط${_select(gender, {'female': 'ي', 'other': ''})} للاتصال";
   String get em_ambulance => "إسعاف";
   String get em_police => "شرطة";
   String get em_fire => "الإطفاء والإنقاذ";
   String get em_tourist => "شرطة السياحة";
   String get emergency => "الطوارئ";
   String get em_one_title => "تسجيل الدخول أو إنشاء حساب";
-  String get em_one_help => "أدخل بريدك وكلمة مرور. جديد هنا؟ سنرسل رمزاً إلى بريدك لتأكيده.";
-  String em_send_code_q(String email) => "تعذّر ذلك. نرسل رمزاً إلى $email للمتابعة؟";
+  String get em_one_help =>
+      "أدخل بريدك وكلمة مرور. جديد هنا؟ سنرسل رمزاً إلى بريدك لتأكيده.";
+  String em_send_code_q(String email) =>
+      "تعذّر ذلك. نرسل رمزاً إلى $email للمتابعة؟";
   String get em_send_code => "أرسل لي رمزاً";
-  String get em_otp_neutral_h => "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
+  String get em_otp_neutral_h =>
+      "أدخل الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
   String get em_adopt_title => "نستخدم كلمة المرور هذه من الآن؟";
-  String get em_adopt_help => "سجّلت الدخول برمز. احفظ كلمة المرور التي كتبتها لتعمل في المرة القادمة.";
+  String get em_adopt_help =>
+      "سجّلت الدخول برمز. احفظ كلمة المرور التي كتبتها لتعمل في المرة القادمة.";
   String get em_adopt_yes => "احفظ كلمة المرور";
   String get em_adopt_no => "أبقِ الحالية";
   String get em_adopt_saved => "تم تحديث كلمة المرور.";
-  String get em_adopt_failed => "تعذّر حفظ كلمة المرور. يمكنك ضبطها من الإعدادات.";
-  String get em_pw_set_failed => "حسابك جاهز، لكن لم تُحفظ كلمة المرور. اضبطها من الإعدادات.";
+  String get em_adopt_failed =>
+      "تعذّر حفظ كلمة المرور. يمكنك ضبطها من الإعدادات.";
+  String get em_pw_set_failed =>
+      "حسابك جاهز، لكن لم تُحفظ كلمة المرور. اضبطها من الإعدادات.";
   String get em_pw_title => "أهلاً بعودتك";
   String get em_pw_help => "أدخل كلمة المرور لتسجيل الدخول.";
   String get em_pw_signup_title => "أنشئ حسابك";
@@ -1528,7 +1641,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
             'female': 'ي',
             'other': ''
           })} هذا الرمز المشفّر لطاقم الطوارئ. ينتهي تلقائيًا ولا يحتوي على مفتاح فك التشفير إلا داخل الرابط نفسه.";
-  String get eqr_help_signin => "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
+  String get eqr_help_signin =>
+      "سجّل الدخول لمشاركة بطاقة الطوارئ الصحية الخاصة بك.";
   String eqr_help_incomplete(Gender gender) => "${_select(gender, {
             'female': 'أضيفي',
             'other': 'أضف'
@@ -1555,7 +1669,10 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_rotate_yes => "استبدال";
   String get eqr_rotated_toast => "الرمز الجديد جاهز";
   String eqr_rotate_failed(Gender gender) =>
-      "تعذّر استبدال الرمز — تحقق${_select(gender, {'female': 'ي', 'other': ''})} من الاتصال";
+      "تعذّر استبدال الرمز — تحقق${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} من الاتصال";
   String get eqr_scan_history => "سجلّ المسح";
   String get eqr_scans_empty => "لا عمليات مسح بعد";
   String get eqr_scan_client_web => "متصفح ويب";
@@ -1569,7 +1686,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'em_label':
@@ -1706,25 +1824,37 @@ class HomeStrings_ar extends HomeStrings {
   final Strings_ar _parent;
   const HomeStrings_ar(this._parent) : super(_parent);
   String get nudge_handle => "احجز معرّفك";
-  String nudge_handle_sub(Gender gender) => "${_select(gender, {'female': 'ابدئي', 'other': 'ابدأ'})} الإعداد";
-  String nudge_ec(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} بطاقة الطوارئ";
-  String nudge_ec_sub(Gender gender) => "${_select(gender, {'female': 'كوني', 'other': 'كن'})} ${_select(gender, {
-            'female': 'مستعدة',
-            'other': 'مستعداً'
-          })}";
-  String nudge_med(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} دواءً";
+  String nudge_handle_sub(Gender gender) =>
+      "${_select(gender, {'female': 'ابدئي', 'other': 'ابدأ'})} الإعداد";
+  String nudge_ec(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} بطاقة الطوارئ";
+  String nudge_ec_sub(Gender gender) => "${_select(gender, {
+            'female': 'كوني',
+            'other': 'كن'
+          })} ${_select(gender, {'female': 'مستعدة', 'other': 'مستعداً'})}";
+  String nudge_med(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} دواءً";
   String get nudge_med_sub => "واظب على المتابعة";
   String get greet => "صباح الخير";
   String get hero_time => "حوالي دقيقتين";
   String get streak => "يوم متتالٍ";
-  String streak_help(Gender gender, int checked) =>
-      "${_select(gender, {'male': 'تابعت', 'female': 'تابعتِ', 'other': 'تابعت'})} ${checked} من آخر 7 أيام";
+  String streak_help(Gender gender, int checked) => "${_select(gender, {
+            'male': 'تابعت',
+            'female': 'تابعتِ',
+            'other': 'تابعت'
+          })} ${checked} من آخر 7 أيام";
   String get on_track => "ملتزمة";
   String get away_banner => "أنت خارج بلدك";
-  String hero_q(Gender gender) =>
-      "${_select(gender, {'male': 'كيف تشعر اليوم؟', 'female': 'كيف تشعرين اليوم؟', 'other': 'كيف تشعر اليوم؟'})}";
-  String hero_cta(Gender gender) =>
-      "${_select(gender, {'male': 'ابدأ المتابعة', 'female': 'ابدئي المتابعة', 'other': 'ابدأ المتابعة'})}";
+  String hero_q(Gender gender) => "${_select(gender, {
+            'male': 'كيف تشعر اليوم؟',
+            'female': 'كيف تشعرين اليوم؟',
+            'other': 'كيف تشعر اليوم؟'
+          })}";
+  String hero_cta(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ المتابعة',
+            'female': 'ابدئي المتابعة',
+            'other': 'ابدأ المتابعة'
+          })}";
   String get hero_disclaimer => "تقييمك الخاص — لا يعتمد على قياس طبي";
   String get care_team_sub => "أطباء وصيدليات ومقدّمو رعاية";
   String get care_team_n => "مقدّم رعاية يتابع حالتك";
@@ -1732,7 +1862,8 @@ class HomeStrings_ar extends HomeStrings {
   String get sc_places => "مكان قريب";
   String get sc_records => "السجلات";
   String viewing_member(String name) => "$name محدد";
-  String viewing_own_data(Gender gender) => "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, {
+  String viewing_own_data(Gender gender) =>
+      "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, {
             'female': 'ترينه',
             'other': 'تراه'
           })} هو سجلّك أنت${_select(gender, {'female': 'ِ', 'other': ''})}.";
@@ -1740,7 +1871,8 @@ class HomeStrings_ar extends HomeStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'nudge_handle':
@@ -1814,8 +1946,10 @@ class MedsStrings_ar extends MedsStrings {
   String get last_7d => "آخر ٧ أيام";
   String get rx_manage => "الوصفات والملفات";
   String get rx_empty => "لا توجد وصفات بعد";
-  String rx_empty_h(Gender gender) =>
-      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} وصفة للاحتفاظ بنسخك في مكان واحد.";
+  String rx_empty_h(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} وصفة للاحتفاظ بنسخك في مكان واحد.";
   String get rx_active => "فعّالة";
   String get rx_expired => "منتهية";
   String get rx_valid_until => "صالحة حتى";
@@ -1834,7 +1968,8 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_added => "تمت إضافة الروشتة";
   String get rx_upload => "رفع ملف";
   String get rx_manual => "كتابتها يدوياً";
-  String rx_or_paste_url(Gender gender) => "أو ${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} رابطاً";
+  String rx_or_paste_url(Gender gender) =>
+      "أو ${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} رابطاً";
   String get rx_url_ph => "https://…";
   String get rx_med_name_ph => "اسم الدواء";
   String get rx_med_dose_ph => "الجرعة (مثال: 500 ملجم)";
@@ -1847,7 +1982,8 @@ class MedsStrings_ar extends MedsStrings {
   String get freq_every => "كل";
   String get unit_hours => "ساعات";
   String get unit_days => "أيام";
-  String freq_other_ph(Gender gender) => "اكتب${_select(gender, {'female': 'ي', 'other': ''})} التكرار";
+  String freq_other_ph(Gender gender) =>
+      "اكتب${_select(gender, {'female': 'ي', 'other': ''})} التكرار";
   String freq_n_per_day(String n) => "$n×/يوم";
   String get rx_duration => "المدة";
   String get dur_days => "لعدد من الأيام";
@@ -1858,13 +1994,16 @@ class MedsStrings_ar extends MedsStrings {
   String get dur_until_empty => "حتى انتهاء العلبة";
   String get dur_ongoing => "مستمر";
   String get dur_other => "أخرى";
-  String dur_other_ph(Gender gender) => "اكتب${_select(gender, {'female': 'ي', 'other': ''})} المدة";
+  String dur_other_ph(Gender gender) =>
+      "اكتب${_select(gender, {'female': 'ي', 'other': ''})} المدة";
   String get rx_add_med => "إضافة دواء آخر";
   String get rx_self_added => "أضفتها أنت";
   String med_count(int n) =>
       "${_plural(n, one: 'دواء واحد', two: 'دواءين', few: '$n أدوية', many: '$n دواءً', other: '$n دواء')}";
-  String get med_del_body_one => "سيُزال من جدولك اليومي وتتوقف تذكيراته. لا يمكن التراجع عن ذلك.";
-  String get med_del_body_n => "ستُزال من جدولك اليومي وتتوقف تذكيراتها. لا يمكن التراجع عن ذلك.";
+  String get med_del_body_one =>
+      "سيُزال من جدولك اليومي وتتوقف تذكيراته. لا يمكن التراجع عن ذلك.";
+  String get med_del_body_n =>
+      "ستُزال من جدولك اليومي وتتوقف تذكيراتها. لا يمكن التراجع عن ذلك.";
   String rx_count(int n) =>
       "${_plural(n, one: 'وصفة واحدة', two: 'وصفتين', few: '$n وصفات', many: '$n وصفة', other: '$n وصفة')}";
   String get rx_del_body_one => "ستُحذف من هذا الجهاز. لا يمكن التراجع عن ذلك.";
@@ -1895,7 +2034,8 @@ class MedsStrings_ar extends MedsStrings {
   String get med_time_midday => "ظهراً";
   String get med_time_evening => "مساءً";
   String get med_time_night => "ليلاً";
-  String get med_self_note => "لأدوية بدون روشتة، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
+  String get med_self_note =>
+      "لأدوية بدون روشتة، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
   String get med_when => "موعد الجرعة";
   String get med_dose_times => "مواعيد الجرعات";
   String get med_first_dose => "الجرعة الأولى";
@@ -1904,12 +2044,16 @@ class MedsStrings_ar extends MedsStrings {
   String get dur_count => "العدد";
   String get meds_signin_help => "سجّل الدخول لعرض أدويتك.";
   String meds_empty_help(Gender gender) =>
-      "لا توجد أدوية بعد. ${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} دواءً للبدء.";
+      "لا توجد أدوية بعد. ${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} دواءً للبدء.";
   String get meds_none_today => "لا جرعات مجدولة اليوم.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'meds_today':
@@ -2150,7 +2294,8 @@ class NavStrings_ar extends NavStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'tab_home':
@@ -2199,7 +2344,8 @@ class OnboardingStrings_ar extends OnboardingStrings {
   final Strings_ar _parent;
   const OnboardingStrings_ar(this._parent) : super(_parent);
   String get w_title => "صحتك، دائماً قريبة.";
-  String get w_sub => "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
+  String get w_sub =>
+      "متابعة يومية، تذكير بالدواء، ورسوم بيانية — محفوظة على هاتفك، وتُزامَن عند رغبتك.";
   String get w_have => "لديّ حساب بالفعل";
   String get w_create => "إنشاء حساب";
   String get w_device => "استخدمه على هذا الجهاز فقط";
@@ -2226,12 +2372,16 @@ class OnboardingStrings_ar extends OnboardingStrings {
   String get dob_confirm => "تأكيد";
   String get age_gate_body =>
       "بلسم متاح حاليًا لمن هم في سن 18 وأكثر. نعمل على إصدار للمستخدمين الأصغر سنًا بموافقة ولي الأمر.";
-  String w_start(Gender gender) =>
-      "${_select(gender, {'male': 'ابدأ الآن', 'female': 'ابدئي الآن', 'other': 'ابدأ الآن'})}";
+  String w_start(Gender gender) => "${_select(gender, {
+            'male': 'ابدأ الآن',
+            'female': 'ابدئي الآن',
+            'other': 'ابدأ الآن'
+          })}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'w_title':
@@ -2305,10 +2455,12 @@ class WalkthroughStrings_ar extends WalkthroughStrings {
       "بلسم أول وأكبر منصة صحية مفتوحة المصدر بُنيت في مصر والعالم العربي — بالعربية أولاً، ويملكها من يستخدمها.";
   String get wt_eyebrow_2 => "يوم مع بلسم";
   String get wt_title_2 => "من قياس هذا الصباح إلى الصيدلية الليلة.";
-  String get wt_body_2 => "سجلّ واحد، وتسجيل يومي، وخريطة رعاية واحدة — جرّبها في الأسفل، تماماً كما تظهر في التطبيق.";
+  String get wt_body_2 =>
+      "سجلّ واحد، وتسجيل يومي، وخريطة رعاية واحدة — جرّبها في الأسفل، تماماً كما تظهر في التطبيق.";
   String get wt_eyebrow_3 => "ملكك دائماً";
   String get wt_title_3 => "بياناتك تبقى ملكك.";
-  String get wt_body_3 => "محفوظة على هاتفك بالتصميم، وتعمل دون إنترنت. أنت تختار ما تشاركه — ومع من.";
+  String get wt_body_3 =>
+      "محفوظة على هاتفك بالتصميم، وتعمل دون إنترنت. أنت تختار ما تشاركه — ومع من.";
   String get wt_skip => "تخطّي";
   String get wt_next => "التالي";
   String get wt_start => "ابدأ الآن";
@@ -2331,7 +2483,8 @@ class WalkthroughStrings_ar extends WalkthroughStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'wt_eyebrow_1':
@@ -2403,12 +2556,14 @@ class PrivacyStrings_ar extends PrivacyStrings {
   String get pv_analytics => "تحليلات مجهولة";
   String get pv_analytics_h => "ساعدنا على تحسين التطبيق";
   String get pv_replay => "مشاركة تسجيلات الشاشة";
-  String get pv_replay_h => "تسجيلات مُخفاة لشاشات تسجيل الدخول فقط — وليس شاشاتك الصحية أبدًا";
+  String get pv_replay_h =>
+      "تسجيلات مُخفاة لشاشات تسجيل الدخول فقط — وليس شاشاتك الصحية أبدًا";
   String get pv_research => "المساهمة في الأبحاث";
   String get pv_research_h => "بيانات مجهولة للأبحاث الطبية";
   String get pv_security => "الأمان";
   String get pv_bio => "قفل بالبصمة / الوجه";
-  String pv_bio_h(Gender gender) => "افتح${_select(gender, {'female': 'ي', 'other': ''})} التطبيق ببصمتك";
+  String pv_bio_h(Gender gender) =>
+      "افتح${_select(gender, {'female': 'ي', 'other': ''})} التطبيق ببصمتك";
   String get pv_pin => "طلب رمز PIN عند الفتح";
   String get pv_pin_h => "طبقة حماية إضافية";
   String get pv_yourdata => "بياناتك";
@@ -2431,18 +2586,26 @@ class PrivacyStrings_ar extends PrivacyStrings {
   String get pv_deletion => "الحذف";
   String get pv_saving => "جارٍ الحفظ…";
   String get pv_agree => "أوافق وأتابع";
-  String get pv_intro_body => "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
-  String get pv_collect_body => "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
-  String get pv_protect_body => "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
-  String get pv_rights_body => "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
-  String pv_authority_body(String authority) => "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
-  String get pv_sharing_body => "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
-  String get pv_deletion_body => "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
+  String get pv_intro_body =>
+      "قبل المتابعة، يرجى مراجعة كيفية تعاملنا مع بياناتك. تبقى بياناتك الصحية على جهازك.";
+  String get pv_collect_body =>
+      "حساب أساسي غير صحي (البريد، البلد، اللغة). تبقى السجلات الصحية مشفّرة على جهازك.";
+  String get pv_protect_body =>
+      "تشفير على مستوى الجهاز، ونقل عبر قنوات آمنة، ووصول محدود بأقل قدر ممكن.";
+  String get pv_rights_body =>
+      "يمكنك الوصول إلى بياناتك أو تصحيحها أو حذفها في أي وقت من إعدادات الحساب.";
+  String pv_authority_body(String authority) =>
+      "الجهة المشرفة على حماية بياناتك في بلدك: $authority.";
+  String get pv_sharing_body =>
+      "لا نبيع بياناتك. لا تتم المشاركة إلا بموافقتك الصريحة أو عند وجود إلزام قانوني.";
+  String get pv_deletion_body =>
+      "يؤدي حذف حسابك إلى إزالة بياناتك السحابية غير الصحية ومسح السجلات من جهازك.";
   String get pv_scroll_hint => "مرّر للأسفل للمتابعة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'pv_sharing':
@@ -2545,9 +2708,12 @@ class ProfileStrings_ar extends ProfileStrings {
   String get m_weight => "الوزن";
   String get m_o2 => "الأكسجين";
   String get m_pulse => "النبض";
-  String pc_title(Gender gender) => "أكمل${_select(gender, {'female': 'ي', 'other': ''})} ملفك الشخصي";
-  String pc_help(Gender gender) =>
-      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} اسمك وتاريخ ميلادك وبياناتك";
+  String pc_title(Gender gender) =>
+      "أكمل${_select(gender, {'female': 'ي', 'other': ''})} ملفك الشخصي";
+  String pc_help(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} اسمك وتاريخ ميلادك وبياناتك";
   String pc_missing(String fields) => "الناقص: $fields";
   String get pc_f_name => "الاسم";
   String get pc_f_dob => "تاريخ الميلاد";
@@ -2571,7 +2737,8 @@ class ProfileStrings_ar extends ProfileStrings {
   String get pd_save => "حفظ التغييرات";
   String get pd_saved => "تم الحفظ";
   String get pd_saving => "جارٍ الحفظ…";
-  String pd_number_invalid(Gender gender) => "أدخل${_select(gender, {'female': 'ي', 'other': ''})} رقماً صالحاً";
+  String pd_number_invalid(Gender gender) =>
+      "أدخل${_select(gender, {'female': 'ي', 'other': ''})} رقماً صالحاً";
   String get hc_title => "تغيير اسم المستخدم؟";
   String get hc_body =>
       "يتوقف رابطك القديم عن العمل فوراً. كل من يحتفظ به — طبيب أو أحد أفراد العائلة — سيحتاج إلى الرابط الجديد.";
@@ -2598,8 +2765,10 @@ class ProfileStrings_ar extends ProfileStrings {
   String get pd_conditions => "الحالات المزمنة";
   String get pd_allergies => "الحساسية";
   String get pd_measurements => "القياسات";
-  String pd_add_cond(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} حالة…";
-  String pd_add_alg(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} حساسية…";
+  String pd_add_cond(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} حالة…";
+  String pd_add_alg(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} حساسية…";
   String get bmi_label => "كتلة الجسم";
   String get bmi_under => "نقص وزن";
   String get bmi_normal => "صحي";
@@ -2613,7 +2782,8 @@ class ProfileStrings_ar extends ProfileStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'm_bp':
@@ -2773,29 +2943,38 @@ class EcosystemStrings_ar extends EcosystemStrings {
   String get eco_p1h => "هذا التطبيق — لك";
   String get eco_p1b => "سجلاتك وأدويتك ومواعيدك، كاملة وبلغتك.";
   String get eco_p2h => "بَلسَم برو — للصيدليات والعيادات";
-  String get eco_p2b => "الصرف والمخزون والزيارات على النظام المفتوح نفسه — يعمل بلا إنترنت، وهو على خارطة الطريق.";
+  String get eco_p2b =>
+      "الصرف والمخزون والزيارات على النظام المفتوح نفسه — يعمل بلا إنترنت، وهو على خارطة الطريق.";
   String get eco_help_t => "ساعد بلسم على الانتشار";
-  String get eco_help_sub => "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
+  String get eco_help_sub =>
+      "بلسم ملك لمن يستخدمه. وكل خطوة مما يلي تجعله أقوى.";
   String get eco_tagline => "مفتوح · عربي · موثوق";
-  String eco_a1h(Gender gender) => "أخبر${_select(gender, {'female': 'ي', 'other': ''})} شخصاً تثق${_select(gender, {
-            'female': 'ين',
+  String eco_a1h(Gender gender) => "أخبر${_select(gender, {
+            'female': 'ي',
             'other': ''
-          })} به";
-  String get eco_a1b => "العائلة والجيران هم طريق انتشار بلسم — توصية واحدة في كل مرة.";
-  String eco_a2h(Gender gender) => "شارك${_select(gender, {'female': 'ي', 'other': ''})} ملاحظاتك";
-  String get eco_a2b => "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
+          })} شخصاً تثق${_select(gender, {'female': 'ين', 'other': ''})} به";
+  String get eco_a1b =>
+      "العائلة والجيران هم طريق انتشار بلسم — توصية واحدة في كل مرة.";
+  String eco_a2h(Gender gender) =>
+      "شارك${_select(gender, {'female': 'ي', 'other': ''})} ملاحظاتك";
+  String get eco_a2b =>
+      "قيّم التطبيق وأخبرنا بما يجب تحسينه. الفريق يقرأ كل ملاحظة.";
   String get eco_a3h => "اسأل صيدليتك أو عيادتك";
-  String get eco_a3b => "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بلسم في زيارتك القادمة — فهو مجاني وملك لهم.";
+  String get eco_a3b =>
+      "ينضم مقدمو الرعاية عندما يسأل المرضى. اذكر بلسم في زيارتك القادمة — فهو مجاني وملك لهم.";
   String get eco_a4h => "ساهم في المشروع";
-  String get eco_a4b => "مطوّرون ومترجمون وأطباء — الشيفرة وخارطة الطريق مفتوحتان للجميع.";
-  String get eco_share_text => "أستخدم بلسم لمتابعة صحتي — مجاني، ومفتوح، وبياناتك على جهازك. حمّله من هنا:";
+  String get eco_a4b =>
+      "مطوّرون ومترجمون وأطباء — الشيفرة وخارطة الطريق مفتوحتان للجميع.";
+  String get eco_share_text =>
+      "أستخدم بلسم لمتابعة صحتي — مجاني، ومفتوح، وبياناتك على جهازك. حمّله من هنا:";
   String get eco_link_copied => "تم نسخ الرابط";
   String get eco_follow_t => "تابع بلسم";
   String get eco_follow_sub => "أخبار المشروع، الكود المفتوح، وطرق دعمه.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'eco_row':
@@ -2855,7 +3034,8 @@ class FeedbackStrings_ar extends FeedbackStrings {
   const FeedbackStrings_ar(this._parent) : super(_parent);
   String get fb_row => "التقييم والملاحظات";
   String get fb_title => "كيف تجد بلسم؟";
-  String fb_rate_q(Gender gender) => "اضغط${_select(gender, {'female': 'ي', 'other': ''})} على زهرة للتقييم";
+  String fb_rate_q(Gender gender) =>
+      "اضغط${_select(gender, {'female': 'ي', 'other': ''})} على زهرة للتقييم";
   String get fb_r1 => "يحتاج تحسيناً";
   String get fb_r2 => "يمكن أن يكون أفضل";
   String get fb_r3 => "مقبول";
@@ -2869,10 +3049,14 @@ class FeedbackStrings_ar extends FeedbackStrings {
   String get fb_privacy =>
       "تُرسل إلى فريق بلسم، وليس إلى متجر التطبيقات. من فضلك لا تكتب تفاصيل صحية — بياناتك الصحية تبقى على جهازك.";
   String fb_failed(Gender gender) =>
-      "تعذّر إرسال ملاحظتك. حاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى.";
+      "تعذّر إرسال ملاحظتك. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
   String get fb_send => "إرسال الملاحظات";
   String get fb_thanks => "وصلتنا. شكراً لك.";
-  String get fb_thanks_sub => "فريق بلسم يقرأ كل ملاحظة، وملاحظتك تساعد بلسم على خدمة الجميع بشكل أفضل.";
+  String get fb_thanks_sub =>
+      "فريق بلسم يقرأ كل ملاحظة، وملاحظتك تساعد بلسم على خدمة الجميع بشكل أفضل.";
   String get fb_done => "تم";
   String get fb_t_general => "عام";
   String get fb_t_ease => "سهولة الاستخدام";
@@ -2882,7 +3066,8 @@ class FeedbackStrings_ar extends FeedbackStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'fb_row':
@@ -2949,7 +3134,10 @@ class RecordsStrings_ar extends RecordsStrings {
   String rec_tags_ph(Gender gender) => "${_select(gender, {
             'female': 'أضيفي',
             'other': 'أضف'
-          })} وسماً واضغط${_select(gender, {'female': 'ي', 'other': ''})} Enter";
+          })} وسماً واضغط${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} Enter";
   String get rec_no_results => "لا سجلات مطابقة";
   String get rec_no_results_h => "لا سجلات تطابق";
   String get rec_no_results_h2 => "لا شيء في هذه الفئة بعد.";
@@ -2970,8 +3158,10 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_preview => "معاينة المستند";
   String get rec_preview_failed => "تعذّر فتح هذا الملف";
   String get rec_share => "مشاركة مع الطبيب";
-  String rec_empty_h(Gender gender) =>
-      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} تحليلاً أو أشعة أو تقريراً لتحتفظ${_select(gender, {
+  String rec_empty_h(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} تحليلاً أو أشعة أو تقريراً لتحتفظ${_select(gender, {
             'female': 'ي',
             'other': ''
           })} بتاريخك كاملاً في مكان واحد.";
@@ -3001,14 +3191,20 @@ class RecordsStrings_ar extends RecordsStrings {
   String get att_src_files => "الملفات";
   String get att_src_files_h => "ملف PDF أو صورة محفوظة على هذا الجهاز";
   String get att_src_gallery => "الصور";
-  String att_src_gallery_h(Gender gender) => "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} من مكتبة الصور";
+  String att_src_gallery_h(Gender gender) => "${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} من مكتبة الصور";
   String get att_src_paste => "لصق";
   String get att_src_paste_h => "صورة أو رابط نسخته";
   String get att_src_url => "رابط";
   String att_src_url_h(Gender gender) => "اكتب${_select(gender, {
             'female': 'ي',
             'other': ''
-          })} أو الصق${_select(gender, {'female': 'ي', 'other': ''})} عنوان ويب";
+          })} أو الصق${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} عنوان ويب";
   String get att_url_title => "إضافة رابط";
   String get att_url_hint => "https://…";
   String get att_url_bad => "لا يبدو أن هذا عنوان ويب.";
@@ -3019,13 +3215,15 @@ class RecordsStrings_ar extends RecordsStrings {
   String att_n_files(String n) => "$n ملفات";
   String rec_n_selected(String n) => "$n محدد";
   String rec_delete_n_title(String n) => "حذف $n من السجلات؟";
-  String get rec_delete_n_body => "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.";
+  String get rec_delete_n_body =>
+      "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.";
   String get rec_delete_confirm => "حذف";
   String get rec_delete_1_title => "حذف هذا السجل؟";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'rec_documents':
@@ -3180,24 +3378,30 @@ class SettingsStrings_ar extends SettingsStrings {
   String get trust_device => "ملكك دائماً";
   String get add_photo => "إضافة صورة";
   String get add_member => "إضافة فرد من الأسرة";
-  String choose_lang(Gender gender) => "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} اللغة";
+  String choose_lang(Gender gender) =>
+      "${_select(gender, {'female': 'اختاري', 'other': 'اختر'})} اللغة";
   String get choose_country => "أين أنت الآن؟";
-  String get travel_help => "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
+  String get travel_help =>
+      "حدّد موقعك ليعرض بلسم أرقام الطوارئ ومعلومات الرعاية المحلية أثناء سفرك.";
   String get lang_full => "دعم كامل";
   String get lang_beta => "تجريبي";
   String get home_country => "بلدك";
   String get add_record => "إضافة سجل";
-  String add_calendar(Gender gender) => "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} للتقويم";
+  String add_calendar(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} للتقويم";
   String get na_not_available => "غير متاح بعد";
   String get na_notify_me => "أبلغني عند التوفر";
   String get na_status_support => "حالة الخدمة والدعم";
-  String get cal_months => "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
-  String get cal_months_short => "ينا|فبر|مار|أبر|ماي|يون|يول|أغس|سبت|أكت|نوف|ديس";
+  String get cal_months =>
+      "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر";
+  String get cal_months_short =>
+      "ينا|فبر|مار|أبر|ماي|يون|يول|أغس|سبت|أكت|نوف|ديس";
   String get cal_weekdays => "أحد|إثن|ثلا|أرب|خمي|جمع|سبت";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'trust_private':
@@ -3248,7 +3452,8 @@ class StorageStrings_ar extends StorageStrings {
   final Strings_ar _parent;
   const StorageStrings_ar(this._parent) : super(_parent);
   String get store_delete_rec => "حذف السجل";
-  String get store_delete_rec_h => "سيُحذف السجل ومرفقه نهائياً من هذا الجهاز. لا يمكن التراجع عن ذلك.";
+  String get store_delete_rec_h =>
+      "سيُحذف السجل ومرفقه نهائياً من هذا الجهاز. لا يمكن التراجع عن ذلك.";
   String get store_deleted_rec => "تم حذف السجل";
   String get store_manage => "إدارة التخزين";
   String get storage => "التخزين والمزامنة";
@@ -3280,7 +3485,8 @@ class StorageStrings_ar extends StorageStrings {
   String store_places(String n) => "$n أماكن";
   String get store_where => "مكان الحفظ";
   String get store_loc_label => "مكان الحفظ";
-  String get store_encrypted_note => "أي شيء يغادر هذا الهاتف يُشفَر هنا أولاً، وأنت من يختار مكانه.";
+  String get store_encrypted_note =>
+      "أي شيء يغادر هذا الهاتف يُشفَر هنا أولاً، وأنت من يختار مكانه.";
   String get store_whole_journal =>
       "عند وصول مزامنة السحابة، سينسخ بلسم سجلك كملف مشفر واحد — فتكون السحابة مُفعلة أو لا لكل شيء، لا لكل فئة.";
   String get store_not_synced => "لم تتم المزامنة بعد";
@@ -3299,7 +3505,8 @@ class StorageStrings_ar extends StorageStrings {
       "يتوفر التخزين على الجهاز فقط حالياً. آي كلاود وجوجل درايف وبلسم كلاود قادمون قريباً.";
   String get store_coming_soon => "قريباً";
   String get store_available_soon => "متوفر قريباً";
-  String get store_care_cloud_on => "مُفعلة — فريق رعايتك محفوظ في سحابة بلسم أيضاً";
+  String get store_care_cloud_on =>
+      "مُفعلة — فريق رعايتك محفوظ في سحابة بلسم أيضاً";
   String get store_care_cloud_off => "متوقفة — فريق رعايتك يبقى على هذا الجهاز";
   String get store_care_cloud_note =>
       "يُزامَن فريق رعايتك مع سحابة بلسم حتى لا تفقده إن ضاع هاتفك. عند إيقافها تبقى التغييرات الجديدة على هذا الجهاز، وما سبق حفظه في سحابة بلسم يبقى كما هو.";
@@ -3314,7 +3521,8 @@ class StorageStrings_ar extends StorageStrings {
   String store_synced_with(String target) => "مزامن مع $target";
   String get store_done => "تم";
   String get store_remove_q => "إيقاف النسخ الاحتياطي؟";
-  String store_remove_help(String target) => "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
+  String store_remove_help(String target) =>
+      "ستُحذف بياناتك من $target وتبقى على جهازك فقط.";
   String get store_remove_cta => "إيقاف النسخ الاحتياطي";
   String store_synced(String when) => "محفوظ · تمت المزامنة $when";
   String get store_sync_now => "الآن";
@@ -3324,7 +3532,8 @@ class StorageStrings_ar extends StorageStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'store_delete_rec':
@@ -3477,7 +3686,8 @@ class MapPacksStrings_ar extends MapPacksStrings {
   final Strings_ar _parent;
   const MapPacksStrings_ar(this._parent) : super(_parent);
   String get title => "الخرائط دون اتصال";
-  String get subtitle => "نزّل محافظة لاستخدام الخريطة والأماكن القريبة بدون اتصال بالإنترنت.";
+  String get subtitle =>
+      "نزّل محافظة لاستخدام الخريطة والأماكن القريبة بدون اتصال بالإنترنت.";
   String get not_downloaded => "غير مُنزّلة";
   String get downloaded => "تم التنزيل";
   String get update_available => "يتوفر تحديث";
@@ -3487,11 +3697,13 @@ class MapPacksStrings_ar extends MapPacksStrings {
   String get retry => "إعادة المحاولة";
   String get delete => "حذف";
   String get cancel => "إلغاء";
-  String get offline_notice => "تعذّر التحقق من وجود تحديثات — يظهر ما تم تنزيله بالفعل.";
+  String get offline_notice =>
+      "تعذّر التحقق من وجود تحديثات — يظهر ما تم تنزيله بالفعل.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -3528,38 +3740,60 @@ class OfflineStrings_ar extends OfflineStrings {
   final Strings_ar _parent;
   const OfflineStrings_ar(this._parent) : super(_parent);
   String get go_title => "الاتصال بالإنترنت";
-  String get go_help => "نرسل رمزًا إلى بريدك للتحقق منه. تبقى بياناتك على هذا الجهاز.";
+  String get go_help =>
+      "نرسل رمزًا إلى بريدك للتحقق منه. تبقى بياناتك على هذا الجهاز.";
   String get go_send => "إرسال الرمز";
-  String go_code_help(Gender gender) =>
-      "أدخل${_select(gender, {'female': 'ي', 'other': ''})} الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
-  String go_verify(Gender gender) =>
-      "تحقق${_select(gender, {'female': 'ي', 'other': ''})} واتصل${_select(gender, {'female': 'ي', 'other': ''})}";
-  String go_done_title(Gender gender) =>
-      "أنت${_select(gender, {'female': 'ِ', 'other': ''})} متصل${_select(gender, {'female': 'ة', 'other': ''})} الآن";
+  String go_code_help(Gender gender) => "أدخل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} الرمز المكوّن من 6 أرقام الذي أرسلناه إلى";
+  String go_verify(Gender gender) => "تحقق${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} واتصل${_select(gender, {'female': 'ي', 'other': ''})}";
+  String go_done_title(Gender gender) => "أنت${_select(gender, {
+            'female': 'ِ',
+            'other': ''
+          })} متصل${_select(gender, {'female': 'ة', 'other': ''})} الآن";
   String get go_done_help =>
       "تم التحقق من بريدك. حسابك الآن على بلسم ويمكن استعادة كلمة المرور. تبقى بياناتك الصحية على هذا الجهاز.";
   String get go_done => "تم";
   String get go_row => "الاتصال بالإنترنت";
-  String get go_row_sub => "تحقّق من بريدك لاستعادة كلمة المرور واستخدام المشاركة";
-  String go_cloud_pill(Gender gender) => "اتصل${_select(gender, {'female': 'ي', 'other': ''})}";
+  String get go_row_sub =>
+      "تحقّق من بريدك لاستعادة كلمة المرور واستخدام المشاركة";
+  String go_cloud_pill(Gender gender) =>
+      "اتصل${_select(gender, {'female': 'ي', 'other': ''})}";
   String go_failed(Gender gender) =>
-      "تعذّر الاتصال الآن. حاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى.";
+      "تعذّر الاتصال الآن. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
   String get merge_title => "هذا البريد لديه حساب في بلسم بالفعل";
-  String merge_help(Gender gender) => "تم تسجيل دخولك إلى ذلك الحساب. ${_select(gender, {
+  String merge_help(Gender gender) =>
+      "تم تسجيل دخولك إلى ذلك الحساب. ${_select(gender, {
             'female': 'اختاري',
             'other': 'اختر'
-          })} ما ${_select(gender, {'female': 'تفعلينه', 'other': 'تفعله'})} بالبيانات الموجودة على هذا الهاتف.";
+          })} ما ${_select(gender, {
+            'female': 'تفعلينه',
+            'other': 'تفعله'
+          })} بالبيانات الموجودة على هذا الهاتف.";
   String get merge_btn => "أضِف بيانات هذا الهاتف إلى حسابي";
-  String get merge_note => "يحتفظ حسابك بكلمة مروره الحالية. لن تُستخدم كلمة المرور التي عيّنتها على هذا الهاتف.";
+  String get merge_note =>
+      "يحتفظ حسابك بكلمة مروره الحالية. لن تُستخدم كلمة المرور التي عيّنتها على هذا الهاتف.";
   String get discard_btn => "احذف بيانات هذا الهاتف";
   String get discard_confirm_title => "حذف البيانات الموجودة على هذا الهاتف؟";
-  String get discard_confirm_body => "سيُحذف كل ما أضفته دون اتصال على هذا الهاتف. لا يمكن التراجع عن ذلك.";
+  String get discard_confirm_body =>
+      "سيُحذف كل ما أضفته دون اتصال على هذا الهاتف. لا يمكن التراجع عن ذلك.";
   String get discard_confirm_btn => "احذف";
-  String merge_failed(Gender gender) => "تعذّر الإكمال. حاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى.";
+  String merge_failed(Gender gender) => "تعذّر الإكمال. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'go_title':
@@ -3628,7 +3862,8 @@ class UpdateStrings_ar extends UpdateStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'upd_eyebrow_new':
@@ -3665,12 +3900,14 @@ class WebStrings_ar extends WebStrings {
   final Strings_ar _parent;
   const WebStrings_ar(this._parent) : super(_parent);
   String other_tab_t(String app) => "$app مفتوح في تبويب آخر";
-  String get other_tab_b => "حفاظًا على بياناتك، يمكن فتحه في تبويب واحد فقط. أغلق التبويب الآخر ثم حاول مرة أخرى.";
+  String get other_tab_b =>
+      "حفاظًا على بياناتك، يمكن فتحه في تبويب واحد فقط. أغلق التبويب الآخر ثم حاول مرة أخرى.";
   String get other_tab_retry => "حاول مرة أخرى";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'other_tab_t':
@@ -3685,31 +3922,436 @@ class WebStrings_ar extends WebStrings {
   }
 }
 
+class PregnancyStrings_ar extends PregnancyStrings {
+  final Strings_ar _parent;
+  const PregnancyStrings_ar(this._parent) : super(_parent);
+  String get title => "متابعة الحمل";
+  String week_n(int n) => "الأسبوع $n";
+  String week_lower(int n) => "الأسبوع $n";
+  String get week => "الأسبوع";
+  String day_n(int n) => "اليوم $n";
+  String get tri_1 => "الثلث الأول";
+  String get tri_2 => "الثلث الثاني";
+  String get tri_3 => "الثلث الثالث";
+  String get tri_short_1 => "الأول";
+  String get tri_short_2 => "الثاني";
+  String get tri_short_3 => "الثالث";
+  String days_to_go(int n) =>
+      "${_plural(n, one: 'باقٍ يوم واحد', two: 'باقٍ يومان', few: 'باقٍ $n أيام', many: 'باقٍ $n يوماً', other: 'باقٍ $n يوم')}";
+  String get days_to_due => "يوماً على الموعد المتوقع";
+  String get due_date => "الموعد المتوقع للولادة";
+  String get next_visit => "الزيارة القادمة";
+  String get prompt_b =>
+      "إن كنتِ حاملاً، سجّلي موعد الولادة المتوقع واسم طبيبتك";
+  String get not_now => "ليس الآن · يمكنك تفعيلها لاحقاً من «الملف»";
+  String get row_off => "غير مفعّلة";
+  String get next_visit_t => "زيارة المتابعة القادمة";
+  String get add_visit => "أضيفي موعد زيارة المتابعة القادمة";
+  String get visit_date => "التاريخ";
+  String get visit_time => "الوقت";
+  String get visit_time_ph => "مثل: 10:30";
+  String get visit_clinic => "العيادة";
+  String get visit_remove => "حذف هذه الزيارة";
+  String get babies => "الأطفال";
+  String get baby => "الطفل";
+  String baby_lettered(String x) => "الطفل $x";
+  String get baby_letters =>
+      "الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن";
+  String get attach => "إرفاق";
+  String get last_measure => "آخر قياس";
+  String get hr => "نبض القلب";
+  String get bpm => "نبضة/د";
+  String get efw => "الوزن التقديري";
+  String get grams => "جم";
+  String born_on(String date) => "الميلاد $date";
+  String get add_baby => "إضافة طفل";
+  String get my_records => "سجلاتي في الحمل";
+  String get my_records_empty => "نتائج تحاليلك أنتِ تظهر هنا.";
+  String get card_row => "بطاقة الطوارئ في وضع الحمل";
+  String get birth_sec => "الولادة وإنهاء المتابعة";
+  String get arrived_one => "وصل المولود";
+  String get arrived_multi => "وصل مولود";
+  String get end_t => "إنهاء متابعة الحمل";
+  String get end_b => "تبقى سجلات هذا الحمل محفوظة فيه على جهازك.";
+  String get end_cta => "إنهاء المتابعة";
+  String get go_back => "تراجع";
+  String get options => "خيارات";
+  String get rename => "تغيير الاسم";
+  String get stop_t => "إيقاف متابعة هذا الطفل";
+  String get stop_b =>
+      "ستُحفظ سجلاته داخل هذا الحمل على جهازك، ولن تظهر بطاقته بعد ذلك.";
+  String get stop_cta => "إيقاف المتابعة";
+  String get shared_all => "مشترك بين الجميع";
+  String get shared => "مشترك";
+  String get list_sep => "، ";
+  String get pregnant => "حامل";
+  String get type_2 => "حمل بتوأم";
+  String get type_3 => "حمل بثلاثة توائم";
+  String get type_4 => "حمل بأربعة توائم";
+  String type_n(int n) => "حمل متعدد ($n)";
+  String card_due(String date) => "الموعد المتوقع للولادة $date";
+  String get rh_neg => "العامل الريسوسي سالب";
+  String get rh_pos => "العامل الريسوسي موجب";
+  String get ob => "طبيبة النساء والتوليد";
+  String get card_note => "اعرضي هذه البطاقة من هاتفك في حالة الطوارئ.";
+  String get start_note =>
+      "تظهر متابعة الحمل في ملفك أنتِ فقط، ولا تظهر في ملفات العائلة.";
+  String get mode_due => "أعرف الموعد المتوقع";
+  String get mode_lmp => "أعرف تاريخ آخر دورة";
+  String get lmp => "أول يوم في آخر دورة";
+  String get est_due => "الموعد المتوقع تقريباً";
+  String get pick_date => "اختاري التاريخ";
+  String get how_many => "عدد الأطفال";
+  String get more => "أكثر";
+  String get add_later =>
+      "يمكنك إضافة طفل لاحقاً في أي وقت، مثلاً إذا ظهر توأم في سونار لاحق.";
+  String get ob_name_ph => "الاسم";
+  String get phone => "رقم الهاتف";
+  String get start_cta => "ابدئي المتابعة";
+  String get name_hint => "يمكنك أن تختاري اسماً إن أردتِ، وهذا اختياري.";
+  String get sec_scan => "السونار والتقارير";
+  String get sec_measure => "القياسات";
+  String get sec_doc => "التحاليل والمستندات";
+  String get nothing_yet => "لا شيء بعد.";
+  String get as_entered => "تُعرض القياسات كما أدخلتِها تماماً.";
+  String get add_record => "إضافة سجل";
+  String get name_sub => "اختياري. اتركيه فارغاً ليظهر الاسم الافتراضي.";
+  String get name_ph => "الاسم أو اسم التدليل";
+  String get attach_t => "إرفاق سجل";
+  String get who => "هذا السجل عن مَن؟";
+  String get me => "عنّي — نتائجي أنا";
+  String get all_babies => "كل الأطفال — تقرير مشترك";
+  String get clear_babies => "إلغاء تحديد الكل";
+  String get type => "النوع";
+  String get kind_scan => "سونار أو تقرير";
+  String get kind_measure => "قياسات";
+  String get kind_doc => "تحليل أو مستند";
+  String get one_at_a_time => "القياسات تُسجَّل لكل طفل على حدة.";
+  String get title_l => "العنوان";
+  String get title_ph_measure => "مثل: قياسات زيارة اليوم";
+  String get title_ph => "مثل: سونار الأسبوع 24";
+  String get date => "التاريخ";
+  String get hr_field => "نبض القلب (نبضة/د)";
+  String get efw_field => "الوزن التقديري (جم)";
+  String get other_field => "قياس آخر";
+  String get other_ph => "مثل: طول الفخذ";
+  String get value => "القيمة";
+  String get value_ph => "مثل: 44 مم";
+  String get as_written => "اكتبي الأرقام كما في التقرير. لا يفسّرها بلسم.";
+  String get file => "الملف";
+  String get file_pick => "صوّري أو اختاري ملفاً";
+  String get file_local => "يُحفظ على هذا الجهاز فقط";
+  String get file_attached => "ملف مرفق";
+  String birth_title(String baby) => "ملف $baby";
+  String get birth_title_one => "ملف المولود";
+  String get arrived_t => "وصل مولودك بالسلامة";
+  String get arrived_b_multi =>
+      "أنشئي ملف كل طفل عند ولادته. تبقى متابعة الحمل مفتوحة للبقية.";
+  String get arrived_b =>
+      "أنشئي ملف طفلك الآن، واختاري السجلات التي تنتقل إليه.";
+  String get which => "أي طفل؟";
+  String get blood_if_known => "إن كانت معروفة";
+  String get moves => "سجلات تنتقل إلى ملف الطفل";
+  String get no_records => "لا توجد سجلات لهذا الطفل.";
+  String get me_stay => "سجلاتك «عنّي» تبقى في ملفك أنتِ.";
+  String get create_cta => "إنشاء الملف";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'week_n':
+        return week_n;
+      case 'week_lower':
+        return week_lower;
+      case 'week':
+        return week;
+      case 'day_n':
+        return day_n;
+      case 'tri_1':
+        return tri_1;
+      case 'tri_2':
+        return tri_2;
+      case 'tri_3':
+        return tri_3;
+      case 'tri_short_1':
+        return tri_short_1;
+      case 'tri_short_2':
+        return tri_short_2;
+      case 'tri_short_3':
+        return tri_short_3;
+      case 'days_to_go':
+        return days_to_go;
+      case 'days_to_due':
+        return days_to_due;
+      case 'due_date':
+        return due_date;
+      case 'next_visit':
+        return next_visit;
+      case 'prompt_b':
+        return prompt_b;
+      case 'not_now':
+        return not_now;
+      case 'row_off':
+        return row_off;
+      case 'next_visit_t':
+        return next_visit_t;
+      case 'add_visit':
+        return add_visit;
+      case 'visit_date':
+        return visit_date;
+      case 'visit_time':
+        return visit_time;
+      case 'visit_time_ph':
+        return visit_time_ph;
+      case 'visit_clinic':
+        return visit_clinic;
+      case 'visit_remove':
+        return visit_remove;
+      case 'babies':
+        return babies;
+      case 'baby':
+        return baby;
+      case 'baby_lettered':
+        return baby_lettered;
+      case 'baby_letters':
+        return baby_letters;
+      case 'attach':
+        return attach;
+      case 'last_measure':
+        return last_measure;
+      case 'hr':
+        return hr;
+      case 'bpm':
+        return bpm;
+      case 'efw':
+        return efw;
+      case 'grams':
+        return grams;
+      case 'born_on':
+        return born_on;
+      case 'add_baby':
+        return add_baby;
+      case 'my_records':
+        return my_records;
+      case 'my_records_empty':
+        return my_records_empty;
+      case 'card_row':
+        return card_row;
+      case 'birth_sec':
+        return birth_sec;
+      case 'arrived_one':
+        return arrived_one;
+      case 'arrived_multi':
+        return arrived_multi;
+      case 'end_t':
+        return end_t;
+      case 'end_b':
+        return end_b;
+      case 'end_cta':
+        return end_cta;
+      case 'go_back':
+        return go_back;
+      case 'options':
+        return options;
+      case 'rename':
+        return rename;
+      case 'stop_t':
+        return stop_t;
+      case 'stop_b':
+        return stop_b;
+      case 'stop_cta':
+        return stop_cta;
+      case 'shared_all':
+        return shared_all;
+      case 'shared':
+        return shared;
+      case 'list_sep':
+        return list_sep;
+      case 'pregnant':
+        return pregnant;
+      case 'type_2':
+        return type_2;
+      case 'type_3':
+        return type_3;
+      case 'type_4':
+        return type_4;
+      case 'type_n':
+        return type_n;
+      case 'card_due':
+        return card_due;
+      case 'rh_neg':
+        return rh_neg;
+      case 'rh_pos':
+        return rh_pos;
+      case 'ob':
+        return ob;
+      case 'card_note':
+        return card_note;
+      case 'start_note':
+        return start_note;
+      case 'mode_due':
+        return mode_due;
+      case 'mode_lmp':
+        return mode_lmp;
+      case 'lmp':
+        return lmp;
+      case 'est_due':
+        return est_due;
+      case 'pick_date':
+        return pick_date;
+      case 'how_many':
+        return how_many;
+      case 'more':
+        return more;
+      case 'add_later':
+        return add_later;
+      case 'ob_name_ph':
+        return ob_name_ph;
+      case 'phone':
+        return phone;
+      case 'start_cta':
+        return start_cta;
+      case 'name_hint':
+        return name_hint;
+      case 'sec_scan':
+        return sec_scan;
+      case 'sec_measure':
+        return sec_measure;
+      case 'sec_doc':
+        return sec_doc;
+      case 'nothing_yet':
+        return nothing_yet;
+      case 'as_entered':
+        return as_entered;
+      case 'add_record':
+        return add_record;
+      case 'name_sub':
+        return name_sub;
+      case 'name_ph':
+        return name_ph;
+      case 'attach_t':
+        return attach_t;
+      case 'who':
+        return who;
+      case 'me':
+        return me;
+      case 'all_babies':
+        return all_babies;
+      case 'clear_babies':
+        return clear_babies;
+      case 'type':
+        return type;
+      case 'kind_scan':
+        return kind_scan;
+      case 'kind_measure':
+        return kind_measure;
+      case 'kind_doc':
+        return kind_doc;
+      case 'one_at_a_time':
+        return one_at_a_time;
+      case 'title_l':
+        return title_l;
+      case 'title_ph_measure':
+        return title_ph_measure;
+      case 'title_ph':
+        return title_ph;
+      case 'date':
+        return date;
+      case 'hr_field':
+        return hr_field;
+      case 'efw_field':
+        return efw_field;
+      case 'other_field':
+        return other_field;
+      case 'other_ph':
+        return other_ph;
+      case 'value':
+        return value;
+      case 'value_ph':
+        return value_ph;
+      case 'as_written':
+        return as_written;
+      case 'file':
+        return file;
+      case 'file_pick':
+        return file_pick;
+      case 'file_local':
+        return file_local;
+      case 'file_attached':
+        return file_attached;
+      case 'birth_title':
+        return birth_title;
+      case 'birth_title_one':
+        return birth_title_one;
+      case 'arrived_t':
+        return arrived_t;
+      case 'arrived_b_multi':
+        return arrived_b_multi;
+      case 'arrived_b':
+        return arrived_b;
+      case 'which':
+        return which;
+      case 'blood_if_known':
+        return blood_if_known;
+      case 'moves':
+        return moves;
+      case 'no_records':
+        return no_records;
+      case 'me_stay':
+        return me_stay;
+      case 'create_cta':
+        return create_cta;
+      default:
+        return super[key];
+    }
+  }
+}
+
 class FamilyStrings_ar extends FamilyStrings {
   final Strings_ar _parent;
   const FamilyStrings_ar(this._parent) : super(_parent);
-  String bar_viewing(Gender gender) => "${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}";
+  String bar_viewing(Gender gender) =>
+      "${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}";
   String get bar_your_profile => "ملفك";
   String get bar_family => "العائلة";
   String get bar_change => "تغيير";
   String get bar_a11y => "تغيير الملف المعروض";
-  String picker_title(Gender gender) => "ملف من ${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}؟";
-  String picker_sub(Gender gender) =>
-      "اختار${_select(gender, {'female': 'ي', 'other': ''})} صاحب البيانات التي تظهر في التطبيق.";
-  String picker_you(Gender gender) => "${_select(gender, {'female': 'أنتِ', 'other': 'أنت'})} · ${_select(gender, {
+  String picker_title(Gender gender) =>
+      "ملف من ${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}؟";
+  String picker_sub(Gender gender) => "اختار${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} صاحب البيانات التي تظهر في التطبيق.";
+  String picker_you(Gender gender) => "${_select(gender, {
+            'female': 'أنتِ',
+            'other': 'أنت'
+          })} · ${_select(gender, {
             'female': 'صاحبة الحساب',
             'other': 'صاحب الحساب'
           })}";
   String get manage_family => "إدارة العائلة";
-  String picker_note(Gender gender) => "هذه ملفات عائلتك على هذا الجهاز. لتبديل حساب بلسم نفسه، اضغط${_select(gender, {
+  String picker_note(Gender gender) =>
+      "هذه ملفات عائلتك على هذا الجهاز. لتبديل حساب بلسم نفسه، اضغط${_select(gender, {
             'female': 'ي',
             'other': ''
           })} صورتك أعلى الشاشة الرئيسية.";
-  String get acc_sub => "حسابات بلسم المسجّلة على هذا الجهاز. لكل حساب تسجيل دخول خاص به.";
+  String get acc_sub =>
+      "حسابات بلسم المسجّلة على هذا الجهاز. لكل حساب تسجيل دخول خاص به.";
   String get acc_signed_in => "حساب مسجّل";
-  String acc_family_t(Gender gender) => "${_select(gender, {'female': 'تبحثين', 'other': 'تبحث'})} عن ملفات أطفالك؟";
+  String acc_family_t(Gender gender) => "${_select(gender, {
+            'female': 'تبحثين',
+            'other': 'تبحث'
+          })} عن ملفات أطفالك؟";
   String acc_family_b(Gender gender) =>
-      "ملفات العائلة ليست حسابات، و${_select(gender, {'female': 'تجدينها', 'other': 'تجدها'})} في «العائلة».";
+      "ملفات العائلة ليست حسابات، و${_select(gender, {
+            'female': 'تجدينها',
+            'other': 'تجدها'
+          })} في «العائلة».";
   String get title => "العائلة";
   String get add_member => "إضافة فرد من العائلة";
   String intro(Gender gender) => "${_select(gender, {
@@ -3720,11 +4362,17 @@ class FamilyStrings_ar extends FamilyStrings {
   String empty_b(Gender gender) => "${_select(gender, {
             'female': 'أضيفي',
             'other': 'أضف'
-          })} أطفالك أو والديك لتحتفظ${_select(gender, {'female': 'ي', 'other': ''})} ببطاقة طوارئ لكل منهم.";
+          })} أطفالك أو والديك لتحتفظ${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} ببطاقة طوارئ لكل منهم.";
   String get stays_local => "بيانات عائلتك محفوظة على هذا الجهاز وحده.";
   String get manual_t => "الإدخال يدويًا";
   String manual_b(Gender gender) =>
-      "لطفلك، أو لمن لا يملك حسابًا على بلسم. ${_select(gender, {'female': 'تديرين', 'other': 'تدير'})} ملفه من جهازك.";
+      "لطفلك، أو لمن لا يملك حسابًا على بلسم. ${_select(gender, {
+            'female': 'تديرين',
+            'other': 'تدير'
+          })} ملفه من جهازك.";
   String get group_family => "عائلتي";
   String get group_neighbours => "الجيران";
   String get new_group => "مجموعة جديدة";
@@ -3738,7 +4386,8 @@ class FamilyStrings_ar extends FamilyStrings {
   String get rel_brother => "أخوك";
   String get rel_sister => "أختك";
   String get rel_sibling => "أخوك أو أختك";
-  String rel_spouse(Gender gender) => "${_select(gender, {'female': 'زوجك', 'other': 'زوجتك'})}";
+  String rel_spouse(Gender gender) =>
+      "${_select(gender, {'female': 'زوجك', 'other': 'زوجتك'})}";
   String get rel_partner => "شريك الحياة";
   String get rel_grandparent => "جدّك أو جدّتك";
   String get rel_relative => "قريب";
@@ -3778,14 +4427,18 @@ class FamilyStrings_ar extends FamilyStrings {
   String get edit_medical => "البيانات الطبية";
   String get close_profile => "إغلاق الملف";
   String close_confirm_t(String name) => "إغلاق ملف $name؟";
-  String get close_confirm_b => "تبقى سجلاته على هذا الجهاز للعرض فقط، ولا يظهر الملف في قائمة الاختيار بعد الآن.";
+  String get close_confirm_b =>
+      "تبقى سجلاته على هذا الجهاز للعرض فقط، ولا يظهر الملف في قائمة الاختيار بعد الآن.";
   String closed_toast(String name) => "أُغلق ملف $name";
   String get step_basic => "البيانات الأساسية";
   String get step_1_of_2 => "الخطوة 1 من 2 · البيانات الأساسية";
   String get step_2_of_2 => "الخطوة 2 من 2 · الموافقة";
   String get f_relation => "صلة القرابة";
   String get f_name => "الاسم";
-  String f_name_ph(Gender gender) => "الاسم كما ${_select(gender, {'female': 'تريدين', 'other': 'تريد'})} أن يظهر";
+  String f_name_ph(Gender gender) => "الاسم كما ${_select(gender, {
+            'female': 'تريدين',
+            'other': 'تريد'
+          })} أن يظهر";
   String get f_group => "المجموعة";
   String get f_dob => "تاريخ الميلاد";
   String get f_dob_ph => "يوم / شهر / سنة";
@@ -3799,29 +4452,48 @@ class FamilyStrings_ar extends FamilyStrings {
   String get next => "التالي";
   String get save => "حفظ";
   String consent_title(String name, Gender gender) =>
-      "قبل أن ${_select(gender, {'female': 'تديري', 'other': 'تدير'})} ملف $name";
-  String consent_body_f(String name, Gender gender) => "$name بالغة، ومعلوماتها الصحية ملكٌ لها. ${_select(gender, {
+      "قبل أن ${_select(gender, {
+            'female': 'تديري',
+            'other': 'تدير'
+          })} ملف $name";
+  String consent_body_f(String name, Gender gender) =>
+      "$name بالغة، ومعلوماتها الصحية ملكٌ لها. ${_select(gender, {
             'female': 'تأكدي',
             'other': 'تأكد'
           })} من موافقتها على أن ${_select(gender, {
             'female': 'تسجّلي',
             'other': 'تسجّل'
-          })} بياناتها و${_select(gender, {'female': 'تتابعيها', 'other': 'تتابعها'})} من جهازك.";
-  String consent_body_m(String name, Gender gender) => "$name بالغ، ومعلوماته الصحية ملكٌ له. ${_select(gender, {
+          })} بياناتها و${_select(gender, {
+            'female': 'تتابعيها',
+            'other': 'تتابعها'
+          })} من جهازك.";
+  String consent_body_m(String name, Gender gender) =>
+      "$name بالغ، ومعلوماته الصحية ملكٌ له. ${_select(gender, {
             'female': 'تأكدي',
             'other': 'تأكد'
-          })} من موافقته على أن ${_select(gender, {'female': 'تسجّلي', 'other': 'تسجّل'})} بياناته و${_select(gender, {
+          })} من موافقته على أن ${_select(gender, {
+            'female': 'تسجّلي',
+            'other': 'تسجّل'
+          })} بياناته و${_select(gender, {
             'female': 'تتابعيها',
             'other': 'تتابعها'
           })} من جهازك.";
   String get consent_stays => "تبقى البيانات على جهازك ولا تُرسل إلى أي مكان.";
   String consent_close(Gender gender) =>
-      "يمكنك إغلاق الملف متى ${_select(gender, {'female': 'شئتِ', 'other': 'شئت'})}.";
-  String consent_check_f(String name) => "لديّ موافقة $name على إدارة معلوماتها الصحية";
-  String consent_check_m(String name) => "لديّ موافقة $name على إدارة معلوماته الصحية";
+      "يمكنك إغلاق الملف متى ${_select(gender, {
+            'female': 'شئتِ',
+            'other': 'شئت'
+          })}.";
+  String consent_check_f(String name) =>
+      "لديّ موافقة $name على إدارة معلوماتها الصحية";
+  String consent_check_m(String name) =>
+      "لديّ موافقة $name على إدارة معلوماته الصحية";
   String get consent_hint => "نسألك هذا مرة واحدة فقط لكل فرد بالغ.";
   String add_cta(String name) => "إضافة $name";
-  String save_failed(Gender gender) => "تعذّر الحفظ. حاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى.";
+  String save_failed(Gender gender) => "تعذّر الحفظ. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
   String get card_brand => "بطاقة طوارئ · بلسم";
   String get card_allergies => "الحساسية";
   String get card_conditions => "أمراض مزمنة";
@@ -3843,7 +4515,8 @@ class FamilyStrings_ar extends FamilyStrings {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'bar_viewing':

@@ -27,6 +27,7 @@ import 'care_team_screen.dart';
 import 'family/family_account_sheet.dart';
 import 'family/member_screen.dart';
 import 'family/profile_bar.dart';
+import 'pregnancy/pregnancy_home_card.dart';
 
 /// Home tab — P001 patient-MVP scope.
 ///
@@ -114,9 +115,9 @@ class HomeScreen extends ConsumerWidget {
             else ...[
               const AwayBanner(),
 
-              // Stage 4 hook (pregnancy): the pregnancy card / "start pregnancy"
-              // prompt (design `MCHomeCards`) goes here, for the patient's own
-              // profile, when Mother & Child is on.
+              // The pregnancy card / "start pregnancy" prompt (design
+              // `MCHomeCards`), on the patient's own profile.
+              if (family) PregnancyHomeCards(gutter: g),
 
               Padding(
                 padding: EdgeInsetsDirectional.symmetric(horizontal: g),

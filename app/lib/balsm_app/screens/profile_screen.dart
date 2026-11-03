@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:core/core.dart';
 import 'package:sessions/sessions.dart';
 import 'package:deletion/deletion.dart';
+import 'package:pregnancy/pregnancy.dart';
 import '../app_state.dart';
 import '../routes.dart';
 import '../kit.dart';
@@ -21,6 +22,8 @@ import 'care_team_screen.dart';
 import 'profile_subscreens.dart';
 import 'storage_sheet.dart';
 import '../widgets/badges.dart';
+import '../flags.dart';
+import 'pregnancy/pregnancy_screen.dart';
 
 /// Profile tab (home.jsx ProfileScreen) — main screen + language/country sheets.
 class ProfileScreen extends ConsumerWidget {
@@ -163,17 +166,22 @@ class ProfileScreen extends ConsumerWidget {
 
           // Menu
           _ListCard(
-            children: rows.indexed
-                .map((entry) => _ListRow(
-                      icon: entry.$2.$1,
-                      label: s.t(entry.$2.$2),
-                      first: entry.$1 == 0,
-                      onTap: entry.$2.$3 ?? () {},
-                      iconBg: entry.$2.$4 ? T.dangerBg : null,
-                      iconFg: entry.$2.$4 ? T.danger : null,
-                      labelColor: entry.$2.$4 ? T.danger : null,
-                    ))
-                .toList(),
+            children: [
+              for (final entry in rows.indexed) ...[
+                _ListRow(
+                  icon: entry.$2.$1,
+                  label: s.t(entry.$2.$2),
+                  first: entry.$1 == 0,
+                  onTap: entry.$2.$3 ?? () {},
+                  iconBg: entry.$2.$4 ? T.dangerBg : null,
+                  iconFg: entry.$2.$4 ? T.danger : null,
+                  labelColor: entry.$2.$4 ? T.danger : null,
+                ),
+                // Mother & Child: pregnancy after the medical profile, as in
+                // the design (home-base-mc.jsx `mc_preg`).
+                if (entry.$2.$2 == 'profile.p_cond' && s.flags.isOn(AppFlags.motherChild)) const _PregnancyRow(),
+              ],
+            ],
           ),
 
           // Account & security — real governance screens (sessions, service
@@ -490,6 +498,24 @@ class _ListCard extends StatelessWidget {
           child: Column(children: children),
         ),
       );
+}
+
+/// Profile → Pregnancy: the current week, or "Off"; opens the tracker or
+/// the start screen.
+class _PregnancyRow extends ConsumerWidget {
+  const _PregnancyRow();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final p = s.strings.pregnancy;
+    final preg = ref.watch(activePregnancyProvider);
+    return _ListRow(
+      icon: LucideIcons.sprout,
+      label: p.title,
+      trailing: preg == null ? p.row_off : p.week_n(preg.infoOn(DateTime.now()).week),
+      onTap: () => openPregnancy(context, ref),
+    );
+  }
 }
 
 class _ListRow extends StatelessWidget {
