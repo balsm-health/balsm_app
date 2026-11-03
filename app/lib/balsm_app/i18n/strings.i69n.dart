@@ -7,8 +7,15 @@ import 'package:core/core.dart';
 String get _languageCode => 'en';
 String get _localeName => 'en';
 
-String _plural(int count, {String? zero, String? one, String? two, String? few, String? many, String? other}) =>
-    i69n.plural(count, _languageCode, zero: zero, one: one, two: two, few: few, many: many, other: other);
+String _plural(int count,
+        {String? zero,
+        String? one,
+        String? two,
+        String? few,
+        String? many,
+        String? other}) =>
+    i69n.plural(count, _languageCode,
+        zero: zero, one: one, two: two, few: few, many: many, other: other);
 
 class Strings implements i69n.I69nMessageBundle {
   const Strings();
@@ -34,11 +41,14 @@ class Strings implements i69n.I69nMessageBundle {
   OfflineStrings get offline => OfflineStrings(this);
   UpdateStrings get update => UpdateStrings(this);
   WebStrings get web => WebStrings(this);
+  VaccStrings get vacc => VaccStrings(this);
+  GrowthStrings get growth => GrowthStrings(this);
   FamilyStrings get family => FamilyStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'auth':
@@ -85,6 +95,10 @@ class Strings implements i69n.I69nMessageBundle {
         return update;
       case 'web':
         return web;
+      case 'vacc':
+        return vacc;
+      case 'growth':
+        return growth;
       case 'family':
         return family;
       default:
@@ -112,7 +126,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get legal_updated => "Notice version";
   String get otp_title => "Enter your code";
   String get otp_resend => "Resend code";
-  String get link_used_or_expired => "This sign-in link has already been used or has expired. Request a new code.";
+  String get link_used_or_expired =>
+      "This sign-in link has already been used or has expired. Request a new code.";
   String get otp_in => "Resend in";
   String get verify => "Verify";
   String get pw_label => "Password";
@@ -134,9 +149,11 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get device_warning =>
       "Your email isn't verified yet, so your password can't be recovered until you go online. If you lose this device before then, your data goes with it.";
   String get device_create => "Create account on device";
-  String get device_create_failed => "Couldn't create the account on this device. Try again.";
+  String get device_create_failed =>
+      "Couldn't create the account on this device. Try again.";
   String get signup_title => "Create an account";
-  String get signup_help => "Enter your email and choose a password. We'll send a 6-digit code to confirm your email.";
+  String get signup_help =>
+      "Enter your email and choose a password. We'll send a 6-digit code to confirm your email.";
   String get signup_send => "Send code";
   String get signin_title => "Sign in";
   String get signin_help => "Enter your email and password.";
@@ -145,10 +162,13 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get create_account => "Create an account";
   String get otp_confirm_title => "Confirm your email";
   String get otp_sent_to => "Enter the 6-digit code we sent to";
-  String get otp_existing_note => "If this email already has an account, you'll be signed in to it.";
-  String get signup_email_registered => "This email already has an account. Sign in instead.";
+  String get otp_existing_note =>
+      "If this email already has an account, you'll be signed in to it.";
+  String get signup_email_registered =>
+      "This email already has an account. Sign in instead.";
   String get fp_title => "Reset your password";
-  String get fp_help => "Enter your email — we'll send a code to reset your password.";
+  String get fp_help =>
+      "Enter your email — we'll send a code to reset your password.";
   String get fp_send => "Send reset code";
   String get fp_code_label => "Reset code";
   String get fp_new_pw => "New password";
@@ -157,12 +177,15 @@ class AuthStrings implements i69n.I69nMessageBundle {
   String get fp_done => "Done";
   String get fp_success => "Password updated. Sign in with your new password.";
   String get social_failed => "Sign-in failed. Please try again.";
-  String get social_unavailable => "Sign-in is unavailable right now. Use your email instead.";
-  String auth_locked_retry(String secs) => "Account temporarily locked. Try again in ${secs}s.";
+  String get social_unavailable =>
+      "Sign-in is unavailable right now. Use your email instead.";
+  String auth_locked_retry(String secs) =>
+      "Account temporarily locked. Try again in ${secs}s.";
   String get unlock_title => "Unlock Balsm";
   String get unlock_help => "Enter the password you set on this device.";
   String get unlock_wrong => "Wrong password.";
-  String unlock_locked(String secs) => "Too many attempts. Try again in ${secs}s.";
+  String unlock_locked(String secs) =>
+      "Too many attempts. Try again in ${secs}s.";
   String get unlock_btn => "Unlock";
   String get unlock_failed => "Couldn't unlock right now. Try again.";
   String get remove_device_account => "Remove this account from this phone";
@@ -176,7 +199,8 @@ class AuthStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'un_label':
@@ -338,7 +362,8 @@ class BootStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'boot_preparing':
@@ -353,13 +378,16 @@ class CareStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const CareStrings(this._parent);
   String get loc_off => "Location is turned off on this phone.";
-  String get loc_denied => "Balsm doesn’t have permission to use your location.";
-  String loc_unavailable(Gender gender) => "Couldn’t find your location. Try again outdoors.";
+  String get loc_denied =>
+      "Balsm doesn’t have permission to use your location.";
+  String loc_unavailable(Gender gender) =>
+      "Couldn’t find your location. Try again outdoors.";
   String get loc_settings => "Settings";
   String get map_sub => "places mapped nearby";
   String get to_doctor => "A copy reaches Dr. Sara at your next visit.";
   String get to_home => "Back to home";
-  String get care_intro => "The people and places caring for you — doctors, nurses, pharmacies, caregivers and more.";
+  String get care_intro =>
+      "The people and places caring for you — doctors, nurses, pharmacies, caregivers and more.";
   String get care_find => "Find care nearby";
   String get follow_up => "Follow-up";
   String get check_up => "Check-up";
@@ -376,7 +404,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get map_no_res_h => "Try a different search or filter.";
   String get map_search_area => "Search this area";
   String get map_zoomed_out => "Zoom in to see places";
-  String get map_zoomed_out_h => "The directory is searched around the area you are viewing.";
+  String get map_zoomed_out_h =>
+      "The directory is searched around the area you are viewing.";
   String map_n_types(String n) => "$n types";
   String get map_clear => "Clear search";
   String get care_empty => "No care team yet";
@@ -385,7 +414,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get care_search_ph => "Search name, specialty or clinic";
   String get care_all => "All";
   String get care_no_match => "No matches";
-  String care_no_match_h(Gender gender) => "Try another name, or add the provider yourself.";
+  String care_no_match_h(Gender gender) =>
+      "Try another name, or add the provider yourself.";
   String get care_import => "From contacts";
   String get care_import_title => "Review contacts";
   String care_import_note(Gender gender) =>
@@ -404,7 +434,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   String care_import_fab(Gender gender) => "Add from contacts";
   String care_import_banner(String n, Gender gender) =>
       "$n added to your care team. Tap edit to add specialty and address.";
-  String care_import_manual(Gender gender) => "Not in your contacts? Add manually";
+  String care_import_manual(Gender gender) =>
+      "Not in your contacts? Add manually";
   String care_import_none(Gender gender) => "Select contacts";
   String get care_import_unavailable =>
       "Your phone contacts are not available here. You can still add a provider by hand.";
@@ -423,7 +454,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get care_t_clinic => "Clinic";
   String get care_t_other => "Other";
   String get care_add_title => "Add a provider";
-  String get care_add_note => "Only the name is required. Your care team syncs to your Balsm account.";
+  String get care_add_note =>
+      "Only the name is required. Your care team syncs to your Balsm account.";
   String get care_f_type => "Provider type";
   String get care_f_name => "Name";
   String get care_ph_name_person => "Dr. Sara Kamal";
@@ -456,12 +488,14 @@ class CareStrings implements i69n.I69nMessageBundle {
   String get care_f_map => "Map link (optional)";
   String get care_ph_map => "https://maps.app.goo.gl/…";
   String get care_map_help => "In your maps app: Share → Copy link.";
-  String get care_map_bad => "That doesn’t look like a link. Copy it from Google Maps or Apple Maps.";
+  String get care_map_bad =>
+      "That doesn’t look like a link. Copy it from Google Maps or Apple Maps.";
   String get care_paste => "Paste";
   String get care_directions => "Directions";
   String get care_delete => "Remove from care team";
   String care_delete_q(String name) => "Remove $name from your care team?";
-  String get care_delete_h => "Their details and attached files will be deleted from your device.";
+  String get care_delete_h =>
+      "Their details and attached files will be deleted from your device.";
   String get care_keep => "Keep";
   String get care_attach_file => "Attach file";
   String get care_manage_files => "Manage files";
@@ -477,7 +511,8 @@ class CareStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'loc_off':
@@ -788,15 +823,18 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get body_view_back => "Back";
   String body_tap(Gender gender) => "Tap to mark location";
   String get body_layer => "Layer";
-  String body_layer_locked(Gender gender) => "Clear selection to change body type";
+  String body_layer_locked(Gender gender) =>
+      "Clear selection to change body type";
   String body_remove(String label) => "Remove $label";
   String get body_clear_all => "Clear all";
   String get body_marked => "Marked areas";
   String get rec_delete => "Delete record";
   String rec_del_body_one(String day, String time) =>
       "This record from $day, $time will be removed. This can’t be undone.";
-  String rec_del_body_n(String day) => "These records from $day will be removed. This can’t be undone.";
-  String rec_count(int n) => "${_plural(n, one: '1 record', other: '$n records')}";
+  String rec_del_body_n(String day) =>
+      "These records from $day will be removed. This can’t be undone.";
+  String rec_count(int n) =>
+      "${_plural(n, one: '1 record', other: '$n records')}";
   String get rec_select_title => "Select records";
   String get day_empty => "No records on this day.";
   String get list_sep => ", ";
@@ -805,12 +843,14 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String pain_n_where(String n, String where) => "$n/10 · $where";
   String labeled_where(String label, String where) => "$label · $where";
   String reading_unit(String n, String unit) => "$n $unit";
-  String reading_unit_ctx(String n, String unit, String ctx) => "$n $unit · $ctx";
+  String reading_unit_ctx(String n, String unit, String ctx) =>
+      "$n $unit · $ctx";
   String bp_pair(String sys, String dia) => "$sys/$dia";
   String get cond_icd10_hint => "ICD-10 (optional)";
   String get cond_onset_hint => "Onset yr";
   String get q_vitals_t => "Your vitals";
-  String q_vitals_h(Gender gender) => "Enter any readings you took today — all optional.";
+  String q_vitals_h(Gender gender) =>
+      "Enter any readings you took today — all optional.";
   String get unit_spo2 => "%";
   String get unit_bpm => "bpm";
   String get pulse_count => "Count with me";
@@ -830,7 +870,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get sym_nausea => "Nausea";
   String get sym_thirst => "Excess thirst";
   String q_mood_t(Gender gender) => "How are you feeling today?";
-  String q_sym_h(Gender gender) => "Slide to your pain level, then tap anything you feel.";
+  String q_sym_h(Gender gender) =>
+      "Slide to your pain level, then tap anything you feel.";
   String get sd_color => "Color";
   String get sd_quantity => "Quantity";
   String get sd_ml => "ml";
@@ -858,7 +899,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'latest':
@@ -1196,7 +1238,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get fam_confirm_title => "Confirm member";
   String get fam_point_camera => "Point the camera at their Balsm QR code";
   String get fam_code_found => "Code recognised";
-  String get fam_code_hint => "They can find their code in Profile → My QR code.";
+  String get fam_code_hint =>
+      "They can find their code in Profile → My QR code.";
   String get fam_manual_instead => "Enter details manually instead";
   String get fam_scan_instead => "Scan a QR code instead";
   String get fam_scan_other => "Scan a different code";
@@ -1209,9 +1252,11 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get fam_decline => "Decline";
   String get fam_approve => "Approve";
   String get fam_self_add => "You can't add yourself — this is your own code";
-  String get fam_self_add_manual => "That's your own name — family members are other people";
+  String get fam_self_add_manual =>
+      "That's your own name — family members are other people";
   String get fam_scan_invalid => "That isn't a Balsm profile code";
-  String fam_scan_failed(Gender gender) => "Couldn't read this code — try again";
+  String fam_scan_failed(Gender gender) =>
+      "Couldn't read this code — try again";
   String get rel_default => "Family member";
   String get member_dob => "Date of birth";
   String get member_dob_ph => "DD / MM / YYYY";
@@ -1235,7 +1280,8 @@ class CommonStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -1453,7 +1499,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get em_ph => "you@example.com";
   String get em_otp_h => "We sent a 6-digit code to";
   String get em_eg => "Egypt";
-  String em_intro(Gender gender) => "Egypt's nationwide emergency lines. Tap any number to call right away.";
+  String em_intro(Gender gender) =>
+      "Egypt's nationwide emergency lines. Tap any number to call right away.";
   String em_tap_call(Gender gender) => "Tap to call";
   String get em_ambulance => "Ambulance";
   String get em_police => "Police";
@@ -1461,17 +1508,22 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get em_tourist => "Tourist police";
   String get emergency => "Emergency";
   String get em_one_title => "Sign in or create an account";
-  String get em_one_help => "Enter your email and a password. New here? We'll email you a code to confirm the address.";
-  String em_send_code_q(String email) => "That didn't work. Send a code to $email to continue?";
+  String get em_one_help =>
+      "Enter your email and a password. New here? We'll email you a code to confirm the address.";
+  String em_send_code_q(String email) =>
+      "That didn't work. Send a code to $email to continue?";
   String get em_send_code => "Send me a code";
   String get em_otp_neutral_h => "Enter the 6-digit code we sent to";
   String get em_adopt_title => "Use this password from now on?";
-  String get em_adopt_help => "You signed in with a code. Save the password you just typed so it works next time.";
+  String get em_adopt_help =>
+      "You signed in with a code. Save the password you just typed so it works next time.";
   String get em_adopt_yes => "Save this password";
   String get em_adopt_no => "Keep my current one";
   String get em_adopt_saved => "Password updated.";
-  String get em_adopt_failed => "Couldn't save the password. You can set one in Settings.";
-  String get em_pw_set_failed => "Your account is ready, but the password wasn't saved. Set one in Settings.";
+  String get em_adopt_failed =>
+      "Couldn't save the password. You can set one in Settings.";
+  String get em_pw_set_failed =>
+      "Your account is ready, but the password wasn't saved. Set one in Settings.";
   String get em_pw_title => "Welcome back";
   String get em_pw_help => "Enter your password to sign in.";
   String get em_pw_signup_title => "Create your account";
@@ -1505,7 +1557,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
       "Replace this QR? Printed or shared copies will stop working immediately.";
   String get eqr_rotate_yes => "Replace";
   String get eqr_rotated_toast => "New QR ready";
-  String eqr_rotate_failed(Gender gender) => "Could not replace the QR — check your connection";
+  String eqr_rotate_failed(Gender gender) =>
+      "Could not replace the QR — check your connection";
   String get eqr_scan_history => "Scan history";
   String get eqr_scans_empty => "No scans yet";
   String get eqr_scan_client_web => "Web browser";
@@ -1519,7 +1572,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'em_label':
@@ -1664,24 +1718,28 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get greet => "Good morning";
   String get hero_time => "About 2 minutes";
   String get streak => "day streak";
-  String streak_help(Gender gender, int checked) => "Checked in ${checked} of the last 7 days";
+  String streak_help(Gender gender, int checked) =>
+      "Checked in ${checked} of the last 7 days";
   String get on_track => "On track";
   String get away_banner => "You're away from home";
   String hero_q(Gender gender) => "How are you feeling today?";
   String hero_cta(Gender gender) => "Start check-in";
-  String get hero_disclaimer => "Your own self-report — not a clinical measurement";
+  String get hero_disclaimer =>
+      "Your own self-report — not a clinical measurement";
   String get care_team_sub => "Doctors, pharmacies and caregivers";
   String get care_team_n => "providers following your care";
   String get sc_providers => "providers";
   String get sc_places => "places nearby";
   String get sc_records => "Records";
   String viewing_member(String name) => "$name is selected";
-  String viewing_own_data(Gender gender) => "Their record isn't on this device yet — you're still seeing your own.";
+  String viewing_own_data(Gender gender) =>
+      "Their record isn't on this device yet — you're still seeing your own.";
   String get viewing_switch_back => "Switch back";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'nudge_handle':
@@ -1755,7 +1813,8 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get last_7d => "Last 7 days";
   String get rx_manage => "Manage your scripts";
   String get rx_empty => "No prescriptions yet";
-  String rx_empty_h(Gender gender) => "Add a prescription to keep your scripts in one place.";
+  String rx_empty_h(Gender gender) =>
+      "Add a prescription to keep your scripts in one place.";
   String get rx_active => "Active";
   String get rx_expired => "Expired";
   String get rx_valid_until => "Valid until";
@@ -1801,14 +1860,18 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String dur_other_ph(Gender gender) => "Describe duration";
   String get rx_add_med => "Add another medication";
   String get rx_self_added => "Self-added";
-  String med_count(int n) => "${_plural(n, one: '1 medication', other: '$n medications')}";
+  String med_count(int n) =>
+      "${_plural(n, one: '1 medication', other: '$n medications')}";
   String get med_del_body_one =>
       "It’ll be removed from your daily schedule and its reminders will stop. This can’t be undone.";
   String get med_del_body_n =>
       "They’ll be removed from your daily schedule and their reminders will stop. This can’t be undone.";
-  String rx_count(int n) => "${_plural(n, one: '1 prescription', other: '$n prescriptions')}";
-  String get rx_del_body_one => "It’ll be removed from this device. This can’t be undone.";
-  String get rx_del_body_n => "They’ll be removed from this device. This can’t be undone.";
+  String rx_count(int n) =>
+      "${_plural(n, one: '1 prescription', other: '$n prescriptions')}";
+  String get rx_del_body_one =>
+      "It’ll be removed from this device. This can’t be undone.";
+  String get rx_del_body_n =>
+      "They’ll be removed from this device. This can’t be undone.";
   String get rx_self_note => "Added by you — not verified by a pharmacy.";
   String get rx_my_prescriptions => "My prescriptions";
   String get rx_take_photo => "Take photo";
@@ -1844,12 +1907,14 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get dur_period => "For a set period";
   String get dur_count => "Count";
   String get meds_signin_help => "Sign in to view your medications.";
-  String meds_empty_help(Gender gender) => "No medications yet. Add one to get started.";
+  String meds_empty_help(Gender gender) =>
+      "No medications yet. Add one to get started.";
   String get meds_none_today => "Nothing scheduled today.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'meds_today':
@@ -2090,7 +2155,8 @@ class NavStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'tab_home':
@@ -2151,7 +2217,8 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   String get lang_to_en => "Switch to English";
   String get lang_to_ar => "Switch to Arabic";
   String get pf_title => "Tell us about you";
-  String get pf_help => "This helps your care team read your reports correctly.";
+  String get pf_help =>
+      "This helps your care team read your reports correctly.";
   String get pf_fname => "First name";
   String get pf_lname => "Last name";
   String get pf_fname_ph => "e.g. Layla";
@@ -2171,7 +2238,8 @@ class OnboardingStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'w_title':
@@ -2244,7 +2312,8 @@ class WalkthroughStrings implements i69n.I69nMessageBundle {
   String get wt_body_1 =>
       "Balsm is the first and largest open-source health platform built in Egypt and the Arab world — Arabic-first, and owned by the people who use it.";
   String get wt_eyebrow_2 => "A day with Balsm";
-  String get wt_title_2 => "From this morning's reading to tonight's pharmacy run.";
+  String get wt_title_2 =>
+      "From this morning's reading to tonight's pharmacy run.";
   String get wt_body_2 =>
       "One record, one daily check-in, one map of care nearby — try them below, right where they live in the app.";
   String get wt_eyebrow_3 => "Yours, always";
@@ -2273,7 +2342,8 @@ class WalkthroughStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'wt_eyebrow_1':
@@ -2345,7 +2415,8 @@ class PrivacyStrings implements i69n.I69nMessageBundle {
   String get pv_analytics => "Anonymous analytics";
   String get pv_analytics_h => "Help us improve the app";
   String get pv_replay => "Share screen recordings";
-  String get pv_replay_h => "Masked recordings of sign-in screens only — never your health screens";
+  String get pv_replay_h =>
+      "Masked recordings of sign-in screens only — never your health screens";
   String get pv_research => "Research contributions";
   String get pv_research_h => "De-identified data for medical studies";
   String get pv_security => "Security";
@@ -2377,8 +2448,10 @@ class PrivacyStrings implements i69n.I69nMessageBundle {
       "Before you continue, please review how we handle your data. Your health data stays on your device.";
   String get pv_collect_body =>
       "A minimal non-health account (email, country, language). Health records stay encrypted on your device.";
-  String get pv_protect_body => "On-device encryption, secure transport, and least-privilege access.";
-  String get pv_rights_body => "Access, correct, or delete your data at any time from account settings.";
+  String get pv_protect_body =>
+      "On-device encryption, secure transport, and least-privilege access.";
+  String get pv_rights_body =>
+      "Access, correct, or delete your data at any time from account settings.";
   String pv_authority_body(String authority) =>
       "The authority overseeing your data protection in your country: $authority.";
   String get pv_sharing_body =>
@@ -2389,7 +2462,8 @@ class PrivacyStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'pv_sharing':
@@ -2559,7 +2633,8 @@ class ProfileStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'm_bp':
@@ -2717,30 +2792,38 @@ class EcosystemStrings implements i69n.I69nMessageBundle {
   String get eco_sub =>
       "A community-owned healthcare system for the Arab world. Open code, your data, no vendor in between.";
   String get eco_p1h => "This app — for you";
-  String get eco_p1b => "Your records, medications and appointments, whole and in your language.";
+  String get eco_p1b =>
+      "Your records, medications and appointments, whole and in your language.";
   String get eco_p2h => "Balsm Pro — for pharmacies & clinics";
-  String get eco_p2b => "Dispensing, inventory and encounters on the same open system — offline-first, on the roadmap.";
+  String get eco_p2b =>
+      "Dispensing, inventory and encounters on the same open system — offline-first, on the roadmap.";
   String get eco_help_t => "Help Balsm grow";
-  String get eco_help_sub => "Balsm belongs to the people who use it. Every one of these makes it stronger.";
+  String get eco_help_sub =>
+      "Balsm belongs to the people who use it. Every one of these makes it stronger.";
   String get eco_tagline => "Open · Arab · Trusted";
   String eco_a1h(Gender gender) => "Tell someone you trust";
-  String get eco_a1b => "Family and neighbours are how Balsm travels — one recommendation at a time.";
+  String get eco_a1b =>
+      "Family and neighbours are how Balsm travels — one recommendation at a time.";
   String eco_a2h(Gender gender) => "Share your feedback";
-  String get eco_a2b => "Rate the app and tell us what to fix. The team reads every note.";
+  String get eco_a2b =>
+      "Rate the app and tell us what to fix. The team reads every note.";
   String get eco_a3h => "Ask your pharmacy or clinic";
   String get eco_a3b =>
       "Providers join when patients ask. Mention Balsm on your next visit — it's free for them to own.";
   String get eco_a4h => "Contribute to the project";
-  String get eco_a4b => "Developers, translators, clinicians — the code and roadmap are open to everyone.";
+  String get eco_a4b =>
+      "Developers, translators, clinicians — the code and roadmap are open to everyone.";
   String get eco_share_text =>
       "I use Balsm to keep track of my health — free, open, and your data stays on your phone. Get it here:";
   String get eco_link_copied => "Link copied";
   String get eco_follow_t => "Follow Balsm";
-  String get eco_follow_sub => "Project news, the open code, and ways to support it.";
+  String get eco_follow_sub =>
+      "Project news, the open code, and ways to support it.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'eco_row':
@@ -2813,10 +2896,12 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
   String get fb_ph => "What worked well? What didn't?";
   String get fb_privacy =>
       "Sent to the Balsm team, not an app store. Please don't include health details — your health data stays on your device.";
-  String fb_failed(Gender gender) => "Couldn't send your feedback. Please try again.";
+  String fb_failed(Gender gender) =>
+      "Couldn't send your feedback. Please try again.";
   String get fb_send => "Send feedback";
   String get fb_thanks => "Received. Thank you.";
-  String get fb_thanks_sub => "The Balsm team reads every note. Yours helps Balsm work better for everyone.";
+  String get fb_thanks_sub =>
+      "The Balsm team reads every note. Yours helps Balsm work better for everyone.";
   String get fb_done => "Done";
   String get fb_t_general => "General";
   String get fb_t_ease => "Ease of use";
@@ -2826,7 +2911,8 @@ class FeedbackStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'fb_row':
@@ -2911,7 +2997,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get rec_preview => "Document preview";
   String get rec_preview_failed => "Could not open this file";
   String get rec_share => "Share with doctor";
-  String rec_empty_h(Gender gender) => "Add a lab test, scan, or report to keep your whole history in one place.";
+  String rec_empty_h(Gender gender) =>
+      "Add a lab test, scan, or report to keep your whole history in one place.";
   String get rec_pick_type => "What are you adding?";
   String get rec_title => "Title";
   String get rec_title_ph => "e.g. HbA1c blood test";
@@ -2946,19 +3033,22 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get att_url_title => "Add a link";
   String get att_url_hint => "https://…";
   String get att_url_bad => "That does not look like a web address.";
-  String get att_url_note => "Balsm stores the address only — nothing is downloaded, and it opens in your browser.";
+  String get att_url_note =>
+      "Balsm stores the address only — nothing is downloaded, and it opens in your browser.";
   String get att_paste_empty => "Nothing to paste.";
   String get att_one_file => "1 file";
   String att_n_files(String n) => "$n files";
   String rec_n_selected(String n) => "$n selected";
   String rec_delete_n_title(String n) => "Delete $n records?";
-  String get rec_delete_n_body => "The records and their files are removed from this device. This cannot be undone.";
+  String get rec_delete_n_body =>
+      "The records and their files are removed from this device. This cannot be undone.";
   String get rec_delete_confirm => "Delete";
   String get rec_delete_1_title => "Delete this record?";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'rec_documents':
@@ -3115,7 +3205,8 @@ class SettingsStrings implements i69n.I69nMessageBundle {
   String get add_member => "Add family member";
   String choose_lang(Gender gender) => "Choose language";
   String get choose_country => "Where are you now?";
-  String get travel_help => "Set your location so Balsm shows local emergency numbers and care info while you travel.";
+  String get travel_help =>
+      "Set your location so Balsm shows local emergency numbers and care info while you travel.";
   String get lang_full => "Full support";
   String get lang_beta => "Beta";
   String get home_country => "Home";
@@ -3124,13 +3215,16 @@ class SettingsStrings implements i69n.I69nMessageBundle {
   String get na_not_available => "Not available yet";
   String get na_notify_me => "Notify me when available";
   String get na_status_support => "Service status & support";
-  String get cal_months => "January|February|March|April|May|June|July|August|September|October|November|December";
-  String get cal_months_short => "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC";
+  String get cal_months =>
+      "January|February|March|April|May|June|July|August|September|October|November|December";
+  String get cal_months_short =>
+      "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC";
   String get cal_weekdays => "Su|Mo|Tu|We|Th|Fr|Sa";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'trust_private':
@@ -3234,8 +3328,10 @@ class StorageStrings implements i69n.I69nMessageBundle {
       "Only local storage is available right now. iCloud, Google Drive, and Balsm Cloud are all coming later.";
   String get store_coming_soon => "Coming soon";
   String get store_available_soon => "Available soon";
-  String get store_care_cloud_on => "On — your care team is kept in Balsm Cloud too";
-  String get store_care_cloud_off => "Off — your care team stays on this device";
+  String get store_care_cloud_on =>
+      "On — your care team is kept in Balsm Cloud too";
+  String get store_care_cloud_off =>
+      "Off — your care team stays on this device";
   String get store_care_cloud_note =>
       "Your care team syncs to Balsm Cloud so it survives a lost phone. Turn it off and new changes stay on this device; what is already in Balsm Cloud is kept.";
   String get store_always_on => "Always on";
@@ -3249,7 +3345,8 @@ class StorageStrings implements i69n.I69nMessageBundle {
   String store_synced_with(String target) => "Synced with $target";
   String get store_done => "Done";
   String get store_remove_q => "Remove cloud backup?";
-  String store_remove_help(String target) => "Your data will be removed from $target and kept on this device only.";
+  String store_remove_help(String target) =>
+      "Your data will be removed from $target and kept on this device only.";
   String get store_remove_cta => "Remove cloud backup";
   String store_synced(String when) => "Backed up · synced $when";
   String get store_sync_now => "just now";
@@ -3259,7 +3356,8 @@ class StorageStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'store_delete_rec':
@@ -3412,7 +3510,8 @@ class MapPacksStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const MapPacksStrings(this._parent);
   String get title => "Offline maps";
-  String get subtitle => "Download a governorate to use the map and nearby places without a connection.";
+  String get subtitle =>
+      "Download a governorate to use the map and nearby places without a connection.";
   String get not_downloaded => "Not downloaded";
   String get downloaded => "Downloaded";
   String get update_available => "Update available";
@@ -3422,11 +3521,13 @@ class MapPacksStrings implements i69n.I69nMessageBundle {
   String get retry => "Retry";
   String get delete => "Delete";
   String get cancel => "Cancel";
-  String get offline_notice => "Couldn't check for updates — showing what's already downloaded.";
+  String get offline_notice =>
+      "Couldn't check for updates — showing what's already downloaded.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -3463,7 +3564,8 @@ class OfflineStrings implements i69n.I69nMessageBundle {
   final Strings _parent;
   const OfflineStrings(this._parent);
   String get go_title => "Go online";
-  String get go_help => "We'll send a code to your email to verify it. Your data stays on this device.";
+  String get go_help =>
+      "We'll send a code to your email to verify it. Your data stays on this device.";
   String get go_send => "Send code";
   String go_code_help(Gender gender) => "Enter the 6-digit code we sent to";
   String go_verify(Gender gender) => "Verify and go online";
@@ -3472,7 +3574,8 @@ class OfflineStrings implements i69n.I69nMessageBundle {
       "Email verified. Your account is now on Balsm and your password can be recovered. Your health data stays on this device.";
   String get go_done => "Done";
   String get go_row => "Go online";
-  String get go_row_sub => "Verify your email to recover your password and use sharing";
+  String get go_row_sub =>
+      "Verify your email to recover your password and use sharing";
   String go_cloud_pill(Gender gender) => "Go online";
   String go_failed(Gender gender) => "Couldn't go online right now. Try again.";
   String get merge_title => "This email already has a Balsm account";
@@ -3490,7 +3593,8 @@ class OfflineStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'go_title':
@@ -3547,9 +3651,11 @@ class UpdateStrings implements i69n.I69nMessageBundle {
   String get upd_eyebrow_new => "New version";
   String get upd_eyebrow_required => "Required update";
   String upd_available_t(String app) => "A newer $app is available";
-  String get upd_available_b => "Your data stays on your device while you update.";
+  String get upd_available_b =>
+      "Your data stays on your device while you update.";
   String upd_required_t(String app) => "Update $app to continue";
-  String get upd_required_b => "This version is needed to keep your records syncing securely.";
+  String get upd_required_b =>
+      "This version is needed to keep your records syncing securely.";
   String get upd_current => "Current";
   String get upd_new => "New";
   String get upd_whats_new => "What’s new";
@@ -3559,7 +3665,8 @@ class UpdateStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'upd_eyebrow_new':
@@ -3602,7 +3709,8 @@ class WebStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'other_tab_t':
@@ -3611,6 +3719,158 @@ class WebStrings implements i69n.I69nMessageBundle {
         return other_tab_b;
       case 'other_tab_retry':
         return other_tab_retry;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class VaccStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const VaccStrings(this._parent);
+  String get title => "Vaccinations";
+  String get add => "Add vaccination";
+  String get empty_t => "No vaccinations recorded yet";
+  String empty_b(Gender gender) =>
+      "Copy the doses from the paper vaccination card, and set the next due date yourself.";
+  String get next_dose => "Next dose";
+  String dose(int n) => "Dose $n";
+  String in_days(int n) =>
+      "${_plural(n, one: 'in 1 day', other: 'in $n days')}";
+  String get past_due => "Past due, not yet recorded";
+  String was_due(String date) => "Was due $date";
+  String get due_today => "due today";
+  String days_ago(int n) =>
+      "${_plural(n, one: '1 day ago', other: '$n days ago')}";
+  String get record => "Record";
+  String get given => "Given";
+  String get f_name => "Vaccine name";
+  String get f_name_ph => "As written on the vaccination card";
+  String get f_dose => "Dose number";
+  String get f_date => "Date given";
+  String get f_clinic => "Where it was given";
+  String get f_clinic_ph => "e.g. your local health office";
+  String get f_next => "Next dose due";
+  String get optional => "Optional";
+  String f_next_hint(Gender gender) =>
+      "Set it yourself, as written on the vaccination card or as the doctor advised.";
+  String get f_next_clear => "Clear";
+  String get save => "Save vaccination";
+  String tile_next(String date) => "Next $date";
+  String recorded_n(int n) =>
+      "${_plural(n, one: '1 recorded', other: '$n recorded')}";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'add':
+        return add;
+      case 'empty_t':
+        return empty_t;
+      case 'empty_b':
+        return empty_b;
+      case 'next_dose':
+        return next_dose;
+      case 'dose':
+        return dose;
+      case 'in_days':
+        return in_days;
+      case 'past_due':
+        return past_due;
+      case 'was_due':
+        return was_due;
+      case 'due_today':
+        return due_today;
+      case 'days_ago':
+        return days_ago;
+      case 'record':
+        return record;
+      case 'given':
+        return given;
+      case 'f_name':
+        return f_name;
+      case 'f_name_ph':
+        return f_name_ph;
+      case 'f_dose':
+        return f_dose;
+      case 'f_date':
+        return f_date;
+      case 'f_clinic':
+        return f_clinic;
+      case 'f_clinic_ph':
+        return f_clinic_ph;
+      case 'f_next':
+        return f_next;
+      case 'optional':
+        return optional;
+      case 'f_next_hint':
+        return f_next_hint;
+      case 'f_next_clear':
+        return f_next_clear;
+      case 'save':
+        return save;
+      case 'tile_next':
+        return tile_next;
+      case 'recorded_n':
+        return recorded_n;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class GrowthStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const GrowthStrings(this._parent);
+  String get title => "Growth";
+  String get weight => "Weight (kg)";
+  String get height => "Height (cm)";
+  String get date => "Date";
+  String get add => "Add entry";
+  String get entries => "Entries";
+  String get empty => "No entries yet.";
+  String kg(String v) => "$v kg";
+  String cm(String v) => "$v cm";
+  String invalid(Gender gender) =>
+      "Check the numbers: weight 0.2–300 kg, height 20–250 cm.";
+  String tile_last(String date) => "Last entry $date";
+  String get tile_empty => "No entries yet";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'title':
+        return title;
+      case 'weight':
+        return weight;
+      case 'height':
+        return height;
+      case 'date':
+        return date;
+      case 'add':
+        return add;
+      case 'entries':
+        return entries;
+      case 'empty':
+        return empty;
+      case 'kg':
+        return kg;
+      case 'cm':
+        return cm;
+      case 'invalid':
+        return invalid;
+      case 'tile_last':
+        return tile_last;
+      case 'tile_empty':
+        return tile_empty;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -3626,21 +3886,25 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get bar_change => "Change";
   String get bar_a11y => "Change whose profile is shown";
   String picker_title(Gender gender) => "Whose profile?";
-  String picker_sub(Gender gender) => "Choose whose health information the app shows.";
+  String picker_sub(Gender gender) =>
+      "Choose whose health information the app shows.";
   String picker_you(Gender gender) => "You · account holder";
   String get manage_family => "Manage family";
   String picker_note(Gender gender) =>
       "These are your family's profiles on this phone. To switch Balsm accounts, tap your photo at the top of Home.";
-  String get acc_sub => "Balsm accounts signed in on this phone. Each one has its own sign-in.";
+  String get acc_sub =>
+      "Balsm accounts signed in on this phone. Each one has its own sign-in.";
   String get acc_signed_in => "Signed-in account";
   String acc_family_t(Gender gender) => "Looking for your children's profiles?";
-  String acc_family_b(Gender gender) => "Family profiles aren't accounts. They live in Family.";
+  String acc_family_b(Gender gender) =>
+      "Family profiles aren't accounts. They live in Family.";
   String get title => "Family";
   String get add_member => "Add family member";
   String intro(Gender gender) =>
       "You manage these profiles from your phone. Family members don't need an account or a sign-in.";
   String get empty_t => "No family members yet";
-  String empty_b(Gender gender) => "Add your children or parents to keep an emergency card for each.";
+  String empty_b(Gender gender) =>
+      "Add your children or parents to keep an emergency card for each.";
   String get stays_local => "Your family's data stays on this phone.";
   String get manual_t => "Enter details manually";
   String manual_b(Gender gender) =>
@@ -3676,18 +3940,22 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get pick_friend => "Friend";
   String get pick_other => "Other";
   String age_years(int n) => "${_plural(n, one: '1 year', other: '$n years')}";
-  String age_months(int n) => "${_plural(n, one: '1 month', other: '$n months')}";
+  String age_months(int n) =>
+      "${_plural(n, one: '1 month', other: '$n months')}";
   String age_and(String years, String months) => "$years $months";
   String born(String date) => "born $date";
   String get tile_card => "Emergency card";
   String get no_allergies => "No allergies";
-  String allergies_n(int n) => "${_plural(n, one: '1 allergy', other: '$n allergies')}";
+  String allergies_n(int n) =>
+      "${_plural(n, one: '1 allergy', other: '$n allergies')}";
   String get tile_meds => "Medicines";
   String get no_meds => "No medicines yet";
-  String meds_n(int n) => "${_plural(n, one: '1 medicine', other: '$n medicines')}";
+  String meds_n(int n) =>
+      "${_plural(n, one: '1 medicine', other: '$n medicines')}";
   String get tile_records => "Records";
   String get no_records => "No documents yet";
-  String records_n(int n) => "${_plural(n, one: '1 record', other: '$n records')}";
+  String records_n(int n) =>
+      "${_plural(n, one: '1 record', other: '$n records')}";
   String get member_menu => "More options";
   String get edit_details => "Edit details";
   String get edit_medical => "Medical details";
@@ -3714,15 +3982,20 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get blood_unsure => "Not sure";
   String get next => "Next";
   String get save => "Save";
-  String consent_title(String name, Gender gender) => "Before you manage $name's profile";
+  String consent_title(String name, Gender gender) =>
+      "Before you manage $name's profile";
   String consent_body_f(String name, Gender gender) =>
       "$name is an adult, and her health information belongs to her. Make sure she agrees to you recording and following it from your phone.";
   String consent_body_m(String name, Gender gender) =>
       "$name is an adult, and his health information belongs to him. Make sure he agrees to you recording and following it from your phone.";
-  String get consent_stays => "Their data stays on your phone and isn't sent anywhere.";
-  String consent_close(Gender gender) => "You can close the profile at any time.";
-  String consent_check_f(String name) => "I have their consent to manage their health information";
-  String consent_check_m(String name) => "I have their consent to manage their health information";
+  String get consent_stays =>
+      "Their data stays on your phone and isn't sent anywhere.";
+  String consent_close(Gender gender) =>
+      "You can close the profile at any time.";
+  String consent_check_f(String name) =>
+      "I have their consent to manage their health information";
+  String consent_check_m(String name) =>
+      "I have their consent to manage their health information";
   String get consent_hint => "We ask this once for each adult.";
   String add_cta(String name) => "Add $name";
   String save_failed(Gender gender) => "Couldn't save. Try again.";
@@ -3742,7 +4015,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'bar_viewing':

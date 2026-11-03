@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:medications/medications.dart';
 import 'package:profile/profile.dart';
 import 'package:records/records.dart';
+import 'package:vaccinations/vaccinations.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
@@ -15,8 +16,10 @@ import '../profile_subscreens.dart';
 import '../records_screen.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
+import 'growth_screen.dart';
 import 'member_card_screen.dart';
 import 'profile_bar.dart';
+import 'vaccinations_screen.dart';
 
 /// Opens member [id]'s home (mother-child.jsx `MCMemberScreen`).
 Future<void> openMember(BuildContext context, HealthProfileId id) =>
@@ -146,7 +149,7 @@ class MemberBody extends ConsumerWidget {
         sub: '${blood ?? '—'} · ${allergies == 0 ? f.no_allergies : f.allergies_n(allergies)}',
         onTap: () => openMemberCard(context, m.id),
       ),
-      ..._childTiles(context, m, now),
+      ..._childTiles(context, ref, m, now),
       FamilyTile(
         icon: LucideIcons.pill,
         tone: MemberTone.blue,
@@ -190,12 +193,37 @@ class MemberBody extends ConsumerWidget {
     ]);
   }
 
-  /// Tiles only a child gets — **stage 3 hook**. The design shows
-  /// Vaccinations (`syringe`, emerald) and Growth (`ruler`, aqua) here, after
-  /// the emergency card, for a member under 18 (`m.isChildOn(now)`). They
-  /// render only once the vaccinations and growth modules exist; until then
-  /// this adds nothing.
-  List<Widget> _childTiles(BuildContext context, FamilyMember m, DateTime now) => const [];
+  /// Tiles only a child gets (`m.isChildOn(now)`), after the emergency
+  /// card: Vaccinations — the next dose due, else how many are recorded —
+  /// and Growth — the day of the latest entry. Both read member [m]'s own
+  /// log, whichever profile is active.
+  List<Widget> _childTiles(BuildContext context, WidgetRef ref, FamilyMember m, DateTime now) {
+    if (!m.isChildOn(now)) return const [];
+    final s = AppScope.of(context);
+    final vaccines = ref.watch(vaccinationsProvider(m.id)).valueOrNull ?? const <VaccinationRecord>[];
+    final next = VaccinationStatus.of(vaccines, today: now).next;
+    final growth = ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[];
+    return [
+      FamilyTile(
+        icon: LucideIcons.syringe,
+        tone: MemberTone.emerald,
+        title: s.strings.vacc.title,
+        sub: next == null
+            ? s.strings.vacc.recorded_n(vaccines.length)
+            : s.strings.vacc.tile_next(formatDay(next.nextDueOn!)),
+        onTap: () => openVaccinations(context, m.id),
+      ),
+      FamilyTile(
+        icon: LucideIcons.ruler,
+        tone: MemberTone.aqua,
+        title: s.strings.growth.title,
+        sub: growth.isEmpty
+            ? s.strings.growth.tile_empty
+            : s.strings.growth.tile_last(formatDay(growth.first.measuredOn)),
+        onTap: () => openGrowth(context, m.id),
+      ),
+    ];
+  }
 
   /// Medicines / Records: the member is already the active profile, so the
   /// app's own tabs show their data. Back to the tab bar first when this body

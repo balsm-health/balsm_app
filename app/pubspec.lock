@@ -1819,6 +1819,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.5.3"
+  vaccinations:
+    dependency: "direct main"
+    description:
+      path: "../modules/vaccinations"
+      relative: true
+    source: path
+    version: "0.0.0"
   vector_graphics:
     dependency: transitive
     description:
