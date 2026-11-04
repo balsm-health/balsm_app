@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:family/family.dart';
+import 'package:family_link/family_link.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,10 +8,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../app_state.dart';
 import '../../assets.dart';
+import '../../family/family_links_sync.dart';
+import '../../flags.dart';
 import '../../kit.dart';
 import '../../tokens.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
+import 'family_link_rows.dart';
+import 'link_scan_screen.dart';
 import 'member_card_screen.dart';
 import 'member_screen.dart';
 import 'profile_bar.dart';
@@ -21,8 +26,26 @@ Future<void> openFamily(BuildContext context) => pushFamilyScreen<void>(context,
 /// Family — the member profiles this phone manages, grouped, with each
 /// one's emergency card a tap away. Opening a member makes them the active
 /// profile, as the design does.
-class FamilyScreen extends ConsumerWidget {
+///
+/// With family links on it also lists link requests waiting for this
+/// account's answer and the accounts it is linked with or waiting on, pulled
+/// when the screen opens and on pull-to-refresh.
+class FamilyScreen extends ConsumerStatefulWidget {
   const FamilyScreen({super.key});
+  @override
+  ConsumerState<FamilyScreen> createState() => _FamilyScreenState();
+}
+
+class _FamilyScreenState extends ConsumerState<FamilyScreen> {
+  bool get _links => familyLinkOn(AppScope.of(context).flags);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _links) pullFamilyLinks(ref);
+    });
+  }
 
   Future<void> _open(BuildContext context, WidgetRef ref, FamilyMember m, {bool card = false}) async {
     await ref.read(activeProfileSwitcherProvider).select(m.id);
@@ -35,14 +58,16 @@ class FamilyScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final f = s.strings.family;
     final sections = ref.watch(familySectionsProvider);
+    final links = _links;
     final now = DateTime.now();
     return FamilyScaffold(
       title: f.title,
       bar: const ProfileBar(),
+      onRefresh: links ? () => ref.read(familyLinksProvider.notifier).refresh() : null,
       footer: PButton(
         f.add_member,
         icon: LucideIcons.userPlus,
@@ -57,6 +82,7 @@ class FamilyScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 14),
           child: Text(f.intro(s.gender), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
         ),
+        if (links) const FamilyLinkSections(),
         if (sections == null)
           const SizedBox.shrink()
         else if (sections.isEmpty)
@@ -151,9 +177,9 @@ class _MemberRow extends StatelessWidget {
   }
 }
 
-/// "Add family member" (`MCAddSheet`) — manual entry only. Linking someone
-/// with their own Balsm account by QR needs the Identity & Access link flow
-/// and is not offered here.
+/// "Add family member" (`MCAddSheet`): enter a member's details by hand, or
+/// — with family links on — scan the profile QR of someone with their own
+/// Balsm account, who then approves the request in their app.
 Future<void> showAddMemberSheet(BuildContext context) {
   final s = AppScope.of(context);
   return showAppSheet<void>(
@@ -162,30 +188,64 @@ Future<void> showAddMemberSheet(BuildContext context) {
     builder: (ctx) {
       final f = s.strings.family;
       return FamilySheet(title: f.add_member, children: [
-        PressHighlight(
+        _AddRow(
+          icon: LucideIcons.pencilLine,
+          accent: true,
+          title: f.manual_t,
+          sub: f.manual_b(s.gender),
           onTap: () {
             Navigator.pop(ctx);
             openAddMember(context);
           },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.border)),
-            child: Row(children: [
-              IconSquare(LucideIcons.pencilLine, bg: s.accent.bg, fg: s.accent.main, size: 44, iconSize: 22),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(f.manual_t, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                  const SizedBox(height: 2),
-                  Text(f.manual_b(s.gender), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                ]),
-              ),
-              Chevron(rtl: s.rtl),
-            ]),
-          ),
         ),
+        if (familyLinkOn(s.flags)) ...[
+          const SizedBox(height: 10),
+          _AddRow(
+            icon: LucideIcons.qrCode,
+            title: f.scan_t,
+            sub: f.scan_b,
+            onTap: () {
+              Navigator.pop(ctx);
+              openLinkScan(context);
+            },
+          ),
+        ],
         const StaysLocalNote(center: false),
       ]);
     },
   );
+}
+
+/// `MCAddRow` — icon square, title, one line under it, chevron.
+class _AddRow extends StatelessWidget {
+  const _AddRow({required this.icon, required this.title, required this.sub, required this.onTap, this.accent = false});
+  final IconData icon;
+  final String title;
+  final String sub;
+  final VoidCallback onTap;
+  final bool accent;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return PressHighlight(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.border)),
+        child: Row(children: [
+          IconSquare(icon,
+              bg: accent ? s.accent.bg : T.ink50, fg: accent ? s.accent.main : T.fg2, size: 44, iconSize: 22),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+              const SizedBox(height: 2),
+              Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            ]),
+          ),
+          Chevron(rtl: s.rtl),
+        ]),
+      ),
+    );
+  }
 }

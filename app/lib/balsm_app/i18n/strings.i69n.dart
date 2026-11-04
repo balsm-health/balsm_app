@@ -4408,6 +4408,46 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get contact_phone => "Phone number";
   String get contact_add => "Add";
   String a11y_call(String name) => "Call $name";
+  String get scan_t => "Scan their QR code";
+  String get scan_b =>
+      "For someone with their own Balsm account. They approve the request in their app.";
+  String get link_section => "Linked accounts";
+  String get link_requests => "Link requests";
+  String link_asks(String relation) => "Asked to add you as $relation";
+  String get link_waiting => "Waiting for approval";
+  String get link_read_only => "Read-only";
+  String get link_someone => "Balsm member";
+  String link_sent(Gender gender) =>
+      "Request sent. They'll see it in their Balsm app.";
+  String link_not_found(Gender gender) =>
+      "This code is no longer valid. Ask them to show their current code.";
+  String link_exists(Gender gender) =>
+      "You've already asked to link with this person, or you're already linked.";
+  String link_failed(Gender gender) => "Couldn't send the request. Try again.";
+  String link_offline(Gender gender) =>
+      "You're offline. Connect and try again.";
+  String link_action_failed(Gender gender) =>
+      "Couldn't update the link. Try again.";
+  String link_linked_toast(String name, Gender gender) =>
+      "You're now linked with $name";
+  String get link_card_section => "Their emergency card";
+  String link_card_updated(String date) => "Updated $date";
+  String get link_card_not_shared => "Not shared";
+  String get link_card_not_shared_b =>
+      "They haven't shared their emergency card with you.";
+  String link_card_stale(Gender gender) =>
+      "Ask them to open Balsm to refresh their card.";
+  String get link_share_t => "Share my emergency card";
+  String link_share_b(Gender gender) =>
+      "Only their phone can open it — not Balsm, and no one else. You can turn it off at any time.";
+  String link_share_failed(Gender gender) =>
+      "Couldn't change sharing. Try again.";
+  String get link_unlink => "Unlink";
+  String link_unlink_t(String name) => "Unlink from $name?";
+  String get link_unlink_b =>
+      "Neither of you will see the other's shared card any more.";
+  String get link_unlinked_toast => "Unlinked";
+  String get link_dot_a11y => "A link request is waiting";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4639,6 +4679,62 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return contact_add;
       case 'a11y_call':
         return a11y_call;
+      case 'scan_t':
+        return scan_t;
+      case 'scan_b':
+        return scan_b;
+      case 'link_section':
+        return link_section;
+      case 'link_requests':
+        return link_requests;
+      case 'link_asks':
+        return link_asks;
+      case 'link_waiting':
+        return link_waiting;
+      case 'link_read_only':
+        return link_read_only;
+      case 'link_someone':
+        return link_someone;
+      case 'link_sent':
+        return link_sent;
+      case 'link_not_found':
+        return link_not_found;
+      case 'link_exists':
+        return link_exists;
+      case 'link_failed':
+        return link_failed;
+      case 'link_offline':
+        return link_offline;
+      case 'link_action_failed':
+        return link_action_failed;
+      case 'link_linked_toast':
+        return link_linked_toast;
+      case 'link_card_section':
+        return link_card_section;
+      case 'link_card_updated':
+        return link_card_updated;
+      case 'link_card_not_shared':
+        return link_card_not_shared;
+      case 'link_card_not_shared_b':
+        return link_card_not_shared_b;
+      case 'link_card_stale':
+        return link_card_stale;
+      case 'link_share_t':
+        return link_share_t;
+      case 'link_share_b':
+        return link_share_b;
+      case 'link_share_failed':
+        return link_share_failed;
+      case 'link_unlink':
+        return link_unlink;
+      case 'link_unlink_t':
+        return link_unlink_t;
+      case 'link_unlink_b':
+        return link_unlink_b;
+      case 'link_unlinked_toast':
+        return link_unlinked_toast;
+      case 'link_dot_a11y':
+        return link_dot_a11y;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

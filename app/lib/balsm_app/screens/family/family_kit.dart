@@ -200,6 +200,7 @@ class FamilyScaffold extends StatelessWidget {
     this.trailing,
     this.bar,
     this.footer,
+    this.onRefresh,
   });
   final String title;
   final List<Widget> children;
@@ -207,6 +208,9 @@ class FamilyScaffold extends StatelessWidget {
   final Widget? trailing;
   final Widget? bar;
   final Widget? footer;
+
+  /// Pull-to-refresh on the body, when given.
+  final Future<void> Function()? onRefresh;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -234,7 +238,16 @@ class FamilyScaffold extends StatelessWidget {
         Expanded(
           child: ContentColumn(
             maxWidth: 640,
-            child: ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 40), children: children),
+            child: onRefresh == null
+                ? ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 40), children: children)
+                : RefreshIndicator(
+                    onRefresh: onRefresh!,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                      children: children,
+                    ),
+                  ),
           ),
         ),
         if (footer != null)

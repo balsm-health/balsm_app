@@ -1,10 +1,12 @@
 import 'package:core/core.dart';
 import 'package:family/family.dart';
+import 'package:family_link/family_link.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../app_state.dart';
+import '../../flags.dart';
 import '../../kit.dart';
 import '../../tokens.dart';
 import 'family_kit.dart';
@@ -31,9 +33,13 @@ class ProfileBar extends ConsumerWidget {
             .toList()
         : const <FamilyMember>[];
     final ring = tone?.bg ?? T.ink50;
+    // A link request waiting for this account's answer (pulled — no push).
+    final waiting =
+        familyLinkOn(s.flags) && (ref.watch(familyLinksProvider).valueOrNull?.awaitingMe.isNotEmpty ?? false);
+    final avatar = m == null ? const SelfAvatar(size: 30) : MemberAvatar(m, size: 30);
     return Semantics(
       button: true,
-      label: f.bar_a11y,
+      label: waiting ? '${f.bar_a11y}. ${f.link_dot_a11y}' : f.bar_a11y,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
         child: Pressable(
@@ -47,7 +53,26 @@ class ProfileBar extends ConsumerWidget {
               border: Border.all(color: m == null ? T.border : Colors.transparent),
             ),
             child: Row(children: [
-              if (m == null) const SelfAvatar(size: 30) else MemberAvatar(m, size: 30),
+              if (!waiting)
+                avatar
+              else
+                Stack(clipBehavior: Clip.none, children: [
+                  avatar,
+                  PositionedDirectional(
+                    top: -2,
+                    end: -2,
+                    child: Container(
+                      key: const ValueKey('family-link-dot'),
+                      width: 11,
+                      height: 11,
+                      decoration: BoxDecoration(
+                        color: T.danger,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ]),
               const SizedBox(width: 10),
               Expanded(
                 child: Text.rich(

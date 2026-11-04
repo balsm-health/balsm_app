@@ -114,17 +114,59 @@ class MemberEmergencyCard extends StatelessWidget {
     final s = AppScope.of(context);
     final f = s.strings.family;
     final m = member;
-    final now = DateTime.now();
-    final age = m.ageOn(now);
-    final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
-    final meta = [
-      if (m.sex != null) m.sex == Sex.female ? f.sex_female : f.sex_male,
-      if (age != null) ageLabel(s, age),
-      if (m.dateOfBirth != null) f.born(formatDay(m.dateOfBirth!)),
-    ].join(' · ');
-    final allergies = health?.allergies.map((a) => a.name).join(s.rtl ? '، ' : ', ') ?? '';
-    final conditions = health?.conditions.map((c) => c.name).join(s.rtl ? '، ' : ', ') ?? '';
-    final contacts = health?.emergencyContacts ?? const <EmergencyContact>[];
+    final age = m.ageOn(DateTime.now());
+    return EmergencyCardBody(
+      name: m.displayName,
+      meta: [
+        if (m.sex != null) m.sex == Sex.female ? f.sex_female : f.sex_male,
+        if (age != null) ageLabel(s, age),
+        if (m.dateOfBirth != null) f.born(formatDay(m.dateOfBirth!)),
+      ].join(' · '),
+      bloodType: (health?.bloodType ?? m.bloodType)?.code,
+      allergies: [for (final a in health?.allergies ?? const <Allergy>[]) a.name],
+      conditions: [for (final c in health?.conditions ?? const <ChronicCondition>[]) c.name],
+      contacts: [
+        for (final c in health?.emergencyContacts ?? const <EmergencyContact>[])
+          (name: c.name, phone: c.phone, relation: c.relation),
+      ],
+      banner: banner,
+      extraRows: extraRows,
+    );
+  }
+}
+
+/// One emergency contact as the card shows it.
+typedef CardContactRow = ({String name, String phone, String? relation});
+
+/// The emergency card's layout over plain values, so a member's own profile
+/// and a card shared over a family link render the same.
+class EmergencyCardBody extends StatelessWidget {
+  const EmergencyCardBody({
+    super.key,
+    required this.name,
+    required this.meta,
+    required this.bloodType,
+    required this.allergies,
+    required this.conditions,
+    required this.contacts,
+    this.banner,
+    this.extraRows = const [],
+  });
+  final String name;
+  final String meta;
+  final String? bloodType;
+  final List<String> allergies;
+  final List<String> conditions;
+  final List<CardContactRow> contacts;
+  final Widget? banner;
+  final List<Widget> extraRows;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final f = s.strings.family;
+    final blood = bloodType?.replaceAll('-', '−');
+    final sep = s.rtl ? '، ' : ', ';
     const line = BorderSide(color: T.ink100);
     return PCard(
       padding: EdgeInsets.zero,
@@ -138,7 +180,7 @@ class MemberEmergencyCard extends StatelessWidget {
               Text(f.card_brand, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600)),
             ]),
             const SizedBox(height: 6),
-            Text(m.displayName, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            Text(name, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             if (meta.isNotEmpty) Text(meta, style: Typo.meta(ar: s.rtl)),
             const SizedBox(height: 12),
             Text(f.f_blood, style: Typo.meta(ar: s.rtl)),
@@ -153,9 +195,9 @@ class MemberEmergencyCard extends StatelessWidget {
           decoration: const BoxDecoration(border: Border(top: line)),
           child: IntrinsicHeight(
             child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Expanded(child: _cell(s, f.card_allergies, allergies.isEmpty ? f.card_none : allergies)),
+              Expanded(child: _cell(s, f.card_allergies, allergies.isEmpty ? f.card_none : allergies.join(sep))),
               const VerticalDivider(width: 1, thickness: 1, color: T.ink100),
-              Expanded(child: _cell(s, f.card_conditions, conditions.isEmpty ? f.card_none : conditions)),
+              Expanded(child: _cell(s, f.card_conditions, conditions.isEmpty ? f.card_none : conditions.join(sep))),
             ]),
           ),
         ),
@@ -187,7 +229,7 @@ class MemberEmergencyCard extends StatelessWidget {
 
 class _ContactRow extends StatelessWidget {
   const _ContactRow({required this.contact});
-  final EmergencyContact contact;
+  final CardContactRow contact;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);

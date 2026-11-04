@@ -4679,6 +4679,74 @@ class FamilyStrings_ar extends FamilyStrings {
   String get contact_phone => "رقم الهاتف";
   String get contact_add => "إضافة";
   String a11y_call(String name) => "اتصال بـ$name";
+  String get scan_t => "مسح رمز QR الخاص بهم";
+  String get scan_b => "لمن لديه حساب على بلسم. يوافق على الطلب من تطبيقه.";
+  String get link_section => "حسابات مرتبطة";
+  String get link_requests => "طلبات الربط";
+  String link_asks(String relation) => "طلب إضافتك بصفة $relation";
+  String get link_waiting => "بانتظار موافقته";
+  String get link_read_only => "للعرض فقط";
+  String get link_someone => "مستخدم على بلسم";
+  String link_sent(Gender gender) =>
+      "تم إرسال الطلب. سيراه في تطبيق بلسم الخاص به.";
+  String link_not_found(Gender gender) =>
+      "هذا الرمز لم يعد صالحًا. اطلب${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} منه إظهار رمزه الحالي.";
+  String link_exists(Gender gender) => "سبق أن ${_select(gender, {
+            'female': 'طلبتِ',
+            'other': 'طلبت'
+          })} الربط مع هذا الشخص، أو أنكما مرتبطان بالفعل.";
+  String link_failed(Gender gender) =>
+      "تعذّر إرسال الطلب. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
+  String link_offline(Gender gender) => "${_select(gender, {
+            'female': 'أنتِ غير متصلة',
+            'other': 'أنت غير متصل'
+          })} بالإنترنت. ${_select(gender, {
+            'female': 'اتصلي',
+            'other': 'اتصل'
+          })} وحاول${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى.";
+  String link_action_failed(Gender gender) =>
+      "تعذّر تحديث الربط. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
+  String link_linked_toast(String name, Gender gender) => "${_select(gender, {
+            'female': 'أصبحتِ مرتبطة',
+            'other': 'أصبحت مرتبطًا'
+          })} بـ$name";
+  String get link_card_section => "بطاقة الطوارئ الخاصة به";
+  String link_card_updated(String date) => "آخر تحديث $date";
+  String get link_card_not_shared => "غير مُشارَكة";
+  String get link_card_not_shared_b => "لم يشارك بطاقة الطوارئ الخاصة به معك.";
+  String link_card_stale(Gender gender) => "اطلب${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} منه فتح بلسم لتحديث بطاقته.";
+  String get link_share_t => "مشاركة بطاقة الطوارئ الخاصة بي";
+  String link_share_b(Gender gender) =>
+      "لا يستطيع فتحها إلا هاتفه — لا بلسم ولا أي شخص آخر. ${_select(gender, {
+            'female': 'يمكنكِ',
+            'other': 'يمكنك'
+          })} إيقافها متى ${_select(gender, {
+            'female': 'شئتِ',
+            'other': 'شئت'
+          })}.";
+  String link_share_failed(Gender gender) =>
+      "تعذّر تغيير المشاركة. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
+  String get link_unlink => "إلغاء الربط";
+  String link_unlink_t(String name) => "إلغاء الربط مع $name؟";
+  String get link_unlink_b =>
+      "لن يرى أيٌّ منكما البطاقة التي شاركها الآخر بعد الآن.";
+  String get link_unlinked_toast => "تم إلغاء الربط";
+  String get link_dot_a11y => "طلب ربط بانتظار الرد";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4910,6 +4978,62 @@ class FamilyStrings_ar extends FamilyStrings {
         return contact_add;
       case 'a11y_call':
         return a11y_call;
+      case 'scan_t':
+        return scan_t;
+      case 'scan_b':
+        return scan_b;
+      case 'link_section':
+        return link_section;
+      case 'link_requests':
+        return link_requests;
+      case 'link_asks':
+        return link_asks;
+      case 'link_waiting':
+        return link_waiting;
+      case 'link_read_only':
+        return link_read_only;
+      case 'link_someone':
+        return link_someone;
+      case 'link_sent':
+        return link_sent;
+      case 'link_not_found':
+        return link_not_found;
+      case 'link_exists':
+        return link_exists;
+      case 'link_failed':
+        return link_failed;
+      case 'link_offline':
+        return link_offline;
+      case 'link_action_failed':
+        return link_action_failed;
+      case 'link_linked_toast':
+        return link_linked_toast;
+      case 'link_card_section':
+        return link_card_section;
+      case 'link_card_updated':
+        return link_card_updated;
+      case 'link_card_not_shared':
+        return link_card_not_shared;
+      case 'link_card_not_shared_b':
+        return link_card_not_shared_b;
+      case 'link_card_stale':
+        return link_card_stale;
+      case 'link_share_t':
+        return link_share_t;
+      case 'link_share_b':
+        return link_share_b;
+      case 'link_share_failed':
+        return link_share_failed;
+      case 'link_unlink':
+        return link_unlink;
+      case 'link_unlink_t':
+        return link_unlink_t;
+      case 'link_unlink_b':
+        return link_unlink_b;
+      case 'link_unlinked_toast':
+        return link_unlinked_toast;
+      case 'link_dot_a11y':
+        return link_dot_a11y;
       default:
         return super[key];
     }
