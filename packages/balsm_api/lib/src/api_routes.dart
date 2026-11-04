@@ -88,6 +88,19 @@ class ApiRoutes {
   /// propagates to the patient's other devices.
   static String careTeamProvider(String id) => '$care_team_providers/$id';
 
+  // ── Family links (Identity & Access) ──────────────────────────────────────
+  // Linking two Balsm accounts by profile QR, and the sealed emergency card
+  // each side may share with the other. The server stores ciphertext only.
+  static const _family_links = '/api/v1/family-links';
+  static const family_links = _family_links;
+  static const family_links_incoming = '$_family_links/incoming';
+  static const family_links_outgoing = '$_family_links/outgoing';
+  static String familyLink(String id) => '$_family_links/$id';
+  static String familyLinkApprove(String id) => '$_family_links/$id/approve';
+  static String familyLinkDecline(String id) => '$_family_links/$id/decline';
+  static String familyLinkKeys(String id) => '$_family_links/$id/keys';
+  static String familyLinkCard(String id) => '$_family_links/$id/card';
+
   // ── Platform ──────────────────────────────────────────────────────────────
   /// Host readiness probe. Anonymous, and the only endpoint safe to call
   /// against a server the app is not signed in to — which is what the Dev

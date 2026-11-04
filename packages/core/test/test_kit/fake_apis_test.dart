@@ -126,6 +126,17 @@ void main() {
     expect(container.read(disclosureApiProvider), isA<FakeDisclosureApi>());
     expect(container.read(geofenceApiProvider), isA<FakeGeofenceApi>());
     expect(container.read(careDirectoryApiProvider), isA<FakeCareDirectoryApi>());
+    expect(container.read(familyLinksApiProvider), isA<FakeFamilyLinksApi>());
+  });
+
+  test('FakeFamilyLinksApi answers 404 for an unknown jti and stores a pending request', () async {
+    final api = FakeFamilyLinksApi()..knownJtis.add('jti-known');
+    const ask = CreateFamilyLinkRequest(id: 'l1', jti: 'jti-unknown', relation: 'son', publicKey: 'k');
+
+    await expectLater(api.create(ask), throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)));
+    await api.create(const CreateFamilyLinkRequest(id: 'l1', jti: 'jti-known', relation: 'son', publicKey: 'k'));
+
+    expect((await api.outgoing()).single.status, 'pending');
   });
 
   test('e2eApiOverrides accepts a pre-configured fake so a test can force state', () {

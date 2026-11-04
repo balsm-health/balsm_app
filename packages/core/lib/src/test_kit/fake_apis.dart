@@ -383,6 +383,165 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
   Future<List<MapPackResponse>> packs(MapPacksQuery query, {CancelToken? cancelToken}) async => const [];
 }
 
+/// In-memory [FamilyLinksApi] holding one account's view of its links.
+///
+/// [links] and [cards] are the knobs: seed a row to reach a branch, read them
+/// back to assert what the client sent. A jti in [knownJtis] resolves; any
+/// other answers `404`, as the server does for unknown, revoked and expired
+/// tokens alike. No names or health data are invented here.
+class FakeFamilyLinksApi implements FamilyLinksApi {
+  /// The caller's links, by id.
+  final links = <String, FamilyLinkResponse>{};
+
+  /// Cards the other party sealed for the caller, by link id.
+  final cards = <String, SealedCardResponse>{};
+
+  /// Cards the caller sealed for the other party, by link id.
+  final sentCards = <String, PutSealedCardRequest>{};
+
+  /// Public keys the caller sent, by link id.
+  final sentKeys = <String, String>{};
+
+  /// Profile-QR jtis that resolve to another account.
+  final knownJtis = <String>{};
+
+  /// Every call made, as "verb id", in order.
+  final calls = <String>[];
+
+  /// When set, every call throws it — e.g. an offline [ApiException].
+  ApiException? failWith;
+
+  static const _missing = ApiException(code: 'not_found', statusCode: 404);
+  static const _conflict = ApiException(code: 'conflict', statusCode: 409);
+
+  void _guard(String call) {
+    calls.add(call);
+    if (failWith != null) throw failWith!;
+  }
+
+  FamilyLinkResponse _with(FamilyLinkResponse l, {String? status, bool? byMe}) => FamilyLinkResponse(
+        id: l.id,
+        relation: l.relation,
+        status: status ?? l.status,
+        direction: l.direction,
+        createdAt: l.createdAt,
+        updatedAt: l.updatedAt,
+        otherAccountId: l.otherAccountId,
+        otherDisplayName: l.otherDisplayName,
+        otherHandle: l.otherHandle,
+        otherPublicKey: l.otherPublicKey,
+        cardSharedByMe: byMe ?? l.cardSharedByMe,
+        cardSharedWithMe: cards.containsKey(l.id),
+      );
+
+  @override
+  Future<void> create(CreateFamilyLinkRequest request, {CancelToken? cancelToken}) async {
+    _guard('create ${request.id}');
+    if (links.containsKey(request.id)) return;
+    if (!knownJtis.contains(request.jti)) throw _missing;
+    sentKeys[request.id] = request.publicKey;
+    links[request.id] = FamilyLinkResponse(
+      id: request.id,
+      relation: request.relation,
+      status: 'pending',
+      direction: 'outgoing',
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
+  }
+
+  @override
+  Future<List<FamilyLinkResponse>> incoming({String? status, CancelToken? cancelToken}) async {
+    _guard('incoming');
+    return [
+      for (final l in links.values)
+        if (l.direction == 'incoming' && (status == null || l.status == status)) _with(l),
+    ];
+  }
+
+  @override
+  Future<List<FamilyLinkResponse>> outgoing({CancelToken? cancelToken}) async {
+    _guard('outgoing');
+    return [
+      for (final l in links.values)
+        if (l.direction == 'outgoing') _with(l),
+    ];
+  }
+
+  @override
+  Future<FamilyLinkResponse> get(String id, {CancelToken? cancelToken}) async {
+    _guard('get $id');
+    final l = links[id];
+    if (l == null) throw _missing;
+    return _with(l);
+  }
+
+  @override
+  Future<void> approve(String id, FamilyLinkKeyRequest request, {CancelToken? cancelToken}) async {
+    _guard('approve $id');
+    final l = links[id];
+    if (l == null || l.direction != 'incoming') throw _missing;
+    if (l.status != 'pending') throw _conflict;
+    sentKeys[id] = request.publicKey;
+    links[id] = _with(l, status: 'linked');
+  }
+
+  @override
+  Future<void> decline(String id, {CancelToken? cancelToken}) async {
+    _guard('decline $id');
+    final l = links[id];
+    if (l == null || l.direction != 'incoming') throw _missing;
+    if (l.status != 'pending') throw _conflict;
+    links[id] = _with(l, status: 'declined');
+  }
+
+  @override
+  Future<void> delete(String id, {CancelToken? cancelToken}) async {
+    _guard('delete $id');
+    final l = links[id];
+    if (l == null) return;
+    if (l.status == 'pending' && l.direction == 'outgoing') {
+      links[id] = _with(l, status: 'cancelled', byMe: false);
+    } else if (l.status == 'linked') {
+      links[id] = _with(l, status: 'unlinked', byMe: false);
+    }
+    sentCards.remove(id);
+    cards.remove(id);
+  }
+
+  @override
+  Future<void> putKeys(String id, FamilyLinkKeyRequest request, {CancelToken? cancelToken}) async {
+    _guard('putKeys $id');
+    if (!links.containsKey(id)) throw _missing;
+    sentKeys[id] = request.publicKey;
+  }
+
+  @override
+  Future<void> putCard(String id, PutSealedCardRequest request, {CancelToken? cancelToken}) async {
+    _guard('putCard $id');
+    final l = links[id];
+    if (l == null) throw _missing;
+    final prior = sentCards[id];
+    if (l.status != 'linked' || (prior != null && request.version <= prior.version)) throw _conflict;
+    sentCards[id] = request;
+    links[id] = _with(l, byMe: true);
+  }
+
+  @override
+  Future<SealedCardResponse?> getCard(String id, {CancelToken? cancelToken}) async {
+    _guard('getCard $id');
+    if (!links.containsKey(id)) throw _missing;
+    return cards[id];
+  }
+
+  @override
+  Future<void> deleteCard(String id, {CancelToken? cancelToken}) async {
+    _guard('deleteCard $id');
+    sentCards.remove(id);
+    final l = links[id];
+    if (l != null) links[id] = _with(l, byMe: false);
+  }
+}
+
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force
 /// a branch; omit it for a fresh default.
 ///
@@ -397,6 +556,7 @@ List<Override> e2eApiOverrides({
   FakeDisclosureApi? disclosure,
   FakeGeofenceApi? geofence,
   FakeCareDirectoryApi? careDirectory,
+  FakeFamilyLinksApi? familyLinks,
 }) =>
     [
       authApiProvider.overrideWithValue(auth ?? FakeAuthApi()),
@@ -407,4 +567,5 @@ List<Override> e2eApiOverrides({
       disclosureApiProvider.overrideWithValue(disclosure ?? FakeDisclosureApi()),
       geofenceApiProvider.overrideWithValue(geofence ?? FakeGeofenceApi()),
       careDirectoryApiProvider.overrideWithValue(careDirectory ?? FakeCareDirectoryApi()),
+      familyLinksApiProvider.overrideWithValue(familyLinks ?? FakeFamilyLinksApi()),
     ];

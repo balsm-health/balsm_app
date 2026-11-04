@@ -65,6 +65,12 @@ final careTeamApiProvider = Provider<CareTeamApi>((ref) {
   return DioCareTeamApi(net: ref.watch(networkManagerProvider));
 });
 
+/// Family links between two accounts and the sealed emergency cards shared
+/// over them (Identity & Access). Ciphertext only — the server never reads a card.
+final familyLinksApiProvider = Provider<FamilyLinksApi>((ref) {
+  return DioFamilyLinksApi(net: ref.watch(networkManagerProvider));
+});
+
 /// Map-pack bytes downloader.
 ///
 /// Deliberately NOT built on [balsmApiClientProvider]'s Dio: basemaps come

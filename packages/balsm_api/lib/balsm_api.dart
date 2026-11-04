@@ -55,6 +55,11 @@ export 'src/disclosure/disclosure_api.dart';
 export 'src/disclosure/dio_disclosure_api.dart';
 export 'src/disclosure/requests.dart';
 
+export 'src/family_links/family_links_api.dart';
+export 'src/family_links/dio_family_links_api.dart';
+export 'src/family_links/requests.dart';
+export 'src/family_links/responses.dart';
+
 export 'src/geofence/geofence_api.dart';
 export 'src/geofence/dio_geofence_api.dart';
 export 'src/geofence/responses.dart';
