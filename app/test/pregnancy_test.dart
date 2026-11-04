@@ -2,6 +2,7 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
+import 'package:app/balsm_app/pregnancy/api_pregnancy_guidance.dart';
 import 'package:app/balsm_app/pregnancy/profile_pregnancy_babies.dart';
 import 'package:app/balsm_app/screens/home_screen.dart';
 import 'package:app/balsm_app/screens/pregnancy/birth_screen.dart';
@@ -59,6 +60,9 @@ void main() {
       globalKVDataSourceProvider.overrideWithValue(kv),
       familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
       pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
+      // No guidance content (the fake answers 404): the card stays out.
+      contentApiProvider.overrideWithValue(FakeContentApi()),
+      pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource),
       accountSummaryProvider.overrideWith((ref) async => const AccountSummary(
             id: user,
             displayName: 'Test Mother',
@@ -194,7 +198,7 @@ void main() {
   });
 
   group('Pregnancy screen', () {
-    testWidgets('twins: week hero, Baby A and Baby B, no weekly guidance', (tester) async {
+    testWidgets('twins: week hero, Baby A and Baby B, no weekly guidance without content', (tester) async {
       final s = state();
       final p = s.strings.pregnancy;
       final c = await pump(tester, const SizedBox(), s);

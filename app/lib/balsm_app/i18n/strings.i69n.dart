@@ -3888,6 +3888,11 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String week_lower(int n) => "week $n";
   String get week => "Week";
   String day_n(int n) => "Day $n";
+  String guidance_week(int n) => "Week $n guidance";
+  String get all_weeks => "All weeks";
+  String get weeks_title => "Week by week";
+  String get this_week => "This week";
+  String content_from(String org) => "Content from $org";
   String get tri_1 => "First trimester";
   String get tri_2 => "Second trimester";
   String get tri_3 => "Third trimester";
@@ -4033,6 +4038,16 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return week;
       case 'day_n':
         return day_n;
+      case 'guidance_week':
+        return guidance_week;
+      case 'all_weeks':
+        return all_weeks;
+      case 'weeks_title':
+        return weeks_title;
+      case 'this_week':
+        return this_week;
+      case 'content_from':
+        return content_from;
       case 'tri_1':
         return tri_1;
       case 'tri_2':

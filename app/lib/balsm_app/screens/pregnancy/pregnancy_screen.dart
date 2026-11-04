@@ -14,13 +14,16 @@ import 'baby_screen.dart';
 import 'birth_screen.dart';
 import 'pregnancy_add_screen.dart';
 import 'pregnancy_card_screen.dart';
+import 'pregnancy_guidance.dart';
 import 'pregnancy_kit.dart';
 import 'pregnancy_start_screen.dart';
 
 /// Opens the pregnancy — the tracker when one is active, otherwise the start
 /// screen. Pregnancy lives on the account holder's own profile, so it is made
-/// the active profile first (design `MCPregScreen`).
+/// the active profile first (design `MCPregScreen`). Weekly guidance is asked
+/// for again on every opening.
 Future<void> openPregnancy(BuildContext context, WidgetRef ref) async {
+  ref.invalidate(pregnancyGuidanceProvider);
   await ref.read(activeProfileSwitcherProvider).selectSelf();
   if (!context.mounted) return;
   final active = ref.read(activePregnancyProvider) != null;
@@ -31,9 +34,8 @@ Future<void> openPregnancy(BuildContext context, WidgetRef ref) async {
 void leavePregnancy(BuildContext context) => Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
 
 /// The pregnancy tracker (mother-child.jsx `MCPregScreen`): week hero and
-/// trimester bar, next visit, the babies, the mother's own records, the
-/// pregnancy-mode emergency card, and birth / end. No weekly guidance (it
-/// would be placeholder partner content).
+/// trimester bar, next visit, this week's guidance, the babies, the mother's
+/// own records, the pregnancy-mode emergency card, and birth / end.
 class PregnancyScreen extends ConsumerWidget {
   const PregnancyScreen({super.key});
 
@@ -56,6 +58,7 @@ class PregnancyScreen extends ConsumerWidget {
         _Hero(pregnancy: preg),
         const SizedBox(height: 12),
         _NextVisitCard(pregnancy: preg),
+        PregnancyGuidanceCard(week: preg.infoOn(DateTime.now()).week, multiples: multi),
         Padding(
           padding: const EdgeInsets.only(top: 22, bottom: 10),
           child: Row(children: [

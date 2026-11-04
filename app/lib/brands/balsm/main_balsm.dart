@@ -20,6 +20,7 @@ import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/family/profile_own_emergency_card.dart';
 import 'package:app/balsm_app/pregnancy/profile_pregnancy_babies.dart';
+import 'package:app/balsm_app/pregnancy/api_pregnancy_guidance.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/prefs.dart';
@@ -264,6 +265,9 @@ Future<void> bootstrap({
     // Pregnancy's babies are prenatal profiles of the profile module, bound
     // the same way.
     pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
+    // Weekly pregnancy guidance: general content from the API, last good copy
+    // kept on the device.
+    pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource),
     // Family links seal the account holder's own emergency card from the
     // profile and account modules, bound the same way.
     ownEmergencyCardReaderProvider.overrideWith(profileOwnEmergencyCard),

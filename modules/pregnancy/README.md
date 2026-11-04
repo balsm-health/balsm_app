@@ -6,6 +6,7 @@ features:
   - "P003b: one prenatal profile per baby (Baby A/B…, optional name, no sex before birth), add a baby, stop following one"
   - "P003b: pregnancy records about me or one or more babies (scan, measurements, document)"
   - "P003b: birth turns the baby's prenatal profile into the child's profile, keeping its id and chosen records; ending a pregnancy keeps every record"
+  - "P003b: weekly guidance card and week-by-week list — placeholder content served from GET /api/v1/content/pregnancy-weeks (static JSON for now; partner content later), kept on the device for offline"
 ---
 
 # pregnancy
@@ -28,6 +29,10 @@ child's earliest history. Everything stays on the device.
 - At birth, records about that baby that are not ticked to move are detached
   from the child (the link is soft-deleted); the record stays on the pregnancy.
 - Items are soft-deleted only.
+- Weekly guidance is general content, the same for everyone, behind the
+  `PregnancyGuidanceSource` port (the app binds it to the API and keeps the
+  last good copy on the device). No guidance at all — never fetched and
+  unreachable — leaves the card out; it is never an error.
 
 ## Layers
 

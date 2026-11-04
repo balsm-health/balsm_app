@@ -4097,6 +4097,11 @@ class PregnancyStrings_ar extends PregnancyStrings {
   String week_lower(int n) => "الأسبوع $n";
   String get week => "الأسبوع";
   String day_n(int n) => "اليوم $n";
+  String guidance_week(int n) => "إرشاد الأسبوع $n";
+  String get all_weeks => "كل الأسابيع";
+  String get weeks_title => "إرشاد الأسابيع";
+  String get this_week => "هذا الأسبوع";
+  String content_from(String org) => "المحتوى من $org";
   String get tri_1 => "الثلث الأول";
   String get tri_2 => "الثلث الثاني";
   String get tri_3 => "الثلث الثالث";
@@ -4239,6 +4244,16 @@ class PregnancyStrings_ar extends PregnancyStrings {
         return week;
       case 'day_n':
         return day_n;
+      case 'guidance_week':
+        return guidance_week;
+      case 'all_weeks':
+        return all_weeks;
+      case 'weeks_title':
+        return weeks_title;
+      case 'this_week':
+        return this_week;
+      case 'content_from':
+        return content_from;
       case 'tri_1':
         return tri_1;
       case 'tri_2':

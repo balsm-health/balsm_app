@@ -2,14 +2,17 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/ports/pregnancy_babies_port.dart';
+import '../application/ports/pregnancy_guidance_source.dart';
 import '../application/use_cases/end_pregnancy_use_case.dart';
 import '../application/use_cases/pregnancy_babies_use_case.dart';
 import '../application/use_cases/pregnancy_records_use_case.dart';
 import '../application/use_cases/record_birth_use_case.dart';
 import '../application/use_cases/start_pregnancy_use_case.dart';
+import '../application/use_cases/watch_pregnancy_guidance_use_case.dart';
 import '../domain/aggregates/pregnancy.dart';
 import '../domain/entities/pregnancy_baby.dart';
 import '../domain/entities/pregnancy_item.dart';
+import '../domain/value_objects/weekly_guidance.dart';
 import '../infrastructure/drift/drift_pregnancies_data_source.dart';
 
 /// Every pregnancy on the self profile (active and closed), newest first,
@@ -102,4 +105,15 @@ final pregnancyRecordsUseCaseProvider = Provider<PregnancyRecordsUseCase>(
     pregnancies: ref.watch(pregnanciesDataSourceProvider),
     babies: ref.watch(pregnancyBabiesPortProvider),
   ),
+);
+
+final watchPregnancyGuidanceUseCaseProvider = Provider<WatchPregnancyGuidanceUseCase>(
+  (ref) => WatchPregnancyGuidanceUseCase(source: ref.watch(pregnancyGuidanceSourceProvider)),
+);
+
+/// Weekly guidance: the copy on the device first, then the server's if newer.
+/// Null (or an error) means there is none to show. Invalidate it to ask the
+/// server again — the app does so each time the pregnancy screen opens.
+final pregnancyGuidanceProvider = StreamProvider<WeeklyGuidance?>(
+  (ref) => ref.watch(watchPregnancyGuidanceUseCaseProvider)(),
 );
