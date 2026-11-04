@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:math' as math;
 
+import 'package:account/account.dart';
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:profile/profile.dart';
@@ -12,6 +13,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import 'account_gender.dart';
 import 'app_state.dart';
 import 'family/family_flag_guard.dart';
 import 'family/family_links_sync.dart';
@@ -145,10 +148,15 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // the foreground. Sign-in / profile-switch is handled by the listen in
     // build(); pull-to-refresh by the care-team screen itself.
     WidgetsBinding.instance.addObserver(this);
-    // Family links have no push: pull them on sign-in (and on a cold start
-    // that is already signed in) and on every resume — see below.
+    // On sign-in (and on a cold start that is already signed in): pull the
+    // family links, which have no push — they are also pulled on every resume,
+    // see below — and read the account's gender, which until this ran on its
+    // own was read only when Personal details was opened.
     ref.listenManual<UserId?>(currentUserIdProvider, (previous, next) {
-      if (next != null && next != previous) _pullFamilyLinks();
+      if (next != null && next != previous) {
+        _pullFamilyLinks();
+        unawaited(syncAccountGender(state, () => ref.read(accountProfileUseCaseProvider).load()));
+      }
     }, fireImmediately: true);
     _bindDebugServiceExtensions();
     // Hold 2300ms, or 1200 under reduced motion — the spinner is the only
@@ -170,10 +178,12 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
     if (lifecycle != AppLifecycleState.resumed) return;
     // Flags first: a sync switched on or off remotely applies to this very run.
-    unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(() {
-      _syncCareTeam();
-      _pullFamilyLinks();
-    }));
+    unawaited(
+      ref.read(featureFlagsProvider).refresh().whenComplete(() {
+        _syncCareTeam();
+        _pullFamilyLinks();
+      }),
+    );
   }
 
   void _pullFamilyLinks() {
@@ -233,12 +243,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
 
   void _keepSelfWithoutFamily() {
     if (!mounted) return;
-    unawaited(keepSelfActiveWithoutFamily(
-      familyOn: state.flags.isOn(AppFlags.motherChild),
-      active: ref.read(currentProfileIdProvider),
-      self: () => ref.read(selfProfileIdProvider.future),
-      selectSelf: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
-    ));
+    unawaited(
+      keepSelfActiveWithoutFamily(
+        familyOn: state.flags.isOn(AppFlags.motherChild),
+        active: ref.read(currentProfileIdProvider),
+        self: () => ref.read(selfProfileIdProvider.future),
+        selectSelf: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
+      ),
+    );
   }
 
   void _syncCareTeam() {
@@ -395,21 +407,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
           // so an 'ar' locale resolves to the first supported Arabic entry
           // (ar-EG) for framework localization; all render Arabic. RTL stays
           // driven by the manual Directionality below.
-          supportedLocales: const [
-            Locale('en'),
-            Locale('ar', 'EG'),
-            Locale('ar', 'SA'),
-            Locale('ar', 'AE'),
-          ],
+          supportedLocales: const [Locale('en'), Locale('ar', 'EG'), Locale('ar', 'SA'), Locale('ar', 'AE')],
           locale: Locale(state.lang.value),
           theme: balsmTheme(),
           // Clamp Dynamic Type so large system text never breaks layouts.
           builder: (context, child) {
             final mq = MediaQuery.of(context);
             return MediaQuery(
-              data: mq.copyWith(
-                textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3),
-              ),
+              data: mq.copyWith(textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.3)),
               // Shake anywhere → Dev Config (read-only in prod).
               child: BetaBanner(
                 state: state,
@@ -442,22 +447,26 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                   accent: state.accent,
                   child: Scaffold(
                     backgroundColor: Colors.white,
-                    body: Stack(children: [
-                      // The shell contains its own main pane so the rail stays
-                      // at the window edge; every other screen is contained
-                      // whole — app.css `.app-body > .screen:not(.app-shell)`.
-                      _publicResolveJti != null
-                          ? AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
-                          : _publicDelete
-                              ? const AdaptiveFrame(child: PublicDeleteScreen())
-                              : _publicDeleteCancel
-                                  ? const AdaptiveFrame(child: PublicDeleteCancelledScreen())
-                                  : state.route == AppRoutes.app
-                                      ? const _MainApp()
-                                      : const AdaptiveFrame(child: AuthRouter()),
-                      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
-                        Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
-                    ]),
+                    body: Stack(
+                      children: [
+                        // The shell contains its own main pane so the rail stays
+                        // at the window edge; every other screen is contained
+                        // whole — app.css `.app-body > .screen:not(.app-shell)`.
+                        _publicResolveJti != null
+                            ? AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
+                            : _publicDelete
+                            ? const AdaptiveFrame(child: PublicDeleteScreen())
+                            : _publicDeleteCancel
+                            ? const AdaptiveFrame(child: PublicDeleteCancelledScreen())
+                            : state.route == AppRoutes.app
+                            ? const _MainApp()
+                            : const AdaptiveFrame(child: AuthRouter()),
+                        if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
+                          Positioned.fill(
+                            child: _BootSplash(state: state, visible: _booting),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -486,25 +495,27 @@ class AdaptiveFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
-      if (c.maxWidth < minWidth) return child;
-      return ColoredBox(
-        color: T.cream50,
-        child: Center(
-          child: Container(
-            width: T.contentMax,
-            decoration: const BoxDecoration(
-              color: T.surface,
-              border: BorderDirectional(
-                start: BorderSide(color: T.border),
-                end: BorderSide(color: T.border),
+    return LayoutBuilder(
+      builder: (context, c) {
+        if (c.maxWidth < minWidth) return child;
+        return ColoredBox(
+          color: T.cream50,
+          child: Center(
+            child: Container(
+              width: T.contentMax,
+              decoration: const BoxDecoration(
+                color: T.surface,
+                border: BorderDirectional(
+                  start: BorderSide(color: T.border),
+                  end: BorderSide(color: T.border),
+                ),
               ),
+              child: child,
             ),
-            child: child,
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -562,49 +573,57 @@ class _MainAppState extends State<_MainApp> {
       AppTab.profile => const ProfileScreen(),
     };
 
-    final content = LayoutBuilder(builder: (context, c) {
-      // Design window classes (app.jsx / RESPONSIVE.md §0): compact <600 →
-      // bottom bar · medium/expanded 600–1439 → icon rail · wide ≥1440 →
-      // 240px sidebar with the brand block. Rail/sidebar persist on
-      // sub-screens; only compact hides its bar there.
-      if (c.maxWidth >= BalsmWindow.mediumMin) {
-        return Row(children: [
-          _SideNav(expanded: c.maxWidth >= BalsmWindow.wideMin),
-          // `.app-main`: from 1024 the screen is contained on the cream canvas
-          // while the rail keeps the window edge. The pane is the window less
-          // the rail, so the threshold moves by the same amount.
-          Expanded(
-            child: AdaptiveFrame(
-              minWidth: BalsmWindow.expandedMin - BalsmWindow.railW,
-              child: _navLoading ? const _ScreenSkeleton() : screen,
-            ),
-          ),
-        ]);
-      }
-      // Phone: full-bleed screen + bottom tab bar. Hide the bar on full-screen
-      // sub-screens (trends / records / appointments / prescriptions).
-      // Design `app.jsx`: hide on trends/records (and Flutter's appointments
-      // sub-screen). Prescriptions stay on the meds path with the tab bar.
-      final hideTabBar = s.tab == AppTab.trends || s.tab == AppTab.records;
-      return Column(children: [
-        Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
-        if (!hideTabBar) const _TabBar(),
-      ]);
-    });
+    final content = LayoutBuilder(
+      builder: (context, c) {
+        // Design window classes (app.jsx / RESPONSIVE.md §0): compact <600 →
+        // bottom bar · medium/expanded 600–1439 → icon rail · wide ≥1440 →
+        // 240px sidebar with the brand block. Rail/sidebar persist on
+        // sub-screens; only compact hides its bar there.
+        if (c.maxWidth >= BalsmWindow.mediumMin) {
+          return Row(
+            children: [
+              _SideNav(expanded: c.maxWidth >= BalsmWindow.wideMin),
+              // `.app-main`: from 1024 the screen is contained on the cream canvas
+              // while the rail keeps the window edge. The pane is the window less
+              // the rail, so the threshold moves by the same amount.
+              Expanded(
+                child: AdaptiveFrame(
+                  minWidth: BalsmWindow.expandedMin - BalsmWindow.railW,
+                  child: _navLoading ? const _ScreenSkeleton() : screen,
+                ),
+              ),
+            ],
+          );
+        }
+        // Phone: full-bleed screen + bottom tab bar. Hide the bar on full-screen
+        // sub-screens (trends / records / appointments / prescriptions).
+        // Design `app.jsx`: hide on trends/records (and Flutter's appointments
+        // sub-screen). Prescriptions stay on the meds path with the tab bar.
+        final hideTabBar = s.tab == AppTab.trends || s.tab == AppTab.records;
+        return Column(
+          children: [
+            Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
+            if (!hideTabBar) const _TabBar(),
+          ],
+        );
+      },
+    );
 
     // One mount covers both layouts — the phone Column and the tablet
     // _SideNav Row are both inside `content`. Per-screen mounting would stack
     // duplicates as the user moves between tabs.
     return _OfflineAwareBody(
-      child: Stack(children: [
-        content,
-        PositionedDirectional(
-          top: 0,
-          start: 0,
-          end: 0,
-          child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
-        ),
-      ]),
+      child: Stack(
+        children: [
+          content,
+          PositionedDirectional(
+            top: 0,
+            start: 0,
+            end: 0,
+            child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -633,12 +652,14 @@ class _OfflineAwareBody extends ConsumerWidget {
     final offline = ref.watch(onlineProvider).valueOrNull == false;
     if (!offline) return child;
 
-    return Column(children: [
-      OfflineBanner(message: AppScope.of(context).strings.common.offline_banner),
-      Expanded(
-        child: MediaQuery.removePadding(context: context, removeTop: true, child: child),
-      ),
-    ]);
+    return Column(
+      children: [
+        OfflineBanner(message: AppScope.of(context).strings.common.offline_banner),
+        Expanded(
+          child: MediaQuery.removePadding(context: context, removeTop: true, child: child),
+        ),
+      ],
+    );
   }
 }
 
@@ -649,12 +670,15 @@ class _ScreenSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget bar({double w = 140, double h = 14}) => Container(
-          width: w,
-          height: h,
-          decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rSm)),
-        );
-    Widget circle(double size) =>
-        Container(width: size, height: size, decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle));
+      width: w,
+      height: h,
+      decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rSm)),
+    );
+    Widget circle(double size) => Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle),
+    );
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
@@ -663,32 +687,42 @@ class _ScreenSkeleton extends StatelessWidget {
         const SizedBox(height: 16),
         PCard(
           padding: const EdgeInsets.all(20),
-          child: Row(children: [
-            circle(52),
-            const SizedBox(width: 16),
-            Expanded(
+          child: Row(
+            children: [
+              circle(52),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [bar(w: 160), const SizedBox(height: 8), bar(w: 110, h: 10)])),
-          ]),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [bar(w: 160), const SizedBox(height: 8), bar(w: 110, h: 10)],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         PCard(
           padding: EdgeInsets.zero,
-          child: Column(children: [
-            for (var i = 0; i < 3; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(children: [
-                  circle(40),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: Column(
+          child: Column(
+            children: [
+              for (var i = 0; i < 3; i++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      circle(40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [bar(w: 150), const SizedBox(height: 8), bar(w: 80, h: 10)])),
-                ]),
-              ),
-          ]),
+                          children: [bar(w: 150), const SizedBox(height: 8), bar(w: 80, h: 10)],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -722,14 +756,17 @@ class _TabBar extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsetsDirectional.only(bottom: tabBarBottomPadding(MediaQuery.paddingOf(context).bottom)),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
-          _Tab(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
-          // Quick-log "+" — opens the daily check-in flow as a route (center slot).
-          const _QuickLog(),
-          _Tab(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
-          _Tab(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile),
-        ]),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
+            _Tab(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
+            // Quick-log "+" — opens the daily check-in flow as a route (center slot).
+            const _QuickLog(),
+            _Tab(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
+            _Tab(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile),
+          ],
+        ),
       ),
     );
   }
@@ -751,12 +788,17 @@ class _Tab extends StatelessWidget {
         onTap: () => s.setTab(id),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 3),
-            Text(label,
-                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 24, color: color),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -791,17 +833,21 @@ class _QuickLog extends StatelessWidget {
               borderRadius: BorderRadius.circular(T.rMd),
               boxShadow: s.accent.boxShadow,
             ),
-            child: Row(children: [
-              const Icon(LucideIcons.plus, size: 20, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(s.strings.checkin.ql_title,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.plus, size: 20, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    s.strings.checkin.ql_title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Typo.body(ar: s.rtl)
-                        .copyWith(fontSize: FS.md, fontWeight: FontWeight.w700, color: Colors.white)),
-              ),
-            ]),
+                        .copyWith(fontSize: FS.md, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -870,15 +916,19 @@ class _SideNav extends StatelessWidget {
         border: BorderDirectional(end: BorderSide(color: T.border)),
       ),
       child: SafeArea(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: Space.s1, children: [
-          _NavBrand(expanded: expanded),
-          _QuickLog(rail: true, wide: expanded),
-          _RailItem(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
-          _RailItem(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
-          _RailItem(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
-          _RailItem(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
-          const Spacer(),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s1,
+          children: [
+            _NavBrand(expanded: expanded),
+            _QuickLog(rail: true, wide: expanded),
+            _RailItem(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
+            _RailItem(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
+            _RailItem(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
+            _RailItem(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
+            const Spacer(),
+          ],
+        ),
       ),
     );
   }
@@ -901,23 +951,29 @@ class _NavBrand extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
-      child: Row(children: [
-        SvgPicture.asset(Assets.brand_icon, width: 44, height: 44),
-        const SizedBox(width: 12),
-        Text.rich(
-          TextSpan(children: [
+      child: Row(
+        children: [
+          SvgPicture.asset(Assets.brand_icon, width: 44, height: 44),
+          const SizedBox(width: 12),
+          Text.rich(
             TextSpan(
-                text: 'Balsm',
-                style: Typo.heading(ar: false)
-                    .copyWith(fontSize: 22, fontWeight: FontWeight.w700, color: T.wordmark, letterSpacing: -0.22)),
-            TextSpan(
-                text: '.health',
-                style:
-                    Typo.heading(ar: false).copyWith(fontSize: 17, fontWeight: FontWeight.w500, color: T.wordmarkTld)),
-          ]),
-          textDirection: TextDirection.ltr,
-        ),
-      ]),
+              children: [
+                TextSpan(
+                  text: 'Balsm',
+                  style: Typo.heading(ar: false)
+                      .copyWith(fontSize: 22, fontWeight: FontWeight.w700, color: T.wordmark, letterSpacing: -0.22),
+                ),
+                TextSpan(
+                  text: '.health',
+                  style: Typo.heading(ar: false)
+                      .copyWith(fontSize: 17, fontWeight: FontWeight.w500, color: T.wordmarkTld),
+                ),
+              ],
+            ),
+            textDirection: TextDirection.ltr,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -938,29 +994,43 @@ class _RailItem extends StatelessWidget {
     final s = AppScope.of(context);
     final active = s.tab == id;
     final child = wide
-        ? Row(children: [
-            Icon(icon, size: 20, color: active ? s.accent.d : T.fg2),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(label,
+        ? Row(
+            children: [
+              Icon(icon, size: 20, color: active ? s.accent.d : T.fg2),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Typo.body(ar: s.rtl).copyWith(
-                      fontSize: FS.sm,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                      color: active ? s.accent.d : T.fg2)),
-            ),
-          ])
-        : Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 24, color: active ? s.accent.main : T.fg4),
-            const SizedBox(height: 4),
-            Text(label,
+                    fontSize: FS.sm,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                    color: active ? s.accent.d : T.fg2,
+                  ),
+                ),
+              ),
+            ],
+          )
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 24, color: active ? s.accent.main : T.fg4),
+              const SizedBox(height: 4),
+              Text(
+                label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: Typo.body(ar: s.rtl).copyWith(
-                    fontSize: FS.xs2, fontWeight: FontWeight.w600, height: 1.2, color: active ? s.accent.main : T.fg4)),
-          ]);
+                  fontSize: FS.xs2,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                  color: active ? s.accent.main : T.fg4,
+                ),
+              ),
+            ],
+          );
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => s.setTab(id),
@@ -992,44 +1062,40 @@ class _BootSplash extends StatelessWidget {
         opacity: visible ? 1 : 0,
         duration: Motion.slow,
         curve: Motion.easeOut,
-        child: Stack(fit: StackFit.expand, children: [
-          const ColoredBox(color: T.cream50),
-          // Image's own `opacity`, not an Opacity wrapper: wrapping a
-          // full-bleed image forces a saveLayer offscreen composite every
-          // frame, while this folds the alpha into the paint.
-          Image.asset(
-            Assets.brand_background,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            opacity: const AlwaysStoppedAnimation(0.95),
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.2),
-                radius: 1.2,
-                colors: [
-                  Color(0x00FAFAF7),
-                  Color(0x57FAFAF7),
-                  Color(0xEBFAFAF7),
-                ],
-                stops: [0.0, 0.54, 1.0],
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const ColoredBox(color: T.cream50),
+            // Image's own `opacity`, not an Opacity wrapper: wrapping a
+            // full-bleed image forces a saveLayer offscreen composite every
+            // frame, while this folds the alpha into the paint.
+            Image.asset(
+              Assets.brand_background,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              opacity: const AlwaysStoppedAnimation(0.95),
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 1.2,
+                  colors: [Color(0x00FAFAF7), Color(0x57FAFAF7), Color(0xEBFAFAF7)],
+                  stops: [0.0, 0.54, 1.0],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            // The mark alone, no caption. A screen reader still hears what is
-            // happening: the label that used to be drawn is now spoken.
-            child: Center(
-              child: Semantics(
-                label: state.strings.boot.boot_preparing,
-                child: const MarkSpinner(size: 96),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              // The mark alone, no caption. A screen reader still hears what is
+              // happening: the label that used to be drawn is now spoken.
+              child: Center(
+                child: Semantics(label: state.strings.boot.boot_preparing, child: const MarkSpinner(size: 96)),
               ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
