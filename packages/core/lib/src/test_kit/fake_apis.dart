@@ -542,6 +542,32 @@ class FakeFamilyLinksApi implements FamilyLinksApi {
   }
 }
 
+/// In-memory [ContentApi]. [weeks] is what a 200 carries (null: the
+/// server has nothing — answers 404); [etag] is the server's current tag, and a
+/// request already holding it gets [NotModified]. Placeholder copy only.
+class FakeContentApi implements ContentApi {
+  FakeContentApi({this.weeks, this.etag = '"fake-etag"'});
+
+  PregnancyWeeksResponse? weeks;
+  String etag;
+
+  /// When set, every call throws it — e.g. an offline [ApiException].
+  ApiException? failWith;
+
+  /// The If-None-Match each call sent, in order.
+  final sentEtags = <String?>[];
+
+  @override
+  Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({String? etag, CancelToken? cancelToken}) async {
+    sentEtags.add(etag);
+    if (failWith != null) throw failWith!;
+    final body = weeks;
+    if (body == null) throw const ApiException(code: 'not_found', statusCode: 404);
+    if (etag == this.etag) return const NotModified();
+    return Modified(body, etag: this.etag);
+  }
+}
+
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force
 /// a branch; omit it for a fresh default.
 ///
@@ -557,6 +583,7 @@ List<Override> e2eApiOverrides({
   FakeGeofenceApi? geofence,
   FakeCareDirectoryApi? careDirectory,
   FakeFamilyLinksApi? familyLinks,
+  FakeContentApi? content,
 }) =>
     [
       authApiProvider.overrideWithValue(auth ?? FakeAuthApi()),
@@ -568,4 +595,5 @@ List<Override> e2eApiOverrides({
       geofenceApiProvider.overrideWithValue(geofence ?? FakeGeofenceApi()),
       careDirectoryApiProvider.overrideWithValue(careDirectory ?? FakeCareDirectoryApi()),
       familyLinksApiProvider.overrideWithValue(familyLinks ?? FakeFamilyLinksApi()),
+      contentApiProvider.overrideWithValue(content ?? FakeContentApi()),
     ];

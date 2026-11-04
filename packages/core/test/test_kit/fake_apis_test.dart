@@ -127,6 +127,24 @@ void main() {
     expect(container.read(geofenceApiProvider), isA<FakeGeofenceApi>());
     expect(container.read(careDirectoryApiProvider), isA<FakeCareDirectoryApi>());
     expect(container.read(familyLinksApiProvider), isA<FakeFamilyLinksApi>());
+    expect(container.read(contentApiProvider), isA<FakeContentApi>());
+  });
+
+  test('FakeContentApi answers 304 to its current ETag and 404 when it has nothing', () async {
+    final api = FakeContentApi();
+    await expectLater(api.pregnancyWeeks(), throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)));
+
+    api.weeks = PregnancyWeeksResponse.fromJson(const {
+      'version': 'v-test',
+      'weeks': [
+        {'week': 4},
+      ],
+    });
+    final fresh = await api.pregnancyWeeks();
+    final again = await api.pregnancyWeeks(etag: (fresh as Modified<PregnancyWeeksResponse>).etag);
+
+    expect(again, isA<NotModified<PregnancyWeeksResponse>>());
+    expect(api.sentEtags, [null, null, '"fake-etag"']);
   });
 
   test('FakeFamilyLinksApi answers 404 for an unknown jti and stores a pending request', () async {

@@ -101,6 +101,11 @@ class ApiRoutes {
   static String familyLinkKeys(String id) => '$_family_links/$id/keys';
   static String familyLinkCard(String id) => '$_family_links/$id/card';
 
+  // ── Content (platform reference copy) ─────────────────────────────────────
+  // General information served by the host, the same for every caller.
+  static const _content = '/api/v1/content';
+  static const content_pregnancy_weeks = '$_content/pregnancy-weeks';
+
   // ── Platform ──────────────────────────────────────────────────────────────
   /// Host readiness probe. Anonymous, and the only endpoint safe to call
   /// against a server the app is not signed in to — which is what the Dev

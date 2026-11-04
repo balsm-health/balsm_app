@@ -71,6 +71,12 @@ final familyLinksApiProvider = Provider<FamilyLinksApi>((ref) {
   return DioFamilyLinksApi(net: ref.watch(networkManagerProvider));
 });
 
+/// Platform reference content — general information, the same for every
+/// caller (week-by-week pregnancy guidance). Never patient data.
+final contentApiProvider = Provider<ContentApi>((ref) {
+  return DioContentApi(net: ref.watch(networkManagerProvider));
+});
+
 /// Map-pack bytes downloader.
 ///
 /// Deliberately NOT built on [balsmApiClientProvider]'s Dio: basemaps come

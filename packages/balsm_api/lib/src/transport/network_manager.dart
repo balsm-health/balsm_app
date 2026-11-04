@@ -19,12 +19,14 @@ class NetworkManager {
     Map<String, dynamic>? queryParameters,
     CancelToken? cancelToken,
     ProgressCallback? onReceiveProgress,
+    Options? options,
   }) =>
       _guard(() => _dio.get<Map<String, dynamic>>(
             path,
             queryParameters: queryParameters,
             cancelToken: cancelToken,
             onReceiveProgress: onReceiveProgress,
+            options: options,
           ));
 
   Future<Response<Map<String, dynamic>>> post(
