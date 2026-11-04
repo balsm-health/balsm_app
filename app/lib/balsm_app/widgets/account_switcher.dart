@@ -50,7 +50,7 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
   @override
   Widget build(BuildContext context) {
     if (_adding) {
-      return _AddFamilyMemberSheet(
+      return AddFamilyMemberSheet(
         s: s,
         selfName: (ref.read(accountSummaryProvider).valueOrNull?.displayName ?? '').trim(),
         onClose: () => setState(() => _adding = false),
@@ -328,8 +328,11 @@ class _LinkRequests extends StatelessWidget {
   }
 }
 
-class _AddFamilyMemberSheet extends StatefulWidget {
-  const _AddFamilyMemberSheet({required this.s, required this.selfName, required this.onClose, required this.onAdd});
+/// The add-a-family-member form inside the account switcher. Public only so
+/// its keyboard layout can be tested without walking the switcher to it.
+class AddFamilyMemberSheet extends StatefulWidget {
+  @visibleForTesting
+  const AddFamilyMemberSheet({required this.s, required this.selfName, required this.onClose, required this.onAdd});
   final PatientAppState s;
 
   /// The signed-in account's display name — a manual entry matching it is
@@ -338,13 +341,13 @@ class _AddFamilyMemberSheet extends StatefulWidget {
   final VoidCallback onClose;
   final void Function(String name, String relation, DateTime? dob, {String? linkJti}) onAdd;
   @override
-  State<_AddFamilyMemberSheet> createState() => _AddFamilyMemberSheetState();
+  State<AddFamilyMemberSheet> createState() => _AddFamilyMemberSheetState();
 }
 
 /// choose → scan → found | manual (design AddFamilyMemberSheet modes).
 enum _AddMode { choose, scan, found, manual }
 
-class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
+class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
   final _name = TextEditingController();
   String _relation = '';
   DateTime? _dob;
@@ -390,23 +393,36 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 32 + MediaQuery.viewInsetsOf(context).bottom),
+      // Header pinned, form scrolling, like every other sheet with a text field.
+      // The name field autofocuses, so the keyboard is up from the first frame;
+      // as one fixed column the form plus the keyboard ran past the screen and
+      // overflowed instead of scrolling.
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-          RoundBtn(
-              icon: LucideIcons.x,
-              semanticLabel: s.strings.common.a11y_close,
-              ghost: true,
-              iconSize: 17,
-              onTap: widget.onClose),
-        ]),
-        const SizedBox(height: 8),
-        const Divider(height: 1, color: T.ink100),
-        const SizedBox(height: 16),
-        ..._body(c),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const SheetGrab(),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
+              RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: widget.onClose),
+            ]),
+            const SizedBox(height: 8),
+            const Divider(height: 1, color: T.ink100),
+          ]),
+        ),
+        Flexible(
+          child: SingleChildScrollView(
+            // sheetBottomInset carries the keyboard and the home indicator.
+            padding: EdgeInsets.fromLTRB(20, 16, 20, sheetBottomInset(context, base: 32)),
+            child: Column(mainAxisSize: MainAxisSize.min, children: _body(c)),
+          ),
+        ),
       ]),
     );
   }
