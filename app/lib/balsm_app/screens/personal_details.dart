@@ -285,6 +285,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       _origHandle = newHandle;
     }
 
+    // What was just saved is now the account's gender. Without this the app
+    // kept the one it read when the screen opened until the next visit.
+    s.setGender(_gender ?? Gender.other);
     await refreshAccountSummary(ref);
     ref.invalidate(_profileProvider);
     // Re-derive the completion card from the freshly saved fields.
