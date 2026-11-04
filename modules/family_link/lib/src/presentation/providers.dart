@@ -12,16 +12,22 @@ import '../application/use_cases/request_family_link_use_case.dart';
 import '../application/use_cases/respond_to_family_link_use_case.dart';
 import '../application/use_cases/set_card_sharing_use_case.dart';
 import '../domain/entities/family_link.dart';
+import '../domain/value_objects/emergency_card_payload.dart';
 import '../domain/value_objects/link_relation.dart';
 import '../infrastructure/crypto/ecies_card_sealer.dart';
 import '../infrastructure/secure/secure_device_key_store.dart';
 import '../infrastructure/secure/secure_link_local_store.dart';
 
 /// The account holder's own emergency card. Bound by the app shell in
-/// bootstrap() — the profile and account modules own the data.
-final ownEmergencyCardReaderProvider = Provider<OwnEmergencyCardReader>(
-  (ref) => throw UnimplementedError('ownEmergencyCardReaderProvider must be overridden in bootstrap()'),
-);
+/// bootstrap() — the profile and account modules own the data. Unbound, no
+/// card can be read, so none is ever sealed: sharing fails closed.
+final ownEmergencyCardReaderProvider = Provider<OwnEmergencyCardReader>((ref) => const _NoCard());
+
+class _NoCard implements OwnEmergencyCardReader {
+  const _NoCard();
+  @override
+  Future<EmergencyCardPayload?> read() async => null;
+}
 
 final cardSealerProvider = Provider<CardSealer>((ref) => EciesCardSealer());
 
