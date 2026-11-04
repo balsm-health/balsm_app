@@ -385,6 +385,13 @@ packages:
       relative: true
     source: path
     version: "0.0.0"
+  family_link:
+    dependency: "direct main"
+    description:
+      path: "../modules/family_link"
+      relative: true
+    source: path
+    version: "0.0.0"
   ffi:
     dependency: transitive
     description:

@@ -57,6 +57,7 @@ the device.
 |---|---|---|
 | `beta_banner` | on | The amber corner ribbon marking the release as a beta ("Beta" / "إطلاق تجريبي"). Turn it off when the app is declared stable. For store screenshots, build with `FEATURE_FLAGS=beta_banner=false`. |
 | `mother_child` | off | Mother & Child: family member profiles kept on this phone, the people picker under the Home header that switches every screen to one of them, each member's emergency card, children's vaccinations and growth log, and pregnancy tracking (babies, pregnancy records, birth). Off, the app keeps one profile and the account switcher's session-only family list, exactly as before. |
+| `family_link` | off | Family links: in the Add family member sheet, "Scan their QR code" asks someone with their own Balsm account to link; they approve or decline in their own app (pulled on app start, resume, the Family screen and pull-to-refresh — there is no push). Linked people show in Family as read-only, with their emergency card when they choose to share it — sealed so only the other person's phone can open it. Sends the link request, the relation and the device public keys to the server; never a readable card. Needs `mother_child` on as well. Off, nothing is sent and Family is as before. |
 
 ## Turning a flag on
 

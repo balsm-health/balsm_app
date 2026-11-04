@@ -14,6 +14,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'app_state.dart';
 import 'family/family_flag_guard.dart';
+import 'family/family_links_sync.dart';
 import 'flags.dart';
 import 'routes.dart';
 import 'desktop_menu.dart';
@@ -144,6 +145,11 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // the foreground. Sign-in / profile-switch is handled by the listen in
     // build(); pull-to-refresh by the care-team screen itself.
     WidgetsBinding.instance.addObserver(this);
+    // Family links have no push: pull them on sign-in (and on a cold start
+    // that is already signed in) and on every resume — see below.
+    ref.listenManual<UserId?>(currentUserIdProvider, (previous, next) {
+      if (next != null && next != previous) _pullFamilyLinks();
+    }, fireImmediately: true);
     _bindDebugServiceExtensions();
     // Hold 2300ms, or 1200 under reduced motion — the spinner is the only
     // thing left to watch. Read off the dispatcher rather than a MediaQuery,
@@ -164,7 +170,15 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
     if (lifecycle != AppLifecycleState.resumed) return;
     // Flags first: a sync switched on or off remotely applies to this very run.
-    unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(_syncCareTeam));
+    unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(() {
+      _syncCareTeam();
+      _pullFamilyLinks();
+    }));
+  }
+
+  void _pullFamilyLinks() {
+    if (!mounted || !familyLinkOn(state.flags) || ref.read(currentUserIdProvider) == null) return;
+    pullFamilyLinks(ref);
   }
 
   /// Where the update check keeps its cache. Null when no storage is bound —

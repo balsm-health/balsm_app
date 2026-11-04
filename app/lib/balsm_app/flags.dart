@@ -52,10 +52,24 @@ abstract final class AppFlags {
     'mother_child',
     fallback: false,
     label: 'Mother & Child',
-    description: 'Family profiles, the people picker, per-member emergency cards, child vaccinations and growth, and pregnancy tracking.',
+    description:
+        'Family profiles, the people picker, per-member emergency cards, child vaccinations and growth, and pregnancy tracking.',
   );
 
-  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner, motherChild];
+  /// Family links (P003b, Identity & Access): add someone with their own
+  /// Balsm account by scanning their profile QR, approve or decline incoming
+  /// requests, and share a sealed emergency card per link. Off by default — it
+  /// sends data to the server. Only takes effect with [motherChild] on too:
+  /// its screens are the Mother & Child ones ([familyLinkOn]).
+  static const familyLink = FeatureFlag(
+    'family_link',
+    fallback: false,
+    label: 'Family links',
+    description:
+        'Link Balsm accounts by profile QR; approve requests; share a sealed emergency card. Needs Mother & Child.',
+  );
+
+  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner, motherChild, familyLink];
 }
 
 extension DataCategorySync on DataCategory {
@@ -70,3 +84,7 @@ extension DataCategorySync on DataCategory {
 /// the type's own flag are on.
 bool cloudSyncOn(DataCategory category, FeatureFlags flags) =>
     category.hasSyncEngine && flags.isOn(AppFlags.sync) && flags.isOn(AppFlags.syncFor(category));
+
+/// Whether family links are offered in this build, on this device, right now:
+/// both its own flag and Mother & Child, whose screens carry it, are on.
+bool familyLinkOn(FeatureFlags flags) => flags.isOn(AppFlags.motherChild) && flags.isOn(AppFlags.familyLink);

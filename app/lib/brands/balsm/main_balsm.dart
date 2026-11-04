@@ -6,6 +6,7 @@ import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:family/family.dart';
+import 'package:family_link/family_link.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -17,6 +18,7 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/auth/boot_session.dart';
 import 'package:app/balsm_app/auth/go_online_controller.dart';
 import 'package:app/balsm_app/family/profile_family_members.dart';
+import 'package:app/balsm_app/family/profile_own_emergency_card.dart';
 import 'package:app/balsm_app/pregnancy/profile_pregnancy_babies.dart';
 import 'package:app/balsm_app/routes.dart';
 import 'package:app/balsm_app/flags.dart';
@@ -262,6 +264,9 @@ Future<void> bootstrap({
     // Pregnancy's babies are prenatal profiles of the profile module, bound
     // the same way.
     pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
+    // Family links seal the account holder's own emergency card from the
+    // profile and account modules, bound the same way.
+    ownEmergencyCardReaderProvider.overrideWith(profileOwnEmergencyCard),
     // Emergency card reads the on-device HealthProfile (PHI stays on-device).
     emergencySnapshotReaderProvider.overrideWith(
       (ref) => _ProfileEmergencySnapshotReader(ref),

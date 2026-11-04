@@ -43,6 +43,8 @@ dependencies:
     path: ../modules/geofence_block
   family:
     path: ../modules/family
+  family_link:
+    path: ../modules/family_link
   pregnancy:
     path: ../modules/pregnancy
   vaccinations:
