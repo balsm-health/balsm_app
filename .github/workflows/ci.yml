@@ -26,7 +26,7 @@ env:
     modules/geofence_block modules/auth modules/disclosure modules/profile
     modules/account modules/emergency_card modules/medications
     modules/prescriptions modules/records modules/self_report
-    modules/deletion modules/sessions modules/family modules/vaccinations modules/pregnancy
+    modules/deletion modules/sessions modules/family modules/family_link modules/vaccinations modules/pregnancy
     app
 
 jobs:

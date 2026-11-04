@@ -1,0 +1,21 @@
+name: family_link
+description: Balsm family-link bounded-context package — linking two Balsm accounts by profile QR and the sealed emergency card share (Identity & Access)
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+    path: ../../packages/core
+  balsm_api:
+    path: ../../packages/balsm_api
+  cryptography: ^2.7.0
+  flutter_riverpod: ^2.6.1
+dev_dependencies:
+  custom_lint: ^0.8.0
+  balsm_boundary_lint:
+    path: ../../packages/balsm_boundary_lint
+  flutter_test:
+    sdk: flutter
