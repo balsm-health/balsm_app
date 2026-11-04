@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:core/core.dart';
 import 'package:family/family.dart';
 import 'package:material_ui/material_ui.dart';
@@ -152,13 +154,15 @@ class FamilySheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
       ),
-      padding: const EdgeInsets.only(bottom: 34),
+      // Clear the home indicator and, while typing, the keyboard.
+      padding: EdgeInsets.only(
+          bottom: math.max(MediaQuery.paddingOf(context).bottom, 16.0) + MediaQuery.viewInsetsOf(context).bottom),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SizedBox(height: 10),
         const SheetGrab(),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Row(crossAxisAlignment: sub == null ? CrossAxisAlignment.center : CrossAxisAlignment.start, children: [
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),

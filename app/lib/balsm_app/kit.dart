@@ -1464,10 +1464,15 @@ class SheetGrab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (SheetPresentation.isDialog(context)) return const SizedBox.shrink();
-    return Container(
-      width: 38,
-      height: 4,
-      decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(T.rPill)),
+    // Centred and sized by itself, so a parent that stretches its children
+    // (`CrossAxisAlignment.stretch`) can't widen it into a full-width bar.
+    return Center(
+      heightFactor: 1,
+      child: Container(
+        width: 38,
+        height: 4,
+        decoration: BoxDecoration(color: T.ink200, borderRadius: BorderRadius.circular(T.rPill)),
+      ),
     );
   }
 }
