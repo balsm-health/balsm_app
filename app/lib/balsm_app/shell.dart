@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:math' as math;
 
+import 'package:account/account.dart';
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:profile/profile.dart';
@@ -12,6 +13,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'account_gender.dart';
 import 'app_state.dart';
 import 'routes.dart';
 import 'desktop_menu.dart';
@@ -142,6 +144,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // the foreground. Sign-in / profile-switch is handled by the listen in
     // build(); pull-to-refresh by the care-team screen itself.
     WidgetsBinding.instance.addObserver(this);
+    // The account's gender, on sign-in and on a cold start that is already
+    // signed in. Until this ran on its own, it was read only when Personal
+    // details was opened.
+    ref.listenManual<UserId?>(currentUserIdProvider, (previous, next) {
+      if (next != null && next != previous) {
+        unawaited(syncAccountGender(state, () => ref.read(accountProfileUseCaseProvider).load()));
+      }
+    }, fireImmediately: true);
     _bindDebugServiceExtensions();
     // Hold 2300ms, or 1200 under reduced motion — the spinner is the only
     // thing left to watch. Read off the dispatcher rather than a MediaQuery,
