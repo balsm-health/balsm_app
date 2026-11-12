@@ -88,7 +88,7 @@ class _TrackerCard extends ConsumerWidget {
                   Text(p.title, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: babyInk)),
                   Text(p.week_n(info.week), style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w800)),
                   Text(
-                    '${trimesterLabel(s, info.trimester)} · ${p.days_to_go(info.daysLeft < 0 ? 0 : info.daysLeft)}',
+                    '${trimesterLabel(s, info.trimester)} · ${dueLine(s, info)}',
                     style: Typo.bodySm(ar: s.rtl),
                   ),
                 ]),

@@ -35,6 +35,14 @@ String trimesterLabel(PatientAppState s, int n) {
   return switch (n) { 1 => p.tri_1, 2 => p.tri_2, _ => p.tri_3 };
 }
 
+/// "12 days to go", "Due today" or "3 days past your due date" for [info].
+String dueLine(PatientAppState s, PregnancyInfo info) {
+  final p = s.strings.pregnancy;
+  if (info.daysLeft > 0) return p.days_to_go(info.daysLeft);
+  if (info.daysLeft == 0) return p.due_today;
+  return p.days_past_due(-info.daysLeft);
+}
+
 /// `mcPregType` — "Twin pregnancy"…, or null for a single baby.
 String? pregnancyTypeLabel(PatientAppState s, int babies) {
   final p = s.strings.pregnancy;

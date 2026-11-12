@@ -261,7 +261,8 @@ class _Hero extends StatelessWidget {
         ]),
         const SizedBox(height: 14),
         Row(children: [
-          tile('${info.daysLeft < 0 ? 0 : info.daysLeft}', p.days_to_due),
+          // Past the due date the count goes up again, labelled as such.
+          tile('${info.daysLeft.abs()}', info.daysLeft < 0 ? p.days_past_due_label : p.days_to_due),
           const SizedBox(width: 8),
           tile(formatDay(pregnancy.dueDate), p.due_date, large: false),
         ]),

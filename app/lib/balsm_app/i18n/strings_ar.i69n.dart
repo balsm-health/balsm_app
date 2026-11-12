@@ -4111,6 +4111,10 @@ class PregnancyStrings_ar extends PregnancyStrings {
   String days_to_go(int n) =>
       "${_plural(n, one: 'باقٍ يوم واحد', two: 'باقٍ يومان', few: 'باقٍ $n أيام', many: 'باقٍ $n يوماً', other: 'باقٍ $n يوم')}";
   String get days_to_due => "يوماً على الموعد المتوقع";
+  String get due_today => "الموعد المتوقع اليوم";
+  String days_past_due(int n) =>
+      "${_plural(n, one: 'مضى يوم واحد على الموعد المتوقع', two: 'مضى يومان على الموعد المتوقع', few: 'مضت $n أيام على الموعد المتوقع', many: 'مضى $n يوماً على الموعد المتوقع', other: 'مضى $n يوم على الموعد المتوقع')}";
+  String get days_past_due_label => "يوماً بعد الموعد المتوقع";
   String get due_date => "الموعد المتوقع للولادة";
   String get next_visit => "الزيارة القادمة";
   String get prompt_b =>
@@ -4270,6 +4274,12 @@ class PregnancyStrings_ar extends PregnancyStrings {
         return days_to_go;
       case 'days_to_due':
         return days_to_due;
+      case 'due_today':
+        return due_today;
+      case 'days_past_due':
+        return days_past_due;
+      case 'days_past_due_label':
+        return days_past_due_label;
       case 'due_date':
         return due_date;
       case 'next_visit':

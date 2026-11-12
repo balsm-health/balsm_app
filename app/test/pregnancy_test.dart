@@ -146,6 +146,17 @@ void main() {
     });
   });
 
+  group('dueLine', () {
+    test('counts down, says due today, then counts the days past', () {
+      final s = state();
+      final p = s.strings.pregnancy;
+      final due = DateTime(2026, 10, 1);
+      expect(dueLine(s, PregnancyInfo.on(due, DateTime(2026, 9, 29))), p.days_to_go(2));
+      expect(dueLine(s, PregnancyInfo.on(due, DateTime(2026, 10, 1))), p.due_today);
+      expect(dueLine(s, PregnancyInfo.on(due, DateTime(2026, 10, 4))), p.days_past_due(3));
+    });
+  });
+
   group('Home', () {
     testWidgets('offers to start tracking; "Not now" hides it for this account, kept on the device', (tester) async {
       final s = state();

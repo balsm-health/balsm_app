@@ -3902,6 +3902,10 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String days_to_go(int n) =>
       "${_plural(n, one: '1 day to go', other: '$n days to go')}";
   String get days_to_due => "days to your due date";
+  String get due_today => "Due today";
+  String days_past_due(int n) =>
+      "${_plural(n, one: '1 day past your due date', other: '$n days past your due date')}";
+  String get days_past_due_label => "days past your due date";
   String get due_date => "Due date";
   String get next_visit => "Next visit";
   String get prompt_b =>
@@ -4064,6 +4068,12 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return days_to_go;
       case 'days_to_due':
         return days_to_due;
+      case 'due_today':
+        return due_today;
+      case 'days_past_due':
+        return days_past_due;
+      case 'days_past_due_label':
+        return days_past_due_label;
       case 'due_date':
         return due_date;
       case 'next_visit':
