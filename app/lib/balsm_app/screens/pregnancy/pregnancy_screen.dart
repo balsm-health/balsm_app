@@ -417,18 +417,12 @@ class _BabyCard extends ConsumerWidget {
         onTap: () => openBaby(context, baby.id),
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Icon and menu on top, the name and count below at the card's
+          // full width: two cards share a phone row, too narrow for all
+          // four side by side.
           Row(children: [
             const IconSquare(LucideIcons.sprout, bg: babyWash, fg: babyInk, size: 38, iconSize: 19),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                Text(s.strings.family.records_n(its.length), style: Typo.meta(ar: s.rtl)),
-              ]),
-            ),
+            const Spacer(),
             RoundBtn(
               icon: LucideIcons.ellipsis,
               semanticLabel: p.options,
@@ -437,6 +431,13 @@ class _BabyCard extends ConsumerWidget {
               onTap: () => _babyMenu(context, ref, pregnancy, baby, label),
             ),
           ]),
+          const SizedBox(height: 10),
+          Text(label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+          Text(s.strings.family.records_n(its.length),
+              maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.meta(ar: s.rtl)),
           if (last != null) ...[
             const SizedBox(height: 10),
             Text('${p.last_measure} · ${formatDay(last.recordedOn)}', style: Typo.meta(ar: s.rtl)),
