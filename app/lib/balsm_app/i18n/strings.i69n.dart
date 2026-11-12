@@ -387,7 +387,6 @@ class CareStrings implements i69n.I69nMessageBundle {
       "Couldn’t find your location. Try again outdoors.";
   String get loc_settings => "Settings";
   String get map_sub => "places mapped nearby";
-  String get to_doctor => "A copy reaches Dr. Sara at your next visit.";
   String get to_home => "Back to home";
   String get care_intro =>
       "The people and places caring for you — doctors, nurses, pharmacies, caregivers and more.";
@@ -528,8 +527,6 @@ class CareStrings implements i69n.I69nMessageBundle {
         return loc_settings;
       case 'map_sub':
         return map_sub;
-      case 'to_doctor':
-        return to_doctor;
       case 'to_home':
         return to_home;
       case 'care_intro':

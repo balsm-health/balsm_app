@@ -393,7 +393,6 @@ class CareStrings_ar extends CareStrings {
           })} مرة أخرى في مكان مفتوح.";
   String get loc_settings => "الإعدادات";
   String get map_sub => "مكان بالقرب منك";
-  String get to_doctor => "ستصل نسخة إلى د. سارة في زيارتك القادمة.";
   String get to_home => "العودة للرئيسية";
   String get care_intro =>
       "الأشخاص والأماكن التي ترعاك — أطباء وتمريض وصيدليات ومقدّمو رعاية وغيرهم.";
@@ -568,8 +567,6 @@ class CareStrings_ar extends CareStrings {
         return loc_settings;
       case 'map_sub':
         return map_sub;
-      case 'to_doctor':
-        return to_doctor;
       case 'to_home':
         return to_home;
       case 'care_intro':

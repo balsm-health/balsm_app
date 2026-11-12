@@ -565,14 +565,6 @@ class _Summary extends StatelessWidget {
               child: Column(
                   children: items.indexed.map((e) => _summaryItem(s, e.$2, last: e.$1 == items.length - 1)).toList()),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-              child: Row(children: [
-                const Icon(LucideIcons.send, size: 15, color: T.fg3),
-                const SizedBox(width: 8),
-                Expanded(child: Text(s.strings.care.to_doctor, style: Typo.meta(ar: s.rtl))),
-              ]),
-            ),
             const SizedBox(height: 16),
           ]))),
           Padding(
