@@ -1297,6 +1297,8 @@
     "empty_t": "No family members yet",
     "empty_b(Gender gender)": "Add your children or parents to keep an emergency card for each.",
     "stays_local": "Your family's data stays on this phone.",
+    "home_sub(int n, Gender gender)": "${_plural(n, one:'1 profile you manage', other:'$n profiles you manage')}",
+    "home_empty_sub(Gender gender)": "Add the people you look after",
     "manual_t": "Enter details manually",
     "manual_b(Gender gender)": "For your child, or someone without a Balsm account. You manage their profile from your phone.",
     "group_family": "My family",
