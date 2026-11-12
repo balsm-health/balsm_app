@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:family/family.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +24,10 @@ class FamilyHomeCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final f = s.strings.family;
-    final members = ref.watch(familyMembersProvider).valueOrNull;
+    // The people Family lists: dependents only (a prenatal profile lives
+    // under the pregnancy, not in Family).
+    final members =
+        ref.watch(familyMembersProvider).valueOrNull?.where((m) => m.kind == ProfileKind.dependent).toList();
     if (members == null) return const SizedBox.shrink();
     final shown = members.take(3).toList();
     final extra = members.length - shown.length;
