@@ -96,6 +96,33 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     if (ctx != null && ctx.mounted) opener(ctx);
   }
 
+  /// The day the app last drew "today" for, and the timer that fires at the
+  /// next local midnight. Left open overnight, Home kept yesterday's finished
+  /// check-in and the pregnancy screen yesterday's days-to-go.
+  DateTime _day = _dayOf(DateTime.now());
+  Timer? _midnight;
+
+  static DateTime _dayOf(DateTime t) => DateTime(t.year, t.month, t.day);
+
+  void _armMidnight() {
+    _midnight?.cancel();
+    final now = DateTime.now();
+    final next = DateTime(now.year, now.month, now.day + 1);
+    // A second past midnight, so the rebuild lands on the new day.
+    _midnight = Timer(next.difference(now) + const Duration(seconds: 1), _checkDay);
+  }
+
+  /// Rebuilds once when the calendar day moved on (timer, or a resume after a
+  /// night in the background where timers do not run).
+  void _checkDay() {
+    final today = _dayOf(DateTime.now());
+    if (today != _day) {
+      _day = today;
+      state.dayChanged();
+    }
+    _armMidnight();
+  }
+
   // Boot splash (auth.jsx `SplashScreen`) — mark wash + mark spinner,
   // held ~2.3s on cold start, then fades out.
   bool _booting = true;
@@ -146,6 +173,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // the foreground. Sign-in / profile-switch is handled by the listen in
     // build(); pull-to-refresh by the care-team screen itself.
     WidgetsBinding.instance.addObserver(this);
+    _armMidnight();
     // Family links have no push: pull them on sign-in (and on a cold start
     // that is already signed in) and on every resume — see below.
     ref.listenManual<UserId?>(currentUserIdProvider, (previous, next) {
@@ -166,6 +194,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
 
   @override
   void dispose() {
+    _midnight?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -173,6 +202,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
     if (lifecycle != AppLifecycleState.resumed) return;
+    _checkDay();
     // Flags first: a sync switched on or off remotely applies to this very run.
     unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(() {
       _syncCareTeam();

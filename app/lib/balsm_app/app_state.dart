@@ -208,6 +208,11 @@ class PatientAppState extends ChangeNotifier {
 
   bool get isHomeCountry => country == kHomeCountry;
 
+  /// The calendar day changed while the app was open. Screens read
+  /// `DateTime.now()` when they build, so one rebuild is enough to move
+  /// "today" (check-in, days to the due date, doses) to the new day.
+  void dayChanged() => notifyListeners();
+
   void setGender(Gender g) {
     if (g == gender) return;
     gender = g;
