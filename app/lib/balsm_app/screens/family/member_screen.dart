@@ -33,6 +33,12 @@ class MemberScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
+    // The screen is the active member's: choosing someone else in the bar's
+    // picker left it showing this member under "Viewing your profile", with
+    // tiles counting the other person's data. It closes instead.
+    ref.listen<HealthProfileId?>(currentProfileIdProvider, (previous, next) {
+      if (previous == id && next != null && next != id) Navigator.maybePop(context);
+    });
     final m =
         (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[]).where((x) => x.id == id).firstOrNull;
     if (m == null) return const Scaffold(backgroundColor: Colors.white);
