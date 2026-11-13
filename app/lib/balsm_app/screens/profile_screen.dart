@@ -8,6 +8,7 @@ import 'package:sessions/sessions.dart';
 import 'package:deletion/deletion.dart';
 import 'package:pregnancy/pregnancy.dart';
 import '../app_state.dart';
+import '../dev/shake_to_dev_config.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -219,7 +220,10 @@ class ProfileScreen extends ConsumerWidget {
             // The choice persists (reconfigure) and survives relaunch (init() in
             // main). ServerSelectorScreen owns its Scaffold + Navigator.pop, so the
             // plain _pushGovernance push is sufficient.
-            if (FlavorConfig.current.serverSwitchingEnabled)
+            // A real phone opens Dev Config (and its server switch) with a
+            // shake; the English dev row only shows where a shake can't —
+            // emulators, desktop, web — as the Welcome screen's pill does.
+            if (FlavorConfig.current.serverSwitchingEnabled && ref.watch(canShakeProvider).valueOrNull == false)
               _ListRow(
                 icon: LucideIcons.server,
                 label: 'Switch server (dev)',
