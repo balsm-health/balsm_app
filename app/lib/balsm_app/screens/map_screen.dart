@@ -583,7 +583,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   // hours or ratings, and ~8% of places have no phone. Omit the
                   // row rather than rendering an empty icon or a bare "/ 5".
                   Wrap(spacing: 14, runSpacing: 4, children: [
-                    if (e.distance.isNotEmpty) _metaBit(LucideIcons.navigation, e.distance, s),
+                    if (e.distance.isNotEmpty) _metaBit(LucideIcons.navigation, _ltr(e.distance), s),
                     if (e.hours.isNotEmpty) _metaBit(LucideIcons.clock, e.hours, s),
                     if (e.rating.isNotEmpty) _metaBit(LucideIcons.star, e.rating, s, star: true),
                   ]),
@@ -639,7 +639,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   if (pick(e.addr, ar: s.rtl).isNotEmpty) _detailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
                   if (e.hours.isNotEmpty) _detailRow(LucideIcons.clock, e.hours, s),
                   if (e.distance.isNotEmpty)
-                    _detailRow(LucideIcons.navigation, '${e.distance} ${s.strings.care.map_distance}', s),
+                    _detailRow(LucideIcons.navigation, '${_ltr(e.distance)} ${s.strings.care.map_distance}', s),
                   if (e.rating.isNotEmpty) _detailRow(LucideIcons.star, '${e.rating} / 5', s, star: true),
                   const SizedBox(height: 18),
                   Row(children: [
@@ -813,6 +813,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         decoration: BoxDecoration(color: type.bg, borderRadius: BorderRadius.circular(T.rMd)),
         child: Icon(type.icon, size: size * 0.47, color: type.color),
       );
+
+  /// Keeps "0.3 km" in its own left-to-right run inside Arabic text, where
+  /// it otherwise read "km 0.3".
+  static String _ltr(String text) => '\u2066$text\u2069';
 
   Widget _metaBit(IconData icon, String text, PatientAppState s, {bool star = false}) => Row(
         mainAxisSize: MainAxisSize.min,

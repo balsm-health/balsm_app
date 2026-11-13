@@ -109,8 +109,10 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
       if (_visible.contains(_TrendMetric.pain) && pain.isNotEmpty)
         _ChartCard(
           title: s.strings.profile.m_pain,
-          value: _avg(pain).toStringAsFixed(1),
-          unit: '/10',
+          // "/10" belongs to the number: as a separate RTL unit its slash
+          // flipped to "10/ 6.0".
+          value: '${_avg(pain).toStringAsFixed(1)}/10',
+          unit: '',
           series: [ChartSeries(pain, T.danger)],
           margin: chartMargin,
         ),
@@ -254,7 +256,7 @@ class _ChartCard extends StatelessWidget {
           Row(children: [
             if (showAvg) Text('${s.strings.checkin.avg} ', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
             Text(value, textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg1)),
-            Text(' $unit', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            if (unit.isNotEmpty) Text(' $unit', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ]),
         ]),
         const SizedBox(height: 6),
