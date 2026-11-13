@@ -36,6 +36,11 @@ class WeeklyGuidance {
   /// Content version; a new one replaces the copy held on the device.
   final String version;
 
+  /// True for the stand-in copy the server ships until partner content
+  /// arrives (versions named `placeholder-…`). Its titles read "Week N
+  /// guidance title" and its source "[Partner organization]": never shown.
+  bool get isPlaceholder => version.startsWith('placeholder');
+
   /// Who the content comes from ("Content from …").
   final GuidanceText source;
 

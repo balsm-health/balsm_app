@@ -59,5 +59,12 @@ void main() {
       expect(await versions(_Source(fresh: _guidance('v1'))), ['v1']);
       expect(await versions(_Source()), [null]);
     });
+
+    test('placeholder copy counts as none, kept or fetched', () async {
+      expect(await versions(_Source(fresh: _guidance('placeholder-2026-11-04'))), [null]);
+      expect(await versions(_Source(kept: _guidance('placeholder-2026-11-04'))), [null]);
+      expect(await versions(_Source(kept: _guidance('placeholder-2026-11-04'), fresh: _guidance('partner-v1'))),
+          ['partner-v1']);
+    });
   });
 }
