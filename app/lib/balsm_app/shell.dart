@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:math' as math;
 
+import 'package:account/account.dart' show accountProfileUseCaseProvider;
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:profile/profile.dart';
@@ -148,7 +149,10 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // Family links have no push: pull them on sign-in (and on a cold start
     // that is already signed in) and on every resume — see below.
     ref.listenManual<UserId?>(currentUserIdProvider, (previous, next) {
-      if (next != null && next != previous) _pullFamilyLinks();
+      if (next != null && next != previous) {
+        _pullFamilyLinks();
+        _restoreGender(next);
+      }
     }, fireImmediately: true);
     _bindDebugServiceExtensions();
     // Hold 2300ms, or 1200 under reduced motion — the spinner is the only
@@ -174,6 +178,22 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       _syncCareTeam();
       _pullFamilyLinks();
     }));
+  }
+
+  /// Gendered Arabic copy follows the account's saved sex. Account details
+  /// sets it when opened, but nothing did on a cold start, so a restarted app
+  /// addressed every woman in the masculine until she opened that screen.
+  /// Loaded once per signed-in account; a failure (offline) keeps what the
+  /// state already has.
+  Future<void> _restoreGender(UserId user) async {
+    try {
+      final profile = await ref.read(accountProfileUseCaseProvider).load();
+      final g = profile?.gender;
+      if (!mounted || g == null || ref.read(currentUserIdProvider) != user) return;
+      state.setGender(g);
+    } catch (_) {
+      // Offline or the server refused: the copy stays as it was.
+    }
   }
 
   void _pullFamilyLinks() {
