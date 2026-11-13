@@ -1513,12 +1513,28 @@ Future<R?> showAppSheet<R>(
       enableDrag: enableDrag,
       backgroundColor: Colors.transparent,
       barrierColor: barrierColor,
-      builder: (ctx) => present(
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 520), child: builder(ctx)),
-        ),
-      ),
+      builder: (ctx) {
+        // The app draws edge to edge under a transparent navigation bar
+        // (main_balsm.dart). A sheet's own body stops above the bar — its
+        // content had scrolled under the ‹ ○ ||| buttons, burying the bottom
+        // button — and the strip under the buttons is filled with the sheet's
+        // white so it still reads as one surface to the screen edge.
+        final navBar = MediaQuery.paddingOf(ctx).bottom;
+        return present(
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Flexible(
+                  child: MediaQuery.removePadding(context: ctx, removeBottom: true, child: Builder(builder: builder)),
+                ),
+                if (navBar > 0) Container(height: navBar, color: Colors.white),
+              ]),
+            ),
+          ),
+        );
+      },
     );
   }
   final maxWidth = size == SheetSize.lg ? BalsmWindow.modalMaxWLg : BalsmWindow.modalMaxWMd;
