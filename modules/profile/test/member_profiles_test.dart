@@ -379,5 +379,37 @@ void main() {
       expect(refused.error, isA<NotFoundFailure>());
       bus.dispose();
     });
+
+    test('removing an emergency contact takes it off that member only', () async {
+      const early = HealthProfileId.value('hp-early');
+      final bus = EventBus();
+      final contacts = DriftEmergencyContactsDataSource(db: db, activeProfile: () => selfId);
+      final add = AddEmergencyContactUseCase(dao: ds, contacts: contacts, eventBus: bus);
+      final remove = RemoveEmergencyContactUseCase(dao: ds, contacts: contacts, eventBus: bus);
+      final events = <HealthProfileUpdated>[];
+      final sub = bus.on<HealthProfileUpdated>().listen(events.add);
+
+      await add.execute(userId: user, profileId: early, name: 'Test One', phone: '+200000000001', isPrimary: true);
+      final two = await add.execute(userId: user, profileId: early, name: 'Test Two', phone: '+200000000002');
+      final mine = await add.execute(userId: user, name: 'Test Mine', phone: '+200000000003');
+      final oneId = two.value.emergencyContacts.firstWhere((c) => c.name == 'Test One').id;
+      final mineId = mine.value.emergencyContacts.single.id;
+
+      final r = await remove.execute(userId: user, profileId: early, contactId: oneId);
+      expect(r.isSuccess, isTrue);
+      expect(r.value.emergencyContacts.map((c) => c.name), ['Test Two']);
+      expect((await ds.getProfile(user))!.emergencyContacts.single.name, 'Test Mine', reason: 'self is untouched');
+
+      final again = await remove.execute(userId: user, profileId: early, contactId: oneId);
+      expect(again.error, isA<NotFoundFailure>());
+      final wrongProfile = await remove.execute(userId: user, profileId: early, contactId: mineId);
+      expect(wrongProfile.error, isA<NotFoundFailure>(), reason: "another profile's contact is not removed");
+      expect((await ds.getProfile(user))!.emergencyContacts, hasLength(1));
+
+      await pumpEventQueue();
+      expect(events.where((e) => e.fieldChanged == 'contact_removed'), hasLength(1));
+      await sub.cancel();
+      bus.dispose();
+    });
   });
 }

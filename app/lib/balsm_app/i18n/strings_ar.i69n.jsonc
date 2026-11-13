@@ -1424,6 +1424,11 @@
     "contact_phone": "رقم الهاتف",
     "contact_add": "إضافة",
     "a11y_call(String name)": "اتصال بـ$name",
+    // إزالة جهة اتصال طوارئ من بطاقة فرد الأسرة (MCEditMemberScreen).
+    "contact_remove": "إزالة جهة الاتصال",
+    "a11y_remove_contact(String name)": "إزالة جهة الاتصال $name",
+    "contact_remove_t(String name)": "إزالة $name؟",
+    "contact_remove_b": "تُزال جهة الاتصال من بطاقة الطوارئ على هذا الجهاز.",
     "scan_t": "مسح رمز QR الخاص بهم",
     "scan_b": "لمن لديه حساب على بلسم. يوافق على الطلب من تطبيقه.",
     "link_section": "حسابات مرتبطة",

@@ -4798,6 +4798,11 @@ class FamilyStrings_ar extends FamilyStrings {
   String get contact_phone => "رقم الهاتف";
   String get contact_add => "إضافة";
   String a11y_call(String name) => "اتصال بـ$name";
+  String get contact_remove => "إزالة جهة الاتصال";
+  String a11y_remove_contact(String name) => "إزالة جهة الاتصال $name";
+  String contact_remove_t(String name) => "إزالة $name؟";
+  String get contact_remove_b =>
+      "تُزال جهة الاتصال من بطاقة الطوارئ على هذا الجهاز.";
   String get scan_t => "مسح رمز QR الخاص بهم";
   String get scan_b => "لمن لديه حساب على بلسم. يوافق على الطلب من تطبيقه.";
   String get link_section => "حسابات مرتبطة";
@@ -5101,6 +5106,14 @@ class FamilyStrings_ar extends FamilyStrings {
         return contact_add;
       case 'a11y_call':
         return a11y_call;
+      case 'contact_remove':
+        return contact_remove;
+      case 'a11y_remove_contact':
+        return a11y_remove_contact;
+      case 'contact_remove_t':
+        return contact_remove_t;
+      case 'contact_remove_b':
+        return contact_remove_b;
       case 'scan_t':
         return scan_t;
       case 'scan_b':

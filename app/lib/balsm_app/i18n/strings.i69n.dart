@@ -4517,6 +4517,11 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get contact_phone => "Phone number";
   String get contact_add => "Add";
   String a11y_call(String name) => "Call $name";
+  String get contact_remove => "Remove contact";
+  String a11y_remove_contact(String name) => "Remove contact $name";
+  String contact_remove_t(String name) => "Remove $name?";
+  String get contact_remove_b =>
+      "The contact is removed from the emergency card on this phone.";
   String get scan_t => "Scan their QR code";
   String get scan_b =>
       "For someone with their own Balsm account. They approve the request in their app.";
@@ -4792,6 +4797,14 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return contact_add;
       case 'a11y_call':
         return a11y_call;
+      case 'contact_remove':
+        return contact_remove;
+      case 'a11y_remove_contact':
+        return a11y_remove_contact;
+      case 'contact_remove_t':
+        return contact_remove_t;
+      case 'contact_remove_b':
+        return contact_remove_b;
       case 'scan_t':
         return scan_t;
       case 'scan_b':

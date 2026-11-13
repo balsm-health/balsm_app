@@ -43,7 +43,7 @@ class MemberCardScreen extends ConsumerWidget {
       title: f.tile_card,
       bar: const ProfileBar(),
       children: [
-        MemberEmergencyCard(member: m, health: health),
+        MemberEmergencyCard(member: m, health: health, onRemoveContact: (c) => _removeContact(context, ref, m, c)),
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(4, 12, 4, 14),
           child: Text(f.card_note(s.gender), style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
@@ -76,6 +76,26 @@ class MemberCardScreen extends ConsumerWidget {
     );
   }
 
+  /// Asks, then removes [c] from the member's card; nothing changes on Cancel.
+  Future<void> _removeContact(BuildContext context, WidgetRef ref, FamilyMember m, EmergencyContact c) async {
+    final s = AppScope.of(context);
+    final f = s.strings.family;
+    final messenger = ScaffoldMessenger.of(context);
+    final yes = await showFamilyConfirmSheet(
+      context,
+      title: f.contact_remove_t(c.name),
+      body: f.contact_remove_b,
+      confirmLabel: f.contact_remove,
+    );
+    if (!yes) return;
+    final user = ref.read(currentUserIdProvider);
+    if (user == null) return;
+    final r =
+        await ref.read(removeEmergencyContactUseCaseProvider).execute(userId: user, profileId: m.id, contactId: c.id);
+    ref.invalidate(memberHealthProfileProvider(m.id));
+    if (!r.isSuccess) messenger.showSnackBar(SnackBar(content: Text(f.save_failed(s.gender))));
+  }
+
   Future<void> _addContact(BuildContext context, WidgetRef ref, FamilyMember m) async {
     final s = AppScope.of(context);
     final first = ref.read(memberHealthProfileProvider(m.id)).valueOrNull?.emergencyContacts.isEmpty ?? true;
@@ -101,11 +121,16 @@ class MemberEmergencyCard extends StatelessWidget {
     required this.health,
     this.banner,
     this.extraRows = const [],
+    this.onRemoveContact,
   });
   final FamilyMember member;
   final HealthProfile? health;
   final Widget? banner;
   final List<Widget> extraRows;
+
+  /// When set, each contact row gets a remove button (mother-child.jsx
+  /// MCEditMemberScreen, "Remove contact").
+  final void Function(EmergencyContact contact)? onRemoveContact;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +138,8 @@ class MemberEmergencyCard extends StatelessWidget {
     final f = s.strings.family;
     final m = member;
     final age = m.ageOn(DateTime.now());
+    final contacts = health?.emergencyContacts ?? const <EmergencyContact>[];
+    final remove = onRemoveContact;
     return EmergencyCardBody(
       name: m.displayName,
       meta: [
@@ -123,10 +150,8 @@ class MemberEmergencyCard extends StatelessWidget {
       bloodType: (health?.bloodType ?? m.bloodType)?.code,
       allergies: [for (final a in health?.allergies ?? const <Allergy>[]) a.name],
       conditions: [for (final c in health?.conditions ?? const <ChronicCondition>[]) c.name],
-      contacts: [
-        for (final c in health?.emergencyContacts ?? const <EmergencyContact>[])
-          (name: c.name, phone: c.phone, relation: c.relation),
-      ],
+      contacts: contacts.map((c) => (name: c.name, phone: c.phone, relation: c.relation)).toList(),
+      onRemoveContact: remove == null ? null : (i) => remove(contacts[i]),
       banner: banner,
       extraRows: extraRows,
     );
@@ -149,6 +174,7 @@ class EmergencyCardBody extends StatelessWidget {
     required this.contacts,
     this.banner,
     this.extraRows = const [],
+    this.onRemoveContact,
   });
   final String name;
   final String meta;
@@ -158,6 +184,10 @@ class EmergencyCardBody extends StatelessWidget {
   final List<CardContactRow> contacts;
   final Widget? banner;
   final List<Widget> extraRows;
+
+  /// Removes the contact at the given index; null hides the remove buttons
+  /// (a card shared over a family link is read-only).
+  final void Function(int index)? onRemoveContact;
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +239,10 @@ class EmergencyCardBody extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(f.card_no_contacts, style: Typo.body(ar: s.rtl).copyWith(color: T.fg3)),
               ),
-            for (final c in contacts) _ContactRow(contact: c),
+            ...contacts.indexed.map((e) => _ContactRow(
+                  contact: e.$2,
+                  onRemove: onRemoveContact == null ? null : () => onRemoveContact!(e.$1),
+                )),
           ]),
         ),
       ]),
@@ -226,8 +259,11 @@ class EmergencyCardBody extends StatelessWidget {
 }
 
 class _ContactRow extends StatelessWidget {
-  const _ContactRow({required this.contact});
+  const _ContactRow({required this.contact, this.onRemove});
   final CardContactRow contact;
+
+  /// The round ghost "Remove contact" button after Call, when set.
+  final VoidCallback? onRemove;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
@@ -259,6 +295,15 @@ class _ContactRow extends StatelessWidget {
           iconSize: 18,
           onTap: () => launchUrl(Uri(scheme: 'tel', path: c.phone.replaceAll(' ', ''))),
         ),
+        if (onRemove != null)
+          RoundBtn(
+            icon: LucideIcons.x,
+            semanticLabel: s.strings.family.a11y_remove_contact(c.name),
+            ghost: true,
+            fg: T.fg3,
+            iconSize: 16,
+            onTap: onRemove,
+          ),
       ]),
     );
   }

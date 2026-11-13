@@ -1427,6 +1427,12 @@
     "contact_phone": "Phone number",
     "contact_add": "Add",
     "a11y_call(String name)": "Call $name",
+    // Remove an emergency contact from a member's card (mother-child.jsx
+    // MCEditMemberScreen contact rows, "Remove contact").
+    "contact_remove": "Remove contact",
+    "a11y_remove_contact(String name)": "Remove contact $name",
+    "contact_remove_t(String name)": "Remove $name?",
+    "contact_remove_b": "The contact is removed from the emergency card on this phone.",
     "scan_t": "Scan their QR code",
     "scan_b": "For someone with their own Balsm account. They approve the request in their app.",
     "link_section": "Linked accounts",

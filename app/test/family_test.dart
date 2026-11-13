@@ -5,6 +5,8 @@ import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/family/family_screen.dart';
 import 'package:app/balsm_app/screens/family/family_home_card.dart';
+import 'package:app/balsm_app/screens/family/family_kit.dart';
+import 'package:app/balsm_app/screens/family/member_card_screen.dart';
 import 'package:app/balsm_app/screens/family/profile_bar.dart';
 import 'package:app/balsm_app/screens/home_screen.dart';
 import 'package:core/core.dart';
@@ -247,6 +249,43 @@ void main() {
       await tester.tap(find.text('Test Parent'));
       await tester.pumpAndSettle();
       expect(c.read(currentProfileIdProvider), selfId);
+    });
+  });
+
+  group('Member card', () {
+    testWidgets('a contact is removed after asking; Cancel keeps it', (tester) async {
+      final state = familyState();
+      final f = state.strings.family;
+      final c = await pump(tester, const SizedBox(), state);
+      final kid = await seed(c, 'Test Kid');
+      await c
+          .read(addEmergencyContactUseCaseProvider)
+          .execute(userId: user, profileId: kid.id, name: 'Test Contact', phone: '+200000000001', isPrimary: true);
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(home: MemberCardScreen(id: kid.id)),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('Test Contact'), findsOne);
+
+      final remove =
+          find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == f.a11y_remove_contact('Test Contact'));
+      await tester.tap(remove);
+      await tester.pumpAndSettle();
+      expect(find.text(f.contact_remove_t('Test Contact')), findsOne);
+      await tester.tap(find.text(state.strings.common.cancel));
+      await tester.pumpAndSettle();
+      expect(find.text('Test Contact'), findsOne);
+
+      await tester.tap(remove);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(FamilyConfirmSheet), matching: find.text(f.contact_remove)));
+      await tester.pumpAndSettle();
+      expect(find.text('Test Contact'), findsNothing);
+      expect(find.text(f.card_no_contacts), findsOne);
     });
   });
 
