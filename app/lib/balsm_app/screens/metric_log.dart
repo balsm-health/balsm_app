@@ -546,7 +546,10 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
     final ar = s.rtl;
     return chrome(
       child: Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        // Blood pressure is written systolic/diastolic left to right in every
+        // language ("120/80", as Home and Trends show it). Mirrored under RTL
+        // the entry read "80 / 120"; the boxes and their labels stay LTR.
+        Row(mainAxisAlignment: MainAxisAlignment.center, textDirection: TextDirection.ltr, children: [
           _BigReading(value: sys, s: s, active: onSys, onTap: () => setState(() => onSys = true), width: 108),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -557,13 +560,17 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
           _BigReading(value: dia, s: s, active: !onSys, onTap: () => setState(() => onSys = false), width: 108),
         ]),
         const SizedBox(height: 4),
-        Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-          Text(s.strings.checkin.sys,
-              style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? s.accent.main : T.fg3)),
-          const SizedBox(width: 60),
-          Text(s.strings.checkin.dia,
-              style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? T.fg3 : s.accent.main)),
-        ]),
+        Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            textDirection: TextDirection.ltr,
+            children: [
+              Text(s.strings.checkin.sys,
+                  style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? s.accent.main : T.fg3)),
+              const SizedBox(width: 60),
+              Text(s.strings.checkin.dia,
+                  style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600, color: onSys ? T.fg3 : s.accent.main)),
+            ]),
         const SizedBox(height: 4),
         Text(s.strings.checkin.unit_bp,
             style: Typo.bodySm(ar: ar).copyWith(fontSize: FS.md, fontWeight: FontWeight.w600, color: T.fg3)),
