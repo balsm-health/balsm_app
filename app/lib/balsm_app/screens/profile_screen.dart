@@ -42,12 +42,13 @@ class ProfileScreen extends ConsumerWidget {
     // Design order (home.jsx ProfileScreen): personal → conditions → care →
     // emergency → notif → privacy → feedback → ecosystem → help. Governance
     // (sessions / status / deletion) stays in its own card below.
-    final rows = <(IconData, String, VoidCallback?, bool)>[
+    final rows = <(IconData, String, VoidCallback, bool)>[
       (LucideIcons.user, 'profile.p_personal', () => openPersonalDetails(context), false),
       (LucideIcons.clipboardList, 'profile.p_cond', () => openMedicalProfile(context), false),
       (LucideIcons.stethoscope, 'profile.p_care', () => openCareTeam(context), false),
       (LucideIcons.siren, 'profile.p_emergency', () => openEmergency(context), true),
-      (LucideIcons.bell, 'profile.p_notif', null, false),
+      // Reminders has no screen yet: hidden rather than a row that does
+      // nothing when tapped.
       (
         LucideIcons.shieldCheck,
         'profile.p_privacy',
@@ -56,7 +57,8 @@ class ProfileScreen extends ConsumerWidget {
       ),
       (LucideIcons.star, 'feedback.fb_row', () => showFeedbackSheet(context), false),
       (LucideIcons.flower2, 'ecosystem.eco_row', () => showEcosystemSheet(context), false),
-      (LucideIcons.lifeBuoy, 'profile.p_help', null, false),
+      // Help opens Service status, which carries the support address.
+      (LucideIcons.lifeBuoy, 'profile.p_help', () => _pushGovernance(context, const StatusScreen()), false),
     ];
     return ContentColumn(
         maxWidth: 720,
@@ -172,7 +174,7 @@ class ProfileScreen extends ConsumerWidget {
                   icon: entry.$2.$1,
                   label: s.t(entry.$2.$2),
                   first: entry.$1 == 0,
-                  onTap: entry.$2.$3 ?? () {},
+                  onTap: entry.$2.$3,
                   iconBg: entry.$2.$4 ? T.dangerBg : null,
                   iconFg: entry.$2.$4 ? T.danger : null,
                   labelColor: entry.$2.$4 ? T.danger : null,
