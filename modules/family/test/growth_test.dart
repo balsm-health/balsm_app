@@ -128,5 +128,45 @@ void main() {
       final refused = await use(measuredOn: now, weightKg: 11.2, heightCm: null, now: now, profileId: closed);
       expect(refused.error, isA<StorageFailure>());
     });
+
+    test('UpdateGrowthEntryUseCase edits in place, keeping id and first-recorded time', () async {
+      await ds.put(const GrowthEntryId.value('e1'), entry('e1', DateTime(2026, 9, 1)), scope: child);
+      final use = UpdateGrowthEntryUseCase(ds);
+      const id = GrowthEntryId.value('e1');
+      expect((await use(id: id, measuredOn: now, weightKg: null, heightCm: null, now: now, profileId: child)).error,
+          isA<ValidationFailure>());
+
+      final ok = await use(
+          id: id, measuredOn: DateTime(2026, 10, 2), weightKg: 12.5, heightCm: 80, now: now, profileId: child);
+      expect(ok.isSuccess, isTrue);
+      final back = (await ds.findAll(scope: child)).single;
+      expect(back.id, id);
+      expect(back.measuredOn, DateTime.utc(2026, 10, 2));
+      expect(back.weightKg, 12.5);
+      expect(back.heightCm, 80);
+      expect(back.createdAt, DateTime.utc(2026));
+
+      final gone = await use(
+          id: const GrowthEntryId.value('nope'),
+          measuredOn: now,
+          weightKg: 1,
+          heightCm: null,
+          now: now,
+          profileId: child);
+      expect(gone.error, isA<NotFoundFailure>());
+      expect(await ds.findAll(scope: child), hasLength(1), reason: 'an edit never adds a row');
+    });
+
+    test('DeleteGrowthEntryUseCase soft-deletes; a closed profile is refused', () async {
+      await ds.put(const GrowthEntryId.value('e1'), entry('e1', DateTime(2026, 9, 1)), scope: child);
+      final use = DeleteGrowthEntryUseCase(ds);
+      expect((await use(const GrowthEntryId.value('e1'), profileId: child)).isSuccess, isTrue);
+      expect(await ds.findAll(scope: child), isEmpty);
+      final raw = await db.customSelect("SELECT deleted_at FROM growth_entry WHERE id = 'e1'").getSingle();
+      expect(raw.read<int?>('deleted_at'), isNotNull);
+
+      expect((await use(const GrowthEntryId.value('e1'), profileId: closed)).error, isA<StorageFailure>());
+      expect((await use(const GrowthEntryId.value('e1'), profileId: otherSelf)).error, isA<StorageFailure>());
+    });
   });
 }

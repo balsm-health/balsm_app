@@ -1,7 +1,9 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../application/use_cases/delete_vaccination_use_case.dart';
 import '../application/use_cases/record_vaccination_use_case.dart';
+import '../application/use_cases/update_vaccination_use_case.dart';
 import '../domain/aggregates/vaccination_record.dart';
 import '../infrastructure/drift/drift_vaccinations_data_source.dart';
 
@@ -15,4 +17,12 @@ final vaccinationsProvider =
 
 final recordVaccinationUseCaseProvider = Provider<RecordVaccinationUseCase>(
   (ref) => RecordVaccinationUseCase(ref.watch(vaccinationsDataSourceProvider)),
+);
+
+final updateVaccinationUseCaseProvider = Provider<UpdateVaccinationUseCase>(
+  (ref) => UpdateVaccinationUseCase(ref.watch(vaccinationsDataSourceProvider)),
+);
+
+final deleteVaccinationUseCaseProvider = Provider<DeleteVaccinationUseCase>(
+  (ref) => DeleteVaccinationUseCase(ref.watch(vaccinationsDataSourceProvider)),
 );

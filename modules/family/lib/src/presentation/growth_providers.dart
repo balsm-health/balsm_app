@@ -1,7 +1,9 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../application/use_cases/delete_growth_entry_use_case.dart';
 import '../application/use_cases/record_growth_entry_use_case.dart';
+import '../application/use_cases/update_growth_entry_use_case.dart';
 import '../domain/aggregates/growth_entry.dart';
 import '../infrastructure/drift/drift_growth_log_data_source.dart';
 
@@ -14,4 +16,12 @@ final growthEntriesProvider = StreamProvider.autoDispose.family<List<GrowthEntry
 
 final recordGrowthEntryUseCaseProvider = Provider<RecordGrowthEntryUseCase>(
   (ref) => RecordGrowthEntryUseCase(ref.watch(growthLogDataSourceProvider)),
+);
+
+final updateGrowthEntryUseCaseProvider = Provider<UpdateGrowthEntryUseCase>(
+  (ref) => UpdateGrowthEntryUseCase(ref.watch(growthLogDataSourceProvider)),
+);
+
+final deleteGrowthEntryUseCaseProvider = Provider<DeleteGrowthEntryUseCase>(
+  (ref) => DeleteGrowthEntryUseCase(ref.watch(growthLogDataSourceProvider)),
 );

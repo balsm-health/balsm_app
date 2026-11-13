@@ -22,7 +22,8 @@ import '../../domain/value_objects/ids.dart';
 /// A write is refused ([StorageWriteException]) unless the profile is an
 /// open profile of the signed-in account ([activeUser]): a closed member's
 /// log stays read-only, and no account files doses under another's person.
-/// [delete] only stamps `deleted_at`; dates are stored as `YYYY-MM-DD`.
+/// [delete] only stamps `deleted_at`, under the same write rule; dates are
+/// stored as `YYYY-MM-DD`.
 class DriftVaccinationsDataSource extends ProfileDataSource<VaccinationRecordId, VaccinationRecord>
     implements VaccinationsDataSource {
   DriftVaccinationsDataSource({
@@ -176,6 +177,7 @@ class DriftVaccinationsDataSource extends ProfileDataSource<VaccinationRecordId,
     final profile = _require(scope);
     final ids = keys.map((k) => k.value).toList();
     if (ids.isEmpty) return;
+    await _requireWritable(profile);
     await _db.customUpdate(
       'UPDATE $_table SET deleted_at = ? WHERE health_profile_id = ? AND $_live '
       'AND id IN (${List.filled(ids.length, '?').join(', ')})',

@@ -21,9 +21,11 @@ export 'src/application/ports/family_members_port.dart';
 export 'src/application/ports/growth_log_data_source.dart';
 export 'src/application/ports/member_groups_data_source.dart';
 export 'src/application/use_cases/close_family_member_use_case.dart';
+export 'src/application/use_cases/delete_growth_entry_use_case.dart';
 export 'src/application/use_cases/ensure_default_groups_use_case.dart';
 export 'src/application/use_cases/record_growth_entry_use_case.dart';
 export 'src/application/use_cases/save_family_member_use_case.dart';
+export 'src/application/use_cases/update_growth_entry_use_case.dart';
 
 // Infrastructure — bound through its providers; the classes are exported for tests.
 export 'src/infrastructure/drift/drift_growth_log_data_source.dart';

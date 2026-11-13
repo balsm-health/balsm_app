@@ -134,6 +134,56 @@ void main() {
     expect(refused.error, isA<StorageFailure>());
   });
 
+  test('UpdateVaccinationUseCase edits a dose in place, keeping id and first-recorded time', () async {
+    await ds.put(const VaccinationRecordId.value('e1'), dose('e1'), scope: child);
+    final use = UpdateVaccinationUseCase(ds);
+    const id = VaccinationRecordId.value('e1');
+    final bad = await use(id: id, vaccine: ' ', doseNumber: 1, administeredOn: now, now: now, profileId: child);
+    expect(bad.error, isA<ValidationFailure>());
+
+    final ok = await use(
+      id: id,
+      vaccine: 'Edited Vaccine',
+      doseNumber: 3,
+      administeredOn: DateTime(2026, 10, 5),
+      clinic: '',
+      nextDueOn: DateTime(2027, 2, 1),
+      now: now,
+      profileId: child,
+    );
+    expect(ok.isSuccess, isTrue);
+    final back = (await ds.findAll(scope: child)).single;
+    expect(back.id, id);
+    expect(back.vaccine, 'Edited Vaccine');
+    expect(back.doseNumber, 3);
+    expect(back.administeredOn, DateTime.utc(2026, 10, 5));
+    expect(back.clinic, isNull);
+    expect(back.nextDueOn, DateTime.utc(2027, 2, 1));
+    expect(back.createdAt, DateTime.utc(2026, 10, 1, 12));
+
+    final gone = await use(
+        id: const VaccinationRecordId.value('nope'),
+        vaccine: 'X',
+        doseNumber: 1,
+        administeredOn: now,
+        now: now,
+        profileId: child);
+    expect(gone.error, isA<NotFoundFailure>());
+    expect(await ds.findAll(scope: child), hasLength(1), reason: 'an edit never adds a row');
+  });
+
+  test('DeleteVaccinationUseCase soft-deletes; another account and a closed profile are refused', () async {
+    await ds.put(const VaccinationRecordId.value('e1'), dose('e1'), scope: child);
+    final use = DeleteVaccinationUseCase(ds);
+    expect((await use(const VaccinationRecordId.value('e1'), profileId: child)).isSuccess, isTrue);
+    expect(await ds.findAll(scope: child), isEmpty);
+    final raw = await db.customSelect("SELECT deleted_at FROM vaccination_record WHERE id = 'e1'").getSingle();
+    expect(raw.read<int?>('deleted_at'), isNotNull);
+
+    expect((await use(const VaccinationRecordId.value('e1'), profileId: closed)).error, isA<StorageFailure>());
+    expect((await use(const VaccinationRecordId.value('e1'), profileId: bobSelf)).error, isA<StorageFailure>());
+  });
+
   test('clear wipes one profile; clearAll wipes every row', () async {
     await ds.put(const VaccinationRecordId.value('k1'), dose('k1'));
     await ds.put(const VaccinationRecordId.value('k2'), dose('k2'), scope: child);

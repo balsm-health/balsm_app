@@ -10,7 +10,9 @@ export 'src/domain/value_objects/ids.dart';
 
 // Application
 export 'src/application/ports/vaccinations_data_source.dart';
+export 'src/application/use_cases/delete_vaccination_use_case.dart';
 export 'src/application/use_cases/record_vaccination_use_case.dart';
+export 'src/application/use_cases/update_vaccination_use_case.dart';
 
 // Infrastructure — bound through its provider; the class is exported for tests.
 export 'src/infrastructure/drift/drift_vaccinations_data_source.dart';

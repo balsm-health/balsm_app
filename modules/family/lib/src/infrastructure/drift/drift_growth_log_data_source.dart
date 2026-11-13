@@ -22,7 +22,8 @@ import '../../domain/value_objects/growth_entry_id.dart';
 /// A write is refused ([StorageWriteException]) unless the profile is an
 /// open profile of the signed-in account ([activeUser]): a closed member's
 /// log stays read-only, and no account logs measurements for another's person.
-/// [delete] only stamps `deleted_at`; dates are stored as `YYYY-MM-DD`.
+/// [delete] only stamps `deleted_at`, under the same write rule; dates are
+/// stored as `YYYY-MM-DD`.
 class DriftGrowthLogDataSource extends ProfileDataSource<GrowthEntryId, GrowthEntry> implements GrowthLogDataSource {
   DriftGrowthLogDataSource({
     required AppDatabase db,
@@ -171,6 +172,7 @@ class DriftGrowthLogDataSource extends ProfileDataSource<GrowthEntryId, GrowthEn
     final profile = _require(scope);
     final ids = keys.map((k) => k.value).toList();
     if (ids.isEmpty) return;
+    await _requireWritable(profile);
     await _db.customUpdate(
       'UPDATE $_table SET deleted_at = ? WHERE health_profile_id = ? AND $_live '
       'AND id IN (${List.filled(ids.length, '?').join(', ')})',
