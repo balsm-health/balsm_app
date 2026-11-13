@@ -637,6 +637,11 @@
     "regimen_of(String name)": "نظام $name اليومي",
     "member_meds_empty(String name)": "لا أدوية لـ$name بعد",
     "member_meds_empty_h(Gender gender, String name)": "${_select(gender, female: 'أضيفي', other: 'أضف')} أدوية $name ومواعيدها، وسيذكّرك بلسم بها حتى دون إنترنت.",
+    // Edit medication (prescriptions.jsx AddMedSheet with `initial`).
+    "med_edit_title": "تعديل الدواء",
+    "med_save_changes": "حفظ التعديلات",
+    "med_changes_saved": "تم حفظ التعديلات",
+    "med_edit_hint(Gender gender)": "اضغط${_select(gender, female: 'ي', other: '')} على دواء لتعديله.",
   },
   "nav": {
     "tab_home": "الرئيسية",

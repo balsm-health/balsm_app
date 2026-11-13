@@ -111,6 +111,82 @@ void main() {
     expect(m.notes, isNull);
   });
 
+  group('Edit medication (fromMedication)', () {
+    Medication stored(ScheduleType type, ScheduleConfig cfg, {DateTime? end}) => Medication(
+          id: const MedicationId.value('med-stored'),
+          userId: user,
+          name: 'Testamol',
+          doseAmount: '500 mg',
+          scheduleType: type,
+          scheduleConfig: cfg,
+          startDate: DateTime(2026, 9, 1),
+          endDate: end,
+          isControlled: true,
+          notes: 'with food',
+        );
+
+    test('fills the form from the medication', () {
+      final d =
+          MedPlanDraft.fromMedication(stored(ScheduleType.daily, const ScheduleConfig(times: ['07:00', '19:00'])));
+      addTearDown(d.dispose);
+      expect((d.name.text, d.dose.text, d.notes.text), ('Testamol', '500 mg', 'with food'));
+      expect((d.freqType, d.freqN.text, d.timing), ('per_day', '2', MedTiming.times));
+      expect(d.times, ['07:00', '19:00']);
+      expect(d.durType, 'ongoing');
+    });
+
+    test('maps every schedule back to its form option', () {
+      MedPlanDraft of(ScheduleType t, ScheduleConfig c, {DateTime? end}) =>
+          MedPlanDraft.fromMedication(stored(t, c, end: end));
+      final once = of(ScheduleType.once, const ScheduleConfig(times: ['20:00']));
+      expect((once.freqType, once.evening), ('once', true));
+      final hours = of(ScheduleType.everyHours, const ScheduleConfig(times: ['06:00'], interval: 8));
+      expect((hours.freqType, hours.freqUnit, hours.freqN.text), ('every_x', 'hours', '8'));
+      expect(hours.times, ['06:00']);
+      final days = of(ScheduleType.everyDays, const ScheduleConfig(times: ['08:00'], interval: 2));
+      expect((days.freqType, days.freqUnit, days.freqN.text), ('every_x', 'days', '2'));
+      final other = of(ScheduleType.daily, const ScheduleConfig(times: ['08:00'], frequencyNote: 'when needed'));
+      expect((other.freqType, other.freqOther.text), ('other', 'when needed'));
+      final period = of(ScheduleType.daily, const ScheduleConfig(times: ['08:00'], durationKind: DurationKind.period),
+          end: DateTime(2026, 9, 8));
+      expect((period.durType, period.durN.text, period.durUnit), ('period', '7', 'days'));
+    });
+
+    test('saving keeps the id, start date and controlled flag; changed fields change', () {
+      final med = stored(ScheduleType.daily, const ScheduleConfig(times: ['08:00']));
+      final d = MedPlanDraft.fromMedication(med)
+        ..name.text = 'Placebex'
+        ..dose.text = '250 mg';
+      final m = d.toMedication(user, now: now);
+      expect(m.id, med.id);
+      expect(m.startDate, med.startDate);
+      expect(m.isControlled, isTrue);
+      expect((m.name, m.doseAmount), ('Placebex', '250 mg'));
+    });
+
+    test('an untouched schedule is kept as stored, even one the form cannot express', () {
+      final med =
+          stored(ScheduleType.weekly, const ScheduleConfig(times: ['10:00'], days: [1]), end: DateTime(2026, 12, 1));
+      final m = (MedPlanDraft.fromMedication(med)..name.text = 'Placebex').toMedication(user, now: now);
+      expect(m.scheduleType, ScheduleType.weekly);
+      expect(m.scheduleConfig.days, [1]);
+      expect(m.endDate, DateTime(2026, 12, 1));
+    });
+
+    test('a changed schedule is rebuilt from the form', () {
+      final med = stored(ScheduleType.daily, const ScheduleConfig(times: ['08:00']));
+      final d = MedPlanDraft.fromMedication(med)
+        ..freqType = 'every_x'
+        ..freqN.text = '8'
+        ..freqUnit = 'hours'
+        ..syncTimes();
+      final m = d.toMedication(user, now: now);
+      expect(m.scheduleType, ScheduleType.everyHours);
+      expect(m.scheduleConfig.interval, 8);
+      expect(m.startDate, med.startDate);
+    });
+  });
+
   testWidgets('in the sheet, picking "Times per day" shows the dose-time chips', (tester) async {
     tester.view.physicalSize = const Size(1320, 2868);
     tester.view.devicePixelRatio = 3;

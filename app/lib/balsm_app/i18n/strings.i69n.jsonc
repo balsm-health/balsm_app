@@ -639,6 +639,11 @@
     "regimen_of(String name)": "$name's daily regimen",
     "member_meds_empty(String name)": "No medicines for $name yet",
     "member_meds_empty_h(Gender gender, String name)": "Add their medicines and times, and Balsm reminds you, even offline.",
+    // Edit medication (prescriptions.jsx AddMedSheet with `initial`).
+    "med_edit_title": "Edit medication",
+    "med_save_changes": "Save changes",
+    "med_changes_saved": "Changes saved",
+    "med_edit_hint(Gender gender)": "Tap a medicine to edit it.",
   },
   "nav": {
     "tab_home": "Home",

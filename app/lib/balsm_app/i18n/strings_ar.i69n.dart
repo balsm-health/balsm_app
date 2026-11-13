@@ -2059,6 +2059,11 @@ class MedsStrings_ar extends MedsStrings {
             'female': 'أضيفي',
             'other': 'أضف'
           })} أدوية $name ومواعيدها، وسيذكّرك بلسم بها حتى دون إنترنت.";
+  String get med_edit_title => "تعديل الدواء";
+  String get med_save_changes => "حفظ التعديلات";
+  String get med_changes_saved => "تم حفظ التعديلات";
+  String med_edit_hint(Gender gender) =>
+      "اضغط${_select(gender, {'female': 'ي', 'other': ''})} على دواء لتعديله.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2282,6 +2287,14 @@ class MedsStrings_ar extends MedsStrings {
         return member_meds_empty;
       case 'member_meds_empty_h':
         return member_meds_empty_h;
+      case 'med_edit_title':
+        return med_edit_title;
+      case 'med_save_changes':
+        return med_save_changes;
+      case 'med_changes_saved':
+        return med_changes_saved;
+      case 'med_edit_hint':
+        return med_edit_hint;
       default:
         return super[key];
     }

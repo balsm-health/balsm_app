@@ -62,6 +62,13 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
     ref.invalidate(medicationListProvider);
   }
 
+  Future<void> _editMedication(UserId userId, Medication med) async {
+    await ref.read(editMedicationUseCaseProvider(userId)).call(med);
+    if (!mounted) return;
+    ref.invalidate(todayDosesProvider);
+    ref.invalidate(medicationListProvider);
+  }
+
   /// Asks before ending [meds]; nothing changes on Cancel.
   void _askDelete(UserId userId, List<Medication> meds) {
     if (meds.isEmpty) return;
@@ -87,15 +94,30 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
 
   // ── UI actions ───────────────────────────────────────────────────────────
 
-  Future<void> _openDoseActions(TodayDose dose) async {
+  /// Taken / snooze / skip for a pending dose, or Edit medication.
+  Future<void> _openDoseActions(UserId userId, TodayDose dose) async {
     final s = AppScope.of(context);
-    final outcome = await showAppSheet<DoseOutcome>(
+    final picked = await showAppSheet<Object>(
       context,
       barrierColor: const Color(0x6114202B),
       textDirection: s.dir,
       builder: (_) => _DoseActionSheet(s: s, dose: dose),
     );
-    if (outcome != null) await _recordDose(dose, outcome);
+    if (picked is DoseOutcome) await _recordDose(dose, picked);
+    if (picked == _DoseActionSheet.edit && mounted) await _openEditMedication(userId, dose.medication);
+  }
+
+  /// Edit medication (prescriptions.jsx AddMedSheet with `initial`).
+  Future<void> _openEditMedication(UserId userId, Medication med) async {
+    final s = AppScope.of(context);
+    await showAppSheet<void>(
+      context,
+      size: SheetSize.lg,
+      barrierColor: const Color(0x6114202B),
+      textDirection: s.dir,
+      builder: (_) =>
+          _AddMedSheet(s: s, userId: userId, initial: med, onSave: (edited) => _editMedication(userId, edited)),
+    );
   }
 
   Future<void> _openAddMedication(UserId userId) async {
@@ -275,7 +297,11 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
                             first: e.$1 == 0,
                             lead: kitCheck(med.id),
                             trail: kitMore(label: med.name, onDelete: ask),
-                            onTap: e.$2.isPending ? () => _openDoseActions(e.$2) : null,
+                            // A pending dose offers taken / snooze / skip and
+                            // Edit; a logged one opens Edit straight away.
+                            onTap: e.$2.isPending
+                                ? () => _openDoseActions(userId, e.$2)
+                                : () => _openEditMedication(userId, med),
                           ),
                         );
                       }).toList()),
@@ -283,6 +309,16 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
                   ),
                 ],
               ],
+            // Design: "Tap a medicine to edit it."
+            if (userId != null && doses.isNotEmpty && !selecting)
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(22, 12, 22, 0),
+                child: Row(children: [
+                  const Icon(LucideIcons.pencil, size: 13, color: T.fg3),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(s.strings.meds.med_edit_hint(s.gender), style: Typo.meta(ar: s.rtl))),
+                ]),
+              ),
             SizedBox(height: selecting ? kitBottomRoom : 24),
           ]),
           ...deleteKitOverlays(
@@ -554,6 +590,9 @@ class _SheetButton extends StatelessWidget {
 
 class _DoseActionSheet extends StatelessWidget {
   const _DoseActionSheet({required this.s, required this.dose});
+
+  /// Popped when the patient picks Edit medication instead of an outcome.
+  static const edit = #edit;
   final PatientAppState s;
   final TodayDose dose;
   @override
@@ -587,6 +626,12 @@ class _DoseActionSheet extends StatelessWidget {
             label: s.strings.meds.med_skip,
             icon: LucideIcons.x,
             onTap: () => Navigator.pop(context, DoseOutcome.skipped)),
+        const SizedBox(height: 10),
+        _SheetButton(
+            s: s,
+            label: s.strings.meds.med_edit_title,
+            icon: LucideIcons.pencil,
+            onTap: () => Navigator.pop(context, edit)),
       ]),
     );
   }
@@ -596,17 +641,22 @@ class _DoseActionSheet extends StatelessWidget {
 
 /// A medication with no prescription (pain relief, vitamins, carried-over
 /// meds). Saved on-device, then shown as a confirmation before closing.
+///
+/// With [initial] it is Edit medication: the fields start from it and saving
+/// replaces it under the same id.
 class _AddMedSheet extends StatefulWidget {
-  const _AddMedSheet({required this.s, required this.userId, required this.onSave});
+  const _AddMedSheet({required this.s, required this.userId, required this.onSave, this.initial});
   final PatientAppState s;
   final UserId userId;
+  final Medication? initial;
   final Future<void> Function(Medication med) onSave;
   @override
   State<_AddMedSheet> createState() => _AddMedSheetState();
 }
 
 class _AddMedSheetState extends State<_AddMedSheet> {
-  final _draft = MedPlanDraft();
+  late final _draft = widget.initial == null ? MedPlanDraft() : MedPlanDraft.fromMedication(widget.initial!);
+  bool get _editing => widget.initial != null;
   bool _saving = false;
   bool _done = false;
 
@@ -632,12 +682,12 @@ class _AddMedSheetState extends State<_AddMedSheet> {
   Widget build(BuildContext context) {
     final m = s.strings.meds;
     if (_done) {
-      return _SheetChrome(s: s, title: '', child: _Added(s: s, label: m.med_added));
+      return _SheetChrome(s: s, title: '', child: _Added(s: s, label: _editing ? m.med_changes_saved : m.med_added));
     }
     final ready = _draft.isNamed && !_saving;
     return _SheetChrome(
       s: s,
-      title: m.med_add_title,
+      title: _editing ? m.med_edit_title : m.med_add_title,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Container(
           padding: const EdgeInsets.all(12),
@@ -658,7 +708,7 @@ class _AddMedSheetState extends State<_AddMedSheet> {
         const SizedBox(height: 18),
         Opacity(
           opacity: ready ? 1 : 0.4,
-          child: PButton(m.med_add_btn,
+          child: PButton(_editing ? m.med_save_changes : m.med_add_btn,
               large: true, block: true, accent: s.accent, ar: s.rtl, onTap: ready ? _submit : null),
         ),
       ]),

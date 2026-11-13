@@ -24,6 +24,16 @@ class _Recorder implements DeleteMedicationUseCase {
   Future<void> call(MedicationId id) async => deleted.add(id);
 }
 
+class _EditRecorder implements EditMedicationUseCase {
+  final edited = <Medication>[];
+
+  @override
+  MedicationsDataSource get dao => throw UnimplementedError();
+
+  @override
+  Future<void> call(Medication medication) async => edited.add(medication);
+}
+
 void main() {
   const user = UserId.value('usr-1');
   Medication med(String id, String name) => Medication(
@@ -43,9 +53,12 @@ void main() {
     TodayDose(medication: alpha, scheduledAt: DateTime(today.year, today.month, today.day, 20)),
   ];
 
+  late _EditRecorder editor;
+
   Future<(_Recorder, PatientAppState)> pump(WidgetTester tester,
       {bool ar = false, FamilyMember? member, List<Medication>? meds}) async {
     final recorder = _Recorder();
+    editor = _EditRecorder();
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
     if (member != null) {
@@ -71,6 +84,7 @@ void main() {
         prescriptionListProvider.overrideWith((ref) => Stream.value(const <Prescription>[])),
         weekAdherenceProvider.overrideWith((ref) async => const WeekAdherence(scheduled: 0, taken: 0)),
         deleteMedicationUseCaseProvider(user).overrideWithValue(recorder),
+        editMedicationUseCaseProvider(user).overrideWithValue(editor),
       ],
       child: AppScope(
         state: state,
@@ -139,6 +153,33 @@ void main() {
     await tester.pumpAndSettle();
     await confirm(tester, s);
     expect(recorder.deleted, [alpha.id]);
+  });
+
+  testWidgets('Edit medication: from the dose sheet, prefilled, saved under the same id', (tester) async {
+    final (_, s) = await pump(tester);
+    final m = s.strings.meds;
+    expect(find.text(m.med_edit_hint(s.gender)), findsOne);
+
+    await tester.tap(find.text('Placebex'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(m.med_edit_title));
+    await tester.pumpAndSettle();
+
+    expect(find.text(m.med_edit_title), findsOne, reason: 'the sheet title');
+    final name = find.byWidgetPredicate((w) => w is EditableText && w.controller.text == 'Placebex');
+    expect(name, findsOne);
+    await tester.enterText(name, 'Renamedol');
+    await tester.pump();
+    await tester.tap(find.text(m.med_save_changes));
+    await tester.pump();
+    expect(find.text(m.med_changes_saved), findsOne);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(editor.edited, hasLength(1));
+    expect(editor.edited.single.id, beta.id);
+    expect(editor.edited.single.name, 'Renamedol');
+    expect(editor.edited.single.scheduleConfig.times, beta.scheduleConfig.times, reason: 'schedule left alone');
   });
 
   group('a family member is the active profile (home-base-mc.jsx MedsScreen member)', () {

@@ -15,7 +15,63 @@ import 'select_field.dart';
 /// Shared by Add medication and Add prescription, so a med typed into either
 /// lands in the Meds tab's daily list the same way. On-device PHI only.
 class MedPlanDraft {
-  MedPlanDraft();
+  MedPlanDraft() : _from = null;
+
+  /// A draft filled from [med], for Edit medication (prescriptions.jsx
+  /// `AddMedSheet` with `initial`). [toMedication] then saves under the same
+  /// id and keeps the start date, and a schedule or duration the patient left
+  /// untouched is kept exactly as stored — even one the form cannot express.
+  MedPlanDraft.fromMedication(Medication med) : _from = med {
+    final cfg = med.scheduleConfig;
+    final first = cfg.times.firstOrNull ?? morningTime;
+    name.text = med.name;
+    dose.text = med.doseAmount ?? '';
+    notes.text = med.notes ?? '';
+    evening = (int.tryParse(first.split(':').first) ?? 8) >= 12;
+    times = [first];
+    switch (med.scheduleType) {
+      case _ when cfg.frequencyNote != null:
+        freqType = 'other';
+        freqOther.text = cfg.frequencyNote!;
+      case ScheduleType.once:
+        freqType = 'once';
+      case ScheduleType.everyHours:
+        freqType = 'every_x';
+        freqUnit = 'hours';
+        freqN.text = '${cfg.interval ?? 1}';
+      case ScheduleType.everyDays:
+        freqType = 'every_x';
+        freqUnit = 'days';
+        freqN.text = '${cfg.interval ?? 1}';
+      case ScheduleType.daily || ScheduleType.weekly || ScheduleType.custom:
+        freqType = 'per_day';
+        freqN.text = '${cfg.times.length.clamp(1, 12)}';
+        if (cfg.times.length > 1) times = [...cfg.times];
+    }
+    switch (cfg.durationKind) {
+      case DurationKind.period when med.endDate != null:
+        durType = 'period';
+        durUnit = 'days';
+        durN.text = '${DateUtils.dateOnly(med.endDate!).difference(DateUtils.dateOnly(med.startDate)).inDays}';
+      case DurationKind.untilEmpty:
+        durType = 'until_empty';
+      case DurationKind.other:
+        durType = 'other';
+        durOther.text = cfg.durationNote ?? '';
+      case _:
+        durType = 'ongoing';
+    }
+    _seededSchedule = _scheduleKey;
+    _seededDuration = _durationKey;
+  }
+
+  /// The medication being edited; null when adding.
+  final Medication? _from;
+  String? _seededSchedule;
+  String? _seededDuration;
+
+  String get _scheduleKey => [freqType, freqN.text, freqUnit, freqOther.text, evening, ...times].join('|');
+  String get _durationKey => [durType, durN.text, durUnit, durOther.text].join('|');
 
   final name = TextEditingController();
   final dose = TextEditingController();
@@ -79,7 +135,8 @@ class MedPlanDraft {
   /// The scheduled medication. It starts at midnight today, so a dose due
   /// earlier today is listed as Due rather than silently skipped.
   Medication toMedication(UserId userId, {DateTime? now}) {
-    final today = DateUtils.dateOnly(now ?? DateTime.now());
+    final from = _from;
+    final today = from?.startDate ?? DateUtils.dateOnly(now ?? DateTime.now());
     final text = freqOther.text.trim();
     final (type, times, interval) = switch (freqType) {
       'once' => (ScheduleType.once, [_halfOfDay], null),
@@ -91,26 +148,34 @@ class MedPlanDraft {
     final count = int.tryParse(durN.text) ?? 0;
     final period = durType == 'period' && count > 0;
     final durText = durOther.text.trim();
+    final keepSchedule = from != null && _scheduleKey == _seededSchedule;
+    final keepDuration = from != null && _durationKey == _seededDuration;
+    final cfg = from?.scheduleConfig;
     return Medication(
-      id: MedicationId.uuid(),
-      userId: userId,
+      id: from?.id ?? MedicationId.uuid(),
+      userId: from?.userId ?? userId,
       name: name.text.trim(),
       doseAmount: dose.text.trim().isEmpty ? null : dose.text.trim(),
-      scheduleType: type,
+      scheduleType: keepSchedule ? from.scheduleType : type,
       scheduleConfig: ScheduleConfig(
-        times: times,
-        interval: interval,
-        frequencyNote: freqType == 'other' && text.isNotEmpty ? text : null,
-        durationKind: switch (durType) {
-          'period' when period => DurationKind.period,
-          'until_empty' => DurationKind.untilEmpty,
-          'other' => DurationKind.other,
-          _ => DurationKind.ongoing,
-        },
-        durationNote: durType == 'other' && durText.isNotEmpty ? durText : null,
+        times: keepSchedule ? cfg!.times : times,
+        days: keepSchedule ? cfg!.days : null,
+        interval: keepSchedule ? cfg!.interval : interval,
+        frequencyNote: keepSchedule ? cfg!.frequencyNote : (freqType == 'other' && text.isNotEmpty ? text : null),
+        durationKind: keepDuration
+            ? cfg!.durationKind
+            : switch (durType) {
+                'period' when period => DurationKind.period,
+                'until_empty' => DurationKind.untilEmpty,
+                'other' => DurationKind.other,
+                _ => DurationKind.ongoing,
+              },
+        durationNote: keepDuration ? cfg!.durationNote : (durType == 'other' && durText.isNotEmpty ? durText : null),
       ),
       startDate: today,
-      endDate: period ? periodEnd(today, count, PeriodUnit.values.byName(durUnit)) : null,
+      endDate:
+          keepDuration ? from.endDate : (period ? periodEnd(today, count, PeriodUnit.values.byName(durUnit)) : null),
+      isControlled: from?.isControlled ?? false,
       notes: notes.text.trim().isEmpty ? null : notes.text.trim(),
     );
   }
