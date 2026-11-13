@@ -27,7 +27,10 @@ class RecordDetailScreen extends ConsumerWidget {
 
     final meta = <String>[
       formatRecordDate(record.takenAt, s),
-      if (record.fileType != null && record.fileType!.isNotEmpty) record.fileType!,
+      // fileType is stored ('PDF' / 'Image'); the image kind is shown in the
+      // UI language, PDF reads the same everywhere.
+      if (record.fileType != null && record.fileType!.isNotEmpty)
+        record.fileType!.toLowerCase() == 'image' ? s.strings.records.rec_kind_image : record.fileType!,
       if ((record.pages ?? 0) > 1) '${record.pages} ${s.strings.common.pages}',
     ];
 

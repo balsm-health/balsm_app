@@ -905,6 +905,7 @@
     "rec_empty": "No records yet",
     "rec_source": "Source",
     "rec_view": "View document",
+    "rec_kind_image": "Image",
     "rec_preview": "Document preview",
     "rec_preview_failed": "Could not open this file",
     "rec_share": "Share with doctor",

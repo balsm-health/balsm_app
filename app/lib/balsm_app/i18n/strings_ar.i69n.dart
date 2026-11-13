@@ -909,7 +909,7 @@ class CheckinStrings_ar extends CheckinStrings {
   String rec_del_body_n(String day) =>
       "ستُحذف هذه السجلات من $day. لا يمكن التراجع عن ذلك.";
   String rec_count(int n) =>
-      "${_plural(n, one: 'سجل واحد', two: 'سجلين', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
+      "${_plural(n, zero: 'لا سجلات', one: 'سجل واحد', two: 'سجلين', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
   String get rec_select_title => "حدد السجلات";
   String get day_empty => "لا توجد سجلات في هذا اليوم.";
   String get list_sep => "، ";
@@ -1332,7 +1332,7 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_manual_sub => "لمن لا يملك حسابًا بعد.";
   String get fam_scan_title => "مسح رمز QR";
   String get fam_confirm_title => "تأكيد الإضافة";
-  String get fam_point_camera => "وجّه الكاميرا إلى رمز بلسم الخاص بهم";
+  String get fam_point_camera => "الكاميرا جاهزة لمسح رمز بلسم الخاص بهم";
   String get fam_code_found => "تم التعرّف على الرمز";
   String get fam_code_hint => "يجد كل فرد رمزه في الملف الشخصي ← رمز المشاركة.";
   String get fam_manual_instead => "الإدخال يدويًا بدلاً من ذلك";
@@ -1961,14 +1961,14 @@ class MedsStrings_ar extends MedsStrings {
   String rx_meds_n(String n) => "$n أدوية";
   String get rx_show => "أظهر للصيدلاني";
   String get rx_scan => "امسح للصرف";
-  String get rx_add => "إضافة روشتة";
+  String get rx_add => "إضافة وصفة";
   String get rx_name => "الاسم";
-  String get rx_name_ph => "مثال: روشتة د. سارة";
+  String get rx_name_ph => "مثال: وصفة د. سارة";
   String get rx_doctor_name => "اسم الطبيب";
   String get rx_doctor_name_ph => "اختياري";
   String get rx_date => "تاريخ الإصدار";
   String get rx_expiry => "تاريخ الانتهاء";
-  String get rx_added => "تمت إضافة الروشتة";
+  String get rx_added => "تمت إضافة الوصفة";
   String get rx_upload => "رفع ملف";
   String get rx_manual => "كتابتها يدوياً";
   String rx_or_paste_url(Gender gender) =>
@@ -2017,7 +2017,7 @@ class MedsStrings_ar extends MedsStrings {
   String get rx_from_gallery => "الصور";
   String get rx_from_files => "اختيار ملف";
   String get rx_prescribed_by => "بواسطة";
-  String get rx_default_title => "روشتة";
+  String get rx_default_title => "وصفة";
   String get dose_skipped => "تم التخطي";
   String get dose_snoozed => "مؤجل";
   String get dose_missed => "فائت";
@@ -2038,7 +2038,7 @@ class MedsStrings_ar extends MedsStrings {
   String get med_time_evening => "مساءً";
   String get med_time_night => "ليلاً";
   String get med_self_note =>
-      "لأدوية بدون روشتة، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
+      "لأدوية بدون وصفة طبية، مثل المسكنات والفيتامينات. تُحفظ على أنها أضفتها أنت.";
   String get med_when => "موعد الجرعة";
   String get med_dose_times => "مواعيد الجرعات";
   String get med_first_dose => "الجرعة الأولى";
@@ -3154,10 +3154,11 @@ class RecordsStrings_ar extends RecordsStrings {
   String get rec_lab_one => "تحليل";
   String get rec_scan_one => "أشعة";
   String get rec_report_one => "تقرير";
-  String get rec_self => "رفعتَه بنفسك";
+  String get rec_self => "رفعته بنفسك";
   String get rec_empty => "لا توجد سجلات بعد";
   String get rec_source => "المصدر";
   String get rec_view => "عرض المستند";
+  String get rec_kind_image => "صورة";
   String get rec_preview => "معاينة المستند";
   String get rec_preview_failed => "تعذّر فتح هذا الملف";
   String get rec_share => "مشاركة مع الطبيب";
@@ -3273,6 +3274,8 @@ class RecordsStrings_ar extends RecordsStrings {
         return rec_source;
       case 'rec_view':
         return rec_view;
+      case 'rec_kind_image':
+        return rec_kind_image;
       case 'rec_preview':
         return rec_preview;
       case 'rec_preview_failed':
@@ -3965,7 +3968,7 @@ class VaccStrings_ar extends VaccStrings {
   String get save => "حفظ التطعيم";
   String tile_next(String date) => "القادمة $date";
   String recorded_n(int n) =>
-      "${_plural(n, zero: '0 مسجّلة', one: 'تطعيم واحد مسجّل', two: 'تطعيمان مسجّلان', few: '$n تطعيمات مسجّلة', many: '$n تطعيماً مسجّلاً', other: '$n تطعيم مسجّل')}";
+      "${_plural(n, zero: 'لا تطعيمات بعد', one: 'تطعيم واحد مسجّل', two: 'تطعيمان مسجّلان', few: '$n تطعيمات مسجّلة', many: '$n تطعيماً مسجّلاً', other: '$n تطعيم مسجّل')}";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4618,7 +4621,7 @@ class FamilyStrings_ar extends FamilyStrings {
   String get tile_records => "السجلات";
   String get no_records => "لا مستندات بعد";
   String records_n(int n) =>
-      "${_plural(n, one: 'سجل واحد', two: 'سجلان', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
+      "${_plural(n, zero: 'لا سجلات', one: 'سجل واحد', two: 'سجلان', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
   String get member_menu => "خيارات أخرى";
   String get edit_details => "تعديل البيانات";
   String get edit_medical => "البيانات الطبية";

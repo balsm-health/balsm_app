@@ -2994,6 +2994,7 @@ class RecordsStrings implements i69n.I69nMessageBundle {
   String get rec_empty => "No records yet";
   String get rec_source => "Source";
   String get rec_view => "View document";
+  String get rec_kind_image => "Image";
   String get rec_preview => "Document preview";
   String get rec_preview_failed => "Could not open this file";
   String get rec_share => "Share with doctor";
@@ -3095,6 +3096,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return rec_source;
       case 'rec_view':
         return rec_view;
+      case 'rec_kind_image':
+        return rec_kind_image;
       case 'rec_preview':
         return rec_preview;
       case 'rec_preview_failed':
