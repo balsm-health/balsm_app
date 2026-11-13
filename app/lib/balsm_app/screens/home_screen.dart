@@ -66,104 +66,117 @@ class HomeScreen extends ConsumerWidget {
     final firstName = displayName.split(' ').first;
     const avatarColor = T.hueAqua;
 
-    return ContentColumn(
-      maxWidth: T.contentMax,
-      child: LayoutBuilder(builder: (context, box) {
-        // `.hv2 { --g }` — 16 on a phone, 24 from 600; two columns from 840.
-        final g = box.maxWidth >= 600 ? 24.0 : 16.0;
-        final wide = box.maxWidth >= 840;
-        return ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const PadTop(),
+    // Under a transparent status bar the scrolled cards ran beneath the
+    // clock and icons; a strip in the screen's colour keeps them clear.
+    final statusBar = MediaQuery.paddingOf(context).top;
+    return Stack(children: [
+      ContentColumn(
+        maxWidth: T.contentMax,
+        child: LayoutBuilder(builder: (context, box) {
+          // `.hv2 { --g }` — 16 on a phone, 24 from 600; two columns from 840.
+          final g = box.maxWidth >= 600 ? 24.0 : 16.0;
+          final wide = box.maxWidth >= 840;
+          return ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              const PadTop(),
 
-            // App bar: avatar (account switcher) + greeting. The design keeps
-            // the v1 header (`BALSM_V1_HEADER`).
-            AppBarRow(children: [
-              _AvatarButton(
-                initials: accountInitials(displayName),
-                color: avatarColor,
-                showBadge: !family && s.extraFamily.isNotEmpty,
-                onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
-                  if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-                ]),
-              ),
-              // Bell hidden: it had an empty onTap, so it announced itself to a
-              // screen reader as a working button and then did nothing. Restore
-              // it with the screen it is meant to open.
-            ]),
+              // App bar: avatar (account switcher) + greeting. The design keeps
+              // the v1 header (`BALSM_V1_HEADER`).
+              AppBarRow(children: [
+                _AvatarButton(
+                  initials: accountInitials(displayName),
+                  color: avatarColor,
+                  showBadge: !family && s.extraFamily.isNotEmpty,
+                  onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
+                    if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
+                  ]),
+                ),
+                // Bell hidden: it had an empty onTap, so it announced itself to a
+                // screen reader as a working button and then did nothing. Restore
+                // it with the screen it is meant to open.
+              ]),
 
-            // `UX Enhancement Screens.html` — "Household · active-account
-            // accent": the design keeps whose-data-is-this permanently visible.
-            // Here it says the true thing: the member is selected, but their
-            // record is not on this device yet, so this is still your own.
-            // Without Mother & Child only. With it the data really re-points,
-            // and the profile bar below says whose it is.
-            if (member != null) _ViewingBanner(member: member),
+              // `UX Enhancement Screens.html` — "Household · active-account
+              // accent": the design keeps whose-data-is-this permanently visible.
+              // Here it says the true thing: the member is selected, but their
+              // record is not on this device yet, so this is still your own.
+              // Without Mother & Child only. With it the data really re-points,
+              // and the profile bar below says whose it is.
+              if (member != null) _ViewingBanner(member: member),
 
-            if (family) const ProfileBar(family: true),
+              if (family) const ProfileBar(family: true),
 
-            if (activeMember != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                child: MemberBody(member: activeMember),
-              )
-            else ...[
-              const AwayBanner(),
+              if (activeMember != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                  child: MemberBody(member: activeMember),
+                )
+              else ...[
+                const AwayBanner(),
 
-              // The pregnancy card / "start pregnancy" prompt (design
-              // `MCHomeCards`), on the patient's own profile.
-              if (family) PregnancyHomeCards(gutter: g),
+                // The pregnancy card / "start pregnancy" prompt (design
+                // `MCHomeCards`), on the patient's own profile.
+                if (family) PregnancyHomeCards(gutter: g),
 
-              // Family card: tap 1 of Home → Family → a member's card.
-              if (family) FamilyHomeCard(gutter: g),
+                // Family card: tap 1 of Home → Family → a member's card.
+                if (family) FamilyHomeCard(gutter: g),
 
-              Padding(
-                padding: EdgeInsetsDirectional.symmetric(horizontal: g),
-                child: wide
-                    ? const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Expanded(
-                          flex: 115,
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                            _CheckInSection(),
-                            _NudgeSection(),
-                            _LatestMetrics(),
-                          ]),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          flex: 100,
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                            _Shortcuts(row: true),
-                            _RecentReports(),
-                          ]),
-                        ),
-                      ])
-                    : const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        _CheckInSection(),
-                        // Onboarding nudges — driven by real P001 providers
-                        // (handle / emergency card / first medication). Each
-                        // stays hidden until its provider resolves, so
-                        // signed-out never flashes a wrong nudge.
-                        _NudgeSection(),
-                        _LatestMetrics(),
-                        SizedBox(height: 10),
-                        _Shortcuts(),
-                        _RecentReports(),
-                      ]),
-              ),
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(horizontal: g),
+                  child: wide
+                      ? const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Expanded(
+                            flex: 115,
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                              _CheckInSection(),
+                              _NudgeSection(),
+                              _LatestMetrics(),
+                            ]),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            flex: 100,
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                              _Shortcuts(row: true),
+                              _RecentReports(),
+                            ]),
+                          ),
+                        ])
+                      : const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                          _CheckInSection(),
+                          // Onboarding nudges — driven by real P001 providers
+                          // (handle / emergency card / first medication). Each
+                          // stays hidden until its provider resolves, so
+                          // signed-out never flashes a wrong nudge.
+                          _NudgeSection(),
+                          _LatestMetrics(),
+                          SizedBox(height: 10),
+                          _Shortcuts(),
+                          _RecentReports(),
+                        ]),
+                ),
+              ],
+
+              const SizedBox(height: 28),
             ],
-
-            const SizedBox(height: 28),
-          ],
-        );
-      }),
-    );
+          );
+        }),
+      ),
+      if (statusBar > 0)
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: statusBar,
+          child: ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
+        ),
+    ]);
   }
 }
 
