@@ -210,6 +210,27 @@ Future<bool> showFamilyConfirmSheet(
   return yes == true;
 }
 
+/// Asks to close member [m]'s profile in a [FamilyConfirmSheet] (the
+/// mother-child.jsx `MCEditMemberScreen` delete-profile confirm; the app
+/// soft-closes instead of deleting, so the copy says the records stay), then
+/// closes it. Shows the outcome in a snackbar; true once the profile is closed.
+Future<bool> confirmCloseMember(BuildContext context, WidgetRef ref, FamilyMember m) async {
+  final s = AppScope.of(context);
+  final f = s.strings.family;
+  final yes = await showFamilyConfirmSheet(
+    context,
+    title: f.close_confirm_t(m.shortName),
+    body: f.close_confirm_b,
+    confirmLabel: f.close_profile,
+  );
+  if (!yes || !context.mounted) return false;
+  final messenger = ScaffoldMessenger.of(context);
+  final result = await ref.read(closeFamilyMemberUseCaseProvider)(m.id, now: DateTime.now());
+  messenger
+      .showSnackBar(SnackBar(content: Text(result.isSuccess ? f.closed_toast(m.shortName) : f.save_failed(s.gender))));
+  return result.isSuccess;
+}
+
 /// MCConfirmSheet — mother-child.jsx: the small sheet that confirms a delete.
 /// The question and what deleting means, then a full-width danger button and
 /// Cancel, stacked so long Arabic labels never truncate. Pops `true` on

@@ -4476,6 +4476,9 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get close_confirm_b =>
       "Their records stay on this phone, read-only. The profile no longer appears in the picker.";
   String closed_toast(String name) => "$name's profile is closed";
+  String close_member(String name) => "Close $name's profile";
+  String get edit_title => "Edit profile";
+  String get save_changes => "Save changes";
   String get step_basic => "Basic details";
   String get step_1_of_2 => "Step 1 of 2 · Basic details";
   String get step_2_of_2 => "Step 2 of 2 · Consent";
@@ -4724,6 +4727,12 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return close_confirm_b;
       case 'closed_toast':
         return closed_toast;
+      case 'close_member':
+        return close_member;
+      case 'edit_title':
+        return edit_title;
+      case 'save_changes':
+        return save_changes;
       case 'step_basic':
         return step_basic;
       case 'step_1_of_2':

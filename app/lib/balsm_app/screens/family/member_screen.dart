@@ -64,7 +64,7 @@ Future<void> _showMemberMenu(BuildContext context, WidgetRef ref, FamilyMember m
     textDirection: s.dir,
     builder: (ctx) => FamilySheet(title: m.displayName, children: [
       for (final (icon, label, danger, action) in [
-        (LucideIcons.pencilLine, f.edit_details, false, () => openAddMember(context, editing: m)),
+        (LucideIcons.pencilLine, f.edit_details, false, () => _editDetails(context, m)),
         (LucideIcons.clipboardList, f.edit_medical, false, () => openMemberMedical(context, m)),
         (LucideIcons.archive, f.close_profile, true, () => _confirmClose(context, ref, m)),
       ])
@@ -82,35 +82,14 @@ Future<void> _showMemberMenu(BuildContext context, WidgetRef ref, FamilyMember m
 }
 
 Future<void> _confirmClose(BuildContext context, WidgetRef ref, FamilyMember m) async {
-  final s = AppScope.of(context);
-  final f = s.strings.family;
-  final yes = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => Directionality(
-      textDirection: s.dir,
-      child: AlertDialog(
-        title: Text(f.close_confirm_t(m.shortName)),
-        content: Text(f.close_confirm_b),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.strings.common.cancel)),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(f.close_profile, style: const TextStyle(color: T.danger)),
-          ),
-        ],
-      ),
-    ),
-  );
-  if (yes != true || !context.mounted) return;
-  final result = await ref.read(closeFamilyMemberUseCaseProvider)(m.id, now: DateTime.now());
-  if (!context.mounted) return;
-  final messenger = ScaffoldMessenger.of(context);
-  if (result.isSuccess) {
-    Navigator.pop(context);
-    messenger.showSnackBar(SnackBar(content: Text(f.closed_toast(m.shortName))));
-  } else {
-    messenger.showSnackBar(SnackBar(content: Text(f.save_failed(s.gender))));
-  }
+  if (await confirmCloseMember(context, ref, m) && context.mounted) Navigator.pop(context);
+}
+
+/// Edits [m]'s details; leaves the member's screen too when the edit screen
+/// closed the profile.
+Future<void> _editDetails(BuildContext context, FamilyMember m) async {
+  final closed = await openAddMember(context, editing: m);
+  if (closed && context.mounted) Navigator.pop(context);
 }
 
 /// Medical details (blood type, conditions, allergies) of member [m] — the

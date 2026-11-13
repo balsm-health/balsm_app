@@ -4729,6 +4729,9 @@ class FamilyStrings_ar extends FamilyStrings {
   String get close_confirm_b =>
       "تبقى سجلاته على هذا الجهاز للعرض فقط، ولا يظهر الملف في قائمة الاختيار بعد الآن.";
   String closed_toast(String name) => "أُغلق ملف $name";
+  String close_member(String name) => "إغلاق ملف $name";
+  String get edit_title => "تعديل الملف";
+  String get save_changes => "حفظ التعديلات";
   String get step_basic => "البيانات الأساسية";
   String get step_1_of_2 => "الخطوة 1 من 2 · البيانات الأساسية";
   String get step_2_of_2 => "الخطوة 2 من 2 · الموافقة";
@@ -5039,6 +5042,12 @@ class FamilyStrings_ar extends FamilyStrings {
         return close_confirm_b;
       case 'closed_toast':
         return closed_toast;
+      case 'close_member':
+        return close_member;
+      case 'edit_title':
+        return edit_title;
+      case 'save_changes':
+        return save_changes;
       case 'step_basic':
         return step_basic;
       case 'step_1_of_2':

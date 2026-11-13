@@ -10,8 +10,9 @@ import '../../tokens.dart';
 import 'family_kit.dart';
 
 /// Opens the add-member form, or the same form to edit [editing]'s details.
-Future<void> openAddMember(BuildContext context, {FamilyMember? editing}) =>
-    pushFamilyScreen<void>(context, (_) => AddMemberScreen(editing: editing));
+/// True when the edit form closed [editing]'s profile.
+Future<bool> openAddMember(BuildContext context, {FamilyMember? editing}) async =>
+    await pushFamilyScreen<bool>(context, (_) => AddMemberScreen(editing: editing)) ?? false;
 
 /// The design's relation chips (`MC_RELS` picks). A child or parent chip also
 /// sets the member's sex; the stored relationship is the core
@@ -56,7 +57,10 @@ enum _Rel {
 /// Add family member (mother-child.jsx `MCAddMemberScreen`, manual mode):
 /// relation, name, group, date of birth, sex and an optional blood type; an
 /// adult gets a second step confirming their consent. With [editing] the
-/// same form rewrites an existing member's details, without the consent step.
+/// same form is the design's `MCEditMemberScreen`: "Edit profile", name
+/// first, "Save changes", and a close-profile action under the fields (the
+/// design deletes; the app soft-closes and keeps the records). Pops `true`
+/// when the profile was closed.
 class AddMemberScreen extends ConsumerStatefulWidget {
   const AddMemberScreen({super.key, this.editing});
   final FamilyMember? editing;
@@ -118,7 +122,11 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     }
     // The design makes a newly added member the active profile.
     if (editing == null) await ref.read(activeProfileSwitcherProvider).select(result.value.id);
-    if (mounted) Navigator.pop(context);
+    if (mounted) Navigator.pop(context, false);
+  }
+
+  Future<void> _close(FamilyMember m) async {
+    if (await confirmCloseMember(context, ref, m) && mounted) Navigator.pop(context, true);
   }
 
   Future<void> _pickDob() async {
@@ -143,10 +151,21 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     final f = s.strings.family;
     final ok = _draft.violations(DateTime.now()).isEmpty;
     if (_step == 2) return _consentStep();
+    final editing = widget.editing;
+    final relation = _field(f.f_relation, _chips());
+    final name = _field(
+      f.f_name,
+      TextField(
+        controller: _name,
+        onChanged: (_) => setState(() {}),
+        style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
+        decoration: _dec(f.f_name_ph(s.gender)),
+      ),
+    );
     return FamilyScaffold(
-      title: _editing ? f.edit_details : f.add_member,
+      title: _editing ? f.edit_title : f.add_member,
       footer: PButton(
-        _adult ? f.next : f.save,
+        _adult ? f.next : (_editing ? f.save_changes : f.save),
         large: true,
         block: true,
         accent: s.accent,
@@ -154,17 +173,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         onTap: ok && !_saving ? (_adult ? () => setState(() => _step = 2) : _save) : null,
       ),
       children: [
-        _Steps(step: 1, two: _adult),
-        _field(f.f_relation, _chips()),
-        _field(
-          f.f_name,
-          TextField(
-            controller: _name,
-            onChanged: (_) => setState(() {}),
-            style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
-            decoration: _dec(f.f_name_ph(s.gender)),
-          ),
-        ),
+        if (editing == null) ...[_Steps(step: 1, two: _adult), relation, name] else ...[name, relation],
         _field(f.f_group, _groups()),
         _field(f.f_dob, _dobField()),
         _field(
@@ -176,9 +185,25 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             onChanged: (x) => setState(() => _sex = x),
           ),
         ),
-        _field('${f.f_blood} · ${f.optional}', _bloodGrid()),
+        _field(_editing ? f.f_blood : '${f.f_blood} · ${f.optional}', _bloodGrid()),
+        if (editing != null)
+          PButton(
+            f.close_member(_firstName(editing)),
+            icon: LucideIcons.archive,
+            variant: BtnVariant.ghost,
+            block: true,
+            ar: s.rtl,
+            color: T.danger,
+            onTap: _saving ? null : () => _close(editing),
+          ),
       ],
     );
+  }
+
+  /// The first word of the name as typed, else the member's stored short name.
+  String _firstName(FamilyMember m) {
+    final typed = _name.text.trim().split(' ').first;
+    return typed.isEmpty ? m.shortName : typed;
   }
 
   Widget _field(String label, Widget child) => Padding(
