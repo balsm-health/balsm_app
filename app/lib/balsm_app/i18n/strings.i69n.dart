@@ -804,6 +804,9 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String symptoms_n(String n) => "$n symptoms";
   String get ql_title => "Let's check in";
   String get ql_search => "Search";
+  String ql_logging_for(Gender gender) => "Logging for ";
+  String ql_self_hint(Gender gender) =>
+      "To log for yourself, switch to your profile at the top of Home.";
   String get ql_no_results => "No matches";
   String get ql_vitals => "Vitals";
   String get ql_wellbeing => "Wellbeing";
@@ -995,6 +998,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_title;
       case 'ql_search':
         return ql_search;
+      case 'ql_logging_for':
+        return ql_logging_for;
+      case 'ql_self_hint':
+        return ql_self_hint;
       case 'ql_no_results':
         return ql_no_results;
       case 'ql_vitals':

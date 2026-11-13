@@ -7,14 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:collection/collection.dart';
 import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
+import '../flags.dart';
 import '../kit.dart';
 import '../tokens.dart';
 import 'metric_log.dart';
 import 'records_detail.dart';
 import 'records_screen.dart';
+import 'family/family_kit.dart';
 import '../vault/vault_blob.dart';
 import 'report_flow.dart';
 
@@ -495,7 +498,10 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         RecordType.values.where((type) => q.isEmpty || recordTypeLabelOne(s, type).toLowerCase().contains(q)).toList();
     final empty = filtered.isEmpty && records.isEmpty;
 
+    final member = s.flags.isOn(AppFlags.motherChild) ? ref.watch(activeFamilyMemberProvider) : null;
+
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (member != null) _MemberBanner(s: s, member: member),
       _searchField(),
       if (showCta) ...[
         _fullCheckinCta(),
@@ -744,6 +750,40 @@ enum _Leave { back, close }
 
 /// quicklog.jsx toast — dark, over the list after a save: a mint tick,
 /// "Saved" and the reading. Status only; nothing in it is tappable.
+/// quicklog.jsx `member` banner: whose profile a quick log lands in while a
+/// family member is the active one, and how to log for yourself instead.
+class _MemberBanner extends StatelessWidget {
+  const _MemberBanner({required this.s, required this.member});
+  final PatientAppState s;
+  final FamilyMember member;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = s.strings.checkin;
+    return Container(
+      margin: const EdgeInsetsDirectional.only(bottom: 14),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rLg)),
+      child: Row(children: [
+        MemberAvatar(member, size: 30),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text.rich(
+              TextSpan(children: [
+                TextSpan(text: c.ql_logging_for(s.gender)),
+                TextSpan(text: member.shortName, style: const TextStyle(fontWeight: FontWeight.w700)),
+              ]),
+              style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1),
+            ),
+            Text(c.ql_self_hint(s.gender), style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
 class _SavedToast extends StatelessWidget {
   const _SavedToast({required this.s, required this.value});
   final PatientAppState s;

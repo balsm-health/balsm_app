@@ -868,6 +868,15 @@ class CheckinStrings_ar extends CheckinStrings {
   String symptoms_n(String n) => "$n أعراض";
   String get ql_title => "دعنا نطمئن عليك";
   String get ql_search => "بحث";
+  String ql_logging_for(Gender gender) =>
+      "${_select(gender, {'female': 'تسجّلين', 'other': 'تسجّل'})} لـ";
+  String ql_self_hint(Gender gender) => "لتسجّل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} لنفسك، ${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} ملفك من أعلى الشاشة الرئيسية.";
   String get ql_no_results => "لا توجد نتائج";
   String get ql_vitals => "العلامات الحيوية";
   String get ql_wellbeing => "الحالة العامة";
@@ -1087,6 +1096,10 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_title;
       case 'ql_search':
         return ql_search;
+      case 'ql_logging_for':
+        return ql_logging_for;
+      case 'ql_self_hint':
+        return ql_self_hint;
       case 'ql_no_results':
         return ql_no_results;
       case 'ql_vitals':

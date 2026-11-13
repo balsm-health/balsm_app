@@ -245,6 +245,10 @@
     "symptoms_n(String n)": "$n symptoms",
     "ql_title": "Let's check in",
     "ql_search": "Search",
+    // Mother & Child: a family member is the active profile (quicklog.jsx
+    // `member` banner). The member's name follows ql_logging_for, in bold.
+    "ql_logging_for(Gender gender)": "Logging for ",
+    "ql_self_hint(Gender gender)": "To log for yourself, switch to your profile at the top of Home.",
     "ql_no_results": "No matches",
     "ql_vitals": "Vitals",
     "ql_wellbeing": "Wellbeing",

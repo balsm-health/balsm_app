@@ -1,4 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/flags.dart';
+import 'package:family/family.dart';
 import 'package:core/core.dart';
 import 'package:app/balsm_app/screens/metric_log.dart';
 import 'package:app/balsm_app/screens/quick_log.dart';
@@ -204,5 +206,56 @@ void main() {
     final p = s.strings.profile;
     expect(top(tester, p.m_pulse), greaterThan(top(tester, p.m_o2)));
     expect(top(tester, p.m_pulse), lessThan(top(tester, p.m_weight)));
+  });
+
+  group('a family member is the active profile (quicklog.jsx member banner)', () {
+    const kid = FamilyMember(
+      id: HealthProfileId.value('hp-kid'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Kid',
+    );
+
+    Future<void> open(WidgetTester tester, {FamilyMember? member, bool ar = false}) async {
+      s = PatientAppState()
+        ..attachFlags(FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true));
+      if (ar) s.setLang(LanguageCode.ar);
+      tester.view.physicalSize = const Size(402, 874);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(ProviderScope(
+        overrides: [activeFamilyMemberProvider.overrideWithValue(member)],
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('says whose profile it logs to, and how to log for yourself', (tester) async {
+      await open(tester, member: kid);
+      expect(find.text(s.strings.checkin.ql_self_hint(s.gender)), findsOne);
+      expect(find.text('${s.strings.checkin.ql_logging_for(s.gender)}Test', findRichText: true), findsOne);
+    });
+
+    testWidgets('logging for yourself shows no hint', (tester) async {
+      await open(tester);
+      expect(find.text(s.strings.checkin.ql_self_hint(s.gender)), findsNothing);
+    });
+
+    testWidgets('the Arabic hint addresses the patient by gender', (tester) async {
+      await open(tester, member: kid, ar: true);
+      expect(find.text(s.strings.checkin.ql_self_hint(s.gender)), findsOne);
+      expect(s.strings.checkin.ql_self_hint(Gender.female), 'لتسجّلي لنفسك، اختاري ملفك من أعلى الشاشة الرئيسية.');
+      expect(s.strings.checkin.ql_self_hint(Gender.male), 'لتسجّل لنفسك، اختر ملفك من أعلى الشاشة الرئيسية.');
+      expect(s.strings.checkin.ql_logging_for(Gender.female), 'تسجّلين لـ');
+    });
   });
 }
