@@ -3762,6 +3762,12 @@ class VaccStrings implements i69n.I69nMessageBundle {
       "Set it yourself, as written on the vaccination card or as the doctor advised.";
   String get f_next_clear => "Clear";
   String get save => "Save vaccination";
+  String get edit_t => "Edit vaccination";
+  String get save_changes => "Save changes";
+  String get delete => "Delete this vaccination";
+  String get delete_t => "Delete this vaccination?";
+  String get delete_b =>
+      "It will be removed from the vaccination record on this phone.";
   String tile_next(String date) => "Next $date";
   String recorded_n(int n) =>
       "${_plural(n, one: '1 recorded', other: '$n recorded')}";
@@ -3820,6 +3826,16 @@ class VaccStrings implements i69n.I69nMessageBundle {
         return f_next_clear;
       case 'save':
         return save;
+      case 'edit_t':
+        return edit_t;
+      case 'save_changes':
+        return save_changes;
+      case 'delete':
+        return delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
       case 'tile_next':
         return tile_next;
       case 'recorded_n':
@@ -3846,6 +3862,14 @@ class GrowthStrings implements i69n.I69nMessageBundle {
       "Check the numbers: weight 0.2–300 kg, height 20–250 cm.";
   String tile_last(String date) => "Last entry $date";
   String get tile_empty => "No entries yet";
+  String get editing => "Editing entry";
+  String get save_changes => "Save changes";
+  String get cancel_edit => "Cancel editing";
+  String tap_hint(Gender gender) => "Tap an entry to edit it.";
+  String get a11y_delete => "Delete entry";
+  String get delete_t => "Delete this entry?";
+  String get delete_b =>
+      "It will be removed from the growth record on this phone.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3877,6 +3901,20 @@ class GrowthStrings implements i69n.I69nMessageBundle {
         return tile_last;
       case 'tile_empty':
         return tile_empty;
+      case 'editing':
+        return editing;
+      case 'save_changes':
+        return save_changes;
+      case 'cancel_edit':
+        return cancel_edit;
+      case 'tap_hint':
+        return tap_hint;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

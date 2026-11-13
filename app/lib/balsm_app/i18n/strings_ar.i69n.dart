@@ -3969,6 +3969,11 @@ class VaccStrings_ar extends VaccStrings {
           })} بنفسك كما هو مكتوب في كارت التطعيم أو حسب كلام الطبيب.";
   String get f_next_clear => "مسح";
   String get save => "حفظ التطعيم";
+  String get edit_t => "تعديل التطعيم";
+  String get save_changes => "حفظ التعديلات";
+  String get delete => "حذف هذا التطعيم";
+  String get delete_t => "حذف هذا التطعيم؟";
+  String get delete_b => "سيُحذف من سجل التطعيمات على هذا الجهاز.";
   String tile_next(String date) => "القادمة $date";
   String recorded_n(int n) =>
       "${_plural(n, zero: 'لا تطعيمات بعد', one: 'تطعيم واحد مسجّل', two: 'تطعيمان مسجّلان', few: '$n تطعيمات مسجّلة', many: '$n تطعيماً مسجّلاً', other: '$n تطعيم مسجّل')}";
@@ -4027,6 +4032,16 @@ class VaccStrings_ar extends VaccStrings {
         return f_next_clear;
       case 'save':
         return save;
+      case 'edit_t':
+        return edit_t;
+      case 'save_changes':
+        return save_changes;
+      case 'delete':
+        return delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
       case 'tile_next':
         return tile_next;
       case 'recorded_n':
@@ -4055,6 +4070,14 @@ class GrowthStrings_ar extends GrowthStrings {
           })} الأرقام: الوزن من 0.2 إلى 300 كجم، والطول من 20 إلى 250 سم.";
   String tile_last(String date) => "آخر قياس $date";
   String get tile_empty => "لا قياسات بعد";
+  String get editing => "تعديل القياس";
+  String get save_changes => "حفظ التعديلات";
+  String get cancel_edit => "إلغاء التعديل";
+  String tap_hint(Gender gender) =>
+      "اضغط${_select(gender, {'female': 'ي', 'other': ''})} على قياس لتعديله.";
+  String get a11y_delete => "حذف القياس";
+  String get delete_t => "حذف هذا القياس؟";
+  String get delete_b => "سيُحذف من سجل النمو على هذا الجهاز.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4086,6 +4109,20 @@ class GrowthStrings_ar extends GrowthStrings {
         return tile_last;
       case 'tile_empty':
         return tile_empty;
+      case 'editing':
+        return editing;
+      case 'save_changes':
+        return save_changes;
+      case 'cancel_edit':
+        return cancel_edit;
+      case 'tap_hint':
+        return tap_hint;
+      case 'a11y_delete':
+        return a11y_delete;
+      case 'delete_t':
+        return delete_t;
+      case 'delete_b':
+        return delete_b;
       default:
         return super[key];
     }

@@ -20,6 +20,10 @@ Future<void> openVaccinations(BuildContext context, HealthProfileId id) =>
 Future<void> openAddVaccination(BuildContext context, HealthProfileId id, {String? vaccine, int? dose}) =>
     pushFamilyScreen<void>(context, (_) => AddVaccinationScreen(id: id, vaccine: vaccine, dose: dose));
 
+/// Opens the vaccination form on dose [record] of [id], to change or delete it.
+Future<void> openEditVaccination(BuildContext context, HealthProfileId id, VaccinationRecord record) =>
+    pushFamilyScreen<void>(context, (_) => AddVaccinationScreen(id: id, editing: record));
+
 /// A person's vaccination log: the next dose due, doses past due (each with
 /// a shortcut to record it) and every dose given, newest first.
 class VaccinationsScreen extends ConsumerWidget {
@@ -61,7 +65,11 @@ class VaccinationsScreen extends ConsumerWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(T.rLg),
               child: Column(children: [
-                for (final (i, r) in records.indexed) _GivenRow(record: r, divider: i > 0),
+                ...records.indexed.map((e) => _GivenRow(
+                      record: e.$2,
+                      divider: e.$1 > 0,
+                      onTap: () => openEditVaccination(context, id, e.$2),
+                    )),
               ]),
             ),
           ),
@@ -169,59 +177,74 @@ class _PastDueRow extends StatelessWidget {
   }
 }
 
+/// A dose given; tapping it opens the form to edit or delete it.
 class _GivenRow extends StatelessWidget {
-  const _GivenRow({required this.record, required this.divider});
+  const _GivenRow({required this.record, required this.divider, required this.onTap});
   final VaccinationRecord record;
   final bool divider;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final v = s.strings.vacc;
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
-      decoration: divider ? const BoxDecoration(border: Border(top: BorderSide(color: T.ink100))) : null,
-      child: Row(children: [
-        const IconSquare(LucideIcons.check, bg: T.hueEmerald50, fg: T.hueEmeraldInk, size: 36, iconSize: 17),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(record.vaccine, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            Text.rich(
-              TextSpan(children: [
-                TextSpan(text: '${v.dose(record.doseNumber)} · '),
-                TextSpan(
-                  text: formatDay(record.administeredOn),
-                  style: Typo.num(size: FS.xs, weight: FontWeight.w500, color: T.fg3),
+    return Semantics(
+      button: true,
+      child: Pressable(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
+          decoration: divider ? const BoxDecoration(border: Border(top: BorderSide(color: T.ink100))) : null,
+          child: Row(children: [
+            const IconSquare(LucideIcons.check, bg: T.hueEmerald50, fg: T.hueEmeraldInk, size: 36, iconSize: 17),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(record.vaccine, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: '${v.dose(record.doseNumber)} · '),
+                    TextSpan(
+                      text: formatDay(record.administeredOn),
+                      style: Typo.num(size: FS.xs, weight: FontWeight.w500, color: T.fg3),
+                    ),
+                    if (record.clinic != null) TextSpan(text: ' · ${record.clinic}'),
+                  ]),
+                  style: Typo.meta(ar: s.rtl),
                 ),
-                if (record.clinic != null) TextSpan(text: ' · ${record.clinic}'),
               ]),
-              style: Typo.meta(ar: s.rtl),
             ),
+            const SizedBox(width: 8),
+            const Icon(LucideIcons.pencil, size: 15, color: T.fg3),
           ]),
         ),
-      ]),
+      ),
     );
   }
 }
 
 /// Add a vaccination (`MCVaccAddScreen`): the vaccine's name as written on
 /// the card, the dose number, the day given (not after today), where, and
-/// an optional next due day after the day given.
+/// an optional next due day after the day given. With [editing] it is the
+/// edit form (`prefill.edit`): prefilled with that dose, saving over it, and
+/// offering to delete it after a confirm sheet (`MCConfirmSheet`).
 class AddVaccinationScreen extends ConsumerStatefulWidget {
-  const AddVaccinationScreen({super.key, required this.id, this.vaccine, this.dose});
+  const AddVaccinationScreen({super.key, required this.id, this.vaccine, this.dose, this.editing});
   final HealthProfileId id;
   final String? vaccine;
   final int? dose;
+
+  /// The dose being edited; null for a new one.
+  final VaccinationRecord? editing;
   @override
   ConsumerState<AddVaccinationScreen> createState() => _AddVaccinationScreenState();
 }
 
 class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
-  late final _name = TextEditingController(text: widget.vaccine ?? '');
-  final _clinic = TextEditingController();
-  late int _dose = widget.dose ?? 1;
-  DateTime? _given = DateTime.now();
-  DateTime? _next;
+  late final _name = TextEditingController(text: widget.editing?.vaccine ?? widget.vaccine ?? '');
+  late final _clinic = TextEditingController(text: widget.editing?.clinic ?? '');
+  late int _dose = widget.editing?.doseNumber ?? widget.dose ?? 1;
+  late DateTime? _given = widget.editing?.administeredOn ?? DateTime.now();
+  late DateTime? _next = widget.editing?.nextDueOn;
   bool _saving = false;
 
   PatientAppState get s => AppScope.of(context);
@@ -245,15 +268,42 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
   Future<void> _save() async {
     if (_saving) return;
     setState(() => _saving = true);
-    final result = await ref.read(recordVaccinationUseCaseProvider)(
-      vaccine: _name.text,
-      doseNumber: _dose,
-      administeredOn: _given,
-      clinic: _clinic.text,
-      nextDueOn: _next,
-      now: DateTime.now(),
-      profileId: widget.id,
-    );
+    final editing = widget.editing;
+    final result = editing == null
+        ? await ref.read(recordVaccinationUseCaseProvider)(
+            vaccine: _name.text,
+            doseNumber: _dose,
+            administeredOn: _given,
+            clinic: _clinic.text,
+            nextDueOn: _next,
+            now: DateTime.now(),
+            profileId: widget.id,
+          )
+        : await ref.read(updateVaccinationUseCaseProvider)(
+            id: editing.id,
+            vaccine: _name.text,
+            doseNumber: _dose,
+            administeredOn: _given,
+            clinic: _clinic.text,
+            nextDueOn: _next,
+            now: DateTime.now(),
+            profileId: widget.id,
+          );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (result.isFailure) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.strings.family.save_failed(s.gender))));
+      return;
+    }
+    Navigator.pop(context);
+  }
+
+  Future<void> _delete(VaccinationRecord record) async {
+    final v = s.strings.vacc;
+    final yes = await showFamilyConfirmSheet(context, title: v.delete_t, body: v.delete_b);
+    if (!yes || !mounted) return;
+    setState(() => _saving = true);
+    final result = await ref.read(deleteVaccinationUseCaseProvider)(record.id, profileId: widget.id);
     if (!mounted) return;
     setState(() => _saving = false);
     if (result.isFailure) {
@@ -266,19 +316,34 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
   @override
   Widget build(BuildContext context) {
     final v = s.strings.vacc;
+    final editing = widget.editing;
     final now = DateTime.now();
     final given = _given;
     final doses = [for (var n = 1; n <= (_dose > 5 ? _dose : 5); n++) n];
     return FamilyScaffold(
-      title: v.add,
-      footer: PButton(
-        v.save,
-        large: true,
-        block: true,
-        accent: s.accent,
-        ar: s.rtl,
-        onTap: _ok && !_saving ? _save : null,
-      ),
+      title: editing == null ? v.add : v.edit_t,
+      footer: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        PButton(
+          editing == null ? v.save : v.save_changes,
+          large: true,
+          block: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: _ok && !_saving ? _save : null,
+        ),
+        if (editing != null) ...[
+          const SizedBox(height: 8),
+          PButton(
+            v.delete,
+            icon: LucideIcons.trash2,
+            variant: BtnVariant.ghost,
+            block: true,
+            color: T.danger,
+            ar: s.rtl,
+            onTap: _saving ? null : () => _delete(editing),
+          ),
+        ],
+      ]),
       children: [
         LogField(
           label: v.f_name,

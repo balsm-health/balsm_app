@@ -1129,6 +1129,12 @@
     "f_next_hint(Gender gender)": "Set it yourself, as written on the vaccination card or as the doctor advised.",
     "f_next_clear": "Clear",
     "save": "Save vaccination",
+    // Editing a dose already given (tap a row under "Given").
+    "edit_t": "Edit vaccination",
+    "save_changes": "Save changes",
+    "delete": "Delete this vaccination",
+    "delete_t": "Delete this vaccination?",
+    "delete_b": "It will be removed from the vaccination record on this phone.",
     "tile_next(String date)": "Next $date",
     "recorded_n(int n)": "${_plural(n, one:'1 recorded', other:'$n recorded')}"
   },
@@ -1144,7 +1150,15 @@
     "cm(String v)": "$v cm",
     "invalid(Gender gender)": "Check the numbers: weight 0.2–300 kg, height 20–250 cm.",
     "tile_last(String date)": "Last entry $date",
-    "tile_empty": "No entries yet"
+    "tile_empty": "No entries yet",
+    // Editing an entry in place: tap a row to load it into the form.
+    "editing": "Editing entry",
+    "save_changes": "Save changes",
+    "cancel_edit": "Cancel editing",
+    "tap_hint(Gender gender)": "Tap an entry to edit it.",
+    "a11y_delete": "Delete entry",
+    "delete_t": "Delete this entry?",
+    "delete_b": "It will be removed from the growth record on this phone."
   },
   // Mother & Child — pregnancy (mother-child.jsx L934-1375). No weekly
   // guidance and no visit reminders: neither exists in the app.

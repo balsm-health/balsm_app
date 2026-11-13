@@ -186,6 +186,44 @@ void main() {
       expect(stored.single.nextDueOn, isNull);
       expect(await c.read(vaccinationsDataSourceProvider).findAll(), isEmpty, reason: 'self has no doses');
     });
+
+    testWidgets('tapping a given dose edits it in place; delete asks first', (tester) async {
+      final state = familyState();
+      final v = state.strings.vacc;
+      final kid = await seedFirst('Test Kid');
+      final c = await pump(tester, VaccinationsScreen(id: kid.id), state);
+      await dose(c, kid.id, 'Test Alpha', 1, given: daysFromToday(-60));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Test Alpha'));
+      await tester.pumpAndSettle();
+      expect(find.text(v.edit_t), findsOne);
+      expect(find.widgetWithText(TextField, 'Test Alpha'), findsOne, reason: 'prefilled with the dose');
+      await tester.enterText(find.byType(TextField).first, 'Test Alpha Edited');
+      await tester.tap(find.text('2'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(PButton, v.save_changes));
+      await tester.pumpAndSettle();
+      final ds = c.read(vaccinationsDataSourceProvider);
+      final edited = (await ds.findAll(scope: kid.id)).single;
+      expect((edited.vaccine, edited.doseNumber), ('Test Alpha Edited', 2));
+
+      await tester.tap(find.text('Test Alpha Edited'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PButton, v.delete));
+      await tester.pumpAndSettle();
+      expect(find.byType(FamilyConfirmSheet), findsOne);
+      await tester.tap(find.widgetWithText(PButton, state.strings.common.cancel));
+      await tester.pumpAndSettle();
+      expect(await ds.findAll(scope: kid.id), hasLength(1), reason: 'cancel keeps the dose');
+
+      await tester.tap(find.widgetWithText(PButton, v.delete));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PButton, state.strings.common.del));
+      await tester.pumpAndSettle();
+      expect(await ds.findAll(scope: kid.id), isEmpty);
+      expect(find.byType(VaccinationsScreen), findsOne, reason: 'back on the log');
+    });
   });
 
   group('Growth', () {
@@ -225,6 +263,36 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(state.strings.growth.invalid(state.gender)), findsOne);
       expect(await c.read(growthLogDataSourceProvider).findAll(scope: kid.id), isEmpty);
+    });
+
+    testWidgets('tapping an entry edits it in the form; the bin deletes after a confirm', (tester) async {
+      final state = familyState();
+      final g = state.strings.growth;
+      final kid = await seedFirst('Test Kid');
+      final c = await pump(tester, GrowthScreen(id: kid.id), state);
+      await c.read(recordGrowthEntryUseCaseProvider)(
+          measuredOn: daysFromToday(-30), weightKg: 12, heightCm: 88, now: DateTime.now(), profileId: kid.id);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(g.kg('12')));
+      await tester.pumpAndSettle();
+      expect(find.text(g.editing), findsOne);
+      expect(tester.widget<TextField>(find.byType(TextField).first).controller!.text, '12');
+      await tester.enterText(find.byType(TextField).first, '13');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(PButton, g.save_changes));
+      await tester.pumpAndSettle();
+      final ds = c.read(growthLogDataSourceProvider);
+      final log = await ds.findAll(scope: kid.id);
+      expect([for (final e in log) (e.weightKg, e.heightCm)], [(13.0, 88.0)], reason: 'edited, not added');
+      expect(find.text(g.editing), findsNothing, reason: 'the form goes back to adding');
+
+      await tester.tap(find.bySemanticsLabel(g.a11y_delete));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PButton, state.strings.common.del));
+      await tester.pumpAndSettle();
+      expect(await ds.findAll(scope: kid.id), isEmpty);
+      expect(find.text(g.empty), findsOne);
     });
   });
 

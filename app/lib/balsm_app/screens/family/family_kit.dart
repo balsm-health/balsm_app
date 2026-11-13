@@ -193,6 +193,60 @@ class FamilySheet extends StatelessWidget {
   }
 }
 
+/// Asks [title] / [body] in a [FamilyConfirmSheet] before a delete; true
+/// when the patient confirmed. [confirmLabel] defaults to "Delete".
+Future<bool> showFamilyConfirmSheet(
+  BuildContext context, {
+  required String title,
+  required String body,
+  String? confirmLabel,
+}) async {
+  final s = AppScope.of(context);
+  final yes = await showAppSheet<bool>(
+    context,
+    textDirection: s.dir,
+    builder: (_) => FamilyConfirmSheet(title: title, body: body, confirmLabel: confirmLabel),
+  );
+  return yes == true;
+}
+
+/// MCConfirmSheet — mother-child.jsx: the small sheet that confirms a delete.
+/// The question and what deleting means, then a full-width danger button and
+/// Cancel, stacked so long Arabic labels never truncate. Pops `true` on
+/// confirm, `false` on cancel.
+class FamilyConfirmSheet extends StatelessWidget {
+  const FamilyConfirmSheet({super.key, required this.title, required this.body, this.confirmLabel});
+  final String title;
+  final String body;
+
+  /// The danger button's label; "Delete" when null.
+  final String? confirmLabel;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return FamilySheet(title: title, sub: body, children: [
+      const SizedBox(height: 4),
+      PButton(
+        confirmLabel ?? s.strings.common.del,
+        variant: BtnVariant.danger,
+        large: true,
+        block: true,
+        ar: s.rtl,
+        onTap: () => Navigator.pop(context, true),
+      ),
+      const SizedBox(height: 10),
+      PButton(
+        s.strings.common.cancel,
+        variant: BtnVariant.secondary,
+        large: true,
+        block: true,
+        ar: s.rtl,
+        onTap: () => Navigator.pop(context, false),
+      ),
+    ]);
+  }
+}
+
 /// `MCScreen` — back + title app bar, an optional bar under it (the profile
 /// bar), a width-capped scrolling body and an optional pinned footer.
 class FamilyScaffold extends StatelessWidget {

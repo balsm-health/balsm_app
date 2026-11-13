@@ -1126,6 +1126,12 @@
     "f_next_hint(Gender gender)": "حدّد${_select(gender, female: 'يه', other: 'ه')} بنفسك كما هو مكتوب في كارت التطعيم أو حسب كلام الطبيب.",
     "f_next_clear": "مسح",
     "save": "حفظ التطعيم",
+    // تعديل جرعة مسجّلة (الضغط على صف تحت «أُعطيت»).
+    "edit_t": "تعديل التطعيم",
+    "save_changes": "حفظ التعديلات",
+    "delete": "حذف هذا التطعيم",
+    "delete_t": "حذف هذا التطعيم؟",
+    "delete_b": "سيُحذف من سجل التطعيمات على هذا الجهاز.",
     "tile_next(String date)": "القادمة $date",
     "recorded_n(int n)": "${_plural(n, zero:'لا تطعيمات بعد', one:'تطعيم واحد مسجّل', two:'تطعيمان مسجّلان', few:'$n تطعيمات مسجّلة', many:'$n تطعيماً مسجّلاً', other:'$n تطعيم مسجّل')}"
   },
@@ -1141,7 +1147,15 @@
     "cm(String v)": "$v سم",
     "invalid(Gender gender)": "راجع${_select(gender, female: 'ي', other: '')} الأرقام: الوزن من 0.2 إلى 300 كجم، والطول من 20 إلى 250 سم.",
     "tile_last(String date)": "آخر قياس $date",
-    "tile_empty": "لا قياسات بعد"
+    "tile_empty": "لا قياسات بعد",
+    // تعديل قياس في مكانه: الضغط على صف يملأ النموذج به.
+    "editing": "تعديل القياس",
+    "save_changes": "حفظ التعديلات",
+    "cancel_edit": "إلغاء التعديل",
+    "tap_hint(Gender gender)": "اضغط${_select(gender, female: 'ي', other: '')} على قياس لتعديله.",
+    "a11y_delete": "حذف القياس",
+    "delete_t": "حذف هذا القياس؟",
+    "delete_b": "سيُحذف من سجل النمو على هذا الجهاز."
   },
   // Mother & Child — pregnancy. Only the pregnant patient reads this copy
   // about her own pregnancy, so it addresses her in the feminine throughout
