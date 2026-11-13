@@ -921,78 +921,85 @@ class _TileMapState extends State<_TileMap> {
     // A first pin outside the covered area would be rejected by the constraint
     // and land the map somewhere arbitrary.
     final center = widget.initialView?.center ?? (kCareCoverage.contains(first) ? first : kCareFallbackCenter);
-    return FlutterMap(
-      mapController: widget.controller,
-      options: MapOptions(
-        initialCenter: center,
-        initialZoom: widget.initialView?.zoom ?? 13,
-        onMapReady: widget.onReady,
-        minZoom: 3,
-        maxZoom: 18,
-        interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
-        // The directory covers Egypt only, so panning past it can only produce
-        // an empty map. containCenter rather than contain: at a country-wide
-        // zoom the viewport is legitimately wider than the country, and
-        // constraining the EDGES would fight the user at exactly that zoom.
-        cameraConstraint: CameraConstraint.containCenter(bounds: kCareCoverage),
-        onPositionChanged: (camera, hasGesture) => _handleMove(camera, hasGesture),
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'health.balsm.app',
+    // A map has no reading direction. Under the app's RTL the marker layer
+    // mis-placed every pin (Arabic showed "1500 places" over an empty map),
+    // so the map lays out LTR; labels inside pins and the attribution keep
+    // their own text direction.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: FlutterMap(
+        mapController: widget.controller,
+        options: MapOptions(
+          initialCenter: center,
+          initialZoom: widget.initialView?.zoom ?? 13,
+          onMapReady: widget.onReady,
+          minZoom: 3,
+          maxZoom: 18,
+          interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+          // The directory covers Egypt only, so panning past it can only produce
+          // an empty map. containCenter rather than contain: at a country-wide
+          // zoom the viewport is legitimately wider than the country, and
+          // constraining the EDGES would fight the user at exactly that zoom.
+          cameraConstraint: CameraConstraint.containCenter(bounds: kCareCoverage),
+          onPositionChanged: (camera, hasGesture) => _handleMove(camera, hasGesture),
         ),
-        // ODbL requires attributing the tile source; place data is Overture's,
-        // under CDLA-Permissive. Both notices are owed wherever the map renders.
-        const RichAttributionWidget(
-          alignment: AttributionAlignment.bottomLeft,
-          attributions: [
-            TextSourceAttribution('OpenStreetMap contributors'),
-            TextSourceAttribution('Overture Maps Foundation'),
-          ],
-        ),
-        // Own-position dot sits under the entity pins, as in the design.
-        if (widget.userLocation != null)
-          MarkerLayer(markers: [
-            Marker(
-              point: widget.userLocation!,
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              child: const _UserDot(),
-            ),
-          ]),
-        MarkerLayer(
-          markers: _visiblePoints.map((point) {
-            if (point.isCluster == true) {
-              return Marker(
-                point: point.position,
-                width: 44,
-                height: 44,
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'health.balsm.app',
+          ),
+          // ODbL requires attributing the tile source; place data is Overture's,
+          // under CDLA-Permissive. Both notices are owed wherever the map renders.
+          const RichAttributionWidget(
+            alignment: AttributionAlignment.bottomLeft,
+            attributions: [
+              TextSourceAttribution('OpenStreetMap contributors'),
+              TextSourceAttribution('Overture Maps Foundation'),
+            ],
+          ),
+          // Own-position dot sits under the entity pins, as in the design.
+          if (widget.userLocation != null)
+            MarkerLayer(markers: [
+              Marker(
+                point: widget.userLocation!,
+                width: 36,
+                height: 36,
                 alignment: Alignment.center,
+                child: const _UserDot(),
+              ),
+            ]),
+          MarkerLayer(
+            markers: _visiblePoints.map((point) {
+              if (point.isCluster == true) {
+                return Marker(
+                  point: point.position,
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () => _expand(point),
+                    child: _ClusterPin(count: point.count),
+                  ),
+                );
+              }
+
+              final e = point.pin!;
+              final sel = e.id == widget.selectedId;
+              final pinW = sel ? 40.0 : 32.0;
+              return Marker(
+                point: e.position,
+                width: pinW,
+                height: pinW + 7,
+                alignment: Alignment.topCenter, // tail tip sits on the coordinate
                 child: GestureDetector(
-                  onTap: () => _expand(point),
-                  child: _ClusterPin(count: point.count),
+                  onTap: () => widget.onPin(e),
+                  child: _Pin(type: e.type, selected: sel, size: pinW),
                 ),
               );
-            }
-
-            final e = point.pin!;
-            final sel = e.id == widget.selectedId;
-            final pinW = sel ? 40.0 : 32.0;
-            return Marker(
-              point: e.position,
-              width: pinW,
-              height: pinW + 7,
-              alignment: Alignment.topCenter, // tail tip sits on the coordinate
-              child: GestureDetector(
-                onTap: () => widget.onPin(e),
-                child: _Pin(type: e.type, selected: sel, size: pinW),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 }
