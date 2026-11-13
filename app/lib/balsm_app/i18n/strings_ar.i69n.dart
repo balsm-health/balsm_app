@@ -1944,6 +1944,7 @@ class MedsStrings_ar extends MedsStrings {
   String get medications => "الأدوية";
   String get morning => "الصباح";
   String get evening => "المساء";
+  String get sec_pm => "بعد الظهر";
   String get adherence => "الالتزام";
   String get regimen => "نظامك اليومي";
   String get last_7d => "آخر ٧ أيام";
@@ -2081,6 +2082,8 @@ class MedsStrings_ar extends MedsStrings {
         return morning;
       case 'evening':
         return evening;
+      case 'sec_pm':
+        return sec_pm;
       case 'adherence':
         return adherence;
       case 'regimen':

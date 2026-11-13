@@ -539,6 +539,7 @@
     "medications": "Medications",
     "morning": "Morning",
     "evening": "Evening",
+    "sec_pm": "Afternoon",
     "adherence": "Adherence",
     "regimen": "Your daily regimen",
     "last_7d": "Last 7 days",

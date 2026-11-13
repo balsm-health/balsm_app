@@ -1808,6 +1808,7 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String get medications => "Medications";
   String get morning => "Morning";
   String get evening => "Evening";
+  String get sec_pm => "Afternoon";
   String get adherence => "Adherence";
   String get regimen => "Your daily regimen";
   String get last_7d => "Last 7 days";
@@ -1939,6 +1940,8 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return morning;
       case 'evening':
         return evening;
+      case 'sec_pm':
+        return sec_pm;
       case 'adherence':
         return adherence;
       case 'regimen':

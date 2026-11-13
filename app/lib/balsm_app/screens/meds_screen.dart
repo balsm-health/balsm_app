@@ -240,7 +240,8 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
               for (final (key, icon, list) in groups) ...[
                 if (list.isNotEmpty) ...[
                   _GroupHead(
-                    label: key == 'morning' ? s.strings.meds.morning : s.strings.meds.evening,
+                    // Doses from noon on: "Evening" put 12:00 there.
+                    label: key == 'morning' ? s.strings.meds.morning : s.strings.meds.sec_pm,
                     icon: icon,
                     count: list.length,
                     ar: s.rtl,
@@ -363,6 +364,12 @@ class _MedDoseRow extends StatelessWidget {
       DoseOutcome.skipped => (s.strings.meds.dose_skipped, PillKind.neutral),
       DoseOutcome.snoozed => (s.strings.meds.dose_snoozed, PillKind.neutral),
       DoseOutcome.missed => (s.strings.meds.dose_missed, PillKind.neutral),
+      // Unlogged and over an hour late reads as missed, not still due (the
+      // night's doses said "due" all afternoon). Tapping still logs it.
+      _ when DateTime.now().isAfter(dose.scheduledAt.add(const Duration(hours: 1))) => (
+          s.strings.meds.dose_missed,
+          PillKind.neutral
+        ),
       _ => (s.strings.meds.due, PillKind.neutral),
     };
     final subtitle = [
