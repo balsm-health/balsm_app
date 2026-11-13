@@ -2053,6 +2053,12 @@ class MedsStrings_ar extends MedsStrings {
             'other': 'أضف'
           })} دواءً للبدء.";
   String get meds_none_today => "لا جرعات مجدولة اليوم.";
+  String regimen_of(String name) => "نظام $name اليومي";
+  String member_meds_empty(String name) => "لا أدوية لـ$name بعد";
+  String member_meds_empty_h(Gender gender, String name) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} أدوية $name ومواعيدها، وسيذكّرك بلسم بها حتى دون إنترنت.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2270,6 +2276,12 @@ class MedsStrings_ar extends MedsStrings {
         return meds_empty_help;
       case 'meds_none_today':
         return meds_none_today;
+      case 'regimen_of':
+        return regimen_of;
+      case 'member_meds_empty':
+        return member_meds_empty;
+      case 'member_meds_empty_h':
+        return member_meds_empty_h;
       default:
         return super[key];
     }

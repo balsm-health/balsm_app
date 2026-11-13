@@ -1,7 +1,9 @@
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/meds_screen.dart';
 import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -41,10 +43,16 @@ void main() {
     TodayDose(medication: alpha, scheduledAt: DateTime(today.year, today.month, today.day, 20)),
   ];
 
-  Future<(_Recorder, PatientAppState)> pump(WidgetTester tester, {bool ar = false}) async {
+  Future<(_Recorder, PatientAppState)> pump(WidgetTester tester,
+      {bool ar = false, FamilyMember? member, List<Medication>? meds}) async {
     final recorder = _Recorder();
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
+    if (member != null) {
+      state.attachFlags(
+          FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true));
+    }
+    final list = meds ?? [alpha, beta];
     tester.view.physicalSize = const Size(390, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -54,8 +62,12 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         currentUserIdProvider.overrideWithValue(user),
-        todayDosesProvider.overrideWith((ref) async => doses),
-        medicationListProvider.overrideWith((ref) => Stream.value([alpha, beta])),
+        todayDosesProvider.overrideWith((ref) async => meds == null ? doses : const <TodayDose>[]),
+        medicationListProvider.overrideWith((ref) => Stream.value(list)),
+        if (member != null) ...[
+          familyMembersProvider.overrideWith((ref) => Stream.value([member])),
+          activeFamilyMemberProvider.overrideWithValue(member),
+        ],
         prescriptionListProvider.overrideWith((ref) => Stream.value(const <Prescription>[])),
         weekAdherenceProvider.overrideWith((ref) async => const WeekAdherence(scheduled: 0, taken: 0)),
         deleteMedicationUseCaseProvider(user).overrideWithValue(recorder),
@@ -127,5 +139,38 @@ void main() {
     await tester.pumpAndSettle();
     await confirm(tester, s);
     expect(recorder.deleted, [alpha.id]);
+  });
+
+  group('a family member is the active profile (home-base-mc.jsx MedsScreen member)', () {
+    const kid = FamilyMember(
+      id: HealthProfileId.value('hp-kid'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Kid',
+    );
+
+    testWidgets('names them, hides the adherence and prescriptions cards, and offers to add', (tester) async {
+      final (_, s) = await pump(tester, member: kid, meds: const []);
+      final m = s.strings.meds;
+      expect(find.text(m.regimen_of('Test')), findsOne);
+      expect(find.text(m.regimen), findsNothing);
+      expect(find.text(m.adherence), findsNothing);
+      expect(find.text(s.strings.records.prescriptions), findsNothing);
+      expect(find.text(m.member_meds_empty('Test')), findsOne);
+      expect(find.text(m.member_meds_empty_h(s.gender, 'Test')), findsOne);
+      expect(find.text(m.med_add_title), findsOne);
+    });
+
+    testWidgets('in Arabic, the copy addresses the patient by gender', (tester) async {
+      final (_, s) = await pump(tester, ar: true, member: kid, meds: const []);
+      expect(find.text('لا أدوية لـTest بعد'), findsOne);
+      expect(s.strings.meds.member_meds_empty_h(Gender.female, 'Test'), startsWith('أضيفي'));
+      expect(s.strings.meds.member_meds_empty_h(Gender.male, 'Test'), startsWith('أضف '));
+    });
+
+    testWidgets('once they have medicines, the list shows instead of the empty state', (tester) async {
+      final (_, s) = await pump(tester, member: kid);
+      expect(find.text(s.strings.meds.member_meds_empty('Test')), findsNothing);
+      expect(find.text('Testamol'), findsWidgets);
+    });
   });
 }

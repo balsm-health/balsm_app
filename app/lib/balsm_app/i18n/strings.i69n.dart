@@ -1911,6 +1911,10 @@ class MedsStrings implements i69n.I69nMessageBundle {
   String meds_empty_help(Gender gender) =>
       "No medications yet. Add one to get started.";
   String get meds_none_today => "Nothing scheduled today.";
+  String regimen_of(String name) => "$name's daily regimen";
+  String member_meds_empty(String name) => "No medicines for $name yet";
+  String member_meds_empty_h(Gender gender, String name) =>
+      "Add their medicines and times, and Balsm reminds you, even offline.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -2128,6 +2132,12 @@ class MedsStrings implements i69n.I69nMessageBundle {
         return meds_empty_help;
       case 'meds_none_today':
         return meds_none_today;
+      case 'regimen_of':
+        return regimen_of;
+      case 'member_meds_empty':
+        return member_meds_empty;
+      case 'member_meds_empty_h':
+        return member_meds_empty_h;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

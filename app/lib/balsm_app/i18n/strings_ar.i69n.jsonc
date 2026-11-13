@@ -632,6 +632,11 @@
     "meds_signin_help": "سجّل الدخول لعرض أدويتك.",
     "meds_empty_help(Gender gender)": "لا توجد أدوية بعد. ${_select(gender, female: 'أضيفي', other: 'أضف')} دواءً للبدء.",
     "meds_none_today": "لا جرعات مجدولة اليوم.",
+    // Mother & Child — Meds tab for a family member. The design's «أدويته»
+    // assumes a boy; the name keeps it right for a girl too.
+    "regimen_of(String name)": "نظام $name اليومي",
+    "member_meds_empty(String name)": "لا أدوية لـ$name بعد",
+    "member_meds_empty_h(Gender gender, String name)": "${_select(gender, female: 'أضيفي', other: 'أضف')} أدوية $name ومواعيدها، وسيذكّرك بلسم بها حتى دون إنترنت.",
   },
   "nav": {
     "tab_home": "الرئيسية",
