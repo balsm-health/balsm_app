@@ -14,13 +14,25 @@ import '../vault/vault_blob.dart';
 import '../widgets/date_time_row.dart';
 import '../widgets/photo_attach.dart';
 
+/// One record, live from the active profile's vault — so an edit saved from
+/// the detail screen shows there at once. Null when the record is gone.
+final recordDocumentProvider = StreamProvider.autoDispose.family<RecordDocument?, RecordDocumentId>((ref, id) {
+  final profileId = ref.watch(currentProfileIdProvider);
+  if (profileId == null) return Stream.value(null);
+  return ref.watch(recordsDataSourceProvider).watch(id, scope: profileId);
+});
+
 /// One vault entry in full — metadata, preview, result note, tags, source.
 class RecordDetailScreen extends ConsumerWidget {
   const RecordDetailScreen({super.key, required this.record});
+
+  /// The record as the list showed it; the screen follows the stored row from
+  /// there, falling back to this while it loads.
   final RecordDocument record;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final record = ref.watch(recordDocumentProvider(this.record.id)).valueOrNull ?? this.record;
     final s = AppScope.of(context);
     final r = s.strings.records;
     final style = recordTypeStyle(record.type);
@@ -52,6 +64,12 @@ class RecordDetailScreen extends ConsumerWidget {
               child: Text(recordTypeLabelOne(s, record.type),
                   style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: style.fg)),
             ),
+            const SizedBox(width: 10),
+            RoundBtn(
+                icon: LucideIcons.pencil,
+                semanticLabel: s.strings.common.a11y_edit,
+                iconSize: 18,
+                onTap: () => showEditRecord(context, record: record)),
           ]),
           Expanded(
             child: ListView(padding: EdgeInsets.zero, children: [
@@ -610,7 +628,7 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
   Widget _form(PatientAppState s) {
     final r = s.strings.records;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Field(label: r.rec_title, child: _input(s, _title, r.rec_title_ph)),
+      _Field(label: r.rec_title, child: _RecordInput(controller: _title, hint: r.rec_title_ph)),
       const SizedBox(height: 18),
       DateTimeWhen(when: _date, onChanged: (v) => setState(() => _date = v)),
       const SizedBox(height: 18),
@@ -627,14 +645,17 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
             ),
             const SizedBox(height: 8),
           ],
-          _input(s, _tagDraft, r.rec_tags_ph(s.gender), onSubmitted: (v) {
-            final t = v.trim();
-            if (t.isEmpty || _tags.contains(t)) return;
-            setState(() {
-              _tags.add(t);
-              _tagDraft.clear();
-            });
-          }),
+          _RecordInput(
+              controller: _tagDraft,
+              hint: r.rec_tags_ph(s.gender),
+              onSubmitted: (v) {
+                final t = v.trim();
+                if (t.isEmpty || _tags.contains(t)) return;
+                setState(() {
+                  _tags.add(t);
+                  _tagDraft.clear();
+                });
+              }),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
@@ -696,27 +717,37 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
       RecordType.report => [r.tag_cardiology, r.tag_surgery, r.tag_follow_up, r.tag_referral],
     };
   }
+}
 
-  Widget _input(PatientAppState s, TextEditingController c, String hint, {ValueChanged<String>? onSubmitted}) =>
-      TextField(
-        controller: c,
-        onSubmitted: onSubmitted,
-        textInputAction: onSubmitted == null ? TextInputAction.next : TextInputAction.done,
-        style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          border: _b(T.border),
-          enabledBorder: _b(T.border),
-          focusedBorder: _b(s.accent.main),
-        ),
-      );
+/// `.b-input` as the record sheets draw it — add record and edit record.
+class _RecordInput extends StatelessWidget {
+  const _RecordInput({required this.controller, this.hint, this.onSubmitted});
+  final TextEditingController controller;
+  final String? hint;
+  final ValueChanged<String>? onSubmitted;
 
-  OutlineInputBorder _b(Color c) =>
-      OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: c, width: 1.5));
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    OutlineInputBorder b(Color c) =>
+        OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: c, width: 1.5));
+    return TextField(
+      controller: controller,
+      onSubmitted: onSubmitted,
+      textInputAction: onSubmitted == null ? TextInputAction.next : TextInputAction.done,
+      style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        border: b(T.border),
+        enabledBorder: b(T.border),
+        focusedBorder: b(s.accent.main),
+      ),
+    );
+  }
 }
 
 class _TypeRow extends StatelessWidget {
@@ -819,6 +850,163 @@ class _RemovableTag extends StatelessWidget {
           child: Icon(LucideIcons.x, size: 13, color: s.accent.d),
         ),
       ]),
+    );
+  }
+}
+
+/// Opens [EditRecordSheet] over the record detail.
+Future<void> showEditRecord(BuildContext context, {required RecordDocument record}) => showAppSheet<void>(
+      context,
+      builder: (_) => EditRecordSheet(record: record),
+    );
+
+/// EditRecordSheet — records-mc.jsx `EditRecordSheet`: rename a record, change
+/// its type and the date it was taken. Saving goes through the records
+/// module's update use case; the detail screen follows the stored row, so it
+/// shows the edit as soon as the sheet closes.
+class EditRecordSheet extends ConsumerStatefulWidget {
+  const EditRecordSheet({super.key, required this.record});
+  final RecordDocument record;
+
+  @override
+  ConsumerState<EditRecordSheet> createState() => _EditRecordSheetState();
+}
+
+class _EditRecordSheetState extends ConsumerState<EditRecordSheet> {
+  late final TextEditingController _title = TextEditingController(text: widget.record.title);
+  late RecordType _type = widget.record.type;
+  late DateTime _date = widget.record.takenAt;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  bool get _ok => _title.text.trim().isNotEmpty;
+
+  Future<void> _save() async {
+    if (!_ok || _saving) return;
+    setState(() => _saving = true);
+    final result = await ref.read(updateRecordDocumentUseCaseProvider)(
+      widget.record.id,
+      title: _title.text,
+      type: _type,
+      takenAt: _date,
+    );
+    if (!mounted) return;
+    if (result.isSuccess) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() => _saving = false);
+    final s = AppScope.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.strings.records.rec_save_failed(s.gender))));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final r = s.strings.records;
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.88),
+      decoration:
+          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
+          child: Column(children: [
+            const SheetGrab(),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: Text(r.rec_edit, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+              ),
+              RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: () => Navigator.of(context).pop()),
+            ]),
+          ]),
+        ),
+        Flexible(
+          child: SingleChildScrollView(
+            padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, sheetBottomInset(context, base: 34)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              _Field(
+                label: r.rec_name,
+                child: _RecordInput(controller: _title),
+              ),
+              const SizedBox(height: 16),
+              _Field(
+                label: r.rec_type,
+                // Wraps rather than sitting side by side, so the Arabic labels
+                // never truncate.
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: RecordType.values
+                      .map(
+                          (type) => _TypeChip(type: type, on: _type == type, onTap: () => setState(() => _type = type)))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              DateTimeWhen(
+                when: _date,
+                dateLabel: r.rec_date,
+                onChanged: (v) => setState(() => _date = v),
+              ),
+              ListenableBuilder(
+                listenable: _title,
+                builder: (_, __) => PButton(r.rec_save_changes,
+                    large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _ok && !_saving ? _save : null),
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// `.chip` with the record type's icon — the edit sheet's type picker.
+class _TypeChip extends StatelessWidget {
+  const _TypeChip({required this.type, required this.on, required this.onTap});
+  final RecordType type;
+  final bool on;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final style = recordTypeStyle(type);
+    return Semantics(
+      button: true,
+      selected: on,
+      child: Pressable(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: Motion.fast,
+          curve: Motion.easeOut,
+          height: 36,
+          padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: on ? s.accent.bg : Colors.white,
+            borderRadius: BorderRadius.circular(T.rPill),
+            border: Border.all(color: on ? s.accent.main : T.border, width: 1.5),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(style.icon, size: 14, color: on ? s.accent.d : style.fg),
+            const SizedBox(width: 6),
+            Text(recordTypeLabelOne(s, type),
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: on ? s.accent.d : T.fg2)),
+          ]),
+        ),
+      ),
     );
   }
 }

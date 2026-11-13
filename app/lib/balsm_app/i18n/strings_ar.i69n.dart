@@ -3226,6 +3226,15 @@ class RecordsStrings_ar extends RecordsStrings {
       "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.";
   String get rec_delete_confirm => "حذف";
   String get rec_delete_1_title => "حذف هذا السجل؟";
+  String get rec_edit => "تعديل السجل";
+  String get rec_name => "الاسم";
+  String get rec_type => "النوع";
+  String get rec_date => "التاريخ";
+  String get rec_save_changes => "حفظ التعديلات";
+  String rec_save_failed(Gender gender) => "تعذّر الحفظ. حاول${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} مرة أخرى.";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -3373,6 +3382,18 @@ class RecordsStrings_ar extends RecordsStrings {
         return rec_delete_confirm;
       case 'rec_delete_1_title':
         return rec_delete_1_title;
+      case 'rec_edit':
+        return rec_edit;
+      case 'rec_name':
+        return rec_name;
+      case 'rec_type':
+        return rec_type;
+      case 'rec_date':
+        return rec_date;
+      case 'rec_save_changes':
+        return rec_save_changes;
+      case 'rec_save_failed':
+        return rec_save_failed;
       default:
         return super[key];
     }
