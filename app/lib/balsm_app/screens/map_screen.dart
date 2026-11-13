@@ -249,7 +249,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   List<CarePin> _filterPins(List<CarePin> all) =>
       _activeTypes.isEmpty ? all : all.where((p) => _activeTypes.contains(p.type)).toList(growable: false);
 
-  void _select(CareEntity e) => setState(() => _selectedId = _selectedId == e.id ? null : e.id);
+  /// On the map a tap toggles the selection. In the list it only highlighted
+  /// the row — the place's card lives on the map — so the list opens the map
+  /// on that place with its card up.
+  void _select(CareEntity e) {
+    if (_mapView) {
+      setState(() => _selectedId = _selectedId == e.id ? null : e.id);
+      return;
+    }
+    _remember(e.position, _kUserZoom, placed: true);
+    setState(() {
+      _selectedId = e.id;
+      _mapView = true;
+    });
+  }
 
   void _selectPin(CarePin p) => setState(() => _selectedId = _selectedId == p.id ? null : p.id);
 
