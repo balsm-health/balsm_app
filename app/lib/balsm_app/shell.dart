@@ -188,8 +188,33 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     // which initState has no safe access to.
     final reduce = WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.disableAnimations;
     Timer(Duration(milliseconds: reduce ? 1200 : 2300), () {
-      if (mounted) setState(() => _booting = false);
+      _splashHeld = true;
+      _endBootWhenReady();
     });
+    // The splash also waits for the signed-in account (name, gender, family)
+    // so Home does not open empty — no name, "0 places", masculine copy —
+    // and fill in seconds later. Capped so a slow server never traps the
+    // patient on the splash.
+    Timer(const Duration(seconds: 8), () {
+      if (mounted && _booting) setState(() => _booting = false);
+    });
+  }
+
+  bool _splashHeld = false;
+
+  void _endBootWhenReady() {
+    if (!mounted || !_booting || !_splashHeld) return;
+    final signedIn = ref.read(currentUserIdProvider) != null;
+    final accountReady = !signedIn || ref.read(accountSummaryProvider).hasValue;
+    if (accountReady) {
+      setState(() => _booting = false);
+    } else {
+      ref.listenManual(accountSummaryProvider, (_, next) {
+        if (next.hasValue || next.hasError) {
+          if (mounted && _booting) setState(() => _booting = false);
+        }
+      });
+    }
   }
 
   @override
