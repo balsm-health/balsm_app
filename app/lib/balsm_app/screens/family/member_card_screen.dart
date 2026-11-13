@@ -48,32 +48,30 @@ class MemberCardScreen extends ConsumerWidget {
           padding: const EdgeInsetsDirectional.fromSTEB(4, 12, 4, 14),
           child: Text(f.card_note(s.gender), style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
         ),
-        Row(children: [
-          Expanded(
-            child: PButton(
-              f.edit_medical,
-              icon: LucideIcons.clipboardList,
-              variant: BtnVariant.secondary,
-              large: true,
-              ar: s.rtl,
-              onTap: () async {
-                await openMemberMedical(context, m);
-                ref.invalidate(memberHealthProfileProvider(id));
-              },
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: PButton(
-              f.add_contact,
-              icon: LucideIcons.userPlus,
-              large: true,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: atMax ? null : () => _addContact(context, ref, m),
-            ),
-          ),
-        ]),
+        // Stacked, full width: side by side on a phone both labels were cut
+        // to "البيانات ال…" / "إضافة جه…".
+        PButton(
+          f.add_contact,
+          icon: LucideIcons.userPlus,
+          large: true,
+          block: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: atMax ? null : () => _addContact(context, ref, m),
+        ),
+        const SizedBox(height: 10),
+        PButton(
+          f.edit_medical,
+          icon: LucideIcons.clipboardList,
+          variant: BtnVariant.secondary,
+          large: true,
+          block: true,
+          ar: s.rtl,
+          onTap: () async {
+            await openMemberMedical(context, m);
+            ref.invalidate(memberHealthProfileProvider(id));
+          },
+        ),
       ],
     );
   }
