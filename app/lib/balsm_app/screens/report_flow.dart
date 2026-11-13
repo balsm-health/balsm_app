@@ -157,9 +157,47 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     if (step > 0) {
       setState(() => step--);
       _trackStep();
+    } else if (_hasInput) {
+      _confirmLeave();
     } else {
       Navigator.pop(context);
     }
+  }
+
+  /// Anything entered so far that leaving would throw away.
+  bool get _hasInput => _captures.isNotEmpty || medMarks.values.any((v) => v.isNotEmpty);
+
+  /// Leaving with entries asks first, as quick log does: Back used to drop a
+  /// half-done check-in without a word.
+  Future<void> _confirmLeave() async {
+    final c = s.strings.checkin;
+    final leave = await showAppSheet<bool>(
+      context,
+      textDirection: s.dir,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(c.ql_discard_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(c.ql_discard_body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5)),
+          const SizedBox(height: 18),
+          PButton(c.ql_discard,
+              variant: BtnVariant.danger, large: true, block: true, ar: s.rtl, onTap: () => Navigator.pop(ctx, true)),
+          const SizedBox(height: 10),
+          PButton(c.ql_keep_editing,
+              variant: BtnVariant.secondary,
+              large: true,
+              block: true,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(ctx, false)),
+        ]),
+      ),
+    );
+    if (leave == true && mounted) Navigator.pop(context);
   }
 
   void _onCapture(String id, MetricLogCapture capture, {required bool valid}) {
@@ -315,80 +353,88 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     final canFinish = profileId != null && !saving;
     final enabled = isLast ? (canFinish && canNext) : canNext;
 
-    return Scaffold(
-      backgroundColor: T.cream50,
-      body: ContentColumn(
-        maxWidth: 480,
-        child: Column(children: [
-          const PadTop(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-            child: Row(children: [
-              RoundBtn(
-                  icon: step == 0 ? LucideIcons.x : backArrow(context),
-                  semanticLabel: step == 0 ? s.strings.common.a11y_close : s.strings.common.a11y_back,
-                  ghost: true,
-                  onTap: back),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(s.strings.checkin.full_checkin,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.lg)),
-              ),
-              const SizedBox(width: 12),
-              // `.meta.num { min-width: 38px }` — a floor, not a cap. A fixed
-              // width wrapped "1 of 3" onto two lines.
-              ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 38),
-                  child: Text('${step + 1} ${s.strings.common.step_of} ${_steps.length}',
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      softWrap: false,
-                      style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
-            ]),
-          ),
-          // The DS Steps row replaces the old single progress bar.
-          if (_steps.length > 1)
+    // Android Back behaves like the header button: a step back, and at the
+    // first step a prompt when something was entered.
+    return PopScope(
+      canPop: step == 0 && !_hasInput,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) back();
+      },
+      child: Scaffold(
+        backgroundColor: T.cream50,
+        body: ContentColumn(
+          maxWidth: 480,
+          child: Column(children: [
+            const PadTop(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
-              child: CheckInSteps(s: s, steps: _steps, current: step),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+              child: Row(children: [
+                RoundBtn(
+                    icon: step == 0 ? LucideIcons.x : backArrow(context),
+                    semanticLabel: step == 0 ? s.strings.common.a11y_close : s.strings.common.a11y_back,
+                    ghost: true,
+                    onTap: back),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(s.strings.checkin.full_checkin,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.lg)),
+                ),
+                const SizedBox(width: 12),
+                // `.meta.num { min-width: 38px }` — a floor, not a cap. A fixed
+                // width wrapped "1 of 3" onto two lines.
+                ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 38),
+                    child: Text('${step + 1} ${s.strings.common.step_of} ${_steps.length}',
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
+              ]),
             ),
-          Expanded(
-            child: IndexedStack(
-              index: _steps.isEmpty ? 0 : step,
-              children: [
-                for (final id in _steps)
-                  SingleChildScrollView(
-                    key: ValueKey(id),
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                    child: _stepBody(id),
-                  ),
-              ],
+            // The DS Steps row replaces the old single progress bar.
+            if (_steps.length > 1)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+                child: CheckInSteps(s: s, steps: _steps, current: step),
+              ),
+            Expanded(
+              child: IndexedStack(
+                index: _steps.isEmpty ? 0 : step,
+                children: [
+                  for (final id in _steps)
+                    SingleChildScrollView(
+                      key: ValueKey(id),
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                      child: _stepBody(id),
+                    ),
+                ],
+              ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
-            // `.flow-foot` reaches solid cream by 30% and stays there, so the
-            // button never floats over half-transparent content.
-            decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [0, 0.3],
-                    colors: [Color(0x00FAFAF7), T.cream50])),
-            child: Opacity(
-              opacity: enabled ? 1 : 0.4,
-              child: PButton(isLast ? (saving ? '…' : s.strings.common.finish) : s.strings.common.continue_,
-                  variant: BtnVariant.primary,
-                  large: true,
-                  block: true,
-                  accent: s.accent,
-                  ar: s.rtl,
-                  onTap: enabled ? next : null),
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
+              // `.flow-foot` reaches solid cream by 30% and stays there, so the
+              // button never floats over half-transparent content.
+              decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: [0, 0.3],
+                      colors: [Color(0x00FAFAF7), T.cream50])),
+              child: Opacity(
+                opacity: enabled ? 1 : 0.4,
+                child: PButton(isLast ? (saving ? '…' : s.strings.common.finish) : s.strings.common.continue_,
+                    variant: BtnVariant.primary,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: enabled ? next : null),
+              ),
             ),
-          ),
-        ]),
+          ]),
+        ),
       ),
     );
   }
