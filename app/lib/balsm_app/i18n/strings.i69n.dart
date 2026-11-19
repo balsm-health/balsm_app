@@ -3083,10 +3083,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
       "The records and their files are removed from this device. This cannot be undone.";
   String get rec_delete_confirm => "Delete";
   String get rec_delete_1_title => "Delete this record?";
-  String get rec_edit => "Edit record";
-  String get rec_name => "Name";
-  String get rec_type => "Type";
-  String get rec_date => "Date";
+  String rec_edit_title(String type) => "Edit · $type";
+  String get rec_changes_saved => "Changes saved";
   String get rec_save_changes => "Save changes";
   String rec_save_failed(Gender gender) => "Could not save. Try again.";
   Object operator [](String key) {
@@ -3236,14 +3234,10 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return rec_delete_confirm;
       case 'rec_delete_1_title':
         return rec_delete_1_title;
-      case 'rec_edit':
-        return rec_edit;
-      case 'rec_name':
-        return rec_name;
-      case 'rec_type':
-        return rec_type;
-      case 'rec_date':
-        return rec_date;
+      case 'rec_edit_title':
+        return rec_edit_title;
+      case 'rec_changes_saved':
+        return rec_changes_saved;
       case 'rec_save_changes':
         return rec_save_changes;
       case 'rec_save_failed':

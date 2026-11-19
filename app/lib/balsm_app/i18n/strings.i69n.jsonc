@@ -972,11 +972,9 @@
     "rec_delete_n_body": "The records and their files are removed from this device. This cannot be undone.",
     "rec_delete_confirm": "Delete",
     "rec_delete_1_title": "Delete this record?",
-    // Edit sheet on the record detail (records-mc.jsx EditRecordSheet).
-    "rec_edit": "Edit record",
-    "rec_name": "Name",
-    "rec_type": "Type",
-    "rec_date": "Date",
+    // Editing a record in the add-record sheet (records-mc.jsx AddRecordSheet `initial`).
+    "rec_edit_title(String type)": "Edit · $type",
+    "rec_changes_saved": "Changes saved",
     "rec_save_changes": "Save changes",
     "rec_save_failed(Gender gender)": "Could not save. Try again."
   },

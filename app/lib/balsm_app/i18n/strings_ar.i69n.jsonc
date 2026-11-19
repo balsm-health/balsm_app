@@ -967,11 +967,9 @@
     "rec_delete_n_body": "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.",
     "rec_delete_confirm": "حذف",
     "rec_delete_1_title": "حذف هذا السجل؟",
-    // شيت التعديل في تفاصيل السجل (records-mc.jsx EditRecordSheet).
-    "rec_edit": "تعديل السجل",
-    "rec_name": "الاسم",
-    "rec_type": "النوع",
-    "rec_date": "التاريخ",
+    // Editing a record in the add-record sheet (records-mc.jsx AddRecordSheet `initial`).
+    "rec_edit_title(String type)": "تعديل · $type",
+    "rec_changes_saved": "تم حفظ التعديلات",
     "rec_save_changes": "حفظ التعديلات",
     "rec_save_failed(Gender gender)": "تعذّر الحفظ. حاول${_select(gender, female: 'ي', other: '')} مرة أخرى."
   },
