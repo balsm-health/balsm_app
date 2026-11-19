@@ -30,6 +30,7 @@ class CheckIn {
     required this.vitals,
     this.note,
     this.photoRecordId,
+    this.history = EntryHistory.none,
   });
 
   final CheckInId id;
@@ -61,10 +62,30 @@ class CheckIn {
   /// Back-reference to a photo in the records vault (never the bytes).
   final String? photoRecordId;
 
+  /// Who other than the patient added, edited or shared this check-in, and
+  /// the patient's own edits since. Append-only; empty for the patient's own.
+  final EntryHistory history;
+
   /// Nothing left worth keeping: no reading, no symptom, no note. A check-in
   /// the patient has emptied reading by reading is removed, not kept blank.
   bool get isEmpty =>
       mood == null && !reportsPain && symptoms.isEmpty && vitals.isEmpty && (note == null || note!.trim().isEmpty);
+
+  /// This check-in with [history] in place of its own.
+  CheckIn withHistory(EntryHistory history) => CheckIn(
+        id: id,
+        healthProfileId: healthProfileId,
+        recordedAt: recordedAt,
+        mood: mood,
+        painLevel: painLevel,
+        painSites: painSites,
+        symptoms: symptoms,
+        symptomDetails: symptomDetails,
+        vitals: vitals,
+        note: note,
+        photoRecordId: photoRecordId,
+        history: history,
+      );
 
   /// This check-in with one reading removed, as the patient deletes it from
   /// the day screen. Removing pain clears the marked sites with the score;
@@ -96,6 +117,7 @@ class CheckIn {
       vitals: vitalsWithout(),
       note: note,
       photoRecordId: photoRecordId,
+      history: history,
     );
   }
 }

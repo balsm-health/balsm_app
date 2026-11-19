@@ -66,4 +66,36 @@ void main() {
     expect(await ds.find(c.id), isNull);
     expect((await ds.findAll()).map((x) => x.id), [keep.id]);
   });
+
+  group('history', () {
+    final family = ProvenanceActor.other(ProvenanceActorKind.family, displayName: 'Member A');
+    final addedByFamily =
+        ProvenanceEvent(id: 'p1', actor: family, action: ProvenanceAction.added, at: DateTime.utc(2026, 7, 24, 9));
+
+    test('removing a reading from a check-in someone else added appends the patient\'s edit', () async {
+      final c = entry('chk-1').withHistory(EntryHistory([addedByFamily]));
+      await ds.put(c.id, c);
+      final stamped = UpdateCheckInUseCase(dao: ds, clock: () => DateTime.utc(2026, 7, 25));
+
+      expect(await stamped(c.without(CheckInMetric.bloodPressure)), isTrue);
+
+      final got = (await ds.findAll()).single;
+      expect(got.history.events, hasLength(2));
+      expect(got.history.events.first, addedByFamily);
+      expect(got.history.events.last.action, ProvenanceAction.edited);
+      expect(got.history.events.last.actor.isSelf, isTrue);
+    });
+
+    test('without() keeps the check-in\'s history', () {
+      final c = entry('chk-1').withHistory(EntryHistory([addedByFamily]));
+      expect(c.without(CheckInMetric.mood).history, c.history);
+    });
+
+    test('the patient\'s own check-in stays without history when edited', () async {
+      final c = entry('chk-1');
+      await ds.put(c.id, c);
+      await update(c.without(CheckInMetric.bloodPressure));
+      expect((await ds.find(c.id))!.history.isEmpty, isTrue);
+    });
+  });
 }
