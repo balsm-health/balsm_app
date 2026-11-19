@@ -28,9 +28,12 @@ import '../../domain/value_objects/ids.dart';
 /// Fail-loud: backend failures surface as [StorageWriteException]; a row
 /// whose json/enum fields don't decode throws [StorageDecodeException].
 class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordDocument> implements RecordsDataSource {
-  DriftRecordsDataSource(this._db, this.activeProfile);
+  DriftRecordsDataSource(this._db, this.activeProfile) : _history = EntryProvenanceStore(_db, _table);
 
   final AppDatabase _db;
+
+  /// Append-only history of who else added, edited or shared each record.
+  final EntryProvenanceStore _history;
 
   /// Resolves the active health profile at call time (null = signed out, or
   /// the self profile is not ensured yet).
@@ -65,7 +68,8 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
       'SELECT * FROM $_table WHERE id = ? AND health_profile_id = ? LIMIT 1',
       variables: [Variable<String>(key.value), Variable<String>(profile.value)],
     ).get();
-    return rows.isEmpty ? null : _fromRow(rows.first.data);
+    if (rows.isEmpty) return null;
+    return _fromRow(rows.first.data, await _history.historyOf(key.value, profile));
   }
 
   @override
@@ -76,7 +80,8 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
       'SELECT * FROM $_table WHERE health_profile_id = ? ORDER BY taken_at DESC',
       variables: [Variable<String>(profile.value)],
     ).get();
-    return rows.map((r) => _fromRow(r.data)).toList();
+    final histories = await _history.historiesOf(profile);
+    return rows.map((r) => _fromRow(r.data, histories[r.data['id']])).toList();
   }
 
   @override
@@ -93,7 +98,8 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
         ...ids.map((id) => Variable<String>(id)),
       ],
     ).get();
-    return rows.map((r) => _fromRow(r.data)).toList();
+    final histories = await _history.historiesOf(profile);
+    return rows.map((r) => _fromRow(r.data, histories[r.data['id']])).toList();
   }
 
   @override
@@ -132,27 +138,30 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
     final profile = _require(scope);
     await _requireOwnedBy(profile, value.userId, 'record ${key.value}');
     try {
-      await _db.customInsert(
-        'INSERT OR REPLACE INTO $_table '
-        '(id, user_id, health_profile_id, type, title, tags, source, '
-        'file_type, file_path, pages, result_note, taken_at, created_at) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        variables: [
-          Variable<String>(key.value),
-          Variable<String>(value.userId.value),
-          Variable<String>(profile.value),
-          Variable<String>(value.type.name),
-          Variable<String>(value.title),
-          Variable<String>(jsonEncode(value.tags)),
-          Variable<String>(value.source.value),
-          Variable<String>(value.fileType),
-          Variable<String>(value.filePath),
-          Variable<int>(value.pages),
-          Variable<String>(value.resultNote),
-          Variable<String>(value.takenAt.toIso8601String()),
-          Variable<String>(value.createdAt.toIso8601String()),
-        ],
-      );
+      await _db.transaction(() async {
+        await _db.customInsert(
+          'INSERT OR REPLACE INTO $_table '
+          '(id, user_id, health_profile_id, type, title, tags, source, '
+          'file_type, file_path, pages, result_note, taken_at, created_at) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          variables: [
+            Variable<String>(key.value),
+            Variable<String>(value.userId.value),
+            Variable<String>(profile.value),
+            Variable<String>(value.type.name),
+            Variable<String>(value.title),
+            Variable<String>(jsonEncode(value.tags)),
+            Variable<String>(value.source.value),
+            Variable<String>(value.fileType),
+            Variable<String>(value.filePath),
+            Variable<int>(value.pages),
+            Variable<String>(value.resultNote),
+            Variable<String>(value.takenAt.toIso8601String()),
+            Variable<String>(value.createdAt.toIso8601String()),
+          ],
+        );
+        await _history.append(key.value, profile, value.history);
+      });
     } catch (e) {
       if (e is StorageException) rethrow;
       throw StorageWriteException('record ${key.value}: write failed', e);
@@ -231,7 +240,7 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
 
   // ── Mapping ──────────────────────────────────────────────────────────────
 
-  RecordDocument _fromRow(Map<String, dynamic> row) {
+  RecordDocument _fromRow(Map<String, dynamic> row, EntryHistory? history) {
     try {
       return RecordDocument(
         id: RecordDocumentId.value(row['id'] as String),
@@ -246,6 +255,7 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
         resultNote: row['result_note'] as String?,
         takenAt: DateTime.parse(row['taken_at'] as String),
         createdAt: DateTime.parse(row['created_at'] as String),
+        history: history ?? EntryHistory.none,
       );
     } catch (e) {
       if (e is StorageException) rethrow;
