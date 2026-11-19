@@ -16,6 +16,7 @@ class BirthDetails {
     required this.dateOfBirth,
     this.bloodType,
     this.keepItemIds = const {},
+    this.relationship = Relationship.child,
   });
 
   static const maxNameLength = 60;
@@ -27,9 +28,10 @@ class BirthDetails {
   final BloodType? bloodType;
   final Set<PregnancyItemId> keepItemIds;
 
-  /// The child's relationship to the mother: a child, named son or daughter
-  /// by [sex] — the same mapping as the family screens.
-  Relationship get relationship => Relationship.child;
+  /// The child's relationship to the account holder: their child (named son
+  /// or daughter by [sex], as on the family screens) when the mother is the
+  /// account holder or their spouse; otherwise what the caller says.
+  final Relationship relationship;
 
   /// Every rule this form breaks on [now] (empty = can be saved).
   List<BirthViolation> violations(DateTime now) {

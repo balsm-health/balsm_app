@@ -4,20 +4,27 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:medications/medications.dart';
+import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
 import 'package:records/records.dart';
+import 'package:self_report/self_report.dart';
 import 'package:vaccinations/vaccinations.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
 import '../../routes.dart';
 import '../../tokens.dart';
-import '../profile_subscreens.dart';
+import '../profile_subscreens.dart' show memberHealthProfileProvider;
+import '../pregnancy/pregnancy_kit.dart' show dueLine;
+import '../pregnancy/pregnancy_screen.dart';
 import '../records_screen.dart';
+import '../trend_series.dart';
+import '../trends_screen.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
 import 'growth_screen.dart';
 import 'member_card_screen.dart';
+import 'member_medical_screen.dart';
 import 'profile_bar.dart';
 import 'vaccinations_screen.dart';
 
@@ -92,13 +99,6 @@ Future<void> _editDetails(BuildContext context, FamilyMember m) async {
   if (closed && context.mounted) Navigator.pop(context);
 }
 
-/// Medical details (blood type, conditions, allergies) of member [m] — the
-/// app's medical-profile editor, pointed at the member's profile.
-Future<void> openMemberMedical(BuildContext context, FamilyMember m) => pushFamilyScreen<void>(
-      context,
-      (s) => MedicalProfileScreen(s: s, profileId: m.id, title: m.displayName),
-    );
-
 /// The member's head and tiles (`MCMemberBody`), shared by the member screen
 /// and Home while the member is the active profile.
 class MemberBody extends ConsumerWidget {
@@ -115,6 +115,12 @@ class MemberBody extends ConsumerWidget {
     final age = m.ageOn(now);
     final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
     final allergies = health?.allergies.length ?? 0;
+    final conditions = health?.conditions.length ?? 0;
+    final preg = ref.watch(activePregnancyOfProvider(m.id));
+    final trends = trendSeries(
+      ref.watch(profileCheckInsProvider(m.id)).valueOrNull ?? const <CheckIn>[],
+      growth: ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[],
+    ).length;
     // The tiles count the active profile's data; this member is the active
     // profile whenever their home is on screen (opening them selects them).
     final active = ref.watch(currentProfileIdProvider) == m.id;
@@ -135,6 +141,34 @@ class MemberBody extends ConsumerWidget {
         onTap: () => openMemberCard(context, m.id),
       ),
       ..._childTiles(context, ref, m, now),
+      if (preg != null || m.canTrackPregnancyOn(now))
+        FamilyTile(
+          icon: LucideIcons.sprout,
+          tone: MemberTone.aqua,
+          title: s.strings.pregnancy.title,
+          sub: preg == null
+              ? f.tile_preg_off(s.gender)
+              : '${s.strings.pregnancy.week_n(preg.infoOn(now).week)} · ${dueLine(s, preg.infoOn(now))}',
+          onTap: () => openPregnancy(context, ref, mother: m.id),
+        ),
+      FamilyTile(
+        icon: LucideIcons.clipboardList,
+        tone: MemberTone.emerald,
+        title: f.tile_medical,
+        sub: [
+          blood ?? f.no_blood,
+          if (allergies > 0) f.allergies_n(allergies),
+          if (conditions > 0) f.conditions_n(conditions),
+        ].join(' · '),
+        onTap: () => openMemberMedical(context, m),
+      ),
+      FamilyTile(
+        icon: LucideIcons.trendingUp,
+        tone: MemberTone.blue,
+        title: f.tile_trends,
+        sub: trends == 0 ? f.trends_none : f.trends_n(trends),
+        onTap: () => openMemberTrends(context, m),
+      ),
       FamilyTile(
         icon: LucideIcons.pill,
         tone: MemberTone.blue,

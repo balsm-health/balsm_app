@@ -8,6 +8,7 @@ import '../../app_state.dart';
 import '../../kit.dart';
 import '../../tokens.dart';
 import 'family_kit.dart';
+import 'member_medical_screen.dart';
 
 /// Opens the add-member form, or the same form to edit [editing]'s details.
 /// True when the edit form closed [editing]'s profile.
@@ -22,6 +23,8 @@ enum _Rel {
   daughter(Relationship.child, Sex.female),
   mother(Relationship.parent, Sex.female),
   father(Relationship.parent, Sex.male),
+  sister(Relationship.sibling, Sex.female),
+  brother(Relationship.sibling, Sex.male),
   spouse(Relationship.spouse, null),
   neighbour(Relationship.neighbour, null),
   friend(Relationship.friend, null),
@@ -38,6 +41,8 @@ enum _Rel {
       _Rel.daughter => f.pick_daughter,
       _Rel.mother => f.pick_mother,
       _Rel.father => f.pick_father,
+      _Rel.sister => f.pick_sister,
+      _Rel.brother => f.pick_brother,
       _Rel.spouse => f.pick_spouse,
       _Rel.neighbour => f.pick_neighbour,
       _Rel.friend => f.pick_friend,
@@ -97,10 +102,18 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         relationship: _relationship,
         dateOfBirth: _dob,
         sex: _sex,
-        bloodType: _bloodUnsure ? null : _blood,
+        bloodType: _editing ? _storedBlood : (_bloodUnsure ? null : _blood),
         groupId: _groupId,
         newGroupName: _newGroup ? _newGroupName.text : null,
       );
+
+  /// Editing keeps the blood type as stored now: it is changed on the
+  /// medical profile, which may have been opened from this form.
+  BloodType? get _storedBlood {
+    final id = widget.editing!.id;
+    final live = (ref.read(familyMembersProvider).valueOrNull ?? const <FamilyMember>[]).where((x) => x.id == id);
+    return live.isEmpty ? widget.editing!.bloodType : live.first.bloodType;
+  }
 
   bool get _adult => !_editing && _draft.needsConsentOn(DateTime.now());
 
@@ -185,7 +198,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             onChanged: (x) => setState(() => _sex = x),
           ),
         ),
-        _field(_editing ? f.f_blood : '${f.f_blood} · ${f.optional}', _bloodGrid()),
+        if (editing == null) _field('${f.f_blood} · ${f.optional}', _bloodGrid()) else _medicalRow(editing),
         if (editing != null)
           PButton(
             f.close_member(_firstName(editing)),
@@ -197,6 +210,33 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             onTap: _saving ? null : () => _close(editing),
           ),
       ],
+    );
+  }
+
+  /// The edit form's way to the member's medical profile (blood type,
+  /// allergies, long-term conditions), which used to be fields here.
+  Widget _medicalRow(FamilyMember m) {
+    final f = s.strings.family;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Semantics(
+        button: true,
+        child: PCard(
+          onTap: () => openMemberMedical(context, m),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(children: [
+            Icon(LucideIcons.clipboardList, size: 18, color: s.accent.main),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(f.tile_medical, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                Text(f.medical_row_sub, style: Typo.meta(ar: s.rtl)),
+              ]),
+            ),
+            Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg3),
+          ]),
+        ),
+      ),
     );
   }
 
@@ -303,40 +343,14 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     ]);
   }
 
-  Widget _bloodGrid() {
-    final f = s.strings.family;
-    final types = BloodType.values.where((b) => b != BloodType.bombay).toList();
-    return LayoutBuilder(builder: (context, c) {
-      const gap = 8.0;
-      final w = (c.maxWidth - gap * 3) / 4;
-      return Wrap(spacing: gap, runSpacing: gap, children: [
-        for (final b in types)
-          SizedBox(
-            width: w,
-            child: _GridChip(
-              label: b.code.replaceAll('-', '−'),
-              ltr: true,
-              active: !_bloodUnsure && _blood == b,
-              onTap: () => setState(() {
-                _blood = b;
-                _bloodUnsure = false;
-              }),
-            ),
-          ),
-        SizedBox(
-          width: c.maxWidth,
-          child: _GridChip(
-            label: f.blood_unsure,
-            active: _bloodUnsure,
-            onTap: () => setState(() {
-              _bloodUnsure = true;
-              _blood = null;
-            }),
-          ),
-        ),
-      ]);
-    });
-  }
+  Widget _bloodGrid() => BloodTypeGrid(
+        value: _blood,
+        unsure: _bloodUnsure,
+        onChanged: (b) => setState(() {
+          _blood = b;
+          _bloodUnsure = b == null;
+        }),
+      );
 
   Widget _consentStep() {
     final f = s.strings.family;
@@ -441,42 +455,6 @@ class _Steps extends StatelessWidget {
         const SizedBox(height: 8),
         Text(step == 2 ? f.step_2_of_2 : (two ? f.step_1_of_2 : f.step_basic), style: Typo.meta(ar: s.rtl)),
       ]),
-    );
-  }
-}
-
-/// A square-ish selectable chip for the blood-type grid.
-class _GridChip extends StatelessWidget {
-  const _GridChip({required this.label, required this.active, required this.onTap, this.ltr = false});
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  final bool ltr;
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return Semantics(
-      button: true,
-      selected: active,
-      child: Pressable(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: Motion.fast,
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: active ? s.accent.main : Colors.white,
-            borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(color: active ? s.accent.main : T.border, width: 1.5),
-          ),
-          child: Text(
-            label,
-            textDirection: ltr ? TextDirection.ltr : null,
-            style: (ltr ? Typo.num(size: FS.md, weight: FontWeight.w700) : Typo.bodySm(ar: s.rtl))
-                .copyWith(fontWeight: FontWeight.w600, color: active ? T.onFill(s.accent.main) : T.fg2),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -80,7 +80,11 @@ String relationLabel(PatientAppState s, Relationship? rel, Sex? sex) {
         Sex.female => f.rel_sister,
         null => f.rel_sibling
       },
-    Relationship.spouse => f.rel_spouse(s.gender),
+    Relationship.spouse => switch (sex) {
+        Sex.female => f.rel_wife,
+        Sex.male => f.rel_husband,
+        null => f.rel_spouse(s.gender)
+      },
     Relationship.partner => f.rel_partner,
     Relationship.grandparent => f.rel_grandparent,
     Relationship.relative => f.rel_relative,
@@ -423,4 +427,88 @@ Future<R?> pushFamilyScreen<R>(BuildContext context, Widget Function(PatientAppS
   return Navigator.of(context, rootNavigator: true).push<R>(MaterialPageRoute(
     builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: build(s))),
   ));
+}
+
+/// The blood-type picker (`MC_BLOOD` chips plus "Not sure"): the eight ABO/Rh
+/// types four to a row, read left to right in both languages, and "Not sure"
+/// across the bottom. [onChanged] gets the type, or null for "Not sure".
+/// Without [enabled] the choice shows but cannot change.
+class BloodTypeGrid extends StatelessWidget {
+  const BloodTypeGrid({
+    super.key,
+    required this.value,
+    required this.unsure,
+    required this.onChanged,
+    this.enabled = true,
+  });
+  final BloodType? value;
+  final bool unsure;
+  final ValueChanged<BloodType?> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final types = BloodType.values.where((b) => b != BloodType.bombay).toList();
+    return LayoutBuilder(builder: (context, c) {
+      const gap = 8.0;
+      final w = (c.maxWidth - gap * 3) / 4;
+      return Wrap(spacing: gap, runSpacing: gap, children: [
+        ...types.map((b) => SizedBox(
+              width: w,
+              child: _GridChip(
+                label: b.code.replaceAll('-', '−'),
+                ltr: true,
+                active: !unsure && value == b,
+                onTap: enabled ? () => onChanged(b) : null,
+              ),
+            )),
+        SizedBox(
+          width: c.maxWidth,
+          child: _GridChip(
+            label: s.strings.family.blood_unsure,
+            active: unsure,
+            onTap: enabled ? () => onChanged(null) : null,
+          ),
+        ),
+      ]);
+    });
+  }
+}
+
+/// A square-ish selectable chip for the blood-type grid.
+class _GridChip extends StatelessWidget {
+  const _GridChip({required this.label, required this.active, required this.onTap, this.ltr = false});
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
+  final bool ltr;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Semantics(
+      button: true,
+      selected: active,
+      enabled: onTap != null,
+      child: Pressable(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: Motion.fast,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? s.accent.main : Colors.white,
+            borderRadius: BorderRadius.circular(T.rPill),
+            border: Border.all(color: active ? s.accent.main : T.border, width: 1.5),
+          ),
+          child: Text(
+            label,
+            textDirection: ltr ? TextDirection.ltr : null,
+            style: (ltr ? Typo.num(size: FS.md, weight: FontWeight.w700) : Typo.bodySm(ar: s.rtl))
+                .copyWith(fontWeight: FontWeight.w600, color: active ? T.onFill(s.accent.main) : T.fg2),
+          ),
+        ),
+      ),
+    );
+  }
 }

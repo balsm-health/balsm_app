@@ -1315,7 +1315,16 @@
     "moves": "Records that move to the child's profile",
     "no_records": "No records for this baby.",
     "me_stay": "Your “Me” records stay on your own profile.",
-    "create_cta": "Create profile"
+    "create_cta": "Create profile",
+    // A family member's pregnancy (mother-child.jsx MCPregWho): copy that
+    // names her. About the member, so not patient-gendered, except where it
+    // addresses the patient.
+    "title_of(String name)": "Pregnancy · $name",
+    "records_of(String name)": "$name's pregnancy records",
+    "records_of_empty": "The mother's own results appear here.",
+    "start_note_of(String name, Gender gender)": "Pregnancy tracking appears on $name's profile only. You manage it from your phone.",
+    "start_cta_of(Gender gender)": "Start tracking",
+    "me_of(String name)": "$name — her own results"
   },
   "family": {
     "bar_viewing(Gender gender)": "Viewing",
@@ -1356,6 +1365,9 @@
     "rel_sister": "Sister",
     "rel_sibling": "Sibling",
     "rel_spouse(Gender gender)": "Spouse",
+    // A spouse whose sex is known reads as wife or husband (mother-child.jsx mcRel).
+    "rel_wife": "Wife",
+    "rel_husband": "Husband",
     "rel_partner": "Partner",
     "rel_grandparent": "Grandparent",
     "rel_relative": "Relative",
@@ -1368,6 +1380,8 @@
     "pick_daughter": "Daughter",
     "pick_mother": "Mother",
     "pick_father": "Father",
+    "pick_sister": "Sister",
+    "pick_brother": "Brother",
     "pick_spouse": "Spouse",
     "pick_neighbour": "Neighbour",
     "pick_friend": "Friend",
@@ -1385,6 +1399,31 @@
     "tile_records": "Records",
     "no_records": "No documents yet",
     "records_n(int n)": "${_plural(n, one:'1 record', other:'$n records')}",
+    // Member home tiles (mother-child.jsx MCMemberBody): medical profile,
+    // trends and pregnancy.
+    "tile_medical": "Medical profile",
+    "no_blood": "No blood type",
+    "conditions_n(int n)": "${_plural(n, one:'1 condition', other:'$n conditions')}",
+    "tile_trends": "Trends",
+    "trends_n(int n)": "${_plural(n, one:'1 measure', other:'$n measures')}",
+    "trends_none": "Not enough data yet",
+    "tile_preg_off(Gender gender)": "Off · start tracking",
+    // Medical profile of a member (MCMedicalScreen). Copy about the member is
+    // not patient-gendered; the add placeholders address the patient.
+    "medical_intro(String name)": "This shows on $name's emergency card.",
+    "medical_conditions": "Long-term conditions",
+    "medical_allergies_none": "No allergies recorded",
+    "medical_conditions_none": "No conditions recorded",
+    "medical_allergy_ph(Gender gender)": "Add an allergy, e.g. Penicillin",
+    "medical_condition_ph(Gender gender)": "Add a condition, e.g. Asthma",
+    "medical_add": "Add",
+    "medical_remove(String item)": "Remove $item",
+    "medical_row_sub": "Blood type, allergies and long-term conditions",
+    "medical_locked": "This profile is read-only, so it can't be edited here.",
+    // A member's trends (MCTrendsScreen).
+    "trends_empty_t": "No data in this period",
+    "trends_empty_b(String name, Gender gender)": "$name's readings and growth show here over time. Try a longer range.",
+    "trends_nothing(String name)": "Nothing logged for $name yet.",
     "member_menu": "More options",
     "edit_details": "Edit details",
     "edit_medical": "Medical details",

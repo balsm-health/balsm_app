@@ -57,4 +57,21 @@ class FamilyMember {
     final age = ageOn(now);
     return age != null && !age.isAdult;
   }
+
+  /// Ages between which pregnancy tracking is offered for a member.
+  static const pregnancyAgeYears = (min: 14, max: 55);
+
+  /// Whether pregnancy can be tracked on this profile on [now]
+  /// (mother-child.jsx `mcCanPreg`): a woman of childbearing age whose
+  /// profile the account holder manages — an open dependent, female, aged
+  /// [pregnancyAgeYears]. Unknown sex or age is not offered.
+  bool canTrackPregnancyOn(DateTime now) {
+    final age = ageOn(now);
+    return kind == ProfileKind.dependent &&
+        status == ProfileStatus.active &&
+        sex == Sex.female &&
+        age != null &&
+        age.years >= pregnancyAgeYears.min &&
+        age.years <= pregnancyAgeYears.max;
+  }
 }
