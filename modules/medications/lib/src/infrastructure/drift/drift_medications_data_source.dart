@@ -30,9 +30,12 @@ const _kDoseEventsTable = 'dose_events';
 ///   a database-file-level operation owned by the deletion flow, not a
 ///   row-level contract op.
 class DriftMedicationsDataSource extends MedicationsDataSource {
-  DriftMedicationsDataSource(this._db, this.activeProfile);
+  DriftMedicationsDataSource(this._db, this.activeProfile) : _history = EntryProvenanceStore(_db, _kMedicationsTable);
 
   final AppDatabase _db;
+
+  /// Append-only history of who else added, edited or shared each medication.
+  final EntryProvenanceStore _history;
 
   /// Resolves the active health profile at call time (null = signed out or
   /// the self profile is not ensured yet).
@@ -60,7 +63,8 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
         Variable<String>(profile.value),
       ],
     ).get();
-    return rows.isEmpty ? null : _medicationFromRow(rows.first.data);
+    if (rows.isEmpty) return null;
+    return _medicationFromRow(rows.first.data, await _history.historyOf(key.value, profile));
   }
 
   @override
@@ -72,7 +76,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
       'ORDER BY name COLLATE NOCASE ASC',
       variables: [Variable<String>(profile.value)],
     ).get();
-    return rows.map((r) => _medicationFromRow(r.data)).toList();
+    return _withHistories(rows, profile);
   }
 
   @override
@@ -89,7 +93,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
         ...ids.map((id) => Variable<String>(id)),
       ],
     ).get();
-    return rows.map((r) => _medicationFromRow(r.data)).toList();
+    return _withHistories(rows, profile);
   }
 
   @override
@@ -98,25 +102,28 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
   @override
   Future<void> put(MedicationId key, Medication value, {HealthProfileId? scope}) async {
     final profile = _require(scope);
-    await _db.customInsert(
-      'INSERT OR REPLACE INTO $_kMedicationsTable '
-      '(id, user_id, health_profile_id, name, dose_amount, schedule_type, '
-      'schedule_config, start_date, end_date, is_controlled, notes) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      variables: [
-        Variable<String>(key.value),
-        Variable<String>(value.userId.value),
-        Variable<String>(profile.value),
-        Variable<String>(value.name),
-        Variable<String>(value.doseAmount),
-        Variable<String>(value.scheduleType.name),
-        Variable<String>(jsonEncode(value.scheduleConfig.toJson())),
-        Variable<String>(value.startDate.toIso8601String()),
-        Variable<String>(value.endDate?.toIso8601String()),
-        Variable<int>(value.isControlled ? 1 : 0),
-        Variable<String>(value.notes),
-      ],
-    );
+    await _db.transaction(() async {
+      await _db.customInsert(
+        'INSERT OR REPLACE INTO $_kMedicationsTable '
+        '(id, user_id, health_profile_id, name, dose_amount, schedule_type, '
+        'schedule_config, start_date, end_date, is_controlled, notes) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        variables: [
+          Variable<String>(key.value),
+          Variable<String>(value.userId.value),
+          Variable<String>(profile.value),
+          Variable<String>(value.name),
+          Variable<String>(value.doseAmount),
+          Variable<String>(value.scheduleType.name),
+          Variable<String>(jsonEncode(value.scheduleConfig.toJson())),
+          Variable<String>(value.startDate.toIso8601String()),
+          Variable<String>(value.endDate?.toIso8601String()),
+          Variable<int>(value.isControlled ? 1 : 0),
+          Variable<String>(value.notes),
+        ],
+      );
+      await _history.append(key.value, profile, value.history);
+    });
   }
 
   @override
@@ -197,7 +204,8 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
           readsFrom: {/* TODO: medications table after build_runner */},
         )
         .watch()
-        .map((rows) => rows.isEmpty ? null : _medicationFromRow(rows.first.data));
+        .asyncMap((rows) async =>
+            rows.isEmpty ? null : _medicationFromRow(rows.first.data, await _history.historyOf(key.value, profile)));
   }
 
   @override
@@ -212,7 +220,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
           readsFrom: {/* TODO: medications table after build_runner */},
         )
         .watch()
-        .map((rows) => rows.map((r) => _medicationFromRow(r.data)).toList());
+        .asyncMap((rows) => _withHistories(rows, profile));
   }
 
   // --- Dose events (APPEND-ONLY, keyed by medication FK — unscoped) --------
@@ -279,7 +287,12 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
 
   // --- Mapping -------------------------------------------------------------
 
-  Medication _medicationFromRow(Map<String, dynamic> row) => Medication(
+  Future<List<Medication>> _withHistories(List<QueryRow> rows, HealthProfileId profile) async {
+    final histories = await _history.historiesOf(profile);
+    return rows.map((r) => _medicationFromRow(r.data, histories[r.data['id']])).toList();
+  }
+
+  Medication _medicationFromRow(Map<String, dynamic> row, [EntryHistory? history]) => Medication(
         id: MedicationId.value(row['id'] as String),
         userId: UserId.value(row['user_id'] as String),
         name: row['name'] as String,
@@ -292,6 +305,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
         endDate: (row['end_date'] as String?) != null ? DateTime.parse(row['end_date'] as String) : null,
         isControlled: (row['is_controlled'] as int) != 0,
         notes: row['notes'] as String?,
+        history: history ?? EntryHistory.none,
       );
 
   DoseEvent _doseEventFromRow(Map<String, dynamic> row) => DoseEvent(
