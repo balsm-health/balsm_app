@@ -10,6 +10,7 @@ import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/badges.dart';
+import '../widgets/entry_attribution.dart';
 import 'records_detail.dart';
 
 /// Rows written by `persistPhotoRecord` before the `check-in` source existed:
@@ -370,7 +371,9 @@ class _RecordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final style = recordTypeStyle(record.type);
-    final source = record.source.isSelf ? s.strings.records.rec_self : record.source.value;
+    // Someone else's entry is named by its chip, never "You uploaded".
+    final attributed = record.history.isAttributed;
+    final source = record.source.isSelf ? (attributed ? null : s.strings.records.rec_self) : record.source.value;
     final isSelected = selected ?? false;
     return PCard(
       padding: const EdgeInsets.all(14),
@@ -407,8 +410,13 @@ class _RecordCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
             const SizedBox(height: 2),
-            Text('${formatRecordDate(record.takenAt, s)} · $source',
+            Text([formatRecordDate(record.takenAt, s), if (source != null) source].join(' · '),
                 maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            if (attributed)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(top: 4),
+                child: EntryAttributionChip(history: record.history),
+              ),
           ]),
         ),
         const SizedBox(width: 8),
