@@ -48,6 +48,7 @@ class Strings_ar extends Strings {
   GrowthStrings_ar get growth => GrowthStrings_ar(this);
   PregnancyStrings_ar get pregnancy => PregnancyStrings_ar(this);
   FamilyStrings_ar get family => FamilyStrings_ar(this);
+  AttributionStrings_ar get attribution => AttributionStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -107,6 +108,8 @@ class Strings_ar extends Strings {
         return pregnancy;
       case 'family':
         return family;
+      case 'attribution':
+        return attribution;
       default:
         return super[key];
     }
@@ -5192,6 +5195,72 @@ class FamilyStrings_ar extends FamilyStrings {
         return link_unlinked_toast;
       case 'link_dot_a11y':
         return link_dot_a11y;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class AttributionStrings_ar extends AttributionStrings {
+  final Strings_ar _parent;
+  const AttributionStrings_ar(this._parent) : super(_parent);
+  String chip_a11y(String who) => "سجل التعديلات: $who";
+  String by(String name) => "بواسطة $name";
+  String edited_by(String name) => "عدّله $name";
+  String get someone => "شخص آخر";
+  String get you => "أنت";
+  String get history_title => "سجل التعديلات";
+  String get history_sub => "من أضاف هذا الإدخال أو عدّله، ومتى.";
+  String added_this(String name) => "أضافه $name";
+  String edited_this(String name) => "عدّله $name";
+  String shared_this(String name) => "شاركه $name";
+  String you_added(Gender gender) =>
+      "أضفت${_select(gender, {'female': 'ِ', 'other': 'َ'})}ه أنت";
+  String you_edited(Gender gender) =>
+      "عدّلت${_select(gender, {'female': 'ِ', 'other': 'َ'})}ه أنت";
+  String get role_family => "من العائلة";
+  String get role_doctor => "طبيب";
+  String get role_clinic => "جهة رعاية";
+  String get locked => "يحتفظ بلسم بهذا السجل ولا يمكن تعديله.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'chip_a11y':
+        return chip_a11y;
+      case 'by':
+        return by;
+      case 'edited_by':
+        return edited_by;
+      case 'someone':
+        return someone;
+      case 'you':
+        return you;
+      case 'history_title':
+        return history_title;
+      case 'history_sub':
+        return history_sub;
+      case 'added_this':
+        return added_this;
+      case 'edited_this':
+        return edited_this;
+      case 'shared_this':
+        return shared_this;
+      case 'you_added':
+        return you_added;
+      case 'you_edited':
+        return you_edited;
+      case 'role_family':
+        return role_family;
+      case 'role_doctor':
+        return role_doctor;
+      case 'role_clinic':
+        return role_clinic;
+      case 'locked':
+        return locked;
       default:
         return super[key];
     }

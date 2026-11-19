@@ -45,6 +45,7 @@ class Strings implements i69n.I69nMessageBundle {
   GrowthStrings get growth => GrowthStrings(this);
   PregnancyStrings get pregnancy => PregnancyStrings(this);
   FamilyStrings get family => FamilyStrings(this);
+  AttributionStrings get attribution => AttributionStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -104,6 +105,8 @@ class Strings implements i69n.I69nMessageBundle {
         return pregnancy;
       case 'family':
         return family;
+      case 'attribution':
+        return attribution;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -4877,6 +4880,70 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return link_unlinked_toast;
       case 'link_dot_a11y':
         return link_dot_a11y;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class AttributionStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const AttributionStrings(this._parent);
+  String chip_a11y(String who) => "Edit history: $who";
+  String by(String name) => "By $name";
+  String edited_by(String name) => "Edited by $name";
+  String get someone => "Someone else";
+  String get you => "You";
+  String get history_title => "Edit history";
+  String get history_sub => "Who added or changed this entry, and when.";
+  String added_this(String name) => "$name added this";
+  String edited_this(String name) => "$name edited this";
+  String shared_this(String name) => "$name shared this";
+  String you_added(Gender gender) => "You added this";
+  String you_edited(Gender gender) => "You edited this";
+  String get role_family => "Family";
+  String get role_doctor => "Doctor";
+  String get role_clinic => "Care provider";
+  String get locked => "Balsm keeps this history and it can’t be changed.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'chip_a11y':
+        return chip_a11y;
+      case 'by':
+        return by;
+      case 'edited_by':
+        return edited_by;
+      case 'someone':
+        return someone;
+      case 'you':
+        return you;
+      case 'history_title':
+        return history_title;
+      case 'history_sub':
+        return history_sub;
+      case 'added_this':
+        return added_this;
+      case 'edited_this':
+        return edited_this;
+      case 'shared_this':
+        return shared_this;
+      case 'you_added':
+        return you_added;
+      case 'you_edited':
+        return you_edited;
+      case 'role_family':
+        return role_family;
+      case 'role_doctor':
+        return role_doctor;
+      case 'role_clinic':
+        return role_clinic;
+      case 'locked':
+        return locked;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

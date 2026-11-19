@@ -1464,5 +1464,26 @@
     "link_unlinked_toast": "تم إلغاء الربط",
     "link_dot_a11y": "طلب ربط بانتظار الرد"
   },
+  // من أضاف إدخالًا أو عدّله أو شاركه غير المريض (mother-child.jsx MCBy / MCByHistory).
+  "attribution": {
+    "chip_a11y(String who)": "سجل التعديلات: $who",
+    "by(String name)": "بواسطة $name",
+    "edited_by(String name)": "عدّله $name",
+    "someone": "شخص آخر",
+    // Same spelling for both genders without vowel marks.
+    "you": "أنت",
+    "history_title": "سجل التعديلات",
+    "history_sub": "من أضاف هذا الإدخال أو عدّله، ومتى.",
+    "added_this(String name)": "أضافه $name",
+    "edited_this(String name)": "عدّله $name",
+    "shared_this(String name)": "شاركه $name",
+    // Addressed to the patient: only the vowel on the verb's ending changes.
+    "you_added(Gender gender)": "أضفت${_select(gender, female: 'ِ', other: 'َ')}ه أنت",
+    "you_edited(Gender gender)": "عدّلت${_select(gender, female: 'ِ', other: 'َ')}ه أنت",
+    "role_family": "من العائلة",
+    "role_doctor": "طبيب",
+    "role_clinic": "جهة رعاية",
+    "locked": "يحتفظ بلسم بهذا السجل ولا يمكن تعديله."
+  },
   "_i69n_import": "package:core/core.dart"
 }
