@@ -12,12 +12,13 @@ import '../../app_state.dart';
 import '../../kit.dart';
 import '../../routes.dart';
 import '../../tokens.dart';
-import '../profile_subscreens.dart';
+import '../profile_subscreens.dart' show memberHealthProfileProvider;
 import '../records_screen.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
 import 'growth_screen.dart';
 import 'member_card_screen.dart';
+import 'member_medical_screen.dart';
 import 'profile_bar.dart';
 import 'vaccinations_screen.dart';
 
@@ -92,13 +93,6 @@ Future<void> _editDetails(BuildContext context, FamilyMember m) async {
   if (closed && context.mounted) Navigator.pop(context);
 }
 
-/// Medical details (blood type, conditions, allergies) of member [m] — the
-/// app's medical-profile editor, pointed at the member's profile.
-Future<void> openMemberMedical(BuildContext context, FamilyMember m) => pushFamilyScreen<void>(
-      context,
-      (s) => MedicalProfileScreen(s: s, profileId: m.id, title: m.displayName),
-    );
-
 /// The member's head and tiles (`MCMemberBody`), shared by the member screen
 /// and Home while the member is the active profile.
 class MemberBody extends ConsumerWidget {
@@ -115,6 +109,7 @@ class MemberBody extends ConsumerWidget {
     final age = m.ageOn(now);
     final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
     final allergies = health?.allergies.length ?? 0;
+    final conditions = health?.conditions.length ?? 0;
     // The tiles count the active profile's data; this member is the active
     // profile whenever their home is on screen (opening them selects them).
     final active = ref.watch(currentProfileIdProvider) == m.id;
@@ -135,6 +130,17 @@ class MemberBody extends ConsumerWidget {
         onTap: () => openMemberCard(context, m.id),
       ),
       ..._childTiles(context, ref, m, now),
+      FamilyTile(
+        icon: LucideIcons.clipboardList,
+        tone: MemberTone.emerald,
+        title: f.tile_medical,
+        sub: [
+          blood ?? f.no_blood,
+          if (allergies > 0) f.allergies_n(allergies),
+          if (conditions > 0) f.conditions_n(conditions),
+        ].join(' · '),
+        onTap: () => openMemberMedical(context, m),
+      ),
       FamilyTile(
         icon: LucideIcons.pill,
         tone: MemberTone.blue,

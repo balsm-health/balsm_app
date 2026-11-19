@@ -4330,6 +4330,17 @@ class PregnancyStrings_ar extends PregnancyStrings {
   String get no_records => "لا توجد سجلات لهذا الطفل.";
   String get me_stay => "سجلاتك «عنّي» تبقى في ملفك أنتِ.";
   String get create_cta => "إنشاء الملف";
+  String title_of(String name) => "متابعة الحمل · $name";
+  String records_of(String name) => "سجلات $name في الحمل";
+  String get records_of_empty => "نتائج تحاليل الأم تظهر هنا.";
+  String start_note_of(String name, Gender gender) =>
+      "تظهر متابعة الحمل في ملف $name فقط. تدير${_select(gender, {
+            'female': 'ين',
+            'other': ''
+          })}ها من جهازك.";
+  String start_cta_of(Gender gender) =>
+      "${_select(gender, {'female': 'ابدئي', 'other': 'ابدأ'})} المتابعة";
+  String me_of(String name) => "$name — نتائجها هي";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4597,6 +4608,18 @@ class PregnancyStrings_ar extends PregnancyStrings {
         return me_stay;
       case 'create_cta':
         return create_cta;
+      case 'title_of':
+        return title_of;
+      case 'records_of':
+        return records_of;
+      case 'records_of_empty':
+        return records_of_empty;
+      case 'start_note_of':
+        return start_note_of;
+      case 'start_cta_of':
+        return start_cta_of;
+      case 'me_of':
+        return me_of;
       default:
         return super[key];
     }
@@ -4687,6 +4710,8 @@ class FamilyStrings_ar extends FamilyStrings {
   String get rel_sibling => "أخوك أو أختك";
   String rel_spouse(Gender gender) =>
       "${_select(gender, {'female': 'زوجك', 'other': 'زوجتك'})}";
+  String get rel_wife => "زوجتك";
+  String get rel_husband => "زوجك";
   String get rel_partner => "شريك الحياة";
   String get rel_grandparent => "جدّك أو جدّتك";
   String get rel_relative => "قريب";
@@ -4699,6 +4724,8 @@ class FamilyStrings_ar extends FamilyStrings {
   String get pick_daughter => "ابنة";
   String get pick_mother => "الأم";
   String get pick_father => "الأب";
+  String get pick_sister => "أخت";
+  String get pick_brother => "أخ";
   String get pick_spouse => "زوج أو زوجة";
   String get pick_neighbour => "جار أو جارة";
   String get pick_friend => "صديق أو صديقة";
@@ -4721,6 +4748,40 @@ class FamilyStrings_ar extends FamilyStrings {
   String get no_records => "لا مستندات بعد";
   String records_n(int n) =>
       "${_plural(n, zero: 'لا سجلات', one: 'سجل واحد', two: 'سجلان', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
+  String get tile_medical => "الملف الطبي";
+  String get no_blood => "فصيلة الدم غير مسجّلة";
+  String conditions_n(int n) =>
+      "${_plural(n, one: 'حالة مزمنة واحدة', two: 'حالتان مزمنتان', few: '$n حالات مزمنة', many: '$n حالة مزمنة', other: '$n حالة مزمنة')}";
+  String get tile_trends => "المؤشرات";
+  String trends_n(int n) =>
+      "${_plural(n, one: 'مؤشر واحد', two: 'مؤشران', few: '$n مؤشرات', many: '$n مؤشراً', other: '$n مؤشر')}";
+  String get trends_none => "لا بيانات كافية بعد";
+  String tile_preg_off(Gender gender) => "غير مفعّلة · ${_select(gender, {
+            'female': 'ابدئي',
+            'other': 'ابدأ'
+          })} المتابعة";
+  String medical_intro(String name) =>
+      "تظهر هذه المعلومات على بطاقة طوارئ $name.";
+  String get medical_conditions => "الحالات المزمنة";
+  String get medical_allergies_none => "لا حساسية مسجّلة";
+  String get medical_conditions_none => "لا حالات مسجّلة";
+  String medical_allergy_ph(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} حساسية، مثل البنسلين";
+  String medical_condition_ph(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} حالة، مثل الربو";
+  String get medical_add => "إضافة";
+  String medical_remove(String item) => "إزالة $item";
+  String get medical_row_sub => "فصيلة الدم والحساسية والحالات المزمنة";
+  String get medical_locked => "هذا الملف للعرض فقط، فلا يمكن تعديله من هنا.";
+  String get trends_empty_t => "لا بيانات في هذه الفترة";
+  String trends_empty_b(String name, Gender gender) =>
+      "تظهر هنا قياسات $name والنمو بمرور الوقت. جرّب${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} فترة أطول.";
+  String trends_nothing(String name) => "لا تسجيلات لـ$name بعد.";
   String get member_menu => "خيارات أخرى";
   String get edit_details => "تعديل البيانات";
   String get edit_medical => "البيانات الطبية";
@@ -4970,6 +5031,10 @@ class FamilyStrings_ar extends FamilyStrings {
         return rel_sibling;
       case 'rel_spouse':
         return rel_spouse;
+      case 'rel_wife':
+        return rel_wife;
+      case 'rel_husband':
+        return rel_husband;
       case 'rel_partner':
         return rel_partner;
       case 'rel_grandparent':
@@ -4994,6 +5059,10 @@ class FamilyStrings_ar extends FamilyStrings {
         return pick_mother;
       case 'pick_father':
         return pick_father;
+      case 'pick_sister':
+        return pick_sister;
+      case 'pick_brother':
+        return pick_brother;
       case 'pick_spouse':
         return pick_spouse;
       case 'pick_neighbour':
@@ -5028,6 +5097,46 @@ class FamilyStrings_ar extends FamilyStrings {
         return no_records;
       case 'records_n':
         return records_n;
+      case 'tile_medical':
+        return tile_medical;
+      case 'no_blood':
+        return no_blood;
+      case 'conditions_n':
+        return conditions_n;
+      case 'tile_trends':
+        return tile_trends;
+      case 'trends_n':
+        return trends_n;
+      case 'trends_none':
+        return trends_none;
+      case 'tile_preg_off':
+        return tile_preg_off;
+      case 'medical_intro':
+        return medical_intro;
+      case 'medical_conditions':
+        return medical_conditions;
+      case 'medical_allergies_none':
+        return medical_allergies_none;
+      case 'medical_conditions_none':
+        return medical_conditions_none;
+      case 'medical_allergy_ph':
+        return medical_allergy_ph;
+      case 'medical_condition_ph':
+        return medical_condition_ph;
+      case 'medical_add':
+        return medical_add;
+      case 'medical_remove':
+        return medical_remove;
+      case 'medical_row_sub':
+        return medical_row_sub;
+      case 'medical_locked':
+        return medical_locked;
+      case 'trends_empty_t':
+        return trends_empty_t;
+      case 'trends_empty_b':
+        return trends_empty_b;
+      case 'trends_nothing':
+        return trends_nothing;
       case 'member_menu':
         return member_menu;
       case 'edit_details':

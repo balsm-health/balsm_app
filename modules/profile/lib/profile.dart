@@ -21,6 +21,7 @@ export 'src/application/use_cases/add_allergy_use_case.dart';
 export 'src/application/use_cases/remove_allergy_use_case.dart';
 export 'src/application/use_cases/add_chronic_condition_use_case.dart';
 export 'src/application/use_cases/remove_chronic_condition_use_case.dart';
+export 'src/application/use_cases/save_medical_summary_use_case.dart';
 export 'src/application/use_cases/add_emergency_contact_use_case.dart';
 export 'src/application/use_cases/remove_emergency_contact_use_case.dart';
 export 'src/application/use_cases/add_care_provider_use_case.dart';

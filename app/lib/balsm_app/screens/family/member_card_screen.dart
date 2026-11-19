@@ -13,7 +13,7 @@ import '../../kit.dart';
 import '../../tokens.dart';
 import '../profile_subscreens.dart';
 import 'family_kit.dart';
-import 'member_screen.dart';
+import 'member_medical_screen.dart';
 import 'profile_bar.dart';
 
 /// Opens member [id]'s emergency card (mother-child.jsx `MCCardScreen`).

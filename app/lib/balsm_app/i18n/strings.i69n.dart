@@ -4113,6 +4113,13 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String get no_records => "No records for this baby.";
   String get me_stay => "Your “Me” records stay on your own profile.";
   String get create_cta => "Create profile";
+  String title_of(String name) => "Pregnancy · $name";
+  String records_of(String name) => "$name's pregnancy records";
+  String get records_of_empty => "The mother's own results appear here.";
+  String start_note_of(String name, Gender gender) =>
+      "Pregnancy tracking appears on $name's profile only. You manage it from your phone.";
+  String start_cta_of(Gender gender) => "Start tracking";
+  String me_of(String name) => "$name — her own results";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4380,6 +4387,18 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return me_stay;
       case 'create_cta':
         return create_cta;
+      case 'title_of':
+        return title_of;
+      case 'records_of':
+        return records_of;
+      case 'records_of_empty':
+        return records_of_empty;
+      case 'start_note_of':
+        return start_note_of;
+      case 'start_cta_of':
+        return start_cta_of;
+      case 'me_of':
+        return me_of;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -4435,6 +4454,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get rel_sister => "Sister";
   String get rel_sibling => "Sibling";
   String rel_spouse(Gender gender) => "Spouse";
+  String get rel_wife => "Wife";
+  String get rel_husband => "Husband";
   String get rel_partner => "Partner";
   String get rel_grandparent => "Grandparent";
   String get rel_relative => "Relative";
@@ -4447,6 +4468,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get pick_daughter => "Daughter";
   String get pick_mother => "Mother";
   String get pick_father => "Father";
+  String get pick_sister => "Sister";
+  String get pick_brother => "Brother";
   String get pick_spouse => "Spouse";
   String get pick_neighbour => "Neighbour";
   String get pick_friend => "Friend";
@@ -4468,6 +4491,31 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get no_records => "No documents yet";
   String records_n(int n) =>
       "${_plural(n, one: '1 record', other: '$n records')}";
+  String get tile_medical => "Medical profile";
+  String get no_blood => "No blood type";
+  String conditions_n(int n) =>
+      "${_plural(n, one: '1 condition', other: '$n conditions')}";
+  String get tile_trends => "Trends";
+  String trends_n(int n) =>
+      "${_plural(n, one: '1 measure', other: '$n measures')}";
+  String get trends_none => "Not enough data yet";
+  String tile_preg_off(Gender gender) => "Off · start tracking";
+  String medical_intro(String name) => "This shows on $name's emergency card.";
+  String get medical_conditions => "Long-term conditions";
+  String get medical_allergies_none => "No allergies recorded";
+  String get medical_conditions_none => "No conditions recorded";
+  String medical_allergy_ph(Gender gender) => "Add an allergy, e.g. Penicillin";
+  String medical_condition_ph(Gender gender) => "Add a condition, e.g. Asthma";
+  String get medical_add => "Add";
+  String medical_remove(String item) => "Remove $item";
+  String get medical_row_sub =>
+      "Blood type, allergies and long-term conditions";
+  String get medical_locked =>
+      "This profile is read-only, so it can't be edited here.";
+  String get trends_empty_t => "No data in this period";
+  String trends_empty_b(String name, Gender gender) =>
+      "$name's readings and growth show here over time. Try a longer range.";
+  String trends_nothing(String name) => "Nothing logged for $name yet.";
   String get member_menu => "More options";
   String get edit_details => "Edit details";
   String get edit_medical => "Medical details";
@@ -4655,6 +4703,10 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return rel_sibling;
       case 'rel_spouse':
         return rel_spouse;
+      case 'rel_wife':
+        return rel_wife;
+      case 'rel_husband':
+        return rel_husband;
       case 'rel_partner':
         return rel_partner;
       case 'rel_grandparent':
@@ -4679,6 +4731,10 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return pick_mother;
       case 'pick_father':
         return pick_father;
+      case 'pick_sister':
+        return pick_sister;
+      case 'pick_brother':
+        return pick_brother;
       case 'pick_spouse':
         return pick_spouse;
       case 'pick_neighbour':
@@ -4713,6 +4769,46 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return no_records;
       case 'records_n':
         return records_n;
+      case 'tile_medical':
+        return tile_medical;
+      case 'no_blood':
+        return no_blood;
+      case 'conditions_n':
+        return conditions_n;
+      case 'tile_trends':
+        return tile_trends;
+      case 'trends_n':
+        return trends_n;
+      case 'trends_none':
+        return trends_none;
+      case 'tile_preg_off':
+        return tile_preg_off;
+      case 'medical_intro':
+        return medical_intro;
+      case 'medical_conditions':
+        return medical_conditions;
+      case 'medical_allergies_none':
+        return medical_allergies_none;
+      case 'medical_conditions_none':
+        return medical_conditions_none;
+      case 'medical_allergy_ph':
+        return medical_allergy_ph;
+      case 'medical_condition_ph':
+        return medical_condition_ph;
+      case 'medical_add':
+        return medical_add;
+      case 'medical_remove':
+        return medical_remove;
+      case 'medical_row_sub':
+        return medical_row_sub;
+      case 'medical_locked':
+        return medical_locked;
+      case 'trends_empty_t':
+        return trends_empty_t;
+      case 'trends_empty_b':
+        return trends_empty_b;
+      case 'trends_nothing':
+        return trends_nothing;
       case 'member_menu':
         return member_menu;
       case 'edit_details':
