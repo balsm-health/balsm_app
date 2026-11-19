@@ -88,14 +88,19 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
 
   /// The `⋮` popover under [button], aligned to its end edge, with one
   /// Delete item ([label] overrides its text). True when Delete was picked.
-  Future<bool> openDeleteMenu(BuildContext button, {String? label}) async {
+  Future<bool> openDeleteMenu(BuildContext button, {String? label}) async =>
+      await openRowMenu(button, deleteLabel: label) == RowMenuAction.delete;
+
+  /// The `⋮` popover: Edit first when [editLabel] is given, then Delete
+  /// ([deleteLabel] overrides its text). Null when dismissed.
+  Future<RowMenuAction?> openRowMenu(BuildContext button, {String? deleteLabel, String? editLabel}) async {
     setState(() => swipeOpen = null);
     final s = AppScope.of(context);
     final box = button.findRenderObject()! as RenderBox;
     final overlay = Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
     final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
     final x = s.rtl ? rect.left : rect.right;
-    final picked = await showMenu<bool>(
+    final picked = await showMenu<RowMenuAction>(
       context: context,
       position: RelativeRect.fromLTRB(x, rect.bottom + 4, overlay.size.width - x, overlay.size.height - rect.bottom),
       color: Colors.white,
@@ -110,20 +115,31 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
       ),
       popUpAnimationStyle: const AnimationStyle(duration: Duration(milliseconds: 120), curve: Motion.easeOut),
       items: [
-        PopupMenuItem<bool>(
-          value: true,
+        if (editLabel != null)
+          PopupMenuItem<RowMenuAction>(
+            value: RowMenuAction.edit,
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(children: [
+              const Icon(LucideIcons.pencil, size: 18, color: T.fg1),
+              const SizedBox(width: 10),
+              Text(editLabel, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            ]),
+          ),
+        PopupMenuItem<RowMenuAction>(
+          value: RowMenuAction.delete,
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(children: [
             const Icon(LucideIcons.trash2, size: 18, color: T.danger),
             const SizedBox(width: 10),
-            Text(label ?? s.strings.common.del,
+            Text(deleteLabel ?? s.strings.common.del,
                 style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.danger)),
           ]),
         ),
       ],
     );
-    return picked == true;
+    return picked;
   }
 
   /// A swipeable row for [item]. [rowKey] tells rows apart when one item has
@@ -162,15 +178,20 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
       : const SizedBox.shrink();
 
   /// The row's `⋮`, hidden while selecting. [onDelete] runs when its menu's
-  /// Delete is picked.
-  Widget kitMore({required String label, required VoidCallback onDelete, String? menuLabel}) => selecting
-      ? const SizedBox(width: 8)
-      : RowMoreButton(
-          label: label,
-          onTap: (button) async {
-            if (await openDeleteMenu(button, label: menuLabel)) onDelete();
-          },
-        );
+  /// Delete is picked; with [onEdit], the menu offers Edit above it.
+  Widget kitMore({required String label, required VoidCallback onDelete, String? menuLabel, VoidCallback? onEdit}) =>
+      selecting
+          ? const SizedBox(width: 8)
+          : RowMoreButton(
+              label: label,
+              onTap: (button) async {
+                final picked = await openRowMenu(button,
+                    deleteLabel: menuLabel,
+                    editLabel: onEdit == null ? null : AppScope.of(context).strings.common.a11y_edit);
+                if (picked == RowMenuAction.delete) onDelete();
+                if (picked == RowMenuAction.edit) onEdit?.call();
+              },
+            );
 
   /// Design `selectButton`: a round list-checks button that starts Select.
   Widget kitSelectButton() => RoundBtn(
@@ -376,6 +397,9 @@ class _SwipeRowState extends State<SwipeRow> {
     }
   }
 }
+
+/// What was picked from a row's `⋮` menu.
+enum RowMenuAction { edit, delete }
 
 /// Design `Check`: a row's tick box while selecting.
 class SelectCheck extends StatelessWidget {

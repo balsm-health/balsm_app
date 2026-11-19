@@ -264,6 +264,9 @@
     "ql_discard_body": "What you entered won’t be saved.",
     "ql_discard": "Discard",
     "ql_keep_editing": "Keep editing",
+    // Editing a logged reading in the same form (quicklog.jsx QuickLogSheet `edit`).
+    "ql_edit_title(String what)": "Edit · $what",
+    "ql_delete_entry": "Delete this entry",
     "body_location": "Where does it hurt?",
     // Body-map chrome. No inline ar/en ternaries in widgets.
     "body_view_front": "Front",

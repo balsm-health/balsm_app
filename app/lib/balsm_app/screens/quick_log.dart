@@ -50,6 +50,60 @@ void showQuickLog(BuildContext context, {String source = ProductSource.tabBar}) 
   );
 }
 
+/// Opens the one-metric form on a reading already logged in [checkIn], to
+/// edit it (quicklog.jsx `QuickLogSheet` with `edit`): the same form as a new
+/// quick log, prefilled with the stored values, time, note and [photoBytes].
+/// [symptom] picks one symptom of the check-in to edit. Saving stores the
+/// edit over the reading and resolves to the check-in as stored; closing
+/// without saving resolves to null. [onDelete] adds "Delete this entry",
+/// which closes the form first.
+Future<CheckIn?> showEditReading(
+  BuildContext context, {
+  required CheckIn checkIn,
+  required CheckInMetric metric,
+  SymptomId? symptom,
+  Uint8List? photoBytes,
+  VoidCallback? onDelete,
+}) {
+  final s = AppScope.of(context);
+  final edit = _QlEdit(
+    checkIn: checkIn,
+    metric: metric,
+    symptom: symptom,
+    onDelete: onDelete,
+    initial: MetricLogCapture(
+      note: checkIn.note,
+      mood: checkIn.mood,
+      painLevel: checkIn.painLevel,
+      painSites: checkIn.painSites,
+      symptoms: symptom == null ? checkIn.symptoms : {symptom},
+      symptomDetails: checkIn.symptomDetails,
+      vitals: checkIn.vitals,
+      when: checkIn.recordedAt.toLocal(),
+      photoBytes: photoBytes,
+    ),
+  );
+  return showAppSheet<CheckIn>(
+    context,
+    useRootNavigator: true,
+    size: SheetSize.lg,
+    barrierColor: const Color(0x61141F2B),
+    enableDrag: false,
+    textDirection: s.dir,
+    builder: (_) => _QuickLogSheet(s: s, edit: edit),
+  );
+}
+
+/// A logged reading opened in the form, and what it held when opened.
+class _QlEdit {
+  const _QlEdit({required this.checkIn, required this.metric, required this.initial, this.symptom, this.onDelete});
+  final CheckIn checkIn;
+  final CheckInMetric metric;
+  final SymptomId? symptom;
+  final MetricLogCapture initial;
+  final VoidCallback? onDelete;
+}
+
 /// One-metric flows in the design's order (symptoms are their own rows).
 enum _Metric { bp, glucose, o2, pulse, weight, mood, pain }
 
@@ -121,18 +175,28 @@ List<_QlGroup> _groupItems(List<_QlItem> items) =>
     items.splitBetween((a, b) => a.kind != b.kind).map((run) => _QlGroup(kind: run.first.kind, items: run)).toList();
 
 class _QuickLogSheet extends ConsumerStatefulWidget {
-  const _QuickLogSheet({required this.s, required this.source, required this.onFullCheckin, required this.onAddRecord});
-  final String source;
+  const _QuickLogSheet({required this.s, this.source, this.onFullCheckin, this.onAddRecord, this.edit});
+  final String? source;
   final PatientAppState s;
-  final VoidCallback onFullCheckin;
-  final ValueChanged<RecordType> onAddRecord;
+  final VoidCallback? onFullCheckin;
+  final ValueChanged<RecordType>? onAddRecord;
+
+  /// Set when the sheet opens straight on a logged reading to edit it.
+  final _QlEdit? edit;
   @override
   ConsumerState<_QuickLogSheet> createState() => _QuickLogSheetState();
 }
 
 class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
-  _Metric? active;
-  SymptomId? activeSymptom;
+  late _Metric? active = _editMetric();
+  late SymptomId? activeSymptom = widget.edit?.symptom;
+
+  _Metric? _editMetric() {
+    final e = widget.edit;
+    if (e == null || e.symptom != null) return null;
+    return _Metric.values.firstWhereOrNull((m) => _catalogMetric(m) == e.metric);
+  }
+
   bool saving = false;
 
   /// What the open flow holds, and whether it may be saved — the header's
@@ -175,7 +239,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   void initState() {
     super.initState();
     searchCtrl = TextEditingController()..addListener(_onSearch);
-    _track(ProductEvent.quickLogOpened, {'source': widget.source});
+    if (widget.edit == null) _track(ProductEvent.quickLogOpened, {'source': widget.source});
   }
 
   // ── Product analytics (kinds of actions only — see ProductEvent) ──
@@ -226,6 +290,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   /// provider's own future instead so the first save after launch waits for
   /// it rather than dropping the capture.
   Future<void> _save(MetricLogCapture capture) async {
+    if (widget.edit case final edit?) return _saveEdit(edit, capture);
     if (saving) return;
     final savedCategory = _category;
     final openedAt = _flowOpenedAt;
@@ -279,6 +344,56 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     });
   }
 
+  /// Stores the edit over the reading, then closes with the stored check-in.
+  /// A photo the patient replaced or removed leaves the vault only once the
+  /// check-in no longer points at it. PHI: the captured values are never logged.
+  Future<void> _saveEdit(_QlEdit edit, MetricLogCapture capture) async {
+    if (saving) return;
+    setState(() => saving = true);
+    final original = edit.checkIn;
+    final oldPhoto = original.photoRecordId;
+    var photo = oldPhoto;
+    if (!identical(capture.photoBytes, edit.initial.photoBytes)) {
+      photo = capture.photoBytes == null
+          ? null
+          : await persistPhotoRecord(
+              ref,
+              bytes: Uint8List.fromList(capture.photoBytes!),
+              title: s.strings.settings.add_photo,
+            );
+    }
+    final stored = await ref.read(editCheckInReadingUseCaseProvider).call(
+          original,
+          edit.metric,
+          CheckIn(
+            id: original.id,
+            healthProfileId: original.healthProfileId,
+            recordedAt: capture.when ?? original.recordedAt,
+            mood: capture.mood,
+            painLevel: capture.painLevel,
+            painSites: capture.painSites,
+            symptoms: capture.symptoms,
+            symptomDetails: capture.symptomDetails,
+            vitals: capture.vitals,
+            note: capture.note,
+            photoRecordId: photo,
+          ),
+          symptom: edit.symptom,
+        );
+    if (oldPhoto != null && oldPhoto != photo) await _dropPhoto(oldPhoto);
+    if (!mounted) return;
+    Navigator.pop(context, stored);
+  }
+
+  Future<void> _dropPhoto(String recordId) async {
+    final id = RecordDocumentId.fromString(recordId);
+    final user = ref.read(currentUserIdProvider);
+    final profile = ref.read(currentProfileIdProvider);
+    if (id == null || user == null || profile == null) return;
+    final photo = await ref.read(recordsDataSourceProvider).find(id, scope: profile);
+    if (photo != null) await ref.read(deleteRecordDocumentUseCaseProvider)(photo, scope: user, profile: profile);
+  }
+
   /// quicklog.jsx `qlToast` — 2.6s.
   static const _toastFor = Duration(milliseconds: 2600);
 
@@ -301,7 +416,11 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     });
   }
 
-  void _requestBack() => _dirty ? setState(() => _confirm = _Leave.back) : setState(_openList);
+  /// An edit opens straight on its form, so stepping back out of it closes.
+  void _requestBack() {
+    if (widget.edit != null) return _requestClose();
+    _dirty ? setState(() => _confirm = _Leave.back) : setState(_openList);
+  }
 
   void _requestClose() => _dirty ? setState(() => _confirm = _Leave.close) : Navigator.pop(context);
 
@@ -362,7 +481,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
                       padding: const EdgeInsetsDirectional.only(bottom: 10),
                       decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
                       child: Row(children: [
-                        if (inFlow) ...[
+                        if (inFlow && widget.edit == null) ...[
                           RoundBtn(
                               icon: backArrow(context),
                               semanticLabel: s.strings.common.a11y_back,
@@ -431,18 +550,45 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
   }
 
   String _headerTitle() {
-    if (activeSymptom != null) return symptomLabel(s, activeSymptom!);
-    if (active != null) return _metricLabel(s, active!);
-    return s.strings.checkin.ql_title;
+    final label = activeSymptom != null
+        ? symptomLabel(s, activeSymptom!)
+        : active != null
+            ? _metricLabel(s, active!)
+            : null;
+    if (label == null) return s.strings.checkin.ql_title;
+    return widget.edit == null ? label : s.strings.checkin.ql_edit_title(label);
   }
 
   Widget _body() {
+    final onDelete = widget.edit?.onDelete;
+    if (onDelete == null) return _flow();
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _flow(),
+      Padding(
+        padding: const EdgeInsetsDirectional.only(top: 4),
+        child: PButton(s.strings.checkin.ql_delete_entry,
+            icon: LucideIcons.trash2,
+            variant: BtnVariant.ghost,
+            block: true,
+            color: T.danger,
+            accent: s.accent,
+            ar: ar, onTap: () {
+          Navigator.pop(context);
+          onDelete();
+        }),
+      ),
+    ]);
+  }
+
+  Widget _flow() {
+    final initial = widget.edit?.initial;
     if (activeSymptom != null) {
       return MetricLog(
         metric: CheckInMetric.symptoms,
         focusedSymptom: activeSymptom,
         s: s,
         host: MetricLogHost.standalone,
+        initial: initial,
         onChanged: _onChanged,
         onSave: _save,
         onCancel: _requestBack,
@@ -453,6 +599,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         metric: _catalogMetric(active!),
         s: s,
         host: MetricLogHost.standalone,
+        initial: initial,
         onChanged: _onChanged,
         onSave: _save,
         onCancel: _requestBack,
@@ -561,7 +708,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       child: Pressable(
         onTap: () {
           _track(ProductEvent.quickLogFullCheckInTapped);
-          widget.onFullCheckin();
+          widget.onFullCheckin?.call();
         },
         scale: 0.985,
         child: Container(
@@ -727,7 +874,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     return PressHighlight(
       onTap: () {
         _track(ProductEvent.quickLogDocumentTapped, {'type': type.name});
-        widget.onAddRecord(type);
+        widget.onAddRecord?.call(type);
       },
       radius: T.rLg,
       color: Colors.white,

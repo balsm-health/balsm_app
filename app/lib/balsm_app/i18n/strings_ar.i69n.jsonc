@@ -264,6 +264,9 @@
     "ql_discard_body": "لن يُحفظ ما أدخلته.",
     "ql_discard": "تجاهل",
     "ql_keep_editing": "متابعة التعديل",
+    // Editing a logged reading in the same form (quicklog.jsx QuickLogSheet `edit`).
+    "ql_edit_title(String what)": "تعديل · $what",
+    "ql_delete_entry": "حذف هذا التسجيل",
     "body_location": "أين يؤلمك؟",
     "body_view_front": "أمامي",
     "body_view_back": "خلفي",

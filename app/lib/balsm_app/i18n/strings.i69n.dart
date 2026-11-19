@@ -821,6 +821,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get ql_discard_body => "What you entered won’t be saved.";
   String get ql_discard => "Discard";
   String get ql_keep_editing => "Keep editing";
+  String ql_edit_title(String what) => "Edit · $what";
+  String get ql_delete_entry => "Delete this entry";
   String get body_location => "Where does it hurt?";
   String get body_view_front => "Front";
   String get body_view_back => "Back";
@@ -1030,6 +1032,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_discard;
       case 'ql_keep_editing':
         return ql_keep_editing;
+      case 'ql_edit_title':
+        return ql_edit_title;
+      case 'ql_delete_entry':
+        return ql_delete_entry;
       case 'body_location':
         return body_location;
       case 'body_view_front':

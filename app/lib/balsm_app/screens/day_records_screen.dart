@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +15,7 @@ import '../widgets/body_map.dart';
 import '../widgets/delete_kit.dart';
 import '../widgets/mood_face.dart';
 import 'checkin_shared.dart';
+import 'quick_log.dart';
 
 /// One day's readings — mood heroes, metric rows, symptoms cards — from every
 /// check-in logged that date, in the order they were logged.
@@ -25,6 +28,10 @@ import 'checkin_shared.dart';
 /// [DeleteKit]: its `⋮` menu, a swipe toward the start edge, or Select for
 /// several at once. Each asks first, then stores the edit straight away. A
 /// check-in emptied this way is deleted, photo included.
+///
+/// A reading can also be edited (home-base-mc.jsx `DayRecordsScreen`): tap it
+/// or pick Edit from its `⋮`, and the quick-log form opens on it, prefilled.
+/// Each symptom has its own row to edit it.
 class DayRecordsScreen extends ConsumerStatefulWidget {
   const DayRecordsScreen({super.key, required this.checkIns});
 
@@ -45,11 +52,16 @@ typedef _Key = (CheckInId, CheckInMetric);
 class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with DeleteKit<DayRecordsScreen, _Key> {
   late List<CheckIn> _shown = widget.checkIns;
 
+  /// The day on screen — kept apart from [_shown], which an edit can empty
+  /// by moving its only reading to another day.
+  late final DateTime _day = widget.checkIns.first.recordedAt.toLocal();
+
   // Read once up front: a store still running when the screen closes must
   // not reach for ref.
   late final UpdateCheckInUseCase _update;
   late final RecordsDataSource _records;
   late final DeleteRecordDocumentUseCase _deleteRecord;
+  late final UserFileStore _files;
   late final UserId? _userId;
   late final HealthProfileId? _profileId;
 
@@ -62,6 +74,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
     _update = ref.read(updateCheckInUseCaseProvider);
     _records = ref.read(recordsDataSourceProvider);
     _deleteRecord = ref.read(deleteRecordDocumentUseCaseProvider);
+    _files = ref.read(userFileStoreProvider);
     _userId = ref.read(currentUserIdProvider);
     _profileId = ref.read(currentProfileIdProvider);
   }
@@ -78,6 +91,50 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
     }
     await _update(edited);
   }
+
+  /// The check-in's photo, decrypted for the edit form; null when there is
+  /// none or it cannot be read (the check-in then keeps it as it is).
+  Future<Uint8List?> _photoOf(CheckIn checkIn) async {
+    final id = RecordDocumentId.fromString(checkIn.photoRecordId);
+    final profile = _profileId;
+    if (id == null || profile == null) return null;
+    final path = (await _records.find(id, scope: profile))?.filePath;
+    if (path == null) return null;
+    try {
+      return await _files.read(path, scope: _userId);
+    } on StorageDecodeException {
+      return null;
+    }
+  }
+
+  /// Opens the quick-log form on [r] (one [symptom] of it, for a symptoms
+  /// reading) and shows the stored edit. A reading moved to another day
+  /// leaves this one.
+  Future<void> _edit(_Reading r, {SymptomId? symptom}) async {
+    final photo = await _photoOf(r.checkIn);
+    if (!mounted) return;
+    final d = r.metric == CheckInMetric.symptoms ? null : _dayLabel();
+    final stored = await showEditReading(
+      context,
+      checkIn: r.checkIn,
+      metric: r.metric,
+      symptom: symptom,
+      photoBytes: photo,
+      onDelete: d == null ? null : () => _ask([r], day: d),
+    );
+    if (stored == null || !mounted) return;
+    bool sameDay(DateTime t) {
+      final l = t.toLocal();
+      return l.year == _day.year && l.month == _day.month && l.day == _day.day;
+    }
+
+    setState(() {
+      _shown = _shown.map((ci) => ci.id == stored.id ? stored : ci).where((ci) => sameDay(ci.recordedAt)).toList()
+        ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+    });
+  }
+
+  String _dayLabel() => '${_day.day} ${checkInMonthShort(AppScope.of(context), _day)}';
 
   /// Asks before deleting [readings]; nothing changes on Cancel.
   void _ask(List<_Reading> readings, {required String day}) {
@@ -150,8 +207,7 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final c = s.strings.checkin;
-    final d = _shown.first.recordedAt.toLocal();
-    final day = '${d.day} ${checkInMonthShort(s, d)}';
+    final day = _dayLabel();
     final localizations = MaterialLocalizations.of(context);
     String timeOf(CheckIn ci) => localizations.formatTimeOfDay(TimeOfDay.fromDateTime(ci.recordedAt.toLocal()));
 
@@ -194,7 +250,15 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
     Widget swipe(_Reading r, {double radius = 0, required Widget child}) =>
         kitSwipe(item: r.key, label: r.label, onDelete: () => ask([r]), radius: radius, child: child);
 
-    Widget more(_Reading r) => kitMore(label: r.label, menuLabel: c.rec_delete, onDelete: () => ask([r]));
+    Widget more(_Reading r, {bool editable = true}) => kitMore(
+        label: r.label, menuLabel: c.rec_delete, onDelete: () => ask([r]), onEdit: editable ? () => _edit(r) : null);
+
+    /// The reading opens in the edit form when tapped.
+    Widget tapToEdit(_Reading r, Widget child) => Semantics(
+          button: true,
+          onTapHint: s.strings.common.a11y_edit,
+          child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => _edit(r), child: child),
+        );
 
     return PopScope(
       canPop: !selecting,
@@ -230,33 +294,36 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
                       child: swipe(
                         m,
                         radius: T.rLg,
-                        child: Container(
-                          padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 8, 16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(T.rLg),
-                            border: Border.all(color: s.accent.bg),
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              stops: const [0.0, 0.65],
-                              colors: [s.accent.bg, T.cream50],
+                        child: tapToEdit(
+                          m,
+                          Container(
+                            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 8, 16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(T.rLg),
+                              border: Border.all(color: s.accent.bg),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                stops: const [0.0, 0.65],
+                                colors: [s.accent.bg, T.cream50],
+                              ),
                             ),
+                            child: Row(children: [
+                              kitCheck(m.key),
+                              MoodFace(
+                                  level: m.checkIn.mood!.score, size: 40, color: moodColors[m.checkIn.mood!.score - 1]),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(m.value,
+                                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+                                  const SizedBox(height: 2),
+                                  _TimeMeta(time: m.time, prefix: '${m.label} · '),
+                                ]),
+                              ),
+                              more(m),
+                            ]),
                           ),
-                          child: Row(children: [
-                            kitCheck(m.key),
-                            MoodFace(
-                                level: m.checkIn.mood!.score, size: 40, color: moodColors[m.checkIn.mood!.score - 1]),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(m.value,
-                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                                const SizedBox(height: 2),
-                                _TimeMeta(time: m.time, prefix: '${m.label} · '),
-                              ]),
-                            ),
-                            more(m),
-                          ]),
                         ),
                       ),
                     ),
@@ -271,11 +338,14 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
                           children: rows.indexed
                               .map((e) => swipe(
                                     e.$2,
-                                    child: _MetricLine(
-                                      row: e.$2,
-                                      last: e.$1 == rows.length - 1,
-                                      lead: kitCheck(e.$2.key),
-                                      trail: more(e.$2),
+                                    child: tapToEdit(
+                                      e.$2,
+                                      _MetricLine(
+                                        row: e.$2,
+                                        last: e.$1 == rows.length - 1,
+                                        lead: kitCheck(e.$2.key),
+                                        trail: more(e.$2),
+                                      ),
                                     ),
                                   ))
                               .toList(),
@@ -290,22 +360,34 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
                         radius: T.rLg,
                         child: PCard(
                           flat: true,
-                          padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
-                          child: Row(children: [
-                            kitCheck(sym.key),
-                            IconSquare(sym.icon, bg: sym.bg, fg: sym.color, size: 38, iconSize: 19, radius: T.rMd),
-                            const SizedBox(width: 13),
-                            Expanded(
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(sym.label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                                const SizedBox(height: 2),
-                                _TimeMeta(time: sym.time),
+                          padding: EdgeInsets.zero,
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                            Padding(
+                              padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
+                              child: Row(children: [
+                                kitCheck(sym.key),
+                                IconSquare(sym.icon, bg: sym.bg, fg: sym.color, size: 38, iconSize: 19, radius: T.rMd),
+                                const SizedBox(width: 13),
+                                Expanded(
+                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    Text(sym.label,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style:
+                                            Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                                    const SizedBox(height: 2),
+                                    _TimeMeta(time: sym.time),
+                                  ]),
+                                ),
+                                more(sym, editable: false),
                               ]),
                             ),
-                            more(sym),
+                            if (!selecting)
+                              ...sym.checkIn.symptoms.map((id) => _SymptomLine(
+                                    label: symptomLabel(s, id),
+                                    editLabel: s.strings.common.a11y_edit,
+                                    onTap: () => _edit(sym, symptom: id),
+                                  )),
                           ]),
                         ),
                       ),
@@ -381,6 +463,41 @@ class _Reading {
   final Color bg;
 
   _Key get key => (checkIn.id, metric);
+}
+
+/// One symptom of a check-in, under its symptoms card: tap to edit it.
+class _SymptomLine extends StatelessWidget {
+  const _SymptomLine({required this.label, required this.editLabel, required this.onTap});
+  final String label;
+  final String editLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Semantics(
+      button: true,
+      label: label,
+      onTapHint: editLabel,
+      excludeSemantics: true,
+      child: PressHighlight(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 11, 16, 11),
+          decoration: const BoxDecoration(border: Border(top: BorderSide(color: T.ink50))),
+          child: Row(children: [
+            Expanded(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            ),
+            const Icon(LucideIcons.pencil, size: 15, color: T.fg4),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 class _MetricLine extends StatelessWidget {

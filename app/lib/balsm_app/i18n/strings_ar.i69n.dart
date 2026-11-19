@@ -899,6 +899,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_discard_body => "لن يُحفظ ما أدخلته.";
   String get ql_discard => "تجاهل";
   String get ql_keep_editing => "متابعة التعديل";
+  String ql_edit_title(String what) => "تعديل · $what";
+  String get ql_delete_entry => "حذف هذا التسجيل";
   String get body_location => "أين يؤلمك؟";
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
@@ -1128,6 +1130,10 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_discard;
       case 'ql_keep_editing':
         return ql_keep_editing;
+      case 'ql_edit_title':
+        return ql_edit_title;
+      case 'ql_delete_entry':
+        return ql_delete_entry;
       case 'body_location':
         return body_location;
       case 'body_view_front':
