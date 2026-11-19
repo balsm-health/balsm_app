@@ -116,9 +116,22 @@ class GoOnlineController {
         // into the sheet) and a retry re-runs both from the pinned local id.
         // Only once both have landed does the pin move to the new id.
         try {
+          // One transaction: on a throw every row is still on localId.
           await rekeyOwner(_db, from: localId, to: userId, dropOutbox: false);
+        } catch (_) {
+          return AppResult.failure(const StorageFailure());
+        }
+        try {
           await _files.rekeyOwnerFiles(from: localId, to: userId);
         } catch (_) {
+          // The rows already moved but the files did not. Until the retry the
+          // app still runs as localId (the pin is unchanged), so rows left on
+          // the server's id would vanish from every screen. Move them back so
+          // a failed attempt leaves the device as it found it; the server id
+          // is new, so nothing else on the device is owned by it.
+          try {
+            await rekeyOwner(_db, from: userId, to: localId, dropOutbox: false);
+          } catch (_) {}
           return AppResult.failure(const StorageFailure());
         }
         await _storage.writeToken(kLocalId, userId);

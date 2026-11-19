@@ -218,6 +218,32 @@ void main() {
     expect(storage.data['balsm.offline.local_id'], 'off-1');
     verifyNever(() => offline.markOnline());
     expect(events.whereType<UserSignedIn>(), isEmpty);
+    // The rows moved before the files failed; they are moved back, so the
+    // offline account still sees its data until the retry.
+    expect(await owners(db), ['off-1']);
+  });
+
+  test('retry after a failed file move moves rows and files to the server id', () async {
+    await stubCreds(email: 'a@b.co', password: 'correct-horse', localId: 'off-1');
+    when(() => signIn.goOnline(
+            email: any(named: 'email'), code: any(named: 'code'), clientAccountId: any(named: 'clientAccountId')))
+        .thenAnswer((_) async => AppResult.success(const GoOnlineNewId('srv-9')));
+    when(() => signIn.setPassword(password: any(named: 'password'))).thenAnswer((_) async => AppResult.success(null));
+    var fail = true;
+    when(() => files.rekeyOwnerFiles(from: any(named: 'from'), to: any(named: 'to'))).thenAnswer((_) async {
+      if (fail) throw StateError('target owner already has files');
+    });
+
+    expect((await controller.verify(email: 'a@b.co', code: '123456')).isFailure, isTrue);
+    expect(await owners(db), ['off-1']);
+
+    fail = false;
+    final second = await controller.verify(email: 'a@b.co', code: '654321');
+    await flush();
+
+    expect(second.value, GoOnlineOutcome.online);
+    expect(await owners(db), ['srv-9']);
+    verify(() => files.rekeyOwnerFiles(from: 'off-1', to: 'srv-9')).called(2);
   });
 
   test('SetPassword failure keeps plaintext for retry; user is still online', () async {
