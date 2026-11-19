@@ -568,6 +568,29 @@ class FakeContentApi implements ContentApi {
   }
 }
 
+/// In-memory [MaintenanceApi]. Off by default so no flow is stopped by it;
+/// set [mode] (and [failWith] for an unreachable server) to force a branch.
+class FakeMaintenanceApi implements MaintenanceApi {
+  FakeMaintenanceApi({this.mode = 'off', this.message, this.endsAt});
+
+  String mode;
+  String? message;
+  DateTime? endsAt;
+
+  /// When set, every call throws it — e.g. an offline [ApiException].
+  ApiException? failWith;
+
+  /// How many times the status was read.
+  int calls = 0;
+
+  @override
+  Future<MaintenanceStatusResponse> getStatus({CancelToken? cancelToken}) async {
+    calls++;
+    if (failWith != null) throw failWith!;
+    return MaintenanceStatusResponse(mode: mode, message: message, endsAt: endsAt);
+  }
+}
+
 /// Binds every `Provider<XxxApi>` to a fake. Pass a pre-configured fake to force
 /// a branch; omit it for a fresh default.
 ///
@@ -584,6 +607,7 @@ List<Override> e2eApiOverrides({
   FakeCareDirectoryApi? careDirectory,
   FakeFamilyLinksApi? familyLinks,
   FakeContentApi? content,
+  FakeMaintenanceApi? maintenance,
 }) =>
     [
       authApiProvider.overrideWithValue(auth ?? FakeAuthApi()),
@@ -596,4 +620,5 @@ List<Override> e2eApiOverrides({
       careDirectoryApiProvider.overrideWithValue(careDirectory ?? FakeCareDirectoryApi()),
       familyLinksApiProvider.overrideWithValue(familyLinks ?? FakeFamilyLinksApi()),
       contentApiProvider.overrideWithValue(content ?? FakeContentApi()),
+      maintenanceApiProvider.overrideWithValue(maintenance ?? FakeMaintenanceApi()),
     ];
