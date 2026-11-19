@@ -11,13 +11,16 @@ import '../ports/records_data_source.dart';
 ///
 /// Everything else — the attached file, source, result note and when
 /// the entry was first created — is kept from the stored row, so an edit can
-/// never orphan or swap the encrypted blob. A blank title is a
+/// never orphan or swap the encrypted blob. When someone other than the
+/// patient added, edited or shared the record, the edit is appended to its
+/// [RecordDocument.history] as the patient's own. A blank title is a
 /// [ValidationFailure]; a record that is gone (or filed under another
 /// profile) is a [NotFoundFailure]; a storage error is a [StorageFailure].
 class UpdateRecordDocumentUseCase {
-  const UpdateRecordDocumentUseCase(this._records);
+  const UpdateRecordDocumentUseCase(this._records, {DateTime Function() clock = DateTime.now}) : _clock = clock;
 
   final RecordsDataSource _records;
+  final DateTime Function() _clock;
 
   /// [profile] is the person the record is filed under (null = the active
   /// profile, which is whose records the caller is showing).
@@ -39,6 +42,7 @@ class UpdateRecordDocumentUseCase {
         type: type,
         takenAt: takenAt,
         tags: tags == null ? null : List.unmodifiable(tags.map((t) => t.trim()).where((t) => t.isNotEmpty).toSet()),
+        history: existing.history.stampSelfEdit(_clock()),
       );
       await _records.put(id, edited, scope: profile);
       return AppResult.success(edited);

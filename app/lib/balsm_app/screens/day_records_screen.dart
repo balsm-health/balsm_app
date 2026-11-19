@@ -13,6 +13,7 @@ import '../tokens.dart';
 import '../widgets/attachment_thumb.dart';
 import '../widgets/body_map.dart';
 import '../widgets/delete_kit.dart';
+import '../widgets/entry_attribution.dart';
 import '../widgets/mood_face.dart';
 import 'checkin_shared.dart';
 import 'quick_log.dart';
@@ -24,7 +25,7 @@ import 'quick_log.dart';
 /// check-in's [CheckIn.recordedAt]; the domain does not store per-metric
 /// clocks, so we never invent them.
 ///
-/// Every reading is the patient's own, so it can be deleted with the shared
+/// Every reading — the patient's own or one someone else logged — can be deleted with the shared
 /// [DeleteKit]: its `⋮` menu, a swipe toward the start edge, or Select for
 /// several at once. Each asks first, then stores the edit straight away. A
 /// check-in emptied this way is deleted, photo included.
@@ -377,6 +378,11 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
                                             Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
                                     const SizedBox(height: 2),
                                     _TimeMeta(time: sym.time),
+                                    if (sym.checkIn.history.isAttributed)
+                                      Padding(
+                                        padding: const EdgeInsetsDirectional.only(top: 4),
+                                        child: EntryAttributionChip(history: sym.checkIn.history),
+                                      ),
                                   ]),
                                 ),
                                 more(sym, editable: false),
@@ -510,29 +516,38 @@ class _MetricLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    final history = row.checkIn.history;
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 8, 14),
       decoration: BoxDecoration(
         color: Colors.white,
         border: last ? null : const Border(bottom: BorderSide(color: T.ink50)),
       ),
-      child: Row(children: [
-        lead,
-        IconSquare(row.icon, bg: row.bg, fg: row.color, size: 42, iconSize: 20, radius: T.rMd),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(row.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            const SizedBox(height: 2),
-            _TimeMeta(time: row.time),
-          ]),
-        ),
-        const SizedBox(width: 10),
-        _ValueText(row: row),
-        trail,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          lead,
+          IconSquare(row.icon, bg: row.bg, fg: row.color, size: 42, iconSize: 20, radius: T.rMd),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(row.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+              const SizedBox(height: 2),
+              _TimeMeta(time: row.time),
+            ]),
+          ),
+          const SizedBox(width: 10),
+          _ValueText(row: row),
+          trail,
+        ]),
+        // Under the label, past the icon (design: paddingInlineStart 66).
+        if (history.isAttributed)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 52, top: 4),
+            child: EntryAttributionChip(history: history),
+          ),
       ]),
     );
   }

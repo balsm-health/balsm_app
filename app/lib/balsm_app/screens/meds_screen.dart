@@ -15,6 +15,7 @@ import '../tokens.dart';
 import '../storage_target.dart';
 import '../widgets/data_loc_pill.dart';
 import '../widgets/delete_kit.dart';
+import '../widgets/entry_attribution.dart';
 import '../widgets/med_plan_form.dart';
 
 /// Medications tab (home.jsx MedsScreen).
@@ -445,6 +446,11 @@ class _MedDoseRow extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(med.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
             Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+            if (med.history.isAttributed)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(top: 4),
+                child: EntryAttributionChip(history: med.history),
+              ),
           ])),
           Pill(label, kind: kind, ar: s.rtl),
           trail,

@@ -13,6 +13,7 @@ import '../widgets/vault_file_viewer.dart';
 import 'records_screen.dart';
 import '../vault/vault_blob.dart';
 import '../widgets/date_time_row.dart';
+import '../widgets/entry_attribution.dart';
 import '../widgets/photo_attach.dart';
 
 /// One record, live from the active profile's vault — so an edit saved from
@@ -87,6 +88,11 @@ class RecordDetailScreen extends ConsumerWidget {
                           maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.meta(ar: s.rtl)),
                     ),
                   ]),
+                  if (record.history.isAttributed)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(top: 8),
+                      child: EntryAttributionChip(history: record.history),
+                    ),
                 ]),
               ),
               Padding(
@@ -130,7 +136,9 @@ class RecordDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 13),
                   Expanded(
-                    child: Text(record.source.isSelf ? r.rec_self : record.source.value,
+                    child: Text(
+                        attributedName(ref, s, record.history) ??
+                            (record.source.isSelf ? r.rec_self : record.source.value),
                         style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
                   ),
                 ]),

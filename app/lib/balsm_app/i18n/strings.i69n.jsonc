@@ -1470,5 +1470,27 @@
     "link_unlinked_toast": "Unlinked",
     "link_dot_a11y": "A link request is waiting"
   },
+  // Entries someone other than the patient added, edited or shared
+  // (mother-child.jsx MCBy / MCByHistory). Kept in its own block.
+  "attribution": {
+    // Chip: icon + name; the full sentence goes to the screen reader.
+    "chip_a11y(String who)": "Edit history: $who",
+    "by(String name)": "By $name",
+    "edited_by(String name)": "Edited by $name",
+    // Shown when a care-team member the entry points at is no longer listed.
+    "someone": "Someone else",
+    "you": "You",
+    "history_title": "Edit history",
+    "history_sub": "Who added or changed this entry, and when.",
+    "added_this(String name)": "$name added this",
+    "edited_this(String name)": "$name edited this",
+    "shared_this(String name)": "$name shared this",
+    "you_added(Gender gender)": "You added this",
+    "you_edited(Gender gender)": "You edited this",
+    "role_family": "Family",
+    "role_doctor": "Doctor",
+    "role_clinic": "Care provider",
+    "locked": "Balsm keeps this history and it can’t be changed."
+  },
   "_i69n_import": "package:core/core.dart"
 }

@@ -672,6 +672,35 @@ const _phiSchema = <String>[
     PRIMARY KEY (check_in_id, region_id, tissue_id)
   )''',
   'CREATE INDEX IF NOT EXISTS idx_check_in_profile ON check_in(health_profile_id)',
+  // Who added, edited or shared a patient entry other than the patient
+  // (records, medications, readings), and the patient's own later edits of
+  // such an entry. PHI (people's names), on-device only. One ledger for every
+  // kind of entry: `entry_kind` is the owning table, `entry_id` its row, and
+  // each module reads only its own kind (`EntryProvenanceStore`). No foreign
+  // key: `INSERT OR REPLACE` on the entry tables would cascade it away.
+  //
+  // Append-only, like dose_events: a stored event is never changed. Only
+  // `health_profile_id` may move, so an account merge can re-point rows to
+  // the surviving self profile; rows go with their profile or account when
+  // that is discarded.
+  '''
+  CREATE TABLE IF NOT EXISTS entry_provenance (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL,
+    entry_kind TEXT NOT NULL,
+    entry_id TEXT NOT NULL,
+    actor_kind TEXT NOT NULL,
+    actor_name TEXT,
+    care_provider_id TEXT,
+    action TEXT NOT NULL,
+    occurred_at TEXT NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_entry_provenance_entry ON entry_provenance(entry_kind, health_profile_id, entry_id)',
+  '''
+  CREATE TRIGGER IF NOT EXISTS entry_provenance_no_update
+  BEFORE UPDATE OF id, entry_kind, entry_id, actor_kind, actor_name, care_provider_id, action, occurred_at
+  ON entry_provenance
+  BEGIN SELECT RAISE(ABORT, 'entry_provenance is append-only'); END''',
   // Disclosure/consent acceptance ledger (disclosure module). PHI-free —
   // records which disclosure version the user accepted and the jurisdiction
   // context at accept time. One row per (disclosure_id, version).
