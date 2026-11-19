@@ -406,8 +406,21 @@ class _RecordCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            // records-mc.jsx: the date has its own line, under a calendar,
+            // above who the record came from.
+            const SizedBox(height: 3),
+            Row(children: [
+              const Icon(LucideIcons.calendar, size: 12, color: T.fg3),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(formatRecordDate(record.takenAt, s),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs)),
+              ),
+            ]),
             const SizedBox(height: 2),
-            Text('${formatRecordDate(record.takenAt, s)} · $source',
+            Text(source,
                 maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           ]),
         ),
