@@ -4576,6 +4576,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get card_no_contacts => "No contact added yet";
   String card_note(Gender gender) =>
       "Show this card on your phone in an emergency. Only your own card has a code a responder can scan.";
+  String get own_card_note =>
+      "This card is saved on your phone, so it opens without a connection. The card with a code a responder can scan is in Profile.";
   String get add_contact => "Add a contact";
   String get contact_name => "Contact name";
   String get contact_phone => "Phone number";
@@ -4905,6 +4907,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return card_no_contacts;
       case 'card_note':
         return card_note;
+      case 'own_card_note':
+        return own_card_note;
       case 'add_contact':
         return add_contact;
       case 'contact_name':

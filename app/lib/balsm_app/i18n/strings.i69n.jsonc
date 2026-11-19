@@ -1469,6 +1469,7 @@
     "card_contacts": "Emergency contacts",
     "card_no_contacts": "No contact added yet",
     "card_note(Gender gender)": "Show this card on your phone in an emergency. Only your own card has a code a responder can scan.",
+    "own_card_note": "This card is saved on your phone, so it opens without a connection. The card with a code a responder can scan is in Profile.",
     "add_contact": "Add a contact",
     "contact_name": "Contact name",
     "contact_phone": "Phone number",

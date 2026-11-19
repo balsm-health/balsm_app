@@ -4876,6 +4876,8 @@ class FamilyStrings_ar extends FamilyStrings {
             'female': 'ِ',
             'other': ''
           })} وحدها تحمل رمزًا يمكن للمسعف مسحه.";
+  String get own_card_note =>
+      "هذه البطاقة محفوظة على هاتفك، فتُفتح دون اتصال بالإنترنت. البطاقة التي تحمل رمزًا يمكن للمسعف مسحه موجودة في ملفك الشخصي.";
   String get add_contact => "إضافة جهة اتصال";
   String get contact_name => "اسم جهة الاتصال";
   String get contact_phone => "رقم الهاتف";
@@ -5233,6 +5235,8 @@ class FamilyStrings_ar extends FamilyStrings {
         return card_no_contacts;
       case 'card_note':
         return card_note;
+      case 'own_card_note':
+        return own_card_note;
       case 'add_contact':
         return add_contact;
       case 'contact_name':

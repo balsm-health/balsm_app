@@ -74,7 +74,7 @@ import 'package:app/balsm_app/screens/family/family_kit.dart' show FamilyTile;
 import 'package:app/balsm_app/care/care_entity.dart' show DeviceLocationIssue, deviceLocationProvider;
 import 'package:app/balsm_app/screens/family/member_medical_screen.dart';
 import 'package:app/balsm_app/screens/pregnancy/pregnancy_screen.dart';
-import 'package:app/balsm_app/screens/profile_subscreens.dart' show EmergencyScreen;
+import 'package:app/balsm_app/screens/own_card_screen.dart' show OwnCardScreen;
 import 'package:app/balsm_app/screens/records_detail.dart' show RecordDetailScreen;
 import 'package:app/balsm_app/screens/records_screen.dart' show RecordsScreen, formatRecordDate;
 import 'package:app/balsm_app/screens/trends_screen.dart';
@@ -911,14 +911,16 @@ void main() {
     expect(strip.hitTestable(), findsNothing);
     await snap(tester, '31-maintenance-block-page');
 
-    // The emergency card opens from the block page.
+    // The patient's own emergency card opens from the block page, read from the
+    // phone (design MCCardScreen id="self"), not the emergency numbers.
     await tapWhenReady(tester, find.text(m.open_card));
-    await pumpUntil(tester, find.byType(EmergencyScreen));
-    await pumpUntil(tester, find.byType(EmergencyScreen).hitTestable(),
-        timeout: const Duration(seconds: 5)); // BUG check: must not open under the page
+    await pumpUntil(tester, find.byType(OwnCardScreen));
+    await pumpUntil(tester, find.byType(OwnCardScreen).hitTestable(),
+        timeout: const Duration(seconds: 5)); // must not open under the page
+    expect(find.text(_en.family.own_card_note).hitTestable(), findsOneWidget);
     await snap(tester, '32-maintenance-block-emergency-card');
-    Navigator.of(tester.element(find.byType(EmergencyScreen))).pop();
-    await pumpUntilGone(tester, find.byType(EmergencyScreen));
+    Navigator.of(tester.element(find.byType(OwnCardScreen))).pop();
+    await pumpUntilGone(tester, find.byType(OwnCardScreen));
 
     // Check again while still blocked keeps the page.
     final callsBefore = api.calls;

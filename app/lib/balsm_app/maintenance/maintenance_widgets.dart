@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
-import '../screens/profile_subscreens.dart';
+import '../screens/own_card_screen.dart';
 import '../tokens.dart';
 import '../widgets/balsm_mark.dart';
 import 'maintenance_controller.dart';
@@ -261,7 +261,7 @@ class MaintenanceScreen extends ConsumerWidget {
                                 block: true,
                                 large: true,
                                 ar: s.rtl,
-                                onTap: () => openEmergency(context)),
+                                onTap: () => openOwnCard(context)),
                             const SizedBox(height: 10),
                           ],
                           if (!signedIn && !block && onDeviceOnly != null) ...[
