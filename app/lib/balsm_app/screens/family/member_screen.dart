@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:medications/medications.dart';
 import 'package:profile/profile.dart';
 import 'package:records/records.dart';
+import 'package:self_report/self_report.dart';
 import 'package:vaccinations/vaccinations.dart';
 
 import '../../app_state.dart';
@@ -14,6 +15,8 @@ import '../../routes.dart';
 import '../../tokens.dart';
 import '../profile_subscreens.dart' show memberHealthProfileProvider;
 import '../records_screen.dart';
+import '../trend_series.dart';
+import '../trends_screen.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
 import 'growth_screen.dart';
@@ -110,6 +113,10 @@ class MemberBody extends ConsumerWidget {
     final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
     final allergies = health?.allergies.length ?? 0;
     final conditions = health?.conditions.length ?? 0;
+    final trends = trendSeries(
+      ref.watch(profileCheckInsProvider(m.id)).valueOrNull ?? const <CheckIn>[],
+      growth: ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[],
+    ).length;
     // The tiles count the active profile's data; this member is the active
     // profile whenever their home is on screen (opening them selects them).
     final active = ref.watch(currentProfileIdProvider) == m.id;
@@ -140,6 +147,13 @@ class MemberBody extends ConsumerWidget {
           if (conditions > 0) f.conditions_n(conditions),
         ].join(' · '),
         onTap: () => openMemberMedical(context, m),
+      ),
+      FamilyTile(
+        icon: LucideIcons.trendingUp,
+        tone: MemberTone.blue,
+        title: f.tile_trends,
+        sub: trends == 0 ? f.trends_none : f.trends_n(trends),
+        onTap: () => openMemberTrends(context, m),
       ),
       FamilyTile(
         icon: LucideIcons.pill,

@@ -1,3 +1,4 @@
+import 'package:family/family.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -12,18 +13,20 @@ import 'checkin_shared.dart';
 import 'day_records_screen.dart';
 import '../storage_target.dart';
 import '../widgets/data_loc_pill.dart';
+import 'family/family_kit.dart';
+import 'family/profile_bar.dart';
+import 'trend_series.dart';
 
 /// How far back the charts look.
 enum TrendRange { week, month, quarter }
 
-enum _TrendMetric { bp, glucose, pain, weight }
-
-extension on _TrendMetric {
+extension on TrendMetric {
   String label(PatientAppState s) => switch (this) {
-        _TrendMetric.bp => s.strings.profile.m_bp,
-        _TrendMetric.glucose => s.strings.profile.m_glucose,
-        _TrendMetric.pain => s.strings.profile.m_pain,
-        _TrendMetric.weight => s.strings.profile.m_weight,
+        TrendMetric.bp => s.strings.profile.m_bp,
+        TrendMetric.glucose => s.strings.profile.m_glucose,
+        TrendMetric.pain => s.strings.profile.m_pain,
+        TrendMetric.weight => s.strings.profile.m_weight,
+        TrendMetric.height => s.strings.profile.pd_height,
       };
 }
 
@@ -36,28 +39,42 @@ extension on TrendRange {
       };
 }
 
+/// Opens family [member]'s Trends (mother-child.jsx `MCTrendsScreen`).
+Future<void> openMemberTrends(BuildContext context, FamilyMember member) =>
+    pushFamilyScreen<void>(context, (_) => TrendsScreen(member: member));
+
 /// Trends — vitals over time plus the check-in history list.
 ///
 /// Reads real on-device check-ins; every series is derived from what the
 /// patient actually logged, so a metric with no readings hides its card rather
 /// than drawing an empty axis. Filter chips match the Claude Design TrendsScreen.
+///
+/// With [member] it is that family member's Trends, pushed from their
+/// screen: the same layout drawn from their own check-ins and growth entries
+/// (height joins the metrics), the profile bar under the title, and only the
+/// metrics they have in the picker.
 class TrendsScreen extends ConsumerStatefulWidget {
-  const TrendsScreen({super.key});
+  const TrendsScreen({super.key, this.member});
+  final FamilyMember? member;
 
   @override
   ConsumerState<TrendsScreen> createState() => _TrendsScreenState();
 }
 
 class _TrendsScreenState extends ConsumerState<TrendsScreen> {
-  TrendRange _range = TrendRange.week;
-  final _visible = {_TrendMetric.bp, _TrendMetric.glucose, _TrendMetric.pain, _TrendMetric.weight};
+  /// The account holder's own Trends offers these metrics whether or not
+  /// they hold readings.
+  static const _selfMetrics = [TrendMetric.bp, TrendMetric.glucose, TrendMetric.pain, TrendMetric.weight];
 
-  void _toggle(_TrendMetric m) {
+  TrendRange _range = TrendRange.week;
+  final _hidden = <TrendMetric>{};
+
+  void _toggle(TrendMetric m, List<TrendMetric> offered) {
     setState(() {
-      if (_visible.contains(m)) {
-        if (_visible.length > 1) _visible.remove(m);
-      } else {
-        _visible.add(m);
+      if (_hidden.contains(m)) {
+        _hidden.remove(m);
+      } else if (offered.where((x) => !_hidden.contains(x)).length > 1) {
+        _hidden.add(m);
       }
     });
   }
@@ -65,31 +82,34 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
+    final member = widget.member;
+    final history = member == null
+        ? ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[]
+        : ref.watch(profileCheckInsProvider(member.id)).valueOrNull ?? const <CheckIn>[];
+    final growth = member == null
+        ? const <GrowthEntry>[]
+        : ref.watch(growthEntriesProvider(member.id)).valueOrNull ?? const <GrowthEntry>[];
 
+    final all = trendSeries(history, growth: growth);
+    final offered = member == null ? _selfMetrics : all.keys.toList();
     final cutoff = DateTime.now().subtract(Duration(days: _range.days));
-    // `findAll` is newest-first; charts read left-to-right in time order.
-    final inRange = history.where((c) => c.recordedAt.isAfter(cutoff)).toList().reversed.toList();
+    List<TrendPoint> inRange(TrendMetric m) =>
+        _hidden.contains(m) ? const [] : (all[m] ?? const <TrendPoint>[]).where((p) => p.at.isAfter(cutoff)).toList();
 
-    // Systolic and diastolic are charted as a pair, so a reading missing either
-    // contributes to neither — filter once and read both off the same rows.
-    final bp = inRange.where((c) => c.vitals.systolic != null && c.vitals.diastolic != null);
-    final sys = bp.map((c) => c.vitals.systolic!.toDouble()).toList();
-    final dia = bp.map((c) => c.vitals.diastolic!.toDouble()).toList();
-    final glucose = inRange
-        .map((c) => c.vitals.glucoseFasting ?? c.vitals.glucosePostMeal ?? c.vitals.glucoseRandom)
-        .nonNulls
-        .map((g) => g.toDouble())
-        .toList();
-    final pain = inRange.where((c) => c.reportsPain).map((c) => c.painLevel.value.toDouble()).toList();
-    final weight = inRange.map((c) => c.vitals.weightKg).nonNulls.toList();
+    final bp = inRange(TrendMetric.bp);
+    final sys = bp.map((p) => p.value).toList();
+    final dia = bp.map((p) => p.value2!).toList();
+    final glucose = inRange(TrendMetric.glucose).map((p) => p.value).toList();
+    final pain = inRange(TrendMetric.pain).map((p) => p.value).toList();
+    final weight = inRange(TrendMetric.weight).map((p) => p.value).toList();
+    final height = inRange(TrendMetric.height).map((p) => p.value).toList();
 
     // Every metric that can appear is one line of this literal: switched on and
     // holding readings. Spacing between cards is applied where they are laid
     // out, so nothing here depends on how many came before it.
     const chartMargin = EdgeInsets.fromLTRB(20, 0, 20, 0);
     final charts = <Widget>[
-      if (_visible.contains(_TrendMetric.bp) && sys.isNotEmpty)
+      if (sys.isNotEmpty)
         _ChartCard(
           title: s.strings.profile.m_bp,
           value: '${_avg(sys).round()}/${_avg(dia).round()}',
@@ -98,7 +118,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           legend: [(s.strings.checkin.sys, T.hueViolet), (s.strings.checkin.dia, T.hueBlue)],
           margin: chartMargin,
         ),
-      if (_visible.contains(_TrendMetric.glucose) && glucose.isNotEmpty)
+      if (glucose.isNotEmpty)
         _ChartCard(
           title: s.strings.profile.m_glucose,
           value: _avg(glucose).round().toString(),
@@ -106,7 +126,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           series: [ChartSeries(glucose, T.hueMint600)],
           margin: chartMargin,
         ),
-      if (_visible.contains(_TrendMetric.pain) && pain.isNotEmpty)
+      if (pain.isNotEmpty)
         _ChartCard(
           title: s.strings.profile.m_pain,
           // "/10" belongs to the number: as a separate RTL unit its slash
@@ -116,84 +136,103 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           series: [ChartSeries(pain, T.danger)],
           margin: chartMargin,
         ),
-      if (_visible.contains(_TrendMetric.weight) && weight.isNotEmpty)
+      if (weight.isNotEmpty)
         _ChartCard(
           title: s.strings.profile.m_weight,
-          value: _fmtWeight(weight.last),
+          value: _fmtMeasure(weight.last),
           unit: s.strings.checkin.unit_kg,
           series: [ChartSeries(weight, T.hueBlue)],
           margin: chartMargin,
           showAvg: false,
         ),
+      if (height.isNotEmpty)
+        _ChartCard(
+          title: s.strings.profile.pd_height,
+          value: _fmtMeasure(height.last),
+          unit: s.strings.profile.pd_cm,
+          series: [ChartSeries(height, T.hueEmerald)],
+          margin: chartMargin,
+          showAvg: false,
+        ),
     ];
 
-    return ContentColumn(
-      maxWidth: 720,
-      child: ListView(padding: EdgeInsets.zero, children: [
-        const PadTop(),
-        AppBarRow(children: [
-          RoundBtn(
-              icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => s.setTab(AppTab.home)),
-          const SizedBox(width: 12),
-          Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
-          const DataLocPill(category: DataCategory.vitals),
-        ]),
-        // Range and metric filter share one row under the title: the tabs keep
-        // their intrinsic width and the dropdown takes what is left. Putting
-        // either beside the title squeezed the heading onto two lines, worst
-        // in Arabic where "الرسوم البيانية" is long.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-          child: Row(children: [
-            _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),
-            const SizedBox(width: 8),
-            // Metric filter — a dropdown selector (the design replaced the
-            // chip row with one): trigger summarising the selection, opening
-            // a checkbox panel that closes on an outside tap.
-            Expanded(child: _MetricsDropdown(visible: _visible, onToggle: _toggle)),
-          ]),
+    final list = ListView(padding: EdgeInsets.zero, children: [
+      const PadTop(),
+      AppBarRow(children: [
+        RoundBtn(
+          icon: backArrow(context),
+          semanticLabel: s.strings.common.a11y_back,
+          onTap: member == null ? () => s.setTab(AppTab.home) : () => Navigator.maybePop(context),
         ),
-        if (charts.isEmpty)
-          _NoReadings(range: _range)
-        else
-          // Flex.spacing gives the 14pt between cards; the first card gets none.
-          Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: charts),
-        RowHead(s.strings.records.reports, ar: s.rtl),
-        if (history.isEmpty)
-          PCard(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 36),
-            child: Column(children: [
-              const Icon(LucideIcons.clipboardList, size: 36, color: T.fg4),
-              const SizedBox(height: 14),
-              Text(s.strings.checkin.no_checkins,
-                  textAlign: TextAlign.center,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-            ]),
-          )
-        else
-          PCard(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: groupCheckInsByDay(history)
-                  .indexed
-                  .map((e) => CheckInDayRow(
-                        day: e.$2,
-                        first: e.$1 == 0,
-                        onTap: () => DayRecordsScreen.open(context, e.$2),
-                      ))
-                  .toList(),
-            ),
-          ),
-        const SizedBox(height: 24),
+        const SizedBox(width: 12),
+        Expanded(child: Text(s.strings.checkin.trends, style: Typo.heading(ar: s.rtl))),
+        const DataLocPill(category: DataCategory.vitals),
       ]),
-    );
+      if (member != null) const Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 14), child: ProfileBar()),
+      // Range and metric filter share one row under the title: the tabs keep
+      // their intrinsic width and the dropdown takes what is left. Putting
+      // either beside the title squeezed the heading onto two lines, worst
+      // in Arabic where "الرسوم البيانية" is long.
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+        child: Row(children: [
+          _RangeTabs(value: _range, onChange: (r) => setState(() => _range = r)),
+          const SizedBox(width: 8),
+          // Metric filter — a dropdown selector (the design replaced the
+          // chip row with one): trigger summarising the selection, opening
+          // a checkbox panel that closes on an outside tap.
+          if (offered.isNotEmpty)
+            Expanded(
+              child: _MetricsDropdown(
+                offered: offered,
+                hidden: _hidden,
+                onToggle: (m) => _toggle(m, offered),
+              ),
+            ),
+        ]),
+      ),
+      if (charts.isEmpty)
+        member == null ? _NoReadings(range: _range) : _NoMemberData(member: member)
+      else
+        // Flex.spacing gives the 14pt between cards; the first card gets none.
+        Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: charts),
+      RowHead(s.strings.records.reports, ar: s.rtl),
+      if (history.isEmpty)
+        PCard(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 36),
+          child: Column(children: [
+            const Icon(LucideIcons.clipboardList, size: 36, color: T.fg4),
+            const SizedBox(height: 14),
+            Text(member == null ? s.strings.checkin.no_checkins : s.strings.family.trends_nothing(member.shortName),
+                textAlign: TextAlign.center,
+                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
+          ]),
+        )
+      else
+        PCard(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: groupCheckInsByDay(history)
+                .indexed
+                .map((e) => CheckInDayRow(
+                      day: e.$2,
+                      first: e.$1 == 0,
+                      onTap: () => DayRecordsScreen.open(context, e.$2),
+                    ))
+                .toList(),
+          ),
+        ),
+      const SizedBox(height: 24),
+    ]);
+    final body = ContentColumn(maxWidth: 720, child: list);
+    return member == null ? body : Scaffold(backgroundColor: Colors.white, body: body);
   }
 
   static double _avg(List<double> xs) => xs.isEmpty ? 0 : xs.reduce((a, b) => a + b) / xs.length;
 
-  static String _fmtWeight(double kg) => kg == kg.roundToDouble() ? '${kg.round()}' : kg.toStringAsFixed(1);
+  static String _fmtMeasure(double v) => v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1);
 }
 
 /// `.range-tabs` — week / month / 3 months.
@@ -298,20 +337,45 @@ class _NoReadings extends StatelessWidget {
   }
 }
 
-/// Trends metric selector — trigger + checkbox panel (replaces the chip row).
-class _MetricsDropdown extends StatelessWidget {
-  const _MetricsDropdown({required this.visible, required this.onToggle});
-
-  final Set<_TrendMetric> visible;
-  final ValueChanged<_TrendMetric> onToggle;
+/// A family member with nothing to chart in the range.
+class _NoMemberData extends StatelessWidget {
+  const _NoMemberData({required this.member});
+  final FamilyMember member;
 
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final all = _TrendMetric.values.length;
-    final label = visible.length == all
-        ? s.strings.checkin.trend_all_metrics
-        : s.strings.checkin.trend_n_metrics('${visible.length}');
+    final f = s.strings.family;
+    return PCard(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      child: Column(children: [
+        const IconSquare(LucideIcons.trendingUp, bg: T.hueBlue50, fg: T.hueBlue, size: 52, iconSize: 24, radius: 16),
+        const SizedBox(height: 10),
+        Text(f.trends_empty_t,
+            textAlign: TextAlign.center,
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
+        const SizedBox(height: 4),
+        Text(f.trends_empty_b(member.shortName, s.gender), textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl)),
+      ]),
+    );
+  }
+}
+
+/// Trends metric selector — trigger + checkbox panel (replaces the chip row).
+class _MetricsDropdown extends StatelessWidget {
+  const _MetricsDropdown({required this.offered, required this.hidden, required this.onToggle});
+
+  final List<TrendMetric> offered;
+  final Set<TrendMetric> hidden;
+  final ValueChanged<TrendMetric> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final shown = offered.where((m) => !hidden.contains(m)).length;
+    final label =
+        shown == offered.length ? s.strings.checkin.trend_all_metrics : s.strings.checkin.trend_n_metrics('$shown');
 
     return MenuAnchor(
       alignmentOffset: const Offset(0, 6),
@@ -361,7 +425,7 @@ class _MetricsDropdown extends StatelessWidget {
         ),
       ),
       menuChildren: [
-        for (final m in _TrendMetric.values)
+        for (final m in offered)
           MenuItemButton(
             closeOnActivate: false,
             onPressed: () => onToggle(m),
@@ -377,11 +441,11 @@ class _MetricsDropdown extends StatelessWidget {
                 height: 18,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: visible.contains(m) ? s.accent.main : Colors.transparent,
+                  color: !hidden.contains(m) ? s.accent.main : Colors.transparent,
                   borderRadius: BorderRadius.circular(5),
-                  border: visible.contains(m) ? null : Border.all(color: T.borderStrong, width: 1.5),
+                  border: !hidden.contains(m) ? null : Border.all(color: T.borderStrong, width: 1.5),
                 ),
-                child: visible.contains(m) ? const Icon(LucideIcons.check, size: 12, color: Colors.white) : null,
+                child: !hidden.contains(m) ? const Icon(LucideIcons.check, size: 12, color: Colors.white) : null,
               ),
               const SizedBox(width: 10),
               Expanded(

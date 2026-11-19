@@ -4,6 +4,7 @@ import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/family/member_medical_screen.dart';
 import 'package:app/balsm_app/screens/family/member_screen.dart';
+import 'package:app/balsm_app/screens/trends_screen.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
 import 'package:family/family.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
+import 'package:self_report/self_report.dart';
 
 /// A family member's medical profile, trends and member-screen tiles
 /// (mother-child.jsx `MCMedicalScreen`, `MCTrendsScreen`, `MCMemberBody`).
@@ -141,6 +143,61 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining(s.strings.family.rel_wife), findsOneWidget);
+    });
+  });
+
+  group('Member Trends', () {
+    testWidgets('charts the member\'s own readings and growth, not the account holder\'s', (tester) async {
+      final s = state();
+      final c = await pump(tester, const SizedBox(), s);
+      tester.view.physicalSize = const Size(800, 1600);
+      final m = await seed(c);
+      final now = DateTime.now();
+      await c.read(recordGrowthEntryUseCaseProvider)(
+          measuredOn: now.subtract(const Duration(days: 2)), weightKg: 14.5, heightCm: 98, now: now, profileId: m.id);
+      final selfId = await db.ensureSelfHealthProfile(user);
+      final checkIns = c.read(checkInsDataSourceProvider);
+      await checkIns.put(
+        const CheckInId.value('ci-self'),
+        CheckIn(
+          id: const CheckInId.value('ci-self'),
+          healthProfileId: selfId,
+          recordedAt: now.subtract(const Duration(days: 1)),
+          painLevel: PainLevel.none,
+          painSites: const {},
+          symptoms: const {},
+          vitals: const Vitals(systolic: 130, diastolic: 85),
+        ),
+        scope: selfId,
+      );
+
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        // Wide enough for the range tabs and the metric picker in the test font.
+        child: AppScope(state: s, child: MaterialApp(home: TrendsScreen(member: m))),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text(s.strings.profile.m_weight), findsOneWidget);
+      expect(find.text(s.strings.profile.pd_height), findsOneWidget);
+      expect(find.text('98'), findsOneWidget);
+      expect(find.text(s.strings.profile.m_bp), findsNothing, reason: 'the account holder\'s reading is not hers');
+      expect(find.text(s.strings.family.trends_nothing('Test')), findsOneWidget);
+    });
+
+    testWidgets('nothing in range shows the member\'s empty state', (tester) async {
+      final s = state();
+      final c = await pump(tester, const SizedBox(), s);
+      tester.view.physicalSize = const Size(800, 1600);
+      final m = await seed(c);
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        // Wide enough for the range tabs and the metric picker in the test font.
+        child: AppScope(state: s, child: MaterialApp(home: TrendsScreen(member: m))),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text(s.strings.family.trends_empty_t), findsOneWidget);
     });
   });
 }
