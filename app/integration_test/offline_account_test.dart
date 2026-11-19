@@ -184,6 +184,10 @@ class _RecordingAdapter implements dio.HttpClientAdapter {
 Finder _either(Finder a, Finder b) =>
     find.byElementPredicate((e) => a.evaluate().contains(e) || b.evaluate().contains(e));
 
+/// The Welcome screen: today's, with "Use on this device only" on it, or the
+/// older one that opened on "Get started".
+Finder _welcome() => _either(find.text(_en.onboarding.w_device), find.text('Get started'));
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -281,18 +285,26 @@ void main() {
     if (vault.existsSync()) vault.deleteSync(recursive: true);
   }
 
-  /// Welcome (after the walkthrough, if shown) → Get started → Device only.
+  /// Welcome (after the walkthrough, if shown) → Device only. Welcome offers
+  /// "Use on this device only" directly; the older one went Get started →
+  /// Device only, which is still handled.
   Future<void> openDeviceOnlyForm(WidgetTester tester, {en.Strings t = _en}) async {
     final skip = find.text(t.walkthrough.wt_skip);
+    final device = find.text(t.onboarding.w_device);
     final start = find.text(t.walkthrough.wt_start);
-    await pumpUntil(tester, _either(skip.hitTestable(), start));
+    final welcome = _either(device, start);
+    await pumpUntil(tester, _either(skip.hitTestable(), welcome));
     if (skip.hitTestable().evaluate().isNotEmpty) {
       await tapWhenReady(tester, skip.hitTestable());
-      await pumpUntil(tester, start);
+      await pumpUntil(tester, welcome);
     }
-    await tapWhenReady(tester, start);
-    await pumpUntil(tester, find.text(t.auth.mode_device));
-    await tapWhenReady(tester, find.text(t.auth.mode_device));
+    if (device.evaluate().isNotEmpty) {
+      await tapWhenReady(tester, device);
+    } else {
+      await tapWhenReady(tester, start);
+      await pumpUntil(tester, find.text(t.auth.mode_device));
+      await tapWhenReady(tester, find.text(t.auth.mode_device));
+    }
     await pumpUntil(tester, find.text(t.auth.device_title));
   }
 
@@ -894,15 +906,15 @@ void main() {
 
     await tapWhenReady(tester, find.text('Profile'));
     await settle(tester);
-    // A device-only account has no Sign out: it is removed instead.
+    // A device-only account is removed from the phone here. (Its Sign out
+    // only locks the app, #122.)
     await tester.scrollUntilVisible(find.text('Remove this account from this phone'), 200,
         scrollable: find.byType(Scrollable).first);
-    expect(find.text('Sign out'), findsNothing);
     await settle(tester, 2);
     await tapWhenReady(tester, find.text('Remove this account from this phone'));
     await pumpUntil(tester, find.text('Remove this account and its data?'));
     await tapWhenReady(tester, find.text('Remove'));
-    await pumpUntil(tester, find.text('Get started'));
+    await pumpUntil(tester, _welcome());
 
     expect(await key('balsm.user_id'), isNull);
     expect(await key(kAccountModeKey), isNull);
@@ -911,10 +923,19 @@ void main() {
     expect(await medOwners(), isEmpty);
 
     // ── Online sign-in on the same install ──
-    await tapWhenReady(tester, find.text('Get started'));
-    await pumpUntil(tester, find.text('Device only'));
+    // Older Welcome: Get started → mode chooser → Continue. Today's: Sign in →
+    // the sign-in form, submitted with its own "Sign in" button.
+    final older = find.text('Get started').evaluate().isNotEmpty;
+    if (older) {
+      await tapWhenReady(tester, find.text('Get started'));
+      await pumpUntil(tester, find.text('Device only'));
+    } else {
+      await tapWhenReady(tester, find.text(_en.onboarding.w_signin));
+      await pumpUntil(tester, find.byKey(const ValueKey('emailField')));
+    }
     await fillCredentials(tester, 'online-e2e-pass');
-    await tapWhenReady(tester, find.text('Continue'));
+    await tapWhenReady(
+        tester, older ? find.text('Continue') : find.widgetWithText(PButton, _en.auth.pw_signin).hitTestable().last);
     await enterAppAcceptingDisclosure(tester);
     expect(auth.passwordSignIns, 1);
     expect(await key('balsm.user_id'), E2eFixture.userId);
@@ -936,7 +957,7 @@ void main() {
     await launch(tester, auth);
     await pumpUntil(tester, _either(find.text('Meds').hitTestable(), find.text('Unlock Balsm')));
     expect(find.text('Unlock Balsm'), findsNothing);
-    expect(find.text('Get started'), findsNothing);
+    expect(_welcome(), findsNothing);
 
     await shutDown(tester);
   });
@@ -990,7 +1011,7 @@ void main() {
     await tapWhenReady(tester, find.text('Remove'));
     await pumpUntil(tester, find.text('Remove this account and its data?'));
     await tapWhenReady(tester, find.text('Remove'));
-    await pumpUntil(tester, find.text('Get started'));
+    await pumpUntil(tester, _welcome());
 
     expect(await key('balsm.user_id'), isNull);
     expect(await key(kAccountModeKey), isNull);
@@ -1003,7 +1024,7 @@ void main() {
 
     await shutDown(tester);
     await launch(tester, auth);
-    await pumpUntil(tester, find.text('Get started'));
+    await pumpUntil(tester, _welcome());
     expect(find.text('Unlock Balsm'), findsNothing);
 
     await shutDown(tester);
@@ -1035,7 +1056,7 @@ void main() {
     expect(await mode(), AccountMode.deviceOnly);
 
     await launch(tester, auth);
-    await pumpUntil(tester, _either(find.text('Skip').hitTestable(), find.text('Get started')));
+    await pumpUntil(tester, _either(find.text('Skip').hitTestable(), _welcome()));
     expect(find.text('Unlock Balsm'), findsNothing);
 
     expect(await key('balsm.user_id'), isNull);
