@@ -46,6 +46,7 @@ class Strings implements i69n.I69nMessageBundle {
   PregnancyStrings get pregnancy => PregnancyStrings(this);
   FamilyStrings get family => FamilyStrings(this);
   AttributionStrings get attribution => AttributionStrings(this);
+  MaintenanceStrings get maintenance => MaintenanceStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -107,6 +108,8 @@ class Strings implements i69n.I69nMessageBundle {
         return family;
       case 'attribution':
         return attribution;
+      case 'maintenance':
+        return maintenance;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -5040,6 +5043,108 @@ class AttributionStrings implements i69n.I69nMessageBundle {
         return role_clinic;
       case 'locked':
         return locked;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class MaintenanceStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const MaintenanceStrings(this._parent);
+  String get eyebrow => "Maintenance";
+  String get strip_title => "Maintenance · view only";
+  String get strip_details => "Details";
+  String get ro_title => "Balsm is under maintenance";
+  String get ro_body =>
+      "We’re improving our servers. Everything on your phone is still here and readable.";
+  String get block_title => "Balsm is down for maintenance";
+  String get block_body =>
+      "We’re doing urgent work to keep your health data safe. The app will be back shortly.";
+  String get pre_body =>
+      "Signing in and creating accounts are paused. You can use Balsm on this device only for now and connect your account later.";
+  String get paused_title => "This is paused during maintenance";
+  String paused_body(Gender gender) =>
+      "You can try again once maintenance is over. Nothing has been lost.";
+  String get still_available => "Still available";
+  String get paused_for_now => "Paused for now";
+  String get ok_view => "Viewing your records, medicines and results";
+  String get ok_card => "Your emergency card and QR code";
+  String get ok_reminders => "Medicine reminders on your phone";
+  String get paused_log => "Logging readings, adding records and medicines";
+  String get paused_sync => "Syncing and sharing with doctors";
+  String get paused_signin => "Signing in and creating accounts";
+  String get got_it => "Got it";
+  String get open_card => "Open my emergency card";
+  String get device_only => "Use on this device only";
+  String call_emergency(String number, Gender gender) =>
+      "Call emergency $number";
+  String check_again(Gender gender) => "Check again";
+  String get checking => "Checking…";
+  String until(String time) => "Until about $time";
+  String until_tomorrow(String time) => "Until about $time tomorrow";
+  String get end_unknown => "We’ll share the end time soon";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eyebrow':
+        return eyebrow;
+      case 'strip_title':
+        return strip_title;
+      case 'strip_details':
+        return strip_details;
+      case 'ro_title':
+        return ro_title;
+      case 'ro_body':
+        return ro_body;
+      case 'block_title':
+        return block_title;
+      case 'block_body':
+        return block_body;
+      case 'pre_body':
+        return pre_body;
+      case 'paused_title':
+        return paused_title;
+      case 'paused_body':
+        return paused_body;
+      case 'still_available':
+        return still_available;
+      case 'paused_for_now':
+        return paused_for_now;
+      case 'ok_view':
+        return ok_view;
+      case 'ok_card':
+        return ok_card;
+      case 'ok_reminders':
+        return ok_reminders;
+      case 'paused_log':
+        return paused_log;
+      case 'paused_sync':
+        return paused_sync;
+      case 'paused_signin':
+        return paused_signin;
+      case 'got_it':
+        return got_it;
+      case 'open_card':
+        return open_card;
+      case 'device_only':
+        return device_only;
+      case 'call_emergency':
+        return call_emergency;
+      case 'check_again':
+        return check_again;
+      case 'checking':
+        return checking;
+      case 'until':
+        return until;
+      case 'until_tomorrow':
+        return until_tomorrow;
+      case 'end_unknown':
+        return end_unknown;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

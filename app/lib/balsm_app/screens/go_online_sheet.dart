@@ -13,9 +13,11 @@ import '../kit.dart';
 import '../routes.dart';
 import '../tokens.dart';
 import '../widgets/auth_fields.dart';
+import '../maintenance/maintenance_guard.dart';
 
 /// Opens the go-online sheet (design: `GoOnlineSheet`): email → code → done.
-Future<void> showGoOnlineSheet(BuildContext context) {
+Future<void> showGoOnlineSheet(BuildContext context) async {
+  if (maintenancePaused(context)) return;
   final s = AppScope.of(context);
   return showAppSheet<void>(
     context,

@@ -111,4 +111,8 @@ class ApiRoutes {
   /// against a server the app is not signed in to — which is what the Dev
   /// Config connection check does.
   static const health = '/api/v1/health';
+
+  /// Maintenance flag (`off` / `readonly` / `block`). Anonymous, no PHI —
+  /// polled before sign-in and while sign-in itself is paused.
+  static const maintenance = '/api/v1/maintenance';
 }

@@ -15,6 +15,7 @@ import '../vault/vault_blob.dart';
 import '../widgets/date_time_row.dart';
 import '../widgets/entry_attribution.dart';
 import '../widgets/photo_attach.dart';
+import '../maintenance/maintenance_guard.dart';
 
 /// One record, live from the active profile's vault — so an edit saved from
 /// the detail screen shows there at once. Null when the record is gone.
@@ -503,12 +504,14 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
 /// With [initial], the same sheet edits that record (records-mc.jsx
 /// `AddRecordSheet` `initial`): it opens on the form, filled in with the
 /// record's title, type, date, time and tags, and keeps its attachment.
-Future<void> showAddRecord(BuildContext context, {RecordType? initialType, RecordDocument? initial}) =>
-    showAppSheet<void>(
-      context,
-      size: SheetSize.lg,
-      builder: (_) => _AddRecordSheet(initialType: initialType, initial: initial),
-    );
+Future<void> showAddRecord(BuildContext context, {RecordType? initialType, RecordDocument? initial}) async =>
+    maintenancePaused(context)
+        ? null
+        : showAppSheet<void>(
+            context,
+            size: SheetSize.lg,
+            builder: (_) => _AddRecordSheet(initialType: initialType, initial: initial),
+          );
 
 class _AddRecordSheet extends ConsumerStatefulWidget {
   const _AddRecordSheet({this.initialType, this.initial});

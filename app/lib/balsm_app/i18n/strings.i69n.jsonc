@@ -1531,5 +1531,37 @@
     "role_clinic": "Care provider",
     "locked": "Balsm keeps this history and it can’t be changed."
   },
+  // ── Maintenance mode (design maintenance.jsx) ──────────────────────────
+  // Shown while a Balsm super admin has put the platform in maintenance.
+  // Pre-sign-in copy (pre_body, device_only) is fixed: the gender is unknown.
+  "maintenance": {
+    "eyebrow": "Maintenance",
+    "strip_title": "Maintenance · view only",
+    "strip_details": "Details",
+    "ro_title": "Balsm is under maintenance",
+    "ro_body": "We’re improving our servers. Everything on your phone is still here and readable.",
+    "block_title": "Balsm is down for maintenance",
+    "block_body": "We’re doing urgent work to keep your health data safe. The app will be back shortly.",
+    "pre_body": "Signing in and creating accounts are paused. You can use Balsm on this device only for now and connect your account later.",
+    "paused_title": "This is paused during maintenance",
+    "paused_body(Gender gender)": "You can try again once maintenance is over. Nothing has been lost.",
+    "still_available": "Still available",
+    "paused_for_now": "Paused for now",
+    "ok_view": "Viewing your records, medicines and results",
+    "ok_card": "Your emergency card and QR code",
+    "ok_reminders": "Medicine reminders on your phone",
+    "paused_log": "Logging readings, adding records and medicines",
+    "paused_sync": "Syncing and sharing with doctors",
+    "paused_signin": "Signing in and creating accounts",
+    "got_it": "Got it",
+    "open_card": "Open my emergency card",
+    "device_only": "Use on this device only",
+    "call_emergency(String number, Gender gender)": "Call emergency $number",
+    "check_again(Gender gender)": "Check again",
+    "checking": "Checking…",
+    "until(String time)": "Until about $time",
+    "until_tomorrow(String time)": "Until about $time tomorrow",
+    "end_unknown": "We’ll share the end time soon"
+  },
   "_i69n_import": "package:core/core.dart"
 }

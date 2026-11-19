@@ -67,3 +67,7 @@ export 'src/geofence/responses.dart';
 export 'src/content/content_api.dart';
 export 'src/content/dio_content_api.dart';
 export 'src/content/responses.dart';
+
+export 'src/maintenance/maintenance_api.dart';
+export 'src/maintenance/dio_maintenance_api.dart';
+export 'src/maintenance/responses.dart';

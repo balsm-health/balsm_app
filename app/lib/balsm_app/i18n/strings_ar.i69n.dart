@@ -49,6 +49,7 @@ class Strings_ar extends Strings {
   PregnancyStrings_ar get pregnancy => PregnancyStrings_ar(this);
   FamilyStrings_ar get family => FamilyStrings_ar(this);
   AttributionStrings_ar get attribution => AttributionStrings_ar(this);
+  MaintenanceStrings_ar get maintenance => MaintenanceStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -110,6 +111,8 @@ class Strings_ar extends Strings {
         return family;
       case 'attribution':
         return attribution;
+      case 'maintenance':
+        return maintenance;
       default:
         return super[key];
     }
@@ -5370,6 +5373,109 @@ class AttributionStrings_ar extends AttributionStrings {
         return role_clinic;
       case 'locked':
         return locked;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class MaintenanceStrings_ar extends MaintenanceStrings {
+  final Strings_ar _parent;
+  const MaintenanceStrings_ar(this._parent) : super(_parent);
+  String get eyebrow => "صيانة";
+  String get strip_title => "صيانة · للعرض فقط";
+  String get strip_details => "التفاصيل";
+  String get ro_title => "بلسم في وضع الصيانة";
+  String get ro_body =>
+      "نعمل على تحسين خوادمنا. كل ما على هاتفك ما زال موجوداً ويمكنك الاطلاع عليه.";
+  String get block_title => "بلسم متوقف مؤقتاً للصيانة";
+  String get block_body =>
+      "نجري أعمالاً عاجلة للحفاظ على أمان بياناتك الصحية. سيعود التطبيق قريباً.";
+  String get pre_body =>
+      "تسجيل الدخول وإنشاء الحسابات متوقفان مؤقتاً. يمكنك استخدام بلسم على هذا الجهاز فقط الآن، وربط حسابك لاحقاً.";
+  String get paused_title => "هذا متوقف أثناء الصيانة";
+  String paused_body(Gender gender) =>
+      "يمكنك المحاولة مرة أخرى بعد انتهاء الصيانة. لم يُفقد أي شيء.";
+  String get still_available => "ما زال متاحاً";
+  String get paused_for_now => "متوقف مؤقتاً";
+  String get ok_view => "عرض سجلاتك وأدويتك ونتائجك";
+  String get ok_card => "بطاقة الطوارئ ورمز QR";
+  String get ok_reminders => "تذكيرات الأدوية على هاتفك";
+  String get paused_log => "تسجيل القياسات وإضافة السجلات والأدوية";
+  String get paused_sync => "المزامنة والمشاركة مع الأطباء";
+  String get paused_signin => "تسجيل الدخول وإنشاء حسابات جديدة";
+  String get got_it => "حسناً";
+  String get open_card => "فتح بطاقة الطوارئ";
+  String get device_only => "استخدمه على هذا الجهاز فقط";
+  String call_emergency(String number, Gender gender) =>
+      "اتصل${_select(gender, {'female': 'ي', 'other': ''})} بالطوارئ $number";
+  String check_again(Gender gender) =>
+      "تحقّق${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى";
+  String get checking => "جارٍ التحقق…";
+  String until(String time) => "حتى $time تقريباً";
+  String until_tomorrow(String time) => "حتى الغد $time تقريباً";
+  String get end_unknown => "سنعلن موعد العودة قريباً";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eyebrow':
+        return eyebrow;
+      case 'strip_title':
+        return strip_title;
+      case 'strip_details':
+        return strip_details;
+      case 'ro_title':
+        return ro_title;
+      case 'ro_body':
+        return ro_body;
+      case 'block_title':
+        return block_title;
+      case 'block_body':
+        return block_body;
+      case 'pre_body':
+        return pre_body;
+      case 'paused_title':
+        return paused_title;
+      case 'paused_body':
+        return paused_body;
+      case 'still_available':
+        return still_available;
+      case 'paused_for_now':
+        return paused_for_now;
+      case 'ok_view':
+        return ok_view;
+      case 'ok_card':
+        return ok_card;
+      case 'ok_reminders':
+        return ok_reminders;
+      case 'paused_log':
+        return paused_log;
+      case 'paused_sync':
+        return paused_sync;
+      case 'paused_signin':
+        return paused_signin;
+      case 'got_it':
+        return got_it;
+      case 'open_card':
+        return open_card;
+      case 'device_only':
+        return device_only;
+      case 'call_emergency':
+        return call_emergency;
+      case 'check_again':
+        return check_again;
+      case 'checking':
+        return checking;
+      case 'until':
+        return until;
+      case 'until_tomorrow':
+        return until_tomorrow;
+      case 'end_unknown':
+        return end_unknown;
       default:
         return super[key];
     }
