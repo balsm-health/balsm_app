@@ -14,32 +14,37 @@ import '../family/member_card_screen.dart';
 import '../profile_subscreens.dart';
 import 'pregnancy_kit.dart';
 
-/// Opens the account holder's emergency card in pregnancy mode.
-Future<void> openPregnancyCard(BuildContext context) =>
-    pushFamilyScreen<void>(context, (_) => const PregnancyCardScreen());
+/// Opens the emergency card in pregnancy mode — the account holder's, or
+/// family member [mother]'s.
+Future<void> openPregnancyCard(BuildContext context, {HealthProfileId? mother}) =>
+    pushFamilyScreen<void>(context, (_) => PregnancyCardScreen(mother: mother));
 
 /// The account holder's own emergency card in pregnancy mode (design
 /// `MCCardScreen` for self): the shared [MemberEmergencyCard] with the
 /// pregnancy status, due date and Rh factor as its banner and the
 /// obstetrician as an extra contact row. Shown on the phone; the scannable
-/// card stays the one in Profile.
+/// card stays the one in Profile. For a family member's pregnancy it is her
+/// card, read from her own profile.
 class PregnancyCardScreen extends ConsumerWidget {
-  const PregnancyCardScreen({super.key});
+  const PregnancyCardScreen({super.key, this.mother});
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final preg = ref.watch(activePregnancyProvider);
+    final preg = ref.watch(activePregnancyOfProvider(mother));
+    final owner = pregnancyOwner(ref, mother);
     final self = ref.watch(selfProfileIdProvider).valueOrNull;
-    final health = ref.watch(healthProfileProvider).valueOrNull;
+    final health = owner == null
+        ? ref.watch(healthProfileProvider).valueOrNull
+        : ref.watch(memberHealthProfileProvider(owner.id)).valueOrNull;
     final name = (ref.watch(accountSummaryProvider).valueOrNull?.displayName ?? '').trim();
     if (preg == null || self == null) return const Scaffold(backgroundColor: Colors.white);
-    final babies = ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const <PregnancyBaby>[];
-    final info = preg.infoOn(DateTime.now());
     final blood = health?.bloodType;
-    final status = [pregnancyTypeLabel(s, babies.length) ?? p.pregnant, p.week_lower(info.week)].join(' · ');
-    final me = FamilyMember(id: self, kind: ProfileKind.self, displayName: name, bloodType: blood);
+    final me = owner ?? FamilyMember(id: self, kind: ProfileKind.self, displayName: name, bloodType: blood);
     final ob = preg.obName;
     return FamilyScaffold(
       title: s.strings.family.tile_card,
@@ -47,19 +52,9 @@ class PregnancyCardScreen extends ConsumerWidget {
         MemberEmergencyCard(
           member: me,
           health: health,
-          banner: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(12)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(status, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              Text(p.card_due(formatDay(preg.dueDate)), style: Typo.bodySm(ar: s.rtl)),
-              if (blood != null && blood != BloodType.bombay)
-                Text(blood.code.contains('-') ? p.rh_neg : p.rh_pos,
-                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600)),
-            ]),
-          ),
+          banner: PregnancyCardBanner(pregnancy: preg, bloodType: blood),
           extraRows: [
-            if (ob != null) _ObRow(name: ob, phone: preg.obPhone),
+            if (ob != null) PregnancyObRow(name: ob, phone: preg.obPhone),
           ],
         ),
         Padding(
@@ -71,9 +66,39 @@ class PregnancyCardScreen extends ConsumerWidget {
   }
 }
 
+/// The card's pregnancy banner (design `MCEmergencyCard` `preg`): the
+/// pregnancy type and week, the due date, and the Rh factor when the blood
+/// type is known.
+class PregnancyCardBanner extends ConsumerWidget {
+  const PregnancyCardBanner({super.key, required this.pregnancy, required this.bloodType});
+  final Pregnancy pregnancy;
+  final BloodType? bloodType;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppScope.of(context);
+    final p = s.strings.pregnancy;
+    final babies = ref.watch(pregnancyBabiesProvider(pregnancy.id)).valueOrNull ?? const <PregnancyBaby>[];
+    final info = pregnancy.infoOn(DateTime.now());
+    final status = [pregnancyTypeLabel(s, babies.length) ?? p.pregnant, p.week_lower(info.week)].join(' · ');
+    final blood = bloodType;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(12)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(status, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+        Text(p.card_due(formatDay(pregnancy.dueDate)), style: Typo.bodySm(ar: s.rtl)),
+        if (blood != null && blood != BloodType.bombay)
+          Text(blood.code.contains('-') ? p.rh_neg : p.rh_pos,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+}
+
 /// The obstetrician, with a call button when there is a phone number.
-class _ObRow extends StatelessWidget {
-  const _ObRow({required this.name, required this.phone});
+class PregnancyObRow extends StatelessWidget {
+  const PregnancyObRow({super.key, required this.name, required this.phone});
   final String name;
   final String? phone;
   @override

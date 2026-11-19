@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:medications/medications.dart';
+import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
@@ -14,6 +15,8 @@ import '../../kit.dart';
 import '../../routes.dart';
 import '../../tokens.dart';
 import '../profile_subscreens.dart' show memberHealthProfileProvider;
+import '../pregnancy/pregnancy_kit.dart' show dueLine;
+import '../pregnancy/pregnancy_screen.dart';
 import '../records_screen.dart';
 import '../trend_series.dart';
 import '../trends_screen.dart';
@@ -113,6 +116,7 @@ class MemberBody extends ConsumerWidget {
     final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
     final allergies = health?.allergies.length ?? 0;
     final conditions = health?.conditions.length ?? 0;
+    final preg = ref.watch(activePregnancyOfProvider(m.id));
     final trends = trendSeries(
       ref.watch(profileCheckInsProvider(m.id)).valueOrNull ?? const <CheckIn>[],
       growth: ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[],
@@ -137,6 +141,16 @@ class MemberBody extends ConsumerWidget {
         onTap: () => openMemberCard(context, m.id),
       ),
       ..._childTiles(context, ref, m, now),
+      if (preg != null || m.canTrackPregnancyOn(now))
+        FamilyTile(
+          icon: LucideIcons.sprout,
+          tone: MemberTone.aqua,
+          title: s.strings.pregnancy.title,
+          sub: preg == null
+              ? f.tile_preg_off(s.gender)
+              : '${s.strings.pregnancy.week_n(preg.infoOn(now).week)} · ${dueLine(s, preg.infoOn(now))}',
+          onTap: () => openPregnancy(context, ref, mother: m.id),
+        ),
       FamilyTile(
         icon: LucideIcons.clipboardList,
         tone: MemberTone.emerald,

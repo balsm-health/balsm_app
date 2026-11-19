@@ -11,15 +11,18 @@ import 'pregnancy_add_screen.dart';
 import 'pregnancy_kit.dart';
 
 /// Opens baby [id]'s screen; with [rename] its name sheet opens at once.
-Future<void> openBaby(BuildContext context, HealthProfileId id, {bool rename = false}) =>
-    pushFamilyScreen<void>(context, (_) => BabyScreen(id: id, rename: rename));
+Future<void> openBaby(BuildContext context, HealthProfileId id, {bool rename = false, HealthProfileId? mother}) =>
+    pushFamilyScreen<void>(context, (_) => BabyScreen(id: id, rename: rename, mother: mother));
 
 /// One baby of the pregnancy (mother-child.jsx `MCBabyScreen`): its scans,
 /// measurements and documents, an optional name, and "Add a record".
 class BabyScreen extends ConsumerStatefulWidget {
-  const BabyScreen({super.key, required this.id, this.rename = false});
+  const BabyScreen({super.key, required this.id, this.rename = false, this.mother});
   final HealthProfileId id;
   final bool rename;
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
   @override
   ConsumerState<BabyScreen> createState() => _BabyScreenState();
 }
@@ -38,7 +41,7 @@ class _BabyScreenState extends ConsumerState<BabyScreen> {
   }
 
   Future<void> _rename() async {
-    final b = _baby(ref.read(activePregnancyProvider));
+    final b = _baby(ref.read(activePregnancyOfProvider(widget.mother)));
     if (b == null || !mounted) return;
     final s = AppScope.of(context);
     await showAppSheet<void>(context, textDirection: s.dir, builder: (_) => _RenameSheet(baby: b));
@@ -48,12 +51,12 @@ class _BabyScreenState extends ConsumerState<BabyScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final preg = ref.watch(activePregnancyProvider);
+    final preg = ref.watch(activePregnancyOfProvider(widget.mother));
     final babies =
         preg == null ? const <PregnancyBaby>[] : ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const [];
     final b = babies.where((x) => x.id == widget.id && x.isActive).firstOrNull;
     if (preg == null || b == null) return const Scaffold(backgroundColor: Colors.white);
-    final items = (ref.watch(pregnancyItemsProvider(preg.id)).valueOrNull ?? const <PregnancyItem>[])
+    final items = (ref.watch(pregnancyItemsProvider(preg.itemsKey)).valueOrNull ?? const <PregnancyItem>[])
         .where((i) => i.isAbout(b.id))
         .toList();
     final sections = [
@@ -70,7 +73,7 @@ class _BabyScreenState extends ConsumerState<BabyScreen> {
           block: true,
           accent: s.accent,
           ar: s.rtl,
-          onTap: () => openPregnancyAdd(context, babyIds: [b.id])),
+          onTap: () => openPregnancyAdd(context, babyIds: [b.id], mother: widget.mother)),
       children: [
         if (b.givenName == null)
           Padding(

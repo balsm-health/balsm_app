@@ -16,9 +16,13 @@ enum _Mode { due, lastPeriod }
 
 /// Start pregnancy tracking (mother-child.jsx `MCPregStartScreen`): a due
 /// date, or the first day of the last period (due date estimated from it);
-/// how many babies; the obstetrician's name and phone.
+/// how many babies; the obstetrician's name and phone. With [mother] it
+/// starts tracking on that family member's profile.
 class PregnancyStartScreen extends ConsumerStatefulWidget {
-  const PregnancyStartScreen({super.key});
+  const PregnancyStartScreen({super.key, this.mother});
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
   @override
   ConsumerState<PregnancyStartScreen> createState() => _PregnancyStartScreenState();
 }
@@ -63,11 +67,11 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
 
   Future<void> _save() async {
     final due = _due;
-    final self = await ref.read(selfProfileIdProvider.future);
-    if (due == null || self == null || _saving) return;
+    final mother = widget.mother ?? await ref.read(selfProfileIdProvider.future);
+    if (due == null || mother == null || _saving) return;
     setState(() => _saving = true);
     final r = await ref.read(startPregnancyUseCaseProvider)(
-      motherId: self,
+      motherId: mother,
       dueDate: due,
       babyCount: _count,
       now: DateTime.now(),
@@ -83,7 +87,8 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
     }
     final dir = AppScope.of(context).dir;
     Navigator.of(context, rootNavigator: true).pushReplacement(MaterialPageRoute(
-      builder: (_) => Directionality(textDirection: dir, child: const AdaptiveFrame(child: PregnancyScreen())),
+      builder: (_) =>
+          Directionality(textDirection: dir, child: AdaptiveFrame(child: PregnancyScreen(mother: widget.mother))),
     ));
   }
 
@@ -92,14 +97,16 @@ class _PregnancyStartScreenState extends ConsumerState<PregnancyStartScreen> {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
     final due = _due;
+    final owner = pregnancyOwner(ref, widget.mother);
     return FamilyScaffold(
-      title: p.title,
-      footer: PButton(p.start_cta,
+      title: owner == null ? p.title : p.title_of(owner.shortName),
+      footer: PButton(owner == null ? p.start_cta : p.start_cta_of(s.gender),
           large: true, block: true, accent: s.accent, ar: s.rtl, onTap: due == null || _saving ? null : _save),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 18),
-          child: Text(p.start_note, style: Typo.bodySm(ar: s.rtl)),
+          child: Text(owner == null ? p.start_note : p.start_note_of(owner.shortName, s.gender),
+              style: Typo.bodySm(ar: s.rtl)),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 18),

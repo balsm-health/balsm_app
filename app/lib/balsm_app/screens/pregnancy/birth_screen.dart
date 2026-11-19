@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pregnancy/pregnancy.dart';
@@ -14,14 +15,18 @@ import '../family/member_screen.dart';
 import 'pregnancy_kit.dart';
 
 /// Opens the birth flow.
-Future<void> openBirth(BuildContext context) => pushFamilyScreen<void>(context, (_) => const BirthScreen());
+Future<void> openBirth(BuildContext context, {HealthProfileId? mother}) =>
+    pushFamilyScreen<void>(context, (_) => BirthScreen(mother: mother));
 
 /// A baby has arrived (mother-child.jsx `MCBirthScreen`) — one baby at a
 /// time, since births may be minutes or days apart. Sex is first asked here.
 /// The baby's own profile becomes the child's (same id); the records about
 /// this baby that stay ticked move with it, the others stay on the pregnancy.
 class BirthScreen extends ConsumerStatefulWidget {
-  const BirthScreen({super.key});
+  const BirthScreen({super.key, this.mother});
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
   @override
   ConsumerState<BirthScreen> createState() => _BirthScreenState();
 }
@@ -56,10 +61,24 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
     };
   }
 
+  /// The child's relationship to the account holder (mother-child.jsx
+  /// `MCBirthScreen`): their child when the mother is the account holder or
+  /// their spouse or partner; otherwise a relative (core has no grandchild).
+  Future<Relationship> _relationship() async {
+    final mother = widget.mother;
+    final owner =
+        mother == null ? null : (await ref.read(familyMembersProvider.future)).where((m) => m.id == mother).firstOrNull;
+    return switch (owner?.relationship) {
+      null || Relationship.spouse || Relationship.partner => Relationship.child,
+      _ => Relationship.relative,
+    };
+  }
+
   Future<void> _save(Pregnancy preg) async {
     final id = _babyId;
     if (id == null || _saving) return;
     setState(() => _saving = true);
+    final relationship = await _relationship();
     final r = await ref.read(recordBirthUseCaseProvider)(
       preg.id,
       BirthDetails(
@@ -69,6 +88,7 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
         dateOfBirth: _dob,
         bloodType: _bloodUnsure ? null : _blood,
         keepItemIds: _keep ?? const {},
+        relationship: relationship,
       ),
       motherId: preg.motherId,
       now: DateTime.now(),
@@ -101,10 +121,10 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
     final f = s.strings.family;
-    final preg = ref.watch(activePregnancyProvider);
+    final preg = ref.watch(activePregnancyOfProvider(widget.mother));
     if (preg == null) return const Scaffold(backgroundColor: Colors.white);
     final all = ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const <PregnancyBaby>[];
-    final items = ref.watch(pregnancyItemsProvider(preg.id)).valueOrNull ?? const <PregnancyItem>[];
+    final items = ref.watch(pregnancyItemsProvider(preg.itemsKey)).valueOrNull ?? const <PregnancyItem>[];
     final active = all.where((b) => b.isActive).toList();
     if (_babyId == null && active.length == 1) _choose(active.single, items);
     final b = active.where((x) => x.id == _babyId).firstOrNull;

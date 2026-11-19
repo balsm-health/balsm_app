@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -11,6 +12,7 @@ import '../../app_state.dart';
 import '../../assets.dart';
 import '../../kit.dart';
 import '../../tokens.dart';
+import '../pregnancy/pregnancy_card_screen.dart';
 import '../profile_subscreens.dart';
 import 'family_kit.dart';
 import 'member_medical_screen.dart';
@@ -37,13 +39,23 @@ class MemberCardScreen extends ConsumerWidget {
     final m =
         (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[]).where((x) => x.id == id).firstOrNull;
     final health = ref.watch(memberHealthProfileProvider(id)).valueOrNull;
+    final preg = ref.watch(activePregnancyOfProvider(id));
     if (m == null) return const Scaffold(backgroundColor: Colors.white);
     final atMax = (health?.emergencyContacts.length ?? 0) >= AddEmergencyContactUseCase.maxContacts;
     return FamilyScaffold(
       title: f.tile_card,
       bar: const ProfileBar(),
       children: [
-        MemberEmergencyCard(member: m, health: health, onRemoveContact: (c) => _removeContact(context, ref, m, c)),
+        MemberEmergencyCard(
+          member: m,
+          health: health,
+          onRemoveContact: (c) => _removeContact(context, ref, m, c),
+          // While she is pregnant her card says so, with her obstetrician.
+          banner: preg == null ? null : PregnancyCardBanner(pregnancy: preg, bloodType: health?.bloodType),
+          extraRows: [
+            if (preg?.obName case final ob?) PregnancyObRow(name: ob, phone: preg!.obPhone),
+          ],
+        ),
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(4, 12, 4, 14),
           child: Text(f.card_note(s.gender), style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),

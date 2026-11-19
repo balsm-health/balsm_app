@@ -112,12 +112,14 @@ class HomeScreen extends ConsumerWidget {
 
               if (family) const ProfileBar(family: true),
 
-              if (activeMember != null)
+              if (activeMember != null) ...[
+                // Her pregnancy card, when one is tracked on her profile.
+                PregnancyHomeCards(gutter: g, mother: activeMember.id),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                   child: MemberBody(member: activeMember),
-                )
-              else ...[
+                ),
+              ] else ...[
                 const AwayBanner(),
 
                 // The pregnancy card / "start pregnancy" prompt (design

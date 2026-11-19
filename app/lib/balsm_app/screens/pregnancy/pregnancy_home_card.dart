@@ -18,8 +18,14 @@ import 'pregnancy_screen.dart';
 /// it has not been dismissed ("Not now", kept per account on this device);
 /// it is not offered to an account holder who said they are male. Nothing
 /// shows until both have loaded, so it never flashes in.
+///
+/// With [mother] it is on a family member's Home (design `MCHomeCards`
+/// with `member`): her pregnancy card, named for her, and never the prompt.
 class PregnancyHomeCards extends ConsumerWidget {
-  const PregnancyHomeCards({super.key, this.gutter = 16});
+  const PregnancyHomeCards({super.key, this.gutter = 16, this.mother});
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
 
   /// Home's side gutter (16 on a phone, 24 from 600 wide).
   final double gutter;
@@ -28,14 +34,16 @@ class PregnancyHomeCards extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final all = ref.watch(pregnanciesProvider).valueOrNull;
+    final all = ref.watch(pregnanciesOfProvider(mother)).valueOrNull;
+    final owner = pregnancyOwner(ref, mother);
     final dismissed = ref.watch(pregnancyPromptDismissedProvider).valueOrNull;
     if (all == null) return const SizedBox.shrink();
     final preg = all.where((x) => x.isActive).firstOrNull;
     final Widget child;
     if (preg != null) {
-      child = _TrackerCard(pregnancy: preg);
-    } else if (all.isEmpty && dismissed == false && s.gender != Gender.male) {
+      child =
+          _TrackerCard(pregnancy: preg, mother: mother, title: owner == null ? p.title : p.title_of(owner.shortName));
+    } else if (mother == null && all.isEmpty && dismissed == false && s.gender != Gender.male) {
       child = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         PCard(
           onTap: () => openPregnancy(context, ref),
@@ -65,8 +73,10 @@ class PregnancyHomeCards extends ConsumerWidget {
 }
 
 class _TrackerCard extends ConsumerWidget {
-  const _TrackerCard({required this.pregnancy});
+  const _TrackerCard({required this.pregnancy, required this.mother, required this.title});
   final Pregnancy pregnancy;
+  final HealthProfileId? mother;
+  final String title;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -77,7 +87,7 @@ class _TrackerCard extends ConsumerWidget {
     return Semantics(
       button: true,
       child: Pressable(
-        onTap: () => openPregnancy(context, ref),
+        onTap: () => openPregnancy(context, ref, mother: mother),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(20)),
@@ -85,7 +95,7 @@ class _TrackerCard extends ConsumerWidget {
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(p.title, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: babyInk)),
+                  Text(title, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: babyInk)),
                   Text(p.week_n(info.week), style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w800)),
                   Text(
                     '${trimesterLabel(s, info.trimester)} · ${dueLine(s, info)}',

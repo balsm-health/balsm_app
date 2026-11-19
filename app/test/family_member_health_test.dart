@@ -1,7 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/flags.dart';
-import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/family/member_medical_screen.dart';
 import 'package:app/balsm_app/screens/family/member_screen.dart';
 import 'package:app/balsm_app/screens/trends_screen.dart';
