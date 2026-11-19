@@ -63,6 +63,21 @@ void main() {
     expect(result.value.title, 'Edited title');
   });
 
+  test('edits the tags when given, trimmed and without blanks or repeats', () async {
+    await ds.put(id, doc());
+    final result = await update(id,
+        title: 'Test title',
+        type: RecordType.lab,
+        takenAt: DateTime.utc(2026, 5, 26, 14, 30),
+        tags: [' Tag two ', '', 'Tag three', 'Tag two']);
+    expect(result.isSuccess, isTrue);
+
+    final back = (await ds.findAll()).single;
+    expect(back.tags, ['Tag two', 'Tag three']);
+    expect(back.takenAt, DateTime.utc(2026, 5, 26, 14, 30), reason: 'the time of day is kept too');
+    expect(back.filePath, 'vault/r1.pdf');
+  });
+
   test('a blank title is a validation failure and writes nothing', () async {
     await ds.put(id, doc());
     final result = await update(id, title: '   ', type: RecordType.scan, takenAt: DateTime.utc(2026, 1, 1));

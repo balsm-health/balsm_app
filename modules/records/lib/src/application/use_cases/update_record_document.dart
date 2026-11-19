@@ -6,10 +6,10 @@ import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/records_data_source.dart';
 import '../ports/records_data_source.dart';
 
-/// Edits a record's own metadata in place: its [title], [type] and the date
-/// it was [takenAt].
+/// Edits a record's own metadata in place: its [title], [type], the date and
+/// time it was [takenAt], and — when given — its [tags].
 ///
-/// Everything else — the attached file, tags, source, result note and when
+/// Everything else — the attached file, source, result note and when
 /// the entry was first created — is kept from the stored row, so an edit can
 /// never orphan or swap the encrypted blob. A blank title is a
 /// [ValidationFailure]; a record that is gone (or filed under another
@@ -26,6 +26,7 @@ class UpdateRecordDocumentUseCase {
     required String title,
     required RecordType type,
     required DateTime takenAt,
+    List<String>? tags,
     HealthProfileId? profile,
   }) async {
     final trimmed = title.trim();
@@ -33,7 +34,12 @@ class UpdateRecordDocumentUseCase {
     try {
       final existing = await _records.find(id, scope: profile);
       if (existing == null) return AppResult.failure(const NotFoundFailure('record'));
-      final edited = existing.copyWith(title: trimmed, type: type, takenAt: takenAt);
+      final edited = existing.copyWith(
+        title: trimmed,
+        type: type,
+        takenAt: takenAt,
+        tags: tags == null ? null : List.unmodifiable(tags.map((t) => t.trim()).where((t) => t.isNotEmpty).toSet()),
+      );
       await _records.put(id, edited, scope: profile);
       return AppResult.success(edited);
     } on StorageException catch (e) {
