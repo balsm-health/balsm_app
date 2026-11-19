@@ -13,6 +13,7 @@ import 'records_screen.dart';
 import '../vault/vault_blob.dart';
 import '../widgets/date_time_row.dart';
 import '../widgets/photo_attach.dart';
+import '../maintenance/maintenance_guard.dart';
 
 /// One record, live from the active profile's vault — so an edit saved from
 /// the detail screen shows there at once. Null when the record is gone.
@@ -490,11 +491,13 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
 }
 
 /// Add-record bottom sheet: pick a type, then fill in the metadata.
-Future<void> showAddRecord(BuildContext context, {RecordType? initialType}) => showAppSheet<void>(
-      context,
-      size: SheetSize.lg,
-      builder: (_) => _AddRecordSheet(initialType: initialType),
-    );
+Future<void> showAddRecord(BuildContext context, {RecordType? initialType}) async => maintenancePaused(context)
+    ? null
+    : showAppSheet<void>(
+        context,
+        size: SheetSize.lg,
+        builder: (_) => _AddRecordSheet(initialType: initialType),
+      );
 
 class _AddRecordSheet extends ConsumerStatefulWidget {
   const _AddRecordSheet({this.initialType});
@@ -855,10 +858,12 @@ class _RemovableTag extends StatelessWidget {
 }
 
 /// Opens [EditRecordSheet] over the record detail.
-Future<void> showEditRecord(BuildContext context, {required RecordDocument record}) => showAppSheet<void>(
-      context,
-      builder: (_) => EditRecordSheet(record: record),
-    );
+Future<void> showEditRecord(BuildContext context, {required RecordDocument record}) async => maintenancePaused(context)
+    ? null
+    : showAppSheet<void>(
+        context,
+        builder: (_) => EditRecordSheet(record: record),
+      );
 
 /// EditRecordSheet — records-mc.jsx `EditRecordSheet`: rename a record, change
 /// its type and the date it was taken. Saving goes through the records

@@ -1464,5 +1464,36 @@
     "link_unlinked_toast": "تم إلغاء الربط",
     "link_dot_a11y": "طلب ربط بانتظار الرد"
   },
+  // ── وضع الصيانة (maintenance.jsx) ─────────────────────────────────────
+  // نصوص ما قبل تسجيل الدخول (pre_body، device_only) ثابتة: الجنس غير معروف بعد.
+  "maintenance": {
+    "eyebrow": "صيانة",
+    "strip_title": "صيانة · للعرض فقط",
+    "strip_details": "التفاصيل",
+    "ro_title": "بلسم في وضع الصيانة",
+    "ro_body": "نعمل على تحسين خوادمنا. كل ما على هاتفك ما زال موجوداً ويمكنك الاطلاع عليه.",
+    "block_title": "بلسم متوقف مؤقتاً للصيانة",
+    "block_body": "نجري أعمالاً عاجلة للحفاظ على أمان بياناتك الصحية. سيعود التطبيق قريباً.",
+    "pre_body": "تسجيل الدخول وإنشاء الحسابات متوقفان مؤقتاً. يمكنك استخدام بلسم على هذا الجهاز فقط الآن، وربط حسابك لاحقاً.",
+    "paused_title": "هذا متوقف أثناء الصيانة",
+    "paused_body(Gender gender)": "يمكنك المحاولة مرة أخرى بعد انتهاء الصيانة. لم يُفقد أي شيء.",
+    "still_available": "ما زال متاحاً",
+    "paused_for_now": "متوقف مؤقتاً",
+    "ok_view": "عرض سجلاتك وأدويتك ونتائجك",
+    "ok_card": "بطاقة الطوارئ ورمز QR",
+    "ok_reminders": "تذكيرات الأدوية على هاتفك",
+    "paused_log": "تسجيل القياسات وإضافة السجلات والأدوية",
+    "paused_sync": "المزامنة والمشاركة مع الأطباء",
+    "paused_signin": "تسجيل الدخول وإنشاء حسابات جديدة",
+    "got_it": "حسناً",
+    "open_card": "فتح بطاقة الطوارئ",
+    "device_only": "استخدمه على هذا الجهاز فقط",
+    "call_emergency(String number, Gender gender)": "اتصل${_select(gender, female: 'ي', other: '')} بالطوارئ $number",
+    "check_again(Gender gender)": "تحقّق${_select(gender, female: 'ي', other: '')} مرة أخرى",
+    "checking": "جارٍ التحقق…",
+    "until(String time)": "حتى $time تقريباً",
+    "until_tomorrow(String time)": "حتى الغد $time تقريباً",
+    "end_unknown": "سنعلن موعد العودة قريباً"
+  },
   "_i69n_import": "package:core/core.dart"
 }

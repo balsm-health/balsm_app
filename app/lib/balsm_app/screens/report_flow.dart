@@ -15,6 +15,7 @@ import '../tokens.dart';
 import '../vault/vault_blob.dart';
 import 'checkin_shared.dart';
 import 'metric_log.dart';
+import '../maintenance/maintenance_guard.dart';
 
 export 'checkin_shared.dart' show CheckInSteps, MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
 
@@ -26,6 +27,7 @@ export 'checkin_shared.dart' show CheckInSteps, MoodCell, moodColors, painInfo, 
 /// (app.css `@container app (min-width: 600px)`). It is the one screen the
 /// expanded-class containment leaves alone: `.app-main > .flow { border: 0 }`.
 void openCheckin(BuildContext context) {
+  if (maintenancePaused(context)) return;
   final s = AppScope.of(context);
   if (MediaQuery.sizeOf(context).width < BalsmWindow.mediumMin) {
     Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(

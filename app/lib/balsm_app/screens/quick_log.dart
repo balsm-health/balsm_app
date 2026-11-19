@@ -20,11 +20,13 @@ import 'records_screen.dart';
 import 'family/family_kit.dart';
 import '../vault/vault_blob.dart';
 import 'report_flow.dart';
+import '../maintenance/maintenance_guard.dart';
 
 /// Opens the quick-log sheet (quicklog.jsx `QuickLogSheet`) — what the "+"
 /// action in the tab bar / nav rail resolves to. Search + grouped vitals /
 /// wellbeing / per-symptom rows, plus the full check-in CTA.
 void showQuickLog(BuildContext context, {String source = ProductSource.tabBar}) {
+  if (maintenancePaused(context)) return;
   final s = AppScope.of(context);
   showAppSheet<void>(
     context,

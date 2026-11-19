@@ -69,7 +69,18 @@ abstract final class AppFlags {
         'Link Balsm accounts by profile QR; approve requests; share a sealed emergency card. Needs Mother & Child.',
   );
 
-  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner, motherChild, familyLink];
+  /// Maintenance mode: the app reads Balsm's maintenance flag (an anonymous,
+  /// PHI-free GET) and, while a super admin has set it, shows the read-only
+  /// strip or the full-screen page and pauses writes. On by default — it only
+  /// reads. Switch off if the check itself misbehaves.
+  static const maintenance = FeatureFlag(
+    'maintenance',
+    fallback: true,
+    label: 'Maintenance mode',
+    description: 'Honour the server maintenance flag: read-only strip, paused actions, full-screen block.',
+  );
+
+  static final all = <FeatureFlag>[sync, ..._syncTypes.values, betaBanner, motherChild, familyLink, maintenance];
 }
 
 extension DataCategorySync on DataCategory {
