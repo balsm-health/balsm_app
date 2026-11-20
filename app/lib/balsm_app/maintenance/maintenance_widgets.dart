@@ -271,7 +271,10 @@ class MaintenanceSheet extends ConsumerWidget {
                     Expanded(child: Text(m.data_safe, style: Typo.meta(ar: s.rtl))),
                   ]),
                   const SizedBox(height: 18),
-                  PButton(m.got_it, block: true, large: true, ar: s.rtl, onTap: () => Navigator.of(context).pop()),
+                  // The sheet opens on the root navigator, outside AccentScope,
+                  // so the app's accent is passed in explicitly.
+                  PButton(m.got_it,
+                      block: true, large: true, accent: s.accent, ar: s.rtl, onTap: () => Navigator.of(context).pop()),
                   const SizedBox(height: 10),
                   // Over the sheet, so back returns here (design: the card
                   // replaces the sheet until it is closed).
@@ -280,6 +283,7 @@ class MaintenanceSheet extends ConsumerWidget {
                       variant: BtnVariant.ghost,
                       size: BtnSize.md,
                       block: true,
+                      accent: s.accent,
                       ar: s.rtl,
                       onTap: () => openOwnCard(context)),
                 ]),
