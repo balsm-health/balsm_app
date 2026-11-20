@@ -43,6 +43,29 @@ void main() {
       expect(m.isChildOn(now), isTrue);
       expect(member('x').isChildOn(now), isFalse);
     });
+
+    test('pregnancy is offered for an open female dependent aged 14 to 55 (mcCanPreg)', () {
+      FamilyMember w(DateTime? dob,
+              {Sex? sex = Sex.female,
+              ProfileKind kind = ProfileKind.dependent,
+              ProfileStatus status = ProfileStatus.active}) =>
+          FamilyMember(
+              id: const HealthProfileId.value('hp-w'),
+              kind: kind,
+              displayName: 'Test',
+              dateOfBirth: dob,
+              sex: sex,
+              status: status);
+      final day = DateTime(2026, 11, 3);
+      expect(w(DateTime(2012, 11, 3)).canTrackPregnancyOn(day), isTrue, reason: '14 today');
+      expect(w(DateTime(2012, 11, 4)).canTrackPregnancyOn(day), isFalse, reason: 'still 13');
+      expect(w(DateTime(1971, 1, 1)).canTrackPregnancyOn(day), isTrue, reason: '55');
+      expect(w(DateTime(1970, 1, 1)).canTrackPregnancyOn(day), isFalse, reason: '56');
+      expect(w(DateTime(1990, 1, 1), sex: Sex.male).canTrackPregnancyOn(day), isFalse);
+      expect(w(DateTime(1990, 1, 1), sex: null).canTrackPregnancyOn(day), isFalse);
+      expect(w(null).canTrackPregnancyOn(day), isFalse);
+      expect(w(DateTime(1990, 1, 1), status: ProfileStatus.closed).canTrackPregnancyOn(day), isFalse);
+    });
   });
 
   group('MemberDraft', () {

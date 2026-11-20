@@ -11,12 +11,15 @@ import '../tokens.dart';
 import '../widgets/date_time_row.dart';
 import '../widgets/med_plan_form.dart';
 import '../widgets/photo_attach.dart';
+import '../maintenance/maintenance_guard.dart';
 
-Future<void> showAddPrescription(BuildContext context) => showAppSheet<void>(
-      context,
-      size: SheetSize.lg,
-      builder: (_) => const AddPrescriptionSheet(),
-    );
+Future<void> showAddPrescription(BuildContext context) async => maintenancePaused(context)
+    ? null
+    : showAppSheet<void>(
+        context,
+        size: SheetSize.lg,
+        builder: (_) => const AddPrescriptionSheet(),
+      );
 
 class AddPrescriptionSheet extends ConsumerStatefulWidget {
   const AddPrescriptionSheet({super.key});

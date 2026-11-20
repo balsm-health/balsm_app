@@ -17,6 +17,8 @@ import 'app_state.dart';
 import 'family/family_flag_guard.dart';
 import 'family/family_links_sync.dart';
 import 'flags.dart';
+import 'maintenance/maintenance_controller.dart';
+import 'maintenance/maintenance_widgets.dart';
 import 'routes.dart';
 import 'desktop_menu.dart';
 import 'dev/log_buffer.dart';
@@ -182,6 +184,12 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
         _restoreGender(next);
       }
     }, fireImmediately: true);
+    // A block covers the shell from its home route, so anything pushed above
+    // it (a sheet, a sub-screen) is closed when the block begins.
+    ref.listenManual<MaintenanceStatus>(maintenanceProvider, (previous, next) {
+      if (!next.blocks || (previous?.blocks ?? false)) return;
+      _navKey.currentState?.popUntil((route) => route.isFirst);
+    });
     _bindDebugServiceExtensions();
     // Hold 2300ms, or 1200 under reduced motion — the spinner is the only
     // thing left to watch. Read off the dispatcher rather than a MediaQuery,
@@ -228,6 +236,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
     if (lifecycle != AppLifecycleState.resumed) return;
     _checkDay();
+    unawaited(ref.read(maintenanceProvider.notifier).check());
     // Flags first: a sync switched on or off remotely applies to this very run.
     unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(() {
       _syncCareTeam();
@@ -253,6 +262,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
 
   void _pullFamilyLinks() {
     if (!mounted || !familyLinkOn(state.flags) || ref.read(currentUserIdProvider) == null) return;
+    if (ref.read(maintenanceProvider).pausesActions) return;
     pullFamilyLinks(ref);
   }
 
@@ -317,7 +327,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   }
 
   void _syncCareTeam() {
-    if (!mounted) return;
+    if (!mounted || ref.read(maintenanceProvider).pausesActions) return;
     final profileId = ref.read(currentProfileIdProvider);
     if (profileId == null) return;
     unawaited(ref.read(careTeamSyncServiceProvider).sync(profileId));
@@ -431,11 +441,43 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     });
   }
 
+  /// Chose "Use on this device only" on the pre-sign-in maintenance page.
+  bool _maintenanceDeviceOnly = false;
+
+  /// The full-screen maintenance page, when one applies (design app-mc.jsx):
+  /// a block covers the signed-in app; any maintenance covers sign-in and
+  /// account creation, until the patient picks "Use on this device only".
+  /// The walkthrough and the device-only unlock stay reachable — they never
+  /// touch the server. The public QR / deletion pages are never covered.
+  List<Widget> _maintenancePage(MaintenanceStatus m) {
+    final route = state.route;
+    if (route == AppRoutes.app) {
+      return [if (m.blocks) const Positioned.fill(child: MaintenanceScreen(signedIn: true))];
+    }
+    if (!m.pausesActions || route == AppRoutes.walkthrough || route == AppRoutes.unlock) return const [];
+    if (!m.blocks && _maintenanceDeviceOnly && state.authIntent == AuthIntent.deviceOnly) return const [];
+    return [
+      Positioned.fill(
+        child: AdaptiveFrame(
+          child: MaintenanceScreen(
+            signedIn: false,
+            onDeviceOnly: () {
+              setState(() => _maintenanceDeviceOnly = true);
+              state.setAuthIntent(AuthIntent.deviceOnly);
+              state.go(AppRoutes.phone);
+            },
+          ),
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     // ref.watch rebuilds this subtree on every state notification — the
     // Riverpod equivalent of the old AnimatedBuilder(animation: state).
     ref.watch(patientAppStateProvider);
+    final maintenance = ref.watch(maintenanceProvider);
     // FR-509: reconcile on sign-in and on a dependant-profile switch. Firing on
     // the null -> non-null edge means a signed-out app never calls the API, and
     // a restored device pulls its roster as soon as the profile resolves.
@@ -530,6 +572,8 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                                   : state.route == AppRoutes.app
                                       ? const _MainApp()
                                       : const AdaptiveFrame(child: AuthRouter()),
+                      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
+                        ..._maintenancePage(maintenance),
                       if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
                         Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
                     ]),
@@ -649,10 +693,15 @@ class _MainAppState extends State<_MainApp> {
           // while the rail keeps the window edge. The pane is the window less
           // the rail, so the threshold moves by the same amount.
           Expanded(
-            child: AdaptiveFrame(
-              minWidth: BalsmWindow.expandedMin - BalsmWindow.railW,
-              child: _navLoading ? const _ScreenSkeleton() : screen,
-            ),
+            child: Column(children: [
+              Expanded(
+                child: AdaptiveFrame(
+                  minWidth: BalsmWindow.expandedMin - BalsmWindow.railW,
+                  child: _navLoading ? const _ScreenSkeleton() : screen,
+                ),
+              ),
+              const MaintenanceStrip(),
+            ]),
           ),
         ]);
       }
@@ -663,6 +712,8 @@ class _MainAppState extends State<_MainApp> {
       final hideTabBar = s.tab == AppTab.trends || s.tab == AppTab.records;
       return Column(children: [
         Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
+        // Read-only maintenance: the strip sits right above the tab bar.
+        const MaintenanceStrip(),
         if (!hideTabBar) const _TabBar(),
       ]);
     });
@@ -841,6 +892,9 @@ class _Tab extends StatelessWidget {
 /// Quick-log "+" action — the design's center FAB. Rendered as a raised accent
 /// circle in the bottom tab bar (and the side rail), it opens the quick-log
 /// sheet ([showQuickLog]): the full check-in plus the one-metric mini flows.
+///
+/// In read-only maintenance it is washed out with a lock badge and announces
+/// "Adding is paused during maintenance"; a tap still reaches the guard.
 class _QuickLog extends StatelessWidget {
   const _QuickLog({this.rail = false, this.wide = false});
   final bool rail;
@@ -848,6 +902,8 @@ class _QuickLog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    Widget fab(Widget child) =>
+        MaintenanceFabLock(label: s.strings.checkin.ql_title, onTap: () => showQuickLog(context), child: child);
     if (wide) {
       // Sidebar (≥1440): `.tab-fab .fab { width: 100%; height: 48px;
       // border-radius: var(--radius-md); padding: 0 14px; justify-content:
@@ -855,7 +911,7 @@ class _QuickLog extends StatelessWidget {
       // with `.fab-label` shown, inside `.tab-fab { margin: 4px 0 12px }`.
       return Padding(
         padding: const EdgeInsets.only(top: Space.s1, bottom: Space.s3),
-        child: Pressable(
+        child: fab(Pressable(
           onTap: () => showQuickLog(context),
           scale: 0.97,
           child: Container(
@@ -878,7 +934,7 @@ class _QuickLog extends StatelessWidget {
               ),
             ]),
           ),
-        ),
+        )),
       );
     }
     // Bar: a 58px disc whose 4px white ring lets it punch through the bar as
@@ -887,7 +943,7 @@ class _QuickLog extends StatelessWidget {
     // The compact bar now draws it inline (app.css "Check-in FAB — v2 colour +
     // inline position"): a 52px ink disc, no ring, centred in the bar.
     final size = rail ? 48.0 : 52.0;
-    final button = Pressable(
+    final button = fab(Pressable(
       onTap: () => showQuickLog(context),
       scale: 0.94,
       child: Container(
@@ -901,7 +957,7 @@ class _QuickLog extends StatelessWidget {
         ),
         child: Icon(LucideIcons.plus, size: rail ? 24 : 26, color: Colors.white),
       ),
-    );
+    ));
     if (rail) {
       // `.tab-fab { order: -1; padding: 4px 0 0; margin-bottom: 8px }` on a
       // 60px-tall tab slot — the disc leads the rail, above the tabs.

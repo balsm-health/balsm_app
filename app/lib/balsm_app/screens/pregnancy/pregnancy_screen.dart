@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:family/family.dart';
 import 'package:material_ui/material_ui.dart';
@@ -19,46 +21,61 @@ import 'pregnancy_kit.dart';
 import 'pregnancy_start_screen.dart';
 
 /// Opens the pregnancy — the tracker when one is active, otherwise the start
-/// screen. Pregnancy lives on the account holder's own profile, so it is made
-/// the active profile first (design `MCPregScreen`). Weekly guidance is asked
-/// for again on every opening.
-Future<void> openPregnancy(BuildContext context, WidgetRef ref) async {
+/// screen. A pregnancy lives on the mother's own profile: the account
+/// holder's, or with [mother] a family member's whose profile they manage
+/// (design `MCPregWho`); hers is made the active profile first (design
+/// `MCPregScreen`). Weekly guidance is asked for again on every opening.
+Future<void> openPregnancy(BuildContext context, WidgetRef ref, {HealthProfileId? mother}) async {
   ref.invalidate(pregnancyGuidanceProvider);
-  await ref.read(activeProfileSwitcherProvider).selectSelf();
+  final switcher = ref.read(activeProfileSwitcherProvider);
+  await (mother == null ? switcher.selectSelf() : switcher.select(mother));
+  final all = await ref.read(pregnanciesOfProvider(mother).future);
   if (!context.mounted) return;
-  final active = ref.read(activePregnancyProvider) != null;
-  await pushFamilyScreen<void>(context, (_) => active ? const PregnancyScreen() : const PregnancyStartScreen());
+  final active = all.any((p) => p.isActive);
+  await pushFamilyScreen<void>(
+    context,
+    (_) => active ? PregnancyScreen(mother: mother) : PregnancyStartScreen(mother: mother),
+  );
 }
 
-/// Back to the tab bar, e.g. once the pregnancy has closed.
-void leavePregnancy(BuildContext context) => Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
+/// Leaves the pregnancy once it has closed: back to the tab bar, or for a
+/// family member's pregnancy back to her screen.
+void leavePregnancy(BuildContext context, {HealthProfileId? mother}) {
+  Navigator.of(context, rootNavigator: true).popUntil((r) => r.isFirst);
+  if (mother != null) unawaited(openMember(context, mother));
+}
 
 /// The pregnancy tracker (mother-child.jsx `MCPregScreen`): week hero and
 /// trimester bar, next visit, this week's guidance, the babies, the mother's
-/// own records, the pregnancy-mode emergency card, and birth / end.
+/// own records, the pregnancy-mode emergency card, and birth / end. With
+/// [mother] it is a family member's pregnancy, titled with her name.
 class PregnancyScreen extends ConsumerWidget {
-  const PregnancyScreen({super.key});
+  const PregnancyScreen({super.key, this.mother});
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final preg = ref.watch(activePregnancyProvider);
+    final preg = ref.watch(activePregnancyOfProvider(mother));
+    final owner = pregnancyOwner(ref, mother);
     if (preg == null) return const Scaffold(backgroundColor: Colors.white);
     final babies = ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const <PregnancyBaby>[];
-    final items = ref.watch(pregnancyItemsProvider(preg.id)).valueOrNull ?? const <PregnancyItem>[];
+    final items = ref.watch(pregnancyItemsProvider(preg.itemsKey)).valueOrNull ?? const <PregnancyItem>[];
     final active = babies.where((b) => b.isActive).toList();
     final born = babies.where((b) => b.isBorn).toList();
     final multi = babies.length > 1;
     final mine = items.where((i) => i.about == ItemAbout.me).toList();
 
     return FamilyScaffold(
-      title: p.title,
+      title: owner == null ? p.title : p.title_of(owner.shortName),
       children: [
         _Hero(pregnancy: preg),
         const SizedBox(height: 12),
         _NextVisitCard(pregnancy: preg),
-        PregnancyGuidanceCard(week: preg.infoOn(DateTime.now()).week, multiples: multi),
+        PregnancyGuidanceCard(week: preg.infoOn(DateTime.now()).week, multiples: multi, mother: mother),
         Padding(
           padding: const EdgeInsets.only(top: 22, bottom: 10),
           child: Row(children: [
@@ -66,7 +83,8 @@ class PregnancyScreen extends ConsumerWidget {
               child:
                   Text(multi ? p.babies : p.baby, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             ),
-            _LinkButton(icon: LucideIcons.paperclip, label: p.attach, onTap: () => openPregnancyAdd(context)),
+            _LinkButton(
+                icon: LucideIcons.paperclip, label: p.attach, onTap: () => openPregnancyAdd(context, mother: mother)),
           ]),
         ),
         LayoutBuilder(builder: (context, c) {
@@ -74,7 +92,8 @@ class PregnancyScreen extends ConsumerWidget {
           final w = active.length > 1 ? (c.maxWidth - gap) / 2 : c.maxWidth;
           return Wrap(spacing: gap, runSpacing: gap, children: [
             for (final b in active)
-              SizedBox(width: w, child: _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items)),
+              SizedBox(
+                  width: w, child: _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items, mother: mother)),
           ]);
         }),
         if (born.isNotEmpty) ...[
@@ -88,19 +107,20 @@ class PregnancyScreen extends ConsumerWidget {
             child: _LinkButton(icon: LucideIcons.plus, label: p.add_baby, onTap: () => _addBaby(context, ref, preg)),
           ),
         ),
-        FamilySecHead(p.my_records),
+        FamilySecHead(owner == null ? p.my_records : p.records_of(owner.shortName)),
         if (mine.isEmpty)
-          Text(p.my_records_empty, style: Typo.bodySm(ar: s.rtl))
+          Text(owner == null ? p.my_records_empty : p.records_of_empty, style: Typo.bodySm(ar: s.rtl))
         else
           RowsCard(children: [for (final it in mine) PregnancyItemRow(item: it, pregnancy: preg, babies: babies)]),
         const SizedBox(height: 12),
         RowsCard(children: [
-          ChevronRow(icon: LucideIcons.idCard, label: p.card_row, onTap: () => openPregnancyCard(context)),
+          ChevronRow(
+              icon: LucideIcons.idCard, label: p.card_row, onTap: () => openPregnancyCard(context, mother: mother)),
         ]),
         FamilySecHead(p.birth_sec),
         RowsCard(children: [
           if (active.isNotEmpty)
-            ChevronRow(label: multi ? p.arrived_multi : p.arrived_one, onTap: () => openBirth(context)),
+            ChevronRow(label: multi ? p.arrived_multi : p.arrived_one, onTap: () => openBirth(context, mother: mother)),
           ChevronRow(label: p.end_t, onTap: () => _confirmEnd(context, ref, preg)),
         ]),
       ],
@@ -120,7 +140,7 @@ class PregnancyScreen extends ConsumerWidget {
     if (yes != true || !context.mounted) return;
     final r = await ref.read(endPregnancyUseCaseProvider)(preg.id, motherId: preg.motherId, now: DateTime.now());
     if (!context.mounted) return;
-    r.isSuccess ? leavePregnancy(context) : _failed(context);
+    r.isSuccess ? leavePregnancy(context, mother: mother) : _failed(context);
   }
 }
 
@@ -398,8 +418,10 @@ class _VisitSheetState extends ConsumerState<_VisitSheet> {
 
 /// `MCBabyCard` — label, record count, menu, and the last measurement.
 class _BabyCard extends ConsumerWidget {
-  const _BabyCard({required this.pregnancy, required this.baby, required this.babies, required this.items});
+  const _BabyCard(
+      {required this.pregnancy, required this.baby, required this.babies, required this.items, required this.mother});
   final Pregnancy pregnancy;
+  final HealthProfileId? mother;
   final PregnancyBaby baby;
   final List<PregnancyBaby> babies;
   final List<PregnancyItem> items;
@@ -415,7 +437,7 @@ class _BabyCard extends ConsumerWidget {
     return Semantics(
       button: true,
       child: PCard(
-        onTap: () => openBaby(context, baby.id),
+        onTap: () => openBaby(context, baby.id, mother: mother),
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Icon and menu on top, the name and count below at the card's
@@ -429,7 +451,7 @@ class _BabyCard extends ConsumerWidget {
               semanticLabel: p.options,
               ghost: true,
               iconSize: 18,
-              onTap: () => _babyMenu(context, ref, pregnancy, baby, label),
+              onTap: () => _babyMenu(context, ref, pregnancy, baby, label, mother),
             ),
           ]),
           const SizedBox(height: 10),
@@ -468,7 +490,8 @@ class _BabyCard extends ConsumerWidget {
 }
 
 /// Rename · Stop following this baby.
-Future<void> _babyMenu(BuildContext context, WidgetRef ref, Pregnancy preg, PregnancyBaby baby, String label) {
+Future<void> _babyMenu(
+    BuildContext context, WidgetRef ref, Pregnancy preg, PregnancyBaby baby, String label, HealthProfileId? mother) {
   final s = AppScope.of(context);
   final p = s.strings.pregnancy;
   return showAppSheet<void>(
@@ -476,8 +499,8 @@ Future<void> _babyMenu(BuildContext context, WidgetRef ref, Pregnancy preg, Preg
     textDirection: s.dir,
     builder: (ctx) => FamilySheet(title: label, children: [
       for (final (icon, text, action) in [
-        (LucideIcons.pencil, p.rename, () => openBaby(context, baby.id, rename: true)),
-        (LucideIcons.archive, p.stop_t, () => _stopFollowing(context, ref, preg, baby)),
+        (LucideIcons.pencil, p.rename, () => openBaby(context, baby.id, rename: true, mother: mother)),
+        (LucideIcons.archive, p.stop_t, () => _stopFollowing(context, ref, preg, baby, mother)),
       ])
         ListTile(
           contentPadding: EdgeInsets.zero,
@@ -492,7 +515,8 @@ Future<void> _babyMenu(BuildContext context, WidgetRef ref, Pregnancy preg, Preg
   );
 }
 
-Future<void> _stopFollowing(BuildContext context, WidgetRef ref, Pregnancy preg, PregnancyBaby baby) async {
+Future<void> _stopFollowing(
+    BuildContext context, WidgetRef ref, Pregnancy preg, PregnancyBaby baby, HealthProfileId? mother) async {
   final s = AppScope.of(context);
   final p = s.strings.pregnancy;
   final yes = await _confirmSheet(context, title: p.stop_t, body: p.stop_b, cta: p.stop_cta);
@@ -502,7 +526,7 @@ Future<void> _stopFollowing(BuildContext context, WidgetRef ref, Pregnancy preg,
       .stopFollowing(preg.id, baby.id, motherId: preg.motherId, now: DateTime.now());
   if (!context.mounted) return;
   if (r.isFailure) return _failed(context);
-  if (!r.value.isActive) leavePregnancy(context);
+  if (!r.value.isActive) leavePregnancy(context, mother: mother);
 }
 
 /// A born baby: now a family member; opens their home.

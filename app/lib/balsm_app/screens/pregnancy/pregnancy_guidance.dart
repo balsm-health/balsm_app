@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
@@ -15,12 +16,15 @@ import '../family/family_kit.dart';
 /// server to ask, the card is simply left out.
 
 /// Opens "Week by week".
-Future<void> openPregnancyWeeks(BuildContext context) =>
-    pushFamilyScreen<void>(context, (_) => const PregnancyWeeksScreen());
+Future<void> openPregnancyWeeks(BuildContext context, {HealthProfileId? mother}) =>
+    pushFamilyScreen<void>(context, (_) => PregnancyWeeksScreen(mother: mother));
 
 /// This week's guidance, "All weeks", source and disclaimer.
 class PregnancyGuidanceCard extends ConsumerWidget {
-  const PregnancyGuidanceCard({super.key, required this.week, required this.multiples});
+  const PregnancyGuidanceCard({super.key, required this.week, required this.multiples, this.mother});
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
 
   /// The pregnancy's current gestational week.
   final int week;
@@ -51,7 +55,7 @@ class PregnancyGuidanceCard extends ConsumerWidget {
             Semantics(
               button: true,
               child: Pressable(
-                onTap: () => openPregnancyWeeks(context),
+                onTap: () => openPregnancyWeeks(context, mother: mother),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -117,7 +121,10 @@ class _MultiplesNote extends StatelessWidget {
 /// "Week by week": every week the content covers, the current one ringed in
 /// aqua, opened and scrolled to.
 class PregnancyWeeksScreen extends ConsumerStatefulWidget {
-  const PregnancyWeeksScreen({super.key});
+  const PregnancyWeeksScreen({super.key, this.mother});
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
 
   @override
   ConsumerState<PregnancyWeeksScreen> createState() => _PregnancyWeeksScreenState();
@@ -143,7 +150,7 @@ class _PregnancyWeeksScreenState extends ConsumerState<PregnancyWeeksScreen> {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
     final lang = s.lang.value;
-    final preg = ref.watch(activePregnancyProvider);
+    final preg = ref.watch(activePregnancyOfProvider(widget.mother));
     final guidance = ref.watch(pregnancyGuidanceProvider).valueOrNull;
     if (preg == null || guidance == null) return FamilyScaffold(title: p.weeks_title, children: const []);
     final current = preg.infoOn(DateTime.now()).week;

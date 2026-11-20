@@ -15,22 +15,33 @@ import '../domain/entities/pregnancy_item.dart';
 import '../domain/value_objects/weekly_guidance.dart';
 import '../infrastructure/drift/drift_pregnancies_data_source.dart';
 
-/// Every pregnancy on the self profile (active and closed), newest first,
-/// live. Empty while signed out.
-final pregnanciesProvider = StreamProvider<List<Pregnancy>>((ref) async* {
-  final self = await ref.watch(selfProfileIdProvider.future);
-  if (self == null) {
+/// Every pregnancy of mother [motherId] (active and closed), newest first,
+/// live. Null is the account holder's own (self) profile; otherwise a
+/// family member whose profile the account holder manages — her pregnancy
+/// is stored on her own profile (mother-child.jsx `MCPregWho`). Empty while
+/// signed out.
+final pregnanciesOfProvider = StreamProvider.family<List<Pregnancy>, HealthProfileId?>((ref, motherId) async* {
+  final mother = motherId ?? await ref.watch(selfProfileIdProvider.future);
+  if (mother == null || ref.watch(currentUserIdProvider) == null) {
     yield const [];
     return;
   }
-  yield* ref.watch(pregnanciesDataSourceProvider).watchAll(scope: self);
+  yield* ref.watch(pregnanciesDataSourceProvider).watchAll(scope: mother);
 });
 
-/// The pregnancy being tracked, or null. Null while loading too — check
-/// [pregnanciesProvider] to tell the two apart.
-final activePregnancyProvider = Provider<Pregnancy?>(
-  (ref) => ref.watch(pregnanciesProvider).valueOrNull?.where((p) => p.isActive).firstOrNull,
+/// Every pregnancy on the self profile (active and closed), newest first,
+/// live. Empty while signed out.
+final pregnanciesProvider = pregnanciesOfProvider(null);
+
+/// The pregnancy being tracked for mother [motherId] (null = self), or null.
+/// Null while loading too — check [pregnanciesOfProvider] to tell the two
+/// apart.
+final activePregnancyOfProvider = Provider.family<Pregnancy?, HealthProfileId?>(
+  (ref, motherId) => ref.watch(pregnanciesOfProvider(motherId)).valueOrNull?.where((p) => p.isActive).firstOrNull,
 );
+
+/// The account holder's own pregnancy being tracked, or null.
+final activePregnancyProvider = activePregnancyOfProvider(null);
 
 /// The babies of pregnancy [id] — active, born and no longer followed —
 /// live.
@@ -38,15 +49,18 @@ final pregnancyBabiesProvider = StreamProvider.family<List<PregnancyBaby>, Pregn
   (ref, id) => ref.watch(pregnancyBabiesPortProvider).watchBabies(id),
 );
 
-/// The items of pregnancy [id], newest first, live.
-final pregnancyItemsProvider = StreamProvider.family<List<PregnancyItem>, PregnancyId>((ref, id) async* {
-  final self = await ref.watch(selfProfileIdProvider.future);
-  if (self == null) {
-    yield const [];
-    return;
-  }
-  yield* ref.watch(pregnanciesDataSourceProvider).watchItems(id, scope: self);
-});
+/// Which pregnancy's items to read: its id and the mother's profile, the
+/// partition they live in. Build one with [PregnancyItemsKey.itemsKey].
+typedef PregnancyItemsKey = ({PregnancyId id, HealthProfileId mother});
+
+extension PregnancyItemsKeyOf on Pregnancy {
+  PregnancyItemsKey get itemsKey => (id: id, mother: motherId);
+}
+
+/// The items of a pregnancy, newest first, live.
+final pregnancyItemsProvider = StreamProvider.family<List<PregnancyItem>, PregnancyItemsKey>(
+  (ref, key) => ref.watch(pregnanciesDataSourceProvider).watchItems(key.id, scope: key.mother),
+);
 
 /// Whether the account holder dismissed the home "start pregnancy" prompt
 /// ("Not now"), kept per account on this device. Not PHI: it records a tap,

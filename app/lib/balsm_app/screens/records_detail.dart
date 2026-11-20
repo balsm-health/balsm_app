@@ -7,12 +7,15 @@ import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
 import '../tokens.dart';
+import '../widgets/attachment_thumb.dart';
 import '../widgets/badges.dart';
 import '../widgets/vault_file_viewer.dart';
 import 'records_screen.dart';
 import '../vault/vault_blob.dart';
 import '../widgets/date_time_row.dart';
+import '../widgets/entry_attribution.dart';
 import '../widgets/photo_attach.dart';
+import '../maintenance/maintenance_guard.dart';
 
 /// One record, live from the active profile's vault — so an edit saved from
 /// the detail screen shows there at once. Null when the record is gone.
@@ -69,7 +72,7 @@ class RecordDetailScreen extends ConsumerWidget {
                 icon: LucideIcons.pencil,
                 semanticLabel: s.strings.common.a11y_edit,
                 iconSize: 18,
-                onTap: () => showEditRecord(context, record: record)),
+                onTap: () => showAddRecord(context, initial: record)),
           ]),
           Expanded(
             child: ListView(padding: EdgeInsets.zero, children: [
@@ -86,6 +89,11 @@ class RecordDetailScreen extends ConsumerWidget {
                           maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.meta(ar: s.rtl)),
                     ),
                   ]),
+                  if (record.history.isAttributed)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(top: 8),
+                      child: EntryAttributionChip(history: record.history),
+                    ),
                 ]),
               ),
               Padding(
@@ -129,7 +137,9 @@ class RecordDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 13),
                   Expanded(
-                    child: Text(record.source.isSelf ? r.rec_self : record.source.value,
+                    child: Text(
+                        attributedName(ref, s, record.history) ??
+                            (record.source.isSelf ? r.rec_self : record.source.value),
                         style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
                   ),
                 ]),
@@ -490,15 +500,25 @@ class _ManageStorageSheetState extends ConsumerState<_ManageStorageSheet> {
 }
 
 /// Add-record bottom sheet: pick a type, then fill in the metadata.
-Future<void> showAddRecord(BuildContext context, {RecordType? initialType}) => showAppSheet<void>(
-      context,
-      size: SheetSize.lg,
-      builder: (_) => _AddRecordSheet(initialType: initialType),
-    );
+///
+/// With [initial], the same sheet edits that record (records-mc.jsx
+/// `AddRecordSheet` `initial`): it opens on the form, filled in with the
+/// record's title, type, date, time and tags, and keeps its attachment.
+Future<void> showAddRecord(BuildContext context, {RecordType? initialType, RecordDocument? initial}) async =>
+    maintenancePaused(context)
+        ? null
+        : showAppSheet<void>(
+            context,
+            size: SheetSize.lg,
+            builder: (_) => _AddRecordSheet(initialType: initialType, initial: initial),
+          );
 
 class _AddRecordSheet extends ConsumerStatefulWidget {
-  const _AddRecordSheet({this.initialType});
+  const _AddRecordSheet({this.initialType, this.initial});
   final RecordType? initialType;
+
+  /// The record being edited; null when adding one.
+  final RecordDocument? initial;
 
   @override
   ConsumerState<_AddRecordSheet> createState() => _AddRecordSheetState();
@@ -514,11 +534,18 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
   bool _saving = false;
   bool _done = false;
 
+  bool get _editing => widget.initial != null;
+
   @override
   void initState() {
     super.initState();
-    _type = widget.initialType;
-    _date = DateTime.now();
+    final initial = widget.initial;
+    _type = initial?.type ?? widget.initialType;
+    _date = initial?.takenAt ?? DateTime.now();
+    if (initial != null) {
+      _title.text = initial.title;
+      _tags.addAll(initial.tags);
+    }
   }
 
   @override
@@ -528,7 +555,36 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
     super.dispose();
   }
 
+  /// Stores the edit through the records module; the attachment stays. A
+  /// blank name falls back to the type, as a new record does.
+  Future<void> _saveEdit(RecordDocument record) async {
+    if (_type == null || _saving) return;
+    setState(() => _saving = true);
+    final s = AppScope.of(context);
+    final title = _title.text.trim();
+    final result = await ref.read(updateRecordDocumentUseCaseProvider)(
+      record.id,
+      title: title.isEmpty ? recordTypeLabelOne(s, _type!) : title,
+      type: _type!,
+      takenAt: _date,
+      tags: _tags,
+    );
+    if (!mounted) return;
+    if (result.isFailure) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.strings.records.rec_save_failed(s.gender))));
+      return;
+    }
+    setState(() {
+      _saving = false;
+      _done = true;
+    });
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    if (mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _save() async {
+    if (widget.initial case final record?) return _saveEdit(record);
     final userId = ref.read(currentUserIdProvider);
     if (userId == null || _type == null || _saving) return;
     setState(() => _saving = true);
@@ -590,7 +646,9 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
                       ? ''
                       : _type == null
                           ? r.rec_pick_type
-                          : recordTypeLabelOne(s, _type!),
+                          : _editing
+                              ? r.rec_edit_title(recordTypeLabelOne(s, _type!))
+                              : recordTypeLabelOne(s, _type!),
                   style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
             ),
             RoundBtn(
@@ -606,7 +664,7 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(20, 16, 20, sheetBottomInset(context, base: 36)),
             child: _done
-                ? _RecordAdded(s: s)
+                ? _RecordAdded(s: s, edited: _editing)
                 : _type == null
                     ? _typePicker(s)
                     : _form(s),
@@ -692,7 +750,25 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
         ]),
       ),
       const SizedBox(height: 18),
-      Text(r.rec_attach, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+      ..._attachment(s),
+      const SizedBox(height: 24),
+      PButton(_editing ? r.rec_save_changes : s.strings.settings.add_record,
+          large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _type == null || _saving ? null : _save),
+    ]);
+  }
+
+  /// A new record picks its file here; an edited one keeps the file it has,
+  /// shown as it is.
+  List<Widget> _attachment(PatientAppState s) {
+    final r = s.strings.records;
+    final label = Text(r.rec_attach, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2));
+    if (widget.initial case final record?) {
+      final path = record.filePath;
+      if (path == null || path.isEmpty) return const [];
+      return [label, const SizedBox(height: 8), VaultAttachmentThumb(path: path, title: record.title, height: 120)];
+    }
+    return [
+      label,
       const SizedBox(height: 8),
       UploadDropzone(
         attach: _attach,
@@ -703,10 +779,7 @@ class _AddRecordSheetState extends ConsumerState<_AddRecordSheet> {
         fromFilesLabel: r.rec_from_files,
         help: r.rec_attach_h,
       ),
-      const SizedBox(height: 24),
-      PButton(s.strings.settings.add_record,
-          large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _type == null || _saving ? null : _save),
-    ]);
+    ];
   }
 
   List<String> _suggestedTags(PatientAppState s, RecordType type) {
@@ -789,8 +862,11 @@ class _TypeRow extends StatelessWidget {
 }
 
 class _RecordAdded extends StatelessWidget {
-  const _RecordAdded({required this.s});
+  const _RecordAdded({required this.s, this.edited = false});
   final PatientAppState s;
+
+  /// "Changes saved", with no subtitle, after an edit.
+  final bool edited;
 
   @override
   Widget build(BuildContext context) {
@@ -806,9 +882,12 @@ class _RecordAdded extends StatelessWidget {
           child: const Icon(LucideIcons.check, size: 36, color: T.hueMint600),
         ),
         const SizedBox(height: 14),
-        Text(r.rec_added, style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        Text(r.rec_added_h, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+        Text(edited ? r.rec_changes_saved : r.rec_added,
+            style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+        if (!edited) ...[
+          const SizedBox(height: 8),
+          Text(r.rec_added_h, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+        ],
       ]),
     );
   }
@@ -850,163 +929,6 @@ class _RemovableTag extends StatelessWidget {
           child: Icon(LucideIcons.x, size: 13, color: s.accent.d),
         ),
       ]),
-    );
-  }
-}
-
-/// Opens [EditRecordSheet] over the record detail.
-Future<void> showEditRecord(BuildContext context, {required RecordDocument record}) => showAppSheet<void>(
-      context,
-      builder: (_) => EditRecordSheet(record: record),
-    );
-
-/// EditRecordSheet — records-mc.jsx `EditRecordSheet`: rename a record, change
-/// its type and the date it was taken. Saving goes through the records
-/// module's update use case; the detail screen follows the stored row, so it
-/// shows the edit as soon as the sheet closes.
-class EditRecordSheet extends ConsumerStatefulWidget {
-  const EditRecordSheet({super.key, required this.record});
-  final RecordDocument record;
-
-  @override
-  ConsumerState<EditRecordSheet> createState() => _EditRecordSheetState();
-}
-
-class _EditRecordSheetState extends ConsumerState<EditRecordSheet> {
-  late final TextEditingController _title = TextEditingController(text: widget.record.title);
-  late RecordType _type = widget.record.type;
-  late DateTime _date = widget.record.takenAt;
-  bool _saving = false;
-
-  @override
-  void dispose() {
-    _title.dispose();
-    super.dispose();
-  }
-
-  bool get _ok => _title.text.trim().isNotEmpty;
-
-  Future<void> _save() async {
-    if (!_ok || _saving) return;
-    setState(() => _saving = true);
-    final result = await ref.read(updateRecordDocumentUseCaseProvider)(
-      widget.record.id,
-      title: _title.text,
-      type: _type,
-      takenAt: _date,
-    );
-    if (!mounted) return;
-    if (result.isSuccess) {
-      Navigator.of(context).pop();
-      return;
-    }
-    setState(() => _saving = false);
-    final s = AppScope.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.strings.records.rec_save_failed(s.gender))));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final r = s.strings.records;
-    return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.88),
-      decoration:
-          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
-          child: Column(children: [
-            const SheetGrab(),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                child: Text(r.rec_edit, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-              ),
-              RoundBtn(
-                  icon: LucideIcons.x,
-                  semanticLabel: s.strings.common.a11y_close,
-                  ghost: true,
-                  iconSize: 17,
-                  onTap: () => Navigator.of(context).pop()),
-            ]),
-          ]),
-        ),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, sheetBottomInset(context, base: 34)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              _Field(
-                label: r.rec_name,
-                child: _RecordInput(controller: _title),
-              ),
-              const SizedBox(height: 16),
-              _Field(
-                label: r.rec_type,
-                // Wraps rather than sitting side by side, so the Arabic labels
-                // never truncate.
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: RecordType.values
-                      .map(
-                          (type) => _TypeChip(type: type, on: _type == type, onTap: () => setState(() => _type = type)))
-                      .toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              DateTimeWhen(
-                when: _date,
-                dateLabel: r.rec_date,
-                onChanged: (v) => setState(() => _date = v),
-              ),
-              ListenableBuilder(
-                listenable: _title,
-                builder: (_, __) => PButton(r.rec_save_changes,
-                    large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _ok && !_saving ? _save : null),
-              ),
-            ]),
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-/// `.chip` with the record type's icon — the edit sheet's type picker.
-class _TypeChip extends StatelessWidget {
-  const _TypeChip({required this.type, required this.on, required this.onTap});
-  final RecordType type;
-  final bool on;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final style = recordTypeStyle(type);
-    return Semantics(
-      button: true,
-      selected: on,
-      child: Pressable(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: Motion.fast,
-          curve: Motion.easeOut,
-          height: 36,
-          padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: on ? s.accent.bg : Colors.white,
-            borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(color: on ? s.accent.main : T.border, width: 1.5),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(style.icon, size: 14, color: on ? s.accent.d : style.fg),
-            const SizedBox(width: 6),
-            Text(recordTypeLabelOne(s, type),
-                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: on ? s.accent.d : T.fg2)),
-          ]),
-        ),
-      ),
     );
   }
 }

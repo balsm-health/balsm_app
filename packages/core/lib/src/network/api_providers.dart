@@ -77,6 +77,11 @@ final contentApiProvider = Provider<ContentApi>((ref) {
   return DioContentApi(net: ref.watch(networkManagerProvider));
 });
 
+/// Platform maintenance flag — anonymous, no PHI; polled by the app shell.
+final maintenanceApiProvider = Provider<MaintenanceApi>((ref) {
+  return DioMaintenanceApi(net: ref.watch(networkManagerProvider));
+});
+
 /// Map-pack bytes downloader.
 ///
 /// Deliberately NOT built on [balsmApiClientProvider]'s Dio: basemaps come

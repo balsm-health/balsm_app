@@ -120,6 +120,7 @@ class Medication {
     this.endDate,
     this.isControlled = false,
     this.notes,
+    this.history = EntryHistory.none,
   });
 
   final MedicationId id;
@@ -134,6 +135,10 @@ class Medication {
 
   /// Free-text notes from the patient ("with food"). PHI, on-device only.
   final String? notes;
+
+  /// Who other than the patient added, edited or shared this medication, and
+  /// the patient's own edits since. Append-only; empty for the patient's own.
+  final EntryHistory history;
 
   /// True when an end date is set and has passed (medication no longer active).
   bool isExpired() => endDate != null && DateTime.now().isAfter(endDate!);
@@ -157,6 +162,7 @@ class Medication {
     DateTime? endDate,
     bool? isControlled,
     String? notes,
+    EntryHistory? history,
   }) =>
       Medication(
         id: id,
@@ -169,6 +175,7 @@ class Medication {
         endDate: endDate ?? this.endDate,
         isControlled: isControlled ?? this.isControlled,
         notes: notes ?? this.notes,
+        history: history ?? this.history,
       );
 
   @override

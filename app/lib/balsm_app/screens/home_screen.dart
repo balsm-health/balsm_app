@@ -25,7 +25,6 @@ import 'personal_details.dart';
 import 'profile_subscreens.dart';
 import 'care_team_screen.dart';
 import 'family/family_account_sheet.dart';
-import 'family/family_home_card.dart';
 import 'family/member_screen.dart';
 import 'family/profile_bar.dart';
 import 'pregnancy/pregnancy_home_card.dart';
@@ -81,26 +80,43 @@ class HomeScreen extends ConsumerWidget {
             children: [
               const PadTop(),
 
-              // App bar: avatar (account switcher) + greeting. The design keeps
-              // the v1 header (`BALSM_V1_HEADER`).
-              AppBarRow(children: [
-                _AvatarButton(
-                  initials: accountInitials(displayName),
-                  color: avatarColor,
-                  showBadge: !family && s.extraFamily.isNotEmpty,
-                  onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
-                    if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-                  ]),
-                ),
-                // Bell hidden: it had an empty onTap, so it announced itself to a
-                // screen reader as a working button and then did nothing. Restore
-                // it with the screen it is meant to open.
-              ]),
+              // App bar (Mother and Child canvas, Home header): the 44px
+              // avatar with its status dot opens the account switcher, then
+              // "Good morning" over the account holder's first name. The
+              // canvas ends the row with a bell; it is left out because the
+              // app has no reminders or notifications screen for it to open,
+              // and a button that does nothing tells a screen reader it works.
+              // While a family member is the active profile the header is the
+              // canvas's member head (Mother and Child, "06 Member profile"):
+              // a round back button that returns to the account holder's own
+              // profile, then "Family". The greeting would name the account
+              // holder above someone else's record.
+              if (activeMember != null)
+                AppBarRow(
+                  leading: RoundBtn(
+                    icon: backArrow(context),
+                    semanticLabel: s.strings.home.member_back,
+                    onTap: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
+                  ),
+                  children: [
+                    Expanded(
+                      child: Text(s.strings.family.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
+                    ),
+                  ],
+                )
+              else
+                AppBarRow(children: [
+                  _AvatarButton(
+                    initials: accountInitials(displayName),
+                    color: avatarColor,
+                    onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: HomeGreeting(firstName: firstName)),
+                ]),
 
               // `UX Enhancement Screens.html` — "Household · active-account
               // accent": the design keeps whose-data-is-this permanently visible.
@@ -112,20 +128,19 @@ class HomeScreen extends ConsumerWidget {
 
               if (family) const ProfileBar(family: true),
 
-              if (activeMember != null)
+              if (activeMember != null) ...[
+                // Her pregnancy card, when one is tracked on her profile.
+                PregnancyHomeCards(gutter: g, mother: activeMember.id),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                   child: MemberBody(member: activeMember),
-                )
-              else ...[
+                ),
+              ] else ...[
                 const AwayBanner(),
 
                 // The pregnancy card / "start pregnancy" prompt (design
                 // `MCHomeCards`), on the patient's own profile.
                 if (family) PregnancyHomeCards(gutter: g),
-
-                // Family card: tap 1 of Home → Family → a member's card.
-                if (family) FamilyHomeCard(gutter: g),
 
                 Padding(
                   padding: EdgeInsetsDirectional.symmetric(horizontal: g),
@@ -246,44 +261,42 @@ class _AvatarButton extends StatelessWidget {
   const _AvatarButton({
     required this.initials,
     required this.color,
-    required this.showBadge,
     required this.onTap,
   });
   final String initials;
   final Color color;
-  final bool showBadge;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return Pressable(
-      onTap: onTap,
-      scale: 0.95,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Avatar(initials: initials, color: color, ar: s.rtl),
-          if (showBadge)
+    return Semantics(
+      button: true,
+      label: s.strings.home.a11y_accounts,
+      excludeSemantics: true,
+      child: Pressable(
+        onTap: onTap,
+        scale: 0.95,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Avatar(initials: initials, color: color, fontSize: FS.md, ar: s.rtl),
+            // The canvas's status dot: 12px in the accent, ringed in the
+            // screen colour so it reads as cut out of the circle.
             PositionedDirectional(
-              bottom: -1,
-              end: -1,
+              bottom: 0,
+              end: 0,
               child: Container(
-                width: 14,
-                height: 14,
-                alignment: Alignment.center,
+                width: 12,
+                height: 12,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: s.accent.main,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle),
+                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -511,5 +524,28 @@ class _ViewingBanner extends StatelessWidget {
         ),
       ]),
     );
+  }
+}
+
+/// The Home header's greeting: "Good morning" in meta size above the account
+/// holder's first name (19px bold, display face). With no name — a
+/// device-only account can have none — the greeting stands alone.
+class HomeGreeting extends StatelessWidget {
+  const HomeGreeting({super.key, required this.firstName});
+  final String firstName;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final name = firstName.trim();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
+      if (name.isNotEmpty)
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Typo.heading(ar: s.rtl).copyWith(fontSize: 19, height: 1.25),
+        ),
+    ]);
   }
 }

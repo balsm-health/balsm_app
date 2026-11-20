@@ -63,6 +63,21 @@ void main() {
     expect(result.value.title, 'Edited title');
   });
 
+  test('edits the tags when given, trimmed and without blanks or repeats', () async {
+    await ds.put(id, doc());
+    final result = await update(id,
+        title: 'Test title',
+        type: RecordType.lab,
+        takenAt: DateTime.utc(2026, 5, 26, 14, 30),
+        tags: [' Tag two ', '', 'Tag three', 'Tag two']);
+    expect(result.isSuccess, isTrue);
+
+    final back = (await ds.findAll()).single;
+    expect(back.tags, ['Tag two', 'Tag three']);
+    expect(back.takenAt, DateTime.utc(2026, 5, 26, 14, 30), reason: 'the time of day is kept too');
+    expect(back.filePath, 'vault/r1.pdf');
+  });
+
   test('a blank title is a validation failure and writes nothing', () async {
     await ds.put(id, doc());
     final result = await update(id, title: '   ', type: RecordType.scan, takenAt: DateTime.utc(2026, 1, 1));
@@ -109,5 +124,44 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     expect(titles.last, 'Edited');
     await sub.cancel();
+  });
+
+  group('history', () {
+    // A synthetic family member, not a real person.
+    final family = ProvenanceActor.other(ProvenanceActorKind.family, displayName: 'Member A');
+    final addedByFamily =
+        ProvenanceEvent(id: 'p1', actor: family, action: ProvenanceAction.added, at: DateTime.utc(2026, 5, 1));
+
+    test('a record someone else added reads back with its history', () async {
+      await ds.put(id, doc().copyWith(history: EntryHistory([addedByFamily])));
+      final back = (await ds.findAll()).single;
+      expect(back.history.attribution, addedByFamily);
+      expect((await ds.find(id))!.history.events, [addedByFamily]);
+    });
+
+    test('editing it appends the patient\'s edit and keeps who added it', () async {
+      await ds.put(id, doc().copyWith(history: EntryHistory([addedByFamily])));
+      final stamped = UpdateRecordDocumentUseCase(ds, clock: () => DateTime.utc(2026, 6, 1));
+      await stamped(id, title: 'Edited', type: RecordType.lab, takenAt: DateTime.utc(2026, 5, 26));
+
+      final events = (await ds.find(id))!.history.events;
+      expect(events, hasLength(2));
+      expect(events.first, addedByFamily);
+      expect(events.last.actor.isSelf, isTrue);
+      expect(events.last.action, ProvenanceAction.edited);
+      expect(events.last.at, DateTime.utc(2026, 6, 1));
+    });
+
+    test('editing the patient\'s own record leaves it without history', () async {
+      await ds.put(id, doc());
+      await update(id, title: 'Edited', type: RecordType.lab, takenAt: DateTime.utc(2026, 5, 26));
+      expect((await ds.find(id))!.history.isEmpty, isTrue);
+    });
+
+    test('storing a copy without history never removes the stored history', () async {
+      await ds.put(id, doc().copyWith(history: EntryHistory([addedByFamily])));
+      await ds.put(id, doc());
+      expect((await ds.find(id))!.history.events, [addedByFamily]);
+    });
   });
 }

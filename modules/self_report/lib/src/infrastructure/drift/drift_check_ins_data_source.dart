@@ -29,9 +29,12 @@ const _moodNotReported = 0;
 /// return empty. Check-ins are immutable — [put] inserts; [delete] removes an
 /// erroneous entry (child rows cascade).
 class DriftCheckInsDataSource extends CheckInsDataSource {
-  DriftCheckInsDataSource(this._db, this.activeProfile);
+  DriftCheckInsDataSource(this._db, this.activeProfile) : _history = EntryProvenanceStore(_db, 'check_in');
 
   final AppDatabase _db;
+
+  /// Append-only history of who else added, edited or shared each check-in.
+  final EntryProvenanceStore _history;
   final HealthProfileId? Function() activeProfile;
 
   final _changes = StreamController<void>.broadcast();
@@ -58,7 +61,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       variables: [Variable<String>(key.value), Variable<String>(p.value)],
     ).get();
     if (rows.isEmpty) return null;
-    return _hydrate(rows.first.data);
+    return _hydrate(rows.first.data, await _history.historyOf(key.value, p));
   }
 
   @override
@@ -70,7 +73,8 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       'ORDER BY recorded_at DESC',
       variables: [Variable<String>(p.value)],
     ).get();
-    return [for (final r in rows) await _hydrate(r.data)];
+    final histories = await _history.historiesOf(p);
+    return [for (final r in rows) await _hydrate(r.data, histories[r.data['id']])];
   }
 
   @override
@@ -170,6 +174,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
           ],
         );
       }
+      await _history.append(key.value, p, value.history);
     });
     _notifyChanged();
   }
@@ -220,7 +225,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
 
   // ── Hydration ──────────────────────────────────────────────────────────
 
-  Future<CheckIn> _hydrate(Map<String, dynamic> row) async {
+  Future<CheckIn> _hydrate(Map<String, dynamic> row, EntryHistory? history) async {
     final id = row['id'] as String;
     final symptomRows = await _db.customSelect(
       'SELECT * FROM check_in_symptom WHERE check_in_id = ?',
@@ -263,6 +268,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
       vitals: Vitals.fromRow(row),
       note: row['note'] as String?,
       photoRecordId: row['photo_record_id'] as String?,
+      history: history ?? EntryHistory.none,
     );
   }
 

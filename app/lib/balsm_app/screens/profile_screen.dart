@@ -86,7 +86,13 @@ class ProfileScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             child: Column(children: [
-              Avatar(initials: accountInitials(displayName), color: T.hueAqua, size: 84, fontSize: FS.xl3, ar: s.rtl),
+              Avatar(
+                  initials: accountInitials(displayName),
+                  color: T.hueAqua,
+                  size: 84,
+                  fontSize: FS.xl3,
+                  ar: s.rtl,
+                  semanticLabel: s.strings.home.a11y_self_avatar),
               if (displayName.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Text(displayName, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2, fontWeight: FontWeight.w800)),

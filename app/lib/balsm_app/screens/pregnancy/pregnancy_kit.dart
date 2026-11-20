@@ -1,4 +1,6 @@
 import 'package:core/core.dart';
+import 'package:family/family.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pregnancy/pregnancy.dart';
@@ -12,6 +14,13 @@ import '../family/family_kit.dart';
 
 /// Shared pieces of the pregnancy screens (mother-child.jsx `MC_KINDS`,
 /// `mcBabyLabel`, `mcPregType`, `MCItemRow`).
+
+/// The family member whose pregnancy a screen shows (mother-child.jsx
+/// `useMCPreg` owner), or null for the account holder's own — [mother] null
+/// or their self profile id, which is no member.
+FamilyMember? pregnancyOwner(WidgetRef ref, HealthProfileId? mother) => mother == null
+    ? null
+    : (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[]).where((m) => m.id == mother).firstOrNull;
 
 /// `mcBabyLabel` — the name the mother gave, "Baby" for an only baby, or
 /// "Baby A"… ("الطفل الأول"…) by position among every baby of the pregnancy.

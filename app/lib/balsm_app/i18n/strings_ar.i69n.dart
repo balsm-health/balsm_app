@@ -48,6 +48,8 @@ class Strings_ar extends Strings {
   GrowthStrings_ar get growth => GrowthStrings_ar(this);
   PregnancyStrings_ar get pregnancy => PregnancyStrings_ar(this);
   FamilyStrings_ar get family => FamilyStrings_ar(this);
+  AttributionStrings_ar get attribution => AttributionStrings_ar(this);
+  MaintenanceStrings_ar get maintenance => MaintenanceStrings_ar(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -107,6 +109,10 @@ class Strings_ar extends Strings {
         return pregnancy;
       case 'family':
         return family;
+      case 'attribution':
+        return attribution;
+      case 'maintenance':
+        return maintenance;
       default:
         return super[key];
     }
@@ -899,6 +905,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get ql_discard_body => "لن يُحفظ ما أدخلته.";
   String get ql_discard => "تجاهل";
   String get ql_keep_editing => "متابعة التعديل";
+  String ql_edit_title(String what) => "تعديل · $what";
+  String get ql_delete_entry => "حذف هذا التسجيل";
   String get body_location => "أين يؤلمك؟";
   String get body_view_front => "أمامي";
   String get body_view_back => "خلفي";
@@ -1128,6 +1136,10 @@ class CheckinStrings_ar extends CheckinStrings {
         return ql_discard;
       case 'ql_keep_editing':
         return ql_keep_editing;
+      case 'ql_edit_title':
+        return ql_edit_title;
+      case 'ql_delete_entry':
+        return ql_delete_entry;
       case 'body_location':
         return body_location;
       case 'body_view_front':
@@ -1852,6 +1864,8 @@ class HomeStrings_ar extends HomeStrings {
       "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} دواءً";
   String get nudge_med_sub => "واظب على المتابعة";
   String get greet => "صباح الخير";
+  String get a11y_accounts => "حساباتك";
+  String get a11y_self_avatar => "حسابك";
   String get hero_time => "حوالي دقيقتين";
   String get streak => "يوم متتالٍ";
   String streak_help(Gender gender, int checked) => "${_select(gender, {
@@ -1878,6 +1892,7 @@ class HomeStrings_ar extends HomeStrings {
   String get sc_places => "مكان قريب";
   String get sc_records => "السجلات";
   String viewing_member(String name) => "$name محدد";
+  String get member_back => "العودة إلى ملفك";
   String viewing_own_data(Gender gender) =>
       "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, {
             'female': 'ترينه',
@@ -1905,6 +1920,10 @@ class HomeStrings_ar extends HomeStrings {
         return nudge_med_sub;
       case 'greet':
         return greet;
+      case 'a11y_accounts':
+        return a11y_accounts;
+      case 'a11y_self_avatar':
+        return a11y_self_avatar;
       case 'hero_time':
         return hero_time;
       case 'streak':
@@ -1933,6 +1952,8 @@ class HomeStrings_ar extends HomeStrings {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
+      case 'member_back':
+        return member_back;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':
@@ -3264,10 +3285,8 @@ class RecordsStrings_ar extends RecordsStrings {
       "تُحذف السجلات وملفاتها من هذا الجهاز. لا يمكن التراجع.";
   String get rec_delete_confirm => "حذف";
   String get rec_delete_1_title => "حذف هذا السجل؟";
-  String get rec_edit => "تعديل السجل";
-  String get rec_name => "الاسم";
-  String get rec_type => "النوع";
-  String get rec_date => "التاريخ";
+  String rec_edit_title(String type) => "تعديل · $type";
+  String get rec_changes_saved => "تم حفظ التعديلات";
   String get rec_save_changes => "حفظ التعديلات";
   String rec_save_failed(Gender gender) => "تعذّر الحفظ. حاول${_select(gender, {
             'female': 'ي',
@@ -3420,14 +3439,10 @@ class RecordsStrings_ar extends RecordsStrings {
         return rec_delete_confirm;
       case 'rec_delete_1_title':
         return rec_delete_1_title;
-      case 'rec_edit':
-        return rec_edit;
-      case 'rec_name':
-        return rec_name;
-      case 'rec_type':
-        return rec_type;
-      case 'rec_date':
-        return rec_date;
+      case 'rec_edit_title':
+        return rec_edit_title;
+      case 'rec_changes_saved':
+        return rec_changes_saved;
       case 'rec_save_changes':
         return rec_save_changes;
       case 'rec_save_failed':
@@ -4033,7 +4048,7 @@ class VaccStrings_ar extends VaccStrings {
   String get delete => "حذف هذا التطعيم";
   String get delete_t => "حذف هذا التطعيم؟";
   String get delete_b => "سيُحذف من سجل التطعيمات على هذا الجهاز.";
-  String tile_next(String date) => "القادمة $date";
+  String tile_next(String date) => "الجرعة القادمة $date";
   String recorded_n(int n) =>
       "${_plural(n, zero: 'لا تطعيمات بعد', one: 'تطعيم واحد مسجّل', two: 'تطعيمان مسجّلان', few: '$n تطعيمات مسجّلة', many: '$n تطعيماً مسجّلاً', other: '$n تطعيم مسجّل')}";
   Object operator [](String key) {
@@ -4218,7 +4233,12 @@ class PregnancyStrings_ar extends PregnancyStrings {
   String get next_visit => "الزيارة القادمة";
   String get prompt_b =>
       "إن كنتِ حاملاً، سجّلي موعد الولادة المتوقع واسم طبيبتك";
-  String get not_now => "ليس الآن · يمكنك تفعيلها لاحقاً من «الملف»";
+  String get hide_a11y => "إخفاء بطاقة متابعة الحمل";
+  String get hide_title => "إخفاء بطاقة متابعة الحمل؟";
+  String get hide_sub => "لن تظهر هذه البطاقة على الشاشة الرئيسية مرة أخرى.";
+  String get hide_note =>
+      "يمكنك تفعيل متابعة الحمل في أي وقت من «الملف» › «متابعة الحمل».";
+  String get hide_btn => "إخفاء البطاقة";
   String get row_off => "غير مفعّلة";
   String get next_visit_t => "زيارة المتابعة القادمة";
   String get add_visit => "أضيفي موعد زيارة المتابعة القادمة";
@@ -4330,6 +4350,17 @@ class PregnancyStrings_ar extends PregnancyStrings {
   String get no_records => "لا توجد سجلات لهذا الطفل.";
   String get me_stay => "سجلاتك «عنّي» تبقى في ملفك أنتِ.";
   String get create_cta => "إنشاء الملف";
+  String title_of(String name) => "متابعة الحمل · $name";
+  String records_of(String name) => "سجلات $name في الحمل";
+  String get records_of_empty => "نتائج تحاليل الأم تظهر هنا.";
+  String start_note_of(String name, Gender gender) =>
+      "تظهر متابعة الحمل في ملف $name فقط. تدير${_select(gender, {
+            'female': 'ين',
+            'other': ''
+          })}ها من جهازك.";
+  String start_cta_of(Gender gender) =>
+      "${_select(gender, {'female': 'ابدئي', 'other': 'ابدأ'})} المتابعة";
+  String me_of(String name) => "$name — نتائجها هي";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4385,8 +4416,16 @@ class PregnancyStrings_ar extends PregnancyStrings {
         return next_visit;
       case 'prompt_b':
         return prompt_b;
-      case 'not_now':
-        return not_now;
+      case 'hide_a11y':
+        return hide_a11y;
+      case 'hide_title':
+        return hide_title;
+      case 'hide_sub':
+        return hide_sub;
+      case 'hide_note':
+        return hide_note;
+      case 'hide_btn':
+        return hide_btn;
       case 'row_off':
         return row_off;
       case 'next_visit_t':
@@ -4597,6 +4636,18 @@ class PregnancyStrings_ar extends PregnancyStrings {
         return me_stay;
       case 'create_cta':
         return create_cta;
+      case 'title_of':
+        return title_of;
+      case 'records_of':
+        return records_of;
+      case 'records_of_empty':
+        return records_of_empty;
+      case 'start_note_of':
+        return start_note_of;
+      case 'start_cta_of':
+        return start_cta_of;
+      case 'me_of':
+        return me_of;
       default:
         return super[key];
     }
@@ -4609,8 +4660,8 @@ class FamilyStrings_ar extends FamilyStrings {
   String bar_viewing(Gender gender) =>
       "${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}";
   String get bar_your_profile => "ملفك";
-  String get bar_family => "العائلة";
   String get bar_change => "تغيير";
+  String get bar_family => "العائلة";
   String get bar_a11y => "تغيير الملف المعروض";
   String picker_title(Gender gender) =>
       "ملف من ${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}؟";
@@ -4658,14 +4709,6 @@ class FamilyStrings_ar extends FamilyStrings {
             'other': ''
           })} ببطاقة طوارئ لكل منهم.";
   String get stays_local => "بيانات عائلتك محفوظة على هذا الجهاز وحده.";
-  String home_sub(int n, Gender gender) => "${_select(gender, {
-            'female': 'تديرين',
-            'other': 'تدير'
-          })} ${_plural(n, one: 'ملفًا واحدًا', two: 'ملفين', few: '$n ملفات', many: '$n ملفًا', other: '$n ملف')}";
-  String home_empty_sub(Gender gender) => "${_select(gender, {
-            'female': 'أضيفي',
-            'other': 'أضف'
-          })} من ${_select(gender, {'female': 'ترعينهم', 'other': 'ترعاهم'})}";
   String get manual_t => "الإدخال يدويًا";
   String manual_b(Gender gender) =>
       "لطفلك، أو لمن لا يملك حسابًا على بلسم. ${_select(gender, {
@@ -4687,6 +4730,8 @@ class FamilyStrings_ar extends FamilyStrings {
   String get rel_sibling => "أخوك أو أختك";
   String rel_spouse(Gender gender) =>
       "${_select(gender, {'female': 'زوجك', 'other': 'زوجتك'})}";
+  String get rel_wife => "زوجتك";
+  String get rel_husband => "زوجك";
   String get rel_partner => "شريك الحياة";
   String get rel_grandparent => "جدّك أو جدّتك";
   String get rel_relative => "قريب";
@@ -4699,6 +4744,8 @@ class FamilyStrings_ar extends FamilyStrings {
   String get pick_daughter => "ابنة";
   String get pick_mother => "الأم";
   String get pick_father => "الأب";
+  String get pick_sister => "أخت";
+  String get pick_brother => "أخ";
   String get pick_spouse => "زوج أو زوجة";
   String get pick_neighbour => "جار أو جارة";
   String get pick_friend => "صديق أو صديقة";
@@ -4721,6 +4768,40 @@ class FamilyStrings_ar extends FamilyStrings {
   String get no_records => "لا مستندات بعد";
   String records_n(int n) =>
       "${_plural(n, zero: 'لا سجلات', one: 'سجل واحد', two: 'سجلان', few: '$n سجلات', many: '$n سجلًا', other: '$n سجل')}";
+  String get tile_medical => "الملف الطبي";
+  String get no_blood => "فصيلة الدم غير مسجّلة";
+  String conditions_n(int n) =>
+      "${_plural(n, one: 'حالة مزمنة واحدة', two: 'حالتان مزمنتان', few: '$n حالات مزمنة', many: '$n حالة مزمنة', other: '$n حالة مزمنة')}";
+  String get tile_trends => "المؤشرات";
+  String trends_n(int n) =>
+      "${_plural(n, one: 'مؤشر واحد', two: 'مؤشران', few: '$n مؤشرات', many: '$n مؤشراً', other: '$n مؤشر')}";
+  String get trends_none => "لا بيانات كافية بعد";
+  String tile_preg_off(Gender gender) => "غير مفعّلة · ${_select(gender, {
+            'female': 'ابدئي',
+            'other': 'ابدأ'
+          })} المتابعة";
+  String medical_intro(String name) =>
+      "تظهر هذه المعلومات على بطاقة طوارئ $name.";
+  String get medical_conditions => "الحالات المزمنة";
+  String get medical_allergies_none => "لا حساسية مسجّلة";
+  String get medical_conditions_none => "لا حالات مسجّلة";
+  String medical_allergy_ph(Gender gender) => "${_select(gender, {
+            'female': 'أضيفي',
+            'other': 'أضف'
+          })} حساسية، مثل البنسلين";
+  String medical_condition_ph(Gender gender) =>
+      "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} حالة، مثل الربو";
+  String get medical_add => "إضافة";
+  String medical_remove(String item) => "إزالة $item";
+  String get medical_row_sub => "فصيلة الدم والحساسية والحالات المزمنة";
+  String get medical_locked => "هذا الملف للعرض فقط، فلا يمكن تعديله من هنا.";
+  String get trends_empty_t => "لا بيانات في هذه الفترة";
+  String trends_empty_b(String name, Gender gender) =>
+      "تظهر هنا قياسات $name والنمو بمرور الوقت. جرّب${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} فترة أطول.";
+  String trends_nothing(String name) => "لا تسجيلات لـ$name بعد.";
   String get member_menu => "خيارات أخرى";
   String get edit_details => "تعديل البيانات";
   String get edit_medical => "البيانات الطبية";
@@ -4809,6 +4890,8 @@ class FamilyStrings_ar extends FamilyStrings {
             'female': 'ِ',
             'other': ''
           })} وحدها تحمل رمزًا يمكن للمسعف مسحه.";
+  String get own_card_note =>
+      "هذه البطاقة محفوظة على هاتفك، فتُفتح دون اتصال بالإنترنت. البطاقة التي تحمل رمزًا يمكن للمسعف مسحه موجودة في ملفك الشخصي.";
   String get add_contact => "إضافة جهة اتصال";
   String get contact_name => "اسم جهة الاتصال";
   String get contact_phone => "رقم الهاتف";
@@ -4898,10 +4981,10 @@ class FamilyStrings_ar extends FamilyStrings {
         return bar_viewing;
       case 'bar_your_profile':
         return bar_your_profile;
-      case 'bar_family':
-        return bar_family;
       case 'bar_change':
         return bar_change;
+      case 'bar_family':
+        return bar_family;
       case 'bar_a11y':
         return bar_a11y;
       case 'picker_title':
@@ -4934,10 +5017,6 @@ class FamilyStrings_ar extends FamilyStrings {
         return empty_b;
       case 'stays_local':
         return stays_local;
-      case 'home_sub':
-        return home_sub;
-      case 'home_empty_sub':
-        return home_empty_sub;
       case 'manual_t':
         return manual_t;
       case 'manual_b':
@@ -4970,6 +5049,10 @@ class FamilyStrings_ar extends FamilyStrings {
         return rel_sibling;
       case 'rel_spouse':
         return rel_spouse;
+      case 'rel_wife':
+        return rel_wife;
+      case 'rel_husband':
+        return rel_husband;
       case 'rel_partner':
         return rel_partner;
       case 'rel_grandparent':
@@ -4994,6 +5077,10 @@ class FamilyStrings_ar extends FamilyStrings {
         return pick_mother;
       case 'pick_father':
         return pick_father;
+      case 'pick_sister':
+        return pick_sister;
+      case 'pick_brother':
+        return pick_brother;
       case 'pick_spouse':
         return pick_spouse;
       case 'pick_neighbour':
@@ -5028,6 +5115,46 @@ class FamilyStrings_ar extends FamilyStrings {
         return no_records;
       case 'records_n':
         return records_n;
+      case 'tile_medical':
+        return tile_medical;
+      case 'no_blood':
+        return no_blood;
+      case 'conditions_n':
+        return conditions_n;
+      case 'tile_trends':
+        return tile_trends;
+      case 'trends_n':
+        return trends_n;
+      case 'trends_none':
+        return trends_none;
+      case 'tile_preg_off':
+        return tile_preg_off;
+      case 'medical_intro':
+        return medical_intro;
+      case 'medical_conditions':
+        return medical_conditions;
+      case 'medical_allergies_none':
+        return medical_allergies_none;
+      case 'medical_conditions_none':
+        return medical_conditions_none;
+      case 'medical_allergy_ph':
+        return medical_allergy_ph;
+      case 'medical_condition_ph':
+        return medical_condition_ph;
+      case 'medical_add':
+        return medical_add;
+      case 'medical_remove':
+        return medical_remove;
+      case 'medical_row_sub':
+        return medical_row_sub;
+      case 'medical_locked':
+        return medical_locked;
+      case 'trends_empty_t':
+        return trends_empty_t;
+      case 'trends_empty_b':
+        return trends_empty_b;
+      case 'trends_nothing':
+        return trends_nothing;
       case 'member_menu':
         return member_menu;
       case 'edit_details':
@@ -5118,6 +5245,8 @@ class FamilyStrings_ar extends FamilyStrings {
         return card_no_contacts;
       case 'card_note':
         return card_note;
+      case 'own_card_note':
+        return own_card_note;
       case 'add_contact':
         return add_contact;
       case 'contact_name':
@@ -5192,6 +5321,208 @@ class FamilyStrings_ar extends FamilyStrings {
         return link_unlinked_toast;
       case 'link_dot_a11y':
         return link_dot_a11y;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class AttributionStrings_ar extends AttributionStrings {
+  final Strings_ar _parent;
+  const AttributionStrings_ar(this._parent) : super(_parent);
+  String chip_a11y(String who) => "سجل التعديلات: $who";
+  String by(String name) => "بواسطة $name";
+  String edited_by(String name) => "عدّله $name";
+  String get someone => "شخص آخر";
+  String get you => "أنت";
+  String get history_title => "سجل التعديلات";
+  String get history_sub => "من أضاف هذا الإدخال أو عدّله، ومتى.";
+  String added_this(String name) => "أضافه $name";
+  String edited_this(String name) => "عدّله $name";
+  String shared_this(String name) => "شاركه $name";
+  String you_added(Gender gender) =>
+      "أضفت${_select(gender, {'female': 'ِ', 'other': 'َ'})}ه أنت";
+  String you_edited(Gender gender) =>
+      "عدّلت${_select(gender, {'female': 'ِ', 'other': 'َ'})}ه أنت";
+  String get role_family => "من العائلة";
+  String get role_doctor => "طبيب";
+  String get role_clinic => "جهة رعاية";
+  String get locked => "يحتفظ بلسم بهذا السجل ولا يمكن تعديله.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'chip_a11y':
+        return chip_a11y;
+      case 'by':
+        return by;
+      case 'edited_by':
+        return edited_by;
+      case 'someone':
+        return someone;
+      case 'you':
+        return you;
+      case 'history_title':
+        return history_title;
+      case 'history_sub':
+        return history_sub;
+      case 'added_this':
+        return added_this;
+      case 'edited_this':
+        return edited_this;
+      case 'shared_this':
+        return shared_this;
+      case 'you_added':
+        return you_added;
+      case 'you_edited':
+        return you_edited;
+      case 'role_family':
+        return role_family;
+      case 'role_doctor':
+        return role_doctor;
+      case 'role_clinic':
+        return role_clinic;
+      case 'locked':
+        return locked;
+      default:
+        return super[key];
+    }
+  }
+}
+
+class MaintenanceStrings_ar extends MaintenanceStrings {
+  final Strings_ar _parent;
+  const MaintenanceStrings_ar(this._parent) : super(_parent);
+  String get eyebrow => "صيانة";
+  String get strip_title => "صيانة · وضع العرض فقط";
+  String get strip_details => "التفاصيل";
+  String get ro_title => "بلسم في وضع الصيانة";
+  String get ro_body =>
+      "نعمل على تحسين خوادمنا. كل ما على هاتفك ما زال موجوداً ويمكنك الاطلاع عليه.";
+  String get block_title => "بلسم متوقف مؤقتاً للصيانة";
+  String get block_body =>
+      "نجري أعمالاً عاجلة للحفاظ على أمان بياناتك الصحية. سيعود التطبيق قريباً.";
+  String get pre_body =>
+      "تسجيل الدخول وإنشاء الحسابات متوقفان مؤقتاً. يمكنك استخدام بلسم على هذا الجهاز فقط الآن، وربط حسابك لاحقاً.";
+  String get paused_title => "الإضافة والتعديل متوقفان مؤقتاً";
+  String paused_body(Gender gender) =>
+      "نُجري صيانة على خوادم بلسم. يمكنك المحاولة مرة أخرى عند انتهائها، ولم يُفقد أي شيء.";
+  String get still_available => "ما زال متاحاً";
+  String get paused_for_now => "متوقف مؤقتاً";
+  String get ok_view => "عرض سجلاتك وأدويتك ونتائجك";
+  String get ok_card => "بطاقة الطوارئ ورمز QR";
+  String get ok_reminders => "تذكيرات الأدوية على هاتفك";
+  String get paused_log => "تسجيل القياسات وإضافة السجلات والأدوية";
+  String get paused_sync => "المزامنة والمشاركة مع الأطباء";
+  String get paused_signin => "تسجيل الدخول وإنشاء حسابات جديدة";
+  String get got_it => "حسناً";
+  String get open_card => "فتح بطاقة الطوارئ";
+  String get device_only => "استخدمه على هذا الجهاز فقط";
+  String call_emergency(String number, Gender gender) =>
+      "اتصل${_select(gender, {'female': 'ي', 'other': ''})} بالطوارئ $number";
+  String check_again(Gender gender) =>
+      "تحقّق${_select(gender, {'female': 'ي', 'other': ''})} مرة أخرى";
+  String get checking => "جارٍ التحقق…";
+  String until(String time) => "حتى $time تقريباً";
+  String until_tomorrow(String time) => "حتى الغد $time تقريباً";
+  String get end_unknown => "سنعلن موعد العودة قريباً";
+  String get sheet_eyebrow => "وضع العرض فقط";
+  String get close => "إغلاق";
+  String left_hm(int h, int m) => "يعود خلال $h س و$m د تقريباً";
+  String left_h(int h) => "يعود خلال $h س تقريباً";
+  String left_m(int m) => "يعود خلال $m دقيقة تقريباً";
+  String get left_unknown => "المدة غير معلنة بعد";
+  String get progress_label => "تقدّم الصيانة";
+  String strip_a11y(String countdown) => "تفاصيل الصيانة. $countdown";
+  String get message_title => "رسالة من فريق بلسم";
+  String get data_safe => "بياناتك على هذا الهاتف آمنة ولن يُحذف منها شيء.";
+  String get fab_paused => "الإضافة متوقفة أثناء الصيانة";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eyebrow':
+        return eyebrow;
+      case 'strip_title':
+        return strip_title;
+      case 'strip_details':
+        return strip_details;
+      case 'ro_title':
+        return ro_title;
+      case 'ro_body':
+        return ro_body;
+      case 'block_title':
+        return block_title;
+      case 'block_body':
+        return block_body;
+      case 'pre_body':
+        return pre_body;
+      case 'paused_title':
+        return paused_title;
+      case 'paused_body':
+        return paused_body;
+      case 'still_available':
+        return still_available;
+      case 'paused_for_now':
+        return paused_for_now;
+      case 'ok_view':
+        return ok_view;
+      case 'ok_card':
+        return ok_card;
+      case 'ok_reminders':
+        return ok_reminders;
+      case 'paused_log':
+        return paused_log;
+      case 'paused_sync':
+        return paused_sync;
+      case 'paused_signin':
+        return paused_signin;
+      case 'got_it':
+        return got_it;
+      case 'open_card':
+        return open_card;
+      case 'device_only':
+        return device_only;
+      case 'call_emergency':
+        return call_emergency;
+      case 'check_again':
+        return check_again;
+      case 'checking':
+        return checking;
+      case 'until':
+        return until;
+      case 'until_tomorrow':
+        return until_tomorrow;
+      case 'end_unknown':
+        return end_unknown;
+      case 'sheet_eyebrow':
+        return sheet_eyebrow;
+      case 'close':
+        return close;
+      case 'left_hm':
+        return left_hm;
+      case 'left_h':
+        return left_h;
+      case 'left_m':
+        return left_m;
+      case 'left_unknown':
+        return left_unknown;
+      case 'progress_label':
+        return progress_label;
+      case 'strip_a11y':
+        return strip_a11y;
+      case 'message_title':
+        return message_title;
+      case 'data_safe':
+        return data_safe;
+      case 'fab_paused':
+        return fab_paused;
       default:
         return super[key];
     }

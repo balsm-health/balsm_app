@@ -45,6 +45,8 @@ class Strings implements i69n.I69nMessageBundle {
   GrowthStrings get growth => GrowthStrings(this);
   PregnancyStrings get pregnancy => PregnancyStrings(this);
   FamilyStrings get family => FamilyStrings(this);
+  AttributionStrings get attribution => AttributionStrings(this);
+  MaintenanceStrings get maintenance => MaintenanceStrings(this);
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -104,6 +106,10 @@ class Strings implements i69n.I69nMessageBundle {
         return pregnancy;
       case 'family':
         return family;
+      case 'attribution':
+        return attribution;
+      case 'maintenance':
+        return maintenance;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -821,6 +827,8 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get ql_discard_body => "What you entered won’t be saved.";
   String get ql_discard => "Discard";
   String get ql_keep_editing => "Keep editing";
+  String ql_edit_title(String what) => "Edit · $what";
+  String get ql_delete_entry => "Delete this entry";
   String get body_location => "Where does it hurt?";
   String get body_view_front => "Front";
   String get body_view_back => "Back";
@@ -1030,6 +1038,10 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return ql_discard;
       case 'ql_keep_editing':
         return ql_keep_editing;
+      case 'ql_edit_title':
+        return ql_edit_title;
+      case 'ql_delete_entry':
+        return ql_delete_entry;
       case 'body_location':
         return body_location;
       case 'body_view_front':
@@ -1723,6 +1735,8 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String nudge_med(Gender gender) => "Add a medication";
   String get nudge_med_sub => "Stay on track";
   String get greet => "Good morning";
+  String get a11y_accounts => "Your accounts";
+  String get a11y_self_avatar => "Your account";
   String get hero_time => "About 2 minutes";
   String get streak => "day streak";
   String streak_help(Gender gender, int checked) =>
@@ -1739,6 +1753,7 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get sc_places => "places nearby";
   String get sc_records => "Records";
   String viewing_member(String name) => "$name is selected";
+  String get member_back => "Back to your own profile";
   String viewing_own_data(Gender gender) =>
       "Their record isn't on this device yet — you're still seeing your own.";
   String get viewing_switch_back => "Switch back";
@@ -1763,6 +1778,10 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return nudge_med_sub;
       case 'greet':
         return greet;
+      case 'a11y_accounts':
+        return a11y_accounts;
+      case 'a11y_self_avatar':
+        return a11y_self_avatar;
       case 'hero_time':
         return hero_time;
       case 'streak':
@@ -1791,6 +1810,8 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
+      case 'member_back':
+        return member_back;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':
@@ -3077,10 +3098,8 @@ class RecordsStrings implements i69n.I69nMessageBundle {
       "The records and their files are removed from this device. This cannot be undone.";
   String get rec_delete_confirm => "Delete";
   String get rec_delete_1_title => "Delete this record?";
-  String get rec_edit => "Edit record";
-  String get rec_name => "Name";
-  String get rec_type => "Type";
-  String get rec_date => "Date";
+  String rec_edit_title(String type) => "Edit · $type";
+  String get rec_changes_saved => "Changes saved";
   String get rec_save_changes => "Save changes";
   String rec_save_failed(Gender gender) => "Could not save. Try again.";
   Object operator [](String key) {
@@ -3230,14 +3249,10 @@ class RecordsStrings implements i69n.I69nMessageBundle {
         return rec_delete_confirm;
       case 'rec_delete_1_title':
         return rec_delete_1_title;
-      case 'rec_edit':
-        return rec_edit;
-      case 'rec_name':
-        return rec_name;
-      case 'rec_type':
-        return rec_type;
-      case 'rec_date':
-        return rec_date;
+      case 'rec_edit_title':
+        return rec_edit_title;
+      case 'rec_changes_saved':
+        return rec_changes_saved;
       case 'rec_save_changes':
         return rec_save_changes;
       case 'rec_save_failed':
@@ -3815,7 +3830,7 @@ class VaccStrings implements i69n.I69nMessageBundle {
   String get delete_t => "Delete this vaccination?";
   String get delete_b =>
       "It will be removed from the vaccination record on this phone.";
-  String tile_next(String date) => "Next $date";
+  String tile_next(String date) => "Next dose $date";
   String recorded_n(int n) =>
       "${_plural(n, one: '1 recorded', other: '$n recorded')}";
   Object operator [](String key) {
@@ -3998,7 +4013,12 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String get next_visit => "Next visit";
   String get prompt_b =>
       "If you're pregnant, add your due date and your obstetrician";
-  String get not_now => "Not now · you can turn it on later in Profile";
+  String get hide_a11y => "Hide the pregnancy card";
+  String get hide_title => "Hide the pregnancy card?";
+  String get hide_sub => "This card won’t appear on Home again.";
+  String get hide_note =>
+      "You can turn on pregnancy tracking any time from Profile › Pregnancy.";
+  String get hide_btn => "Hide card";
   String get row_off => "Off";
   String get next_visit_t => "Next antenatal visit";
   String get add_visit => "Add your next antenatal visit";
@@ -4113,6 +4133,13 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String get no_records => "No records for this baby.";
   String get me_stay => "Your “Me” records stay on your own profile.";
   String get create_cta => "Create profile";
+  String title_of(String name) => "Pregnancy · $name";
+  String records_of(String name) => "$name's pregnancy records";
+  String get records_of_empty => "The mother's own results appear here.";
+  String start_note_of(String name, Gender gender) =>
+      "Pregnancy tracking appears on $name's profile only. You manage it from your phone.";
+  String start_cta_of(Gender gender) => "Start tracking";
+  String me_of(String name) => "$name — her own results";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -4168,8 +4195,16 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return next_visit;
       case 'prompt_b':
         return prompt_b;
-      case 'not_now':
-        return not_now;
+      case 'hide_a11y':
+        return hide_a11y;
+      case 'hide_title':
+        return hide_title;
+      case 'hide_sub':
+        return hide_sub;
+      case 'hide_note':
+        return hide_note;
+      case 'hide_btn':
+        return hide_btn;
       case 'row_off':
         return row_off;
       case 'next_visit_t':
@@ -4380,6 +4415,18 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return me_stay;
       case 'create_cta':
         return create_cta;
+      case 'title_of':
+        return title_of;
+      case 'records_of':
+        return records_of;
+      case 'records_of_empty':
+        return records_of_empty;
+      case 'start_note_of':
+        return start_note_of;
+      case 'start_cta_of':
+        return start_cta_of;
+      case 'me_of':
+        return me_of;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -4391,8 +4438,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   const FamilyStrings(this._parent);
   String bar_viewing(Gender gender) => "Viewing";
   String get bar_your_profile => "your profile";
-  String get bar_family => "Family";
   String get bar_change => "Change";
+  String get bar_family => "Family";
   String get bar_a11y => "Change whose profile is shown";
   String picker_title(Gender gender) => "Whose profile?";
   String picker_sub(Gender gender) =>
@@ -4415,9 +4462,6 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String empty_b(Gender gender) =>
       "Add your children or parents to keep an emergency card for each.";
   String get stays_local => "Your family's data stays on this phone.";
-  String home_sub(int n, Gender gender) =>
-      "${_plural(n, one: '1 profile you manage', other: '$n profiles you manage')}";
-  String home_empty_sub(Gender gender) => "Add the people you look after";
   String get manual_t => "Enter details manually";
   String manual_b(Gender gender) =>
       "For your child, or someone without a Balsm account. You manage their profile from your phone.";
@@ -4435,6 +4479,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get rel_sister => "Sister";
   String get rel_sibling => "Sibling";
   String rel_spouse(Gender gender) => "Spouse";
+  String get rel_wife => "Wife";
+  String get rel_husband => "Husband";
   String get rel_partner => "Partner";
   String get rel_grandparent => "Grandparent";
   String get rel_relative => "Relative";
@@ -4447,6 +4493,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get pick_daughter => "Daughter";
   String get pick_mother => "Mother";
   String get pick_father => "Father";
+  String get pick_sister => "Sister";
+  String get pick_brother => "Brother";
   String get pick_spouse => "Spouse";
   String get pick_neighbour => "Neighbour";
   String get pick_friend => "Friend";
@@ -4468,6 +4516,31 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get no_records => "No documents yet";
   String records_n(int n) =>
       "${_plural(n, one: '1 record', other: '$n records')}";
+  String get tile_medical => "Medical profile";
+  String get no_blood => "No blood type";
+  String conditions_n(int n) =>
+      "${_plural(n, one: '1 condition', other: '$n conditions')}";
+  String get tile_trends => "Trends";
+  String trends_n(int n) =>
+      "${_plural(n, one: '1 measure', other: '$n measures')}";
+  String get trends_none => "Not enough data yet";
+  String tile_preg_off(Gender gender) => "Off · start tracking";
+  String medical_intro(String name) => "This shows on $name's emergency card.";
+  String get medical_conditions => "Long-term conditions";
+  String get medical_allergies_none => "No allergies recorded";
+  String get medical_conditions_none => "No conditions recorded";
+  String medical_allergy_ph(Gender gender) => "Add an allergy, e.g. Penicillin";
+  String medical_condition_ph(Gender gender) => "Add a condition, e.g. Asthma";
+  String get medical_add => "Add";
+  String medical_remove(String item) => "Remove $item";
+  String get medical_row_sub =>
+      "Blood type, allergies and long-term conditions";
+  String get medical_locked =>
+      "This profile is read-only, so it can't be edited here.";
+  String get trends_empty_t => "No data in this period";
+  String trends_empty_b(String name, Gender gender) =>
+      "$name's readings and growth show here over time. Try a longer range.";
+  String trends_nothing(String name) => "Nothing logged for $name yet.";
   String get member_menu => "More options";
   String get edit_details => "Edit details";
   String get edit_medical => "Medical details";
@@ -4522,6 +4595,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String get card_no_contacts => "No contact added yet";
   String card_note(Gender gender) =>
       "Show this card on your phone in an emergency. Only your own card has a code a responder can scan.";
+  String get own_card_note =>
+      "This card is saved on your phone, so it opens without a connection. The card with a code a responder can scan is in Profile.";
   String get add_contact => "Add a contact";
   String get contact_name => "Contact name";
   String get contact_phone => "Phone number";
@@ -4583,10 +4658,10 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return bar_viewing;
       case 'bar_your_profile':
         return bar_your_profile;
-      case 'bar_family':
-        return bar_family;
       case 'bar_change':
         return bar_change;
+      case 'bar_family':
+        return bar_family;
       case 'bar_a11y':
         return bar_a11y;
       case 'picker_title':
@@ -4619,10 +4694,6 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return empty_b;
       case 'stays_local':
         return stays_local;
-      case 'home_sub':
-        return home_sub;
-      case 'home_empty_sub':
-        return home_empty_sub;
       case 'manual_t':
         return manual_t;
       case 'manual_b':
@@ -4655,6 +4726,10 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return rel_sibling;
       case 'rel_spouse':
         return rel_spouse;
+      case 'rel_wife':
+        return rel_wife;
+      case 'rel_husband':
+        return rel_husband;
       case 'rel_partner':
         return rel_partner;
       case 'rel_grandparent':
@@ -4679,6 +4754,10 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return pick_mother;
       case 'pick_father':
         return pick_father;
+      case 'pick_sister':
+        return pick_sister;
+      case 'pick_brother':
+        return pick_brother;
       case 'pick_spouse':
         return pick_spouse;
       case 'pick_neighbour':
@@ -4713,6 +4792,46 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return no_records;
       case 'records_n':
         return records_n;
+      case 'tile_medical':
+        return tile_medical;
+      case 'no_blood':
+        return no_blood;
+      case 'conditions_n':
+        return conditions_n;
+      case 'tile_trends':
+        return tile_trends;
+      case 'trends_n':
+        return trends_n;
+      case 'trends_none':
+        return trends_none;
+      case 'tile_preg_off':
+        return tile_preg_off;
+      case 'medical_intro':
+        return medical_intro;
+      case 'medical_conditions':
+        return medical_conditions;
+      case 'medical_allergies_none':
+        return medical_allergies_none;
+      case 'medical_conditions_none':
+        return medical_conditions_none;
+      case 'medical_allergy_ph':
+        return medical_allergy_ph;
+      case 'medical_condition_ph':
+        return medical_condition_ph;
+      case 'medical_add':
+        return medical_add;
+      case 'medical_remove':
+        return medical_remove;
+      case 'medical_row_sub':
+        return medical_row_sub;
+      case 'medical_locked':
+        return medical_locked;
+      case 'trends_empty_t':
+        return trends_empty_t;
+      case 'trends_empty_b':
+        return trends_empty_b;
+      case 'trends_nothing':
+        return trends_nothing;
       case 'member_menu':
         return member_menu;
       case 'edit_details':
@@ -4803,6 +4922,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return card_no_contacts;
       case 'card_note':
         return card_note;
+      case 'own_card_note':
+        return own_card_note;
       case 'add_contact':
         return add_contact;
       case 'contact_name':
@@ -4877,6 +4998,206 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return link_unlinked_toast;
       case 'link_dot_a11y':
         return link_dot_a11y;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class AttributionStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const AttributionStrings(this._parent);
+  String chip_a11y(String who) => "Edit history: $who";
+  String by(String name) => "By $name";
+  String edited_by(String name) => "Edited by $name";
+  String get someone => "Someone else";
+  String get you => "You";
+  String get history_title => "Edit history";
+  String get history_sub => "Who added or changed this entry, and when.";
+  String added_this(String name) => "$name added this";
+  String edited_this(String name) => "$name edited this";
+  String shared_this(String name) => "$name shared this";
+  String you_added(Gender gender) => "You added this";
+  String you_edited(Gender gender) => "You edited this";
+  String get role_family => "Family";
+  String get role_doctor => "Doctor";
+  String get role_clinic => "Care provider";
+  String get locked => "Balsm keeps this history and it can’t be changed.";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'chip_a11y':
+        return chip_a11y;
+      case 'by':
+        return by;
+      case 'edited_by':
+        return edited_by;
+      case 'someone':
+        return someone;
+      case 'you':
+        return you;
+      case 'history_title':
+        return history_title;
+      case 'history_sub':
+        return history_sub;
+      case 'added_this':
+        return added_this;
+      case 'edited_this':
+        return edited_this;
+      case 'shared_this':
+        return shared_this;
+      case 'you_added':
+        return you_added;
+      case 'you_edited':
+        return you_edited;
+      case 'role_family':
+        return role_family;
+      case 'role_doctor':
+        return role_doctor;
+      case 'role_clinic':
+        return role_clinic;
+      case 'locked':
+        return locked;
+      default:
+        throw Exception('Message $key doesn\'t exist in $this');
+    }
+  }
+}
+
+class MaintenanceStrings implements i69n.I69nMessageBundle {
+  final Strings _parent;
+  const MaintenanceStrings(this._parent);
+  String get eyebrow => "Maintenance";
+  String get strip_title => "Maintenance · view only";
+  String get strip_details => "Details";
+  String get ro_title => "Balsm is under maintenance";
+  String get ro_body =>
+      "We’re improving our servers. Everything on your phone is still here and readable.";
+  String get block_title => "Balsm is down for maintenance";
+  String get block_body =>
+      "We’re doing urgent work to keep your health data safe. The app will be back shortly.";
+  String get pre_body =>
+      "Signing in and creating accounts are paused. You can use Balsm on this device only for now and connect your account later.";
+  String get paused_title => "Adding and editing are paused for now";
+  String paused_body(Gender gender) =>
+      "Balsm’s servers are under maintenance. You can try again once it’s over, and nothing has been lost.";
+  String get still_available => "Still available";
+  String get paused_for_now => "Paused for now";
+  String get ok_view => "View your records, medicines and results";
+  String get ok_card => "Your emergency card and QR code";
+  String get ok_reminders => "Medicine reminders on your phone";
+  String get paused_log => "Logging readings, adding records and medicines";
+  String get paused_sync => "Syncing and sharing with doctors";
+  String get paused_signin => "Signing in and creating accounts";
+  String get got_it => "Got it";
+  String get open_card => "Open my emergency card";
+  String get device_only => "Use on this device only";
+  String call_emergency(String number, Gender gender) =>
+      "Call emergency $number";
+  String check_again(Gender gender) => "Check again";
+  String get checking => "Checking…";
+  String until(String time) => "Until about $time";
+  String until_tomorrow(String time) => "Until about $time tomorrow";
+  String get end_unknown => "We’ll share the end time soon";
+  String get sheet_eyebrow => "View-only mode";
+  String get close => "Close";
+  String left_hm(int h, int m) => "Back in about $h h $m min";
+  String left_h(int h) => "Back in about $h h";
+  String left_m(int m) => "Back in about $m min";
+  String get left_unknown => "Duration not announced yet";
+  String get progress_label => "Maintenance progress";
+  String strip_a11y(String countdown) => "Maintenance details. $countdown";
+  String get message_title => "Message from the Balsm team";
+  String get data_safe =>
+      "Your data on this phone is safe. Nothing will be deleted.";
+  String get fab_paused => "Adding is paused during maintenance";
+  Object operator [](String key) {
+    var index = key.indexOf('.');
+    if (index > 0) {
+      return (this[key.substring(0, index)]
+          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+    }
+    switch (key) {
+      case 'eyebrow':
+        return eyebrow;
+      case 'strip_title':
+        return strip_title;
+      case 'strip_details':
+        return strip_details;
+      case 'ro_title':
+        return ro_title;
+      case 'ro_body':
+        return ro_body;
+      case 'block_title':
+        return block_title;
+      case 'block_body':
+        return block_body;
+      case 'pre_body':
+        return pre_body;
+      case 'paused_title':
+        return paused_title;
+      case 'paused_body':
+        return paused_body;
+      case 'still_available':
+        return still_available;
+      case 'paused_for_now':
+        return paused_for_now;
+      case 'ok_view':
+        return ok_view;
+      case 'ok_card':
+        return ok_card;
+      case 'ok_reminders':
+        return ok_reminders;
+      case 'paused_log':
+        return paused_log;
+      case 'paused_sync':
+        return paused_sync;
+      case 'paused_signin':
+        return paused_signin;
+      case 'got_it':
+        return got_it;
+      case 'open_card':
+        return open_card;
+      case 'device_only':
+        return device_only;
+      case 'call_emergency':
+        return call_emergency;
+      case 'check_again':
+        return check_again;
+      case 'checking':
+        return checking;
+      case 'until':
+        return until;
+      case 'until_tomorrow':
+        return until_tomorrow;
+      case 'end_unknown':
+        return end_unknown;
+      case 'sheet_eyebrow':
+        return sheet_eyebrow;
+      case 'close':
+        return close;
+      case 'left_hm':
+        return left_hm;
+      case 'left_h':
+        return left_h;
+      case 'left_m':
+        return left_m;
+      case 'left_unknown':
+        return left_unknown;
+      case 'progress_label':
+        return progress_label;
+      case 'strip_a11y':
+        return strip_a11y;
+      case 'message_title':
+        return message_title;
+      case 'data_safe':
+        return data_safe;
+      case 'fab_paused':
+        return fab_paused;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

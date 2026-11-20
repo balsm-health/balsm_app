@@ -61,6 +61,7 @@ class SelfAvatar extends ConsumerWidget {
     return Avatar(
       initials: accountInitials(name),
       color: selfAvatarColor,
+      semanticLabel: AppScope.of(context).strings.home.a11y_self_avatar,
       size: size,
       fontSize: (size * 0.4).roundToDouble(),
       ar: AppScope.of(context).rtl,
@@ -80,7 +81,11 @@ String relationLabel(PatientAppState s, Relationship? rel, Sex? sex) {
         Sex.female => f.rel_sister,
         null => f.rel_sibling
       },
-    Relationship.spouse => f.rel_spouse(s.gender),
+    Relationship.spouse => switch (sex) {
+        Sex.female => f.rel_wife,
+        Sex.male => f.rel_husband,
+        null => f.rel_spouse(s.gender)
+      },
     Relationship.partner => f.rel_partner,
     Relationship.grandparent => f.rel_grandparent,
     Relationship.relative => f.rel_relative,
@@ -382,11 +387,15 @@ class FamilyTile extends StatelessWidget {
         onTap: onTap,
         padding: const EdgeInsets.all(14),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 88),
+          // Canvas tile: 118 tall with the 14 padding, a 38px icon square
+          // (radius 11), 10 to a 15/600 title, 2 to the 12px line.
+          constraints: const BoxConstraints(minHeight: 90),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconSquare(icon, bg: t.bg, fg: t.ink, size: 40, iconSize: 20),
+            IconSquare(icon, bg: t.bg, fg: t.ink, radius: T.rIconV2),
             const SizedBox(height: 10),
-            Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            Text(title,
+                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.base, fontWeight: FontWeight.w600, color: T.fg1)),
+            const SizedBox(height: 2),
             Text(sub, style: Typo.meta(ar: s.rtl)),
           ]),
         ),
@@ -423,4 +432,88 @@ Future<R?> pushFamilyScreen<R>(BuildContext context, Widget Function(PatientAppS
   return Navigator.of(context, rootNavigator: true).push<R>(MaterialPageRoute(
     builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: build(s))),
   ));
+}
+
+/// The blood-type picker (`MC_BLOOD` chips plus "Not sure"): the eight ABO/Rh
+/// types four to a row, read left to right in both languages, and "Not sure"
+/// across the bottom. [onChanged] gets the type, or null for "Not sure".
+/// Without [enabled] the choice shows but cannot change.
+class BloodTypeGrid extends StatelessWidget {
+  const BloodTypeGrid({
+    super.key,
+    required this.value,
+    required this.unsure,
+    required this.onChanged,
+    this.enabled = true,
+  });
+  final BloodType? value;
+  final bool unsure;
+  final ValueChanged<BloodType?> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final types = BloodType.values.where((b) => b != BloodType.bombay).toList();
+    return LayoutBuilder(builder: (context, c) {
+      const gap = 8.0;
+      final w = (c.maxWidth - gap * 3) / 4;
+      return Wrap(spacing: gap, runSpacing: gap, children: [
+        ...types.map((b) => SizedBox(
+              width: w,
+              child: _GridChip(
+                label: b.code.replaceAll('-', '−'),
+                ltr: true,
+                active: !unsure && value == b,
+                onTap: enabled ? () => onChanged(b) : null,
+              ),
+            )),
+        SizedBox(
+          width: c.maxWidth,
+          child: _GridChip(
+            label: s.strings.family.blood_unsure,
+            active: unsure,
+            onTap: enabled ? () => onChanged(null) : null,
+          ),
+        ),
+      ]);
+    });
+  }
+}
+
+/// A square-ish selectable chip for the blood-type grid.
+class _GridChip extends StatelessWidget {
+  const _GridChip({required this.label, required this.active, required this.onTap, this.ltr = false});
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
+  final bool ltr;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Semantics(
+      button: true,
+      selected: active,
+      enabled: onTap != null,
+      child: Pressable(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: Motion.fast,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? s.accent.main : Colors.white,
+            borderRadius: BorderRadius.circular(T.rPill),
+            border: Border.all(color: active ? s.accent.main : T.border, width: 1.5),
+          ),
+          child: Text(
+            label,
+            textDirection: ltr ? TextDirection.ltr : null,
+            style: (ltr ? Typo.num(size: FS.md, weight: FontWeight.w700) : Typo.bodySm(ar: s.rtl))
+                .copyWith(fontWeight: FontWeight.w600, color: active ? T.onFill(s.accent.main) : T.fg2),
+          ),
+        ),
+      ),
+    );
+  }
 }

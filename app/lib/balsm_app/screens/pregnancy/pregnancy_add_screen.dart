@@ -12,15 +12,19 @@ import '../family/family_kit.dart';
 import 'pregnancy_kit.dart';
 
 /// Opens the attach flow, preselecting [babyIds] (from a baby's screen).
-Future<void> openPregnancyAdd(BuildContext context, {List<HealthProfileId> babyIds = const []}) =>
-    pushFamilyScreen<void>(context, (_) => PregnancyAddScreen(babyIds: babyIds));
+Future<void> openPregnancyAdd(BuildContext context,
+        {List<HealthProfileId> babyIds = const [], HealthProfileId? mother}) =>
+    pushFamilyScreen<void>(context, (_) => PregnancyAddScreen(babyIds: babyIds, mother: mother));
 
 /// Attach a pregnancy record (mother-child.jsx `MCPregAddScreen`): about me,
 /// one baby or several (a shared report); a scan, measurements (one baby at a
 /// time) or a test/document. The file is stored encrypted on this phone.
 class PregnancyAddScreen extends ConsumerStatefulWidget {
-  const PregnancyAddScreen({super.key, this.babyIds = const []});
+  const PregnancyAddScreen({super.key, this.babyIds = const [], this.mother});
   final List<HealthProfileId> babyIds;
+
+  /// Whose pregnancy (null = the account holder's own).
+  final HealthProfileId? mother;
   @override
   ConsumerState<PregnancyAddScreen> createState() => _PregnancyAddScreenState();
 }
@@ -121,7 +125,8 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final preg = ref.watch(activePregnancyProvider);
+    final preg = ref.watch(activePregnancyOfProvider(widget.mother));
+    final owner = pregnancyOwner(ref, widget.mother);
     if (preg == null) return const Scaffold(backgroundColor: Colors.white);
     final all = ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const <PregnancyBaby>[];
     final active = all.where((b) => b.isActive).toList();
@@ -141,7 +146,7 @@ class _PregnancyAddScreenState extends ConsumerState<PregnancyAddScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _WhoOption(
               me: true,
-              label: p.me,
+              label: owner == null ? p.me : p.me_of(owner.shortName),
               on: _me,
               onTap: () => setState(() {
                 _me = !_me;

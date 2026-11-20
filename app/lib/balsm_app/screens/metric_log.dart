@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,6 +123,7 @@ class MetricLog extends StatelessWidget {
     this.onChanged,
     this.focusedSymptom,
     this.belowField,
+    this.initial,
   });
 
   final CheckInMetric metric;
@@ -130,6 +132,9 @@ class MetricLog extends StatelessWidget {
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
 
   /// Quick-log one-symptom detail: skip the multi-select picker and capture
   /// just this catalog entry (body map only when the design marks it located).
@@ -150,37 +155,88 @@ class MetricLog extends StatelessWidget {
         onSave: onSave,
         onCancel: onCancel,
         onChanged: onChanged,
+        initial: initial,
       );
     }
     if (metric == CheckInMetric.mood) {
       return _MoodLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     if (metric == CheckInMetric.bloodPressure) {
-      return _BpLog(s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+      return _BpLog(
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     if (metric == CheckInMetric.glucose) {
       return _GlucoseLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     if (metric == CheckInMetric.weight) {
       return _WeightLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     if (metric == CheckInMetric.spo2) {
-      return _O2Log(s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+      return _O2Log(
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     if (metric == CheckInMetric.heartRate) {
       return _PulseLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     if (metric == CheckInMetric.pain) {
       return _PainLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     if (metric == CheckInMetric.symptoms) {
       return _SymptomsLog(
-          s: s, host: host, belowField: belowField, onSave: onSave, onCancel: onCancel, onChanged: onChanged);
+          s: s,
+          host: host,
+          belowField: belowField,
+          onSave: onSave,
+          onCancel: onCancel,
+          onChanged: onChanged,
+          initial: initial);
     }
     return const SizedBox.shrink();
   }
@@ -203,6 +259,9 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   bool get valid;
   MetricLogCapture get capture;
 
+  /// The stored entry the form opened on, when editing one.
+  MetricLogCapture? get initial;
+
   /// Rendered between the field and the date/time group. The full check-in
   /// puts its "I didn't measure this today" row here (report.jsx).
   Widget? get belowField => null;
@@ -210,6 +269,14 @@ mixin _MetricLogState<T extends StatefulWidget> on State<T> {
   @override
   void initState() {
     super.initState();
+    // An edit opens on the stored time and photo (quicklog.jsx `init`).
+    final start = initial;
+    if (start != null) {
+      if (start.when case final at?) when = at;
+      if (start.photoBytes case final bytes?) {
+        photo = PickedAttach(kind: 'image', bytes: bytes is Uint8List ? bytes : Uint8List.fromList(bytes));
+      }
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) onChanged?.call(capture, valid: valid);
     });
@@ -398,13 +465,17 @@ String? _trimmedNote(TextEditingController c) {
 // ── Mood ─────────────────────────────────────────────────────
 
 class _MoodLog extends StatefulWidget {
-  const _MoodLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  const _MoodLog(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_MoodLog> createState() => _MoodLogState();
 }
@@ -423,9 +494,11 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  int mood = 0;
+  late int mood = widget.initial?.mood?.score ?? 0;
 
   @override
   bool get valid => mood > 0;
@@ -470,13 +543,17 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
 // ── Blood pressure ───────────────────────────────────────────
 
 class _BpLog extends StatefulWidget {
-  const _BpLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  const _BpLog(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_BpLog> createState() => _BpLogState();
 }
@@ -495,11 +572,13 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  String sys = '';
-  String dia = '';
-  bool onSys = true;
+  late String sys = widget.initial?.vitals.systolic?.toString() ?? '';
+  late String dia = widget.initial?.vitals.diastolic?.toString() ?? '';
+  late bool onSys = dia.isEmpty;
 
   @override
   bool get valid => sys.length >= 2 && dia.length >= 2;
@@ -586,13 +665,17 @@ class _BpLogState extends State<_BpLog> with _MetricLogState {
 enum _GluCtx { fasting, meal, random }
 
 class _GlucoseLog extends StatefulWidget {
-  const _GlucoseLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  const _GlucoseLog(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_GlucoseLog> createState() => _GlucoseLogState();
 }
@@ -611,10 +694,21 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  String glu = '';
-  _GluCtx ctx = _GluCtx.fasting;
+  late String glu = _initialGlucose()?.toString() ?? '';
+  late _GluCtx ctx = switch (widget.initial?.vitals) {
+    Vitals(glucosePostMeal: _?) => _GluCtx.meal,
+    Vitals(glucoseRandom: _?) => _GluCtx.random,
+    _ => _GluCtx.fasting,
+  };
+
+  int? _initialGlucose() {
+    final v = widget.initial?.vitals;
+    return v?.glucoseFasting ?? v?.glucosePostMeal ?? v?.glucoseRandom;
+  }
 
   String get _ctxLabel => switch (ctx) {
         _GluCtx.fasting => s.strings.checkin.glu_fast,
@@ -695,13 +789,17 @@ class _GlucoseLogState extends State<_GlucoseLog> with _MetricLogState {
 // ── Weight ───────────────────────────────────────────────────
 
 class _WeightLog extends StatefulWidget {
-  const _WeightLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  const _WeightLog(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_WeightLog> createState() => _WeightLogState();
 }
@@ -720,11 +818,27 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
   String kg = '';
   String decimals = '';
   bool hasDot = false;
+
+  @override
+  void initState() {
+    // Back into the pad's digits: whole kilos, then at most one decimal.
+    if (widget.initial?.vitals.weightKg case final w?) {
+      final tenths = (w * 10).round();
+      kg = '${tenths ~/ 10}';
+      if (tenths % 10 != 0) {
+        hasDot = true;
+        decimals = '${tenths % 10}';
+      }
+    }
+    super.initState();
+  }
 
   String get display => kg.isEmpty ? '' : (hasDot ? '$kg.${decimals.isEmpty ? '0' : decimals}' : kg);
 
@@ -787,13 +901,17 @@ class _WeightLogState extends State<_WeightLog> with _MetricLogState {
 // ── SpO₂ ─────────────────────────────────────────────────────
 
 class _O2Log extends StatefulWidget {
-  const _O2Log({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  const _O2Log(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_O2Log> createState() => _O2LogState();
 }
@@ -812,9 +930,11 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  String digits = '';
+  late String digits = widget.initial?.vitals.spo2?.toString() ?? '';
 
   int? get _pct => digits.isEmpty ? null : int.tryParse(digits);
 
@@ -870,13 +990,17 @@ class _O2LogState extends State<_O2Log> with _MetricLogState {
 /// quicklog.jsx `QuickPulse` — type the rate in bpm, or "Count with me": tap
 /// each beat for [_pulseSecs] seconds and the rate is the count × 4.
 class _PulseLog extends StatefulWidget {
-  const _PulseLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  const _PulseLog(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_PulseLog> createState() => _PulseLogState();
 }
@@ -897,9 +1021,11 @@ class _PulseLogState extends State<_PulseLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  String digits = '';
+  late String digits = widget.initial?.vitals.heartRate?.toString() ?? '';
 
   /// Tapping beats instead of typing.
   bool counting = false;
@@ -1069,13 +1195,17 @@ class _PulseLogState extends State<_PulseLog> with _MetricLogState {
 // ── Pain ─────────────────────────────────────────────────────
 
 class _PainLog extends StatefulWidget {
-  const _PainLog({required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+  const _PainLog(
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_PainLog> createState() => _PainLogState();
 }
@@ -1094,10 +1224,12 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  double pain = 0;
-  final Set<PainSite> locations = {};
+  late double pain = (widget.initial?.painLevel.value ?? 0).toDouble();
+  late final Set<PainSite> locations = {...?widget.initial?.painSites};
 
   @override
   bool get valid => pain > 0 || locations.isNotEmpty;
@@ -1165,13 +1297,16 @@ class _PainLogState extends State<_PainLog> with _MetricLogState {
 
 class _SymptomsLog extends StatefulWidget {
   const _SymptomsLog(
-      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField});
+      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
   final PatientAppState s;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_SymptomsLog> createState() => _SymptomsLogState();
 }
@@ -1190,7 +1325,9 @@ class _SymptomsLogState extends State<_SymptomsLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
   final Set<SymptomId> symptoms = {};
   bool noSymptoms = false;
@@ -1302,6 +1439,7 @@ class _OneSymptomLog extends StatefulWidget {
     this.onCancel,
     this.onChanged,
     this.belowField,
+    this.initial,
   });
   final PatientAppState s;
   final MetricLogHost host;
@@ -1310,6 +1448,9 @@ class _OneSymptomLog extends StatefulWidget {
   final MetricLogSave? onSave;
   final VoidCallback? onCancel;
   final MetricLogChanged? onChanged;
+
+  /// The stored entry to open on, when editing one; null for a new entry.
+  final MetricLogCapture? initial;
   @override
   State<_OneSymptomLog> createState() => _OneSymptomLogState();
 }
@@ -1328,12 +1469,14 @@ class _OneSymptomLogState extends State<_OneSymptomLog> with _MetricLogState {
   @override
   MetricLogChanged? get onChanged => widget.onChanged;
   @override
-  late final TextEditingController noteCtrl = TextEditingController()..addListener(emit);
+  MetricLogCapture? get initial => widget.initial;
+  @override
+  late final TextEditingController noteCtrl = TextEditingController(text: widget.initial?.note)..addListener(emit);
 
-  final Set<PainSite> locations = {};
+  late final Set<PainSite> locations = {...?widget.initial?.painSites};
 
   /// Only urine and stool carry one (`SymptomId.hasDetail`).
-  SymptomDetail detail = const SymptomDetail();
+  late SymptomDetail detail = widget.initial?.symptomDetails[widget.symptom] ?? const SymptomDetail();
 
   bool get _showMap => _locatedSymptomIds.contains(widget.symptom.id);
 

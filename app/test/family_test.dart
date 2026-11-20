@@ -4,7 +4,6 @@ import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/family/family_screen.dart';
-import 'package:app/balsm_app/screens/family/family_home_card.dart';
 import 'package:app/balsm_app/screens/family/family_kit.dart';
 import 'package:app/balsm_app/screens/family/member_card_screen.dart';
 import 'package:app/balsm_app/screens/family/profile_bar.dart';
@@ -226,10 +225,23 @@ void main() {
   });
 
   group('People picker', () {
+    testWidgets('the bar shows the other members\' avatars, not the one on screen', (tester) async {
+      final state = familyState();
+      final c = await pump(tester, const ProfileBar(), state);
+      final kid = await seed(c, 'Test Kid');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(ProfileBar), matching: find.byType(MemberAvatar)), findsOne);
+
+      await c.read(activeProfileSwitcherProvider).select(kid.id);
+      await tester.pumpAndSettle();
+      // Test Kid is now the bar's own avatar; there is no one else to stack.
+      expect(find.descendant(of: find.byType(ProfileBar), matching: find.byType(MemberAvatar)), findsOne);
+    });
+
     testWidgets('choosing a member re-points the active profile; choosing yourself goes back', (tester) async {
       final state = familyState();
       final f = state.strings.family;
-      final c = await pump(tester, const ProfileBar(family: true), state);
+      final c = await pump(tester, const ProfileBar(), state);
       final selfId = await db.ensureSelfHealthProfile(user);
       final child = await seed(c, 'Test Kid');
       await tester.pumpAndSettle();
@@ -308,19 +320,18 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('flag on: the Family card counts the members and opens Family', (tester) async {
+    testWidgets('flag on: Home has no Family card; Family opens from the people picker', (tester) async {
       final state = familyState();
       final f = state.strings.family;
-      final c = await pump(tester, const HomeScreen(), state, settle: false);
+      await pump(tester, const HomeScreen(), state, settle: false);
       await frames(tester);
-      expect(find.byType(FamilyHomeCard), findsOne);
-      expect(find.text(f.home_empty_sub(Gender.other)), findsOne);
+      // The only "Family" on Home is the profile bar's own label.
+      expect(find.text(f.title), findsOne);
+      expect(find.descendant(of: find.byType(ProfileBar), matching: find.text(f.bar_family)), findsOne);
 
-      await seed(c, 'Test Kid');
+      await tester.tap(find.byType(ProfileBar));
       await frames(tester);
-      expect(find.text(f.home_sub(1, Gender.other)), findsOne);
-
-      await tester.tap(find.byType(FamilyHomeCard));
+      await tester.tap(find.text(f.manage_family));
       await frames(tester);
       expect(find.byType(FamilyScreen), findsOne);
       await unmount(tester);
@@ -332,7 +343,6 @@ void main() {
       await pump(tester, const HomeScreen(), state, settle: false);
 
       expect(find.byType(ProfileBar), findsNothing);
-      expect(find.byType(FamilyHomeCard), findsNothing);
       expect(find.text(state.strings.home.viewing_member('Test Relative')), findsOne);
       await unmount(tester);
     });
