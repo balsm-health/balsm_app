@@ -325,7 +325,9 @@ void main() {
       final f = state.strings.family;
       await pump(tester, const HomeScreen(), state, settle: false);
       await frames(tester);
-      expect(find.text(f.title), findsNothing);
+      // The only "Family" on Home is the profile bar's own label.
+      expect(find.text(f.title), findsOne);
+      expect(find.descendant(of: find.byType(ProfileBar), matching: find.text(f.bar_family)), findsOne);
 
       await tester.tap(find.byType(ProfileBar));
       await frames(tester);

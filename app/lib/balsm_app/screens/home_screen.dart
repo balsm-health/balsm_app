@@ -104,7 +104,7 @@ class HomeScreen extends ConsumerWidget {
               // and the profile bar below says whose it is.
               if (member != null) _ViewingBanner(member: member),
 
-              if (family) const ProfileBar(),
+              if (family) const ProfileBar(family: true),
 
               if (activeMember != null) ...[
                 // Her pregnancy card, when one is tracked on her profile.

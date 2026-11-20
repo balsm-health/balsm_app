@@ -200,7 +200,7 @@ class _MedsScreenState extends ConsumerState<MedsScreen> with DeleteKit<MedsScre
                       onTap: () => _openAddMedication(userId)),
               ]),
             // Mother & Child: whose medicines these are (records-mc.jsx).
-            if (s.flags.isOn(AppFlags.motherChild)) const ProfileBar(),
+            if (s.flags.isOn(AppFlags.motherChild)) const ProfileBar(family: true),
 
             // Adherence (last 7 days). Gradient card from the Claude Design.
             // The member's tab shows neither this nor the prescriptions row.

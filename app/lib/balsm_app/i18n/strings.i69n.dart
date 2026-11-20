@@ -4423,6 +4423,7 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String bar_viewing(Gender gender) => "Viewing";
   String get bar_your_profile => "your profile";
   String get bar_change => "Change";
+  String get bar_family => "Family";
   String get bar_a11y => "Change whose profile is shown";
   String picker_title(Gender gender) => "Whose profile?";
   String picker_sub(Gender gender) =>
@@ -4643,6 +4644,8 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return bar_your_profile;
       case 'bar_change':
         return bar_change;
+      case 'bar_family':
+        return bar_family;
       case 'bar_a11y':
         return bar_a11y;
       case 'picker_title':

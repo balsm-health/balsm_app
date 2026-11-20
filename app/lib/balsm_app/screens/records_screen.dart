@@ -200,7 +200,7 @@ class _RecordsScreenState extends ConsumerState<RecordsScreen> {
               Expanded(child: Text(s.strings.records.records, style: Typo.heading(ar: s.rtl))),
             ]),
           // Mother & Child: whose records these are (records-mc.jsx).
-          if (s.flags.isOn(AppFlags.motherChild)) const ProfileBar(),
+          if (s.flags.isOn(AppFlags.motherChild)) const ProfileBar(family: true),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: _SearchField(controller: _query, onChanged: () => setState(() {})),

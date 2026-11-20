@@ -12,13 +12,19 @@ import '../../tokens.dart';
 import 'family_kit.dart';
 import 'family_screen.dart';
 
-/// Active-profile bar (`Mother and Child.dc.html`, the canvas matched to the
-/// shipped app; mother-child.jsx `MCProfileBar`): under the Home header and on
-/// the Meds and Records tabs, so it is always clear whose data is on screen.
-/// A soft pill — no border — with a 28px avatar, "Viewing <whose>", the
-/// other members' avatars and "Change ⌄". Tapping it opens the people picker.
+/// Active-profile bar (mother-child.jsx `MCProfileBar`): under the Home header
+/// and on the Meds and Records tabs, so it is always clear whose data is on
+/// screen. A pill — bordered on your own profile, the member's tone on theirs —
+/// with a 30px avatar, "Viewing <whose>", the other members' avatars and
+/// "Family ⌄" ([family]) or "Change ⌄". Tapping it opens the people picker.
 class ProfileBar extends ConsumerWidget {
-  const ProfileBar({super.key});
+  const ProfileBar({super.key, this.family = false});
+  final bool family;
+
+  /// Avatar size and overlap of the other members' stack (`size 22`,
+  /// `marginInlineStart: -8`).
+  static const _stackSize = 22.0;
+  static const _stackStep = 14.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,18 +32,18 @@ class ProfileBar extends ConsumerWidget {
     final f = s.strings.family;
     final m = ref.watch(activeFamilyMemberProvider);
     final tone = m == null ? null : toneColors(m.tone);
-    // A link request waiting for this account's answer (pulled — no push).
     // The other people you look after, as a small overlapping stack before
-    // "Change" (mother-child.jsx MCProfileBar), so the bar says there is
-    // someone else to switch to.
+    // the label, so the bar says there is someone else to switch to.
     final others = (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[])
         .where((x) => x.kind == ProfileKind.dependent && x.id != m?.id)
         .take(3)
         .toList();
-    final ring = tone?.bg ?? T.ink50;
+    // The ring separating the stacked avatars is the bar's own background.
+    final ring = m == null ? T.ink50 : s.accent.bg;
+    // A link request waiting for this account's answer (pulled — no push).
     final waiting =
         familyLinkOn(s.flags) && (ref.watch(familyLinksProvider).valueOrNull?.awaitingMe.isNotEmpty ?? false);
-    final avatar = m == null ? const SelfAvatar(size: 28) : MemberAvatar(m, size: 28);
+    final avatar = m == null ? const SelfAvatar(size: 30) : MemberAvatar(m, size: 30);
     return Semantics(
       button: true,
       label: waiting ? '${f.bar_a11y}. ${f.link_dot_a11y}' : f.bar_a11y,
@@ -47,10 +53,11 @@ class ProfileBar extends ConsumerWidget {
           onTap: () => showProfilePicker(context),
           scale: 0.99,
           child: Container(
-            padding: const EdgeInsetsDirectional.fromSTEB(5, 5, 12, 5),
+            padding: const EdgeInsetsDirectional.fromSTEB(5, 5, 14, 5),
             decoration: BoxDecoration(
               color: tone?.bg ?? T.ink50,
               borderRadius: BorderRadius.circular(T.rPill),
+              border: Border.all(color: m == null ? T.border : Colors.transparent),
             ),
             child: Row(children: [
               if (!waiting)
@@ -73,7 +80,7 @@ class ProfileBar extends ConsumerWidget {
                     ),
                   ),
                 ]),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text.rich(
                   TextSpan(children: [
@@ -91,25 +98,30 @@ class ProfileBar extends ConsumerWidget {
                 ),
               ),
               if (others.isNotEmpty) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 ExcludeSemantics(
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    for (final (i, x) in others.indexed)
-                      Transform.translate(
-                        offset: Offset((s.rtl ? 8.0 : -8.0) * i, 0),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: ring, spreadRadius: 2)],
+                  child: SizedBox(
+                    width: _stackSize + _stackStep * (others.length - 1),
+                    height: _stackSize,
+                    child: Stack(clipBehavior: Clip.none, children: [
+                      for (final (i, x) in others.indexed)
+                        PositionedDirectional(
+                          start: _stackStep * i,
+                          top: 0,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [BoxShadow(color: ring, spreadRadius: 2)],
+                            ),
+                            child: MemberAvatar(x, size: _stackSize),
                           ),
-                          child: MemberAvatar(x, size: 22),
                         ),
-                      ),
-                  ]),
+                    ]),
+                  ),
                 ),
               ],
-              const SizedBox(width: 8),
-              Text(f.bar_change,
+              const SizedBox(width: 10),
+              Text(family ? f.bar_family : f.bar_change,
                   style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: tone?.ink ?? s.accent.d)),
               const SizedBox(width: 2),
               Icon(LucideIcons.chevronDown, size: 16, color: tone?.ink ?? s.accent.d),

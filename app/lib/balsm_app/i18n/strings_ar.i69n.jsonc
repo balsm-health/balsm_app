@@ -1329,6 +1329,7 @@
     "bar_viewing(Gender gender)": "${_select(gender, female: 'تعرضين', other: 'تعرض')}",
     "bar_your_profile": "ملفك",
     "bar_change": "تغيير",
+    "bar_family": "العائلة",
     "bar_a11y": "تغيير الملف المعروض",
     "picker_title(Gender gender)": "ملف من ${_select(gender, female: 'تعرضين', other: 'تعرض')}؟",
     "picker_sub(Gender gender)": "اختار${_select(gender, female: 'ي', other: '')} صاحب البيانات التي تظهر في التطبيق.",
