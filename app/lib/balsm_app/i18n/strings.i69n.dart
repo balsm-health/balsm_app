@@ -4010,7 +4010,12 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String get next_visit => "Next visit";
   String get prompt_b =>
       "If you're pregnant, add your due date and your obstetrician";
-  String get not_now => "Not now · you can turn it on later in Profile";
+  String get hide_a11y => "Hide the pregnancy card";
+  String get hide_title => "Hide the pregnancy card?";
+  String get hide_sub => "This card won’t appear on Home again.";
+  String get hide_note =>
+      "You can turn on pregnancy tracking any time from Profile › Pregnancy.";
+  String get hide_btn => "Hide card";
   String get row_off => "Off";
   String get next_visit_t => "Next antenatal visit";
   String get add_visit => "Add your next antenatal visit";
@@ -4187,8 +4192,16 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return next_visit;
       case 'prompt_b':
         return prompt_b;
-      case 'not_now':
-        return not_now;
+      case 'hide_a11y':
+        return hide_a11y;
+      case 'hide_title':
+        return hide_title;
+      case 'hide_sub':
+        return hide_sub;
+      case 'hide_note':
+        return hide_note;
+      case 'hide_btn':
+        return hide_btn;
       case 'row_off':
         return row_off;
       case 'next_visit_t':

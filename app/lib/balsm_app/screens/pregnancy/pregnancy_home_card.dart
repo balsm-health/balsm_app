@@ -15,7 +15,8 @@ import 'pregnancy_screen.dart';
 /// mother-child.jsx `MCHomeCards`), on the account holder's own Home.
 ///
 /// The prompt shows only while nothing has been tracked on this profile and
-/// it has not been dismissed ("Not now", kept per account on this device);
+/// it has not been hidden (its ✕, confirmed in a sheet; kept per account on
+/// this device);
 /// it is not offered to an account holder who said they are male. Nothing
 /// shows until both have loaded, so it never flashes in.
 ///
@@ -44,7 +45,7 @@ class PregnancyHomeCards extends ConsumerWidget {
       child =
           _TrackerCard(pregnancy: preg, mother: mother, title: owner == null ? p.title : p.title_of(owner.shortName));
     } else if (mother == null && all.isEmpty && dismissed == false && s.gender != Gender.male) {
-      child = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child = Stack(alignment: AlignmentDirectional.centerEnd, children: [
         PCard(
           onTap: () => openPregnancy(context, ref),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -57,12 +58,20 @@ class PregnancyHomeCards extends ConsumerWidget {
                 Text(p.prompt_b, style: Typo.meta(ar: s.rtl)),
               ]),
             ),
-            Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg4),
+            // Room for the ✕, which sits over the card's end.
+            const SizedBox(width: 28),
           ]),
         ),
-        TextButton(
-          onPressed: () => ref.read(pregnancyPromptDismissedProvider.notifier).dismiss(),
-          child: Text(p.not_now, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600)),
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 8),
+          child: RoundBtn(
+            icon: LucideIcons.x,
+            semanticLabel: p.hide_a11y,
+            ghost: true,
+            fg: T.fg3,
+            iconSize: 17,
+            onTap: () => _askToHide(context, ref, s),
+          ),
         ),
       ]);
     } else {
@@ -70,6 +79,45 @@ class PregnancyHomeCards extends ConsumerWidget {
     }
     return Padding(padding: EdgeInsets.fromLTRB(gutter, 0, gutter, 14), child: child);
   }
+}
+
+/// "Hide the pregnancy card?" (mother-child.jsx `MCHomeCards` hideAsk): the
+/// prompt goes for good on this device; tracking stays one tap away in
+/// Profile › Pregnancy.
+Future<void> _askToHide(BuildContext context, WidgetRef ref, PatientAppState s) {
+  final p = s.strings.pregnancy;
+  return showAppSheet<void>(
+    context,
+    textDirection: s.dir,
+    builder: (sheet) => FamilySheet(title: p.hide_title, sub: p.hide_sub, children: [
+      Container(
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
+        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(14)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Padding(
+            padding: EdgeInsetsDirectional.only(top: 2),
+            child: Icon(LucideIcons.info, size: 16, color: T.fg3),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(p.hide_note, style: Typo.bodySm(ar: s.rtl))),
+        ]),
+      ),
+      const SizedBox(height: 16),
+      PButton(p.hide_btn, block: true, large: true, accent: s.accent, ar: s.rtl, onTap: () {
+        ref.read(pregnancyPromptDismissedProvider.notifier).dismiss();
+        Navigator.of(sheet).pop();
+      }),
+      const SizedBox(height: 10),
+      PButton(s.strings.common.cancel,
+          variant: BtnVariant.ghost,
+          size: BtnSize.md,
+          block: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: () => Navigator.of(sheet).pop()),
+      const SizedBox(height: 4),
+    ]),
+  );
 }
 
 class _TrackerCard extends ConsumerWidget {

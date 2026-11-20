@@ -159,13 +159,23 @@ void main() {
   });
 
   group('Home', () {
-    testWidgets('offers to start tracking; "Not now" hides it for this account, kept on the device', (tester) async {
+    testWidgets('offers to start tracking; its ✕, once confirmed, hides it for this account, kept on the device',
+        (tester) async {
       final s = state();
       final p = s.strings.pregnancy;
       final c = await pump(tester, const PregnancyHomeCards(), s);
       expect(find.text(p.prompt_b), findsOne);
 
-      await tester.tap(find.text(p.not_now));
+      await tester.tap(find.bySemanticsLabel(p.hide_a11y));
+      await tester.pumpAndSettle();
+      expect(find.text(p.hide_title), findsOne);
+      await tester.tap(find.text(s.strings.common.cancel));
+      await tester.pumpAndSettle();
+      expect(find.text(p.prompt_b), findsOne, reason: 'Cancel keeps the card');
+
+      await tester.tap(find.bySemanticsLabel(p.hide_a11y));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(p.hide_btn));
       await tester.pumpAndSettle();
 
       expect(find.text(p.prompt_b), findsNothing);

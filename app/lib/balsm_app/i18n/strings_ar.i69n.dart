@@ -4230,7 +4230,12 @@ class PregnancyStrings_ar extends PregnancyStrings {
   String get next_visit => "الزيارة القادمة";
   String get prompt_b =>
       "إن كنتِ حاملاً، سجّلي موعد الولادة المتوقع واسم طبيبتك";
-  String get not_now => "ليس الآن · يمكنك تفعيلها لاحقاً من «الملف»";
+  String get hide_a11y => "إخفاء بطاقة متابعة الحمل";
+  String get hide_title => "إخفاء بطاقة متابعة الحمل؟";
+  String get hide_sub => "لن تظهر هذه البطاقة على الشاشة الرئيسية مرة أخرى.";
+  String get hide_note =>
+      "يمكنك تفعيل متابعة الحمل في أي وقت من «الملف» › «متابعة الحمل».";
+  String get hide_btn => "إخفاء البطاقة";
   String get row_off => "غير مفعّلة";
   String get next_visit_t => "زيارة المتابعة القادمة";
   String get add_visit => "أضيفي موعد زيارة المتابعة القادمة";
@@ -4408,8 +4413,16 @@ class PregnancyStrings_ar extends PregnancyStrings {
         return next_visit;
       case 'prompt_b':
         return prompt_b;
-      case 'not_now':
-        return not_now;
+      case 'hide_a11y':
+        return hide_a11y;
+      case 'hide_title':
+        return hide_title;
+      case 'hide_sub':
+        return hide_sub;
+      case 'hide_note':
+        return hide_note;
+      case 'hide_btn':
+        return hide_btn;
       case 'row_off':
         return row_off;
       case 'next_visit_t':
