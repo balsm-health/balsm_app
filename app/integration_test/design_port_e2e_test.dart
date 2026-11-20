@@ -605,10 +605,10 @@ void main() {
     final f = _en.family;
     final p = _en.pregnancy;
 
-    // Home → Family → Add family member → Enter details manually.
+    // Home → profile bar → Manage family → Add family member → Enter details manually.
     await goHome(tester);
-    await reveal(tester, find.text(f.title));
-    await tapWhenReady(tester, find.text(f.title));
+    await tapWhenReady(tester, find.text(f.bar_family));
+    await tapWhenReady(tester, _pButton(f.manage_family));
     await tapWhenReady(tester, _pButton(f.add_member));
     await tapWhenReady(tester, find.text(f.manual_t));
     await pumpUntil(tester, find.text(f.f_relation));
