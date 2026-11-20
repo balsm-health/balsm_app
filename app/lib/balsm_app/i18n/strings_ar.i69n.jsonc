@@ -1345,8 +1345,6 @@
     "empty_t": "لا يوجد أفراد بعد",
     "empty_b(Gender gender)": "${_select(gender, female: 'أضيفي', other: 'أضف')} أطفالك أو والديك لتحتفظ${_select(gender, female: 'ي', other: '')} ببطاقة طوارئ لكل منهم.",
     "stays_local": "بيانات عائلتك محفوظة على هذا الجهاز وحده.",
-    "home_sub(int n, Gender gender)": "${_select(gender, female: 'تديرين', other: 'تدير')} ${_plural(n, one:'ملفًا واحدًا', two:'ملفين', few:'$n ملفات', many:'$n ملفًا', other:'$n ملف')}",
-    "home_empty_sub(Gender gender)": "${_select(gender, female: 'أضيفي', other: 'أضف')} من ${_select(gender, female: 'ترعينهم', other: 'ترعاهم')}",
     "manual_t": "الإدخال يدويًا",
     "manual_b(Gender gender)": "لطفلك، أو لمن لا يملك حسابًا على بلسم. ${_select(gender, female: 'تديرين', other: 'تدير')} ملفه من جهازك.",
     "group_family": "عائلتي",

@@ -4692,14 +4692,6 @@ class FamilyStrings_ar extends FamilyStrings {
             'other': ''
           })} ببطاقة طوارئ لكل منهم.";
   String get stays_local => "بيانات عائلتك محفوظة على هذا الجهاز وحده.";
-  String home_sub(int n, Gender gender) => "${_select(gender, {
-            'female': 'تديرين',
-            'other': 'تدير'
-          })} ${_plural(n, one: 'ملفًا واحدًا', two: 'ملفين', few: '$n ملفات', many: '$n ملفًا', other: '$n ملف')}";
-  String home_empty_sub(Gender gender) => "${_select(gender, {
-            'female': 'أضيفي',
-            'other': 'أضف'
-          })} من ${_select(gender, {'female': 'ترعينهم', 'other': 'ترعاهم'})}";
   String get manual_t => "الإدخال يدويًا";
   String manual_b(Gender gender) =>
       "لطفلك، أو لمن لا يملك حسابًا على بلسم. ${_select(gender, {
@@ -5006,10 +4998,6 @@ class FamilyStrings_ar extends FamilyStrings {
         return empty_b;
       case 'stays_local':
         return stays_local;
-      case 'home_sub':
-        return home_sub;
-      case 'home_empty_sub':
-        return home_empty_sub;
       case 'manual_t':
         return manual_t;
       case 'manual_b':

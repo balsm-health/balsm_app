@@ -4,7 +4,6 @@ import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/family/family_screen.dart';
-import 'package:app/balsm_app/screens/family/family_home_card.dart';
 import 'package:app/balsm_app/screens/family/family_kit.dart';
 import 'package:app/balsm_app/screens/family/member_card_screen.dart';
 import 'package:app/balsm_app/screens/family/profile_bar.dart';
@@ -308,19 +307,16 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('flag on: the Family card counts the members and opens Family', (tester) async {
+    testWidgets('flag on: Home has no Family card; Family opens from the people picker', (tester) async {
       final state = familyState();
       final f = state.strings.family;
-      final c = await pump(tester, const HomeScreen(), state, settle: false);
+      await pump(tester, const HomeScreen(), state, settle: false);
       await frames(tester);
-      expect(find.byType(FamilyHomeCard), findsOne);
-      expect(find.text(f.home_empty_sub(Gender.other)), findsOne);
+      expect(find.text(f.title), findsNothing);
 
-      await seed(c, 'Test Kid');
+      await tester.tap(find.byType(ProfileBar));
       await frames(tester);
-      expect(find.text(f.home_sub(1, Gender.other)), findsOne);
-
-      await tester.tap(find.byType(FamilyHomeCard));
+      await tester.tap(find.text(f.manage_family));
       await frames(tester);
       expect(find.byType(FamilyScreen), findsOne);
       await unmount(tester);
@@ -332,7 +328,6 @@ void main() {
       await pump(tester, const HomeScreen(), state, settle: false);
 
       expect(find.byType(ProfileBar), findsNothing);
-      expect(find.byType(FamilyHomeCard), findsNothing);
       expect(find.text(state.strings.home.viewing_member('Test Relative')), findsOne);
       await unmount(tester);
     });

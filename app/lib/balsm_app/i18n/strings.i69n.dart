@@ -4445,9 +4445,6 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   String empty_b(Gender gender) =>
       "Add your children or parents to keep an emergency card for each.";
   String get stays_local => "Your family's data stays on this phone.";
-  String home_sub(int n, Gender gender) =>
-      "${_plural(n, one: '1 profile you manage', other: '$n profiles you manage')}";
-  String home_empty_sub(Gender gender) => "Add the people you look after";
   String get manual_t => "Enter details manually";
   String manual_b(Gender gender) =>
       "For your child, or someone without a Balsm account. You manage their profile from your phone.";
@@ -4678,10 +4675,6 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return empty_b;
       case 'stays_local':
         return stays_local;
-      case 'home_sub':
-        return home_sub;
-      case 'home_empty_sub':
-        return home_empty_sub;
       case 'manual_t':
         return manual_t;
       case 'manual_b':
