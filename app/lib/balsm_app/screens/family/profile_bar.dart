@@ -15,8 +15,8 @@ import 'family_screen.dart';
 /// Active-profile bar (`Mother and Child.dc.html`, the canvas matched to the
 /// shipped app; mother-child.jsx `MCProfileBar`): under the Home header and on
 /// the Meds and Records tabs, so it is always clear whose data is on screen.
-/// A soft pill — no border — with a 28px avatar, "Viewing <whose>" and
-/// "Change ⌄". Tapping it opens the people picker.
+/// A soft pill — no border — with a 28px avatar, "Viewing <whose>", the
+/// other members' avatars and "Change ⌄". Tapping it opens the people picker.
 class ProfileBar extends ConsumerWidget {
   const ProfileBar({super.key});
 
@@ -27,6 +27,14 @@ class ProfileBar extends ConsumerWidget {
     final m = ref.watch(activeFamilyMemberProvider);
     final tone = m == null ? null : toneColors(m.tone);
     // A link request waiting for this account's answer (pulled — no push).
+    // The other people you look after, as a small overlapping stack before
+    // "Change" (mother-child.jsx MCProfileBar), so the bar says there is
+    // someone else to switch to.
+    final others = (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[])
+        .where((x) => x.kind == ProfileKind.dependent && x.id != m?.id)
+        .take(3)
+        .toList();
+    final ring = tone?.bg ?? T.ink50;
     final waiting =
         familyLinkOn(s.flags) && (ref.watch(familyLinksProvider).valueOrNull?.awaitingMe.isNotEmpty ?? false);
     final avatar = m == null ? const SelfAvatar(size: 28) : MemberAvatar(m, size: 28);
@@ -82,6 +90,24 @@ class ProfileBar extends ConsumerWidget {
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2),
                 ),
               ),
+              if (others.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                ExcludeSemantics(
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    for (final (i, x) in others.indexed)
+                      Transform.translate(
+                        offset: Offset((s.rtl ? 8.0 : -8.0) * i, 0),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [BoxShadow(color: ring, spreadRadius: 2)],
+                          ),
+                          child: MemberAvatar(x, size: 22),
+                        ),
+                      ),
+                  ]),
+                ),
+              ],
               const SizedBox(width: 8),
               Text(f.bar_change,
                   style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: tone?.ink ?? s.accent.d)),

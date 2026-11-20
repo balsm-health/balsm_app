@@ -225,6 +225,19 @@ void main() {
   });
 
   group('People picker', () {
+    testWidgets('the bar shows the other members\' avatars, not the one on screen', (tester) async {
+      final state = familyState();
+      final c = await pump(tester, const ProfileBar(), state);
+      final kid = await seed(c, 'Test Kid');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(ProfileBar), matching: find.byType(MemberAvatar)), findsOne);
+
+      await c.read(activeProfileSwitcherProvider).select(kid.id);
+      await tester.pumpAndSettle();
+      // Test Kid is now the bar's own avatar; there is no one else to stack.
+      expect(find.descendant(of: find.byType(ProfileBar), matching: find.byType(MemberAvatar)), findsOne);
+    });
+
     testWidgets('choosing a member re-points the active profile; choosing yourself goes back', (tester) async {
       final state = familyState();
       final f = state.strings.family;
