@@ -45,7 +45,7 @@ class PregnancyHomeCards extends ConsumerWidget {
       child =
           _TrackerCard(pregnancy: preg, mother: mother, title: owner == null ? p.title : p.title_of(owner.shortName));
     } else if (mother == null && all.isEmpty && dismissed == false && s.gender != Gender.male) {
-      child = Stack(alignment: AlignmentDirectional.centerEnd, children: [
+      child = Stack(children: [
         PCard(
           onTap: () => openPregnancy(context, ref),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -62,16 +62,19 @@ class PregnancyHomeCards extends ConsumerWidget {
             const SizedBox(width: 28),
           ]),
         ),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 8),
-          child: RoundBtn(
+        PositionedDirectional(
+          end: 8,
+          top: 0,
+          bottom: 0,
+          child: Center(
+              child: RoundBtn(
             icon: LucideIcons.x,
             semanticLabel: p.hide_a11y,
             ghost: true,
             fg: T.fg3,
             iconSize: 17,
             onTap: () => _askToHide(context, ref, s),
-          ),
+          )),
         ),
       ]);
     } else {
