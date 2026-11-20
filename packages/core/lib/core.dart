@@ -94,6 +94,7 @@ export 'src/telemetry/console_analytics_logger.dart';
 export 'src/telemetry/dev_log_analytics_logger.dart';
 export 'src/telemetry/feedback_reporter.dart';
 export 'src/update/app_update.dart';
+export 'src/update/maintenance_notice.dart';
 export 'src/flags/feature_flags.dart';
 export 'src/flags/static_flag_source.dart';
 export 'src/flags/posthog_flag_source.dart';

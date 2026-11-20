@@ -66,10 +66,25 @@ class MaintenanceStatus {
 /// How often the flag is re-read while the app is open. Overridable in tests.
 final maintenancePollIntervalProvider = Provider<Duration>((_) => const Duration(minutes: 5));
 
-/// Polls `GET /api/v1/maintenance`: on first read, every
+/// The `maintenance` block of this brand's release manifest
+/// (`/version/<brand>.json`), served from the web host rather than the API
+/// server. Overridable in tests.
+final maintenanceNoticeSourceProvider = Provider<ManifestMaintenanceSource>(
+  (_) => ManifestMaintenanceSource(url: appVersionUrl(FlavorConfig.current.brand)),
+);
+
+/// Reads the maintenance state on first read, every
 /// [maintenancePollIntervalProvider], on resume (the shell calls [check]) and on
-/// "Check again". With the `maintenance` flag off it never calls the API and
-/// stays [MaintenanceMode.off].
+/// "Check again", from two places at once:
+///
+/// - the release manifest's `maintenance` block — the primary switch. It lives
+///   on the web host, so it still answers while the API server is down;
+/// - `GET /api/v1/maintenance` — so a self-hosted server can announce its own.
+///
+/// The stricter answer wins (block > readonly > off). A source that does not
+/// answer counts as off, so only an explicit announcement pauses anything.
+/// With the `maintenance` flag off neither is read and the state stays
+/// [MaintenanceMode.off].
 final maintenanceProvider = NotifierProvider<MaintenanceController, MaintenanceStatus>(MaintenanceController.new);
 
 class MaintenanceController extends Notifier<MaintenanceStatus> {
@@ -95,12 +110,37 @@ class MaintenanceController extends Notifier<MaintenanceStatus> {
       return;
     }
     state = state.copyWith(checking: true);
+    final (manifest, server) = await (_fromManifest(), _fromServer()).wait;
+    state = _stricter(manifest, server) ?? const MaintenanceStatus();
+  }
+
+  Future<MaintenanceStatus?> _fromManifest() async {
+    final n = await ref.read(maintenanceNoticeSourceProvider).read();
+    return n == null
+        ? null
+        : MaintenanceStatus(mode: MaintenanceMode.fromWire(n.mode), message: n.message, endsAt: n.endsAt);
+  }
+
+  Future<MaintenanceStatus?> _fromServer() async {
     try {
       final res = await ref.read(maintenanceApiProvider).getStatus();
-      state = MaintenanceStatus(mode: MaintenanceMode.fromWire(res.mode), message: res.message, endsAt: res.endsAt);
+      return MaintenanceStatus(mode: MaintenanceMode.fromWire(res.mode), message: res.message, endsAt: res.endsAt);
     } catch (_) {
       // Unreachable or refused: never block on a guess (see MaintenanceMode.unknown).
-      state = const MaintenanceStatus();
+      return null;
     }
+  }
+
+  /// The answer that pauses more; on a tie the manifest's, which carries the
+  /// platform-wide message. Null when neither source answered.
+  static MaintenanceStatus? _stricter(MaintenanceStatus? manifest, MaintenanceStatus? server) {
+    int rank(MaintenanceStatus? s) => switch (s?.mode) {
+          MaintenanceMode.block => 3,
+          MaintenanceMode.readonly => 2,
+          MaintenanceMode.off => 1,
+          _ => 0,
+        };
+    if (manifest == null && server == null) return null;
+    return rank(server) > rank(manifest) ? server : manifest ?? server;
   }
 }

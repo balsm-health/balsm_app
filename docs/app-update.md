@@ -216,6 +216,36 @@ minutes each, and an app re-reads it on launch and on every return to the
 foreground. A blocked phone that is offline stays blocked until it is online
 once — the block is held from its last good copy on purpose.
 
+## Maintenance
+
+The same file announces maintenance. It is served from the web host, not the
+API server, so the announcement still reaches the apps while the API is down.
+Add a top-level `maintenance` block on the source branch:
+
+```json
+"maintenance": {
+  "mode": "readonly",
+  "message": "We're moving to a new server.",
+  "ends_at": "2026-11-21T02:00:00Z"
+}
+```
+
+| Key | Values |
+|---|---|
+| `mode` | `off`, `readonly` (a strip above the tab bar; logging, adding, syncing, sharing and sign-in pause), `block` (a full-screen page; only the patient's own emergency card and the emergency number stay reachable) |
+| `message` | optional, replaces the default copy. The same text for every language, so keep it short or leave it out |
+| `ends_at` | optional UTC time, shown in the reader's own time zone; left out = "We'll share the end time soon" |
+
+Set `mode` back to `off` (or delete the block) to end it. It lands as fast as
+a release does — up to about ten minutes through the Worker's cache — and an
+open app re-checks every five minutes, on resume and on "Check again".
+
+The apps also ask the API (`GET /api/v1/maintenance`), so a self-hosted
+server can announce its own maintenance; the stricter of the two answers
+wins. Unlike the update check, the maintenance block is never answered from
+the copy cached on the phone: an unreachable file, an unreadable block or a
+`mode` the app does not know pauses nothing.
+
 ## Compatibility
 
 Every build ever shipped keeps reading this file, so the format only grows.

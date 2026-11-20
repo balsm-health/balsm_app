@@ -263,6 +263,8 @@ void main() {
     await app.bootstrap(
       extraOverrides: [
         ...e2eApiOverrides(auth: FakeAuthApi(), maintenance: maintenance),
+        // Hermetic: the release manifest is not fetched from the web host.
+        maintenanceNoticeSourceProvider.overrideWithValue(FakeManifestMaintenanceSource()),
         // No device location: Home's "Nearby" would otherwise raise the iOS
         // location prompt, a native alert that covers every screenshot.
         deviceLocationProvider.overrideWith((ref) async => (position: null, issue: DeviceLocationIssue.denied)),

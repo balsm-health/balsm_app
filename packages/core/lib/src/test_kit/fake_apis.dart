@@ -2,6 +2,7 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../network/api_providers.dart';
+import '../update/maintenance_notice.dart';
 
 /// The single synthetic identity every e2e run uses. Fixed values so assertions
 /// can name them.
@@ -588,6 +589,23 @@ class FakeMaintenanceApi implements MaintenanceApi {
     calls++;
     if (failWith != null) throw failWith!;
     return MaintenanceStatusResponse(mode: mode, message: message, endsAt: endsAt);
+  }
+}
+
+/// In-memory [ManifestMaintenanceSource]: answers [notice] (null = the
+/// manifest could not be read) without touching the network.
+class FakeManifestMaintenanceSource extends ManifestMaintenanceSource {
+  FakeManifestMaintenanceSource({this.notice}) : super(url: 'https://example.invalid/version.json');
+
+  MaintenanceNotice? notice;
+
+  /// How many times the manifest was read.
+  int calls = 0;
+
+  @override
+  Future<MaintenanceNotice?> read() async {
+    calls++;
+    return notice;
   }
 }
 
