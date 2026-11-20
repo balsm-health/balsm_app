@@ -137,10 +137,18 @@ class MemberBody extends ConsumerWidget {
         icon: LucideIcons.idCard,
         tone: MemberTone.blue,
         title: f.tile_card,
-        sub: '${blood ?? '—'} · ${allergies == 0 ? f.no_allergies : f.allergies_n(allergies)}',
+        // "O+ · 1 allergy" (canvas); no dash in front while no blood type is set.
+        sub: [if (blood != null) blood, allergies == 0 ? f.no_allergies : f.allergies_n(allergies)].join(' · '),
         onTap: () => openMemberCard(context, m.id),
       ),
       ..._childTiles(context, ref, m, now),
+      FamilyTile(
+        icon: LucideIcons.folderHeart,
+        tone: MemberTone.violet,
+        title: f.tile_records,
+        sub: records == 0 ? f.no_records : f.records_n(records),
+        onTap: () => _openTab(context, ref, AppTab.records),
+      ),
       if (preg != null || m.canTrackPregnancyOn(now))
         FamilyTile(
           icon: LucideIcons.sprout,
@@ -176,24 +184,20 @@ class MemberBody extends ConsumerWidget {
         sub: meds == 0 ? f.no_meds : f.meds_n(meds),
         onTap: () => _openTab(context, ref, AppTab.meds),
       ),
-      FamilyTile(
-        icon: LucideIcons.folderHeart,
-        tone: MemberTone.violet,
-        title: f.tile_records,
-        sub: records == 0 ? f.no_records : f.records_n(records),
-        onTap: () => _openTab(context, ref, AppTab.records),
-      ),
     ];
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 20),
+        // Canvas "06 Member profile": 8 above, 84px avatar, 12 to the 26/800
+        // name, 6 to the meta, 10 to the chips, 16 to the tiles.
+        padding: const EdgeInsetsDirectional.only(top: 8, bottom: 16),
         child: Column(children: [
           MemberAvatar(m, size: 84),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(m.displayName,
-              textAlign: TextAlign.center, style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
+              textAlign: TextAlign.center,
+              style: Typo.title(ar: s.rtl).copyWith(fontWeight: FontWeight.w800, height: 1.3)),
+          const SizedBox(height: 6),
           Text(meta, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
           if (blood != null || (health?.conditions.isNotEmpty ?? false)) ...[
             const SizedBox(height: 10),
@@ -263,14 +267,19 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // Canvas chip: 26 high, 10 either side; the blood type bold in the
+    // display face, a condition in regular body text.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      height: 26,
+      alignment: Alignment.center,
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
       decoration: BoxDecoration(color: T.neutralBg, borderRadius: BorderRadius.circular(T.rPill)),
       child: Text(
         label,
         textDirection: ltr ? TextDirection.ltr : null,
-        style: (ltr ? Typo.num(size: FS.sm, weight: FontWeight.w700) : Typo.bodySm(ar: s.rtl))
-            .copyWith(fontWeight: FontWeight.w600, color: T.fg2),
+        style: ltr
+            ? Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg1)
+            : Typo.meta(ar: s.rtl).copyWith(color: T.fg2),
       ),
     );
   }

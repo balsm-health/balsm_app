@@ -86,15 +86,37 @@ class HomeScreen extends ConsumerWidget {
               // canvas ends the row with a bell; it is left out because the
               // app has no reminders or notifications screen for it to open,
               // and a button that does nothing tells a screen reader it works.
-              AppBarRow(children: [
-                _AvatarButton(
-                  initials: accountInitials(displayName),
-                  color: avatarColor,
-                  onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: HomeGreeting(firstName: firstName)),
-              ]),
+              // While a family member is the active profile the header is the
+              // canvas's member head (Mother and Child, "06 Member profile"):
+              // a round back button that returns to the account holder's own
+              // profile, then "Family". The greeting would name the account
+              // holder above someone else's record.
+              if (activeMember != null)
+                AppBarRow(
+                  leading: RoundBtn(
+                    icon: backArrow(context),
+                    semanticLabel: s.strings.home.member_back,
+                    onTap: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
+                  ),
+                  children: [
+                    Expanded(
+                      child: Text(s.strings.family.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
+                    ),
+                  ],
+                )
+              else
+                AppBarRow(children: [
+                  _AvatarButton(
+                    initials: accountInitials(displayName),
+                    color: avatarColor,
+                    onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: HomeGreeting(firstName: firstName)),
+                ]),
 
               // `UX Enhancement Screens.html` — "Household · active-account
               // accent": the design keeps whose-data-is-this permanently visible.

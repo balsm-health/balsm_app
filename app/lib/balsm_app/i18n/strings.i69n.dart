@@ -1753,6 +1753,7 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get sc_places => "places nearby";
   String get sc_records => "Records";
   String viewing_member(String name) => "$name is selected";
+  String get member_back => "Back to your own profile";
   String viewing_own_data(Gender gender) =>
       "Their record isn't on this device yet — you're still seeing your own.";
   String get viewing_switch_back => "Switch back";
@@ -1809,6 +1810,8 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
+      case 'member_back':
+        return member_back;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':
@@ -3827,7 +3830,7 @@ class VaccStrings implements i69n.I69nMessageBundle {
   String get delete_t => "Delete this vaccination?";
   String get delete_b =>
       "It will be removed from the vaccination record on this phone.";
-  String tile_next(String date) => "Next $date";
+  String tile_next(String date) => "Next dose $date";
   String recorded_n(int n) =>
       "${_plural(n, one: '1 recorded', other: '$n recorded')}";
   Object operator [](String key) {

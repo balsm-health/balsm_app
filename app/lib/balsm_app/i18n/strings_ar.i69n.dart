@@ -1892,6 +1892,7 @@ class HomeStrings_ar extends HomeStrings {
   String get sc_places => "مكان قريب";
   String get sc_records => "السجلات";
   String viewing_member(String name) => "$name محدد";
+  String get member_back => "العودة إلى ملفك";
   String viewing_own_data(Gender gender) =>
       "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, {
             'female': 'ترينه',
@@ -1951,6 +1952,8 @@ class HomeStrings_ar extends HomeStrings {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
+      case 'member_back':
+        return member_back;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':
@@ -4045,7 +4048,7 @@ class VaccStrings_ar extends VaccStrings {
   String get delete => "حذف هذا التطعيم";
   String get delete_t => "حذف هذا التطعيم؟";
   String get delete_b => "سيُحذف من سجل التطعيمات على هذا الجهاز.";
-  String tile_next(String date) => "القادمة $date";
+  String tile_next(String date) => "الجرعة القادمة $date";
   String recorded_n(int n) =>
       "${_plural(n, zero: 'لا تطعيمات بعد', one: 'تطعيم واحد مسجّل', two: 'تطعيمان مسجّلان', few: '$n تطعيمات مسجّلة', many: '$n تطعيماً مسجّلاً', other: '$n تطعيم مسجّل')}";
   Object operator [](String key) {

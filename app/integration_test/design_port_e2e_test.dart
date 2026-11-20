@@ -69,7 +69,7 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/i18n/strings.i69n.dart' as en;
 import 'package:app/balsm_app/i18n/strings_ar.i69n.dart' as ar;
-import 'package:app/balsm_app/kit.dart' show PButton, PCard, RoundBtn;
+import 'package:app/balsm_app/kit.dart' show AppBarRow, PButton, PCard, RoundBtn;
 import 'package:app/balsm_app/maintenance/maintenance_controller.dart';
 import 'package:app/balsm_app/maintenance/maintenance_widgets.dart';
 import 'package:app/balsm_app/screens/checkin_shared.dart' show CheckInDayRow;
@@ -110,6 +110,7 @@ const _memberShort = 'Test';
 const _allergen = 'Test allergen';
 const _condition = 'Test condition';
 const _relative = 'Test Relative';
+const _childName = 'Test Child';
 
 const _en = en.Strings();
 const _ar = ar.Strings_ar();
@@ -1009,6 +1010,73 @@ void main() {
       await pumpUntilGone(tester, find.text(_en.checkin.ql_title));
     }
     await snap(tester, '34-maintenance-endpoint-error-nothing-paused');
+
+    await shutDown(tester);
+  });
+
+  // ── 6 ─────────────────────────────────────────────────────────────────────
+  testWidgets('6. member Home: switched to a child, Home is their profile head and tiles (EN + AR)', skip: _skip(6),
+      (tester) async {
+    await freshAccount(tester, motherChild: true);
+    final f = _en.family;
+
+    // Home → Family → Add family member → a son, three years old.
+    await goHome(tester);
+    // The profile bar opens the picker; "Manage family" opens Family.
+    await tapWhenReady(tester, find.text(f.bar_family));
+    await tapWhenReady(tester, _pButton(f.manage_family));
+    await tapWhenReady(tester, _pButton(f.add_member));
+    await tapWhenReady(tester, find.text(f.manual_t));
+    await pumpUntil(tester, find.text(f.f_relation));
+    await tapWhenReady(tester, find.text(f.pick_son));
+    await tester.enterText(find.widgetWithText(TextField, f.f_name_ph(Gender.other)), _childName);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await settle(tester, 3);
+    final dobField = find.text(f.f_dob_ph);
+    await reveal(tester, dobField);
+    await tapWhenReady(tester, dobField);
+    final now = DateTime.now();
+    final months = _en.settings.cal_months.split('|');
+    await tapWhenReady(tester, find.text('${months[now.month - 1]} ${now.year - 5}'));
+    final year = find.text('${now.year - 3}');
+    await reveal(tester, year);
+    await tapWhenReady(tester, year);
+    await tapWhenReady(tester, find.text('15'));
+    await tapWhenReady(tester, find.text(_en.onboarding.dob_confirm));
+    await pumpUntilGone(tester, find.text(_en.onboarding.dob_confirm));
+    final male = find.text(f.sex_male);
+    await reveal(tester, male);
+    await tapWhenReady(tester, male);
+    // A child: no consent step, Save adds him and makes him the active profile.
+    await tapWhenReady(tester, _pButton(f.save));
+    await pumpUntil(tester, find.text(_childName));
+    await tapWhenReady(tester, _roundBtn(_en.common.a11y_back));
+    await settle(tester, 3);
+
+    // Home now shows the child.
+    await goHome(tester);
+    await pumpUntil(tester, find.text(f.tile_card));
+    expect(find.text(_childName), findsWidgets);
+    expect(find.text(_en.vacc.title), findsOneWidget, reason: 'a child gets Vaccinations');
+    expect(find.text(_en.growth.title), findsOneWidget, reason: 'a child gets Growth');
+    // The canvas member head: back to your own profile, then "Family".
+    expect(_roundBtn(_en.home.member_back), findsOneWidget);
+    expect(find.descendant(of: find.byType(AppBarRow), matching: find.text(f.title)), findsOneWidget);
+    await snap(tester, '40-member-home-en');
+
+    appState().setLang(LanguageCode.ar);
+    await settle(tester, 10);
+    await pumpUntil(tester, find.text(_ar.family.tile_card));
+    expect(Directionality.of(tester.element(find.text(_ar.family.tile_card))), TextDirection.rtl);
+    await snap(tester, '41-member-home-ar');
+    expect(tester.takeException(), isNull);
+    appState().setLang(LanguageCode.en);
+    await settle(tester, 10);
+
+    // Back returns Home to the account holder.
+    await tapWhenReady(tester, _roundBtn(_en.home.member_back));
+    await pumpUntilGone(tester, find.text(f.tile_card));
+    expect(find.descendant(of: find.byType(AppBarRow), matching: find.text(f.title)), findsNothing);
 
     await shutDown(tester);
   });

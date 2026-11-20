@@ -535,6 +535,9 @@
     "sc_places": "places nearby",
     "sc_records": "Records",
     "viewing_member(String name)": "$name is selected",
+    // Member Home (Mother & Child): the round button before the "Family" title; it
+    // switches the active profile back to the account holder.
+    "member_back": "Back to your own profile",
     "viewing_own_data(Gender gender)": "Their record isn't on this device yet — you're still seeing your own.",
     "viewing_switch_back": "Switch back"
   },
@@ -1162,7 +1165,7 @@
     "delete": "Delete this vaccination",
     "delete_t": "Delete this vaccination?",
     "delete_b": "It will be removed from the vaccination record on this phone.",
-    "tile_next(String date)": "Next $date",
+    "tile_next(String date)": "Next dose $date",
     "recorded_n(int n)": "${_plural(n, one:'1 recorded', other:'$n recorded')}"
   },
   "growth": {

@@ -387,11 +387,15 @@ class FamilyTile extends StatelessWidget {
         onTap: onTap,
         padding: const EdgeInsets.all(14),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 88),
+          // Canvas tile: 118 tall with the 14 padding, a 38px icon square
+          // (radius 11), 10 to a 15/600 title, 2 to the 12px line.
+          constraints: const BoxConstraints(minHeight: 90),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconSquare(icon, bg: t.bg, fg: t.ink, size: 40, iconSize: 20),
+            IconSquare(icon, bg: t.bg, fg: t.ink, radius: T.rIconV2),
             const SizedBox(height: 10),
-            Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+            Text(title,
+                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.base, fontWeight: FontWeight.w600, color: T.fg1)),
+            const SizedBox(height: 2),
             Text(sub, style: Typo.meta(ar: s.rtl)),
           ]),
         ),

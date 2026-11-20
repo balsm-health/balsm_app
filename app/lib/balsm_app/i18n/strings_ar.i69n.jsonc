@@ -532,6 +532,8 @@
     "sc_places": "مكان قريب",
     "sc_records": "السجلات",
     "viewing_member(String name)": "$name محدد",
+    // ملفك is the same for both genders.
+    "member_back": "العودة إلى ملفك",
     "viewing_own_data(Gender gender)": "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, female: 'ترينه', other: 'تراه')} هو سجلّك أنت${_select(gender, female: 'ِ', other: '')}.",
     "viewing_switch_back": "العودة"
   },
@@ -1156,7 +1158,7 @@
     "delete": "حذف هذا التطعيم",
     "delete_t": "حذف هذا التطعيم؟",
     "delete_b": "سيُحذف من سجل التطعيمات على هذا الجهاز.",
-    "tile_next(String date)": "القادمة $date",
+    "tile_next(String date)": "الجرعة القادمة $date",
     "recorded_n(int n)": "${_plural(n, zero:'لا تطعيمات بعد', one:'تطعيم واحد مسجّل', two:'تطعيمان مسجّلان', few:'$n تطعيمات مسجّلة', many:'$n تطعيماً مسجّلاً', other:'$n تطعيم مسجّل')}"
   },
   "growth": {
