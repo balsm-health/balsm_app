@@ -1325,7 +1325,6 @@
   "family": {
     "bar_viewing(Gender gender)": "${_select(gender, female: 'تعرضين', other: 'تعرض')}",
     "bar_your_profile": "ملفك",
-    "bar_family": "العائلة",
     "bar_change": "تغيير",
     "bar_a11y": "تغيير الملف المعروض",
     "picker_title(Gender gender)": "ملف من ${_select(gender, female: 'تعرضين', other: 'تعرض')}؟",

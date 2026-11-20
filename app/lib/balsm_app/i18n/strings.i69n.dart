@@ -4416,7 +4416,6 @@ class FamilyStrings implements i69n.I69nMessageBundle {
   const FamilyStrings(this._parent);
   String bar_viewing(Gender gender) => "Viewing";
   String get bar_your_profile => "your profile";
-  String get bar_family => "Family";
   String get bar_change => "Change";
   String get bar_a11y => "Change whose profile is shown";
   String picker_title(Gender gender) => "Whose profile?";
@@ -4639,8 +4638,6 @@ class FamilyStrings implements i69n.I69nMessageBundle {
         return bar_viewing;
       case 'bar_your_profile':
         return bar_your_profile;
-      case 'bar_family':
-        return bar_family;
       case 'bar_change':
         return bar_change;
       case 'bar_a11y':

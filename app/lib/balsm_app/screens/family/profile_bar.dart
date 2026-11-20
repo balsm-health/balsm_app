@@ -12,13 +12,13 @@ import '../../tokens.dart';
 import 'family_kit.dart';
 import 'family_screen.dart';
 
-/// Active-profile bar (mother-child.jsx `MCProfileBar`): under the Home header
-/// and on the Meds and Records tabs, so it is always clear whose data is on
-/// screen. Tapping it opens the people picker. [family] shows the other
-/// members' avatars and reads "Family"; otherwise it reads "Change".
+/// Active-profile bar (`Mother and Child.dc.html`, the canvas matched to the
+/// shipped app; mother-child.jsx `MCProfileBar`): under the Home header and on
+/// the Meds and Records tabs, so it is always clear whose data is on screen.
+/// A soft pill — no border — with a 28px avatar, "Viewing <whose>" and
+/// "Change ⌄". Tapping it opens the people picker.
 class ProfileBar extends ConsumerWidget {
-  const ProfileBar({super.key, this.family = false});
-  final bool family;
+  const ProfileBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,17 +26,10 @@ class ProfileBar extends ConsumerWidget {
     final f = s.strings.family;
     final m = ref.watch(activeFamilyMemberProvider);
     final tone = m == null ? null : toneColors(m.tone);
-    final others = family
-        ? (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[])
-            .where((x) => x.kind == ProfileKind.dependent && x.id != m?.id)
-            .take(3)
-            .toList()
-        : const <FamilyMember>[];
-    final ring = tone?.bg ?? T.ink50;
     // A link request waiting for this account's answer (pulled — no push).
     final waiting =
         familyLinkOn(s.flags) && (ref.watch(familyLinksProvider).valueOrNull?.awaitingMe.isNotEmpty ?? false);
-    final avatar = m == null ? const SelfAvatar(size: 30) : MemberAvatar(m, size: 30);
+    final avatar = m == null ? const SelfAvatar(size: 28) : MemberAvatar(m, size: 28);
     return Semantics(
       button: true,
       label: waiting ? '${f.bar_a11y}. ${f.link_dot_a11y}' : f.bar_a11y,
@@ -46,11 +39,10 @@ class ProfileBar extends ConsumerWidget {
           onTap: () => showProfilePicker(context),
           scale: 0.99,
           child: Container(
-            padding: const EdgeInsetsDirectional.fromSTEB(5, 5, 14, 5),
+            padding: const EdgeInsetsDirectional.fromSTEB(5, 5, 12, 5),
             decoration: BoxDecoration(
               color: tone?.bg ?? T.ink50,
               borderRadius: BorderRadius.circular(T.rPill),
-              border: Border.all(color: m == null ? T.border : Colors.transparent),
             ),
             child: Row(children: [
               if (!waiting)
@@ -73,7 +65,7 @@ class ProfileBar extends ConsumerWidget {
                     ),
                   ),
                 ]),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text.rich(
                   TextSpan(children: [
@@ -90,27 +82,10 @@ class ProfileBar extends ConsumerWidget {
                   style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2),
                 ),
               ),
-              if (others.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                ExcludeSemantics(
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    for (final (i, x) in others.indexed)
-                      Transform.translate(
-                        offset: Offset((s.rtl ? 8.0 : -8.0) * i, 0),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: ring, spreadRadius: 2)],
-                          ),
-                          child: MemberAvatar(x, size: 22),
-                        ),
-                      ),
-                  ]),
-                ),
-              ],
-              const SizedBox(width: 6),
-              Text(family ? f.bar_family : f.bar_change,
+              const SizedBox(width: 8),
+              Text(f.bar_change,
                   style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: tone?.ink ?? s.accent.d)),
+              const SizedBox(width: 2),
               Icon(LucideIcons.chevronDown, size: 16, color: tone?.ink ?? s.accent.d),
             ]),
           ),

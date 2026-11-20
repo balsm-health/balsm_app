@@ -1329,7 +1329,6 @@
   "family": {
     "bar_viewing(Gender gender)": "Viewing",
     "bar_your_profile": "your profile",
-    "bar_family": "Family",
     "bar_change": "Change",
     "bar_a11y": "Change whose profile is shown",
     "picker_title(Gender gender)": "Whose profile?",

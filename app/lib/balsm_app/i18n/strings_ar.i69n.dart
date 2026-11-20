@@ -4638,7 +4638,6 @@ class FamilyStrings_ar extends FamilyStrings {
   String bar_viewing(Gender gender) =>
       "${_select(gender, {'female': 'تعرضين', 'other': 'تعرض'})}";
   String get bar_your_profile => "ملفك";
-  String get bar_family => "العائلة";
   String get bar_change => "تغيير";
   String get bar_a11y => "تغيير الملف المعروض";
   String picker_title(Gender gender) =>
@@ -4967,8 +4966,6 @@ class FamilyStrings_ar extends FamilyStrings {
         return bar_viewing;
       case 'bar_your_profile':
         return bar_your_profile;
-      case 'bar_family':
-        return bar_family;
       case 'bar_change':
         return bar_change;
       case 'bar_a11y':

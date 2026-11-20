@@ -229,7 +229,7 @@ void main() {
     testWidgets('choosing a member re-points the active profile; choosing yourself goes back', (tester) async {
       final state = familyState();
       final f = state.strings.family;
-      final c = await pump(tester, const ProfileBar(family: true), state);
+      final c = await pump(tester, const ProfileBar(), state);
       final selfId = await db.ensureSelfHealthProfile(user);
       final child = await seed(c, 'Test Kid');
       await tester.pumpAndSettle();
