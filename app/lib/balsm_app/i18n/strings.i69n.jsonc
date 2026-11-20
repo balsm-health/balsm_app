@@ -517,6 +517,10 @@
     "nudge_med(Gender gender)": "Add a medication",
     "nudge_med_sub": "Stay on track",
     "greet": "Good morning",
+    // Screen-reader label for the header avatar, which opens the account switcher.
+    "a11y_accounts": "Your accounts",
+    // Screen-reader label for the account holder's avatar circle.
+    "a11y_self_avatar": "Your account",
     "hero_time": "About 2 minutes",
     "streak": "day streak",
     "streak_help(Gender gender, int checked)": "Checked in ${checked} of the last 7 days",

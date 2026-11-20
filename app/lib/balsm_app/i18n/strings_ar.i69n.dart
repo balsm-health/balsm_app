@@ -1864,6 +1864,8 @@ class HomeStrings_ar extends HomeStrings {
       "${_select(gender, {'female': 'أضيفي', 'other': 'أضف'})} دواءً";
   String get nudge_med_sub => "واظب على المتابعة";
   String get greet => "صباح الخير";
+  String get a11y_accounts => "حساباتك";
+  String get a11y_self_avatar => "حسابك";
   String get hero_time => "حوالي دقيقتين";
   String get streak => "يوم متتالٍ";
   String streak_help(Gender gender, int checked) => "${_select(gender, {
@@ -1917,6 +1919,10 @@ class HomeStrings_ar extends HomeStrings {
         return nudge_med_sub;
       case 'greet':
         return greet;
+      case 'a11y_accounts':
+        return a11y_accounts;
+      case 'a11y_self_avatar':
+        return a11y_self_avatar;
       case 'hero_time':
         return hero_time;
       case 'streak':

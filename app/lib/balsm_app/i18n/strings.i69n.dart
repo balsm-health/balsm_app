@@ -1735,6 +1735,8 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String nudge_med(Gender gender) => "Add a medication";
   String get nudge_med_sub => "Stay on track";
   String get greet => "Good morning";
+  String get a11y_accounts => "Your accounts";
+  String get a11y_self_avatar => "Your account";
   String get hero_time => "About 2 minutes";
   String get streak => "day streak";
   String streak_help(Gender gender, int checked) =>
@@ -1775,6 +1777,10 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return nudge_med_sub;
       case 'greet':
         return greet;
+      case 'a11y_accounts':
+        return a11y_accounts;
+      case 'a11y_self_avatar':
+        return a11y_self_avatar;
       case 'hero_time':
         return hero_time;
       case 'streak':

@@ -81,25 +81,20 @@ class HomeScreen extends ConsumerWidget {
             children: [
               const PadTop(),
 
-              // App bar: avatar (account switcher) + greeting. The design keeps
-              // the v1 header (`BALSM_V1_HEADER`).
+              // App bar (Mother and Child canvas, Home header): the 44px
+              // avatar with its status dot opens the account switcher, then
+              // "Good morning" over the account holder's first name. The
+              // canvas ends the row with a bell; it is left out because the
+              // app has no reminders or notifications screen for it to open,
+              // and a button that does nothing tells a screen reader it works.
               AppBarRow(children: [
                 _AvatarButton(
                   initials: accountInitials(displayName),
                   color: avatarColor,
-                  showBadge: !family && s.extraFamily.isNotEmpty,
                   onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
-                    if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-                  ]),
-                ),
-                // Bell hidden: it had an empty onTap, so it announced itself to a
-                // screen reader as a working button and then did nothing. Restore
-                // it with the screen it is meant to open.
+                Expanded(child: HomeGreeting(firstName: firstName)),
               ]),
 
               // `UX Enhancement Screens.html` — "Household · active-account
@@ -248,44 +243,42 @@ class _AvatarButton extends StatelessWidget {
   const _AvatarButton({
     required this.initials,
     required this.color,
-    required this.showBadge,
     required this.onTap,
   });
   final String initials;
   final Color color;
-  final bool showBadge;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return Pressable(
-      onTap: onTap,
-      scale: 0.95,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Avatar(initials: initials, color: color, ar: s.rtl),
-          if (showBadge)
+    return Semantics(
+      button: true,
+      label: s.strings.home.a11y_accounts,
+      excludeSemantics: true,
+      child: Pressable(
+        onTap: onTap,
+        scale: 0.95,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Avatar(initials: initials, color: color, fontSize: FS.md, ar: s.rtl),
+            // The canvas's status dot: 12px in the accent, ringed in the
+            // screen colour so it reads as cut out of the circle.
             PositionedDirectional(
-              bottom: -1,
-              end: -1,
+              bottom: 0,
+              end: 0,
               child: Container(
-                width: 14,
-                height: 14,
-                alignment: Alignment.center,
+                width: 12,
+                height: 12,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: s.accent.main,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle),
+                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -513,5 +506,28 @@ class _ViewingBanner extends StatelessWidget {
         ),
       ]),
     );
+  }
+}
+
+/// The Home header's greeting: "Good morning" in meta size above the account
+/// holder's first name (19px bold, display face). With no name — a
+/// device-only account can have none — the greeting stands alone.
+class HomeGreeting extends StatelessWidget {
+  const HomeGreeting({super.key, required this.firstName});
+  final String firstName;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final name = firstName.trim();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
+      if (name.isNotEmpty)
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Typo.heading(ar: s.rtl).copyWith(fontSize: 19, height: 1.25),
+        ),
+    ]);
   }
 }

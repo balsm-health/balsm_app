@@ -515,6 +515,9 @@
     "nudge_med(Gender gender)": "${_select(gender, female: 'أضيفي', other: 'أضف')} دواءً",
     "nudge_med_sub": "واظب على المتابعة",
     "greet": "صباح الخير",
+    // Same spelling for both genders without vowel marks, so fixed (§4).
+    "a11y_accounts": "حساباتك",
+    "a11y_self_avatar": "حسابك",
     "hero_time": "حوالي دقيقتين",
     "streak": "يوم متتالٍ",
     "streak_help(Gender gender, int checked)": "${_select(gender, male: 'تابعت', female: 'تابعتِ', other: 'تابعت')} ${checked} من آخر 7 أيام",

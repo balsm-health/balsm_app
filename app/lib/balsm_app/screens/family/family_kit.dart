@@ -61,6 +61,7 @@ class SelfAvatar extends ConsumerWidget {
     return Avatar(
       initials: accountInitials(name),
       color: selfAvatarColor,
+      semanticLabel: AppScope.of(context).strings.home.a11y_self_avatar,
       size: size,
       fontSize: (size * 0.4).roundToDouble(),
       ar: AppScope.of(context).rtl,

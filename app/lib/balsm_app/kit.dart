@@ -332,6 +332,7 @@ class Avatar extends StatelessWidget {
       this.size = 44,
       this.fontSize,
       this.ar = false,
+      this.semanticLabel,
       this.child});
   final String initials;
   final Color color;
@@ -342,18 +343,33 @@ class Avatar extends StatelessWidget {
   /// fallback only approximates. Pass it explicitly to match a spec exactly.
   final double? fontSize;
   final bool ar;
+
+  /// What a screen reader announces for the circle (e.g. "Your account").
+  /// Without one the avatar reads as its initials, or nothing when it has
+  /// none — pass it wherever the avatar stands alone.
+  final String? semanticLabel;
   final Widget? child;
   @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        child: child ??
-            Text(initials,
+  Widget build(BuildContext context) {
+    // A device-only account can have no name, so no initials: a blank circle
+    // read as broken. A person glyph says "this is someone" instead.
+    final face = child ??
+        (initials.trim().isEmpty
+            ? Icon(LucideIcons.userRound, size: size * 0.45, color: Colors.white)
+            : Text(initials,
                 style: Typo._display(ar)
-                    .copyWith(fontWeight: FontWeight.w700, fontSize: fontSize ?? size * 0.36, color: Colors.white)),
-      );
+                    .copyWith(fontWeight: FontWeight.w700, fontSize: fontSize ?? size * 0.36, color: Colors.white)));
+    final circle = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: face,
+    );
+    final label = semanticLabel;
+    if (label == null) return circle;
+    return Semantics(image: true, label: label, excludeSemantics: true, child: circle);
+  }
 }
 
 /// White rounded card (.card).
