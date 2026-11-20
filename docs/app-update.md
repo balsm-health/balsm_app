@@ -226,15 +226,17 @@ Add a top-level `maintenance` block on the source branch:
 "maintenance": {
   "mode": "readonly",
   "message": "We're moving to a new server.",
+  "starts_at": "2026-11-20T23:00:00Z",
   "ends_at": "2026-11-21T02:00:00Z"
 }
 ```
 
 | Key | Values |
 |---|---|
-| `mode` | `off`, `readonly` (a strip above the tab bar; logging, adding, syncing, sharing and sign-in pause), `block` (a full-screen page; only the patient's own emergency card and the emergency number stay reachable) |
-| `message` | optional, replaces the default copy. The same text for every language, so keep it short or leave it out |
-| `ends_at` | optional UTC time, shown in the reader's own time zone; left out = "We'll share the end time soon" |
+| `mode` | `off`, `readonly` (a card above the tab bar with a countdown; logging, adding, syncing, sharing and sign-in pause), `block` (a full-screen page; only the patient's own emergency card and the emergency number stay reachable) |
+| `message` | optional. The full-screen page shows it in place of the default copy; the details sheet shows it as "Message from the Balsm team". The same text for every language, so keep it short or leave it out |
+| `starts_at` | optional UTC time maintenance was switched on: the start of the progress bar under the countdown. Left out, the app uses the API's `updated_at` when the API's answer is the one shown, and otherwise the moment the app first saw this window (a new `mode` or `ends_at` starts a new one) |
+| `ends_at` | optional UTC time, shown in the reader's own time zone and counted down ("Back in about 1 h 45 min"); left out = "We'll share the end time soon" / "Duration not announced yet", and no progress bar |
 
 Set `mode` back to `off` (or delete the block) to end it. It lands as fast as
 a release does — up to about ten minutes through the Worker's cache — and an

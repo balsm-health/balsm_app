@@ -5067,12 +5067,12 @@ class MaintenanceStrings implements i69n.I69nMessageBundle {
       "We’re doing urgent work to keep your health data safe. The app will be back shortly.";
   String get pre_body =>
       "Signing in and creating accounts are paused. You can use Balsm on this device only for now and connect your account later.";
-  String get paused_title => "This is paused during maintenance";
+  String get paused_title => "Adding and editing are paused for now";
   String paused_body(Gender gender) =>
-      "You can try again once maintenance is over. Nothing has been lost.";
+      "Balsm’s servers are under maintenance. You can try again once it’s over, and nothing has been lost.";
   String get still_available => "Still available";
   String get paused_for_now => "Paused for now";
-  String get ok_view => "Viewing your records, medicines and results";
+  String get ok_view => "View your records, medicines and results";
   String get ok_card => "Your emergency card and QR code";
   String get ok_reminders => "Medicine reminders on your phone";
   String get paused_log => "Logging readings, adding records and medicines";
@@ -5088,6 +5088,18 @@ class MaintenanceStrings implements i69n.I69nMessageBundle {
   String until(String time) => "Until about $time";
   String until_tomorrow(String time) => "Until about $time tomorrow";
   String get end_unknown => "We’ll share the end time soon";
+  String get sheet_eyebrow => "View-only mode";
+  String get close => "Close";
+  String left_hm(int h, int m) => "Back in about $h h $m min";
+  String left_h(int h) => "Back in about $h h";
+  String left_m(int m) => "Back in about $m min";
+  String get left_unknown => "Duration not announced yet";
+  String get progress_label => "Maintenance progress";
+  String strip_a11y(String countdown) => "Maintenance details. $countdown";
+  String get message_title => "Message from the Balsm team";
+  String get data_safe =>
+      "Your data on this phone is safe. Nothing will be deleted.";
+  String get fab_paused => "Adding is paused during maintenance";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -5149,6 +5161,28 @@ class MaintenanceStrings implements i69n.I69nMessageBundle {
         return until_tomorrow;
       case 'end_unknown':
         return end_unknown;
+      case 'sheet_eyebrow':
+        return sheet_eyebrow;
+      case 'close':
+        return close;
+      case 'left_hm':
+        return left_hm;
+      case 'left_h':
+        return left_h;
+      case 'left_m':
+        return left_m;
+      case 'left_unknown':
+        return left_unknown;
+      case 'progress_label':
+        return progress_label;
+      case 'strip_a11y':
+        return strip_a11y;
+      case 'message_title':
+        return message_title;
+      case 'data_safe':
+        return data_safe;
+      case 'fab_paused':
+        return fab_paused;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }

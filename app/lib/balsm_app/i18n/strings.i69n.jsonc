@@ -1544,11 +1544,11 @@
     "block_title": "Balsm is down for maintenance",
     "block_body": "We’re doing urgent work to keep your health data safe. The app will be back shortly.",
     "pre_body": "Signing in and creating accounts are paused. You can use Balsm on this device only for now and connect your account later.",
-    "paused_title": "This is paused during maintenance",
-    "paused_body(Gender gender)": "You can try again once maintenance is over. Nothing has been lost.",
+    "paused_title": "Adding and editing are paused for now",
+    "paused_body(Gender gender)": "Balsm’s servers are under maintenance. You can try again once it’s over, and nothing has been lost.",
     "still_available": "Still available",
     "paused_for_now": "Paused for now",
-    "ok_view": "Viewing your records, medicines and results",
+    "ok_view": "View your records, medicines and results",
     "ok_card": "Your emergency card and QR code",
     "ok_reminders": "Medicine reminders on your phone",
     "paused_log": "Logging readings, adding records and medicines",
@@ -1562,7 +1562,23 @@
     "checking": "Checking…",
     "until(String time)": "Until about $time",
     "until_tomorrow(String time)": "Until about $time tomorrow",
-    "end_unknown": "We’ll share the end time soon"
+    "end_unknown": "We’ll share the end time soon",
+    // Details sheet hero (maintenance.jsx MaintSheet).
+    "sheet_eyebrow": "View-only mode",
+    "close": "Close",
+    // Countdown (maintLeftText): hours and minutes left, rounded to the minute.
+    "left_hm(int h, int m)": "Back in about $h h $m min",
+    "left_h(int h)": "Back in about $h h",
+    "left_m(int m)": "Back in about $m min",
+    "left_unknown": "Duration not announced yet",
+    // Screen-reader name of the progress bar under the countdown.
+    "progress_label": "Maintenance progress",
+    // Screen-reader label of the floating card: "Maintenance details. Back in about 1 h 45 min".
+    "strip_a11y(String countdown)": "Maintenance details. $countdown",
+    "message_title": "Message from the Balsm team",
+    "data_safe": "Your data on this phone is safe. Nothing will be deleted.",
+    // Quick-log button while read-only.
+    "fab_paused": "Adding is paused during maintenance"
   },
   "_i69n_import": "package:core/core.dart"
 }

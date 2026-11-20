@@ -172,6 +172,38 @@ class T {
   /// `.h2-streak` ink on [warningBg].
   static const streakInk = Color(0xFF7A5A00);
 
+  // ── Maintenance amber (maintenance.jsx `MT`) ───────────────
+  /// Title ink on the maintenance card.
+  static const maintInk = Color(0xFF6B4E00);
+
+  /// Icons, eyebrow and the paused list's ink.
+  static const maintInk2 = Color(0xFF8A6A10);
+
+  /// Card and sheet wash, light end.
+  static const maintBg = Color(0xFFFFF7DF);
+
+  /// Card and sheet wash, deep end; the progress track.
+  static const maintBg2 = Color(0xFFFDEFC4);
+
+  /// Hairline around maintenance surfaces.
+  static const maintLine = Color(0xFFF1DFA6);
+
+  /// The blinking dot, the badges and the progress fill.
+  static const maintDot = Color(0xFFE5A800);
+
+  /// Progress fill, light end (`#F2C84B`).
+  static const maintDotLight = Color(0xFFF2C84B);
+
+  /// `0 6px 18px rgba(138,106,16,0.12)` under the floating card.
+  static const List<BoxShadow> maintCardShadow = [
+    BoxShadow(color: Color(0x1F8A6A10), blurRadius: 18, offset: Offset(0, 6)),
+  ];
+
+  /// `0 6px 16px rgba(138,106,16,0.16)` under the sheet's icon tile.
+  static const List<BoxShadow> maintTileShadow = [
+    BoxShadow(color: Color(0x298A6A10), blurRadius: 16, offset: Offset(0, 6)),
+  ];
+
   /// `.h2-vfoot`: a reading above its range.
   static const warnInk = Color(0xFF9A5A00);
 

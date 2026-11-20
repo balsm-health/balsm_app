@@ -16,9 +16,13 @@ class _FlagsOff implements FeatureFlagSource {
   Future<bool?> read(String key) async => key == AppFlags.maintenance.key ? false : null;
 }
 
+/// The clock the controller reads for a window's first-seen start.
+var _clock = DateTime.utc(2025, 1, 1, 0, 30);
+
 ProviderContainer _container(FakeMaintenanceApi api,
     {FeatureFlags? flags, Duration poll = const Duration(hours: 1), FakeManifestMaintenanceSource? manifest}) {
   final c = ProviderContainer(overrides: [
+    maintenanceClockProvider.overrideWithValue(() => _clock),
     maintenanceApiProvider.overrideWithValue(api),
     maintenanceNoticeSourceProvider.overrideWithValue(manifest ?? FakeManifestMaintenanceSource()),
     featureFlagsProvider.overrideWithValue(flags ?? FeatureFlags(flags: [AppFlags.maintenance])),
@@ -29,6 +33,8 @@ ProviderContainer _container(FakeMaintenanceApi api,
 }
 
 void main() {
+  setUp(() => _clock = DateTime.utc(2025, 1, 1, 0, 30));
+
   test('starts unknown — which pauses nothing — then reads the server', () async {
     final api = FakeMaintenanceApi(mode: 'readonly', message: 'Back soon', endsAt: DateTime.utc(2025, 1, 1, 2));
     final c = _container(api);
@@ -39,8 +45,61 @@ void main() {
     expect((first.mode, first.pausesActions), (MaintenanceMode.unknown, false));
     expect(
       c.read(maintenanceProvider),
-      MaintenanceStatus(mode: MaintenanceMode.readonly, message: 'Back soon', endsAt: DateTime.utc(2025, 1, 1, 2)),
+      MaintenanceStatus(
+          mode: MaintenanceMode.readonly, message: 'Back soon', startsAt: _clock, endsAt: DateTime.utc(2025, 1, 1, 2)),
     );
+  });
+
+  group('start of the window', () {
+    test('the API\'s updated_at, when the API answer wins', () async {
+      final c = _container(FakeMaintenanceApi(mode: 'readonly', updatedAt: DateTime.utc(2025, 1, 1)));
+
+      await c.read(maintenanceProvider.notifier).check();
+
+      expect(c.read(maintenanceProvider).startsAt, DateTime.utc(2025, 1, 1));
+    });
+
+    test('the manifest\'s starts_at, when the manifest wins', () async {
+      final c = _container(FakeMaintenanceApi(mode: 'readonly', updatedAt: DateTime.utc(2025, 1, 1)),
+          manifest: FakeManifestMaintenanceSource(
+              notice: MaintenanceNotice(mode: 'block', startsAt: DateTime.utc(2024, 12, 31, 23))));
+
+      await c.read(maintenanceProvider.notifier).check();
+
+      expect(c.read(maintenanceProvider).startsAt, DateTime.utc(2024, 12, 31, 23));
+    });
+
+    test('otherwise when this app first saw the window; a new end starts a new one', () async {
+      final api = FakeMaintenanceApi(mode: 'readonly', endsAt: DateTime.utc(2025, 1, 1, 2));
+      final c = _container(api);
+      final first = _clock;
+
+      await c.read(maintenanceProvider.notifier).check();
+      _clock = _clock.add(const Duration(minutes: 20));
+      await c.read(maintenanceProvider.notifier).check();
+
+      expect(c.read(maintenanceProvider).startsAt, first, reason: 'the same window keeps its start');
+
+      api.endsAt = DateTime.utc(2025, 1, 1, 3);
+      await c.read(maintenanceProvider.notifier).check();
+
+      expect(c.read(maintenanceProvider).startsAt, _clock);
+    });
+
+    test('ending maintenance forgets the window', () async {
+      final api = FakeMaintenanceApi(mode: 'readonly');
+      final c = _container(api);
+      await c.read(maintenanceProvider.notifier).check();
+
+      api.mode = 'off';
+      await c.read(maintenanceProvider.notifier).check();
+      expect(c.read(maintenanceProvider).startsAt, isNull);
+
+      _clock = _clock.add(const Duration(hours: 1));
+      api.mode = 'readonly';
+      await c.read(maintenanceProvider.notifier).check();
+      expect(c.read(maintenanceProvider).startsAt, _clock);
+    });
   });
 
   test('readonly and block pause actions; only block blocks', () {
@@ -127,7 +186,11 @@ void main() {
 
       expect(
         c.read(maintenanceProvider),
-        MaintenanceStatus(mode: MaintenanceMode.block, message: 'Moving servers', endsAt: DateTime.utc(2025, 1, 1, 2)),
+        MaintenanceStatus(
+            mode: MaintenanceMode.block,
+            message: 'Moving servers',
+            startsAt: _clock,
+            endsAt: DateTime.utc(2025, 1, 1, 2)),
       );
       expect(manifest.calls, greaterThan(0));
     });

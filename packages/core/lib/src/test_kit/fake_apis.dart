@@ -572,11 +572,14 @@ class FakeContentApi implements ContentApi {
 /// In-memory [MaintenanceApi]. Off by default so no flow is stopped by it;
 /// set [mode] (and [failWith] for an unreachable server) to force a branch.
 class FakeMaintenanceApi implements MaintenanceApi {
-  FakeMaintenanceApi({this.mode = 'off', this.message, this.endsAt});
+  FakeMaintenanceApi({this.mode = 'off', this.message, this.endsAt, this.updatedAt});
 
   String mode;
   String? message;
   DateTime? endsAt;
+
+  /// When the server's switch last changed — the start of the window.
+  DateTime? updatedAt;
 
   /// When set, every call throws it — e.g. an offline [ApiException].
   ApiException? failWith;
@@ -588,7 +591,7 @@ class FakeMaintenanceApi implements MaintenanceApi {
   Future<MaintenanceStatusResponse> getStatus({CancelToken? cancelToken}) async {
     calls++;
     if (failWith != null) throw failWith!;
-    return MaintenanceStatusResponse(mode: mode, message: message, endsAt: endsAt);
+    return MaintenanceStatusResponse(mode: mode, message: message, endsAt: endsAt, updatedAt: updatedAt);
   }
 }
 

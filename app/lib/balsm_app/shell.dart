@@ -892,6 +892,9 @@ class _Tab extends StatelessWidget {
 /// Quick-log "+" action — the design's center FAB. Rendered as a raised accent
 /// circle in the bottom tab bar (and the side rail), it opens the quick-log
 /// sheet ([showQuickLog]): the full check-in plus the one-metric mini flows.
+///
+/// In read-only maintenance it is washed out with a lock badge and announces
+/// "Adding is paused during maintenance"; a tap still reaches the guard.
 class _QuickLog extends StatelessWidget {
   const _QuickLog({this.rail = false, this.wide = false});
   final bool rail;
@@ -899,6 +902,8 @@ class _QuickLog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    Widget fab(Widget child) =>
+        MaintenanceFabLock(label: s.strings.checkin.ql_title, onTap: () => showQuickLog(context), child: child);
     if (wide) {
       // Sidebar (≥1440): `.tab-fab .fab { width: 100%; height: 48px;
       // border-radius: var(--radius-md); padding: 0 14px; justify-content:
@@ -906,7 +911,7 @@ class _QuickLog extends StatelessWidget {
       // with `.fab-label` shown, inside `.tab-fab { margin: 4px 0 12px }`.
       return Padding(
         padding: const EdgeInsets.only(top: Space.s1, bottom: Space.s3),
-        child: Pressable(
+        child: fab(Pressable(
           onTap: () => showQuickLog(context),
           scale: 0.97,
           child: Container(
@@ -929,7 +934,7 @@ class _QuickLog extends StatelessWidget {
               ),
             ]),
           ),
-        ),
+        )),
       );
     }
     // Bar: a 58px disc whose 4px white ring lets it punch through the bar as
@@ -938,7 +943,7 @@ class _QuickLog extends StatelessWidget {
     // The compact bar now draws it inline (app.css "Check-in FAB — v2 colour +
     // inline position"): a 52px ink disc, no ring, centred in the bar.
     final size = rail ? 48.0 : 52.0;
-    final button = Pressable(
+    final button = fab(Pressable(
       onTap: () => showQuickLog(context),
       scale: 0.94,
       child: Container(
@@ -952,7 +957,7 @@ class _QuickLog extends StatelessWidget {
         ),
         child: Icon(LucideIcons.plus, size: rail ? 24 : 26, color: Colors.white),
       ),
-    );
+    ));
     if (rail) {
       // `.tab-fab { order: -1; padding: 4px 0 0; margin-bottom: 8px }` on a
       // 60px-tall tab slot — the disc leads the rail, above the tabs.

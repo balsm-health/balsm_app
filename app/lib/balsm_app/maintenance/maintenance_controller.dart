@@ -29,12 +29,18 @@ enum MaintenanceMode {
 /// written by a Balsm admin, the same for every patient.
 @immutable
 class MaintenanceStatus {
-  const MaintenanceStatus({this.mode = MaintenanceMode.unknown, this.message, this.endsAt, this.checking = false});
+  const MaintenanceStatus(
+      {this.mode = MaintenanceMode.unknown, this.message, this.startsAt, this.endsAt, this.checking = false});
 
   final MaintenanceMode mode;
 
   /// Admin message; null means "use the default copy".
   final String? message;
+
+  /// When this window began (UTC): the manifest's `starts_at`, the API's
+  /// `updated_at`, or when this app first saw it. Only the start of the
+  /// countdown's progress bar; null outside maintenance.
+  final DateTime? startsAt;
 
   /// Announced end (UTC); null means "not announced".
   final DateTime? endsAt;
@@ -48,20 +54,29 @@ class MaintenanceStatus {
   /// The full-screen page replaces the app.
   bool get blocks => mode == MaintenanceMode.block;
 
-  MaintenanceStatus copyWith({bool? checking}) =>
-      MaintenanceStatus(mode: mode, message: message, endsAt: endsAt, checking: checking ?? this.checking);
+  MaintenanceStatus copyWith({bool? checking, DateTime? startsAt}) => MaintenanceStatus(
+      mode: mode,
+      message: message,
+      startsAt: startsAt ?? this.startsAt,
+      endsAt: endsAt,
+      checking: checking ?? this.checking);
 
   @override
   bool operator ==(Object other) =>
       other is MaintenanceStatus &&
       other.mode == mode &&
       other.message == message &&
+      other.startsAt == startsAt &&
       other.endsAt == endsAt &&
       other.checking == checking;
 
   @override
-  int get hashCode => Object.hash(mode, message, endsAt, checking);
+  int get hashCode => Object.hash(mode, message, startsAt, endsAt, checking);
 }
+
+/// "Now" for the countdown, the end time and the first-seen start of a
+/// window. Overridable in tests.
+final maintenanceClockProvider = Provider<DateTime Function()>((_) => DateTime.now);
 
 /// How often the flag is re-read while the app is open. Overridable in tests.
 final maintenancePollIntervalProvider = Provider<Duration>((_) => const Duration(minutes: 5));
@@ -91,6 +106,12 @@ class MaintenanceController extends Notifier<MaintenanceStatus> {
   Timer? _poll;
   Future<void>? _inFlight;
 
+  /// The window this app is in — its mode and announced end — and when the
+  /// app first saw it: the start of the progress bar when neither source
+  /// says when maintenance began. A new mode or end starts a new window.
+  (MaintenanceMode, DateTime?)? _window;
+  DateTime? _firstSeen;
+
   @override
   MaintenanceStatus build() {
     _poll = Timer.periodic(ref.watch(maintenancePollIntervalProvider), (_) => check());
@@ -111,20 +132,38 @@ class MaintenanceController extends Notifier<MaintenanceStatus> {
     }
     state = state.copyWith(checking: true);
     final (manifest, server) = await (_fromManifest(), _fromServer()).wait;
-    state = _stricter(manifest, server) ?? const MaintenanceStatus();
+    state = _withStart(_stricter(manifest, server) ?? const MaintenanceStatus());
+  }
+
+  /// Fills in [MaintenanceStatus.startsAt] from when this app first saw the
+  /// window, when the winning source did not say. Outside maintenance the
+  /// remembered window is forgotten.
+  MaintenanceStatus _withStart(MaintenanceStatus s) {
+    if (!s.pausesActions) {
+      _window = _firstSeen = null;
+      return s;
+    }
+    final window = (s.mode, s.endsAt);
+    if (window != _window) {
+      _window = window;
+      _firstSeen = ref.read(maintenanceClockProvider)().toUtc();
+    }
+    return s.startsAt == null ? s.copyWith(startsAt: _firstSeen) : s;
   }
 
   Future<MaintenanceStatus?> _fromManifest() async {
     final n = await ref.read(maintenanceNoticeSourceProvider).read();
     return n == null
         ? null
-        : MaintenanceStatus(mode: MaintenanceMode.fromWire(n.mode), message: n.message, endsAt: n.endsAt);
+        : MaintenanceStatus(
+            mode: MaintenanceMode.fromWire(n.mode), message: n.message, startsAt: n.startsAt, endsAt: n.endsAt);
   }
 
   Future<MaintenanceStatus?> _fromServer() async {
     try {
       final res = await ref.read(maintenanceApiProvider).getStatus();
-      return MaintenanceStatus(mode: MaintenanceMode.fromWire(res.mode), message: res.message, endsAt: res.endsAt);
+      return MaintenanceStatus(
+          mode: MaintenanceMode.fromWire(res.mode), message: res.message, startsAt: res.updatedAt, endsAt: res.endsAt);
     } catch (_) {
       // Unreachable or refused: never block on a guess (see MaintenanceMode.unknown).
       return null;

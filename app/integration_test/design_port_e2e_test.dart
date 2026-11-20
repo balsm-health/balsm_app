@@ -25,8 +25,12 @@
 //      list, the record detail and the Meds list → tap → "Edit history" sheet
 //      with the lock line → edit the record in the UI → "You edited this".
 //   5. Maintenance (#164), the maintenance API faked through the same override
-//      seam: readonly → strip above the tab bar, Details sheet, quick log and
-//      add record say "This is paused during maintenance"; block → full-screen
+//      seam: readonly → floating card above the tab bar with the countdown and
+//      progress bar, the details sheet (hero, countdown, admin message,
+//      both lists, emergency card), the washed-out quick-log button with its
+//      lock badge; quick log and add record open the compact paused sheet
+//      ("Adding and editing are paused for now"); Arabic (RTL) screenshots of
+//      the card and the sheet; block → full-screen
 //      page with only the emergency card, the emergency call and Check again,
 //      and the emergency card opens; off → the normal app. An erroring
 //      maintenance endpoint pauses nothing.
@@ -860,7 +864,12 @@ void main() {
     expect(strip, findsNothing);
     final before = api.calls;
 
-    // ── readonly ──
+    // ── readonly ── switched on an hour ago, back in 1 h 45 min, with a note.
+    final now = DateTime.now().toUtc();
+    api
+      ..endsAt = now.add(const Duration(hours: 1, minutes: 45))
+      ..updatedAt = now.subtract(const Duration(hours: 1))
+      ..message = 'We are moving to a new server.';
     await setMode('readonly');
     expect(api.calls, greaterThan(before), reason: 'the app asked the (fake) maintenance API');
     await goHome(tester);
@@ -869,20 +878,56 @@ void main() {
     final tabBarTop = tester.getTopLeft(_quickLogFab).dy;
     expect(stripTop, lessThan(tabBarTop), reason: 'the strip sits above the tab bar');
     expect(find.text(_en.nav.tab_meds).hitTestable(), findsOneWidget, reason: 'the app stays usable');
+    expect(find.textContaining('Back in about 1 h 4'), findsOneWidget, reason: 'the countdown');
+    expect(
+        find.descendant(of: find.byType(MaintenanceStrip), matching: find.byType(FractionallySizedBox)), findsOneWidget,
+        reason: 'the progress bar');
+    // The quick-log button is washed out with a lock and says why.
+    expect(find.byKey(const ValueKey('maintenance-fab-lock')), findsOneWidget);
+    expect(find.bySemanticsLabel(m.fab_paused), findsOneWidget);
     await snap(tester, '27-maintenance-readonly-strip');
 
     await tapWhenReady(tester, find.text(m.strip_details));
     await pumpUntil(tester, find.text(m.ro_title));
+    expect(find.text(m.sheet_eyebrow.toUpperCase()), findsOneWidget);
+    expect(find.textContaining('Back in about 1 h 4'), findsWidgets);
+    expect(find.text(m.message_title), findsOneWidget);
+    expect(find.text('We are moving to a new server.'), findsOneWidget);
     expect(find.text(m.paused_log), findsOneWidget);
     expect(find.text(m.ok_card), findsOneWidget);
     await snap(tester, '28-maintenance-details-sheet');
+    await reveal(tester, _pButton(m.open_card));
+    await snap(tester, '28b-maintenance-details-sheet-bottom');
+    // The patient's own card opens over the sheet; back returns to it.
+    await tapWhenReady(tester, _pButton(m.open_card));
+    await pumpUntil(tester, find.byType(OwnCardScreen).hitTestable());
+    await snap(tester, '28c-maintenance-sheet-emergency-card');
+    Navigator.of(tester.element(find.byType(OwnCardScreen))).pop();
+    await pumpUntilGone(tester, find.byType(OwnCardScreen));
     await tapWhenReady(tester, _pButton(m.got_it));
     await pumpUntilGone(tester, find.text(m.ro_title));
 
-    // Quick log is paused.
+    // Arabic (RTL): the card and the sheet.
+    appState().setLang(LanguageCode.ar);
+    final ma = _ar.maintenance;
+    await pumpUntil(tester, find.text(ma.strip_title).hitTestable());
+    await snap(tester, '27-ar-maintenance-readonly-strip');
+    await tapWhenReady(tester, find.text(ma.strip_details));
+    await pumpUntil(tester, find.text(ma.ro_title));
+    await snap(tester, '28-ar-maintenance-details-sheet');
+    await reveal(tester, _pButton(ma.open_card));
+    await snap(tester, '28b-ar-maintenance-details-sheet-bottom');
+    await tapWhenReady(tester, _pButton(ma.got_it));
+    await pumpUntilGone(tester, find.text(ma.ro_title));
+    appState().setLang(LanguageCode.en);
+    await pumpUntil(tester, strip.hitTestable());
+
+    // Quick log is paused: the compact sheet, only what still works.
     await tapWhenReady(tester, _quickLogFab);
     await pumpUntil(tester, paused);
     expect(find.text(_en.checkin.ql_title).hitTestable(), findsNothing);
+    expect(find.text(m.still_available), findsOneWidget);
+    expect(find.text(m.paused_for_now), findsNothing);
     await snap(tester, '29-maintenance-quicklog-paused');
     await tapWhenReady(tester, _pButton(m.got_it));
     await pumpUntilGone(tester, paused);
@@ -899,6 +944,7 @@ void main() {
     await pumpUntilGone(tester, find.byType(RecordsScreen));
 
     // ── block ──
+    api.message = null;
     await setMode('block');
     final page = find.byType(MaintenanceScreen);
     await pumpUntil(tester, page);

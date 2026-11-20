@@ -7,7 +7,8 @@ import 'package:flutter/foundation.dart';
 /// (`/version/<brand>.json`, see `docs/app-update.md`):
 ///
 /// ```json
-/// "maintenance": { "mode": "readonly", "message": "…", "ends_at": "2026-11-21T02:00:00Z" }
+/// "maintenance": { "mode": "readonly", "message": "…",
+///                  "starts_at": "2026-11-20T23:00:00Z", "ends_at": "2026-11-21T02:00:00Z" }
 /// ```
 ///
 /// The manifest is served from the web host, not the API server, so the
@@ -15,7 +16,7 @@ import 'package:flutter/foundation.dart';
 /// maintenance most needs to explain.
 @immutable
 class MaintenanceNotice {
-  const MaintenanceNotice({required this.mode, this.message, this.endsAt});
+  const MaintenanceNotice({required this.mode, this.message, this.startsAt, this.endsAt});
 
   /// Wire value as written: `off`, `readonly` or `block`. Anything else is
   /// left for the reader to treat as unknown.
@@ -23,6 +24,10 @@ class MaintenanceNotice {
 
   /// Admin message; null means "use the default copy".
   final String? message;
+
+  /// When maintenance was switched on, UTC; null when not given. Only the
+  /// start of the progress bar: the app falls back to when it first saw it.
+  final DateTime? startsAt;
 
   /// Announced end, UTC; null means "not announced".
   final DateTime? endsAt;
@@ -47,11 +52,12 @@ MaintenanceNotice? parseMaintenanceNotice(String manifest) {
   final mode = block['mode'];
   if (mode is! String) return null;
   final message = block['message'];
-  final endsAt = block['ends_at'];
+  DateTime? instant(Object? v) => v is String ? DateTime.tryParse(v)?.toUtc() : null;
   return MaintenanceNotice(
     mode: mode,
     message: message is String && message.trim().isNotEmpty ? message : null,
-    endsAt: endsAt is String ? DateTime.tryParse(endsAt)?.toUtc() : null,
+    startsAt: instant(block['starts_at']),
+    endsAt: instant(block['ends_at']),
   );
 }
 

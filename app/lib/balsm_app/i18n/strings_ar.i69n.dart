@@ -5387,7 +5387,7 @@ class MaintenanceStrings_ar extends MaintenanceStrings {
   final Strings_ar _parent;
   const MaintenanceStrings_ar(this._parent) : super(_parent);
   String get eyebrow => "صيانة";
-  String get strip_title => "صيانة · للعرض فقط";
+  String get strip_title => "صيانة · وضع العرض فقط";
   String get strip_details => "التفاصيل";
   String get ro_title => "بلسم في وضع الصيانة";
   String get ro_body =>
@@ -5397,9 +5397,9 @@ class MaintenanceStrings_ar extends MaintenanceStrings {
       "نجري أعمالاً عاجلة للحفاظ على أمان بياناتك الصحية. سيعود التطبيق قريباً.";
   String get pre_body =>
       "تسجيل الدخول وإنشاء الحسابات متوقفان مؤقتاً. يمكنك استخدام بلسم على هذا الجهاز فقط الآن، وربط حسابك لاحقاً.";
-  String get paused_title => "هذا متوقف أثناء الصيانة";
+  String get paused_title => "الإضافة والتعديل متوقفان مؤقتاً";
   String paused_body(Gender gender) =>
-      "يمكنك المحاولة مرة أخرى بعد انتهاء الصيانة. لم يُفقد أي شيء.";
+      "نُجري صيانة على خوادم بلسم. يمكنك المحاولة مرة أخرى عند انتهائها، ولم يُفقد أي شيء.";
   String get still_available => "ما زال متاحاً";
   String get paused_for_now => "متوقف مؤقتاً";
   String get ok_view => "عرض سجلاتك وأدويتك ونتائجك";
@@ -5419,6 +5419,17 @@ class MaintenanceStrings_ar extends MaintenanceStrings {
   String until(String time) => "حتى $time تقريباً";
   String until_tomorrow(String time) => "حتى الغد $time تقريباً";
   String get end_unknown => "سنعلن موعد العودة قريباً";
+  String get sheet_eyebrow => "وضع العرض فقط";
+  String get close => "إغلاق";
+  String left_hm(int h, int m) => "يعود خلال $h س و$m د تقريباً";
+  String left_h(int h) => "يعود خلال $h س تقريباً";
+  String left_m(int m) => "يعود خلال $m دقيقة تقريباً";
+  String get left_unknown => "المدة غير معلنة بعد";
+  String get progress_label => "تقدّم الصيانة";
+  String strip_a11y(String countdown) => "تفاصيل الصيانة. $countdown";
+  String get message_title => "رسالة من فريق بلسم";
+  String get data_safe => "بياناتك على هذا الهاتف آمنة ولن يُحذف منها شيء.";
+  String get fab_paused => "الإضافة متوقفة أثناء الصيانة";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -5480,6 +5491,28 @@ class MaintenanceStrings_ar extends MaintenanceStrings {
         return until_tomorrow;
       case 'end_unknown':
         return end_unknown;
+      case 'sheet_eyebrow':
+        return sheet_eyebrow;
+      case 'close':
+        return close;
+      case 'left_hm':
+        return left_hm;
+      case 'left_h':
+        return left_h;
+      case 'left_m':
+        return left_m;
+      case 'left_unknown':
+        return left_unknown;
+      case 'progress_label':
+        return progress_label;
+      case 'strip_a11y':
+        return strip_a11y;
+      case 'message_title':
+        return message_title;
+      case 'data_safe':
+        return data_safe;
+      case 'fab_paused':
+        return fab_paused;
       default:
         return super[key];
     }
