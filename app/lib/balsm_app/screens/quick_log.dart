@@ -315,20 +315,38 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       );
     }
 
+    // A child's weight belongs in the growth log — the member Home's weight
+    // tile and the growth chart read it from there, not from check-ins.
+    // If the growth log refuses it, the reading still lands as a check-in.
+    var growthKg = active == _Metric.weight && _forChild ? capture.vitals.weightKg : null;
+    if (growthKg != null) {
+      final grown = await ref.read(recordGrowthEntryUseCaseProvider)(
+        measuredOn: capture.when ?? DateTime.now(),
+        weightKg: growthKg,
+        heightCm: null,
+        now: DateTime.now(),
+        profileId: profileId,
+      );
+      if (!mounted) return;
+      if (grown.isFailure) growthKg = null;
+    }
+
     final checkInId = CheckInId.uuid();
-    await ref.read(saveCheckInUseCaseProvider).call(CheckIn(
-          id: checkInId,
-          healthProfileId: profileId,
-          recordedAt: capture.when ?? DateTime.now(),
-          mood: capture.mood,
-          painLevel: capture.painLevel,
-          painSites: capture.painSites,
-          symptoms: capture.symptoms,
-          symptomDetails: capture.symptomDetails,
-          vitals: capture.vitals,
-          note: capture.note,
-          photoRecordId: photoRecordId,
-        ));
+    if (growthKg == null || capture.note != null || photoRecordId != null) {
+      await ref.read(saveCheckInUseCaseProvider).call(CheckIn(
+            id: checkInId,
+            healthProfileId: profileId,
+            recordedAt: capture.when ?? DateTime.now(),
+            mood: capture.mood,
+            painLevel: capture.painLevel,
+            painSites: capture.painSites,
+            symptoms: capture.symptoms,
+            symptomDetails: capture.symptomDetails,
+            vitals: growthKg == null ? capture.vitals : Vitals.empty,
+            note: capture.note,
+            photoRecordId: photoRecordId,
+          ));
+    }
 
     if (!mounted) return;
     setState(() {
@@ -610,8 +628,20 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     return _menu();
   }
 
+  /// The active profile is a family member under 18 (`FamilyMember.isChildOn`,
+  /// mother-child.jsx `mcIsChild`). Null-safe: you, or no Mother & Child.
+  bool get _forChild {
+    if (!s.flags.isOn(AppFlags.motherChild)) return false;
+    return ref.read(activeFamilyMemberProvider)?.isChildOn(DateTime.now()) ?? false;
+  }
+
+  /// quicklog.jsx `FLAT_ITEMS`: a child's list drops blood pressure and
+  /// glucose; every other reading and every symptom stays.
+  static const _adultOnly = {_Metric.bp, _Metric.glucose};
+
   List<_QlItem> _allItems() {
-    final metrics = _Metric.values.map((m) {
+    final child = _forChild;
+    final metrics = _Metric.values.where((m) => !(child && _adultOnly.contains(m))).map((m) {
       final style = _metricStyles[m]!;
       return _QlItem(
         kind: style.kind,
@@ -642,7 +672,9 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     final q = searchCtrl.text.trim().toLowerCase();
     final items = _allItems();
     final filtered = q.isEmpty ? items : items.where((it) => it.label.toLowerCase().contains(q)).toList();
-    final showCta = q.isEmpty || s.strings.checkin.full_checkin.toLowerCase().contains(q);
+    // The full check-in promises BP and glucose, which a child's log has no
+    // place for (quicklog.jsx hides it for any member: `showCTA = !member`).
+    final showCta = !_forChild && (q.isEmpty || s.strings.checkin.full_checkin.toLowerCase().contains(q));
     final records =
         RecordType.values.where((type) => q.isEmpty || recordTypeLabelOne(s, type).toLowerCase().contains(q)).toList();
     final empty = filtered.isEmpty && records.isEmpty;

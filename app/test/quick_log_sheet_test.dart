@@ -257,5 +257,44 @@ void main() {
       expect(s.strings.checkin.ql_self_hint(Gender.male), 'لتسجّل لنفسك، اختر ملفك من أعلى الشاشة الرئيسية.');
       expect(s.strings.checkin.ql_logging_for(Gender.female), 'تسجّلين لـ');
     });
+
+    // quicklog.jsx FLAT_ITEMS: a child (under 18) has no blood pressure or
+    // glucose rows; an adult member and you keep the full list.
+    final now = DateTime.now();
+    final child = FamilyMember(
+      id: const HealthProfileId.value('hp-child'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Child',
+      dateOfBirth: DateTime(now.year - 6, 1, 1),
+    );
+    final grownUp = FamilyMember(
+      id: const HealthProfileId.value('hp-adult'),
+      kind: ProfileKind.dependent,
+      displayName: 'Test Adult',
+      dateOfBirth: DateTime(now.year - 40, 1, 1),
+    );
+    Finder row(String label) => find.text(label, skipOffstage: false);
+
+    testWidgets('a child gets the child readings only', (tester) async {
+      await open(tester, member: child);
+      final p = s.strings.profile;
+      expect(row(p.m_bp), findsNothing);
+      expect(row(p.m_glucose), findsNothing);
+      for (final l in [p.m_o2, p.m_pulse, p.m_weight, p.m_mood, p.m_pain]) {
+        expect(row(l), findsOne, reason: l);
+      }
+      expect(row(s.strings.checkin.full_checkin), findsNothing, reason: 'its BP/glucose promise is adult');
+    });
+
+    for (final (who, m) in [('an adult member', grownUp), ('you', null)]) {
+      testWidgets('$who keeps blood pressure and glucose', (tester) async {
+        await open(tester, member: m);
+        final p = s.strings.profile;
+        for (final l in [p.m_bp, p.m_glucose, p.m_o2, p.m_pulse, p.m_weight, p.m_mood, p.m_pain]) {
+          expect(row(l), findsOne, reason: l);
+        }
+        expect(row(s.strings.checkin.full_checkin), findsOne);
+      });
+    }
   });
 }

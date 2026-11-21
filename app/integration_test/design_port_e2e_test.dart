@@ -1066,6 +1066,26 @@ void main() {
     expect(find.text(_en.growth.title), findsOneWidget, reason: 'a child gets Growth');
     expect(find.text(_en.care.map_nearby), findsNothing, reason: "the account holder's own shortcuts are hidden");
     await snap(tester, '40-member-home-en');
+    // "Log for {name}" opens Quick log for him (quicklog.jsx FLAT_ITEMS): a
+    // child's list has no blood pressure or glucose rows.
+    final logFor = find.text(_en.home.member_ci_cta(Gender.other, short));
+    await tapWhenReady(tester, logFor);
+    await pumpUntil(tester, find.text(_en.checkin.ql_search));
+    final p = _en.profile;
+    expect(find.text('${_en.checkin.ql_logging_for(Gender.other)}$short', findRichText: true), findsOneWidget);
+    expect(find.text(p.m_bp, skipOffstage: false), findsNothing, reason: 'no blood pressure for a child');
+    expect(find.text(p.m_glucose, skipOffstage: false), findsNothing, reason: 'no glucose for a child');
+    for (final l in [p.m_o2, p.m_pulse, p.m_weight, p.m_mood, p.m_pain]) {
+      expect(find.text(l, skipOffstage: false), findsWidgets, reason: l); // Home behind has them too
+    }
+    expect(find.text(_en.checkin.full_checkin), findsNothing, reason: "the full check-in is the adult set");
+    await snap(tester, '44-quicklog-child-en');
+    final pain = find.text(p.m_pain);
+    await reveal(tester, pain);
+    await settle(tester, 3);
+    await snap(tester, '45-quicklog-child-en-readings');
+    await tapWhenReady(tester, _roundBtn(_en.common.a11y_close));
+    await pumpUntilGone(tester, find.text(_en.checkin.ql_search));
     final empty = find.text(_en.home.member_recent_empty(short));
     await reveal(tester, empty);
     await settle(tester, 3);
