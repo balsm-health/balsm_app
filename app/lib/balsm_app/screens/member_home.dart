@@ -19,11 +19,11 @@ import 'family/growth_screen.dart';
 import 'family/member_card_screen.dart';
 import 'family/member_medical_screen.dart';
 import 'family/member_screen.dart';
+import 'quick_log.dart';
 import 'family/vaccinations_screen.dart';
 import 'home_widgets.dart';
 import 'profile_subscreens.dart' show memberHealthProfileProvider;
 import 'records_screen.dart';
-import 'report_flow.dart';
 import 'trend_series.dart';
 import 'trends_screen.dart';
 
@@ -99,7 +99,10 @@ class _MemberCheckIn extends StatelessWidget {
       cta: h.member_ci_cta(s.gender, name),
       doneLabel: h.member_ci_done(name),
       showTime: false,
-      onStart: () => openCheckin(context),
+      // home-mc.jsx HomeMemberV2: "Log for {name}" opens Quick log, which says
+      // whose profile the reading goes to — not the full check-in, which
+      // speaks to the account holder and asks for adult readings.
+      onStart: () => showQuickLog(context, source: ProductSource.home),
       onReview: () => openMemberTrends(context, member),
     );
   }
