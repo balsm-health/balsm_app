@@ -1892,7 +1892,30 @@ class HomeStrings_ar extends HomeStrings {
   String get sc_places => "مكان قريب";
   String get sc_records => "السجلات";
   String viewing_member(String name) => "$name محدد";
-  String get member_back => "العودة إلى ملفك";
+  String member_ci_q(String name) => "كيف حال $name اليوم؟";
+  String member_ci_note(Gender gender, String name) => "سجّل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} قياساً أو عرضاً نيابةً عن $name";
+  String member_ci_note_child(Gender gender) => "سجّل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} الحرارة أو الوزن أو أي عرض";
+  String member_ci_cta(Gender gender, String name) =>
+      "سجّل${_select(gender, {'female': 'ي', 'other': ''})} لـ$name";
+  String member_ci_done(String name) => "سُجّل لـ$name اليوم";
+  String member_recent_empty(String name) => "لا تسجيلات لـ$name بعد.";
+  String get m_height => "الطول";
+  String get unit_cm => "سم";
+  String get sc_blood => "فصيلة الدم";
+  String sc_allergies(int n) => "$n حساسية";
+  String get sc_conditions => "حالات مزمنة";
+  String get sc_meds => "دواء";
+  String get sc_measures => "مؤشرات";
+  String get sc_entries => "قياسات";
+  String get sc_recorded => "مسجّلة";
+  String sc_next(String date) => "القادمة $date";
+  String get sc_full_profile => "الملف الكامل";
   String viewing_own_data(Gender gender) =>
       "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, {
             'female': 'ترينه',
@@ -1952,8 +1975,40 @@ class HomeStrings_ar extends HomeStrings {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
-      case 'member_back':
-        return member_back;
+      case 'member_ci_q':
+        return member_ci_q;
+      case 'member_ci_note':
+        return member_ci_note;
+      case 'member_ci_note_child':
+        return member_ci_note_child;
+      case 'member_ci_cta':
+        return member_ci_cta;
+      case 'member_ci_done':
+        return member_ci_done;
+      case 'member_recent_empty':
+        return member_recent_empty;
+      case 'm_height':
+        return m_height;
+      case 'unit_cm':
+        return unit_cm;
+      case 'sc_blood':
+        return sc_blood;
+      case 'sc_allergies':
+        return sc_allergies;
+      case 'sc_conditions':
+        return sc_conditions;
+      case 'sc_meds':
+        return sc_meds;
+      case 'sc_measures':
+        return sc_measures;
+      case 'sc_entries':
+        return sc_entries;
+      case 'sc_recorded':
+        return sc_recorded;
+      case 'sc_next':
+        return sc_next;
+      case 'sc_full_profile':
+        return sc_full_profile;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':

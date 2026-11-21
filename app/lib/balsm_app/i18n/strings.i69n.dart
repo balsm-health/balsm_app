@@ -1753,7 +1753,26 @@ class HomeStrings implements i69n.I69nMessageBundle {
   String get sc_places => "places nearby";
   String get sc_records => "Records";
   String viewing_member(String name) => "$name is selected";
-  String get member_back => "Back to your own profile";
+  String member_ci_q(String name) => "How is $name today?";
+  String member_ci_note(Gender gender, String name) =>
+      "Log a reading or symptom on their behalf";
+  String member_ci_note_child(Gender gender) =>
+      "Log a temperature, weight or any symptom";
+  String member_ci_cta(Gender gender, String name) => "Log for $name";
+  String member_ci_done(String name) => "Logged for $name today";
+  String member_recent_empty(String name) => "Nothing logged for $name yet.";
+  String get m_height => "Height";
+  String get unit_cm => "cm";
+  String get sc_blood => "blood type";
+  String sc_allergies(int n) =>
+      "${_plural(n, one: '1 allergy', other: '$n allergies')}";
+  String get sc_conditions => "conditions";
+  String get sc_meds => "medicines";
+  String get sc_measures => "measures";
+  String get sc_entries => "entries";
+  String get sc_recorded => "recorded";
+  String sc_next(String date) => "next $date";
+  String get sc_full_profile => "Full profile";
   String viewing_own_data(Gender gender) =>
       "Their record isn't on this device yet — you're still seeing your own.";
   String get viewing_switch_back => "Switch back";
@@ -1810,8 +1829,40 @@ class HomeStrings implements i69n.I69nMessageBundle {
         return sc_records;
       case 'viewing_member':
         return viewing_member;
-      case 'member_back':
-        return member_back;
+      case 'member_ci_q':
+        return member_ci_q;
+      case 'member_ci_note':
+        return member_ci_note;
+      case 'member_ci_note_child':
+        return member_ci_note_child;
+      case 'member_ci_cta':
+        return member_ci_cta;
+      case 'member_ci_done':
+        return member_ci_done;
+      case 'member_recent_empty':
+        return member_recent_empty;
+      case 'm_height':
+        return m_height;
+      case 'unit_cm':
+        return unit_cm;
+      case 'sc_blood':
+        return sc_blood;
+      case 'sc_allergies':
+        return sc_allergies;
+      case 'sc_conditions':
+        return sc_conditions;
+      case 'sc_meds':
+        return sc_meds;
+      case 'sc_measures':
+        return sc_measures;
+      case 'sc_entries':
+        return sc_entries;
+      case 'sc_recorded':
+        return sc_recorded;
+      case 'sc_next':
+        return sc_next;
+      case 'sc_full_profile':
+        return sc_full_profile;
       case 'viewing_own_data':
         return viewing_own_data;
       case 'viewing_switch_back':

@@ -25,7 +25,7 @@ import 'personal_details.dart';
 import 'profile_subscreens.dart';
 import 'care_team_screen.dart';
 import 'family/family_account_sheet.dart';
-import 'family/member_screen.dart';
+import 'member_home.dart';
 import 'family/profile_bar.dart';
 import 'pregnancy/pregnancy_home_card.dart';
 
@@ -43,7 +43,7 @@ import 'pregnancy/pregnancy_home_card.dart';
 ///
 /// With Mother & Child on (home-mc.jsx), the profile bar sits under the
 /// header and, while a family member is the active profile, the member's
-/// home (`MCMemberHome`) replaces the patient's own cards.
+/// Home (`HomeMemberV2`, [MemberHomeBody]) replaces the patient's own cards.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -86,37 +86,18 @@ class HomeScreen extends ConsumerWidget {
               // canvas ends the row with a bell; it is left out because the
               // app has no reminders or notifications screen for it to open,
               // and a button that does nothing tells a screen reader it works.
-              // While a family member is the active profile the header is the
-              // canvas's member head (Mother and Child, "06 Member profile"):
-              // a round back button that returns to the account holder's own
-              // profile, then "Family". The greeting would name the account
-              // holder above someone else's record.
-              if (activeMember != null)
-                AppBarRow(
-                  leading: RoundBtn(
-                    icon: backArrow(context),
-                    semanticLabel: s.strings.home.member_back,
-                    onTap: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
-                  ),
-                  children: [
-                    Expanded(
-                      child: Text(s.strings.family.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-                    ),
-                  ],
-                )
-              else
-                AppBarRow(children: [
-                  _AvatarButton(
-                    initials: accountInitials(displayName),
-                    color: avatarColor,
-                    onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: HomeGreeting(firstName: firstName)),
-                ]),
+              // The same header while a family member is the active profile
+              // (home-mc.jsx `HomeMemberV2` keeps the v1 header): the profile
+              // bar right under it says whose record is on screen.
+              AppBarRow(children: [
+                _AvatarButton(
+                  initials: accountInitials(displayName),
+                  color: avatarColor,
+                  onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: HomeGreeting(firstName: firstName)),
+              ]),
 
               // `UX Enhancement Screens.html` — "Household · active-account
               // accent": the design keeps whose-data-is-this permanently visible.
@@ -129,11 +110,12 @@ class HomeScreen extends ConsumerWidget {
               if (family) const ProfileBar(family: true),
 
               if (activeMember != null) ...[
-                // Her pregnancy card, when one is tracked on her profile.
+                // `MCHomeCards member`: her pregnancy card, when one is
+                // tracked on her profile; never the "start pregnancy" prompt.
                 PregnancyHomeCards(gutter: g, mother: activeMember.id),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                  child: MemberBody(member: activeMember),
+                  padding: EdgeInsetsDirectional.symmetric(horizontal: g),
+                  child: MemberHomeBody(member: activeMember, wide: wide),
                 ),
               ] else ...[
                 const AwayBanner(),

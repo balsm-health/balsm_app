@@ -313,10 +313,11 @@ void main() {
       await c.read(activeProfileSwitcherProvider).select(child.id);
       await frames(tester);
 
-      expect(find.text('Test Kid'), findsOne);
+      // The member's Home (HomeMemberV2): their check-in and shortcuts.
+      expect(find.text(state.strings.home.member_ci_q(child.shortName)), findsOne);
       expect(find.text(f.tile_card), findsOne);
       expect(find.text(f.tile_meds), findsOne);
-      expect(find.text(f.tile_records), findsOne);
+      expect(find.text(state.strings.home.sc_records), findsOne);
       await unmount(tester);
     });
 

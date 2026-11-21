@@ -532,8 +532,25 @@
     "sc_places": "مكان قريب",
     "sc_records": "السجلات",
     "viewing_member(String name)": "$name محدد",
-    // ملفك is the same for both genders.
-    "member_back": "العودة إلى ملفك",
+    // Member Home: the verbs speak to the account holder (سجّل / سجّلي); the
+    // member is named, never referred to by a gendered pronoun.
+    "member_ci_q(String name)": "كيف حال $name اليوم؟",
+    "member_ci_note(Gender gender, String name)": "سجّل${_select(gender, female: 'ي', other: '')} قياساً أو عرضاً نيابةً عن $name",
+    "member_ci_note_child(Gender gender)": "سجّل${_select(gender, female: 'ي', other: '')} الحرارة أو الوزن أو أي عرض",
+    "member_ci_cta(Gender gender, String name)": "سجّل${_select(gender, female: 'ي', other: '')} لـ$name",
+    "member_ci_done(String name)": "سُجّل لـ$name اليوم",
+    "member_recent_empty(String name)": "لا تسجيلات لـ$name بعد.",
+    "m_height": "الطول",
+    "unit_cm": "سم",
+    "sc_blood": "فصيلة الدم",
+    "sc_allergies(int n)": "$n حساسية",
+    "sc_conditions": "حالات مزمنة",
+    "sc_meds": "دواء",
+    "sc_measures": "مؤشرات",
+    "sc_entries": "قياسات",
+    "sc_recorded": "مسجّلة",
+    "sc_next(String date)": "القادمة $date",
+    "sc_full_profile": "الملف الكامل",
     "viewing_own_data(Gender gender)": "سجلّه غير متاح على هذا الجهاز بعد — ما ${_select(gender, female: 'ترينه', other: 'تراه')} هو سجلّك أنت${_select(gender, female: 'ِ', other: '')}.",
     "viewing_switch_back": "العودة"
   },

@@ -67,9 +67,23 @@ class HomeCheckInCard extends StatelessWidget {
     required this.week,
     required this.onStart,
     required this.onReview,
+    this.question,
+    this.note,
+    this.cta,
+    this.doneLabel,
+    this.showTime = true,
   });
   final bool done;
   final int streak;
+
+  /// A family member's card (`HomeMemberV2`) names them: "How is Sara
+  /// today?", "Log for Sara", "Logged for Sara today", with no time estimate.
+  /// Null keeps the account holder's own copy.
+  final String? question;
+  final String? note;
+  final String? cta;
+  final String? doneLabel;
+  final bool showTime;
 
   /// Last seven days, oldest first, today last ([checkInDays]).
   final List<bool> week;
@@ -131,14 +145,14 @@ class HomeCheckInCard extends StatelessWidget {
                     child: const Icon(LucideIcons.check, size: 22, color: T.hueMint600),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(s.strings.common.done_q, style: _cardTitle(ar))),
+                  Expanded(child: Text(doneLabel ?? s.strings.common.done_q, style: _cardTitle(ar))),
                   Chevron(rtl: ar, color: T.fg4),
                 ]),
               )
             else ...[
-              Text(s.strings.home.hero_q(s.gender), style: _cardTitle(ar)),
+              Text(question ?? s.strings.home.hero_q(s.gender), style: _cardTitle(ar)),
               const SizedBox(height: 6),
-              Text(s.strings.home.hero_disclaimer, style: Typo.meta(ar: ar).copyWith(height: 1.45)),
+              Text(note ?? s.strings.home.hero_disclaimer, style: Typo.meta(ar: ar).copyWith(height: 1.45)),
               const SizedBox(height: 12),
               // `.h2-ci-actions` — the button at the start, the time beside it,
               // wrapping under it when the row runs out (long Arabic copy, large
@@ -150,14 +164,15 @@ class HomeCheckInCard extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   IntrinsicWidth(
-                    child: PButton(s.strings.home.hero_cta(s.gender),
+                    child: PButton(cta ?? s.strings.home.hero_cta(s.gender),
                         icon: LucideIcons.plus, accent: s.accent, ar: ar, onTap: onStart),
                   ),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(LucideIcons.clock, size: 14, color: T.fg3),
-                    const SizedBox(width: 6),
-                    Text(s.strings.home.hero_time, style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600)),
-                  ]),
+                  if (showTime)
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(LucideIcons.clock, size: 14, color: T.fg3),
+                      const SizedBox(width: 6),
+                      Text(s.strings.home.hero_time, style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w600)),
+                    ]),
                 ],
               ),
             ],
@@ -314,7 +329,37 @@ class HomeVitalsCard extends StatelessWidget {
     required this.spo2,
     required this.mood,
     required this.pain,
-  });
+  })  : weight = null,
+        weighedOn = null,
+        height = null,
+        pulse = null,
+        isChild = false;
+
+  /// A child's readings (home-mc.jsx `HomeMemberV2`, `child`): weight in the
+  /// big cell with the day it was measured, then height, pulse, oxygen and
+  /// pain. A child's blood pressure, glucose and mood are not tracked.
+  const HomeVitalsCard.child({
+    super.key,
+    required this.weight,
+    required this.weighedOn,
+    required this.height,
+    required this.pulse,
+    required this.spo2,
+    required this.pain,
+  })  : bp = null,
+        bpHigh = false,
+        glucose = null,
+        glucoseHigh = false,
+        mood = null,
+        isChild = true;
+
+  final bool isChild;
+
+  /// Child only: kilograms, the day it was measured, centimetres, beats a minute.
+  final String? weight;
+  final String? weighedOn;
+  final String? height;
+  final String? pulse;
 
   /// `systolic/diastolic`, or null when not logged.
   final String? bp;
@@ -332,18 +377,32 @@ class HomeVitalsCard extends StatelessWidget {
     final c = s.strings.checkin;
     final p = s.strings.profile;
     const hairline = BorderSide(color: T.lineV2Soft);
-    final cells = [
-      _VitalCell(
-          icon: LucideIcons.droplet,
-          color: T.hueMint600,
-          label: p.m_glucose,
-          value: glucose,
-          unit: c.unit_glu,
-          foot: glucoseHigh ? c.bp_high : null),
-      _VitalCell(icon: LucideIcons.wind, color: T.hueAqua, label: p.m_o2, value: spo2, unit: c.unit_spo2),
-      _VitalCell(icon: LucideIcons.smile, color: T.hueBlue, label: p.m_mood, value: mood, numeric: false),
-      _VitalCell(icon: LucideIcons.thermometer, color: T.danger, label: p.m_pain, value: pain),
-    ];
+    final big = isChild ? weight : bp;
+    final cells = isChild
+        ? [
+            _VitalCell(
+                icon: LucideIcons.ruler,
+                color: T.hueAqua,
+                label: s.strings.home.m_height,
+                value: height,
+                unit: s.strings.home.unit_cm),
+            _VitalCell(
+                icon: LucideIcons.heartPulse, color: T.hueViolet, label: p.m_pulse, value: pulse, unit: c.unit_bpm),
+            _VitalCell(icon: LucideIcons.wind, color: T.hueAqua, label: p.m_o2, value: spo2, unit: c.unit_spo2),
+            _VitalCell(icon: LucideIcons.thermometer, color: T.danger, label: p.m_pain, value: pain),
+          ]
+        : [
+            _VitalCell(
+                icon: LucideIcons.droplet,
+                color: T.hueMint600,
+                label: p.m_glucose,
+                value: glucose,
+                unit: c.unit_glu,
+                foot: glucoseHigh ? c.bp_high : null),
+            _VitalCell(icon: LucideIcons.wind, color: T.hueAqua, label: p.m_o2, value: spo2, unit: c.unit_spo2),
+            _VitalCell(icon: LucideIcons.smile, color: T.hueBlue, label: p.m_mood, value: mood, numeric: false),
+            _VitalCell(icon: LucideIcons.thermometer, color: T.danger, label: p.m_pain, value: pain),
+          ];
     Widget pair(int a, {required bool top}) => IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Expanded(
@@ -374,20 +433,29 @@ class HomeVitalsCard extends StatelessWidget {
           padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 12),
           decoration: const BoxDecoration(border: Border(bottom: hairline)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _VitalLabel(icon: LucideIcons.activity, color: T.hueViolet, label: p.m_bp, size: 15),
+            isChild
+                ? _VitalLabel(icon: LucideIcons.scale, color: T.hueBlue, label: p.m_weight, size: 15)
+                : _VitalLabel(icon: LucideIcons.activity, color: T.hueViolet, label: p.m_bp, size: 15),
             const SizedBox(height: 4),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Expanded(
                 child: Text.rich(
                   TextSpan(children: [
-                    TextSpan(text: bp ?? '—', style: Typo.num(size: FS.xl4).copyWith(height: 1, letterSpacing: -1.2)),
-                    if (bp != null) TextSpan(text: ' ${c.unit_bp}', style: _unit(ar)),
+                    TextSpan(text: big ?? '—', style: Typo.num(size: FS.xl4).copyWith(height: 1, letterSpacing: -1.2)),
+                    if (big != null) TextSpan(text: ' ${isChild ? c.unit_kg : c.unit_bp}', style: _unit(ar)),
                   ]),
                   textDirection: TextDirection.ltr,
                   textAlign: ar ? TextAlign.right : TextAlign.left,
                 ),
               ),
-              if (bp != null) ...[
+              if (isChild && big != null && weighedOn != null) ...[
+                const SizedBox(width: 12),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(bottom: 4),
+                  child: Text(weighedOn!, textDirection: TextDirection.ltr, style: Typo.meta(ar: ar)),
+                ),
+              ],
+              if (!isChild && bp != null) ...[
                 const SizedBox(width: 12),
                 Padding(
                   padding: const EdgeInsetsDirectional.only(bottom: 4),
@@ -685,12 +753,17 @@ class HomeShortcutTile extends StatelessWidget {
     required this.unit,
     required this.onTap,
     this.row = false,
+    this.value,
   });
   final IconData icon;
   final Color iconBg;
   final Color iconFg;
   final String label;
   final int count;
+
+  /// Shown in place of [count] when the figure is not a number (a blood
+  /// type), or empty to show [unit] alone.
+  final String? value;
   final String unit;
   final VoidCallback onTap;
   final bool row;
@@ -712,8 +785,9 @@ class HomeShortcutTile extends StatelessWidget {
         style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1, height: 1.25));
     final sub = Text.rich(
       TextSpan(children: [
-        TextSpan(text: '$count', style: Typo.num(size: FS.xs2, weight: FontWeight.w700, color: T.fg2)),
-        TextSpan(text: ' $unit'),
+        if (value != '')
+          TextSpan(text: value ?? '$count', style: Typo.num(size: FS.xs2, weight: FontWeight.w700, color: T.fg2)),
+        TextSpan(text: value == '' ? unit : ' $unit'),
       ]),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

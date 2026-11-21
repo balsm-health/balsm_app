@@ -535,9 +535,27 @@
     "sc_places": "places nearby",
     "sc_records": "Records",
     "viewing_member(String name)": "$name is selected",
-    // Member Home (Mother & Child): the round button before the "Family" title; it
-    // switches the active profile back to the account holder.
-    "member_back": "Back to your own profile",
+    // Member Home (Mother & Child, home-mc.jsx HomeMemberV2): Home while a family
+    // member is the active profile. $name is the member's short name. Copy about
+    // the member is not gendered; the verbs addressed to the account holder are
+    // (Arabic only).
+    "member_ci_q(String name)": "How is $name today?",
+    "member_ci_note(Gender gender, String name)": "Log a reading or symptom on their behalf",
+    "member_ci_note_child(Gender gender)": "Log a temperature, weight or any symptom",
+    "member_ci_cta(Gender gender, String name)": "Log for $name",
+    "member_ci_done(String name)": "Logged for $name today",
+    "member_recent_empty(String name)": "Nothing logged for $name yet.",
+    "m_height": "Height",
+    "unit_cm": "cm",
+    "sc_blood": "blood type",
+    "sc_allergies(int n)": "${_plural(n, one:'1 allergy', other:'$n allergies')}",
+    "sc_conditions": "conditions",
+    "sc_meds": "medicines",
+    "sc_measures": "measures",
+    "sc_entries": "entries",
+    "sc_recorded": "recorded",
+    "sc_next(String date)": "next $date",
+    "sc_full_profile": "Full profile",
     "viewing_own_data(Gender gender)": "Their record isn't on this device yet — you're still seeing your own.",
     "viewing_switch_back": "Switch back"
   },

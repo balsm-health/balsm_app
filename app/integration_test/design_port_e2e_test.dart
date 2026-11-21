@@ -1053,30 +1053,38 @@ void main() {
     await tapWhenReady(tester, _roundBtn(_en.common.a11y_back));
     await settle(tester, 3);
 
-    // Home now shows the child.
+    // Home now shows the child (home-mc.jsx HomeMemberV2): the account
+    // holder's header, then his check-in, readings, shortcuts and recent logs.
+    final short = _childName.trim().split(' ').first;
     await goHome(tester);
-    await pumpUntil(tester, find.text(f.tile_card));
-    expect(find.text(_childName), findsWidgets);
+    await pumpUntil(tester, find.text(_en.home.member_ci_q(short)));
+    expect(find.text(_en.home.greet), findsOneWidget);
+    expect(find.descendant(of: find.byType(AppBarRow), matching: find.text(f.title)), findsNothing);
+    expect(find.text(_en.home.member_ci_cta(Gender.other, short)), findsOneWidget);
+    expect(find.text(_en.profile.m_weight), findsOneWidget, reason: "a child's readings start with weight");
     expect(find.text(_en.vacc.title), findsOneWidget, reason: 'a child gets Vaccinations');
     expect(find.text(_en.growth.title), findsOneWidget, reason: 'a child gets Growth');
-    // The canvas member head: back to your own profile, then "Family".
-    expect(_roundBtn(_en.home.member_back), findsOneWidget);
-    expect(find.descendant(of: find.byType(AppBarRow), matching: find.text(f.title)), findsOneWidget);
+    expect(find.text(_en.care.map_nearby), findsNothing, reason: "the account holder's own shortcuts are hidden");
     await snap(tester, '40-member-home-en');
+    final empty = find.text(_en.home.member_recent_empty(short));
+    await reveal(tester, empty);
+    await settle(tester, 3);
+    await snap(tester, '41-member-home-en-bottom');
 
     appState().setLang(LanguageCode.ar);
     await settle(tester, 10);
-    await pumpUntil(tester, find.text(_ar.family.tile_card));
-    expect(Directionality.of(tester.element(find.text(_ar.family.tile_card))), TextDirection.rtl);
-    await snap(tester, '41-member-home-ar');
+    final arQ = find.text(_ar.home.member_ci_q(short));
+    await reveal(tester, arQ);
+    await pumpUntil(tester, arQ);
+    expect(Directionality.of(tester.element(arQ)), TextDirection.rtl);
+    await snap(tester, '42-member-home-ar');
+    final arEmpty = find.text(_ar.home.member_recent_empty(short));
+    await reveal(tester, arEmpty);
+    await settle(tester, 3);
+    await snap(tester, '43-member-home-ar-bottom');
     expect(tester.takeException(), isNull);
     appState().setLang(LanguageCode.en);
     await settle(tester, 10);
-
-    // Back returns Home to the account holder.
-    await tapWhenReady(tester, _roundBtn(_en.home.member_back));
-    await pumpUntilGone(tester, find.text(f.tile_card));
-    expect(find.descendant(of: find.byType(AppBarRow), matching: find.text(f.title)), findsNothing);
 
     await shutDown(tester);
   });
