@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,11 +13,11 @@ import 'maintenance_widgets.dart';
 /// started the maintenance check (its state is still unknown then). Reading
 /// it here would start the poller from a bare screen.
 bool maintenancePaused(BuildContext context) {
-  if (context.getElementForInheritedWidgetOfExactType<UncontrolledProviderScope>() == null) return false;
+  if (context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() == null) return false;
   final container = ProviderScope.containerOf(context, listen: false);
   if (!container.exists(maintenanceProvider)) return false;
   final status = container.read(maintenanceProvider);
   if (!status.pausesActions) return false;
-  showMaintenanceSheet(context, paused: true);
+  unawaited(showMaintenanceSheet(context, paused: true));
   return true;
 }

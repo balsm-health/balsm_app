@@ -11,11 +11,17 @@ import '../screens/own_card_screen.dart';
 import '../tokens.dart';
 import '../widgets/balsm_mark.dart';
 import 'maintenance_controller.dart';
+import 'maintenance_tokens.dart';
+
+// Top corners of the maintenance sheet (`maintenance.jsx`).
+const _sheetTopRadius = 24.0;
+// The floating maintenance card (`maintenance.jsx`).
+const _cardRadius = 18.0;
+// The 30pt icon box in a paused-feature row.
+const _iconBoxRadius = 9.0;
 
 // The full-screen page keeps the earlier amber (maintenance.jsx MaintScreen);
-// the card above the tab bar and the details sheet use the `T.maint*` palette.
-const _amber = Color(0xFF9A6E00);
-const _pageTop = Color(0xFFFDF8E8);
+// the card above the tab bar and the details sheet use the `MaintenanceTokens` palette.
 
 /// How often the countdown is redrawn (design `useMaintClock`).
 const _tick = Duration(seconds: 30);
@@ -153,14 +159,15 @@ class _Progress extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         height: height,
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(color: track, borderRadius: BorderRadius.circular(T.rPill)),
+        decoration: BoxDecoration(color: track, borderRadius: BorderRadius.circular(AppRadii.pill)),
         child: Align(
           alignment: AlignmentDirectional.centerStart,
           child: FractionallySizedBox(
             widthFactor: value,
             heightFactor: 1,
             child: DecoratedBox(
-              decoration: BoxDecoration(color: fill, gradient: gradient, borderRadius: BorderRadius.circular(T.rPill)),
+              decoration:
+                  BoxDecoration(color: fill, gradient: gradient, borderRadius: BorderRadius.circular(AppRadii.pill)),
             ),
           ),
         ),
@@ -184,7 +191,7 @@ Future<void> showMaintenanceSheet(BuildContext context, {required bool paused}) 
 /// [paused], what is paused), a reassurance line, "Got it" and the patient's
 /// own emergency card.
 class MaintenanceSheet extends ConsumerWidget {
-  const MaintenanceSheet({super.key, required this.s, required this.paused});
+  const MaintenanceSheet({required this.s, required this.paused, super.key});
 
   final PatientAppState s;
   final bool paused;
@@ -193,102 +200,134 @@ class MaintenanceSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final m = s.strings.maintenance;
     final status = ref.watch(maintenanceProvider);
-    const top = Radius.circular(24);
+    const top = Radius.circular(_sheetTopRadius);
     // `maxHeight: 90%`: the sheet scrolls rather than rising under the
     // status bar.
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * _sheetMaxHeight),
       child: Material(
-        color: T.surface,
+        color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: top),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-              // ── hero ──
-              Container(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 18),
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.vertical(top: top),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [T.maintBg2, T.maintBg, T.surface],
-                    stops: [0, 0.6, 1],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── hero ──
+                Container(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 18),
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.vertical(top: top),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [MaintenanceTokens.bg2, MaintenanceTokens.bg, AppColors.surface],
+                      stops: [0, 0.6, 1],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SheetGrab(),
+                      const SizedBox(height: 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _HeroTile(paused: paused),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  s.rtl ? m.sheet_eyebrow : m.sheet_eyebrow.toUpperCase(),
+                                  style: Typo.eyebrow(MaintenanceTokens.ink2, ar: s.rtl)
+                                      .copyWith(fontSize: FontSizes.meta, letterSpacing: s.rtl ? 0 : 1.44),
+                                ),
+                                const SizedBox(height: 2),
+                                Semantics(
+                                  header: true,
+                                  child: Text(
+                                    paused ? m.paused_title : m.ro_title,
+                                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Transform.translate(
+                            offset: const Offset(0, -4),
+                            child: RoundBtn(
+                              icon: LucideIcons.x,
+                              iconSize: 17,
+                              ghost: true,
+                              semanticLabel: m.close,
+                              onTap: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        paused ? m.paused_body(s.gender) : m.ro_body,
+                        style: Typo.bodySm(ar: s.rtl).copyWith(height: 1.55),
+                      ),
+                      const SizedBox(height: 14),
+                      MaintenanceCountdown(s: s),
+                    ],
                   ),
                 ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  const SheetGrab(),
-                  const SizedBox(height: 14),
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    _HeroTile(paused: paused),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(s.rtl ? m.sheet_eyebrow : m.sheet_eyebrow.toUpperCase(),
-                            style: Typo.eyebrow(T.maintInk2, ar: s.rtl)
-                                .copyWith(fontSize: FS.xs, letterSpacing: s.rtl ? 0 : 1.44)),
-                        const SizedBox(height: 2),
-                        Semantics(
-                          header: true,
-                          child: Text(paused ? m.paused_title : m.ro_title,
-                              style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-                        ),
-                      ]),
-                    ),
-                    Transform.translate(
-                      offset: const Offset(0, -4),
-                      child: RoundBtn(
-                        icon: LucideIcons.x,
-                        iconSize: 17,
-                        ghost: true,
-                        semanticLabel: m.close,
+                // ── body ──
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 26),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (status.message case final message?) ...[
+                        const SizedBox(height: 14),
+                        _MessageCard(s: s, message: message),
+                      ],
+                      MaintenanceLists(s: s, compact: paused),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          const Icon(LucideIcons.shieldCheck, size: 14, color: AppColors.hueMint600),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(m.data_safe, style: Typo.meta(ar: s.rtl))),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      // The sheet opens on the root navigator, outside AccentScope,
+                      // so the app's accent is passed in explicitly.
+                      PButton(
+                        m.got_it,
+                        block: true,
+                        large: true,
+                        accent: s.accent,
+                        ar: s.rtl,
                         onTap: () => Navigator.of(context).pop(),
                       ),
-                    ),
-                  ]),
-                  const SizedBox(height: 12),
-                  Text(paused ? m.paused_body(s.gender) : m.ro_body,
-                      style: Typo.bodySm(ar: s.rtl).copyWith(height: 1.55)),
-                  const SizedBox(height: 14),
-                  MaintenanceCountdown(s: s),
-                ]),
-              ),
-              // ── body ──
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 26),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  if (status.message case final message?) ...[
-                    const SizedBox(height: 14),
-                    _MessageCard(s: s, message: message),
-                  ],
-                  MaintenanceLists(s: s, compact: paused),
-                  const SizedBox(height: 14),
-                  Row(children: [
-                    const Icon(LucideIcons.shieldCheck, size: 14, color: T.hueMint600),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text(m.data_safe, style: Typo.meta(ar: s.rtl))),
-                  ]),
-                  const SizedBox(height: 18),
-                  // The sheet opens on the root navigator, outside AccentScope,
-                  // so the app's accent is passed in explicitly.
-                  PButton(m.got_it,
-                      block: true, large: true, accent: s.accent, ar: s.rtl, onTap: () => Navigator.of(context).pop()),
-                  const SizedBox(height: 10),
-                  // Over the sheet, so back returns here (design: the card
-                  // replaces the sheet until it is closed).
-                  PButton(m.open_card,
-                      icon: LucideIcons.idCard,
-                      variant: BtnVariant.ghost,
-                      size: BtnSize.md,
-                      block: true,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      onTap: () => openOwnCard(context)),
-                ]),
-              ),
-            ]),
+                      const SizedBox(height: 10),
+                      // Over the sheet, so back returns here (design: the card
+                      // replaces the sheet until it is closed).
+                      PButton(
+                        m.open_card,
+                        icon: LucideIcons.idCard,
+                        variant: BtnVariant.ghost,
+                        size: BtnSize.md,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: () => openOwnCard(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -308,41 +347,48 @@ class _HeroTile extends StatelessWidget {
         child: SizedBox(
           width: 56,
           height: 56,
-          child: Stack(clipBehavior: Clip.none, children: [
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: T.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: T.maintTileShadow,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(_cardRadius),
+                    boxShadow: MaintenanceTokens.tileShadow,
+                  ),
+                  child: Icon(
+                    paused ? LucideIcons.pencilOff : LucideIcons.wrench,
+                    size: 26,
+                    color: MaintenanceTokens.ink2,
+                  ),
                 ),
-                child: Icon(paused ? LucideIcons.pencilOff : LucideIcons.wrench, size: 26, color: T.maintInk2),
               ),
-            ),
-            PositionedDirectional(
-              top: -4,
-              end: -4,
-              child: _Breathing(
-                period: _pulsePeriod,
-                builder: (context, t) => Opacity(
-                  opacity: 0.9 + 0.1 * t,
-                  child: Transform.scale(
-                    scale: 1 + 0.08 * t,
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: T.maintDot,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: T.surface, width: 2),
+              PositionedDirectional(
+                top: -4,
+                end: -4,
+                child: _Breathing(
+                  period: _pulsePeriod,
+                  builder: (context, t) => Opacity(
+                    opacity: 0.9 + 0.1 * t,
+                    child: Transform.scale(
+                      scale: 1 + 0.08 * t,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: MaintenanceTokens.dot,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.surface, width: 2),
+                        ),
+                        child: const Icon(LucideIcons.eye, size: 11, color: AppColors.surface),
                       ),
-                      child: const Icon(LucideIcons.eye, size: 11, color: T.surface),
                     ),
                   ),
                 ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       );
 }
@@ -367,32 +413,43 @@ class _MessageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsetsDirectional.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rLg)),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(
-            padding: EdgeInsetsDirectional.only(top: 2),
-            child: Icon(LucideIcons.megaphone, size: 17, color: T.fg2),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s.strings.maintenance.message_title,
-                  style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              // `dir="auto"`: the admin writes one text for every language,
-              // so it runs in its own direction, not the app's.
-              Text(message,
-                  textDirection: _directionOf(message, s.dir), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1)),
-            ]),
-          ),
-        ]),
+        decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.lg)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsetsDirectional.only(top: 2),
+              child: Icon(LucideIcons.megaphone, size: 17, color: AppColors.textSecondary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    s.strings.maintenance.message_title,
+                    style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  // `dir="auto"`: the admin writes one text for every language,
+                  // so it runs in its own direction, not the app's.
+                  Text(
+                    message,
+                    textDirection: _directionOf(message, s.dir),
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
 }
 
 /// The countdown block (design `MaintCountdown`): "Back in about …", the end
 /// time, and how far through the window we are.
 class MaintenanceCountdown extends ConsumerWidget {
-  const MaintenanceCountdown({super.key, required this.s});
+  const MaintenanceCountdown({required this.s, super.key});
 
   final PatientAppState s;
 
@@ -400,54 +457,65 @@ class MaintenanceCountdown extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final m = s.strings.maintenance;
     final status = ref.watch(maintenanceProvider);
-    return _Ticking(builder: (context, now) {
-      final pct = maintenanceProgress(status, now);
-      return Container(
-        padding: const EdgeInsetsDirectional.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: T.surface,
-          borderRadius: BorderRadius.circular(T.rLg),
-          border: Border.all(color: T.maintLine),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 10,
-            runSpacing: 4,
+    return _Ticking(
+      builder: (context, now) {
+        final pct = maintenanceProgress(status, now);
+        return Container(
+          padding: const EdgeInsetsDirectional.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: MaintenanceTokens.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(LucideIcons.clock, size: 15, color: T.maintInk2),
-                const SizedBox(width: 6),
-                Text(maintenanceLeftText(s, status.endsAt, now),
-                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              ]),
-              Text(maintenanceEndText(context, s, status.endsAt, now), style: Typo.meta(ar: s.rtl)),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 4,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.clock, size: 15, color: MaintenanceTokens.ink2),
+                      const SizedBox(width: 6),
+                      Text(
+                        maintenanceLeftText(s, status.endsAt, now),
+                        style:
+                            Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                    ],
+                  ),
+                  Text(maintenanceEndText(context, s, status.endsAt, now), style: Typo.meta(ar: s.rtl)),
+                ],
+              ),
+              if (pct != null) ...[
+                const SizedBox(height: 8),
+                Semantics(
+                  label: m.progress_label,
+                  value: '${(pct * 100).round()}%',
+                  child: _Progress(
+                    value: pct,
+                    height: 6,
+                    track: MaintenanceTokens.bg2,
+                    gradient: const LinearGradient(colors: [MaintenanceTokens.dot, MaintenanceTokens.dotLight]),
+                  ),
+                ),
+              ],
             ],
           ),
-          if (pct != null) ...[
-            const SizedBox(height: 8),
-            Semantics(
-              label: m.progress_label,
-              value: '${(pct * 100).round()}%',
-              child: _Progress(
-                value: pct,
-                height: 6,
-                track: T.maintBg2,
-                gradient: const LinearGradient(colors: [T.maintDot, T.maintDotLight]),
-              ),
-            ),
-          ],
-        ]),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
 /// What still works and — unless [compact] — what is paused: two tinted
 /// cards with an icon tile per item (design `MaintLists`).
 class MaintenanceLists extends StatelessWidget {
-  const MaintenanceLists({super.key, required this.s, this.compact = false});
+  const MaintenanceLists({required this.s, super.key, this.compact = false});
 
   final PatientAppState s;
 
@@ -459,39 +527,43 @@ class MaintenanceLists extends StatelessWidget {
     final m = s.strings.maintenance;
     return Padding(
       padding: const EdgeInsetsDirectional.only(top: 16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 10, children: [
-        _ListCard(
-          s: s,
-          title: m.still_available,
-          titleIcon: LucideIcons.circleCheck,
-          // The design's mint-600 ink measures about 2:1 on the mint wash, too
-          // faint for 12px text; the title takes the darker mint ink.
-          titleInk: T.hueMintInk,
-          iconInk: T.hueMint600,
-          bg: T.hueMint50,
-          line: T.hueMint.withValues(alpha: 0.28),
-          items: [
-            (LucideIcons.eye, m.ok_view),
-            (LucideIcons.idCard, m.ok_card),
-            (LucideIcons.bellRing, m.ok_reminders),
-          ],
-        ),
-        if (!compact)
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 10,
+        children: [
           _ListCard(
             s: s,
-            title: m.paused_for_now,
-            titleIcon: LucideIcons.circlePause,
-            titleInk: T.maintInk2,
-            iconInk: T.maintInk2,
-            bg: T.maintBg,
-            line: T.maintLine,
+            title: m.still_available,
+            titleIcon: LucideIcons.circleCheck,
+            // The design's mint-600 ink measures about 2:1 on the mint wash, too
+            // faint for 12px text; the title takes the darker mint ink.
+            titleInk: AppColors.hueMintInk,
+            iconInk: AppColors.hueMint600,
+            bg: AppColors.hueMint50,
+            line: AppColors.hueMint.withValues(alpha: 0.28),
             items: [
-              (LucideIcons.pencilOff, m.paused_log),
-              (LucideIcons.refreshCwOff, m.paused_sync),
-              (LucideIcons.logIn, m.paused_signin),
+              (LucideIcons.eye, m.ok_view),
+              (LucideIcons.idCard, m.ok_card),
+              (LucideIcons.bellRing, m.ok_reminders),
             ],
           ),
-      ]),
+          if (!compact)
+            _ListCard(
+              s: s,
+              title: m.paused_for_now,
+              titleIcon: LucideIcons.circlePause,
+              titleInk: MaintenanceTokens.ink2,
+              iconInk: MaintenanceTokens.ink2,
+              bg: MaintenanceTokens.bg,
+              line: MaintenanceTokens.line,
+              items: [
+                (LucideIcons.pencilOff, m.paused_log),
+                (LucideIcons.refreshCwOff, m.paused_sync),
+                (LucideIcons.logIn, m.paused_signin),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
@@ -520,35 +592,51 @@ class _ListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsetsDirectional.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(16), border: Border.all(color: line)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Semantics(
-            header: true,
-            child: Row(children: [
-              Icon(titleIcon, size: 14, color: titleInk),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(title, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: titleInk)),
-              ),
-            ]),
-          ),
-          const SizedBox(height: 4),
-          ...items.map((e) => Padding(
-                padding: const EdgeInsetsDirectional.symmetric(vertical: 7),
-                child: Row(children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(color: T.surface, borderRadius: BorderRadius.circular(9)),
-                    child: Icon(e.$1, size: 15, color: iconInk),
-                  ),
-                  const SizedBox(width: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(AppRadii.tile),
+          border: Border.all(color: line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              header: true,
+              child: Row(
+                children: [
+                  Icon(titleIcon, size: 14, color: titleInk),
+                  const SizedBox(width: 6),
                   Expanded(
-                    child: Text(e.$2, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1, height: 1.4)),
+                    child:
+                        Text(title, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: titleInk)),
                   ),
-                ]),
-              )),
-        ]),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...items.map(
+              (e) => Padding(
+                padding: const EdgeInsetsDirectional.symmetric(vertical: 7),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration:
+                          BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(_iconBoxRadius)),
+                      child: Icon(e.$1, size: 15, color: iconInk),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child:
+                          Text(e.$2, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textPrimary, height: 1.4)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       );
 }
 
@@ -565,83 +653,100 @@ class MaintenanceStrip extends ConsumerWidget {
     if (status.mode != MaintenanceMode.readonly) return const SizedBox.shrink();
     final s = AppScope.of(context);
     final m = s.strings.maintenance;
-    const radius = BorderRadius.all(Radius.circular(16));
+    const radius = BorderRadius.all(Radius.circular(AppRadii.tile));
     void open() => showMaintenanceSheet(context, paused: false);
-    return _Ticking(builder: (context, now) {
-      final left = maintenanceLeftText(s, status.endsAt, now);
-      final pct = maintenanceProgress(status, now);
-      return Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 8),
-        child: Semantics(
-          button: true,
-          label: m.strip_a11y(left),
-          onTap: open,
-          excludeSemantics: true,
-          child: DecoratedBox(
-            decoration: const BoxDecoration(borderRadius: radius, boxShadow: T.maintCardShadow),
-            child: Material(
-              type: MaterialType.transparency,
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: radius,
-                  border: Border.all(color: T.maintLine),
-                  gradient: const LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: [T.maintBg, T.maintBg2],
-                  ),
-                ),
-                child: InkWell(
-                  onTap: open,
-                  borderRadius: radius,
-                  child: ClipRRect(
+    return _Ticking(
+      builder: (context, now) {
+        final left = maintenanceLeftText(s, status.endsAt, now);
+        final pct = maintenanceProgress(status, now);
+        return Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 8),
+          child: Semantics(
+            button: true,
+            label: m.strip_a11y(left),
+            onTap: open,
+            excludeSemantics: true,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(borderRadius: radius, boxShadow: MaintenanceTokens.cardShadow),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Ink(
+                  decoration: BoxDecoration(
                     borderRadius: radius,
-                    child: Stack(children: [
-                      Padding(
-                        padding: const EdgeInsetsDirectional.symmetric(horizontal: 12, vertical: 10),
-                        child: Row(children: [
-                          const _StripTile(),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(m.strip_title,
-                                  style: Typo.bodySm(ar: s.rtl)
-                                      .copyWith(fontWeight: FontWeight.w700, color: T.maintInk, height: 1.3)),
-                              Text(left,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Typo.meta(ar: s.rtl).copyWith(color: T.maintInk.withValues(alpha: 0.85))),
-                            ]),
+                    border: Border.all(color: MaintenanceTokens.line),
+                    gradient: const LinearGradient(
+                      begin: AlignmentDirectional.topStart,
+                      end: AlignmentDirectional.bottomEnd,
+                      colors: [MaintenanceTokens.bg, MaintenanceTokens.bg2],
+                    ),
+                  ),
+                  child: InkWell(
+                    onTap: open,
+                    borderRadius: radius,
+                    child: ClipRRect(
+                      borderRadius: radius,
+                      child: Stack(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsetsDirectional.symmetric(horizontal: 12, vertical: 10),
+                            child: Row(
+                              children: [
+                                const _StripTile(),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        m.strip_title,
+                                        style: Typo.bodySm(ar: s.rtl).copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: MaintenanceTokens.ink,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                      Text(
+                                        left,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Typo.meta(ar: s.rtl)
+                                            .copyWith(color: MaintenanceTokens.ink.withValues(alpha: 0.85)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  m.strip_details,
+                                  style: Typo.meta(ar: s.rtl)
+                                      .copyWith(fontWeight: FontWeight.w700, color: MaintenanceTokens.ink),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(forwardChevron(context), size: 15, color: MaintenanceTokens.ink),
+                              ],
+                            ),
                           ),
-                          const SizedBox(width: 8),
-                          Text(m.strip_details,
-                              style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.maintInk)),
-                          const SizedBox(width: 2),
-                          Transform.flip(
-                            flipX: s.rtl,
-                            child: const Icon(LucideIcons.chevronRight, size: 15, color: T.maintInk),
-                          ),
-                        ]),
+                          if (pct != null)
+                            PositionedDirectional(
+                              start: 0,
+                              end: 0,
+                              bottom: 0,
+                              child: Opacity(
+                                opacity: 0.7,
+                                child: _Progress(value: pct, height: 3, fill: MaintenanceTokens.dot),
+                              ),
+                            ),
+                        ],
                       ),
-                      if (pct != null)
-                        PositionedDirectional(
-                          start: 0,
-                          end: 0,
-                          bottom: 0,
-                          child: Opacity(
-                            opacity: 0.7,
-                            child: _Progress(value: pct, height: 3, fill: T.maintDot),
-                          ),
-                        ),
-                    ]),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -653,33 +758,37 @@ class _StripTile extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
         width: 36,
         height: 36,
-        child: Stack(clipBehavior: Clip.none, children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: T.surface, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(LucideIcons.wrench, size: 17, color: T.maintInk2),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration:
+                    BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(AppRadii.control)),
+                child: const Icon(LucideIcons.wrench, size: 17, color: MaintenanceTokens.ink2),
+              ),
             ),
-          ),
-          PositionedDirectional(
-            top: -2,
-            end: -2,
-            child: _Breathing(
-              period: _blinkPeriod,
-              builder: (context, t) => Opacity(
-                opacity: 1 - 0.65 * t,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    color: T.maintDot,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: T.surface, width: 2),
+            PositionedDirectional(
+              top: -2,
+              end: -2,
+              child: _Breathing(
+                period: _blinkPeriod,
+                builder: (context, t) => Opacity(
+                  opacity: 1 - 0.65 * t,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: MaintenanceTokens.dot,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.surface, width: 2),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ]),
+          ],
+        ),
       );
 }
 
@@ -688,7 +797,7 @@ class _StripTile extends StatelessWidget {
 /// number stay reachable; [onDeviceOnly] offers "Use on this device only"
 /// before sign-in while read-only.
 class MaintenanceScreen extends ConsumerWidget {
-  const MaintenanceScreen({super.key, required this.signedIn, this.onDeviceOnly});
+  const MaintenanceScreen({required this.signedIn, super.key, this.onDeviceOnly});
 
   final bool signedIn;
   final VoidCallback? onDeviceOnly;
@@ -711,7 +820,7 @@ class MaintenanceScreen extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [_pageTop, T.surface],
+            colors: [MaintenanceTokens.pageTop, AppColors.surface],
             stops: [0, 0.55],
           ),
         ),
@@ -723,80 +832,109 @@ class MaintenanceScreen extends ConsumerWidget {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 460),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(28, 48, 28, 12),
-                        child: Column(children: [
-                          const _MarkWithWrench(),
-                          const SizedBox(height: 18),
-                          Text(m.eyebrow.toUpperCase(), style: Typo.eyebrow(T.maintInk2, ar: s.rtl)),
-                          const SizedBox(height: 12),
-                          Semantics(
-                            header: true,
-                            child: Text(block ? m.block_title : m.ro_title,
-                                textAlign: TextAlign.center, style: Typo.heading(ar: s.rtl)),
-                          ),
-                          const SizedBox(height: 12),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 320),
-                            child: Text(body, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl)),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsetsDirectional.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: T.surface,
-                              borderRadius: BorderRadius.circular(T.rPill),
-                              border: Border.all(color: T.ink100),
-                            ),
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(LucideIcons.clock, size: 15, color: T.fg3),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(maintenanceEndText(context, s, status.endsAt, now),
-                                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsetsDirectional.fromSTEB(28, 48, 28, 12),
+                          child: Column(
+                            children: [
+                              const _MarkWithWrench(),
+                              const SizedBox(height: 18),
+                              Text(m.eyebrow.toUpperCase(), style: Typo.eyebrow(MaintenanceTokens.ink2, ar: s.rtl)),
+                              const SizedBox(height: 12),
+                              Semantics(
+                                header: true,
+                                child: Text(
+                                  block ? m.block_title : m.ro_title,
+                                  textAlign: TextAlign.center,
+                                  style: Typo.heading(ar: s.rtl),
+                                ),
                               ),
-                            ]),
+                              const SizedBox(height: 12),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 320),
+                                child: Text(body, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl)),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsetsDirectional.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                                  border: Border.all(color: AppColors.ink100),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(LucideIcons.clock, size: 15, color: AppColors.textTertiary),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        maintenanceEndText(context, s, status.endsAt, now),
+                                        style: Typo.bodySm(ar: s.rtl)
+                                            .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ]),
-                      ),
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 28),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          if (signedIn) ...[
-                            PButton(m.open_card,
-                                icon: LucideIcons.idCard,
+                        ),
+                        Padding(
+                          padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 28),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (signedIn) ...[
+                                PButton(
+                                  m.open_card,
+                                  icon: LucideIcons.idCard,
+                                  block: true,
+                                  large: true,
+                                  ar: s.rtl,
+                                  onTap: () => openOwnCard(context),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              if (!signedIn && !block && onDeviceOnly != null) ...[
+                                PButton(
+                                  m.device_only,
+                                  icon: LucideIcons.smartphone,
+                                  block: true,
+                                  large: true,
+                                  ar: s.rtl,
+                                  onTap: onDeviceOnly,
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              if (number.isNotEmpty) ...[
+                                PButton(
+                                  m.call_emergency(number, s.gender),
+                                  icon: LucideIcons.phone,
+                                  variant: BtnVariant.secondary,
+                                  color: AppColors.danger,
+                                  block: true,
+                                  large: true,
+                                  ar: s.rtl,
+                                  onTap: () => launchUrl(Uri(scheme: 'tel', path: number)),
+                                ),
+                                const SizedBox(height: 10),
+                              ],
+                              PButton(
+                                status.checking ? m.checking : m.check_again(s.gender),
+                                icon: LucideIcons.rotateCw,
+                                variant: BtnVariant.ghost,
                                 block: true,
-                                large: true,
                                 ar: s.rtl,
-                                onTap: () => openOwnCard(context)),
-                            const SizedBox(height: 10),
-                          ],
-                          if (!signedIn && !block && onDeviceOnly != null) ...[
-                            PButton(m.device_only,
-                                icon: LucideIcons.smartphone, block: true, large: true, ar: s.rtl, onTap: onDeviceOnly),
-                            const SizedBox(height: 10),
-                          ],
-                          if (number.isNotEmpty) ...[
-                            PButton(m.call_emergency(number, s.gender),
-                                icon: LucideIcons.phone,
-                                variant: BtnVariant.secondary,
-                                color: T.danger,
-                                block: true,
-                                large: true,
-                                ar: s.rtl,
-                                onTap: () => launchUrl(Uri(scheme: 'tel', path: number))),
-                            const SizedBox(height: 10),
-                          ],
-                          PButton(status.checking ? m.checking : m.check_again(s.gender),
-                              icon: LucideIcons.rotateCw,
-                              variant: BtnVariant.ghost,
-                              block: true,
-                              ar: s.rtl,
-                              onTap: status.checking ? null : () => ref.read(maintenanceProvider.notifier).check()),
-                        ]),
-                      ),
-                    ]),
+                                onTap: status.checking ? null : () => ref.read(maintenanceProvider.notifier).check(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -817,23 +955,26 @@ class _MarkWithWrench extends StatelessWidget {
     return SizedBox(
       width: 88,
       height: 88,
-      child: Stack(clipBehavior: Clip.none, children: [
-        const Positioned.fill(child: Opacity(opacity: 0.9, child: BalsmFlower(size: 88))),
-        PositionedDirectional(
-          end: -6,
-          bottom: -4,
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: T.warningBg,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Positioned.fill(child: Opacity(opacity: 0.9, child: BalsmFlower(size: 88))),
+          PositionedDirectional(
+            end: -6,
+            bottom: -4,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.warningBackground,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.white, width: 3),
+              ),
+              child: const Icon(LucideIcons.wrench, size: 17, color: MaintenanceTokens.ink2),
             ),
-            child: const Icon(LucideIcons.wrench, size: 17, color: _amber),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -845,7 +986,7 @@ class _MarkWithWrench extends StatelessWidget {
 /// reaches the guard, which shows the paused sheet. The badge stays full
 /// colour so it reads as a lock.
 class MaintenanceFabLock extends ConsumerWidget {
-  const MaintenanceFabLock({super.key, required this.label, required this.onTap, required this.child});
+  const MaintenanceFabLock({required this.label, required this.onTap, required this.child, super.key});
 
   /// What the button says outside read-only maintenance.
   final String label;
@@ -873,23 +1014,26 @@ class MaintenanceFabLock extends ConsumerWidget {
   }
 
   Widget _locked() {
-    return Stack(clipBehavior: Clip.none, children: [
-      Opacity(opacity: 0.75, child: ColorFiltered(colorFilter: ColorFilter.matrix(_saturate(0.35)), child: child)),
-      PositionedDirectional(
-        top: -2,
-        end: -2,
-        child: Container(
-          key: const ValueKey('maintenance-fab-lock'),
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: T.maintDot,
-            shape: BoxShape.circle,
-            border: Border.all(color: T.surface, width: 2),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Opacity(opacity: 0.75, child: ColorFiltered(colorFilter: ColorFilter.matrix(_saturate(0.35)), child: child)),
+        PositionedDirectional(
+          top: -2,
+          end: -2,
+          child: Container(
+            key: const ValueKey('maintenance-fab-lock'),
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: MaintenanceTokens.dot,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.surface, width: 2),
+            ),
+            child: const Icon(LucideIcons.lock, size: 10, color: AppColors.surface),
           ),
-          child: const Icon(LucideIcons.lock, size: 10, color: T.surface),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
