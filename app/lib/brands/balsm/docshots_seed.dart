@@ -103,13 +103,15 @@ Future<void> seedDocshotsData(ProviderContainer container) async {
             .subtract(Duration(days: day))
             .add(Duration(hours: int.parse(parts[0]), minutes: int.parse(parts[1])));
         final missed = day == 3 && time == '20:00' && name == 'Metformin';
-        await meds.insertDoseEvent(DoseEvent(
-          id: DoseEventId.uuid(),
-          medicationId: id,
-          scheduledAt: scheduledAt,
-          recordedAt: scheduledAt.add(const Duration(minutes: 4)),
-          outcome: missed ? DoseOutcome.missed : DoseOutcome.taken,
-        ));
+        await meds.insertDoseEvent(
+          DoseEvent(
+            id: DoseEventId.uuid(),
+            medicationId: id,
+            scheduledAt: scheduledAt,
+            recordedAt: scheduledAt.add(const Duration(minutes: 4)),
+            outcome: missed ? DoseOutcome.missed : DoseOutcome.taken,
+          ),
+        );
       }
     }
   }
@@ -264,8 +266,6 @@ Future<void> _seedRecords(ProviderContainer container, UserId userId, HealthProf
         userId: userId,
         type: type,
         title: title,
-        tags: const [],
-        source: RecordSource.self,
         resultNote: note,
         takenAt: takenAt,
         createdAt: takenAt,

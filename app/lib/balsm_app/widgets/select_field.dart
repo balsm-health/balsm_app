@@ -2,25 +2,24 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
-import '../kit.dart';
 import '../tokens.dart';
 
 /// Design-system `Select` — a bordered dropdown field with a trailing chevron.
 ///
 /// Two sizes: the default (`dense: false`), used by forms such as
-/// [med_plan_form.dart]'s frequency/duration pickers, and the small DS
+/// `med_plan_form.dart`'s frequency/duration pickers, and the small DS
 /// `Select size sm` (`dense: true`; 32pt tall, 1px border), used by the body
 /// map's layer picker. Generic over the option value so callers keep their
 /// own `enum`/`String` value types instead of stringly keys.
 ///
-/// Type parameter is `V` (not `T`) — this file's [T] design-token class would
+/// Type parameter is `V` (not `T`) — this file's `T` design-token class would
 /// otherwise be shadowed by a same-named generic parameter.
 class SelectField<V> extends StatelessWidget {
   const SelectField({
-    super.key,
     required this.value,
     required this.items,
     required this.onChanged,
+    super.key,
     this.semanticsLabel,
     this.dense = false,
     this.enabled = true,
@@ -49,14 +48,14 @@ class SelectField<V> extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(T.rMd),
-      borderSide: BorderSide(color: T.border, width: dense ? 1 : 1.5),
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      borderSide: BorderSide(color: AppColors.border, width: dense ? 1 : 1.5),
     );
     final field = InputDecorator(
       decoration: InputDecoration(
         isDense: dense,
         filled: true,
-        fillColor: enabled ? Colors.white : T.surfaceMuted,
+        fillColor: enabled ? AppColors.white : AppColors.surfaceMuted,
         contentPadding: dense
             ? const EdgeInsets.symmetric(horizontal: 12, vertical: 6)
             : const EdgeInsets.symmetric(horizontal: 12),
@@ -68,8 +67,8 @@ class SelectField<V> extends StatelessWidget {
         child: DropdownButton<V>(
           value: value,
           isExpanded: true,
-          icon: Icon(LucideIcons.chevronDown, size: 15, color: enabled ? T.fg3 : T.fg4),
-          style: Typo.body(ar: s.rtl).copyWith(color: enabled ? T.fg1 : T.fg4),
+          icon: Icon(LucideIcons.chevronDown, size: 15, color: enabled ? AppColors.textTertiary : AppColors.textHint),
+          style: Typo.body(ar: s.rtl).copyWith(color: enabled ? AppColors.textPrimary : AppColors.textHint),
           items: [
             for (final (v, label) in items)
               DropdownMenuItem(value: v, child: Text(label, overflow: TextOverflow.ellipsis)),

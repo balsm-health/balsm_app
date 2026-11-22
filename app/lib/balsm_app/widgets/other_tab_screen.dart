@@ -3,14 +3,13 @@ import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
-import '../tokens.dart';
 import 'balsm_mark.dart';
 
 /// Web only: shown in place of the app when another tab already owns the
 /// on-device database (see `claimDatabaseTab`). Without it this tab would
 /// render an empty app whose every read and write fails.
 class OtherTabScreen extends StatelessWidget {
-  const OtherTabScreen({super.key, required this.state});
+  const OtherTabScreen({required this.state, super.key});
 
   final PatientAppState state;
 
@@ -23,7 +22,7 @@ class OtherTabScreen extends StatelessWidget {
       child: AccentScope(
         accent: state.accent,
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.white,
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 380),
@@ -37,13 +36,17 @@ class OtherTabScreen extends StatelessWidget {
                     Text(
                       strings.other_tab_t(brand.nameIn(state.lang.value)),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: T.ink900),
+                      style: const TextStyle(
+                        fontSize: FontSizes.headline,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink900,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       strings.other_tab_b,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 15, height: 1.5, color: T.ink600),
+                      style: const TextStyle(fontSize: FontSizes.bodyLg, height: 1.5, color: AppColors.ink600),
                     ),
                     const SizedBox(height: 28),
                     PButton(strings.other_tab_retry, block: true, large: true, ar: state.rtl, onTap: reloadPage),

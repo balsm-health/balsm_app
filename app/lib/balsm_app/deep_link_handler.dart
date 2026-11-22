@@ -6,8 +6,8 @@ import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app_state.dart';
 import 'deep_links.dart';
@@ -46,11 +46,17 @@ String deepLinkKind(Uri uri) => parseDeepLink(uri)?.kind ?? 'other';
 /// whichever handler is attached — queueing any that arrive while none is.
 @visibleForTesting
 class DeepLinkInbox {
+  /// Builds an inbox over arbitrary sources, for tests.
+  @visibleForTesting
+  factory DeepLinkInbox.forTest(Stream<Uri> links, {Future<Uri?>? launchLink}) =>
+      DeepLinkInbox._(links, launchLink ?? Future.value());
   DeepLinkInbox._(Stream<Uri> links, Future<Uri?> launchLink) {
     links.listen(_deliver, onError: (_) {});
-    unawaited(launchLink.then((uri) {
-      if (uri != null) _deliver(uri);
-    }));
+    unawaited(
+      launchLink.then((uri) {
+        if (uri != null) _deliver(uri);
+      }),
+    );
   }
 
   static DeepLinkInbox? _instance;
@@ -59,11 +65,6 @@ class DeepLinkInbox {
     final links = AppLinks();
     return _instance ??= DeepLinkInbox._(links.uriLinkStream, links.getInitialLink());
   }
-
-  /// Builds an inbox over arbitrary sources, for tests.
-  @visibleForTesting
-  factory DeepLinkInbox.forTest(Stream<Uri> links, {Future<Uri?>? launchLink}) =>
-      DeepLinkInbox._(links, launchLink ?? Future.value());
 
   final _queue = <Uri>[];
   void Function(Uri)? _sink;
@@ -115,7 +116,7 @@ class DeepLinkInbox {
 /// Handles both the cold-start link and links delivered while running. Sits
 /// under the Navigator and [AppScope], so it can push screens itself.
 class DeepLinkHandler extends ConsumerStatefulWidget {
-  const DeepLinkHandler({super.key, required this.child});
+  const DeepLinkHandler({required this.child, super.key});
   final Widget child;
 
   @override

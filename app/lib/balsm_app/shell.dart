@@ -6,53 +6,56 @@ import 'dart:math' as math;
 import 'package:account/account.dart' show accountProfileUseCaseProvider;
 import 'package:core/core.dart';
 import 'package:deletion/deletion.dart';
-import 'package:profile/profile.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:profile/profile.dart';
+
+import '../update/update_gate.dart';
 import 'app_state.dart';
+import 'assets.dart';
+import 'deep_link_handler.dart';
+import 'deep_links.dart';
+import 'desktop_menu.dart';
+import 'dev/log_buffer.dart';
+import 'dev/shake_to_dev_config.dart';
 import 'family/family_flag_guard.dart';
 import 'family/family_links_sync.dart';
 import 'flags.dart';
+import 'kit.dart';
 import 'maintenance/maintenance_controller.dart';
 import 'maintenance/maintenance_widgets.dart';
-import 'routes.dart';
-import 'desktop_menu.dart';
-import 'dev/log_buffer.dart';
-import 'assets.dart';
-import 'kit.dart';
 import 'offline_banner.dart';
-import 'widgets/beta_banner.dart';
 import 'responsive.dart';
-import 'theme.dart';
-import 'tokens.dart';
+import 'routes.dart';
+import 'screens/add_prescription_sheet.dart';
+import 'screens/auth_flow.dart';
+import 'screens/care_team_screen.dart';
+import 'screens/ecosystem_sheet.dart';
+import 'screens/feedback_sheet.dart';
 import 'screens/home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/meds_screen.dart';
+import 'screens/personal_details.dart';
 import 'screens/prescriptions_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/records_screen.dart';
-import 'screens/trends_screen.dart';
-import 'screens/quick_log.dart';
-import 'screens/auth_flow.dart';
-import 'screens/personal_details.dart';
 import 'screens/profile_subscreens.dart';
-import 'screens/ecosystem_sheet.dart';
-import 'screens/feedback_sheet.dart';
-import 'screens/storage_sheet.dart';
-import 'screens/add_prescription_sheet.dart';
+import 'screens/quick_log.dart';
+import 'screens/records_screen.dart';
 import 'screens/report_flow.dart';
+import 'screens/storage_sheet.dart';
+import 'screens/trends_screen.dart';
+import 'theme.dart';
 import 'widgets/account_switcher.dart';
 import 'widgets/balsm_mark.dart';
+import 'widgets/beta_banner.dart';
 import 'widgets/other_tab_screen.dart';
-import 'deep_link_handler.dart';
-import 'deep_links.dart';
-import 'dev/shake_to_dev_config.dart';
-import '../update/update_gate.dart';
-import 'screens/care_team_screen.dart';
+
+// Scrolling the page to its end after a tab change.
+const _scrollToEnd = Duration(milliseconds: 280);
 
 /// Root of the patient app prototype. Watches the Riverpod-owned
 /// [PatientAppState] and renders the auth flow or the main tabbed app
@@ -76,7 +79,7 @@ void registerExtensionOnce(String name, developer.ServiceExtensionHandler handle
 }
 
 class PatientApp extends ConsumerStatefulWidget {
-  const PatientApp({super.key, required this.navObservers});
+  const PatientApp({required this.navObservers, super.key});
 
   /// Logs a `screen_view` analytics action on each navigation.
   final List<NavigatorObserver> navObservers;
@@ -91,7 +94,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
 
   /// Rasterisation root for the desktop menu's Save-screenshot action.
   // Shared with Dev Config, which screenshots the app for bug reports.
-  final _captureKey = appCaptureKey;
+  final GlobalKey<State<StatefulWidget>> _captureKey = appCaptureKey;
 
   void _menuOpen(void Function(BuildContext) opener) {
     final ctx = _navKey.currentContext;
@@ -165,9 +168,11 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       }
       // The public pages never touch the database, so they stay usable.
       if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel) {
-        claimDatabaseTab().then((owned) {
-          if (!owned && mounted) setState(() => _otherTab = true);
-        });
+        unawaited(
+          claimDatabaseTab().then((owned) {
+            if (!owned && mounted) setState(() => _otherTab = true);
+          }),
+        );
       }
     }
     LogBuffer.instance.install();
@@ -178,12 +183,16 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     _armMidnight();
     // Family links have no push: pull them on sign-in (and on a cold start
     // that is already signed in) and on every resume — see below.
-    ref.listenManual<UserId?>(currentUserIdProvider, (previous, next) {
-      if (next != null && next != previous) {
-        _pullFamilyLinks();
-        _restoreGender(next);
-      }
-    }, fireImmediately: true);
+    ref.listenManual<UserId?>(
+      currentUserIdProvider,
+      (previous, next) {
+        if (next != null && next != previous) {
+          _pullFamilyLinks();
+          unawaited(_restoreGender(next));
+        }
+      },
+      fireImmediately: true,
+    );
     // A block covers the shell from its home route, so anything pushed above
     // it (a sheet, a sub-screen) is closed when the block begins.
     ref.listenManual<MaintenanceStatus>(maintenanceProvider, (previous, next) {
@@ -238,10 +247,12 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     _checkDay();
     unawaited(ref.read(maintenanceProvider.notifier).check());
     // Flags first: a sync switched on or off remotely applies to this very run.
-    unawaited(ref.read(featureFlagsProvider).refresh().whenComplete(() {
-      _syncCareTeam();
-      _pullFamilyLinks();
-    }));
+    unawaited(
+      ref.read(featureFlagsProvider).refresh().whenComplete(() {
+        _syncCareTeam();
+        _pullFamilyLinks();
+      }),
+    );
   }
 
   /// Gendered Arabic copy follows the account's saved sex. Account details
@@ -255,7 +266,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       final g = profile?.gender;
       if (!mounted || g == null || ref.read(currentUserIdProvider) != user) return;
       state.setGender(g);
-    } catch (_) {
+    } on Object catch (_) {
       // Offline or the server refused: the copy stays as it was.
     }
   }
@@ -271,44 +282,10 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
   late final AppUpdatePrefs? _updatePrefs = () {
     try {
       return AppUpdatePrefs(ref.read(globalKVDataSourceProvider));
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }();
-
-  /// The app-update prompt, dressed for this shell: its brand's manifest and
-  /// name, the patient app's strings, accent and mark.
-  Widget _updateGate(PatientAppState state, Widget child) {
-    final brand = FlavorConfig.currentOrNull?.brand ?? AppBrand.balsm;
-    final name = brand.nameIn(state.lang.value);
-    final u = state.strings.update;
-    return UpdateGate(
-      brand: brand,
-      lang: state.lang.value,
-      prefs: _updatePrefs,
-      look: UpdateLook(
-        rtl: state.rtl,
-        accent: state.accent,
-        mark: const BalsmFlower(size: 52),
-        copy: UpdateCopy(
-          eyebrowNew: u.upd_eyebrow_new,
-          eyebrowRequired: u.upd_eyebrow_required,
-          availableTitle: u.upd_available_t(name),
-          availableBody: u.upd_available_b,
-          requiredTitle: u.upd_required_t(name),
-          requiredBody: u.upd_required_b,
-          current: u.upd_current,
-          newVersion: u.upd_new,
-          whatsNew: u.upd_whats_new,
-          updateNow: u.upd_now,
-          skip: u.upd_skip,
-          fullNotes: u.upd_full_notes,
-          close: state.strings.common.a11y_close,
-        ),
-      ),
-      child: child,
-    );
-  }
 
   /// Fire-and-forget: the care-team screen reads from drift, so a failed sync
   /// costs the patient nothing visible — [CareTeamSyncService] records it on
@@ -318,12 +295,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
 
   void _keepSelfWithoutFamily() {
     if (!mounted) return;
-    unawaited(keepSelfActiveWithoutFamily(
-      familyOn: state.flags.isOn(AppFlags.motherChild),
-      active: ref.read(currentProfileIdProvider),
-      self: () => ref.read(selfProfileIdProvider.future),
-      selectSelf: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
-    ));
+    unawaited(
+      keepSelfActiveWithoutFamily(
+        familyOn: state.flags.isOn(AppFlags.motherChild),
+        active: ref.read(currentProfileIdProvider),
+        self: () => ref.read(selfProfileIdProvider.future),
+        selectSelf: () => ref.read(activeProfileSwitcherProvider).selectSelf(),
+      ),
+    );
   }
 
   void _syncCareTeam() {
@@ -356,7 +335,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
       if (c != null && c.hasClients) {
         await c.animateTo(
           c.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 280),
+          duration: _scrollToEnd,
           curve: Curves.easeOut,
         );
       }
@@ -422,9 +401,9 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
         case 'privacy':
           openPrivacyData(next, onDeleteAccount: () => openAccountDeletion(next));
         case 'feedback':
-          showFeedbackSheet(next);
+          unawaited(showFeedbackSheet(next));
         case 'ecosystem':
-          showEcosystemSheet(next);
+          unawaited(showEcosystemSheet(next));
         case 'storage':
           showStorageSync(next);
         case 'quicklog':
@@ -432,9 +411,9 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
         case 'checkin':
           openCheckin(next);
         case 'addRx':
-          showAddPrescription(next);
+          unawaited(showAddPrescription(next));
         case 'switcher':
-          showAccountSwitcher(next);
+          unawaited(showAccountSwitcher(next));
       }
       await Future<void>.delayed(const Duration(milliseconds: 80));
       return developer.ServiceExtensionResponse.result(jsonEncode({'ok': true, 'screen': screen}));
@@ -463,8 +442,9 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
             signedIn: false,
             onDeviceOnly: () {
               setState(() => _maintenanceDeviceOnly = true);
-              state.setAuthIntent(AuthIntent.deviceOnly);
-              state.go(AppRoutes.phone);
+              state
+                ..setAuthIntent(AuthIntent.deviceOnly)
+                ..go(AppRoutes.phone);
             },
           ),
         ),
@@ -534,7 +514,7 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                   key: _captureKey,
                   child: _otherTab
                       ? OtherTabScreen(state: state)
-                      : ShakeToDevConfig(navigatorKey: _navKey, child: _updateGate(state, child!)),
+                      : ShakeToDevConfig(navigatorKey: _navKey, child: _UpdateGate(state, child!, prefs: _updatePrefs)),
                 ),
               ),
             );
@@ -558,25 +538,28 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                 child: AccentScope(
                   accent: state.accent,
                   child: Scaffold(
-                    backgroundColor: Colors.white,
-                    body: Stack(children: [
-                      // The shell contains its own main pane so the rail stays
-                      // at the window edge; every other screen is contained
-                      // whole — app.css `.app-body > .screen:not(.app-shell)`.
-                      _publicResolveJti != null
-                          ? AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
-                          : _publicDelete
+                    backgroundColor: AppColors.white,
+                    body: Stack(
+                      children: [
+                        // The shell contains its own main pane so the rail stays
+                        // at the window edge; every other screen is contained
+                        // whole — app.css `.app-body > .screen:not(.app-shell)`.
+                        if (_publicResolveJti != null)
+                          AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
+                        else
+                          _publicDelete
                               ? const AdaptiveFrame(child: PublicDeleteScreen())
                               : _publicDeleteCancel
                                   ? const AdaptiveFrame(child: PublicDeleteCancelledScreen())
                                   : state.route == AppRoutes.app
                                       ? const _MainApp()
                                       : const AdaptiveFrame(child: AuthRouter()),
-                      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
-                        ..._maintenancePage(maintenance),
-                      if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
-                        Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
-                    ]),
+                        if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
+                          ..._maintenancePage(maintenance),
+                        if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
+                          Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -589,13 +572,13 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
 }
 
 /// Content containment at expanded and up — app.css `@container app
-/// (min-width: 1024px)`: the screen sits centred at [T.contentMax] on the
+/// (min-width: 1024px)`: the screen sits centred at [BalsmWindow.appContentMax] on the
 /// cream canvas with a hairline down either side, so a touch-first layout
 /// never stretches edge-to-edge on desktop/web. Below [minWidth] the screen
 /// fills its pane and the internal layout (bottom nav ↔ side rail, adaptive
 /// panes) handles every size.
 class AdaptiveFrame extends StatelessWidget {
-  const AdaptiveFrame({super.key, required this.child, this.minWidth = BalsmWindow.expandedMin});
+  const AdaptiveFrame({required this.child, super.key, this.minWidth = BalsmWindow.expandedMin});
   final Widget child;
 
   /// Pane width from which containment applies. The shell's main pane passes
@@ -605,25 +588,27 @@ class AdaptiveFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
-      if (c.maxWidth < minWidth) return child;
-      return ColoredBox(
-        color: T.cream50,
-        child: Center(
-          child: Container(
-            width: T.contentMax,
-            decoration: const BoxDecoration(
-              color: T.surface,
-              border: BorderDirectional(
-                start: BorderSide(color: T.border),
-                end: BorderSide(color: T.border),
+    return LayoutBuilder(
+      builder: (context, c) {
+        if (c.maxWidth < minWidth) return child;
+        return ColoredBox(
+          color: AppColors.cream50,
+          child: Center(
+            child: Container(
+              width: BalsmWindow.appContentMax,
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: BorderDirectional(
+                  start: BorderSide(color: AppColors.border),
+                  end: BorderSide(color: AppColors.border),
+                ),
               ),
+              child: child,
             ),
-            child: child,
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
@@ -681,56 +666,66 @@ class _MainAppState extends State<_MainApp> {
       AppTab.profile => const ProfileScreen(),
     };
 
-    final content = LayoutBuilder(builder: (context, c) {
-      // Design window classes (app.jsx / RESPONSIVE.md §0): compact <600 →
-      // bottom bar · medium/expanded 600–1439 → icon rail · wide ≥1440 →
-      // 240px sidebar with the brand block. Rail/sidebar persist on
-      // sub-screens; only compact hides its bar there.
-      if (c.maxWidth >= BalsmWindow.mediumMin) {
-        return Row(children: [
-          _SideNav(expanded: c.maxWidth >= BalsmWindow.wideMin),
-          // `.app-main`: from 1024 the screen is contained on the cream canvas
-          // while the rail keeps the window edge. The pane is the window less
-          // the rail, so the threshold moves by the same amount.
-          Expanded(
-            child: Column(children: [
+    final content = LayoutBuilder(
+      builder: (context, c) {
+        // Design window classes (app.jsx / RESPONSIVE.md §0): compact <600 →
+        // bottom bar · medium/expanded 600–1439 → icon rail · wide ≥1440 →
+        // 240px sidebar with the brand block. Rail/sidebar persist on
+        // sub-screens; only compact hides its bar there.
+        if (c.maxWidth >= BalsmWindow.mediumMin) {
+          return Row(
+            children: [
+              _SideNav(expanded: c.maxWidth >= BalsmWindow.wideMin),
+              // `.app-main`: from 1024 the screen is contained on the cream canvas
+              // while the rail keeps the window edge. The pane is the window less
+              // the rail, so the threshold moves by the same amount.
               Expanded(
-                child: AdaptiveFrame(
-                  minWidth: BalsmWindow.expandedMin - BalsmWindow.railW,
-                  child: _navLoading ? const _ScreenSkeleton() : screen,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: AdaptiveFrame(
+                        minWidth: BalsmWindow.expandedMin - BalsmWindow.railW,
+                        child: _navLoading ? const _ScreenSkeleton() : screen,
+                      ),
+                    ),
+                    const MaintenanceStrip(),
+                  ],
                 ),
               ),
-              const MaintenanceStrip(),
-            ]),
-          ),
-        ]);
-      }
-      // Phone: full-bleed screen + bottom tab bar. Hide the bar on full-screen
-      // sub-screens (trends / records / appointments / prescriptions).
-      // Design `app.jsx`: hide on trends/records (and Flutter's appointments
-      // sub-screen). Prescriptions stay on the meds path with the tab bar.
-      final hideTabBar = s.tab == AppTab.trends || s.tab == AppTab.records;
-      return Column(children: [
-        Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
-        // Read-only maintenance: the strip sits right above the tab bar.
-        const MaintenanceStrip(),
-        if (!hideTabBar) const _TabBar(),
-      ]);
-    });
+            ],
+          );
+        }
+        // Phone: full-bleed screen + bottom tab bar. Hide the bar on full-screen
+        // sub-screens (trends / records / appointments / prescriptions).
+        // Design `app.jsx`: hide on trends/records (and Flutter's appointments
+        // sub-screen). Prescriptions stay on the meds path with the tab bar.
+        final hideTabBar = s.tab == AppTab.trends || s.tab == AppTab.records;
+        return Column(
+          children: [
+            Expanded(child: _navLoading ? const _ScreenSkeleton() : screen),
+            // Read-only maintenance: the strip sits right above the tab bar.
+            const MaintenanceStrip(),
+            if (!hideTabBar) const _TabBar(),
+          ],
+        );
+      },
+    );
 
     // One mount covers both layouts — the phone Column and the tablet
     // _SideNav Row are both inside `content`. Per-screen mounting would stack
     // duplicates as the user moves between tabs.
     return _OfflineAwareBody(
-      child: Stack(children: [
-        content,
-        PositionedDirectional(
-          top: 0,
-          start: 0,
-          end: 0,
-          child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
-        ),
-      ]),
+      child: Stack(
+        children: [
+          content,
+          PositionedDirectional(
+            top: 0,
+            start: 0,
+            end: 0,
+            child: TopLoadingBar(loading: _navLoading, color: s.accent.main),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -754,17 +749,19 @@ class _OfflineAwareBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // `valueOrNull == false` and not `!= true`: connectivity is unknown for the
+    // `value == false` and not `!= true`: connectivity is unknown for the
     // first frames, and an unknown state must not shift the whole layout down.
-    final offline = ref.watch(onlineProvider).valueOrNull == false;
+    final offline = ref.watch(onlineProvider).value == false;
     if (!offline) return child;
 
-    return Column(children: [
-      OfflineBanner(message: AppScope.of(context).strings.common.offline_banner),
-      Expanded(
-        child: MediaQuery.removePadding(context: context, removeTop: true, child: child),
-      ),
-    ]);
+    return Column(
+      children: [
+        OfflineBanner(message: AppScope.of(context).strings.common.offline_banner),
+        Expanded(
+          child: MediaQuery.removePadding(context: context, removeTop: true, child: child),
+        ),
+      ],
+    );
   }
 }
 
@@ -777,44 +774,57 @@ class _ScreenSkeleton extends StatelessWidget {
     Widget bar({double w = 140, double h = 14}) => Container(
           width: w,
           height: h,
-          decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rSm)),
+          decoration: BoxDecoration(color: AppColors.ink100, borderRadius: BorderRadius.circular(AppRadii.sm)),
         );
-    Widget circle(double size) =>
-        Container(width: size, height: size, decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle));
+    Widget circle(double size) => Container(
+          width: size,
+          height: size,
+          decoration: const BoxDecoration(color: AppColors.ink100, shape: BoxShape.circle),
+        );
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 56, 20, 24),
       children: [
-        bar(w: 140, h: 26),
+        bar(h: 26),
         const SizedBox(height: 16),
         PCard(
           padding: const EdgeInsets.all(20),
-          child: Row(children: [
-            circle(52),
-            const SizedBox(width: 16),
-            Expanded(
+          child: Row(
+            children: [
+              circle(52),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [bar(w: 160), const SizedBox(height: 8), bar(w: 110, h: 10)])),
-          ]),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [bar(w: 160), const SizedBox(height: 8), bar(w: 110, h: 10)],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         PCard(
           padding: EdgeInsets.zero,
-          child: Column(children: [
-            for (var i = 0; i < 3; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(children: [
-                  circle(40),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: Column(
+          child: Column(
+            children: [
+              for (var i = 0; i < 3; i++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      circle(40),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [bar(w: 150), const SizedBox(height: 8), bar(w: 80, h: 10)])),
-                ]),
-              ),
-          ]),
+                          children: [bar(w: 150), const SizedBox(height: 8), bar(w: 80, h: 10)],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -843,19 +853,22 @@ class _TabBar extends StatelessWidget {
     // FAB still rides 22px above the bar.
     return DecoratedBox(
       decoration: const BoxDecoration(
-        color: T.surface,
-        border: Border(top: BorderSide(color: T.border)),
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Padding(
         padding: EdgeInsetsDirectional.only(bottom: tabBarBottomPadding(MediaQuery.paddingOf(context).bottom)),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
-          _Tab(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
-          // Quick-log "+" — opens the daily check-in flow as a route (center slot).
-          const _QuickLog(),
-          _Tab(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
-          _Tab(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile),
-        ]),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Tab(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home),
+            _Tab(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map),
+            // Quick-log "+" — opens the daily check-in flow as a route (center slot).
+            const _QuickLog(),
+            _Tab(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds),
+            _Tab(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile),
+          ],
+        ),
       ),
     );
   }
@@ -870,19 +883,25 @@ class _Tab extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final active = s.tab == id;
-    final color = active ? s.accent.main : T.fg4;
+    final color = active ? s.accent.main : AppColors.textHint;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => s.setTab(id),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 3),
-            Text(label,
-                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: color)),
-          ]),
+          padding: const EdgeInsetsDirectional.fromSTEB(4, 10, 4, 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 24, color: color),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: Typo.body(ar: s.rtl)
+                    .copyWith(fontSize: FontSizes.eyebrow, fontWeight: FontWeight.w600, color: color),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -911,30 +930,36 @@ class _QuickLog extends StatelessWidget {
       // with `.fab-label` shown, inside `.tab-fab { margin: 4px 0 12px }`.
       return Padding(
         padding: const EdgeInsets.only(top: Space.s1, bottom: Space.s3),
-        child: fab(Pressable(
-          onTap: () => showQuickLog(context),
-          scale: 0.97,
-          child: Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: s.accent.main,
-              borderRadius: BorderRadius.circular(T.rMd),
-              boxShadow: s.accent.boxShadow,
-            ),
-            child: Row(children: [
-              const Icon(LucideIcons.plus, size: 20, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(s.strings.checkin.ql_title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Typo.body(ar: s.rtl)
-                        .copyWith(fontSize: FS.md, fontWeight: FontWeight.w700, color: Colors.white)),
+        child: fab(
+          Pressable(
+            onTap: () => showQuickLog(context),
+            scale: 0.97,
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: s.accent.main,
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                boxShadow: s.accent.boxShadow,
               ),
-            ]),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.plus, size: 20, color: AppColors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      s.strings.checkin.ql_title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Typo.body(ar: s.rtl)
+                          .copyWith(fontSize: FontSizes.body, fontWeight: FontWeight.w700, color: AppColors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        )),
+        ),
       );
     }
     // Bar: a 58px disc whose 4px white ring lets it punch through the bar as
@@ -943,21 +968,23 @@ class _QuickLog extends StatelessWidget {
     // The compact bar now draws it inline (app.css "Check-in FAB — v2 colour +
     // inline position"): a 52px ink disc, no ring, centred in the bar.
     final size = rail ? 48.0 : 52.0;
-    final button = fab(Pressable(
-      onTap: () => showQuickLog(context),
-      scale: 0.94,
-      child: Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: rail ? s.accent.main : T.ink800,
-          shape: BoxShape.circle,
-          boxShadow: rail ? s.accent.boxShadow : T.fabShadow,
+    final button = fab(
+      Pressable(
+        onTap: () => showQuickLog(context),
+        scale: 0.94,
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: rail ? s.accent.main : AppColors.ink800,
+            shape: BoxShape.circle,
+            boxShadow: rail ? s.accent.boxShadow : AppShadows.fab,
+          ),
+          child: Icon(LucideIcons.plus, size: rail ? 24 : 26, color: AppColors.white),
         ),
-        child: Icon(LucideIcons.plus, size: rail ? 24 : 26, color: Colors.white),
       ),
-    ));
+    );
     if (rail) {
       // `.tab-fab { order: -1; padding: 4px 0 0; margin-bottom: 8px }` on a
       // 60px-tall tab slot — the disc leads the rail, above the tabs.
@@ -995,21 +1022,27 @@ class _SideNav extends StatelessWidget {
     final s = AppScope.of(context);
     return Container(
       width: expanded ? BalsmWindow.sidebarW : BalsmWindow.railW,
-      padding: expanded ? const EdgeInsets.fromLTRB(12, 16, 12, 20) : const EdgeInsets.fromLTRB(6, 12, 6, 16),
+      padding: expanded
+          ? const EdgeInsetsDirectional.fromSTEB(12, 16, 12, 20)
+          : const EdgeInsetsDirectional.fromSTEB(6, 12, 6, 16),
       decoration: const BoxDecoration(
-        color: T.surface,
-        border: BorderDirectional(end: BorderSide(color: T.border)),
+        color: AppColors.surface,
+        border: BorderDirectional(end: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: Space.s1, children: [
-          _NavBrand(expanded: expanded),
-          _QuickLog(rail: true, wide: expanded),
-          _RailItem(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
-          _RailItem(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
-          _RailItem(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
-          _RailItem(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
-          const Spacer(),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: Space.s1,
+          children: [
+            _NavBrand(expanded: expanded),
+            _QuickLog(rail: true, wide: expanded),
+            _RailItem(id: AppTab.home, icon: LucideIcons.home, label: s.strings.nav.tab_home, wide: expanded),
+            _RailItem(id: AppTab.map, icon: LucideIcons.mapPin, label: s.strings.nav.tab_map, wide: expanded),
+            _RailItem(id: AppTab.meds, icon: LucideIcons.pill, label: s.strings.nav.tab_meds, wide: expanded),
+            _RailItem(id: AppTab.profile, icon: LucideIcons.user, label: s.strings.nav.tab_profile, wide: expanded),
+            const Spacer(),
+          ],
+        ),
       ),
     );
   }
@@ -1031,24 +1064,37 @@ class _NavBrand extends StatelessWidget {
       );
     }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
-      child: Row(children: [
-        SvgPicture.asset(Assets.brand_icon, width: 44, height: 44),
-        const SizedBox(width: 12),
-        Text.rich(
-          TextSpan(children: [
+      padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 8, 22),
+      child: Row(
+        children: [
+          SvgPicture.asset(Assets.brand_icon, width: 44, height: 44),
+          const SizedBox(width: 12),
+          Text.rich(
             TextSpan(
-                text: 'Balsm',
-                style: Typo.heading(ar: false)
-                    .copyWith(fontSize: 22, fontWeight: FontWeight.w700, color: T.wordmark, letterSpacing: -0.22)),
-            TextSpan(
-                text: '.health',
-                style:
-                    Typo.heading(ar: false).copyWith(fontSize: 17, fontWeight: FontWeight.w500, color: T.wordmarkTld)),
-          ]),
-          textDirection: TextDirection.ltr,
-        ),
-      ]),
+              children: [
+                TextSpan(
+                  text: 'Balsm',
+                  style: Typo.heading().copyWith(
+                    fontSize: FontSizes.headline,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.wordmark,
+                    letterSpacing: -0.22,
+                  ),
+                ),
+                TextSpan(
+                  text: '.health',
+                  style: Typo.heading().copyWith(
+                    fontSize: FontSizes.subheadSm,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.wordmarkTld,
+                  ),
+                ),
+              ],
+            ),
+            textDirection: TextDirection.ltr,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1069,39 +1115,53 @@ class _RailItem extends StatelessWidget {
     final s = AppScope.of(context);
     final active = s.tab == id;
     final child = wide
-        ? Row(children: [
-            Icon(icon, size: 20, color: active ? s.accent.d : T.fg2),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(label,
+        ? Row(
+            children: [
+              Icon(icon, size: 20, color: active ? s.accent.d : AppColors.textSecondary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Typo.body(ar: s.rtl).copyWith(
-                      fontSize: FS.sm,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                      color: active ? s.accent.d : T.fg2)),
-            ),
-          ])
-        : Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 24, color: active ? s.accent.main : T.fg4),
-            const SizedBox(height: 4),
-            Text(label,
+                    fontSize: FontSizes.bodySm,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                    color: active ? s.accent.d : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          )
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 24, color: active ? s.accent.main : AppColors.textHint),
+              const SizedBox(height: 4),
+              Text(
+                label,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: Typo.body(ar: s.rtl).copyWith(
-                    fontSize: FS.xs2, fontWeight: FontWeight.w600, height: 1.2, color: active ? s.accent.main : T.fg4)),
-          ]);
+                  fontSize: FontSizes.eyebrow,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                  color: active ? s.accent.main : AppColors.textHint,
+                ),
+              ),
+            ],
+          );
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => s.setTab(id),
       child: Container(
         constraints: BoxConstraints(minHeight: wide ? 44 : 60),
-        padding: wide ? const EdgeInsets.symmetric(horizontal: 12) : const EdgeInsets.fromLTRB(4, 10, 4, 8),
+        padding: wide ? const EdgeInsets.symmetric(horizontal: 12) : const EdgeInsetsDirectional.fromSTEB(4, 10, 4, 8),
         alignment: wide ? AlignmentDirectional.centerStart : Alignment.center,
         decoration: BoxDecoration(
           color: active ? s.accent.bg : Colors.transparent,
-          borderRadius: BorderRadius.circular(T.rMd),
+          borderRadius: BorderRadius.circular(AppRadii.md),
         ),
         child: child,
       ),
@@ -1123,45 +1183,91 @@ class _BootSplash extends StatelessWidget {
         opacity: visible ? 1 : 0,
         duration: Motion.slow,
         curve: Motion.easeOut,
-        child: Stack(fit: StackFit.expand, children: [
-          const ColoredBox(color: T.cream50),
-          // Image's own `opacity`, not an Opacity wrapper: wrapping a
-          // full-bleed image forces a saveLayer offscreen composite every
-          // frame, while this folds the alpha into the paint.
-          Image.asset(
-            Assets.brand_background,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            opacity: const AlwaysStoppedAnimation(0.95),
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.2),
-                radius: 1.2,
-                colors: [
-                  Color(0x00FAFAF7),
-                  Color(0x57FAFAF7),
-                  Color(0xEBFAFAF7),
-                ],
-                stops: [0.0, 0.54, 1.0],
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const ColoredBox(color: AppColors.cream50),
+            // Image's own `opacity`, not an Opacity wrapper: wrapping a
+            // full-bleed image forces a saveLayer offscreen composite every
+            // frame, while this folds the alpha into the paint.
+            Image.asset(
+              Assets.brand_background,
+              fit: BoxFit.cover,
+              opacity: const AlwaysStoppedAnimation(0.95),
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 1.2,
+                  colors: [
+                    AppColors.creamClear,
+                    AppColors.creamVeil,
+                    AppColors.creamFrost,
+                  ],
+                  stops: [0.0, 0.54, 1.0],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            // The mark alone, no caption. A screen reader still hears what is
-            // happening: the label that used to be drawn is now spoken.
-            child: Center(
-              child: Semantics(
-                label: state.strings.boot.boot_preparing,
-                child: const MarkSpinner(size: 96),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              // The mark alone, no caption. A screen reader still hears what is
+              // happening: the label that used to be drawn is now spoken.
+              child: Center(
+                child: Semantics(
+                  label: state.strings.boot.boot_preparing,
+                  child: const MarkSpinner(size: 96),
+                ),
               ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// The app-update prompt, dressed for this shell: its brand's manifest and
+/// name, the patient app's strings, accent and mark.
+class _UpdateGate extends StatelessWidget {
+  const _UpdateGate(this.state, this.child, {this.prefs});
+  final PatientAppState state;
+  final Widget child;
+
+  /// Null when no storage is bound — the update check then does not run.
+  final AppUpdatePrefs? prefs;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = FlavorConfig.currentOrNull?.brand ?? AppBrand.balsm;
+    final name = brand.nameIn(state.lang.value);
+    final u = state.strings.update;
+    return UpdateGate(
+      brand: brand,
+      lang: state.lang.value,
+      prefs: prefs,
+      look: UpdateLook(
+        rtl: state.rtl,
+        accent: state.accent,
+        mark: const BalsmFlower(size: 52),
+        copy: UpdateCopy(
+          eyebrowNew: u.upd_eyebrow_new,
+          eyebrowRequired: u.upd_eyebrow_required,
+          availableTitle: u.upd_available_t(name),
+          availableBody: u.upd_available_b,
+          requiredTitle: u.upd_required_t(name),
+          requiredBody: u.upd_required_b,
+          current: u.upd_current,
+          newVersion: u.upd_new,
+          whatsNew: u.upd_whats_new,
+          updateNow: u.upd_now,
+          skip: u.upd_skip,
+          fullNotes: u.upd_full_notes,
+          close: state.strings.common.a11y_close,
+        ),
+      ),
+      child: child,
     );
   }
 }

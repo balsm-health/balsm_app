@@ -1,11 +1,12 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:core/core.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../app_state.dart';
-import 'family_qr_scan.dart';
+import '../i18n/strings.i69n.dart' show CommonStrings;
 import '../kit.dart';
-import '../tokens.dart';
+import 'family_qr_scan.dart';
 
 /// Account sheet (home.jsx AccountSwitcherSheet + AddFamilyMemberSheet).
 ///
@@ -29,8 +30,8 @@ class _PickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
         child: SafeArea(child: child),
       );
@@ -52,7 +53,7 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
     if (_adding) {
       return _AddFamilyMemberSheet(
         s: s,
-        selfName: (ref.read(accountSummaryProvider).valueOrNull?.displayName ?? '').trim(),
+        selfName: (ref.read(accountSummaryProvider).value?.displayName ?? '').trim(),
         onClose: () => setState(() => _adding = false),
         onAdd: (name, relation, dob, {linkJti}) {
           // Design: an unset relation falls back to "Family member" so the
@@ -62,93 +63,103 @@ class _AccountSwitcherSheetState extends ConsumerState<_AccountSwitcherSheet> {
           // until the other person approves in their own app); a manually
           // entered member is a local row and links immediately.
           s.addFamilyMember(
-              name: name,
-              relation: r,
-              dob: dob,
-              linkJti: linkJti,
-              status: linkJti != null ? FamilyLinkStatus.pending : FamilyLinkStatus.linked);
+            name: name,
+            relation: r,
+            dob: dob,
+            linkJti: linkJti,
+            status: linkJti != null ? FamilyLinkStatus.pending : FamilyLinkStatus.linked,
+          );
           Navigator.pop(context);
         },
       );
     }
 
-    final summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final summary = ref.watch(accountSummaryProvider).value;
     final displayName = (summary?.displayName ?? '').trim();
     final extras = s.extraFamily;
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
       padding: const EdgeInsets.only(bottom: 38),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: Row(children: [
-            Expanded(
-                child: Text(s.strings.common.your_accounts,
-                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(
-                icon: LucideIcons.x,
-                semanticLabel: s.strings.common.a11y_close,
-                ghost: true,
-                iconSize: 17,
-                onTap: () => Navigator.pop(context)),
-          ]),
-        ),
-        const Divider(height: 1, color: T.ink100),
-        if (summary == null)
-          _EmptyAccount(s)
-        else
-          _AccountRow(
-            s,
-            name: displayName,
-            handle: summary.handle,
-            color: T.hueAqua,
-            active: s.activeFamilyId == null,
-            onTap: () {
-              s.selectFamilyMember(null);
-              Navigator.pop(context);
-            },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    s.strings.common.your_accounts,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
-        for (final (i, member) in extras.indexed)
-          if (member.isPending)
-            _PendingRow(s, member: member, showDivider: i < extras.length)
+          const Divider(height: 1, color: AppColors.ink100),
+          if (summary == null)
+            _EmptyAccount(s)
           else
             _AccountRow(
               s,
-              name: member.name,
-              // Design: "{relation} · {age} yrs" — the age half is dropped when
-              // no birth date was given.
-              handle: switch (member.age) {
-                final years? => '${member.relation} · $years ${s.strings.common.yrs}',
-                _ => member.relation,
-              },
-              color: member.color,
-              active: s.activeFamilyId == member.id,
-              showDivider: i < extras.length,
+              name: displayName,
+              handle: summary.handle,
+              color: AppColors.hueAqua,
+              active: s.activeFamilyId == null,
               onTap: () {
-                s.selectFamilyMember(member.id);
+                s.selectFamilyMember(null);
                 Navigator.pop(context);
               },
             ),
-        if (s.linkRequests.isNotEmpty) _LinkRequests(s),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: PButton(
-            s.strings.settings.add_member,
-            block: true,
-            variant: BtnVariant.secondary,
-            accent: s.accent,
-            ar: s.rtl,
-            icon: LucideIcons.userPlus,
-            onTap: () => setState(() => _adding = true),
+          for (final (i, member) in extras.indexed)
+            if (member.isPending)
+              _PendingRow(s, member: member, showDivider: i < extras.length)
+            else
+              _AccountRow(
+                s,
+                name: member.name,
+                // Design: "{relation} · {age} yrs" — the age half is dropped when
+                // no birth date was given.
+                handle: switch (member.age) {
+                  final years? => '${member.relation} · $years ${s.strings.common.yrs}',
+                  _ => member.relation,
+                },
+                color: member.color,
+                active: s.activeFamilyId == member.id,
+                showDivider: i < extras.length,
+                onTap: () {
+                  s.selectFamilyMember(member.id);
+                  Navigator.pop(context);
+                },
+              ),
+          if (s.linkRequests.isNotEmpty) _LinkRequests(s),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 0),
+            child: PButton(
+              s.strings.settings.add_member,
+              block: true,
+              variant: BtnVariant.secondary,
+              accent: s.accent,
+              ar: s.rtl,
+              icon: LucideIcons.userPlus,
+              onTap: () => setState(() => _adding = true),
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -180,30 +191,41 @@ class _AccountRow extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: showDivider ? const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink50))) : null,
-        child: Row(children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: active ? [BoxShadow(color: color.withValues(alpha: 0.2), spreadRadius: 3)] : null,
+        decoration:
+            showDivider ? const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.ink50))) : null,
+        child: Row(
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: active ? [BoxShadow(color: color.withValues(alpha: 0.2), spreadRadius: 3)] : null,
+              ),
+              child: Avatar(initials: accountInitials(name), color: color, size: 48, ar: s.rtl),
             ),
-            child: Avatar(initials: accountInitials(name), color: color, size: 48, ar: s.rtl),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (name.isNotEmpty)
-                Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              const SizedBox(height: 3),
-              Text(sub,
-                  textDirection: handle != null && handle!.startsWith('@') || (handle?.contains('@') ?? false)
-                      ? TextDirection.ltr
-                      : s.dir,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
-          ),
-          if (active) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
-        ]),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (name.isNotEmpty)
+                    Text(
+                      name,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                    ),
+                  const SizedBox(height: 3),
+                  Text(
+                    sub,
+                    textDirection: handle != null && handle!.startsWith('@') || (handle?.contains('@') ?? false)
+                        ? TextDirection.ltr
+                        : s.dir,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                  ),
+                ],
+              ),
+            ),
+            if (active) Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
+          ],
+        ),
       ),
     );
   }
@@ -215,13 +237,18 @@ class _EmptyAccount extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-        child: Row(children: [
-          const Icon(LucideIcons.userCircle2, size: 22, color: T.fg3),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(s.strings.common.acc_not_signed_in, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ),
-        ]),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.userCircle2, size: 22, color: AppColors.textTertiary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                s.strings.common.acc_not_signed_in,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+              ),
+            ),
+          ],
+        ),
       );
 }
 
@@ -237,34 +264,61 @@ class _PendingRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(vertical: 13),
-      decoration: showDivider ? const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink50))) : null,
-      child: Row(children: [
-        Opacity(
+      decoration: showDivider ? const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.ink50))) : null,
+      child: Row(
+        children: [
+          Opacity(
             opacity: 0.72,
-            child: Avatar(initials: accountInitials(member.name), color: member.color, size: 48, ar: s.rtl)),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(member.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-            const SizedBox(height: 4),
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: const Color(0xFFFDF5DC), borderRadius: BorderRadius.circular(999)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(LucideIcons.clock, size: 12, color: Color(0xFF9A6E00)),
-                  const SizedBox(width: 5),
-                  Text(s.strings.common.fam_pending,
-                      style: Typo.bodySm(ar: s.rtl)
-                          .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, color: const Color(0xFF9A6E00))),
-                ]),
-              ),
-            ]),
-          ]),
-        ),
-        PButton(s.strings.common.fam_cancel_request,
-            variant: BtnVariant.ghost, ar: s.rtl, onTap: () => s.cancelPendingLink(member.id)),
-      ]),
+            child: Avatar(initials: accountInitials(member.name), color: member.color, size: 48, ar: s.rtl),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.name,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningBackground,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(LucideIcons.clock, size: 12, color: AppColors.warningInk),
+                          const SizedBox(width: 5),
+                          Text(
+                            s.strings.common.fam_pending,
+                            style: Typo.bodySm(ar: s.rtl).copyWith(
+                              fontSize: FontSizes.meta,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.warningInk,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          PButton(
+            s.strings.common.fam_cancel_request,
+            variant: BtnVariant.ghost,
+            ar: s.rtl,
+            onTap: () => s.cancelPendingLink(member.id),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -278,52 +332,79 @@ class _LinkRequests extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(s.strings.common.fam_link_requests.toUpperCase(),
-            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, letterSpacing: s.rtl ? 0 : 1.6)),
-        const SizedBox(height: 10),
-        for (final r in List.of(s.linkRequests))
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: s.accent.bg,
-              borderRadius: BorderRadius.circular(T.rLg),
-              border: Border.all(color: T.border),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Avatar(initials: accountInitials(r.name), color: T.hueAqua, size: 42, ar: s.rtl),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(r.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                    const SizedBox(height: 2),
-                    Text([r.relation, if (r.when != null) r.when!].join(' \u00b7 '),
-                        style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, fontSize: FS.xs)),
-                  ]),
-                ),
-              ]),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(
-                  child: PButton(s.strings.common.fam_decline,
-                      variant: BtnVariant.secondary, ar: s.rtl, onTap: () => s.declineLinkRequest(r.id)),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: PButton(s.strings.common.fam_approve,
-                      variant: BtnVariant.primary,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      icon: LucideIcons.check,
-                      onTap: () => s.approveLinkRequest(r.id)),
-                ),
-              ]),
-            ]),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            s.strings.common.fam_link_requests.toUpperCase(),
+            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, letterSpacing: s.rtl ? 0 : 1.6),
           ),
-      ]),
+          const SizedBox(height: 10),
+          for (final r in List.of(s.linkRequests))
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: s.accent.bg,
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Avatar(initials: accountInitials(r.name), color: AppColors.hueAqua, size: 42, ar: s.rtl),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              r.name,
+                              style: Typo.body(ar: s.rtl)
+                                  .copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              [r.relation, if (r.when case final whenText?) whenText].join(' \u00b7 '),
+                              style: Typo.bodySm(ar: s.rtl)
+                                  .copyWith(color: AppColors.textTertiary, fontSize: FontSizes.meta),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: PButton(
+                          s.strings.common.fam_decline,
+                          variant: BtnVariant.secondary,
+                          ar: s.rtl,
+                          onTap: () => s.declineLinkRequest(r.id),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: PButton(
+                          s.strings.common.fam_approve,
+                          accent: s.accent,
+                          ar: s.rtl,
+                          icon: LucideIcons.check,
+                          onTap: () => s.approveLinkRequest(r.id),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -387,37 +468,52 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
     };
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 10, 20, 32 + MediaQuery.viewInsetsOf(context).bottom),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-          RoundBtn(
-              icon: LucideIcons.x,
-              semanticLabel: s.strings.common.a11y_close,
-              ghost: true,
-              iconSize: 17,
-              onTap: widget.onClose),
-        ]),
-        const SizedBox(height: 8),
-        const Divider(height: 1, color: T.ink100),
-        const SizedBox(height: 16),
-        ..._body(c),
-      ]),
+      padding: EdgeInsetsDirectional.fromSTEB(20, 10, 20, 32 + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
+              RoundBtn(
+                icon: LucideIcons.x,
+                semanticLabel: s.strings.common.a11y_close,
+                ghost: true,
+                iconSize: 17,
+                onTap: widget.onClose,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: AppColors.ink100),
+          const SizedBox(height: 16),
+          ..._body(c),
+        ],
+      ),
     );
   }
 
-  List<Widget> _body(dynamic c) => switch (_mode) {
+  List<Widget> _body(CommonStrings c) => switch (_mode) {
         _AddMode.choose => [
-            _chooseCard(c.fam_scan_qr(s.gender), c.fam_scan_qr_sub, LucideIcons.qrCode,
-                accent: true, onTap: () => setState(() => _mode = _AddMode.scan)),
+            _chooseCard(
+              c.fam_scan_qr(s.gender),
+              c.fam_scan_qr_sub,
+              LucideIcons.qrCode,
+              accent: true,
+              onTap: () => setState(() => _mode = _AddMode.scan),
+            ),
             const SizedBox(height: 10),
-            _chooseCard(c.fam_manual, c.fam_manual_sub, LucideIcons.pencilLine,
-                onTap: () => setState(() => _mode = _AddMode.manual)),
+            _chooseCard(
+              c.fam_manual,
+              c.fam_manual_sub,
+              LucideIcons.pencilLine,
+              onTap: () => setState(() => _mode = _AddMode.manual),
+            ),
           ],
         _AddMode.scan => [
             FamilyQrScanView(
@@ -434,53 +530,74 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         _ => _manualBody(c),
       };
 
-  Widget _chooseCard(String title, String sub, IconData icon, {bool accent = false, required VoidCallback onTap}) {
+  Widget _chooseCard(String title, String sub, IconData icon, {required VoidCallback onTap, bool accent = false}) {
     return PressHighlight(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.border)),
-        child: Row(children: [
-          IconSquare(icon,
-              bg: accent ? s.accent.bg : T.ink50, fg: accent ? s.accent.main : T.fg2, size: 44, iconSize: 22),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              const SizedBox(height: 2),
-              Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
-          ),
-          Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg3),
-        ]),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            IconSquare(
+              icon,
+              bg: accent ? s.accent.bg : AppColors.ink50,
+              fg: accent ? s.accent.main : AppColors.textSecondary,
+              size: 44,
+              iconSize: 22,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                ],
+              ),
+            ),
+            Icon(forwardChevron(context), size: 18, color: AppColors.textTertiary),
+          ],
+        ),
       ),
     );
   }
 
-  List<Widget> _foundBody(dynamic c) {
+  List<Widget> _foundBody(CommonStrings c) {
     final found = _scanned!;
     final name = _name.text.trim().isEmpty ? '—' : _name.text.trim();
     return [
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: T.hueMint50,
-          borderRadius: BorderRadius.circular(T.rLg),
-          border: Border.all(color: T.border),
+          color: AppColors.hueMint50,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border),
         ),
-        child: Row(children: [
-          Avatar(initials: accountInitials(name), color: T.hueMint600, size: 48, ar: s.rtl),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-          ),
-          const Icon(LucideIcons.badgeCheck, size: 22, color: T.hueMint600),
-        ]),
+        child: Row(
+          children: [
+            Avatar(initials: accountInitials(name), color: AppColors.hueMint600, size: 48, ar: s.rtl),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                name,
+                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+            ),
+            const Icon(LucideIcons.badgeCheck, size: 22, color: AppColors.hueMint600),
+          ],
+        ),
       ),
       const SizedBox(height: 16),
       _labeled(c.relation, _relationField()),
       const SizedBox(height: 14),
-      Text(c.fam_approval_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+      Text(c.fam_approval_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
       const SizedBox(height: 18),
       PButton(
         c.fam_send_request,
@@ -491,22 +608,28 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         onTap: () => widget.onAdd(_name.text.trim(), _relation, _dob, linkJti: found.jti),
       ),
       const SizedBox(height: 8),
-      PButton(c.fam_scan_other,
-          variant: BtnVariant.ghost, block: true, ar: s.rtl, onTap: () => setState(() => _mode = _AddMode.scan)),
+      PButton(
+        c.fam_scan_other,
+        variant: BtnVariant.ghost,
+        block: true,
+        ar: s.rtl,
+        onTap: () => setState(() => _mode = _AddMode.scan),
+      ),
     ];
   }
 
-  List<Widget> _manualBody(dynamic c) {
+  List<Widget> _manualBody(CommonStrings c) {
     return [
       _labeled(
-          c.member_name,
-          TextField(
-            controller: _name,
-            autofocus: true,
-            onChanged: (_) => setState(() {}),
-            style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
-            decoration: _dec(s, c.member_name_ph),
-          )),
+        c.member_name,
+        TextField(
+          controller: _name,
+          autofocus: true,
+          onChanged: (_) => setState(() {}),
+          style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
+          decoration: _dec(s, c.member_name_ph),
+        ),
+      ),
       const SizedBox(height: 14),
       _labeled(
         c.relation,
@@ -516,21 +639,27 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
               context,
               textDirection: s.dir,
               builder: (ctx) => _PickerSheet(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  for (final r in _relations)
-                    ListTile(
-                      title: Text(r.$2, style: Typo.body(ar: s.rtl)),
-                      onTap: () => Navigator.pop(ctx, r.$2),
-                    ),
-                ]),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final r in _relations)
+                      ListTile(
+                        title: Text(r.$2, style: Typo.body(ar: s.rtl)),
+                        onTap: () => Navigator.pop(ctx, r.$2),
+                      ),
+                  ],
+                ),
               ),
             );
             if (picked != null) setState(() => _relation = picked);
           },
           child: InputDecorator(
             decoration: _dec(s, null),
-            child: Text(_relation.isEmpty ? c.select_relation(s.gender) : _relation,
-                style: Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? T.fg4 : T.fg1)),
+            child: Text(
+              _relation.isEmpty ? c.select_relation(s.gender) : _relation,
+              style:
+                  Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? AppColors.textHint : AppColors.textPrimary),
+            ),
           ),
         ),
       ),
@@ -542,26 +671,32 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
           onTap: _pickDob,
           child: InputDecorator(
             decoration: _dec(s, null),
-            child: Row(children: [
-              const Icon(LucideIcons.calendar, size: 17, color: T.fg3),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _dob == null ? c.member_dob_ph : _formatDob(_dob!),
-                  // Dates read left-to-right even in Arabic.
-                  textDirection: TextDirection.ltr,
-                  textAlign: s.rtl ? TextAlign.right : TextAlign.left,
-                  style: Typo.body(ar: s.rtl).copyWith(color: _dob == null ? T.fg4 : T.fg1),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.calendar, size: 17, color: AppColors.textTertiary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    switch (_dob) {
+                      final dob? => _formatDob(dob),
+                      _ => c.member_dob_ph
+                    },
+                    // Dates read left-to-right even in Arabic.
+                    textDirection: TextDirection.ltr,
+                    textAlign: s.rtl ? TextAlign.right : TextAlign.left,
+                    style:
+                        Typo.body(ar: s.rtl).copyWith(color: _dob == null ? AppColors.textHint : AppColors.textPrimary),
+                  ),
                 ),
-              ),
-              const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-            ]),
+                const Icon(LucideIcons.chevronDown, size: 15, color: AppColors.textTertiary),
+              ],
+            ),
           ),
         ),
       ),
       if (_isSelfName) ...[
         const SizedBox(height: 10),
-        Text(c.fam_self_add_manual, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.danger)),
+        Text(c.fam_self_add_manual, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.danger)),
       ],
       const SizedBox(height: 20),
       PButton(
@@ -573,12 +708,14 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
         onTap: canSave && !_isSelfName ? () => widget.onAdd(_name.text.trim(), _relation, _dob) : null,
       ),
       const SizedBox(height: 8),
-      PButton(c.fam_scan_instead,
-          variant: BtnVariant.ghost,
-          block: true,
-          ar: s.rtl,
-          icon: LucideIcons.qrCode,
-          onTap: () => setState(() => _mode = _AddMode.scan)),
+      PButton(
+        c.fam_scan_instead,
+        variant: BtnVariant.ghost,
+        block: true,
+        ar: s.rtl,
+        icon: LucideIcons.qrCode,
+        onTap: () => setState(() => _mode = _AddMode.scan),
+      ),
     ];
   }
 
@@ -616,42 +753,59 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
           context,
           textDirection: s.dir,
           builder: (ctx) => _PickerSheet(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              for (final r in _relations)
-                ListTile(
-                  title: Text(r.$2, style: Typo.body(ar: s.rtl)),
-                  onTap: () => Navigator.pop(ctx, r.$2),
-                ),
-            ]),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final r in _relations)
+                  ListTile(
+                    title: Text(r.$2, style: Typo.body(ar: s.rtl)),
+                    onTap: () => Navigator.pop(ctx, r.$2),
+                  ),
+              ],
+            ),
           ),
         );
         if (picked != null && mounted) setState(() => _relation = picked);
       },
       child: InputDecorator(
         decoration: _dec(s, null),
-        child: Text(_relation.isEmpty ? c.select_relation(s.gender) : _relation,
-            style: Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? T.fg4 : T.fg1)),
+        child: Text(
+          _relation.isEmpty ? c.select_relation(s.gender) : _relation,
+          style: Typo.body(ar: s.rtl).copyWith(color: _relation.isEmpty ? AppColors.textHint : AppColors.textPrimary),
+        ),
       ),
     );
   }
 
-  Widget _labeled(String label, Widget child) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-        const SizedBox(height: 6),
-        child,
-      ]);
+  Widget _labeled(String label, Widget child) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          child,
+        ],
+      );
 
   InputDecoration _dec(PatientAppState s, String? hint) => InputDecoration(
         hintText: hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.lg),
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.subhead),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: BorderSide(color: s.accent.main, width: 1.5),
+        ),
       );
 }

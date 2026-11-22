@@ -1,14 +1,15 @@
+import 'dart:async';
 import 'package:account/account.dart';
+import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:core/core.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:self_report/self_report.dart';
+
 import '../app_state.dart';
-import '../kit.dart';
-import '../tokens.dart';
+import '../assets.dart';
 import 'body_hit_map.dart';
 import 'select_field.dart';
 
@@ -22,7 +23,7 @@ String siteLabel(PatientAppState s, PainSite site) =>
 /// Signed-in profile's gender, for the skin layer's silhouette. Null while
 /// signed out or before the profile loads — callers fall back to
 /// [PatientAppState.gender].
-final currentProfileGenderProvider = FutureProvider.autoDispose<Gender?>((ref) async {
+final FutureProvider<Gender?> currentProfileGenderProvider = FutureProvider.autoDispose<Gender?>((ref) async {
   if (ref.watch(currentUserIdProvider) == null) return null;
   return (await ref.watch(accountProfileUseCaseProvider).load())?.gender;
 });
@@ -66,10 +67,10 @@ class _BodyRegionColorMapper extends ColorMapper {
 /// [PainSite] on the current tissue layer.
 class BodyMap extends StatefulWidget {
   const BodyMap({
-    super.key,
     required this.selected,
     required this.onToggle,
     required this.gender,
+    super.key,
   });
   final Set<PainSite> selected;
   final ValueChanged<PainSite> onToggle;
@@ -99,9 +100,11 @@ class _BodyMapState extends State<BodyMap> {
     if (_hitsAsset == asset) return;
     _hitsAsset = asset;
     _hits = BodyHitMap.empty;
-    BodyHitMap.forAsset(asset).then((map) {
-      if (mounted && _hitsAsset == asset) setState(() => _hits = map);
-    });
+    unawaited(
+      BodyHitMap.forAsset(asset).then((map) {
+        if (mounted && _hitsAsset == asset) setState(() => _hits = map);
+      }),
+    );
   }
 
   @override
@@ -120,116 +123,120 @@ class _BodyMapState extends State<BodyMap> {
     _ensureHits(asset);
     final c = s.strings.checkin;
     final selectedOnTissue = widget.selected.where((site) => site.tissue == tissue).map((site) => site.region).toSet();
-    return Column(children: [
-      // `display:flex; gap:5; align-items:center` — chips keep their natural
-      // size, the layer select is the only flexible (`flex:1, min-width:0`)
-      // child, so it is the one that shrinks at narrow widths or large text
-      // scales instead of the row overflowing sideways (unrecoverable inside
-      // a vertically-scrolling sheet).
-      Row(
-        spacing: 5,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _chip(s, c.body_view_front, view == BodyView.front, () => setState(() => view = BodyView.front)),
-          _chip(s, c.body_view_back, view == BodyView.back, () => setState(() => view = BodyView.back)),
-          if (BodyTissue.values.length > 1)
-            Expanded(
-              child: SelectField<BodyTissue>(
-                dense: true,
-                value: tissue,
-                enabled: !locked,
-                semanticsLabel: c.body_layer,
-                items: [for (final t in BodyTissue.values) (t, t.label(messages))],
-                onChanged: (t) => setState(() => _tissue = t),
+    return Column(
+      children: [
+        // `display:flex; gap:5; align-items:center` — chips keep their natural
+        // size, the layer select is the only flexible (`flex:1, min-width:0`)
+        // child, so it is the one that shrinks at narrow widths or large text
+        // scales instead of the row overflowing sideways (unrecoverable inside
+        // a vertically-scrolling sheet).
+        Row(
+          spacing: 5,
+          children: [
+            _Chip(s, c.body_view_front, view == BodyView.front, () => setState(() => view = BodyView.front)),
+            _Chip(s, c.body_view_back, view == BodyView.back, () => setState(() => view = BodyView.back)),
+            if (BodyTissue.values.length > 1)
+              Expanded(
+                child: SelectField<BodyTissue>(
+                  dense: true,
+                  value: tissue,
+                  enabled: !locked,
+                  semanticsLabel: c.body_layer,
+                  items: [for (final t in BodyTissue.values) (t, t.label(messages))],
+                  onChanged: (t) => setState(() => _tissue = t),
+                ),
               ),
-            ),
-        ],
-      ),
-      if (locked) ...[
-        const SizedBox(height: 4),
-        Text(
-          c.body_layer_locked(s.gender),
-          textAlign: TextAlign.center,
-          style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg4),
+          ],
         ),
-      ],
-      const SizedBox(height: 8),
-      ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 16),
-        child: widget.selected.isEmpty
-            ? Text(
-                c.body_tap(s.gender),
-                textAlign: TextAlign.center,
-                style: Typo.meta(ar: s.rtl).copyWith(
-                    fontSize: FS.xs,
+        if (locked) ...[
+          const SizedBox(height: 4),
+          Text(
+            c.body_layer_locked(s.gender),
+            textAlign: TextAlign.center,
+            style: Typo.meta(ar: s.rtl)
+                .copyWith(fontSize: FontSizes.meta, fontWeight: FontWeight.w600, color: AppColors.textHint),
+          ),
+        ],
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 16),
+          child: widget.selected.isEmpty
+              ? Text(
+                  c.body_tap(s.gender),
+                  textAlign: TextAlign.center,
+                  style: Typo.meta(ar: s.rtl).copyWith(
+                    fontSize: FontSizes.meta,
                     fontWeight: FontWeight.w700,
                     height: 1.4,
-                    letterSpacing: s.rtl ? 0 : FS.xs * 0.08,
-                    color: T.fg4),
-              )
-            : Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final site in widget.selected)
-                      _SelectedChip(
-                        label: site.label(messages, mid: c.list_mid),
-                        onRemove: () => widget.onToggle(site),
-                        removeLabel: c.body_remove(site.label(messages, mid: c.list_mid)),
-                      ),
-                    if (widget.selected.length > 1)
-                      _ClearAllButton(
-                        label: c.body_clear_all,
-                        onTap: () {
-                          for (final site in widget.selected.toList()) {
-                            widget.onToggle(site);
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              ),
-      ),
-      const SizedBox(height: 8),
-      // `.bm-host` centres the plate; design caps height at min(320px, 40vh).
-      Center(
-        // Cap the height only. Pinning it makes AspectRatio derive a width the
-        // column may not have, and a horizontal overflow is exactly the kind a
-        // vertically-scrolling sheet can never reveal.
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: (MediaQuery.sizeOf(context).height * 0.40).clamp(220.0, 320.0),
-          ),
-          child: AspectRatio(
-            aspectRatio: 200 / 384,
-            child: LayoutBuilder(builder: (context, constraints) {
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapDown: (details) {
-                  final region = _hitRegion(details.localPosition, constraints.biggest, regions, tissue);
-                  if (region == null) return;
-                  final site = PainSite(region);
-                  // One tissue per record: a tap that would add a different
-                  // tissue than the locked selection is dropped silently —
-                  // removing an already-marked site is always allowed.
-                  if (canToggleSite(widget.selected, site)) widget.onToggle(site);
-                },
-                child: SvgPicture.asset(
-                  asset,
-                  fit: BoxFit.contain,
-                  colorMapper: _BodyRegionColorMapper(
-                    selectedOnTissue,
-                    s.accent.main.withValues(alpha: _selectionAlpha(tissue)),
+                    letterSpacing: s.rtl ? 0 : FontSizes.meta * 0.08,
+                    color: AppColors.textHint,
+                  ),
+                )
+              : Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final site in widget.selected)
+                        _SelectedChip(
+                          label: site.label(messages, mid: c.list_mid),
+                          onRemove: () => widget.onToggle(site),
+                          removeLabel: c.body_remove(site.label(messages, mid: c.list_mid)),
+                        ),
+                      if (widget.selected.length > 1)
+                        _ClearAllButton(
+                          label: c.body_clear_all,
+                          onTap: () {
+                            for (final site in widget.selected.toList()) {
+                              widget.onToggle(site);
+                            }
+                          },
+                        ),
+                    ],
                   ),
                 ),
-              );
-            }),
+        ),
+        const SizedBox(height: 8),
+        // `.bm-host` centres the plate; design caps height at min(320px, 40vh).
+        Center(
+          // Cap the height only. Pinning it makes AspectRatio derive a width the
+          // column may not have, and a horizontal overflow is exactly the kind a
+          // vertically-scrolling sheet can never reveal.
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: (MediaQuery.sizeOf(context).height * 0.40).clamp(220.0, 320.0),
+            ),
+            child: AspectRatio(
+              aspectRatio: 200 / 384,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTapDown: (details) {
+                      final region = _hitRegion(details.localPosition, constraints.biggest, regions, tissue);
+                      if (region == null) return;
+                      final site = PainSite(region);
+                      // One tissue per record: a tap that would add a different
+                      // tissue than the locked selection is dropped silently —
+                      // removing an already-marked site is always allowed.
+                      if (canToggleSite(widget.selected, site)) widget.onToggle(site);
+                    },
+                    child: SvgPicture.asset(
+                      asset,
+                      colorMapper: _BodyRegionColorMapper(
+                        selectedOnTissue,
+                        s.accent.main.withValues(alpha: _selectionAlpha(tissue)),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 
   /// Region under [local] on the current layer, or null.
@@ -270,27 +277,6 @@ class _BodyMapState extends State<BodyMap> {
     }
     return best;
   }
-
-  Widget _chip(PatientAppState s, String label, bool active, VoidCallback onTap) {
-    final on = active;
-    final fg = on ? s.accent.d : T.fg2;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 13),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: on ? s.accent.bg : Colors.white,
-          borderRadius: BorderRadius.circular(T.rPill),
-          border: Border.all(color: on ? s.accent.main : T.border, width: 1.5),
-        ),
-        child: Text(label,
-            softWrap: false,
-            style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: fg)),
-      ),
-    );
-  }
 }
 
 /// A selected [PainSite], rendered as an "on" chip with a trailing remove
@@ -309,31 +295,37 @@ class _SelectedChip extends StatelessWidget {
       padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
       decoration: BoxDecoration(
         color: s.accent.bg,
-        borderRadius: BorderRadius.circular(T.rPill),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
         border: Border.all(color: s.accent.main, width: 1.5),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(label,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
             softWrap: false,
-            style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: s.accent.d)),
-        const SizedBox(width: 2),
-        Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onRemove,
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: Semantics(
-                label: removeLabel,
-                child: Icon(LucideIcons.x, size: 14, color: s.accent.d),
+            style:
+                Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.meta, fontWeight: FontWeight.w600, color: s.accent.d),
+          ),
+          const SizedBox(width: 2),
+          Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: Semantics(
+                  label: removeLabel,
+                  child: Icon(LucideIcons.x, size: 14, color: s.accent.d),
+                ),
               ),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -353,9 +345,15 @@ class _ClearAllButton extends StatelessWidget {
         height: 32,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         alignment: Alignment.center,
-        child: Text(label,
-            style: Typo.meta(ar: s.rtl).copyWith(
-                fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg3, decoration: TextDecoration.underline)),
+        child: Text(
+          label,
+          style: Typo.meta(ar: s.rtl).copyWith(
+            fontSize: FontSizes.meta,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textTertiary,
+            decoration: TextDecoration.underline,
+          ),
+        ),
       ),
     );
   }
@@ -365,14 +363,14 @@ class _ClearAllButton extends StatelessWidget {
 /// marked site, highlighted exactly as it was on the input [BodyMap], with the
 /// site labels underneath. No tissue/view controls and no tap targets.
 class BodyMapPreview extends ConsumerWidget {
-  const BodyMapPreview({super.key, required this.sites});
+  const BodyMapPreview({required this.sites, super.key});
   final Set<PainSite> sites;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     if (sites.isEmpty) return const SizedBox.shrink();
-    final gender = ref.watch(currentProfileGenderProvider).valueOrNull ?? s.gender;
+    final gender = ref.watch(currentProfileGenderProvider).value ?? s.gender;
     final messages = selfReportMessagesOf(s.lang.value);
     final c = s.strings.checkin;
     // One tissue per record is enforced on input, but older records may mix
@@ -383,65 +381,76 @@ class BodyMapPreview extends ConsumerWidget {
           if (sites.any((site) => site.tissue == tissue && site.region.view == view)) (tissue, view),
     ];
     final multiTissue = plates.map((p) => p.$1).toSet().length > 1;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          for (final (tissue, view) in plates)
-            SizedBox(
-              width: 120,
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                AspectRatio(
-                  aspectRatio: 200 / 384,
-                  child: SvgPicture.asset(
-                    _asset(tissue, view, gender),
-                    fit: BoxFit.contain,
-                    excludeFromSemantics: true,
-                    colorMapper: _BodyRegionColorMapper(
-                      {
-                        for (final site in sites)
-                          if (site.tissue == tissue) site.region,
-                      },
-                      s.accent.main.withValues(alpha: _selectionAlpha(tissue)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final (tissue, view) in plates)
+              SizedBox(
+                width: 120,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 200 / 384,
+                      child: SvgPicture.asset(
+                        _asset(tissue, view, gender),
+                        excludeFromSemantics: true,
+                        colorMapper: _BodyRegionColorMapper(
+                          {
+                            for (final site in sites)
+                              if (site.tissue == tissue) site.region,
+                          },
+                          s.accent.main.withValues(alpha: _selectionAlpha(tissue)),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        if (view == BodyView.front) c.body_view_front else c.body_view_back,
+                        if (multiTissue) tissue.label(messages),
+                      ].join(c.list_mid),
+                      textAlign: TextAlign.center,
+                      style: Typo.meta(ar: s.rtl).copyWith(
+                        fontSize: FontSizes.meta,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  [
-                    view == BodyView.front ? c.body_view_front : c.body_view_back,
-                    if (multiTissue) tissue.label(messages),
-                  ].join(c.list_mid),
-                  textAlign: TextAlign.center,
-                  style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: T.fg3),
-                ),
-              ]),
-            ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 6,
-        runSpacing: 6,
-        children: [
-          for (final site in sites)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: s.accent.bg,
-                borderRadius: BorderRadius.circular(T.rPill),
-                border: Border.all(color: s.accent.main, width: 1.5),
               ),
-              child: Text(site.label(messages, mid: c.list_mid),
-                  style:
-                      Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, fontWeight: FontWeight.w600, color: s.accent.d)),
-            ),
-        ],
-      ),
-    ]);
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final site in sites)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: s.accent.bg,
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                  border: Border.all(color: s.accent.main, width: 1.5),
+                ),
+                child: Text(
+                  site.label(messages, mid: c.list_mid),
+                  style: Typo.meta(ar: s.rtl)
+                      .copyWith(fontSize: FontSizes.meta, fontWeight: FontWeight.w600, color: s.accent.d),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 
@@ -458,12 +467,44 @@ double _selectionAlpha(BodyTissue tissue) => switch (tissue) {
 String _asset(BodyTissue tissue, BodyView view, Gender gender) {
   final side = view == BodyView.front ? 'front' : 'back';
   return switch (tissue) {
-    BodyTissue.skin => 'assets/body/${gender == Gender.female ? 'female' : 'male'}_$side.svg',
-    BodyTissue.muscle => 'assets/body/muscles_$side.svg',
-    BodyTissue.bone => 'assets/body/bones_$side.svg',
-    BodyTissue.joint => 'assets/body/joints_$side.svg',
-    BodyTissue.tendon => 'assets/body/tendons_$side.svg',
-    BodyTissue.nerve => 'assets/body/nerves_$side.svg',
-    BodyTissue.organ => 'assets/body/organs_$side.svg',
+    BodyTissue.skin => Assets.bodyFigure(gender == Gender.female ? 'female' : 'male', side),
+    BodyTissue.muscle => Assets.bodyLayer('muscles', side),
+    BodyTissue.bone => Assets.bodyLayer('bones', side),
+    BodyTissue.joint => Assets.bodyLayer('joints', side),
+    BodyTissue.tendon => Assets.bodyLayer('tendons', side),
+    BodyTissue.nerve => Assets.bodyLayer('nerves', side),
+    BodyTissue.organ => Assets.bodyLayer('organs', side),
   };
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip(this.s, this.label, this.active, this.onTap);
+  final PatientAppState s;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final on = active;
+    final fg = on ? s.accent.d : AppColors.textSecondary;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 13),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: on ? s.accent.bg : AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(color: on ? s.accent.main : AppColors.border, width: 1.5),
+        ),
+        child: Text(
+          label,
+          softWrap: false,
+          style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.meta, fontWeight: FontWeight.w600, color: fg),
+        ),
+      ),
+    );
+  }
 }
