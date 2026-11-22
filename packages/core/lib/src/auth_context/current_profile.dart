@@ -16,7 +16,7 @@ import 'current_user.dart';
 /// re-resolves, the previous value is kept, so scoped screens never flash
 /// empty.
 final currentProfileIdProvider = Provider<HealthProfileId?>(
-  (ref) => ref.watch(activeProfileProvider).valueOrNull,
+  (ref) => ref.watch(activeProfileProvider).value,
 );
 
 /// Resolves the active profile for the authenticated user, ensuring (and on

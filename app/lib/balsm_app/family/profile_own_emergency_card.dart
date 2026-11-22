@@ -30,7 +30,7 @@ class ProfileOwnEmergencyCard implements OwnEmergencyCardReader {
     final ProfileDetails? details;
     try {
       details = await _details();
-    } catch (_) {
+    } on Object catch (_) {
       // Offline or signed out mid-read: leave any shared card as it is rather
       // than replace it with one missing the name and date of birth.
       return null;

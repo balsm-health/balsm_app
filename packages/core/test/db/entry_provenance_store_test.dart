@@ -13,7 +13,7 @@ void main() {
   // Synthetic values only.
   final family = ProvenanceActor.other(ProvenanceActorKind.family, displayName: 'Member A');
   final clinic = ProvenanceActor.other(ProvenanceActorKind.clinic, careProviderId: 'cp-1');
-  final added = ProvenanceEvent(id: 'e1', actor: family, action: ProvenanceAction.added, at: DateTime.utc(2026, 1, 1));
+  final added = ProvenanceEvent(id: 'e1', actor: family, action: ProvenanceAction.added, at: DateTime.utc(2026));
   final shared =
       ProvenanceEvent(id: 'e2', actor: clinic, action: ProvenanceAction.shared, at: DateTime.utc(2026, 1, 2));
 
@@ -62,7 +62,7 @@ void main() {
   });
 
   test('an undecodable row fails loud', () async {
-    await db.customStatement("INSERT INTO entry_provenance VALUES "
+    await db.customStatement('INSERT INTO entry_provenance VALUES '
         "('bad', '${profile.value}', 'health_record', 'r1', 'stranger', 'N', NULL, 'added', '2026-01-01T00:00:00Z')");
     await expectLater(records.historyOf('r1', profile), throwsA(isA<StorageDecodeException>()));
   });
@@ -84,11 +84,11 @@ void main() {
     final dir = await Directory.systemTemp.createTemp('balsm_provenance_db');
     final file = File('${dir.path}/legacy.db');
     addTearDown(() => dir.delete(recursive: true));
-    final seed = sqlite3.open(file.path);
-    seed.execute('CREATE TABLE health_record (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, '
-        'title TEXT NOT NULL, tags TEXT NOT NULL, source TEXT NOT NULL, taken_at TEXT NOT NULL, '
-        'created_at TEXT NOT NULL)');
-    seed.dispose(); // ignore: deprecated_member_use
+    sqlite3.open(file.path)
+      ..execute('CREATE TABLE health_record (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, '
+          'title TEXT NOT NULL, tags TEXT NOT NULL, source TEXT NOT NULL, taken_at TEXT NOT NULL, '
+          'created_at TEXT NOT NULL)')
+      ..dispose();
 
     final legacy = AppDatabase(NativeDatabase(file));
     addTearDown(legacy.close);

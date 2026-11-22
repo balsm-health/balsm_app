@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
+
 import '../app_state.dart';
 import '../kit.dart';
 import '../responsive.dart';
-import '../tokens.dart';
 import '../widgets/attachment_thumb.dart';
 import '../widgets/body_map.dart';
 import '../widgets/delete_kit.dart';
@@ -34,7 +35,7 @@ import 'quick_log.dart';
 /// or pick Edit from its `⋮`, and the quick-log form opens on it, prefilled.
 /// Each symptom has its own row to edit it.
 class DayRecordsScreen extends ConsumerStatefulWidget {
-  const DayRecordsScreen({super.key, required this.checkIns});
+  const DayRecordsScreen({required this.checkIns, super.key});
 
   /// The day's check-ins, oldest first (see `groupCheckInsByDay`). Never empty.
   final List<CheckIn> checkIns;
@@ -143,26 +144,28 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
     final c = AppScope.of(context).strings.checkin;
     final one = readings.length == 1 ? readings.single : null;
     final what = one?.label ?? c.rec_count(readings.length);
-    confirmDelete(
-      // English names sit mid-sentence; lowercasing leaves Arabic untouched.
-      title: AppScope.of(context).strings.common.del_title(one?.label.toLowerCase() ?? what),
-      body: one != null ? c.rec_del_body_one(day, one.time) : c.rec_del_body_n(day),
-      done: what,
-      onConfirmed: () {
-        // One store per check-in touched, however many of its readings went.
-        final gone = <CheckInId, List<CheckInMetric>>{};
-        for (final r in readings) {
-          (gone[r.checkIn.id] ??= []).add(r.metric);
-        }
-        final shown = [
-          for (final ci in _shown)
-            if (gone[ci.id] case final metrics?) metrics.fold(ci, (x, m) => x.without(m)) else ci,
-        ];
-        for (final edited in shown.where((ci) => gone.containsKey(ci.id))) {
-          _saving = _saving.then((_) => _persist(edited));
-        }
-        setState(() => _shown = shown);
-      },
+    unawaited(
+      confirmDelete(
+        // English names sit mid-sentence; lowercasing leaves Arabic untouched.
+        title: AppScope.of(context).strings.common.del_title(one?.label.toLowerCase() ?? what),
+        body: one != null ? c.rec_del_body_one(day, one.time) : c.rec_del_body_n(day),
+        done: what,
+        onConfirmed: () {
+          // One store per check-in touched, however many of its readings went.
+          final gone = <CheckInId, List<CheckInMetric>>{};
+          for (final r in readings) {
+            (gone[r.checkIn.id] ??= []).add(r.metric);
+          }
+          final shown = [
+            for (final ci in _shown)
+              if (gone[ci.id] case final metrics?) metrics.fold(ci, (x, m) => x.without(m)) else ci,
+          ];
+          for (final edited in shown.where((ci) => gone.containsKey(ci.id))) {
+            _saving = _saving.then((_) => _persist(edited));
+          }
+          setState(() => _shown = shown);
+        },
+      ),
     );
   }
 
@@ -173,34 +176,77 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
     final glucose = v.glucoseFasting ?? v.glucosePostMeal ?? v.glucoseRandom;
     _Reading row(CheckInMetric metric, IconData icon, String label, String value, String unit, Color color, Color bg) =>
         _Reading(
-            checkIn: checkIn,
-            time: time,
-            metric: metric,
-            icon: icon,
-            label: label,
-            value: value,
-            unit: unit,
-            color: color,
-            bg: bg);
+          checkIn: checkIn,
+          time: time,
+          metric: metric,
+          icon: icon,
+          label: label,
+          value: value,
+          unit: unit,
+          color: color,
+          bg: bg,
+        );
     return [
       if (v.systolic != null && v.diastolic != null)
-        row(CheckInMetric.bloodPressure, LucideIcons.activity, s.strings.profile.m_bp, '${v.systolic}/${v.diastolic}',
-            c.unit_bp, T.hueViolet, T.hueViolet50),
+        row(
+          CheckInMetric.bloodPressure,
+          LucideIcons.activity,
+          s.strings.profile.m_bp,
+          '${v.systolic}/${v.diastolic}',
+          c.unit_bp,
+          AppColors.hueViolet,
+          AppColors.hueViolet50,
+        ),
       if (glucose != null)
-        row(CheckInMetric.glucose, LucideIcons.droplet, s.strings.profile.m_glucose, '$glucose', c.unit_glu,
-            T.hueMint600, T.hueMint50),
+        row(
+          CheckInMetric.glucose,
+          LucideIcons.droplet,
+          s.strings.profile.m_glucose,
+          '$glucose',
+          c.unit_glu,
+          AppColors.hueMint600,
+          AppColors.hueMint50,
+        ),
       if (v.spo2 != null)
-        row(CheckInMetric.spo2, LucideIcons.wind, s.strings.profile.m_o2, '${v.spo2}', c.unit_spo2, T.hueBlue,
-            T.hueBlue50),
+        row(
+          CheckInMetric.spo2,
+          LucideIcons.wind,
+          s.strings.profile.m_o2,
+          '${v.spo2}',
+          c.unit_spo2,
+          AppColors.hueBlue,
+          AppColors.hueBlue50,
+        ),
       if (v.heartRate != null)
-        row(CheckInMetric.heartRate, LucideIcons.heartPulse, s.strings.profile.m_pulse, '${v.heartRate}', c.unit_bpm,
-            T.hueViolet, T.hueViolet50),
-      if (v.weightKg != null)
-        row(CheckInMetric.weight, LucideIcons.scale, s.strings.profile.m_weight, _weight(v.weightKg!), c.unit_kg,
-            T.hueBlue, T.hueBlue50),
+        row(
+          CheckInMetric.heartRate,
+          LucideIcons.heartPulse,
+          s.strings.profile.m_pulse,
+          '${v.heartRate}',
+          c.unit_bpm,
+          AppColors.hueViolet,
+          AppColors.hueViolet50,
+        ),
+      if (v.weightKg case final weightKg?)
+        row(
+          CheckInMetric.weight,
+          LucideIcons.scale,
+          s.strings.profile.m_weight,
+          _weight(weightKg),
+          c.unit_kg,
+          AppColors.hueBlue,
+          AppColors.hueBlue50,
+        ),
       if (checkIn.reportsPain)
-        row(CheckInMetric.pain, LucideIcons.zap, s.strings.profile.m_pain, '${checkIn.painLevel.value}/10', '',
-            T.danger, T.dangerBg),
+        row(
+          CheckInMetric.pain,
+          LucideIcons.zap,
+          s.strings.profile.m_pain,
+          '${checkIn.painLevel.value}/10',
+          '',
+          AppColors.danger,
+          AppColors.dangerBackground,
+        ),
     ];
   }
 
@@ -223,8 +269,8 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
             label: s.strings.profile.m_mood,
             value: moodLabel(s, mood.score),
             unit: '',
-            color: T.fg1,
-            bg: T.ink50,
+            color: AppColors.textPrimary,
+            bg: AppColors.ink50,
           ),
     ];
     final rows = [for (final ci in _shown) ..._metricRows(s, ci, timeOf(ci))];
@@ -239,8 +285,8 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
             label: c.symptoms_n('${ci.symptoms.length}'),
             value: '',
             unit: '',
-            color: const Color(0xFF9A6E00),
-            bg: const Color(0xFFFDF5DC),
+            color: AppColors.warningInk,
+            bg: AppColors.warningBackground,
           ),
     ];
     final all = [...moods, ...rows, ...symptoms];
@@ -248,11 +294,15 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
 
     void ask(List<_Reading> rs) => _ask(rs, day: day);
 
-    Widget swipe(_Reading r, {double radius = 0, required Widget child}) =>
+    Widget swipe(_Reading r, {required Widget child, double radius = 0}) =>
         kitSwipe(item: r.key, label: r.label, onDelete: () => ask([r]), radius: radius, child: child);
 
     Widget more(_Reading r, {bool editable = true}) => kitMore(
-        label: r.label, menuLabel: c.rec_delete, onDelete: () => ask([r]), onEdit: editable ? () => _edit(r) : null);
+          label: r.label,
+          menuLabel: c.rec_delete,
+          onDelete: () => ask([r]),
+          onEdit: editable ? () => _edit(r) : null,
+        );
 
     /// The reading opens in the edit form when tapped.
     Widget tapToEdit(_Reading r, Widget child) => Semantics(
@@ -267,174 +317,225 @@ class _DayRecordsScreenState extends ConsumerState<DayRecordsScreen> with Delete
         if (!didPop && selecting) endSelect();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.white,
         body: ContentColumn(
           maxWidth: 720,
-          child: Stack(children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const PadTop(),
-              if (!selecting)
-                AppBarRow(children: [
-                  RoundBtn(
-                      icon: backArrow(context),
-                      semanticLabel: s.strings.common.a11y_back,
-                      onTap: () => Navigator.of(context).pop()),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(day, style: Typo.heading(ar: s.rtl))),
-                  if (all.isNotEmpty)
-                    PButton(s.strings.common.del_select,
-                        variant: BtnVariant.ghost, size: BtnSize.sm, ar: s.rtl, onTap: () => startSelect()),
-                ])
-              else
-                kitSelectAppBar(all.map((r) => r.key), title: c.rec_select_title),
-              Expanded(
-                child: ListView(padding: EdgeInsets.zero, children: [
-                  for (final m in moods)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 12),
-                      child: swipe(
-                        m,
-                        radius: T.rLg,
-                        child: tapToEdit(
-                          m,
-                          Container(
-                            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 8, 16),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(T.rLg),
-                              border: Border.all(color: s.accent.bg),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                stops: const [0.0, 0.65],
-                                colors: [s.accent.bg, T.cream50],
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const PadTop(),
+                  if (!selecting)
+                    AppBarRow(
+                      children: [
+                        RoundBtn(
+                          icon: backArrow(context),
+                          semanticLabel: s.strings.common.a11y_back,
+                          onTap: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(day, style: Typo.heading(ar: s.rtl))),
+                        if (all.isNotEmpty)
+                          PButton(
+                            s.strings.common.del_select,
+                            variant: BtnVariant.ghost,
+                            size: BtnSize.sm,
+                            ar: s.rtl,
+                            onTap: startSelect,
+                          ),
+                      ],
+                    )
+                  else
+                    kitSelectAppBar(all.map((r) => r.key), title: c.rec_select_title),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        for (final m in moods)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 12),
+                            child: swipe(
+                              m,
+                              radius: AppRadii.lg,
+                              child: tapToEdit(
+                                m,
+                                Container(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 8, 16),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                                    border: Border.all(color: s.accent.bg),
+                                    gradient: LinearGradient(
+                                      begin: AlignmentDirectional.topStart,
+                                      end: AlignmentDirectional.bottomEnd,
+                                      stops: const [0.0, 0.65],
+                                      colors: [s.accent.bg, AppColors.cream50],
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      kitCheck(m.key),
+                                      MoodFace(
+                                        level: m.checkIn.mood!.score,
+                                        size: 40,
+                                        color: moodColors[m.checkIn.mood!.score - 1],
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              m.value,
+                                              style: Typo.body(ar: s.rtl)
+                                                  .copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            _TimeMeta(time: m.time, prefix: '${m.label} · '),
+                                          ],
+                                        ),
+                                      ),
+                                      more(m),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                            child: Row(children: [
-                              kitCheck(m.key),
-                              MoodFace(
-                                  level: m.checkIn.mood!.score, size: 40, color: moodColors[m.checkIn.mood!.score - 1]),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Text(m.value,
-                                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                                  const SizedBox(height: 2),
-                                  _TimeMeta(time: m.time, prefix: '${m.label} · '),
-                                ]),
-                              ),
-                              more(m),
-                            ]),
                           ),
-                        ),
-                      ),
-                    ),
-                  if (moods.isNotEmpty) const SizedBox(height: 4),
-                  if (rows.isNotEmpty)
-                    PCard(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: EdgeInsets.zero,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(T.rLg - 1),
-                        child: Column(
-                          children: rows.indexed
-                              .map((e) => swipe(
-                                    e.$2,
-                                    child: tapToEdit(
-                                      e.$2,
-                                      _MetricLine(
-                                        row: e.$2,
-                                        last: e.$1 == rows.length - 1,
-                                        lead: kitCheck(e.$2.key),
-                                        trail: more(e.$2),
+                        if (moods.isNotEmpty) const SizedBox(height: 4),
+                        if (rows.isNotEmpty)
+                          PCard(
+                            margin: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: EdgeInsets.zero,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(AppRadii.lg - 1),
+                              child: Column(
+                                children: rows.indexed
+                                    .map(
+                                      (e) => swipe(
+                                        e.$2,
+                                        child: tapToEdit(
+                                          e.$2,
+                                          _MetricLine(
+                                            row: e.$2,
+                                            last: e.$1 == rows.length - 1,
+                                            lead: kitCheck(e.$2.key),
+                                            trail: more(e.$2),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                          ),
+                        for (final sym in symptoms)
+                          Padding(
+                            padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                            child: swipe(
+                              sym,
+                              radius: AppRadii.lg,
+                              child: PCard(
+                                flat: true,
+                                padding: EdgeInsets.zero,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
+                                      child: Row(
+                                        children: [
+                                          kitCheck(sym.key),
+                                          IconSquare(sym.icon, bg: sym.bg, fg: sym.color),
+                                          const SizedBox(width: 13),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  sym.label,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: Typo.body(ar: s.rtl).copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.textPrimary,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                _TimeMeta(time: sym.time),
+                                                if (sym.checkIn.history.isAttributed)
+                                                  Padding(
+                                                    padding: const EdgeInsetsDirectional.only(top: 4),
+                                                    child: EntryAttributionChip(history: sym.checkIn.history),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          more(sym, editable: false),
+                                        ],
                                       ),
                                     ),
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                  for (final sym in symptoms)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                      child: swipe(
-                        sym,
-                        radius: T.rLg,
-                        child: PCard(
-                          flat: true,
-                          padding: EdgeInsets.zero,
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                            Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(16, 13, 6, 13),
-                              child: Row(children: [
-                                kitCheck(sym.key),
-                                IconSquare(sym.icon, bg: sym.bg, fg: sym.color, size: 38, iconSize: 19, radius: T.rMd),
-                                const SizedBox(width: 13),
-                                Expanded(
-                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text(sym.label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style:
-                                            Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                                    const SizedBox(height: 2),
-                                    _TimeMeta(time: sym.time),
-                                    if (sym.checkIn.history.isAttributed)
-                                      Padding(
-                                        padding: const EdgeInsetsDirectional.only(top: 4),
-                                        child: EntryAttributionChip(history: sym.checkIn.history),
+                                    if (!selecting)
+                                      ...sym.checkIn.symptoms.map(
+                                        (id) => _SymptomLine(
+                                          label: symptomLabel(s, id),
+                                          editLabel: s.strings.common.a11y_edit,
+                                          onTap: () => _edit(sym, symptom: id),
+                                        ),
                                       ),
-                                  ]),
+                                  ],
                                 ),
-                                more(sym, editable: false),
-                              ]),
+                              ),
                             ),
-                            if (!selecting)
-                              ...sym.checkIn.symptoms.map((id) => _SymptomLine(
-                                    label: symptomLabel(s, id),
-                                    editLabel: s.strings.common.a11y_edit,
-                                    onTap: () => _edit(sym, symptom: id),
-                                  )),
-                          ]),
-                        ),
-                      ),
+                          ),
+                        for (final ci in _shown) ...[
+                          // Where it hurt — the body map as the patient marked it.
+                          if (ci.painSites.isNotEmpty)
+                            PCard(
+                              margin: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          c.body_marked,
+                                          style: Typo.body(ar: s.rtl)
+                                              .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                        ),
+                                      ),
+                                      _TimeMeta(time: timeOf(ci)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  BodyMapPreview(sites: ci.painSites),
+                                ],
+                              ),
+                            ),
+                          // The check-in's photo (records-vault back-reference) — design
+                          // DayRecordsScreen renders attachments inline with the readings.
+                          if (ci.photoRecordId case final photoRecordId? when !ci.isEmpty)
+                            Padding(
+                              padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
+                              child: RecordAttachmentThumb(recordId: photoRecordId, height: 160),
+                            ),
+                        ],
+                        if (empty) _EmptyDay(text: c.day_empty),
+                        // Room for the notice and the selection bar over the last row.
+                        const SizedBox(height: 112),
+                      ],
                     ),
-                  for (final ci in _shown) ...[
-                    // Where it hurt — the body map as the patient marked it.
-                    if (ci.painSites.isNotEmpty)
-                      PCard(
-                        margin: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          Row(children: [
-                            Expanded(
-                              child: Text(c.body_marked,
-                                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                            ),
-                            _TimeMeta(time: timeOf(ci)),
-                          ]),
-                          const SizedBox(height: 12),
-                          BodyMapPreview(sites: ci.painSites),
-                        ]),
-                      ),
-                    // The check-in's photo (records-vault back-reference) — design
-                    // DayRecordsScreen renders attachments inline with the readings.
-                    if (ci.photoRecordId != null && !ci.isEmpty)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 0),
-                        child: RecordAttachmentThumb(recordId: ci.photoRecordId!, height: 160),
-                      ),
-                  ],
-                  if (empty) _EmptyDay(text: c.day_empty),
-                  // Room for the notice and the selection bar over the last row.
-                  const SizedBox(height: 112),
-                ]),
+                  ),
+                ],
               ),
-            ]),
-            ...deleteKitOverlays(
-              count: c.rec_count,
-              onDeleteSelected: () => ask(all.where((r) => selected.contains(r.key)).toList()),
-            ),
-          ]),
+              ...deleteKitOverlays(
+                count: c.rec_count,
+                onDeleteSelected: () => ask(all.where((r) => selected.contains(r.key)).toList()),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -490,16 +591,20 @@ class _SymptomLine extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsetsDirectional.fromSTEB(16, 11, 16, 11),
-          decoration: const BoxDecoration(border: Border(top: BorderSide(color: T.ink50))),
-          child: Row(children: [
-            Expanded(
-              child: Text(label,
+          decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.ink50))),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            ),
-            const Icon(LucideIcons.pencil, size: 15, color: T.fg4),
-          ]),
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+              ),
+              const Icon(LucideIcons.pencil, size: 15, color: AppColors.textHint),
+            ],
+          ),
         ),
       ),
     );
@@ -520,35 +625,45 @@ class _MetricLine extends StatelessWidget {
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(18, 14, 8, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: last ? null : const Border(bottom: BorderSide(color: T.ink50)),
+        color: AppColors.white,
+        border: last ? null : const Border(bottom: BorderSide(color: AppColors.ink50)),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          lead,
-          IconSquare(row.icon, bg: row.bg, fg: row.color, size: 42, iconSize: 20, radius: T.rMd),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(row.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              const SizedBox(height: 2),
-              _TimeMeta(time: row.time),
-            ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              lead,
+              IconSquare(row.icon, bg: row.bg, fg: row.color, size: 42, iconSize: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      row.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    _TimeMeta(time: row.time),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              _ValueText(row: row),
+              trail,
+            ],
           ),
-          const SizedBox(width: 10),
-          _ValueText(row: row),
-          trail,
-        ]),
-        // Under the label, past the icon (design: paddingInlineStart 66).
-        if (history.isAttributed)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 52, top: 4),
-            child: EntryAttributionChip(history: history),
-          ),
-      ]),
+          // Under the label, past the icon (design: paddingInlineStart 66).
+          if (history.isAttributed)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 52, top: 4),
+              child: EntryAttributionChip(history: history),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -559,11 +674,16 @@ class _ValueText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text.rich(
-        TextSpan(children: [
-          TextSpan(text: row.value, style: Typo.num(size: FS.md, weight: FontWeight.w700, color: T.fg1)),
-          if (row.unit.isNotEmpty)
-            TextSpan(text: ' ${row.unit}', style: Typo.num(size: FS.xs, weight: FontWeight.w500, color: T.fg4)),
-        ]),
+        TextSpan(
+          children: [
+            TextSpan(text: row.value, style: Typo.num(weight: FontWeight.w700)),
+            if (row.unit.isNotEmpty)
+              TextSpan(
+                text: ' ${row.unit}',
+                style: Typo.num(size: FontSizes.meta, weight: FontWeight.w500, color: AppColors.textHint),
+              ),
+          ],
+        ),
         maxLines: 1,
       );
 }
@@ -579,17 +699,19 @@ class _TimeMeta extends StatelessWidget {
     // One paragraph, so a narrow row trims it with an ellipsis instead of
     // overflowing (Arabic units leave the label column little room).
     return Text.rich(
-      TextSpan(children: [
-        if (prefix.isNotEmpty) TextSpan(text: prefix),
-        const WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: Padding(
-            padding: EdgeInsetsDirectional.only(end: 5),
-            child: Icon(LucideIcons.clock, size: 12, color: T.fg3),
+      TextSpan(
+        children: [
+          if (prefix.isNotEmpty) TextSpan(text: prefix),
+          const WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: EdgeInsetsDirectional.only(end: 5),
+              child: Icon(LucideIcons.clock, size: 12, color: AppColors.textTertiary),
+            ),
           ),
-        ),
-        TextSpan(text: time),
-      ]),
+          TextSpan(text: time),
+        ],
+      ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: Typo.meta(ar: s.rtl),
@@ -606,11 +728,17 @@ class _EmptyDay extends StatelessWidget {
     final s = AppScope.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-      child: Column(children: [
-        const Icon(LucideIcons.calendarX, size: 28, color: T.fg4),
-        const SizedBox(height: 8),
-        Text(text, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
-      ]),
+      child: Column(
+        children: [
+          const Icon(LucideIcons.calendarX, size: 28, color: AppColors.textHint),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary, height: 1.5),
+          ),
+        ],
+      ),
     );
   }
 }

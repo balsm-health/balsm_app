@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'analytics_logger.dart';
 import 'feedback_reporter.dart';
+import 'fire_and_forget.dart';
 import 'telemetry_scrubber.dart';
 
 /// Sentry-backed [AnalyticsLogger].
@@ -19,17 +22,22 @@ class SentryAnalyticsLogger implements AnalyticsLogger {
   @override
   void logEvent(String name, {Map<String, Object?>? props, bool key = false}) {
     final data = scrubTelemetry(props);
-    Sentry.addBreadcrumb(Breadcrumb(
-      category: 'user_action',
-      message: name,
-      data: data,
-      level: SentryLevel.info,
-    ));
+    unawaited(
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          category: 'user_action',
+          message: name,
+          data: data,
+          level: SentryLevel.info,
+        ),
+      ),
+    );
     if (key) {
-      Sentry.captureMessage(
-        name,
-        level: SentryLevel.info,
-        withScope: (scope) => scope.setContexts('action', data),
+      unawaited(
+        Sentry.captureMessage(
+          name,
+          withScope: (scope) => scope.setContexts('action', data),
+        ),
       );
     }
   }
@@ -39,41 +47,56 @@ class SentryAnalyticsLogger implements AnalyticsLogger {
     final data = scrubTelemetry(props);
     final sentryLevel = _toSentryLevel(level);
     if (level == LogLevel.warning || level == LogLevel.error) {
-      Sentry.captureMessage(
-        message,
-        level: sentryLevel,
-        withScope: (scope) => scope.setContexts('log', data),
+      unawaited(
+        Sentry.captureMessage(
+          message,
+          level: sentryLevel,
+          withScope: (scope) => scope.setContexts('log', data),
+        ),
       );
     } else {
-      Sentry.addBreadcrumb(Breadcrumb(
-        category: 'log',
-        message: message,
-        data: data,
-        level: sentryLevel,
-      ));
+      unawaited(
+        Sentry.addBreadcrumb(
+          Breadcrumb(
+            category: 'log',
+            message: message,
+            data: data,
+            level: sentryLevel,
+          ),
+        ),
+      );
     }
   }
 
   @override
-  void logError(Object error,
-      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) {
     final data = scrubTelemetry(context);
-    Sentry.captureException(
-      error,
-      stackTrace: stackTrace,
-      withScope: (scope) {
-        scope.level = fatal ? SentryLevel.fatal : SentryLevel.error;
-        if (message != null) scope.setContexts('message', {'value': message});
-        if (data.isNotEmpty) scope.setContexts('error_context', data);
-      },
+    unawaited(
+      Sentry.captureException(
+        error,
+        stackTrace: stackTrace,
+        withScope: (scope) {
+          scope.level = fatal ? SentryLevel.fatal : SentryLevel.error;
+          if (message != null) fireAndForget(scope.setContexts('message', {'value': message}));
+          if (data.isNotEmpty) fireAndForget(scope.setContexts('error_context', data));
+        },
+      ),
     );
   }
 
   @override
   void setUser(String? id) {
     // Opaque id ONLY — never email/handle/DOB.
-    Sentry.configureScope(
-      (scope) => scope.setUser(id == null ? null : SentryUser(id: id)),
+    fireAndForget(
+      Sentry.configureScope(
+        (scope) => scope.setUser(id == null ? null : SentryUser(id: id)),
+      ),
     );
   }
 
@@ -128,10 +151,10 @@ class SentryFeedbackReporter implements FeedbackReporter {
         // The scope's user is whatever [SentryAnalyticsLogger.setUser] put
         // there, so the device-only rule is already applied.
         payload.name = scope.user?.id;
-        scope.setTag('feedback.rating', '${feedback.rating}');
-        if (feedback.topics.isNotEmpty) scope.setTag('feedback.topics', feedback.topics.join(','));
+        unawaited(scope.setTag('feedback.rating', '${feedback.rating}'));
+        if (feedback.topics.isNotEmpty) unawaited(scope.setTag('feedback.topics', feedback.topics.join(',')));
       },
     );
-    return id != SentryId.empty();
+    return id != const SentryId.empty();
   }
 }

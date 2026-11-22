@@ -1,3 +1,6 @@
+import '../../../self_report.dart' show SymptomDetail;
+import 'symptom_detail.dart' show SymptomDetail;
+
 /// A curated self-reportable symptom. Structural id only; the localized label
 /// resolves from the i69n bundle (`symptom.<id>`). This is a fixed catalog —
 /// self-report is a journal, NOT a symptom checker, so the set is closed and

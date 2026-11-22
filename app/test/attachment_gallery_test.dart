@@ -2,7 +2,7 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/vault/memory_file_store.dart';
 import 'package:app/balsm_app/widgets/attachment_thumb.dart';
-import 'package:core/core.dart' show KeyValueDataSource, userFileStoreProvider;
+import 'package:core/core.dart' show KeyValueDataSource, noProviderRetry, userFileStoreProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -33,19 +33,22 @@ void main() {
   }) async {
     final prefs = PatientAppPrefs(_MemoryKV());
     final s = await PatientAppState.load(prefs, hasSession: false);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [userFileStoreProvider.overrideWithValue(MemoryUserFileStore())],
-      child: MaterialApp(
-        home: AppScope(
-          state: s,
-          child: Scaffold(
-            body: SingleChildScrollView(
-              child: VaultAttachmentGallery(paths: paths, onAdd: onAdd, onRemove: onRemove),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [userFileStoreProvider.overrideWithValue(MemoryUserFileStore())],
+        child: MaterialApp(
+          home: AppScope(
+            state: s,
+            child: Scaffold(
+              body: SingleChildScrollView(
+                child: VaultAttachmentGallery(paths: paths, onAdd: onAdd, onRemove: onRemove),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pump();
   }
 

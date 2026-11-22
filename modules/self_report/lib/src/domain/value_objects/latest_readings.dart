@@ -1,6 +1,8 @@
 import '../aggregates/check_in.dart';
 import 'mood.dart';
 import 'pain_level.dart';
+import 'vital_limits.dart';
+import 'vitals.dart';
 
 /// The newest value of each reading across a patient's check-ins, each taken
 /// from the most recent check-in that logged it. A check-in records only what
@@ -10,7 +12,8 @@ import 'pain_level.dart';
 /// Pain 0 is stored the same as "not logged", so [pain] is the newest
 /// non-zero score.
 class LatestReadings {
-  const LatestReadings({this.systolic, this.diastolic, this.glucose, this.spo2, this.mood, this.pain});
+  const LatestReadings(
+      {this.systolic, this.diastolic, this.glucose, this.glucoseContext, this.spo2, this.mood, this.pain});
 
   /// [history] is newest first, as the check-in history streams it.
   factory LatestReadings.from(List<CheckIn> history) {
@@ -23,10 +26,22 @@ class LatestReadings {
     }
 
     final bp = newest((c) => c.vitals.systolic != null && c.vitals.diastolic != null ? c.vitals : null);
+    // One check-in supplies both the value and how it was taken.
+    final glu = newest(
+      (c) => c.vitals.glucoseFasting != null || c.vitals.glucosePostMeal != null || c.vitals.glucoseRandom != null
+          ? c.vitals
+          : null,
+    );
     return LatestReadings(
       systolic: bp?.systolic,
       diastolic: bp?.diastolic,
-      glucose: newest((c) => c.vitals.glucoseFasting ?? c.vitals.glucosePostMeal ?? c.vitals.glucoseRandom),
+      glucose: glu?.glucoseFasting ?? glu?.glucosePostMeal ?? glu?.glucoseRandom,
+      glucoseContext: switch (glu) {
+        null => null,
+        Vitals(glucoseFasting: != null) => GlucoseContext.fasting,
+        Vitals(glucosePostMeal: != null) => GlucoseContext.postMeal,
+        _ => GlucoseContext.random,
+      },
       spo2: newest((c) => c.vitals.spo2),
       mood: newest((c) => c.mood),
       pain: newest((c) => c.reportsPain ? c.painLevel : null),
@@ -36,6 +51,9 @@ class LatestReadings {
   final int? systolic;
   final int? diastolic;
   final int? glucose;
+
+  /// How [glucose] was taken; null when no glucose is logged.
+  final GlucoseContext? glucoseContext;
   final int? spo2;
   final Mood? mood;
   final PainLevel? pain;

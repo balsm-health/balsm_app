@@ -58,14 +58,16 @@ class ServerHealthProbe {
   final HttpClientAdapter? adapter;
 
   Future<ServerHealthResult> check(String baseUrl) async {
-    final dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: timeout,
-      receiveTimeout: timeout,
-      // Any status is an answer; only transport failure is unreachable.
-      validateStatus: (_) => true,
-    ));
-    if (adapter != null) dio.httpClientAdapter = adapter!;
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: timeout,
+        receiveTimeout: timeout,
+        // Any status is an answer; only transport failure is unreachable.
+        validateStatus: (_) => true,
+      ),
+    );
+    if (adapter case final adapter?) dio.httpClientAdapter = adapter;
 
     final started = DateTime.now();
     try {
@@ -77,7 +79,7 @@ class ServerHealthProbe {
       );
     } on DioException catch (e) {
       return ServerUnreachable(_describe(e));
-    } catch (_) {
+    } on Object catch (_) {
       return const ServerUnreachable('Unexpected error');
     } finally {
       dio.close(force: true);

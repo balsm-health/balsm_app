@@ -75,7 +75,7 @@ void main() {
         about: ItemAbout.baby,
         babyIds: [a.id],
         kind: ItemKind.measure,
-        recordedOn: DateTime(2026, 11, 1),
+        recordedOn: DateTime(2026, 11),
         now: now,
         fetalHeartRateBpm: 144,
         estimatedFetalWeightG: 610,
@@ -223,12 +223,20 @@ void main() {
       expect(items[mine.id]!.babyIds, [a.id]);
       expect(items[shared.id]!.babyIds, [b.id], reason: 'unticked: detached from the child, kept on the pregnancy');
 
-      final refused = await birth(p.id, BirthDetails(babyId: b.id, name: '', sex: null, dateOfBirth: now),
-          motherId: self, now: now);
+      final refused = await birth(
+        p.id,
+        BirthDetails(babyId: b.id, name: '', sex: null, dateOfBirth: now),
+        motherId: self,
+        now: now,
+      );
       expect(refused.error.message, 'nameRequired,sexRequired');
 
-      final afterB = await birth(p.id, BirthDetails(babyId: b.id, name: 'Test Twin', sex: Sex.male, dateOfBirth: now),
-          motherId: self, now: now);
+      final afterB = await birth(
+        p.id,
+        BirthDetails(babyId: b.id, name: 'Test Twin', sex: Sex.male, dateOfBirth: now),
+        motherId: self,
+        now: now,
+      );
       expect(afterB.value.status, PregnancyStatus.birth);
       expect((await ds.findItems(p.id)).firstWhere((i) => i.id == shared.id).babyIds, isEmpty);
     });
@@ -265,8 +273,11 @@ class _FakeBabies implements PregnancyBabiesPort {
   final births = <BirthDetails>[];
 
   @override
-  Future<AppResult<PregnancyBaby>> addBaby(PregnancyId pregnancy,
-      {required int sequence, required DateTime now}) async {
+  Future<AppResult<PregnancyBaby>> addBaby(
+    PregnancyId pregnancy, {
+    required int sequence,
+    required DateTime now,
+  }) async {
     final id = HealthProfileId.uuid();
     await _db.customInsert(
       "INSERT INTO health_profile (id, user_id, kind, updated_at) VALUES (?, ?, 'prenatal', 0)",

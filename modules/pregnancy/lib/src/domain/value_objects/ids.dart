@@ -1,5 +1,9 @@
 import 'package:core/core.dart';
 
+import '../../../pregnancy.dart' show PregnancyItem;
+
+import '../entities/pregnancy_item.dart' show PregnancyItem;
+
 // PregnancyId lives in core — the profile aggregate stores it on a baby's
 // profile. Re-exported so module-internal imports of `ids.dart` resolve it.
 export 'package:core/core.dart' show PregnancyId;
@@ -10,5 +14,5 @@ class PregnancyItemId extends UniqueId {
   const PregnancyItemId.empty() : super.empty();
   PregnancyItemId.uuid() : super.uuidv7('pgi');
 
-  static PregnancyItemId? fromString(String? value) => value?.mapNotNull((v) => PregnancyItemId.value(v));
+  static PregnancyItemId? fromString(String? value) => value.mapNotNull(PregnancyItemId.value);
 }

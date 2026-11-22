@@ -121,7 +121,7 @@ void main() {
           type: CareProviderType.doctor,
           name: 'Dr. Sara Kamal',
           phone: '01002345678',
-          createdAt: DateTime.utc(2026, 1, 1),
+          createdAt: DateTime.utc(2026),
         ),
       ];
       final draft = ImportedContact(id: 'c1', name: 'Dr. Sara Kamal', phones: const ['+201002345678']);
@@ -143,7 +143,7 @@ void main() {
           healthProfileId: const HealthProfileId.value('hp-1'),
           type: CareProviderType.other,
           name: 'Someone',
-          createdAt: DateTime.utc(2026, 1, 1),
+          createdAt: DateTime.utc(2026),
         ),
       ];
       final draft = ImportedContact(id: 'c2', name: 'No Number', phones: const []);

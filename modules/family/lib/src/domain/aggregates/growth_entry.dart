@@ -24,8 +24,8 @@ class GrowthEntry {
 
   /// Plausible bounds for anyone from a premature newborn to an adult; they
   /// catch a slipped decimal point, they are not clinical limits.
-  static const weightRangeKg = (min: 0.2, max: 300.0);
-  static const heightRangeCm = (min: 20.0, max: 250.0);
+  static const ({double max, double min}) weightRangeKg = (min: 0.2, max: 300.0);
+  static const ({double max, double min}) heightRangeCm = (min: 20.0, max: 250.0);
 
   final GrowthEntryId id;
 
@@ -70,13 +70,15 @@ class GrowthEntry {
   }) {
     final broken = violationsOf(measuredOn: measuredOn, weightKg: weightKg, heightCm: heightCm, now: now);
     if (broken.isNotEmpty) return AppResult.failure(ValidationFailure(broken.map((b) => b.name).join(',')));
-    return AppResult.success(GrowthEntry(
-      id: id ?? GrowthEntryId.uuid(),
-      measuredOn: _day(measuredOn!),
-      weightKg: weightKg,
-      heightCm: heightCm,
-      createdAt: now.toUtc(),
-    ));
+    return AppResult.success(
+      GrowthEntry(
+        id: id ?? GrowthEntryId.uuid(),
+        measuredOn: _day(measuredOn!),
+        weightKg: weightKg,
+        heightCm: heightCm,
+        createdAt: now.toUtc(),
+      ),
+    );
   }
 
   static DateTime _day(DateTime d) => DateTime.utc(d.year, d.month, d.day);

@@ -69,16 +69,18 @@ class RecoveryClaimUseCase {
         userId: userId,
       );
 
-      _bus.publish(UserSignedIn(
-        userId: UserId.value(userId),
-        email: newEmail,
-        provider: 'recovery',
-      ));
+      _bus.publish(
+        UserSignedIn(
+          userId: UserId.value(userId),
+          email: newEmail,
+          provider: 'recovery',
+        ),
+      );
 
       return AppResult.success(null);
     } on AuthException catch (e) {
       return AppResult.failure(NetworkFailure(e.message));
-    } catch (_) {
+    } on Object catch (_) {
       return AppResult.failure(const NetworkFailure());
     }
   }
@@ -121,7 +123,7 @@ class RecoveryClaimUseCase {
         if (v is String && v.isNotEmpty) return v;
       }
       return null;
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

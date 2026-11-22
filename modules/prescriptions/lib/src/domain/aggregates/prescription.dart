@@ -44,6 +44,8 @@ class Prescription {
     required this.id,
     required this.userId,
     required this.clinician,
+    required this.issuedAt,
+    required this.createdAt,
     this.title,
     this.specialty,
     this.reference,
@@ -51,9 +53,7 @@ class Prescription {
     this.attachmentPath,
     this.attachmentKind,
     this.items = const [],
-    required this.issuedAt,
     this.validUntil,
-    required this.createdAt,
   });
 
   final PrescriptionId id;

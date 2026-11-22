@@ -1,14 +1,13 @@
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pregnancy/pregnancy.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import '../family/family_kit.dart';
 import '../family/member_card_screen.dart';
 import '../profile_subscreens.dart';
@@ -37,12 +36,11 @@ class PregnancyCardScreen extends ConsumerWidget {
     final p = s.strings.pregnancy;
     final preg = ref.watch(activePregnancyOfProvider(mother));
     final owner = pregnancyOwner(ref, mother);
-    final self = ref.watch(selfProfileIdProvider).valueOrNull;
-    final health = owner == null
-        ? ref.watch(healthProfileProvider).valueOrNull
-        : ref.watch(memberHealthProfileProvider(owner.id)).valueOrNull;
-    final name = (ref.watch(accountSummaryProvider).valueOrNull?.displayName ?? '').trim();
-    if (preg == null || self == null) return const Scaffold(backgroundColor: Colors.white);
+    final self = ref.watch(selfProfileIdProvider).value;
+    final health =
+        owner == null ? ref.watch(healthProfileProvider).value : ref.watch(memberHealthProfileProvider(owner.id)).value;
+    final name = (ref.watch(accountSummaryProvider).value?.displayName ?? '').trim();
+    if (preg == null || self == null) return const Scaffold(backgroundColor: AppColors.white);
     final blood = health?.bloodType;
     final me = owner ?? FamilyMember(id: self, kind: ProfileKind.self, displayName: name, bloodType: blood);
     final ob = preg.obName;
@@ -70,7 +68,7 @@ class PregnancyCardScreen extends ConsumerWidget {
 /// pregnancy type and week, the due date, and the Rh factor when the blood
 /// type is known.
 class PregnancyCardBanner extends ConsumerWidget {
-  const PregnancyCardBanner({super.key, required this.pregnancy, required this.bloodType});
+  const PregnancyCardBanner({required this.pregnancy, required this.bloodType, super.key});
   final Pregnancy pregnancy;
   final BloodType? bloodType;
 
@@ -78,27 +76,32 @@ class PregnancyCardBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final babies = ref.watch(pregnancyBabiesProvider(pregnancy.id)).valueOrNull ?? const <PregnancyBaby>[];
+    final babies = ref.watch(pregnancyBabiesProvider(pregnancy.id)).value ?? const <PregnancyBaby>[];
     final info = pregnancy.infoOn(DateTime.now());
     final status = [pregnancyTypeLabel(s, babies.length) ?? p.pregnant, p.week_lower(info.week)].join(' · ');
     final blood = bloodType;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(12)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(status, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-        Text(p.card_due(formatDay(pregnancy.dueDate)), style: Typo.bodySm(ar: s.rtl)),
-        if (blood != null && blood != BloodType.bombay)
-          Text(blood.code.contains('-') ? p.rh_neg : p.rh_pos,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600)),
-      ]),
+      decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(AppRadii.control)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(status, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          Text(p.card_due(formatDay(pregnancy.dueDate)), style: Typo.bodySm(ar: s.rtl)),
+          if (blood != null && blood != BloodType.bombay)
+            Text(
+              blood.code.contains('-') ? p.rh_neg : p.rh_pos,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600),
+            ),
+        ],
+      ),
     );
   }
 }
 
 /// The obstetrician, with a call button when there is a phone number.
 class PregnancyObRow extends StatelessWidget {
-  const PregnancyObRow({super.key, required this.name, required this.phone});
+  const PregnancyObRow({required this.name, required this.phone, super.key});
   final String name;
   final String? phone;
   @override
@@ -106,33 +109,47 @@ class PregnancyObRow extends StatelessWidget {
     final s = AppScope.of(context);
     final tel = phone;
     return Container(
-      decoration: const BoxDecoration(border: Border(top: BorderSide(color: T.ink100))),
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.ink100))),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(s.strings.pregnancy.ob, style: Typo.meta(ar: s.rtl)),
-        const SizedBox(height: 6),
-        Row(children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(s.strings.pregnancy.ob, style: Typo.meta(ar: s.rtl)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    ),
+                    if (tel != null)
+                      Text(
+                        tel,
+                        textDirection: TextDirection.ltr,
+                        style: Typo.num(size: FontSizes.bodySm, weight: FontWeight.w500)
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                  ],
+                ),
+              ),
               if (tel != null)
-                Text(tel,
-                    textDirection: TextDirection.ltr,
-                    style: Typo.num(size: FS.sm, weight: FontWeight.w500).copyWith(color: T.fg2)),
-            ]),
+                RoundBtn(
+                  icon: LucideIcons.phone,
+                  semanticLabel: s.strings.family.a11y_call(name),
+                  bg: s.accent.bg,
+                  fg: s.accent.d,
+                  outlined: false,
+                  iconSize: 18,
+                  onTap: () => launchUrl(Uri(scheme: 'tel', path: tel.replaceAll(' ', ''))),
+                ),
+            ],
           ),
-          if (tel != null)
-            RoundBtn(
-              icon: LucideIcons.phone,
-              semanticLabel: s.strings.family.a11y_call(name),
-              bg: s.accent.bg,
-              fg: s.accent.d,
-              outlined: false,
-              iconSize: 18,
-              onTap: () => launchUrl(Uri(scheme: 'tel', path: tel.replaceAll(' ', ''))),
-            ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }

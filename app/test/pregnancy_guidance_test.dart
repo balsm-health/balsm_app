@@ -15,6 +15,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:pregnancy/pregnancy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/flag_overrides.dart';
+
 /// Weekly pregnancy guidance: the API adapter that keeps the last good copy on
 /// the device, the card on the pregnancy screen and "Week by week". All copy
 /// here is invented test text — no partner content, nothing about a patient.
@@ -113,7 +115,7 @@ void main() {
     tearDown(() => db.close());
 
     PatientAppState state({LanguageCode lang = LanguageCode.en}) {
-      final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true);
+      final flags = flagsWith({AppFlags.motherChild: true});
       return PatientAppState()
         ..lang = lang
         ..attachFlags(flags);
@@ -126,33 +128,40 @@ void main() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
-      final container = ProviderContainer(overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        currentUserIdProvider.overrideWithValue(user),
-        globalKVDataSourceProvider.overrideWithValue(kv),
-        familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
-        pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
-        contentApiProvider.overrideWithValue(api),
-        pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource),
-        accountSummaryProvider.overrideWith((ref) async => const AccountSummary(
+      final container = ProviderContainer(
+        retry: noProviderRetry,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          currentUserIdProvider.overrideWithValue(user),
+          globalKVDataSourceProvider.overrideWithValue(kv),
+          familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+          pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
+          contentApiProvider.overrideWithValue(api),
+          pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource),
+          accountSummaryProvider.overrideWith(
+            (ref) async => const AccountSummary(
               id: user,
               displayName: 'Test Mother',
               countryCode: 'EG',
               preferredLanguage: 'en',
               deletionState: 'ACTIVE',
-            )),
-      ]);
+            ),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
-      await tester.pumpWidget(UncontrolledProviderScope(
-        container: container,
-        child: AppScope(
-          state: s,
-          child: MaterialApp(
-            builder: (_, child) => Directionality(textDirection: s.dir, child: child!),
-            home: Scaffold(body: screen),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: AppScope(
+            state: s,
+            child: MaterialApp(
+              builder: (_, child) => Directionality(textDirection: s.dir, child: child!),
+              home: Scaffold(body: screen),
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       return container;
     }
@@ -169,7 +178,7 @@ void main() {
       );
     }
 
-    testWidgets('the card shows this week\'s guidance, source and disclaimer; no multiples note for one baby',
+    testWidgets("the card shows this week's guidance, source and disclaimer; no multiples note for one baby",
         (tester) async {
       final s = state();
       final p = s.strings.pregnancy;

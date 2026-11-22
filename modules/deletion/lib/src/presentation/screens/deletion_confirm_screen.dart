@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/cancel_deletion_use_case.dart';
 import '../../application/use_cases/request_deletion_use_case.dart';
+import '../i18n/i18n.dart';
 
 /// Final "Are you sure?" confirmation with a live grace countdown.
 ///
@@ -76,83 +77,79 @@ class _DeletionConfirmScreenState extends ConsumerState<DeletionConfirmScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(deletionStringsProvider);
     final grace = _graceUntil;
     final scheduled = grace != null;
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BalsmAppBar.withBack(
-              title: 'Confirm deletion',
+              title: m.confirm,
               onBack: () => context.pop(),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 24),
                 children: [
                   const Icon(
                     Icons.warning_amber_rounded,
                     size: 48,
-                    color: BalsmColors.danger,
+                    color: AppColors.danger,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    scheduled ? 'Deletion scheduled' : 'Are you sure?',
+                    scheduled ? m.scheduledTitle : m.areYouSure,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: FontSizes.headline,
                       fontWeight: FontWeight.w700,
-                      color: BalsmColors.fg1,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    scheduled
-                        ? 'You can still cancel until the grace period ends.'
-                        : 'This schedules your account for permanent deletion. '
-                            'You can cancel any time before the grace period '
-                            'ends.',
+                    scheduled ? m.scheduledBody : m.confirmBody,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14,
-                      color: BalsmColors.fg3,
+                      fontSize: FontSizes.description,
+                      color: AppColors.textTertiary,
                     ),
                   ),
                   if (grace != null) ...[
                     const SizedBox(height: 24),
                     _GraceCountdownCard(graceUntil: grace),
                   ],
-                  if (_error != null) ...[
+                  if (_error case final error?) ...[
                     const SizedBox(height: 20),
-                    BalsmErrorBanner(message: _error!),
+                    BalsmErrorBanner(message: error),
                   ],
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
               child: scheduled
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         BalsmButton(
-                          label: 'Cancel deletion',
-                          variant: BalsmButtonVariant.primary,
+                          label: m.publicCancelAction,
                           loading: _submitting,
                           onPressed: _submitting ? null : _cancel,
                         ),
                         const SizedBox(height: 10),
                         BalsmButton(
-                          label: 'Done',
+                          label: coreMessagesOf(context).common.done,
                           variant: BalsmButtonVariant.secondary,
                           onPressed: () => context.go('/'),
                         ),
                       ],
                     )
                   : BalsmButton(
-                      label: 'Yes, delete my account',
+                      label: m.confirmAction,
                       variant: BalsmButtonVariant.danger,
                       loading: _submitting,
                       onPressed: _submitting ? null : _confirm,
@@ -165,54 +162,55 @@ class _DeletionConfirmScreenState extends ConsumerState<DeletionConfirmScreen> {
   }
 }
 
-class _GraceCountdownCard extends StatelessWidget {
+class _GraceCountdownCard extends ConsumerWidget {
   const _GraceCountdownCard({required this.graceUntil});
 
   final DateTime graceUntil;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(deletionStringsProvider);
     final remaining = graceUntil.difference(DateTime.now().toUtc());
     final formatted = DateFormat.yMMMMd().add_jm().format(graceUntil.toLocal());
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: BalsmColors.dangerBg,
-        borderRadius: BorderRadius.circular(BalsmRadius.lg),
-        border: Border.all(color: BalsmColors.danger.withAlpha(60)),
+        color: AppColors.dangerBackground,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.danger.withAlpha(60)),
       ),
       child: Column(
         children: [
-          const Text(
-            'Deletion scheduled for',
-            style: TextStyle(fontSize: 13, color: BalsmColors.fg2),
+          Text(
+            m.scheduledFor,
+            style: const TextStyle(fontSize: FontSizes.bodySm, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 4),
           Text(
             formatted,
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: FontSizes.body,
               fontWeight: FontWeight.w700,
-              color: BalsmColors.danger,
+              color: AppColors.danger,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            _formatRemaining(remaining),
-            style: const TextStyle(fontSize: 13, color: BalsmColors.fg3),
+            _formatRemaining(m, remaining),
+            style: const TextStyle(fontSize: FontSizes.bodySm, color: AppColors.textTertiary),
           ),
         ],
       ),
     );
   }
 
-  String _formatRemaining(Duration d) {
-    if (d.isNegative) return 'Grace period has ended';
+  String _formatRemaining(Messages m, Duration d) {
+    if (d.isNegative) return m.graceEnded;
     final days = d.inDays;
     final hours = d.inHours % 24;
     final minutes = d.inMinutes % 60;
     final seconds = d.inSeconds % 60;
-    if (days > 0) return '$days days, $hours hours remaining';
-    return '${hours}h ${minutes}m ${seconds}s remaining';
+    if (days > 0) return m.remainingDays(days, hours);
+    return m.remainingTime(hours, minutes, seconds);
   }
 }

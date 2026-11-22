@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:family_link/family_link.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// stale. The first read pulls by itself; later ones ask for a fresh pull.
 void pullFamilyLinks(WidgetRef ref) {
   if (ref.exists(familyLinksProvider)) {
-    ref.read(familyLinksProvider.notifier).refresh();
+    unawaited(ref.read(familyLinksProvider.notifier).refresh());
   } else {
     ref.read(familyLinksProvider);
   }

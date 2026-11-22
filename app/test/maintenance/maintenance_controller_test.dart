@@ -19,15 +19,22 @@ class _FlagsOff implements FeatureFlagSource {
 /// The clock the controller reads for a window's first-seen start.
 var _clock = DateTime.utc(2025, 1, 1, 0, 30);
 
-ProviderContainer _container(FakeMaintenanceApi api,
-    {FeatureFlags? flags, Duration poll = const Duration(hours: 1), FakeManifestMaintenanceSource? manifest}) {
-  final c = ProviderContainer(overrides: [
-    maintenanceClockProvider.overrideWithValue(() => _clock),
-    maintenanceApiProvider.overrideWithValue(api),
-    maintenanceNoticeSourceProvider.overrideWithValue(manifest ?? FakeManifestMaintenanceSource()),
-    featureFlagsProvider.overrideWithValue(flags ?? FeatureFlags(flags: [AppFlags.maintenance])),
-    maintenancePollIntervalProvider.overrideWithValue(poll),
-  ]);
+ProviderContainer _container(
+  FakeMaintenanceApi api, {
+  FeatureFlags? flags,
+  Duration poll = const Duration(hours: 1),
+  FakeManifestMaintenanceSource? manifest,
+}) {
+  final c = ProviderContainer(
+    retry: noProviderRetry,
+    overrides: [
+      maintenanceClockProvider.overrideWithValue(() => _clock),
+      maintenanceApiProvider.overrideWithValue(api),
+      maintenanceNoticeSourceProvider.overrideWithValue(manifest ?? FakeManifestMaintenanceSource()),
+      featureFlagsProvider.overrideWithValue(flags ?? FeatureFlags(flags: [AppFlags.maintenance])),
+      maintenancePollIntervalProvider.overrideWithValue(poll),
+    ],
+  );
   addTearDown(c.dispose);
   return c;
 }
@@ -46,23 +53,30 @@ void main() {
     expect(
       c.read(maintenanceProvider),
       MaintenanceStatus(
-          mode: MaintenanceMode.readonly, message: 'Back soon', startsAt: _clock, endsAt: DateTime.utc(2025, 1, 1, 2)),
+        mode: MaintenanceMode.readonly,
+        message: 'Back soon',
+        startsAt: _clock,
+        endsAt: DateTime.utc(2025, 1, 1, 2),
+      ),
     );
   });
 
   group('start of the window', () {
-    test('the API\'s updated_at, when the API answer wins', () async {
-      final c = _container(FakeMaintenanceApi(mode: 'readonly', updatedAt: DateTime.utc(2025, 1, 1)));
+    test("the API's updated_at, when the API answer wins", () async {
+      final c = _container(FakeMaintenanceApi(mode: 'readonly', updatedAt: DateTime.utc(2025)));
 
       await c.read(maintenanceProvider.notifier).check();
 
-      expect(c.read(maintenanceProvider).startsAt, DateTime.utc(2025, 1, 1));
+      expect(c.read(maintenanceProvider).startsAt, DateTime.utc(2025));
     });
 
-    test('the manifest\'s starts_at, when the manifest wins', () async {
-      final c = _container(FakeMaintenanceApi(mode: 'readonly', updatedAt: DateTime.utc(2025, 1, 1)),
-          manifest: FakeManifestMaintenanceSource(
-              notice: MaintenanceNotice(mode: 'block', startsAt: DateTime.utc(2024, 12, 31, 23))));
+    test("the manifest's starts_at, when the manifest wins", () async {
+      final c = _container(
+        FakeMaintenanceApi(mode: 'readonly', updatedAt: DateTime.utc(2025)),
+        manifest: FakeManifestMaintenanceSource(
+          notice: MaintenanceNotice(mode: 'block', startsAt: DateTime.utc(2024, 12, 31, 23)),
+        ),
+      );
 
       await c.read(maintenanceProvider.notifier).check();
 
@@ -112,7 +126,7 @@ void main() {
       ro.blocks,
       block.pausesActions,
       block.blocks,
-      off.pausesActions
+      off.pausesActions,
     ], [
       true,
       false,
@@ -145,9 +159,7 @@ void main() {
     final api = FakeMaintenanceApi(mode: 'block');
     final flags = FeatureFlags(flags: [AppFlags.maintenance], sources: [_FlagsOff()]);
     await flags.refresh();
-    final c = _container(api, flags: flags);
-
-    c.read(maintenanceProvider);
+    final c = _container(api, flags: flags)..read(maintenanceProvider);
     await c.read(maintenanceProvider.notifier).check();
 
     expect((c.read(maintenanceProvider).mode, api.calls), (MaintenanceMode.off, 0));
@@ -155,8 +167,7 @@ void main() {
 
   test('concurrent checks share one request', () async {
     final api = FakeMaintenanceApi();
-    final c = _container(api);
-    c.read(maintenanceProvider);
+    final c = _container(api)..read(maintenanceProvider);
     await Future<void>.delayed(Duration.zero);
     final before = api.calls;
 
@@ -167,8 +178,7 @@ void main() {
 
   test('polls on the interval while listened to', () async {
     final api = FakeMaintenanceApi();
-    final c = _container(api, poll: const Duration(milliseconds: 10));
-    c.listen(maintenanceProvider, (_, __) {});
+    _container(api, poll: const Duration(milliseconds: 10)).listen(maintenanceProvider, (_, __) {});
 
     await Future<void>.delayed(const Duration(milliseconds: 55));
 
@@ -179,7 +189,8 @@ void main() {
     test('a block in the manifest blocks even when the API is unreachable', () async {
       final api = FakeMaintenanceApi()..failWith = const ApiException(code: 'network_error', isOffline: true);
       final manifest = FakeManifestMaintenanceSource(
-          notice: MaintenanceNotice(mode: 'block', message: 'Moving servers', endsAt: DateTime.utc(2025, 1, 1, 2)));
+        notice: MaintenanceNotice(mode: 'block', message: 'Moving servers', endsAt: DateTime.utc(2025, 1, 1, 2)),
+      );
       final c = _container(api, manifest: manifest);
 
       await c.read(maintenanceProvider.notifier).check();
@@ -187,17 +198,20 @@ void main() {
       expect(
         c.read(maintenanceProvider),
         MaintenanceStatus(
-            mode: MaintenanceMode.block,
-            message: 'Moving servers',
-            startsAt: _clock,
-            endsAt: DateTime.utc(2025, 1, 1, 2)),
+          mode: MaintenanceMode.block,
+          message: 'Moving servers',
+          startsAt: _clock,
+          endsAt: DateTime.utc(2025, 1, 1, 2),
+        ),
       );
       expect(manifest.calls, greaterThan(0));
     });
 
     test('the stricter answer wins: a self-hosted server in read-only beats a manifest saying off', () async {
-      final c = _container(FakeMaintenanceApi(mode: 'readonly', message: 'Local upgrade'),
-          manifest: FakeManifestMaintenanceSource(notice: MaintenanceNotice.off));
+      final c = _container(
+        FakeMaintenanceApi(mode: 'readonly', message: 'Local upgrade'),
+        manifest: FakeManifestMaintenanceSource(notice: MaintenanceNotice.off),
+      );
 
       await c.read(maintenanceProvider.notifier).check();
 
@@ -206,8 +220,10 @@ void main() {
     });
 
     test('on a tie the manifest message is shown', () async {
-      final c = _container(FakeMaintenanceApi(mode: 'block', message: 'server'),
-          manifest: FakeManifestMaintenanceSource(notice: const MaintenanceNotice(mode: 'block', message: 'manifest')));
+      final c = _container(
+        FakeMaintenanceApi(mode: 'block', message: 'server'),
+        manifest: FakeManifestMaintenanceSource(notice: const MaintenanceNotice(mode: 'block', message: 'manifest')),
+      );
 
       await c.read(maintenanceProvider.notifier).check();
 
@@ -215,8 +231,10 @@ void main() {
     });
 
     test('neither source answering pauses nothing', () async {
-      final c = _container(FakeMaintenanceApi()..failWith = const ApiException(code: 'network_error', isOffline: true),
-          manifest: FakeManifestMaintenanceSource());
+      final c = _container(
+        FakeMaintenanceApi()..failWith = const ApiException(code: 'network_error', isOffline: true),
+        manifest: FakeManifestMaintenanceSource(),
+      );
 
       await c.read(maintenanceProvider.notifier).check();
 
@@ -228,9 +246,7 @@ void main() {
       final manifest = FakeManifestMaintenanceSource(notice: const MaintenanceNotice(mode: 'block'));
       final flags = FeatureFlags(flags: [AppFlags.maintenance], sources: [_FlagsOff()]);
       await flags.refresh();
-      final c = _container(FakeMaintenanceApi(), flags: flags, manifest: manifest);
-
-      c.read(maintenanceProvider);
+      final c = _container(FakeMaintenanceApi(), flags: flags, manifest: manifest)..read(maintenanceProvider);
       await c.read(maintenanceProvider.notifier).check();
 
       expect((c.read(maintenanceProvider).mode, manifest.calls), (MaintenanceMode.off, 0));

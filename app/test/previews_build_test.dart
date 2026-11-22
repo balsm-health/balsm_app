@@ -1,8 +1,8 @@
 import 'package:app/balsm_app/previews/kit_previews.dart' as kit;
 import 'package:app/balsm_app/previews/preview_harness.dart';
 import 'package:app/balsm_app/previews/widget_previews.dart' as w;
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Every `@Preview` function must actually build.
 ///

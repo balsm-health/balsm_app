@@ -31,7 +31,7 @@ final disclosureRoutes = <RouteBase>[
     path: '/disclosure/onboarding',
     name: 'disclosure.onboarding',
     builder: (context, state) {
-      final args = state.extra is DisclosureRouteArgs ? state.extra as DisclosureRouteArgs : null;
+      final args = state.extra is DisclosureRouteArgs ? state.extra! as DisclosureRouteArgs : null;
       final query = state.uri.queryParameters;
 
       return ConsolidatedDisclosureScreen(

@@ -11,7 +11,7 @@ import 'package:dio/dio.dart';
 /// to false is also the safe direction: a new type misread as offline would
 /// serve stale data, while one misread as a server error only means an error
 /// is shown.
-const _offlineTypes = {
+const Set<DioExceptionType> _offlineTypes = {
   DioExceptionType.connectionError,
   DioExceptionType.connectionTimeout,
   DioExceptionType.sendTimeout,

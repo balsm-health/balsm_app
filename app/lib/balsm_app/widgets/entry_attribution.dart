@@ -7,7 +7,6 @@ import 'package:profile/profile.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../screens/care_team_screen.dart';
-import '../tokens.dart';
 
 /// "Done by someone else" (design: `mother-child.jsx` `MCBy`, `MCByHistory`).
 ///
@@ -41,7 +40,7 @@ String? attributedName(WidgetRef ref, PatientAppState s, EntryHistory history) {
 List<CareProvider> _teamFor(WidgetRef ref, EntryHistory history) {
   final needed = history.events.any((e) => e.actor.displayName == null && e.actor.careProviderId != null);
   if (!needed) return const [];
-  return ref.watch(careTeamProvider).valueOrNull ?? const [];
+  return ref.watch(careTeamProvider).value ?? const [];
 }
 
 String _date(DateTime at, PatientAppState s, {required bool long}) {
@@ -54,7 +53,7 @@ String _date(DateTime at, PatientAppState s, {required bool long}) {
 /// `.mc-by` — the small pill under a record, medication or reading that
 /// someone else added, edited or shared. Draws nothing for the patient's own.
 class EntryAttributionChip extends ConsumerWidget {
-  const EntryAttributionChip({super.key, required this.history});
+  const EntryAttributionChip({required this.history, super.key});
 
   final EntryHistory history;
 
@@ -82,19 +81,23 @@ class EntryAttributionChip extends ConsumerWidget {
         child: Container(
           constraints: const BoxConstraints(minHeight: 24),
           padding: const EdgeInsetsDirectional.fromSTEB(6, 2, 8, 2),
-          decoration: BoxDecoration(color: T.hueBlue50, borderRadius: BorderRadius.circular(T.rPill)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 13, color: T.hueBlue),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.hueBlue, height: 1.3),
+          decoration: BoxDecoration(color: AppColors.hueBlue50, borderRadius: BorderRadius.circular(AppRadii.pill)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: AppColors.hueBlue),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.hueBlue, height: 1.3),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
@@ -110,7 +113,7 @@ Future<void> showEntryHistorySheet(BuildContext context, EntryHistory history) {
 /// `MCByHistory` — every event newest first, with role and date, and the
 /// promise that the history can't be changed.
 class EntryHistorySheet extends ConsumerWidget {
-  const EntryHistorySheet({super.key, required this.history});
+  const EntryHistorySheet({required this.history, super.key});
 
   final EntryHistory history;
 
@@ -144,51 +147,68 @@ class EntryHistorySheet extends ConsumerWidget {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 8, 0),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(a.history_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(a.history_sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-              ]),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 8, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(a.history_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(a.history_sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                    ],
+                  ),
+                ),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 18,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
             ),
-            RoundBtn(
-              icon: LucideIcons.x,
-              semanticLabel: s.strings.common.a11y_close,
-              ghost: true,
-              iconSize: 18,
-              onTap: () => Navigator.pop(context),
-            ),
-          ]),
-        ),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, sheetBottomInset(context, base: 24)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              ...events.indexed.map((e) => _HistoryLine(
-                    event: e.$2,
-                    verb: verb(e.$2),
-                    meta: meta(e.$2),
-                    last: e.$1 == events.length - 1,
-                  )),
-              const SizedBox(height: 4),
-              Row(children: [
-                const Icon(LucideIcons.lock, size: 13, color: T.fg3),
-                const SizedBox(width: 6),
-                Expanded(child: Text(a.locked, style: Typo.meta(ar: s.rtl))),
-              ]),
-            ]),
           ),
-        ),
-      ]),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 16, 20, sheetBottomInset(context, base: 24)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...events.indexed.map(
+                    (e) => _HistoryLine(
+                      event: e.$2,
+                      verb: verb(e.$2),
+                      meta: meta(e.$2),
+                      last: e.$1 == events.length - 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.lock, size: 13, color: AppColors.textTertiary),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(a.locked, style: Typo.meta(ar: s.rtl))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -217,36 +237,47 @@ class _HistoryLine extends StatelessWidget {
     final s = AppScope.of(context);
     final self = event.actor.isSelf;
     return IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Column(children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: self ? s.accent.bg : T.hueBlue50, shape: BoxShape.circle),
-            child: Icon(_icon(event), size: 16, color: self ? s.accent.d : T.hueBlue),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: self ? s.accent.bg : AppColors.hueBlue50, shape: BoxShape.circle),
+                child: Icon(_icon(event), size: 16, color: self ? s.accent.d : AppColors.hueBlue),
+              ),
+              if (!last)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    constraints: const BoxConstraints(minHeight: 14),
+                    margin: const EdgeInsetsDirectional.symmetric(vertical: 4),
+                    color: AppColors.ink100,
+                  ),
+                ),
+            ],
           ),
-          if (!last)
-            Expanded(
-              child: Container(
-                width: 2,
-                constraints: const BoxConstraints(minHeight: 14),
-                margin: const EdgeInsetsDirectional.symmetric(vertical: 4),
-                color: T.ink100,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    verb,
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  ),
+                  Text(meta, style: Typo.meta(ar: s.rtl)),
+                ],
               ),
             ),
-        ]),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsetsDirectional.only(bottom: 14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(verb, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              Text(meta, style: Typo.meta(ar: s.rtl)),
-            ]),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

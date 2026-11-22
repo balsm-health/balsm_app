@@ -1,9 +1,9 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/widgets/med_plan_form.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
 
 /// What the Add medication / Add prescription form turns into. The Meds tab's
@@ -22,7 +22,7 @@ void main() {
 
   List<String> today(Medication m) => [for (final at in dosesOn(m, now)) '${at.hour}:${at.minute}'];
 
-  test('starts at midnight, so this morning\'s dose is still listed', () {
+  test("starts at midnight, so this morning's dose is still listed", () {
     final m = draft('once').toMedication(user, now: now);
     expect(m.startDate, DateTime(2026, 10, 5));
     expect(today(m), ['8:0']);
@@ -39,8 +39,9 @@ void main() {
     final d = draft('per_day', n: '3');
     expect(d.timing, MedTiming.times);
     expect(d.times, ['08:00', '14:00', '20:00']);
-    d.times = ['07:00', '14:00', '21:00'];
-    d.syncTimes(); // same count — the patient's edit survives
+    d
+      ..times = ['07:00', '14:00', '21:00']
+      ..syncTimes(); // same count — the patient's edit survives
     final m = d.toMedication(user, now: now);
     expect(m.scheduleType, ScheduleType.daily);
     expect(today(m), ['7:0', '14:0', '21:0']);
@@ -70,14 +71,14 @@ void main() {
   });
 
   test('every 2 days → today, then every other day', () {
-    final m = draft('every_x', n: '2', unit: 'days').toMedication(user, now: now);
+    final m = draft('every_x', unit: 'days').toMedication(user, now: now);
     expect(m.scheduleType, ScheduleType.everyDays);
     expect(today(m), ['8:0']);
     expect(dosesOn(m, DateTime(2026, 10, 6)), isEmpty);
     expect(dosesOn(m, DateTime(2026, 10, 7)), hasLength(1));
   });
 
-  test('other → daily, keeping the patient\'s words', () {
+  test("other → daily, keeping the patient's words", () {
     final d = draft('other')..freqOther.text = 'when needed';
     final m = d.toMedication(user, now: now);
     expect(m.scheduleType, ScheduleType.daily);
@@ -119,7 +120,7 @@ void main() {
           doseAmount: '500 mg',
           scheduleType: type,
           scheduleConfig: cfg,
-          startDate: DateTime(2026, 9, 1),
+          startDate: DateTime(2026, 9),
           endDate: end,
           isControlled: true,
           notes: 'with food',
@@ -147,8 +148,11 @@ void main() {
       expect((days.freqType, days.freqUnit, days.freqN.text), ('every_x', 'days', '2'));
       final other = of(ScheduleType.daily, const ScheduleConfig(times: ['08:00'], frequencyNote: 'when needed'));
       expect((other.freqType, other.freqOther.text), ('other', 'when needed'));
-      final period = of(ScheduleType.daily, const ScheduleConfig(times: ['08:00'], durationKind: DurationKind.period),
-          end: DateTime(2026, 9, 8));
+      final period = of(
+        ScheduleType.daily,
+        const ScheduleConfig(times: ['08:00'], durationKind: DurationKind.period),
+        end: DateTime(2026, 9, 8),
+      );
       expect((period.durType, period.durN.text, period.durUnit), ('period', '7', 'days'));
     });
 
@@ -166,11 +170,11 @@ void main() {
 
     test('an untouched schedule is kept as stored, even one the form cannot express', () {
       final med =
-          stored(ScheduleType.weekly, const ScheduleConfig(times: ['10:00'], days: [1]), end: DateTime(2026, 12, 1));
+          stored(ScheduleType.weekly, const ScheduleConfig(times: ['10:00'], days: [1]), end: DateTime(2026, 12));
       final m = (MedPlanDraft.fromMedication(med)..name.text = 'Placebex').toMedication(user, now: now);
       expect(m.scheduleType, ScheduleType.weekly);
       expect(m.scheduleConfig.days, [1]);
-      expect(m.endDate, DateTime(2026, 12, 1));
+      expect(m.endDate, DateTime(2026, 12));
     });
 
     test('a changed schedule is rebuilt from the form', () {
@@ -194,28 +198,30 @@ void main() {
     final state = PatientAppState();
     final d = MedPlanDraft();
     addTearDown(d.dispose);
-    await tester.pumpWidget(AppScope(
-      state: state,
-      child: MaterialApp(
-        home: Builder(
-          builder: (context) => Scaffold(
-            body: Center(
-              child: TextButton(
-                onPressed: () => showAppSheet<void>(
-                  context,
-                  builder: (_) => StatefulBuilder(
-                    builder: (_, setState) => SingleChildScrollView(
-                      child: MedPlanCard(draft: d, onChanged: () => setState(() {})),
+    await tester.pumpWidget(
+      AppScope(
+        state: state,
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () => showAppSheet<void>(
+                    context,
+                    builder: (_) => StatefulBuilder(
+                      builder: (_, setState) => SingleChildScrollView(
+                        child: MedPlanCard(draft: d, onChanged: () => setState(() {})),
+                      ),
                     ),
                   ),
+                  child: const Text('open'),
                 ),
-                child: const Text('open'),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     final m = state.strings.meds;

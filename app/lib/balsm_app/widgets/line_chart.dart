@@ -18,7 +18,7 @@ class ChartSeries {
 
 /// Minimal multi-series line chart (home.jsx LineChart). RTL mirrors the x-axis.
 class LineChartView extends StatelessWidget {
-  const LineChartView({super.key, required this.series, this.rtl = false, this.height = 96});
+  const LineChartView({required this.series, super.key, this.rtl = false, this.height = 96});
   final List<ChartSeries> series;
   final bool rtl;
   final double height;
@@ -57,7 +57,7 @@ class _LinePainter extends CustomPainter {
 
     // mid gridline
     final grid = Paint()
-      ..color = T.ink100
+      ..color = AppColors.ink100
       ..strokeWidth = 1;
     canvas.drawLine(Offset(0, size.height / 2), Offset(size.width, size.height / 2), grid);
 
@@ -80,7 +80,7 @@ class _LinePainter extends CustomPainter {
       canvas.drawPath(path, line);
 
       final dot = Paint()
-        ..color = Colors.white
+        ..color = AppColors.white
         ..style = PaintingStyle.fill;
       final dotStroke = Paint()
         ..color = s.color
@@ -90,8 +90,9 @@ class _LinePainter extends CustomPainter {
       for (var i = 0; i < s.data.length; i++) {
         final p = Offset(x(i), y(s.data[i]));
         final r = i == lastIdx ? 4.0 : 2.5;
-        canvas.drawCircle(p, r, dot);
-        canvas.drawCircle(p, r, dotStroke);
+        canvas
+          ..drawCircle(p, r, dot)
+          ..drawCircle(p, r, dotStroke);
       }
     }
   }

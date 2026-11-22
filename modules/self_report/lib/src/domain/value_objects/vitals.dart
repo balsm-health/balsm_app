@@ -18,6 +18,18 @@ class Vitals {
     this.glucoseRandom,
   });
 
+  factory Vitals.fromRow(Map<String, dynamic> row) => Vitals(
+        systolic: row['systolic'] as int?,
+        diastolic: row['diastolic'] as int?,
+        heartRate: row['heart_rate'] as int?,
+        temperature: (row['temperature'] as num?)?.toDouble(),
+        weightKg: (row['weight_kg'] as num?)?.toDouble(),
+        spo2: row['spo2'] as int?,
+        glucoseFasting: row['glucose_fasting'] as int?,
+        glucosePostMeal: row['glucose_post_meal'] as int?,
+        glucoseRandom: row['glucose_random'] as int?,
+      );
+
   static const empty = Vitals();
 
   final int? systolic;
@@ -103,16 +115,4 @@ class Vitals {
         'glucose_post_meal': glucosePostMeal,
         'glucose_random': glucoseRandom,
       };
-
-  factory Vitals.fromRow(Map<String, dynamic> row) => Vitals(
-        systolic: row['systolic'] as int?,
-        diastolic: row['diastolic'] as int?,
-        heartRate: row['heart_rate'] as int?,
-        temperature: (row['temperature'] as num?)?.toDouble(),
-        weightKg: (row['weight_kg'] as num?)?.toDouble(),
-        spo2: row['spo2'] as int?,
-        glucoseFasting: row['glucose_fasting'] as int?,
-        glucosePostMeal: row['glucose_post_meal'] as int?,
-        glucoseRandom: row['glucose_random'] as int?,
-      );
 }

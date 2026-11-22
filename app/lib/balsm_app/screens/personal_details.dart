@@ -1,44 +1,54 @@
 import 'dart:async';
 import 'dart:ui' as ui;
-import 'package:material_ui/material_ui.dart';
+
+import 'package:account/account.dart';
+import 'package:balsm_api/balsm_api.dart';
+import 'package:core/core.dart';
+import 'package:emergency_card/emergency_card.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:gal/gal.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'go_online_sheet.dart';
-import 'profile_subscreens.dart';
-import 'package:core/core.dart';
-import 'package:account/account.dart';
-import 'package:emergency_card/emergency_card.dart';
-import 'package:balsm_api/balsm_api.dart';
+import 'package:gal/gal.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../app_state.dart';
-import '../qr/qr_share_controller.dart';
 import '../kit.dart';
+import '../qr/qr_share_controller.dart';
 import '../responsive.dart';
-import '../tokens.dart';
 import '../shell.dart';
 import '../widgets/balsm_mark.dart';
 import '../widgets/phone_field.dart';
+import 'go_online_sheet.dart';
+import 'profile_screen.dart' show ProfileScreen;
+import 'profile_subscreens.dart';
+
+// An emoji flag glyph, sized to its row rather than to the text scale.
+const _flagEmojiSize = 20.0;
+// An emoji flag glyph in the country list, sized to its row.
+const _flagEmojiSizeLarge = 22.0;
 
 /// Opens the account/identity editor (home.jsx AccountDetailsScreen).
 void openPersonalDetails(BuildContext context) {
   final s = AppScope.of(context);
-  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-    builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: PersonalDetailsScreen(s: s))),
-  ));
+  Navigator.of(context, rootNavigator: true).push(
+    MaterialPageRoute<void>(
+      builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: PersonalDetailsScreen(s: s))),
+    ),
+  );
 }
 
 /// Reads the current user's emergency contacts from the on-device HealthProfile
 /// (SQLCipher PHI). Re-runs on sign-in/out; empty when signed out. Adding a
 /// contact via AddEmergencyContactUseCase invalidates this provider.
-final _emergencyContactsProvider = FutureProvider.autoDispose<List<EmergencyContact>>((ref) async {
+final FutureProvider<List<EmergencyContact>> _emergencyContactsProvider =
+    FutureProvider.autoDispose<List<EmergencyContact>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return const [];
   final profile = await ref.watch(profileDataSourceProvider).getProfile(userId);
@@ -49,7 +59,8 @@ final _emergencyContactsProvider = FutureProvider.autoDispose<List<EmergencyCont
 /// `emergencySnapshotReaderProvider` seam (the same PHI the mint use-case
 /// encrypts). Used only to gate the QR-share sheet's mint affordance: `null`
 /// when signed out or when there is no profile yet. Never leaves the device.
-final _emergencySnapshotProvider = FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
+final FutureProvider<EmergencyCardSnapshot?> _emergencySnapshotProvider =
+    FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
   return ref.watch(emergencySnapshotReaderProvider).readSnapshot();
@@ -66,7 +77,7 @@ enum ProfileGap { name, dateOfBirth, gender, bloodType }
 /// complete; the card renders the set so the user knows exactly what's left.
 /// Loading/offline/signed-out resolve to empty so the card never nags on a
 /// guess.
-final profileGapsProvider = FutureProvider.autoDispose<Set<ProfileGap>>((ref) async {
+final FutureProvider<Set<ProfileGap>> profileGapsProvider = FutureProvider.autoDispose<Set<ProfileGap>>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return const {};
   final details = await ref.watch(accountProfileUseCaseProvider).load();
@@ -82,7 +93,7 @@ final profileGapsProvider = FutureProvider.autoDispose<Set<ProfileGap>>((ref) as
   };
 });
 
-final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async {
+final FutureProvider<ProfileDetails?> _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
   return ref.watch(accountProfileUseCaseProvider).load();
@@ -94,7 +105,7 @@ final _profileProvider = FutureProvider.autoDispose<ProfileDetails?>((ref) async
 const _showConnectedAccounts = false;
 
 class PersonalDetailsScreen extends ConsumerStatefulWidget {
-  const PersonalDetailsScreen({super.key, required this.s});
+  const PersonalDetailsScreen({required this.s, super.key});
   final PatientAppState s;
   @override
   ConsumerState<PersonalDetailsScreen> createState() => _PersonalDetailsScreenState();
@@ -146,7 +157,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           '${_dob!.day.toString().padLeft(2, '0')}';
 
   void _setHandle(String raw) {
-    final v = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_.]'), '');
+    final v = raw.toLowerCase().replaceAll(RegExp('[^a-z0-9_.]'), '');
     if (handle.text != v) {
       handle.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
     }
@@ -174,7 +185,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       final res = await ref.read(accountApiProvider).checkHandleAvailability(v);
       if (!mounted || handle.text != v) return; // stale response — ignore
       setState(() => unStatus = res.available ? UsernameStatus.available : UsernameStatus.taken);
-    } catch (_) {
+    } on Object catch (_) {
       // Network / server error — treat as "couldn't verify" (idle), never
       // block on a false-available. A genuinely-taken handle still fails at
       // claim time (409 → ConflictFailure).
@@ -247,18 +258,20 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
     // 1) Profile fields (display name, bio, gender, nationality, phone, DOB,
     //    national ID). Empty string clears a field; DOB is 18+ gated server-side.
-    final profileResult = await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
-          firstName: _firstCtrl.text.trim(),
-          lastName: _lastCtrl.text.trim(),
-          gender: _gender,
-          nationality: _nationality?.value,
-          phone: _phoneCtrl.text.trim(),
-          dateOfBirth: _fmtDob(),
-          nationalId: _nidCtrl.text.trim(),
-          // Kept on the device for a device-only account, which cannot claim
-          // one on the server; online, the claim below sets it.
-          handle: handle.text.trim(),
-        ));
+    final profileResult = await ref.read(accountProfileUseCaseProvider).update(
+          UpdateProfileInput(
+            firstName: _firstCtrl.text.trim(),
+            lastName: _lastCtrl.text.trim(),
+            gender: _gender,
+            nationality: _nationality?.value,
+            phone: _phoneCtrl.text.trim(),
+            dateOfBirth: _fmtDob(),
+            nationalId: _nidCtrl.text.trim(),
+            // Kept on the device for a device-only account, which cannot claim
+            // one on the server; online, the claim below sets it.
+            handle: handle.text.trim(),
+          ),
+        );
     if (!mounted) return;
     if (profileResult.isFailure) {
       setState(() => _saving = false);
@@ -286,9 +299,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     }
 
     await refreshAccountSummary(ref);
-    ref.invalidate(_profileProvider);
-    // Re-derive the completion card from the freshly saved fields.
-    ref.invalidate(profileGapsProvider);
+    ref
+      ..invalidate(_profileProvider)
+      // Re-derive the completion card from the freshly saved fields.
+      ..invalidate(profileGapsProvider);
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -306,7 +320,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) return;
     final name = emName.text.trim();
-    final contactPhone = normalizeArabicNumerals(emPhone.text).trim();
+    final contactPhone = toWesternDigits(emPhone.text).trim();
     if (name.isEmpty || contactPhone.isEmpty) return;
     final result = await ref.read(addEmergencyContactUseCaseProvider).execute(
           userId: userId,
@@ -328,39 +342,56 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   /// Read-only styled row for an existing emergency contact (prototype look).
   Widget _contactRow(EmergencyContact c) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
-        child: Row(children: [
-          Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Flexible(
-                  child: Text(c.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1))),
-              if (c.isPrimary) ...[
-                const SizedBox(width: 7),
-                Pill(s.strings.profile.pd_primary,
-                    kind: PillKind.info,
-                    dot: false,
-                    ar: s.rtl,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2)),
-              ],
-            ]),
-            const SizedBox(height: 3),
-            Builder(builder: (_) {
-              final rel = _relationLabel(c.relation);
-              return Text(
-                rel == null ? c.phone : '$rel · ${c.phone}',
-                textDirection: c.relation == null ? TextDirection.ltr : s.dir,
-                style: Typo.meta(ar: s.rtl),
-              );
-            }),
-          ])),
-        ]),
+        decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.md)),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          c.name,
+                          style:
+                              Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                      ),
+                      if (c.isPrimary) ...[
+                        const SizedBox(width: 7),
+                        Pill(
+                          s.strings.profile.pd_primary,
+                          kind: PillKind.info,
+                          dot: false,
+                          ar: s.rtl,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Builder(
+                    builder: (_) {
+                      final rel = _relationLabel(c.relation);
+                      return Text(
+                        rel == null ? c.phone : '$rel · ${c.phone}',
+                        textDirection: c.relation == null ? TextDirection.ltr : s.dir,
+                        style: Typo.meta(ar: s.rtl),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
 
   Color get _handleStatusColor => switch (unStatus) {
-        UsernameStatus.available => T.hueMint600,
-        UsernameStatus.taken || UsernameStatus.required => T.danger,
-        UsernameStatus.invalid => T.sun500,
+        UsernameStatus.available => AppColors.hueMint600,
+        UsernameStatus.taken || UsernameStatus.required => AppColors.danger,
+        UsernameStatus.invalid => AppColors.sun500,
         _ => s.accent.main,
       };
 
@@ -375,7 +406,7 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
 
   Widget? _handleSuffix() {
     if (unStatus == UsernameStatus.checking) {
-      return const Center(widthFactor: 1, child: Spinner(size: 16, stroke: 2, color: T.fg3));
+      return const Center(widthFactor: 1, child: Spinner(size: 16, stroke: 2, color: AppColors.textTertiary));
     }
     final ico = switch (unStatus) {
       UsernameStatus.available => LucideIcons.checkCircle2,
@@ -390,12 +421,12 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     // Real on-device emergency contacts (PHI). Empty while loading / signed out.
-    final contacts = ref.watch(_emergencyContactsProvider).valueOrNull ?? const <EmergencyContact>[];
+    final contacts = ref.watch(_emergencyContactsProvider).value ?? const <EmergencyContact>[];
     final atMaxContacts = contacts.length >= AddEmergencyContactUseCase.maxContacts;
 
     // Seed every editable field ONCE from the real /account/self on first load
     // (no prototype sample identity). Name comes back as split first/last.
-    final profile = ref.watch(_profileProvider).valueOrNull;
+    final profile = ref.watch(_profileProvider).value;
     if (!_loaded && profile != null) {
       _loaded = true;
       _origHandle = profile.handle ?? '';
@@ -417,254 +448,318 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(children: [
-        const PadTop(),
-        AppBarRow(
-          leading: RoundBtn(
-              icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: () => Navigator.pop(context)),
-          children: [
-            Expanded(
-                child: Text(s.strings.profile.p_personal, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-            if (saved) Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
-          ],
-        ),
-        Expanded(
+      backgroundColor: AppColors.white,
+      body: Column(
+        children: [
+          const PadTop(),
+          AppBarRow(
+            leading: RoundBtn(
+              icon: backArrow(context),
+              semanticLabel: s.strings.common.a11y_back,
+              onTap: () => Navigator.pop(context),
+            ),
+            children: [
+              Expanded(
+                child: Text(
+                  s.strings.profile.p_personal,
+                  style: Typo.heading(ar: s.rtl).copyWith(fontSize: FontSizes.heading),
+                ),
+              ),
+              if (saved) Pill(s.strings.profile.pd_saved, kind: PillKind.success, ar: s.rtl),
+            ],
+          ),
+          Expanded(
             child: ContentColumn(
-                maxWidth: 560,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                  children: [
-                    // Avatar (initials from the live name fields).
-                    Center(
-                        child: Column(children: [
-                      Avatar(
+              maxWidth: 560,
+              child: ListView(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 28),
+                children: [
+                  // Avatar (initials from the live name fields).
+                  Center(
+                    child: Column(
+                      children: [
+                        Avatar(
                           initials: _initials('${_firstCtrl.text} ${_lastCtrl.text}'.trim()),
-                          color: T.hueAqua,
+                          color: AppColors.hueAqua,
                           size: 72,
-                          fontSize: 26),
-                    ])),
-                    // Account (handle + QR share)
-                    _section(LucideIcons.atSign, s.strings.profile.pd_account),
-                    _card([
-                      _labeled(
-                          s.strings.auth.un_label,
-                          TextField(
-                            controller: handle,
-                            textDirection: TextDirection.ltr,
-                            onChanged: _setHandle,
-                            style: Typo.num(size: FS.lg),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              // `UsernameField` paints the "@" as an always-on glyph inside
-                              // the input. `prefixText` only appears once the field is focused
-                              // or non-empty, so an empty handle lost the affordance entirely;
-                              // prefixIcon renders unconditionally.
-                              prefixIcon: Padding(
-                                padding: const EdgeInsetsDirectional.only(start: 14, end: 2),
-                                child: Text('@', style: Typo.num(size: FS.lg, weight: FontWeight.w700, color: T.fg3)),
+                          fontSize: FontSizes.title,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Account (handle + QR share)
+                  _section(LucideIcons.atSign, s.strings.profile.pd_account),
+                  _Card([
+                    _labeled(
+                      s.strings.auth.un_label,
+                      TextField(
+                        controller: handle,
+                        textDirection: TextDirection.ltr,
+                        onChanged: _setHandle,
+                        style: Typo.num(size: FontSizes.subhead),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          // `UsernameField` paints the "@" as an always-on glyph inside
+                          // the input. `prefixText` only appears once the field is focused
+                          // or non-empty, so an empty handle lost the affordance entirely;
+                          // prefixIcon renders unconditionally.
+                          prefixIcon: Padding(
+                            padding: const EdgeInsetsDirectional.only(start: 14, end: 2),
+                            child: Text(
+                              '@',
+                              style: Typo.num(
+                                size: FontSizes.subhead,
+                                weight: FontWeight.w700,
+                                color: AppColors.textTertiary,
                               ),
-                              prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-                              // Status icon: spinner while checking, then check / x / alert.
-                              suffixIcon: _handleSuffix(),
-                              suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                              filled: true, fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                              // InputDecorator animates the border colour over ~200ms as the
-                              // handle validates (border tints mint / red / amber).
-                              enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(T.rMd),
-                                  borderSide: BorderSide(
-                                      color: unStatus == UsernameStatus.idle ? T.border : _handleStatusColor,
-                                      width: 1.5)),
-                              focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(T.rMd),
-                                  borderSide: BorderSide(
-                                      color: unStatus == UsernameStatus.idle ? s.accent.main : _handleStatusColor,
-                                      width: 1.5)),
                             ),
-                          )),
-                      // Validation message — slides in/out smoothly as status changes.
-                      AnimatedSize(
-                        duration: Motion.base,
-                        curve: Motion.easeOut,
-                        alignment: Alignment.topLeft,
-                        child: _handleMsg == null
-                            ? const SizedBox(width: double.infinity)
-                            : Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(_handleMsg!,
-                                    style: Typo.meta(ar: s.rtl)
-                                        .copyWith(fontWeight: FontWeight.w600, color: _handleStatusColor)),
-                              ),
+                          ),
+                          prefixIconConstraints: const BoxConstraints(),
+                          // Status icon: spinner while checking, then check / x / alert.
+                          suffixIcon: _handleSuffix(),
+                          suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                          filled: true, fillColor: AppColors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                          // InputDecorator animates the border colour over ~200ms as the
+                          // handle validates (border tints mint / red / amber).
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadii.md),
+                            borderSide: BorderSide(
+                              color: unStatus == UsernameStatus.idle ? AppColors.border : _handleStatusColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadii.md),
+                            borderSide: BorderSide(
+                              color: unStatus == UsernameStatus.idle ? s.accent.main : _handleStatusColor,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        const Icon(LucideIcons.info, size: 12, color: T.fg3),
+                    ),
+                    // Validation message — slides in/out smoothly as status changes.
+                    AnimatedSize(
+                      duration: Motion.base,
+                      curve: Motion.easeOut,
+                      alignment: AlignmentDirectional.topStart,
+                      child: switch (_handleMsg) {
+                        final handleMsg? => Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              handleMsg,
+                              style:
+                                  Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: _handleStatusColor),
+                            ),
+                          ),
+                        _ => const SizedBox(width: double.infinity)
+                      },
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.info, size: 12, color: AppColors.textTertiary),
                         const SizedBox(width: 5),
-                        Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
-                      ]),
-                    ]),
-                    // Connected accounts — visual match of home.jsx. Hidden behind
-                    // [_showConnectedAccounts] until Apple/Google sign-in is set up.
-                    if (_showConnectedAccounts) ...[
-                      _section(LucideIcons.link, s.strings.profile.conn_accounts),
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(T.rLg),
-                            border: Border.all(color: T.border),
-                            boxShadow: T.shadowSm),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(children: [
+                        Text(
+                          s.strings.profile.pd_handle_hint,
+                          style: Typo.num(size: FontSizes.meta, color: AppColors.textTertiary),
+                        ),
+                      ],
+                    ),
+                  ]),
+                  // Connected accounts — visual match of home.jsx. Hidden behind
+                  // [_showConnectedAccounts] until Apple/Google sign-in is set up.
+                  if (_showConnectedAccounts) ...[
+                    _section(LucideIcons.link, s.strings.profile.conn_accounts),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
+                        border: Border.all(color: AppColors.border),
+                        boxShadow: AppShadows.sm,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
                           _connectedRow(apple: true, label: s.strings.profile.conn_apple, last: false),
                           _connectedRow(apple: false, label: s.strings.profile.conn_google, last: true),
-                        ]),
+                        ],
                       ),
-                    ],
-                    // Basic info — name (→ display_name), date of birth (PHI, 18+),
-                    // gender. All persisted via PATCH /account/profile.
-                    _section(LucideIcons.user, s.strings.profile.pd_basic_info),
-                    _card([
-                      Row(children: [
+                    ),
+                  ],
+                  // Basic info — name (→ display_name), date of birth (PHI, 18+),
+                  // gender. All persisted via PATCH /account/profile.
+                  _section(LucideIcons.user, s.strings.profile.pd_basic_info),
+                  _Card([
+                    Row(
+                      children: [
                         Expanded(child: _field(s.strings.onboarding.pf_fname, _firstCtrl)),
                         const SizedBox(width: 12),
                         Expanded(child: _field(s.strings.onboarding.pf_lname, _lastCtrl)),
-                      ]),
-                      const SizedBox(height: 14),
-                      _labeled(s.strings.onboarding.pf_dob, _dobField()),
-                      const SizedBox(height: 14),
-                      _labeled(s.strings.onboarding.pf_gender, _genderSeg()),
-                    ]),
-                    // Contact — phone, national ID (PHI/PII, encrypted), nationality.
-                    _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
-                    _card([
-                      _phoneField(s.strings.profile.pd_phone, _phoneCtrl),
-                      const SizedBox(height: 14),
-                      _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
-                      const SizedBox(height: 14),
-                      _labeled(s.strings.profile.pd_nationality, _nationalityField()),
-                    ]),
-
-                    // Emergency contact (real on-device PHI; up to 3 contacts).
-                    _section(LucideIcons.phoneCall, s.strings.profile.pd_emergency),
-                    _card([
-                      for (var i = 0; i < contacts.length; i++) ...[
-                        _contactRow(contacts[i]),
-                        if (i < contacts.length - 1 || !atMaxContacts) const SizedBox(height: 12),
                       ],
-                      if (!atMaxContacts) ...[
-                        _field(s.strings.profile.pd_em_name, emName),
-                        const SizedBox(height: 14),
-                        // Stacked, not side by side: the phone field carries a
-                        // country-code picker and needs the full card width.
-                        _labeled(s.strings.profile.pd_em_rel, _relationField()),
-                        const SizedBox(height: 14),
-                        _phoneField(s.strings.profile.pd_em_phone, emPhone),
-                        const SizedBox(height: 14),
-                        PButton(s.strings.profile.pd_add_contact,
-                            icon: LucideIcons.plus,
-                            variant: BtnVariant.secondary,
-                            block: true,
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: _addEmergencyContact),
-                      ],
-                    ]),
-                    const SizedBox(height: 24),
-                    // Saves the profile (and claims a changed+available handle).
-                    // Disabled until loaded and while a handle is mid-check / bad.
-                    Opacity(
-                      opacity: _canSave && !_saving && _loaded ? 1 : 0.4,
-                      child: PButton(saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save,
-                          icon: saved ? LucideIcons.check : LucideIcons.save,
-                          variant: BtnVariant.primary,
-                          large: true,
-                          block: true,
-                          accent: s.accent,
-                          ar: s.rtl,
-                          onTap: _canSave && !_saving && _loaded ? _requestSave : null),
                     ),
-                  ],
-                ))),
-      ]),
+                    const SizedBox(height: 14),
+                    _labeled(s.strings.onboarding.pf_dob, _dobField()),
+                    const SizedBox(height: 14),
+                    _labeled(s.strings.onboarding.pf_gender, _genderSeg()),
+                  ]),
+                  // Contact — phone, national ID (PHI/PII, encrypted), nationality.
+                  _section(LucideIcons.phone, s.strings.profile.pd_contact_section),
+                  _Card([
+                    _phoneField(s.strings.profile.pd_phone, _phoneCtrl),
+                    const SizedBox(height: 14),
+                    _field(s.strings.profile.pd_nid, _nidCtrl, mono: true),
+                    const SizedBox(height: 14),
+                    _labeled(s.strings.profile.pd_nationality, _nationalityField()),
+                  ]),
+
+                  // Emergency contact (real on-device PHI; up to 3 contacts).
+                  _section(LucideIcons.phoneCall, s.strings.profile.pd_emergency),
+                  _Card([
+                    for (var i = 0; i < contacts.length; i++) ...[
+                      _contactRow(contacts[i]),
+                      if (i < contacts.length - 1 || !atMaxContacts) const SizedBox(height: 12),
+                    ],
+                    if (!atMaxContacts) ...[
+                      _field(s.strings.profile.pd_em_name, emName),
+                      const SizedBox(height: 14),
+                      // Stacked, not side by side: the phone field carries a
+                      // country-code picker and needs the full card width.
+                      _labeled(s.strings.profile.pd_em_rel, _relationField()),
+                      const SizedBox(height: 14),
+                      _phoneField(s.strings.profile.pd_em_phone, emPhone),
+                      const SizedBox(height: 14),
+                      PButton(
+                        s.strings.profile.pd_add_contact,
+                        icon: LucideIcons.plus,
+                        variant: BtnVariant.secondary,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _addEmergencyContact,
+                      ),
+                    ],
+                  ]),
+                  const SizedBox(height: 24),
+                  // Saves the profile (and claims a changed+available handle).
+                  // Disabled until loaded and while a handle is mid-check / bad.
+                  Opacity(
+                    opacity: _canSave && !_saving && _loaded ? 1 : 0.4,
+                    child: PButton(
+                      saved ? s.strings.profile.pd_saved : s.strings.profile.pd_save,
+                      icon: saved ? LucideIcons.check : LucideIcons.save,
+                      large: true,
+                      block: true,
+                      accent: s.accent,
+                      ar: s.rtl,
+                      onTap: _canSave && !_saving && _loaded ? _requestSave : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _connectedRow({required bool apple, required String label, required bool last}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink100))),
-      child: Row(children: [
-        Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: apple ? const Color(0xFF1A1A17) : Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: apple ? null : Border.all(color: T.ink100),
+      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: AppColors.ink100))),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: apple ? AppColors.nearBlack : AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: apple ? null : Border.all(color: AppColors.ink100),
+            ),
+            child: apple
+                ? const Icon(Icons.apple, size: 20, color: AppColors.white)
+                : SvgPicture.string(_kGoogleGSvg, width: 18, height: 18),
           ),
-          child: apple
-              ? const Icon(Icons.apple, size: 20, color: Colors.white)
-              : SvgPicture.string(_kGoogleGSvg, width: 18, height: 18),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(label, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-        ),
-        PButton(s.strings.profile.conn_connect,
-            variant: BtnVariant.soft, size: BtnSize.sm, accent: s.accent, ar: s.rtl, onTap: () {}),
-      ]),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+            ),
+          ),
+          PButton(
+            s.strings.profile.conn_connect,
+            variant: BtnVariant.soft,
+            size: BtnSize.sm,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: () {},
+          ),
+        ],
+      ),
     );
   }
 
   Widget _section(IconData icon, String title) => Padding(
-        padding: const EdgeInsets.fromLTRB(0, 18, 0, 10),
-        child: Row(children: [
-          Icon(icon, size: 16, color: s.accent.main),
-          const SizedBox(width: 8),
-          Text(title, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-        ]),
+        padding: const EdgeInsetsDirectional.fromSTEB(0, 18, 0, 10),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: s.accent.main),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
       );
 
-  Widget _card(List<Widget> children) => Container(
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(color: T.border),
-            boxShadow: T.shadowSm),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-      );
-
-  Widget _labeled(String label, Widget child) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label.toUpperCase(),
+  Widget _labeled(String label, Widget child) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
             style: Typo.meta(ar: s.rtl).copyWith(
-                fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: s.rtl ? 0 : FS.xs * 0.08, color: T.fg3)),
-        const SizedBox(height: 8),
-        child,
-      ]);
+              fontSize: FontSizes.meta,
+              fontWeight: FontWeight.w700,
+              letterSpacing: s.rtl ? 0 : FontSizes.meta * 0.08,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          child,
+        ],
+      );
 
   Widget _field(String label, TextEditingController c, {bool mono = false}) => _labeled(
-      label,
-      TextField(
-        controller: c,
-        textDirection: mono ? TextDirection.ltr : s.dir,
-        style: mono ? Typo.num(size: FS.lg) : Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, color: T.fg1),
-        decoration: InputDecoration(
-          isDense: true,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+        label,
+        TextField(
+          controller: c,
+          textDirection: mono ? TextDirection.ltr : s.dir,
+          style: mono
+              ? Typo.num(size: FontSizes.subhead)
+              : Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.subhead, color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderSide: BorderSide(color: s.accent.main, width: 1.5),
+            ),
+          ),
         ),
-      ));
+      );
 
   /// Phone entry with its country picker. Every number the patient gives us is
   /// captured this way — a bare text field left the country code to guesswork.
@@ -678,23 +773,28 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           height: 52,
           padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: T.border, width: 1.5),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
-          child: Row(children: [
-            Expanded(
-              child: Text(
-                _dob == null
-                    ? '—'
-                    : '${_dob!.day.toString().padLeft(2, '0')} / '
-                        '${_dob!.month.toString().padLeft(2, '0')} / ${_dob!.year}',
-                textDirection: TextDirection.ltr,
-                style: Typo.num(size: FS.lg, color: _dob == null ? T.fg4 : T.fg1),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _dob == null
+                      ? '—'
+                      : '${_dob!.day.toString().padLeft(2, '0')} / '
+                          '${_dob!.month.toString().padLeft(2, '0')} / ${_dob!.year}',
+                  textDirection: TextDirection.ltr,
+                  style: Typo.num(
+                    size: FontSizes.subhead,
+                    color: _dob == null ? AppColors.textHint : AppColors.textPrimary,
+                  ),
+                ),
               ),
-            ),
-            const Icon(LucideIcons.calendar, size: 18, color: T.fg4),
-          ]),
+              const Icon(LucideIcons.calendar, size: 18, color: AppColors.textHint),
+            ],
+          ),
         ),
       );
 
@@ -724,24 +824,32 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           height: 52,
           padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: T.border, width: 1.5),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
-          child: Row(children: [
-            if (_nationality != null) ...[
-              Text(_flagEmoji(_nationality!.value), style: const TextStyle(fontSize: 20)),
-              const SizedBox(width: 10),
-            ],
-            Expanded(
-              child: Text(
-                _nationality == null ? '—' : _nationality!.demonym(kCatalog, locale: s.lang.value),
-                style: Typo.body(ar: s.rtl).copyWith(
-                    fontSize: FS.lg, fontWeight: FontWeight.w600, color: _nationality == null ? T.fg4 : T.fg1),
+          child: Row(
+            children: [
+              if (_nationality case final nationality?) ...[
+                Text(_flagEmoji(nationality.value), style: const TextStyle(fontSize: _flagEmojiSize)),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(
+                  switch (_nationality) {
+                    final nationality? => nationality.demonym(kCatalog, locale: s.lang.value),
+                    _ => '—'
+                  },
+                  style: Typo.body(ar: s.rtl).copyWith(
+                    fontSize: FontSizes.subhead,
+                    fontWeight: FontWeight.w600,
+                    color: _nationality == null ? AppColors.textHint : AppColors.textPrimary,
+                  ),
+                ),
               ),
-            ),
-            const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4),
-          ]),
+              const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textHint),
+            ],
+          ),
         ),
       );
 
@@ -771,21 +879,29 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
           height: 52,
           padding: const EdgeInsetsDirectional.only(start: 14, end: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: T.border, width: 1.5),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
-          child: Row(children: [
-            Expanded(
-              child: Text(
-                _emRelation == null ? '—' : _emRelation!.label(kCatalog, locale: s.lang.value),
-                overflow: TextOverflow.ellipsis,
-                style: Typo.body(ar: s.rtl)
-                    .copyWith(fontSize: FS.lg, fontWeight: FontWeight.w600, color: _emRelation == null ? T.fg4 : T.fg1),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  switch (_emRelation) {
+                    final emRelation? => emRelation.label(kCatalog, locale: s.lang.value),
+                    _ => '—'
+                  },
+                  overflow: TextOverflow.ellipsis,
+                  style: Typo.body(ar: s.rtl).copyWith(
+                    fontSize: FontSizes.subhead,
+                    fontWeight: FontWeight.w600,
+                    color: _emRelation == null ? AppColors.textHint : AppColors.textPrimary,
+                  ),
+                ),
               ),
-            ),
-            const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4),
-          ]),
+              const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textHint),
+            ],
+          ),
         ),
       );
 
@@ -801,12 +917,21 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   Widget _genderSeg() => Container(
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-            color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
-        child: Row(children: [
-          _seg(s.strings.onboarding.pf_female, _gender == Gender.female, () => setState(() => _gender = Gender.female)),
-          const SizedBox(width: 6),
-          _seg(s.strings.onboarding.pf_male, _gender == Gender.male, () => setState(() => _gender = Gender.male)),
-        ]),
+          color: AppColors.ink50,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            _seg(
+              s.strings.onboarding.pf_female,
+              _gender == Gender.female,
+              () => setState(() => _gender = Gender.female),
+            ),
+            const SizedBox(width: 6),
+            _seg(s.strings.onboarding.pf_male, _gender == Gender.male, () => setState(() => _gender = Gender.male)),
+          ],
+        ),
       );
 
   Widget _seg(String label, bool active, VoidCallback onTap) => Expanded(
@@ -819,11 +944,17 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
             height: 42,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-                color: active ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(7),
-                boxShadow: active ? T.shadowXs : null),
-            child: Text(label,
-                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
+              color: active ? AppColors.white : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadii.segment),
+              boxShadow: active ? AppShadows.xs : null,
+            ),
+            child: Text(
+              label,
+              style: Typo.bodySm(ar: s.rtl).copyWith(
+                fontWeight: FontWeight.w600,
+                color: active ? AppColors.textPrimary : AppColors.textTertiary,
+              ),
+            ),
           ),
         ),
       );
@@ -884,69 +1015,85 @@ class _NationalitySheetState extends State<_NationalitySheet> {
         child: Container(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
           decoration: const BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          ),
           padding: const EdgeInsets.only(bottom: 24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const SizedBox(height: 10),
-            const SheetGrab(),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(s.strings.profile.pd_nationality,
-                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _search,
-                onChanged: (_) => setState(() {}),
-                textDirection: s.dir,
-                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.base),
-                decoration: InputDecoration(
-                  isDense: true,
-                  prefixIcon: const Icon(LucideIcons.search, size: 18, color: T.fg4),
-                  hintText: s.strings.profile.pd_nationality,
-                  filled: true,
-                  fillColor: T.ink50,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide.none),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              const SheetGrab(),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    s.strings.profile.pd_nationality,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: items.length,
-                itemBuilder: (_, i) {
-                  final c = items[i];
-                  return GestureDetector(
-                    onTap: () => Navigator.pop(context, c),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                      child: Row(children: [
-                        Text(_flagEmoji(c.value), style: const TextStyle(fontSize: 22)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: Text(c.demonym(kCatalog, locale: locale),
-                                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
-                        if (c == widget.current)
-                          Padding(
-                              padding: const EdgeInsetsDirectional.only(start: 8),
-                              child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
-                      ]),
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _search,
+                  onChanged: (_) => setState(() {}),
+                  textDirection: s.dir,
+                  style: Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.bodyLg),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppColors.textHint),
+                    hintText: s.strings.profile.pd_nationality,
+                    filled: true,
+                    fillColor: AppColors.ink50,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      borderSide: BorderSide.none,
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
-          ]),
+              const SizedBox(height: 8),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) {
+                    final c = items[i];
+                    return GestureDetector(
+                      onTap: () => Navigator.pop(context, c),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        child: Row(
+                          children: [
+                            Text(_flagEmoji(c.value), style: const TextStyle(fontSize: _flagEmojiSizeLarge)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                c.demonym(kCatalog, locale: locale),
+                                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            if (c == widget.current)
+                              Padding(
+                                padding: const EdgeInsetsDirectional.only(start: 8),
+                                child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -966,54 +1113,69 @@ class _RelationshipSheet extends StatelessWidget {
       textDirection: s.dir,
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
-        decoration:
-            const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+        ),
         padding: const EdgeInsets.only(bottom: 24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          const SheetGrab(),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(s.strings.profile.pd_em_rel,
-                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            const SheetGrab(),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  s.strings.profile.pd_em_rel,
+                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: Relationship.values
-                  .map((r) => GestureDetector(
+            const SizedBox(height: 8),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: Relationship.values
+                    .map(
+                      (r) => GestureDetector(
                         onTap: () => Navigator.pop(context, r),
                         behavior: HitTestBehavior.opaque,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                          child: Row(children: [
-                            Expanded(
-                                child: Text(r.label(kCatalog, locale: locale),
-                                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
-                            if (r == current)
-                              Padding(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  r.label(kCatalog, locale: locale),
+                                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              if (r == current)
+                                Padding(
                                   padding: const EdgeInsetsDirectional.only(start: 8),
-                                  child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main)),
-                          ]),
+                                  child: Icon(LucideIcons.checkCircle2, size: 18, color: s.accent.main),
+                                ),
+                            ],
+                          ),
                         ),
-                      ))
-                  .toList(),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
 }
 
 /// Emergency-card QR share (qrshare.jsx `QRShareSheet` look, real data): mints
-/// an AES-256-GCM-encrypted emergency token via [mintEmergencyQrTokenUseCase]
+/// an AES-256-GCM-encrypted emergency token via `mintEmergencyQrTokenUseCase`
 /// and renders a rounded-dot QR of `{BASE_URL}/emergency/{jti}#k={key}` with the
 /// Balsm flower in its center. The decryption key lives ONLY in the URL fragment
 /// (`#k=`) — it is embedded in the QR / clipboard locally and is NEVER sent to
@@ -1035,7 +1197,6 @@ Future<void> openQrShare(BuildContext context, {required PatientAppState s, requ
   if (!context.mounted) return;
   return showAppSheet<void>(
     context,
-    barrierColor: const Color(0x6B14202B),
     textDirection: s.dir,
     builder: (_) => _QrShareSheet(s: s, name: name),
   );
@@ -1109,7 +1270,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   void _copy() {
     final m = _mint;
     if (m == null) return;
-    Clipboard.setData(ClipboardData(text: m.qrUrl));
+    unawaited(Clipboard.setData(ClipboardData(text: m.qrUrl)));
     _showToast(s.strings.emergency.eqr_link_copied);
   }
 
@@ -1135,8 +1296,9 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.strings.common.cancel)),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(s.strings.emergency.eqr_rotate_yes, style: const TextStyle(color: T.danger))),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(s.strings.emergency.eqr_rotate_yes, style: const TextStyle(color: AppColors.danger)),
+          ),
         ],
       ),
     );
@@ -1160,8 +1322,8 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     final scans = result.fold((v) => v, (_) => null);
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl))),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -1169,8 +1331,10 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(s.strings.emergency.eqr_scan_history,
-                  style: Typo.title(ar: ar).copyWith(fontSize: FS.lg, fontWeight: FontWeight.w800)),
+              Text(
+                s.strings.emergency.eqr_scan_history,
+                style: Typo.title(ar: ar).copyWith(fontSize: FontSizes.subhead, fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 12),
               if (scans == null || scans.isEmpty)
                 Padding(
@@ -1187,11 +1351,17 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
                       return ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: Icon(e.client == 'app' ? LucideIcons.smartphone : LucideIcons.globe,
-                            size: 18, color: T.fg3),
+                        leading: Icon(
+                          e.client == 'app' ? LucideIcons.smartphone : LucideIcons.globe,
+                          size: 18,
+                          color: AppColors.textTertiary,
+                        ),
                         title: Text(_scanClientLabel(e), style: Typo.body(ar: ar)),
-                        subtitle: Text(e.resolvedAt.toLocal().toString().substring(0, 16),
-                            textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg3)),
+                        subtitle: Text(
+                          e.resolvedAt.toLocal().toString().substring(0, 16),
+                          textDirection: TextDirection.ltr,
+                          style: Typo.num(size: FontSizes.bodySm, color: AppColors.textTertiary),
+                        ),
                       );
                     },
                   ),
@@ -1211,7 +1381,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       if (bytes == null) return;
       if (kIsWeb) {
         // No photo library in a browser: hand the image over as a download.
-        await FilePicker.platform.saveFile(fileName: 'balsm-qr.png', bytes: bytes);
+        await FilePicker.saveFile(fileName: 'balsm-qr.png', bytes: bytes, mimeType: 'image/png');
       } else {
         await Gal.putImageBytes(bytes, name: 'balsm-qr');
       }
@@ -1230,9 +1400,11 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     try {
       final bytes = await _captureQrPng();
       if (bytes == null) return;
-      await SharePlus.instance.share(ShareParams(
-        files: [XFile.fromData(bytes, mimeType: 'image/png', name: 'balsm-qr.png')],
-      ));
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile.fromData(bytes, mimeType: 'image/png', name: 'balsm-qr.png')],
+        ),
+      );
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
@@ -1259,7 +1431,7 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
     // Subscribe: the bridge getters below read this provider's current state.
     ref.watch(qrShareControllerProvider);
     final snapAsync = ref.watch(_emergencySnapshotProvider);
-    final snapshot = snapAsync.valueOrNull;
+    final snapshot = snapAsync.value;
     final hasHealthData = snapshot != null && snapshot.hasAnyData;
     final canShare = userId != null;
     final loadingSnapshot = userId != null && snapAsync.isLoading;
@@ -1278,71 +1450,96 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.92),
-      decoration:
-          const BoxDecoration(color: T.cream50, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-      child: Stack(children: [
-        Column(mainAxisSize: MainAxisSize.min, children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-            child: Column(children: [
-              const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
+      decoration: const BoxDecoration(
+        color: AppColors.cream50,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+      ),
+      child: Stack(
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(children: [
-                  Expanded(
-                      child: Text(s.strings.emergency.eqr_title,
-                          style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
-                  RoundBtn(
-                      icon: LucideIcons.x,
-                      semanticLabel: s.strings.common.a11y_close,
-                      ghost: true,
-                      iconSize: 17,
-                      onTap: () => Navigator.pop(context)),
-                ]),
-              ),
-            ]),
-          ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 6, 20, 22 + MediaQuery.paddingOf(context).bottom),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 18),
-                  child: Text(desc, style: Typo.bodySm(ar: ar).copyWith(color: T.fg3, height: 1.5)),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
+                child: Column(
+                  children: [
+                    const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              s.strings.emergency.eqr_title,
+                              style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          RoundBtn(
+                            icon: LucideIcons.x,
+                            semanticLabel: s.strings.common.a11y_close,
+                            ghost: true,
+                            iconSize: 17,
+                            onTap: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                if (hasToken)
-                  ..._activeToken()
-                else if (loadingSnapshot)
-                  ..._loadingState()
-                else if (!canShare)
-                  ..._disabledState(signedOut: userId == null)
-                else
-                  ..._mintAffordance(),
-              ]),
-            ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsetsDirectional.fromSTEB(20, 6, 20, 22 + MediaQuery.paddingOf(context).bottom),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child:
+                            Text(desc, style: Typo.bodySm(ar: ar).copyWith(color: AppColors.textTertiary, height: 1.5)),
+                      ),
+                      if (hasToken)
+                        ..._activeToken()
+                      else if (loadingSnapshot)
+                        ..._loadingState()
+                      else if (!canShare)
+                        ..._disabledState(signedOut: userId == null)
+                      else
+                        ..._mintAffordance(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ]),
-        // In-sheet toast (matches the prototype's slide-up confirmation).
-        if (toast != null)
-          PositionedDirectional(
-            start: 20,
-            end: 20,
-            bottom: 24 + MediaQuery.paddingOf(context).bottom,
-            child: RiseIn(
+          // In-sheet toast (matches the prototype's slide-up confirmation).
+          if (toast case final toast?)
+            PositionedDirectional(
+              start: 20,
+              end: 20,
+              bottom: 24 + MediaQuery.paddingOf(context).bottom,
+              child: RiseIn(
                 child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(color: T.ink900, borderRadius: BorderRadius.circular(T.rLg)),
-              child: Row(children: [
-                const Icon(LucideIcons.checkCircle, size: 18, color: T.hueMint),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Text(toast!,
-                        style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: Colors.white))),
-              ]),
-            )),
-          ),
-      ]),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(color: AppColors.ink900, borderRadius: BorderRadius.circular(AppRadii.lg)),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.checkCircle, size: 18, color: AppColors.hueMint),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          toast,
+                          style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1350,71 +1547,91 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   /// greys it once the token has expired. Wrapped in a [RepaintBoundary] so
   /// share / save-to-gallery export exactly what is on screen.
   Widget _qrCard(String data, {bool dim = false}) => RepaintBoundary(
-      key: _qrCardKey,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(T.rXl),
-            border: Border.all(color: T.ink100),
-            boxShadow: T.shadowMd),
-        child: Column(children: [
-          Opacity(
-            opacity: dim ? 0.3 : 1,
-            child: SizedBox(
-              width: 240,
-              height: 240,
-              child: Stack(alignment: Alignment.center, children: [
-                QrImageView(
-                  data: data,
-                  version: QrVersions.auto,
-                  size: 240,
-                  padding: EdgeInsets.zero,
-                  backgroundColor: Colors.white,
-                  // High EC so the centered flower stays scannable.
-                  errorCorrectionLevel: QrErrorCorrectLevel.H,
-                  eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: T.ink900),
-                  dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: T.ink900),
-                ),
-                // Center flower mark with white halo (clears QR dots).
-                Container(
-                  width: 58,
-                  height: 58,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [BoxShadow(color: Colors.white, blurRadius: 0, spreadRadius: 5)]),
-                  child: const BalsmFlower(size: 42),
-                ),
-              ]),
-            ),
+        key: _qrCardKey,
+        child: Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(24, 26, 24, 22),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(color: AppColors.ink100),
+            boxShadow: AppShadows.md,
           ),
-          const SizedBox(height: 18),
-          ..._identity(),
-          const SizedBox(height: 8),
-          // Expiry chip. A token minted before the permanent option was
-          // withdrawn still reports `isPermanent`; it gets no chip rather than
-          // a badge telling the patient their health QR never expires.
-          if (_isPermanent)
-            const SizedBox.shrink()
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                  color: _isExpired ? T.dangerBg : s.accent.bg, borderRadius: BorderRadius.circular(T.rPill)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(_isExpired ? LucideIcons.timerOff : LucideIcons.timer,
-                    size: 15, color: _isExpired ? T.danger : s.accent.d),
-                const SizedBox(width: 6),
-                Text(
-                  _isExpired ? _countdownLabel : s.strings.emergency.eqr_expires_in(_countdownLabel),
-                  style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: _isExpired ? T.danger : s.accent.d),
+          child: Column(
+            children: [
+              Opacity(
+                opacity: dim ? 0.3 : 1,
+                child: SizedBox(
+                  width: 240,
+                  height: 240,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      QrImageView(
+                        data: data,
+                        size: 240,
+                        padding: EdgeInsets.zero,
+                        backgroundColor: AppColors.white,
+                        // High EC so the centered flower stays scannable.
+                        errorCorrectionLevel: QrErrorCorrectLevel.H,
+                        eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: AppColors.ink900),
+                        dataModuleStyle:
+                            const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: AppColors.ink900),
+                      ),
+                      // Center flower mark with white halo (clears QR dots).
+                      Container(
+                        width: 58,
+                        height: 58,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(AppRadii.lg),
+                          boxShadow: const [BoxShadow(color: AppColors.white, spreadRadius: 5)],
+                        ),
+                        child: const BalsmFlower(size: 42),
+                      ),
+                    ],
+                  ),
                 ),
-              ]),
-            ),
-        ]),
-      ));
+              ),
+              const SizedBox(height: 18),
+              ..._identity(),
+              const SizedBox(height: 8),
+              // Expiry chip. A token minted before the permanent option was
+              // withdrawn still reports `isPermanent`; it gets no chip rather than
+              // a badge telling the patient their health QR never expires.
+              if (_isPermanent)
+                const SizedBox.shrink()
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _isExpired ? AppColors.dangerBackground : s.accent.bg,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isExpired ? LucideIcons.timerOff : LucideIcons.timer,
+                        size: 15,
+                        color: _isExpired ? AppColors.danger : s.accent.d,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isExpired ? _countdownLabel : s.strings.emergency.eqr_expires_in(_countdownLabel),
+                        style: Typo.num(
+                          size: FontSizes.meta,
+                          weight: FontWeight.w700,
+                          color: _isExpired ? AppColors.danger : s.accent.d,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
 
   /// Active-token view: live QR, copyable link, Save/Share + Revoke.
   List<Widget> _activeToken() {
@@ -1427,23 +1644,33 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       Container(
         padding: const EdgeInsetsDirectional.only(start: 14, end: 6, top: 6, bottom: 6),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.ink100)),
-        child: Row(children: [
-          const Icon(LucideIcons.link, size: 16, color: T.fg3),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Text(m.qrUrl.split('#').first,
-                  textDirection: TextDirection.ltr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Typo.num(size: FS.sm, color: T.fg2))),
-          PButton(s.strings.emergency.eqr_copy,
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.ink100),
+        ),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.link, size: 16, color: AppColors.textTertiary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                m.qrUrl.split('#').first,
+                textDirection: TextDirection.ltr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.num(size: FontSizes.bodySm, color: AppColors.textSecondary),
+              ),
+            ),
+            PButton(
+              s.strings.emergency.eqr_copy,
               icon: LucideIcons.copy,
               variant: BtnVariant.ghost,
               accent: s.accent,
               ar: ar,
-              onTap: expired ? null : _copy),
-        ]),
+              onTap: expired ? null : _copy,
+            ),
+          ],
+        ),
       ),
       // `qrshare.jsx` adds a permanence note here ("this is your permanent code
       // — it doesn't expire"). Deliberately not ported: the token has no expiry
@@ -1453,50 +1680,80 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
       const SizedBox(height: 16),
       if (expired)
         // Token lapsed → offer a fresh mint (returns to the affordance).
-        PButton(s.strings.emergency.eqr_generate_new,
-            icon: LucideIcons.refreshCw,
-            variant: BtnVariant.primary,
-            large: true,
-            block: true,
-            accent: s.accent,
-            ar: ar, onTap: () {
-          ref.read(qrShareControllerProvider.notifier).clearExpired();
-        })
+        PButton(
+          s.strings.emergency.eqr_generate_new,
+          icon: LucideIcons.refreshCw,
+          large: true,
+          block: true,
+          accent: s.accent,
+          ar: ar,
+          onTap: () {
+            ref.read(qrShareControllerProvider.notifier).clearExpired();
+          },
+        )
       else ...[
-        Row(children: [
-          Expanded(
-              child: PButton(s.strings.emergency.eqr_save,
-                  icon: LucideIcons.download,
-                  variant: BtnVariant.secondary,
-                  large: true,
-                  block: true,
-                  ar: ar,
-                  onTap: _exporting ? null : _saveToGallery)),
-          const SizedBox(width: 10),
-          Expanded(
-              child: PButton(s.strings.emergency.eqr_share,
-                  icon: LucideIcons.share2,
-                  variant: BtnVariant.primary,
-                  large: true,
-                  block: true,
-                  accent: s.accent,
-                  ar: ar,
-                  onTap: _exporting ? null : _shareQr)),
-        ]),
+        Row(
+          children: [
+            Expanded(
+              child: PButton(
+                s.strings.emergency.eqr_save,
+                icon: LucideIcons.download,
+                variant: BtnVariant.secondary,
+                large: true,
+                block: true,
+                ar: ar,
+                onTap: _exporting ? null : _saveToGallery,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: PButton(
+                s.strings.emergency.eqr_share,
+                icon: LucideIcons.share2,
+                large: true,
+                block: true,
+                accent: s.accent,
+                ar: ar,
+                onTap: _exporting ? null : _shareQr,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 10),
-        _revoking
-            ? _busyButton()
-            : PButton(s.strings.emergency.eqr_revoke,
-                icon: LucideIcons.ban, variant: BtnVariant.ghost, block: true, ar: ar, color: T.danger, onTap: _revoke),
+        if (_revoking)
+          _busyButton()
+        else
+          PButton(
+            s.strings.emergency.eqr_revoke,
+            icon: LucideIcons.ban,
+            variant: BtnVariant.ghost,
+            block: true,
+            ar: ar,
+            color: AppColors.danger,
+            onTap: _revoke,
+          ),
         if (_isPermanent) ...[
           const SizedBox(height: 4),
-          _rotating
-              ? _busyButton()
-              : PButton(s.strings.emergency.eqr_rotate,
-                  icon: LucideIcons.refreshCcw, variant: BtnVariant.ghost, block: true, ar: ar, onTap: _rotate),
+          if (_rotating)
+            _busyButton()
+          else
+            PButton(
+              s.strings.emergency.eqr_rotate,
+              icon: LucideIcons.refreshCcw,
+              variant: BtnVariant.ghost,
+              block: true,
+              ar: ar,
+              onTap: _rotate,
+            ),
           const SizedBox(height: 4),
-          PButton(s.strings.emergency.eqr_scan_history,
-              icon: LucideIcons.history, variant: BtnVariant.ghost, block: true, ar: ar, onTap: _showScanHistory),
+          PButton(
+            s.strings.emergency.eqr_scan_history,
+            icon: LucideIcons.history,
+            variant: BtnVariant.ghost,
+            block: true,
+            ar: ar,
+            onTap: _showScanHistory,
+          ),
         ],
       ],
     ];
@@ -1512,28 +1769,36 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   /// is looking for.
   List<Widget> _identity() {
     final account = ref.watch(accountSummaryProvider);
-    final handle = account.valueOrNull?.handle;
+    final handle = account.value?.handle;
     // `GET /account/self` failing (an expired session 401s through the
     // refresh) used to render as simply no handle — indistinguishable from
     // never having claimed one. Say which it is.
     if (account.hasError && (handle == null || handle.isEmpty)) {
       return [
-        Text(s.strings.profile.acct_load_failed,
-            textAlign: TextAlign.center, style: Typo.bodySm(ar: ar).copyWith(color: T.fg3)),
+        Text(
+          s.strings.profile.acct_load_failed,
+          textAlign: TextAlign.center,
+          style: Typo.bodySm(ar: ar).copyWith(color: AppColors.textTertiary),
+        ),
       ];
     }
     return [
       if (widget.name.isNotEmpty)
-        Text(widget.name,
-            textAlign: TextAlign.center, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          widget.name,
+          textAlign: TextAlign.center,
+          style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700),
+        ),
       // The handle is Latin either way, so it stays LTR in Arabic.
       if (handle != null && handle.isNotEmpty)
         Padding(
           padding: const EdgeInsets.only(top: 3),
-          child: Text('@$handle',
-              textDirection: TextDirection.ltr,
-              textAlign: TextAlign.center,
-              style: Typo.num(size: FS.sm, weight: FontWeight.w600, color: s.accent.main)),
+          child: Text(
+            '@$handle',
+            textDirection: TextDirection.ltr,
+            textAlign: TextAlign.center,
+            style: Typo.num(size: FontSizes.bodySm, color: s.accent.main),
+          ),
         ),
     ];
   }
@@ -1541,21 +1806,23 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
   /// Pre-mint affordance: Generate, plus any mint error.
   List<Widget> _mintAffordance() => [
         ..._identity(),
-        if (_error != null) ...[
+        if (_error case final error?) ...[
           const SizedBox(height: 14),
-          _errorBox(_error!),
+          _ErrorBox(error),
         ],
         const SizedBox(height: 18),
-        _minting
-            ? _busyButton(primary: true)
-            : PButton(s.strings.emergency.eqr_generate,
-                icon: LucideIcons.qrCode,
-                variant: BtnVariant.primary,
-                large: true,
-                block: true,
-                accent: s.accent,
-                ar: ar,
-                onTap: _mintToken),
+        if (_minting)
+          _busyButton(primary: true)
+        else
+          PButton(
+            s.strings.emergency.eqr_generate,
+            icon: LucideIcons.qrCode,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: ar,
+            onTap: _mintToken,
+          ),
       ];
 
   /// Disabled/empty state — signed out or no health data (never crashes).
@@ -1563,30 +1830,35 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 44, horizontal: 24),
           decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(T.rXl),
-              border: Border.all(color: T.ink100),
-              boxShadow: T.shadowSm),
-          child: Column(children: [
-            Icon(signedOut ? LucideIcons.lock : LucideIcons.heartPulse, size: 40, color: T.ink300),
-            const SizedBox(height: 14),
-            Text(signedOut ? s.strings.emergency.eqr_signin_required : s.strings.emergency.eqr_no_data,
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(color: AppColors.ink100),
+            boxShadow: AppShadows.sm,
+          ),
+          child: Column(
+            children: [
+              Icon(signedOut ? LucideIcons.lock : LucideIcons.heartPulse, size: 40, color: AppColors.ink300),
+              const SizedBox(height: 14),
+              Text(
+                signedOut ? s.strings.emergency.eqr_signin_required : s.strings.emergency.eqr_no_data,
                 textAlign: TextAlign.center,
-                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-          ]),
+                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         // Disabled Generate button (0.4 opacity, non-tappable) — prototype style.
         Opacity(
           opacity: 0.4,
-          child: PButton(s.strings.emergency.eqr_generate,
-              icon: LucideIcons.qrCode,
-              variant: BtnVariant.primary,
-              large: true,
-              block: true,
-              accent: s.accent,
-              ar: ar,
-              onTap: null),
+          child: PButton(
+            s.strings.emergency.eqr_generate,
+            icon: LucideIcons.qrCode,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: ar,
+          ),
         ),
       ];
 
@@ -1598,28 +1870,18 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         ),
       ];
 
-  /// Mint/revoke error surfaced in the prototype's error style (danger wash).
-  Widget _errorBox(String msg) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: T.dangerBg, borderRadius: BorderRadius.circular(T.rMd)),
-        child: Row(children: [
-          const Icon(LucideIcons.alertCircle, size: 18, color: T.danger),
-          const SizedBox(width: 10),
-          Expanded(child: Text(msg, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.danger))),
-        ]),
-      );
-
   /// Button-shaped busy indicator (PButton has no loading prop).
   Widget _busyButton({bool primary = false}) => Container(
         height: primary ? 56 : 52,
         width: double.infinity,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-            color: primary ? s.accent.main : Colors.white,
-            borderRadius: BorderRadius.circular(primary ? T.rLg : T.rMd),
-            border: primary ? null : Border.all(color: T.borderStrong),
-            boxShadow: primary ? s.accent.boxShadow : null),
-        child: Spinner(size: 22, stroke: 2.5, color: primary ? Colors.white : s.accent.main),
+          color: primary ? s.accent.main : AppColors.white,
+          borderRadius: BorderRadius.circular(primary ? AppRadii.lg : AppRadii.md),
+          border: primary ? null : Border.all(color: AppColors.borderStrong),
+          boxShadow: primary ? s.accent.boxShadow : null,
+        ),
+        child: Spinner(size: 22, stroke: 2.5, color: primary ? AppColors.white : s.accent.main),
       );
 }
 
@@ -1637,73 +1899,67 @@ class _HandleChangeSheet extends StatelessWidget {
     final ar = s.rtl;
     final p = s.strings.profile;
     return Container(
-      decoration:
-          const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+      ),
       padding: const EdgeInsets.only(bottom: 38),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(p.hc_title, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 2, 0, 18),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(color: Color(0xFFFFF6E0), shape: BoxShape.circle),
-                  child: const Icon(LucideIcons.alertTriangle, size: 21, color: T.sun500),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(p.hc_title, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(0, 2, 0, 18),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(color: AppColors.warningBackground, shape: BoxShape.circle),
+                        child: const Icon(LucideIcons.alertTriangle, size: 21, color: AppColors.sun500),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(p.hc_body, style: Typo.bodySm(ar: ar).copyWith(height: 1.55))),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(child: Text(p.hc_body, style: Typo.bodySm(ar: ar).copyWith(height: 1.55))),
-              ]),
+                _HandleRow(ar, p.hc_from, from, bg: AppColors.ink50, color: AppColors.textTertiary, strike: true),
+                const SizedBox(height: 10),
+                _HandleRow(ar, p.hc_to, to, bg: s.accent.bg, color: s.accent.d, bold: true),
+                const SizedBox(height: 22),
+                PButton(
+                  p.hc_confirm,
+                  large: true,
+                  block: true,
+                  accent: s.accent,
+                  ar: ar,
+                  onTap: () => Navigator.pop(context, true),
+                ),
+                const SizedBox(height: 10),
+                PButton(
+                  p.hc_cancel,
+                  variant: BtnVariant.ghost,
+                  block: true,
+                  accent: s.accent,
+                  ar: ar,
+                  onTap: () => Navigator.pop(context, false),
+                ),
+              ],
             ),
-            _handleRow(ar, p.hc_from, from, bg: T.ink50, color: T.fg3, strike: true),
-            const SizedBox(height: 10),
-            _handleRow(ar, p.hc_to, to, bg: s.accent.bg, color: s.accent.d, bold: true),
-            const SizedBox(height: 22),
-            PButton(p.hc_confirm,
-                variant: BtnVariant.primary,
-                large: true,
-                block: true,
-                accent: s.accent,
-                ar: ar,
-                onTap: () => Navigator.pop(context, true)),
-            const SizedBox(height: 10),
-            PButton(p.hc_cancel,
-                variant: BtnVariant.ghost,
-                block: true,
-                accent: s.accent,
-                ar: ar,
-                onTap: () => Navigator.pop(context, false)),
-          ]),
-        ),
-      ]),
+          ),
+        ],
+      ),
     );
   }
-
-  Widget _handleRow(bool ar, String label, String value,
-          {required Color bg, required Color color, bool strike = false, bool bold = false}) =>
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(T.rMd)),
-        child: Row(children: [
-          Text(label, style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w700)),
-          const Spacer(),
-          Flexible(
-            child: Text('@$value',
-                textDirection: TextDirection.ltr,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Typo.num(size: FS.sm, weight: bold ? FontWeight.w700 : FontWeight.w400, color: color)
-                    .copyWith(decoration: strike ? TextDecoration.lineThrough : null, decorationColor: color)),
-          ),
-        ]),
-      );
 }
 
 const _kGoogleGSvg = '''
@@ -1714,3 +1970,89 @@ const _kGoogleGSvg = '''
   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
 </svg>
 ''';
+
+class _Card extends StatelessWidget {
+  const _Card(this.children);
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.sm,
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+      );
+}
+
+/// Mint/revoke error surfaced in the prototype's error style (danger wash).
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox(this.msg);
+  final String msg;
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = Directionality.of(context) == TextDirection.rtl;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(color: AppColors.dangerBackground, borderRadius: BorderRadius.circular(AppRadii.md)),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.alertCircle, size: 18, color: AppColors.danger),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              msg,
+              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HandleRow extends StatelessWidget {
+  const _HandleRow(
+    this.ar,
+    this.label,
+    this.value, {
+    required this.bg,
+    required this.color,
+    this.strike = false,
+    this.bold = false,
+  });
+  final bool ar;
+  final String label;
+  final String value;
+  final Color bg;
+  final Color color;
+  final bool strike;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadii.md)),
+        child: Row(
+          children: [
+            Text(label, style: Typo.meta(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+            const Spacer(),
+            Flexible(
+              child: Text(
+                '@$value',
+                textDirection: TextDirection.ltr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Typo.num(size: FontSizes.bodySm, weight: bold ? FontWeight.w700 : FontWeight.w400, color: color)
+                    .copyWith(decoration: strike ? TextDecoration.lineThrough : null, decorationColor: color),
+              ),
+            ),
+          ],
+        ),
+      );
+}

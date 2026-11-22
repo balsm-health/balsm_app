@@ -7,19 +7,6 @@ import '../aggregates/vaccination_record.dart';
 ///
 /// The day is passed in — the domain never reads the clock.
 class VaccinationStatus {
-  const VaccinationStatus._(this.upcoming, this.pastDue);
-
-  /// Doses still to come, soonest first. Each entry is the latest recorded
-  /// dose of its vaccine; the dose due is `doseNumber + 1`.
-  final List<VaccinationRecord> upcoming;
-
-  /// Doses whose due day has come without a later dose recorded, longest
-  /// overdue first.
-  final List<VaccinationRecord> pastDue;
-
-  /// The next dose due, if any.
-  VaccinationRecord? get next => upcoming.isEmpty ? null : upcoming.first;
-
   factory VaccinationStatus.of(Iterable<VaccinationRecord> records, {required DateTime today}) {
     final latest = <String, VaccinationRecord>{};
     for (final r in records) {
@@ -34,6 +21,18 @@ class VaccinationStatus {
       List.unmodifiable(due.where((r) => !r.nextDueOn!.isAfter(day))),
     );
   }
+  const VaccinationStatus._(this.upcoming, this.pastDue);
+
+  /// Doses still to come, soonest first. Each entry is the latest recorded
+  /// dose of its vaccine; the dose due is `doseNumber + 1`.
+  final List<VaccinationRecord> upcoming;
+
+  /// Doses whose due day has come without a later dose recorded, longest
+  /// overdue first.
+  final List<VaccinationRecord> pastDue;
+
+  /// The next dose due, if any.
+  VaccinationRecord? get next => upcoming.isEmpty ? null : upcoming.first;
 
   /// Whole days from [from] to [to] (negative when [to] is earlier).
   static int daysBetween(DateTime from, DateTime to) =>

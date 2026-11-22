@@ -9,9 +9,9 @@ import '../../domain/aggregates/check_in.dart';
 import '../../domain/value_objects/body_region.dart';
 import '../../domain/value_objects/body_tissue.dart';
 import '../../domain/value_objects/ids.dart';
-import '../../domain/value_objects/pain_site.dart';
 import '../../domain/value_objects/mood.dart';
 import '../../domain/value_objects/pain_level.dart';
+import '../../domain/value_objects/pain_site.dart';
 import '../../domain/value_objects/symptom.dart';
 import '../../domain/value_objects/symptom_detail.dart';
 import '../../domain/value_objects/vitals.dart';
@@ -98,7 +98,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
     if (p == null) return Stream.value(null);
     return Stream<CheckIn?>.multi((emitter) async {
       emitter.add(await find(key, scope: p));
-      emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: p)));
+      unawaited(emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: p))));
     });
   }
 
@@ -108,7 +108,7 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
     if (p == null) return Stream.value(const []);
     return Stream<List<CheckIn>>.multi((emitter) async {
       emitter.add(await findAll(scope: p));
-      emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: p)));
+      unawaited(emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: p))));
     });
   }
 
@@ -145,10 +145,16 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
         ],
       );
       // Children: clear then re-insert (idempotent on REPLACE).
-      await _db.customUpdate('DELETE FROM check_in_symptom WHERE check_in_id = ?',
-          variables: [Variable<String>(key.value)], updateKind: UpdateKind.delete);
-      await _db.customUpdate('DELETE FROM check_in_pain_region WHERE check_in_id = ?',
-          variables: [Variable<String>(key.value)], updateKind: UpdateKind.delete);
+      await _db.customUpdate(
+        'DELETE FROM check_in_symptom WHERE check_in_id = ?',
+        variables: [Variable<String>(key.value)],
+        updateKind: UpdateKind.delete,
+      );
+      await _db.customUpdate(
+        'DELETE FROM check_in_pain_region WHERE check_in_id = ?',
+        variables: [Variable<String>(key.value)],
+        updateKind: UpdateKind.delete,
+      );
       for (final s in value.symptoms) {
         final detail = value.symptomDetails[s];
         await _db.customInsert(
@@ -158,8 +164,8 @@ class DriftCheckInsDataSource extends CheckInsDataSource {
             Variable<String>(s.id),
             // Nullable columns go in as an untyped null Variable — the typed
             // constructor's bound is non-nullable.
-            detail?.urineColor == null ? const Variable(null) : Variable.withString(detail!.urineColor!.id),
-            detail?.urineMl == null ? const Variable(null) : Variable.withInt(detail!.urineMl!),
+            if (detail?.urineColor == null) const Variable(null) else Variable.withString(detail!.urineColor!.id),
+            if (detail?.urineMl == null) const Variable(null) else Variable.withInt(detail!.urineMl!),
             Variable<int>(detail?.blood ?? false ? 1 : 0),
           ],
         );

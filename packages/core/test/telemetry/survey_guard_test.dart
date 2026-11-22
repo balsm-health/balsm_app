@@ -11,7 +11,7 @@ Map<String, dynamic> q(String type, {bool openChoice = false}) => {
       'isOptional': false,
       if (type.endsWith('choice')) ...{
         'choices': ['a', 'b'],
-        'hasOpenChoice': openChoice
+        'hasOpenChoice': openChoice,
       },
       if (type == 'rating') ...{
         'ratingType': 1,

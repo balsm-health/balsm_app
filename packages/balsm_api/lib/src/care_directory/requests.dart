@@ -32,7 +32,7 @@ class NearbyCareQuery {
         'lng': lng,
         if (radiusKm != null) 'radius_km': radiusKm,
         if (type != null) 'type': type,
-        if (query != null && query!.trim().isNotEmpty) 'q': query!.trim(),
+        if (query case final queryValue? when query!.trim().isNotEmpty) 'q': queryValue.trim(),
         if (limit != null) 'limit': limit,
       };
 }
@@ -64,7 +64,7 @@ class CarePinsQuery {
         'lng': lng,
         if (radiusKm != null) 'radius_km': radiusKm,
         if (type != null) 'type': type,
-        if (query != null && query!.trim().isNotEmpty) 'q': query!.trim(),
+        if (query case final queryValue? when query!.trim().isNotEmpty) 'q': queryValue.trim(),
         if (limit != null) 'limit': limit,
       };
 }

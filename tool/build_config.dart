@@ -3,9 +3,9 @@
 /// everywhere (melos, CI, VS Code tasks) with no command changes.
 ///
 /// Per brand `<key>`:
-///   entrypoint : lib/brands/<key>/main_<key>.dart
+///   entrypoint : lib/brands/`<key>`/main_`<key>`.dart
 ///   flavor     : Android/iOS product flavor (usually == key)
-///   defines    : env/<key>/<env>.json + env/shared.json
+///   defines    : env/`<key>`/`<env>`.json + env/shared.json
 library;
 
 class Brand {
@@ -14,7 +14,7 @@ class Brand {
   /// Android/iOS product flavor for this brand.
   final String flavor;
 
-  /// Environments with a matching env/<brand>/<env>.json defines file.
+  /// Environments with a matching env/`<brand>`/`<env>`.json defines file.
   final List<String> envs;
 }
 

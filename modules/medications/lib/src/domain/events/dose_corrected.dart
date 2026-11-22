@@ -1,8 +1,7 @@
 import 'package:core/core.dart';
 
-import '../value_objects/ids.dart';
-
 import '../entities/dose_event.dart';
+import '../value_objects/ids.dart';
 
 /// Emitted when a previously recorded dose outcome is corrected.
 ///

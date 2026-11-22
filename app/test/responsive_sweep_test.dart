@@ -2,9 +2,9 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/responsive.dart';
 import 'package:app/balsm_app/screens/home_widgets.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Layout must survive every screen the app ships on, in both directions, at
 /// the largest text scale the shell allows.
@@ -41,7 +41,7 @@ void main() {
 
   /// The shell clamps Dynamic Type to 0.9–1.3 (see PatientApp.builder), so
   /// 1.3 is the largest scale any layout has to survive.
-  const scales = <double>[1.0, 1.3];
+  const scales = <double>[1, 1.3];
 
   Widget host(
     Widget child, {
@@ -98,7 +98,7 @@ void main() {
         tester,
         () => AdaptiveCluster(
           children: [
-            for (var i = 0; i < 8; i++) Pill('$longAr $i', kind: PillKind.neutral, ar: true),
+            for (var i = 0; i < 8; i++) Pill('$longAr $i', ar: true),
           ],
         ),
       );
@@ -108,7 +108,6 @@ void main() {
       await sweep(
         tester,
         () => const AdaptiveRow(
-          breakpoint: Bp.sm,
           children: [
             SizedBox(height: 40, child: Text(longAr)),
             SizedBox(height: 40, child: Text(longAr)),
@@ -121,7 +120,6 @@ void main() {
       await sweep(
         tester,
         () => const AdaptiveSplit(
-          breakpoint: Bp.md,
           primary: SizedBox(height: 80, child: Text(longAr)),
           aside: SizedBox(height: 80, child: Text(longAr)),
         ),
@@ -188,23 +186,28 @@ void main() {
               child: Container(
                 constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
                 color: const Color(0xFFFFFFFF),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(children: [
-                      const Expanded(child: Text(longAr, style: TextStyle(fontSize: 18))),
-                      RoundBtn(icon: LucideIcons.x, semanticLabel: 'Close', ghost: true, onTap: () {}),
-                    ]),
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(20, 8, 20, sheetBottomInset(context)),
-                      child: Column(
-                        children: [for (var i = 0; i < 12; i++) PCard(child: Text('$longAr $i'))],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Expanded(child: Text(longAr, style: TextStyle(fontSize: 18))),
+                          RoundBtn(icon: LucideIcons.x, semanticLabel: 'Close', ghost: true, onTap: () {}),
+                        ],
                       ),
                     ),
-                  ),
-                ]),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(20, 8, 20, sheetBottomInset(context)),
+                        child: Column(
+                          children: [for (var i = 0; i < 12; i++) PCard(child: Text('$longAr $i'))],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -226,12 +229,14 @@ void main() {
       const cap = 640.0;
       await tester.binding.setSurfaceSize(const Size(1920, 1080));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(host(
-        ContentColumn(maxWidth: cap, child: Container(color: const Color(0xFF000000), height: 40)),
-        size: const Size(1920, 1080),
-        dir: TextDirection.ltr,
-        scale: 1,
-      ));
+      await tester.pumpWidget(
+        host(
+          ContentColumn(child: Container(color: const Color(0xFF000000), height: 40)),
+          size: const Size(1920, 1080),
+          dir: TextDirection.ltr,
+          scale: 1,
+        ),
+      );
       await tester.pump();
       final width = tester.getSize(find.byType(Container)).width;
       expect(width, lessThanOrEqualTo(cap), reason: 'touch-first content must not stretch across a desktop window');
@@ -240,12 +245,14 @@ void main() {
     testWidgets('AdaptiveGrid gives every child the same width', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1366));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(host(
-        AdaptiveGrid(children: [for (var i = 0; i < 4; i++) SizedBox(key: ValueKey(i), height: 40)]),
-        size: const Size(1024, 1366),
-        dir: TextDirection.ltr,
-        scale: 1,
-      ));
+      await tester.pumpWidget(
+        host(
+          AdaptiveGrid(children: [for (var i = 0; i < 4; i++) SizedBox(key: ValueKey(i), height: 40)]),
+          size: const Size(1024, 1366),
+          dir: TextDirection.ltr,
+          scale: 1,
+        ),
+      );
       await tester.pump();
       final widths = [for (var i = 0; i < 4; i++) tester.getSize(find.byKey(ValueKey(i))).width];
       expect(widths.toSet().length, 1, reason: 'ragged columns mean the gap maths is wrong: $widths');

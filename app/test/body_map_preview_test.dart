@@ -1,5 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/widgets/body_map.dart';
+import 'package:core/core.dart' show noProviderRetry;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,7 @@ import 'package:self_report/self_report.dart';
 /// Read-only body map on a saved record's detail screen.
 void main() {
   Widget host(Set<PainSite> sites) => ProviderScope(
+        retry: noProviderRetry,
         child: MaterialApp(
           home: AppScope(
             state: PatientAppState(),

@@ -11,14 +11,14 @@ void main() {
 
   const key = 'balsm_dev_saved_envs';
   String envs(List<String> urls) => jsonEncode([
-        for (final (i, u) in urls.indexed) {'id': 'saved_$i', 'name': 'Env $i', 'url': u}
+        for (final (i, u) in urls.indexed) {'id': 'saved_$i', 'name': 'Env $i', 'url': u},
       ]);
 
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
   test('a saved server without its scheme is repaired on load, and kept repaired', () async {
     SharedPreferences.setMockInitialValues({
-      key: envs(['192.168.8.3:5050', 'https://staging.example.com'])
+      key: envs(['192.168.8.3:5050', 'https://staging.example.com']),
     });
 
     final store = DevConfigStore();
@@ -31,7 +31,7 @@ void main() {
 
   test('one that cannot be repaired is left to edit or delete', () async {
     SharedPreferences.setMockInitialValues({
-      key: envs(['http://'])
+      key: envs(['http://']),
     });
 
     final store = DevConfigStore();

@@ -19,6 +19,24 @@ class CareProviderResponse {
     this.notes,
   });
 
+  factory CareProviderResponse.fromJson(Map<String, dynamic> json) => CareProviderResponse(
+        id: json['id'] as String,
+        healthProfileId: json['health_profile_id'] as String,
+        type: json['type'] as String,
+        name: json['name'] as String,
+        specialty: json['specialty'] as String?,
+        phone: json['phone'] as String?,
+        phone2: json['phone2'] as String?,
+        email: json['email'] as String?,
+        clinic: json['clinic'] as String?,
+        address: json['address'] as String?,
+        mapUrl: json['map_url'] as String?,
+        notes: json['notes'] as String?,
+        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
+        updatedAt: DateTime.parse(json['updated_at'] as String).toUtc(),
+        isDeleted: json['is_deleted'] as bool? ?? false,
+      );
+
   final String id;
   final String healthProfileId;
   final String type;
@@ -37,22 +55,4 @@ class CareProviderResponse {
   final String? address;
   final String? mapUrl;
   final String? notes;
-
-  factory CareProviderResponse.fromJson(Map<String, dynamic> json) => CareProviderResponse(
-        id: json['id'] as String,
-        healthProfileId: json['health_profile_id'] as String,
-        type: json['type'] as String,
-        name: json['name'] as String,
-        specialty: json['specialty'] as String?,
-        phone: json['phone'] as String?,
-        phone2: json['phone2'] as String?,
-        email: json['email'] as String?,
-        clinic: json['clinic'] as String?,
-        address: json['address'] as String?,
-        mapUrl: json['map_url'] as String?,
-        notes: json['notes'] as String?,
-        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
-        updatedAt: DateTime.parse(json['updated_at'] as String).toUtc(),
-        isDeleted: json['is_deleted'] as bool? ?? false,
-      );
 }

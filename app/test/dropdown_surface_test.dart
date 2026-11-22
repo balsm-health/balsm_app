@@ -21,8 +21,8 @@ void main() {
     final theme = balsmTheme();
 
     // What DropdownButton paints its menu with.
-    expect(theme.canvasColor, T.surface);
-    expect(theme.popupMenuTheme.color, T.surface);
+    expect(theme.canvasColor, AppColors.surface);
+    expect(theme.popupMenuTheme.color, AppColors.surface);
 
     // The tint M3 would otherwise lay back over that white at elevation.
     expect(theme.popupMenuTheme.surfaceTintColor, Colors.transparent);
@@ -34,11 +34,11 @@ void main() {
     // A different token from canvasColor: DatePickerDialog falls back to
     // colorScheme.surfaceContainerHigh, so setting canvasColor alone would
     // leave this dialog lilac while reading as though it had covered it.
-    expect(theme.datePickerTheme.backgroundColor, T.surface);
-    expect(theme.datePickerTheme.headerBackgroundColor, T.surface);
+    expect(theme.datePickerTheme.backgroundColor, AppColors.surface);
+    expect(theme.datePickerTheme.headerBackgroundColor, AppColors.surface);
     expect(theme.datePickerTheme.surfaceTintColor, Colors.transparent);
 
-    expect(theme.timePickerTheme.backgroundColor, T.surface);
+    expect(theme.timePickerTheme.backgroundColor, AppColors.surface);
   });
 
   testWidgets('an open SelectField menu is white', (tester) async {
@@ -73,6 +73,6 @@ void main() {
     // The menu's background is the inherited canvasColor, read from inside the
     // route so a theme that stops short of the overlay is caught too.
     final menuTheme = Theme.of(tester.element(find.text('Muscle')));
-    expect(menuTheme.canvasColor, T.surface);
+    expect(menuTheme.canvasColor, AppColors.surface);
   });
 }

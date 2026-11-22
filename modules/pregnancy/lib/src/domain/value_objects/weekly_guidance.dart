@@ -1,6 +1,7 @@
 /// Week-by-week pregnancy guidance: general information from a partner
 /// organisation, the same for every patient. Not PHI — it says nothing about
 /// anyone's pregnancy — and it changes only when the content does.
+library;
 
 /// One piece of guidance copy in every language the app ships.
 class GuidanceText {

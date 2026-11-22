@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/ports/care_providers_data_source.dart';
 import '../../domain/entities/care_provider.dart';
+import '../../domain/value_objects/care_provider_file.dart';
 import '../../domain/value_objects/care_provider_type.dart';
 import '../../domain/value_objects/ids.dart';
-import '../../domain/value_objects/care_provider_file.dart';
 
 /// Drift-backed [CareProvidersDataSource]. Raw SQL against the PHI schema in
 /// core's `_phiSchema`, like every other on-device PHI store here.

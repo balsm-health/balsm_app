@@ -10,11 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Answers with a fixed status, or throws a chosen transport failure.
 class _StubAdapter implements HttpClientAdapter {
-  _StubAdapter.status(this.statusCode,
-      {this.body = const {
-        'data': {'status': 'Healthy'}
-      }})
-      : error = null,
+  _StubAdapter.status(
+    this.statusCode, {
+    this.body = const {
+      'data': {'status': 'Healthy'},
+    },
+  })  : error = null,
         cause = null;
   _StubAdapter.failure(this.error, {this.cause})
       : statusCode = 0,
@@ -36,7 +37,7 @@ class _StubAdapter implements HttpClientAdapter {
       body is String ? body! as String : jsonEncode(body),
       statusCode,
       headers: {
-        Headers.contentTypeHeader: [body is String ? 'text/html' : Headers.jsonContentType]
+        Headers.contentTypeHeader: [if (body is String) 'text/html' else Headers.jsonContentType],
       },
     );
   }
@@ -60,13 +61,16 @@ void main() {
     });
 
     test('carries every field of the health body, and the deployed version', () async {
-      final adapter = _StubAdapter.status(200, body: {
-        'status': 'Healthy',
-        'ready': true,
-        'version': '0.1.1.0',
-        'uptime_seconds': 42,
-        'not_ready_reason': null,
-      });
+      final adapter = _StubAdapter.status(
+        200,
+        body: {
+          'status': 'Healthy',
+          'ready': true,
+          'version': '0.1.1.0',
+          'uptime_seconds': 42,
+          'not_ready_reason': null,
+        },
+      );
 
       final result = await ServerHealthProbe(adapter: adapter).check('http://x') as ServerHealthy;
 
@@ -145,7 +149,7 @@ void main() {
       }
 
       expect(
-        await reasonFor(const SocketException('Failed host lookup: \'api.balsm.health\'')),
+        await reasonFor(const SocketException("Failed host lookup: 'api.balsm.health'")),
         'Host not found — check the URL',
       );
       expect(

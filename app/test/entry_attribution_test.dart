@@ -19,23 +19,35 @@ void main() {
   final family = ProvenanceActor.other(ProvenanceActorKind.family, displayName: 'Member A');
   final added = ProvenanceEvent(id: 'e1', actor: family, action: ProvenanceAction.added, at: DateTime(2026, 1, 1, 9));
   final selfEdit = ProvenanceEvent(
-      id: 'e2', actor: ProvenanceActor.self, action: ProvenanceAction.edited, at: DateTime(2026, 2, 3, 9));
+    id: 'e2',
+    actor: ProvenanceActor.self,
+    action: ProvenanceAction.edited,
+    at: DateTime(2026, 2, 3, 9),
+  );
 
-  Future<PatientAppState> pump(WidgetTester tester, Widget child,
-      {List<CareProvider> team = const [], LanguageCode lang = LanguageCode.en, Gender gender = Gender.other}) async {
+  Future<PatientAppState> pump(
+    WidgetTester tester,
+    Widget child, {
+    List<CareProvider> team = const [],
+    LanguageCode lang = LanguageCode.en,
+    Gender gender = Gender.other,
+  }) async {
     final state = PatientAppState()
       ..setLang(lang)
       ..setGender(gender);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [careTeamProvider.overrideWith((ref) => Stream.value(team))],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, c) => Directionality(textDirection: state.dir, child: c!),
-          home: Scaffold(body: Center(child: child)),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [careTeamProvider.overrideWith((ref) => Stream.value(team))],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, c) => Directionality(textDirection: state.dir, child: c!),
+            home: Scaffold(body: Center(child: child)),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return state;
   }
@@ -45,7 +57,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the patient\'s own entry shows nothing', (tester) async {
+  testWidgets("the patient's own entry shows nothing", (tester) async {
     await pump(tester, const EntryAttributionChip(history: EntryHistory.none));
     expect(find.byType(Text), findsNothing);
     expect(find.byType(Icon), findsNothing);
@@ -64,7 +76,7 @@ void main() {
     expect(find.text('Balsm keeps this history and it can’t be changed.'), findsOne);
   });
 
-  testWidgets('the patient\'s own edit is listed newest first and marks the chip edited', (tester) async {
+  testWidgets("the patient's own edit is listed newest first and marks the chip edited", (tester) async {
     await pump(tester, EntryAttributionChip(history: EntryHistory([added, selfEdit])));
     expect(find.text('Member A'), findsOne, reason: 'still shown as coming from the family member');
     expect(find.byIcon(LucideIcons.pencil), findsOne);
@@ -102,16 +114,23 @@ void main() {
   testWidgets('a care-team reference that is gone reads "Someone else"', (tester) async {
     final clinic = ProvenanceActor.other(ProvenanceActorKind.clinic, careProviderId: 'gone');
     await pump(
-        tester,
-        EntryAttributionChip(
-            history: EntryHistory(
-                [ProvenanceEvent(id: 'e4', actor: clinic, action: ProvenanceAction.added, at: DateTime(2026))])));
+      tester,
+      EntryAttributionChip(
+        history: EntryHistory(
+          [ProvenanceEvent(id: 'e4', actor: clinic, action: ProvenanceAction.added, at: DateTime(2026))],
+        ),
+      ),
+    );
     expect(find.text('Someone else'), findsOne);
   });
 
-  testWidgets('Arabic addresses the patient\'s own edit in their gender', (tester) async {
-    await pump(tester, EntryAttributionChip(history: EntryHistory([added, selfEdit])),
-        lang: LanguageCode.ar, gender: Gender.female);
+  testWidgets("Arabic addresses the patient's own edit in their gender", (tester) async {
+    await pump(
+      tester,
+      EntryAttributionChip(history: EntryHistory([added, selfEdit])),
+      lang: LanguageCode.ar,
+      gender: Gender.female,
+    );
     await openSheet(tester);
     expect(find.text('عدّلتِه أنت'), findsOne);
     expect(find.text('أضافه Member A'), findsOne);
@@ -134,21 +153,26 @@ void main() {
           history: history,
         );
     final state = PatientAppState();
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
-      ],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          home: DayRecordsScreen(checkIns: [
-            reading('own', EntryHistory.none),
-            reading('theirs', EntryHistory([added]))
-          ]),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
+        ],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            home: DayRecordsScreen(
+              checkIns: [
+                reading('own', EntryHistory.none),
+                reading('theirs', EntryHistory([added])),
+              ],
+            ),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     expect(find.byType(EntryAttributionChip), findsOne, reason: 'only the reading someone else logged');
     expect(find.text('Member A'), findsOne);

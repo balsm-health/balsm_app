@@ -19,13 +19,13 @@ void main() {
   tearDown(() => db.close());
 
   final original = Medication(
-    id: MedicationId.value('med-edit'),
+    id: const MedicationId.value('med-edit'),
     userId: user,
     name: 'Testamol',
     doseAmount: '500 mg',
     scheduleType: ScheduleType.daily,
     scheduleConfig: const ScheduleConfig(times: ['08:00']),
-    startDate: DateTime(2026, 11, 1),
+    startDate: DateTime(2026, 11),
   );
 
   test('replaces the medication under the same id', () async {
@@ -51,13 +51,15 @@ void main() {
   test('keeps the dose history recorded before the edit', () async {
     await dao.put(original.id, original);
     final at = DateTime(2026, 11, 2, 8);
-    await dao.insertDoseEvent(DoseEvent(
-      id: DoseEventId.uuid(),
-      medicationId: original.id,
-      scheduledAt: at,
-      recordedAt: at,
-      outcome: DoseOutcome.taken,
-    ));
+    await dao.insertDoseEvent(
+      DoseEvent(
+        id: DoseEventId.uuid(),
+        medicationId: original.id,
+        scheduledAt: at,
+        recordedAt: at,
+        outcome: DoseOutcome.taken,
+      ),
+    );
 
     await EditMedicationUseCase(dao: dao)(original.copyWith(name: 'Placebex'));
 
@@ -71,7 +73,7 @@ void main() {
     final addedByDoctor =
         ProvenanceEvent(id: 'p1', actor: doctor, action: ProvenanceAction.added, at: DateTime.utc(2026, 10, 30));
 
-    test('editing a medication a doctor added appends the patient\'s edit', () async {
+    test("editing a medication a doctor added appends the patient's edit", () async {
       await dao.put(original.id, original.copyWith(history: EntryHistory([addedByDoctor])));
       // The edit form builds a fresh copy that knows nothing of the history.
       final edited = original.copyWith(name: 'Placebex');
@@ -85,7 +87,7 @@ void main() {
       expect(stored.history.attribution, addedByDoctor);
     });
 
-    test('editing the patient\'s own medication records no history', () async {
+    test("editing the patient's own medication records no history", () async {
       await dao.put(original.id, original);
       await EditMedicationUseCase(dao: dao)(original.copyWith(name: 'Placebex'));
       expect((await dao.find(original.id))!.history.isEmpty, isTrue);

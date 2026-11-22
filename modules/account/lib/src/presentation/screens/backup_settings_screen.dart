@@ -1,6 +1,8 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../i18n/i18n.dart';
 
 /// Backup & sync hub: live status, manual backup, and recovery-code management.
 class BackupSettingsScreen extends ConsumerWidget {
@@ -9,14 +11,15 @@ class BackupSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final backup = ref.watch(backupServiceProvider);
+    final m = ref.watch(accountStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const BalsmAppBar(title: 'Backup & sync'),
+            BalsmAppBar(title: m.backupTitle),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -27,7 +30,7 @@ class BackupSettingsScreen extends ConsumerWidget {
                     children: [
                       BalsmListRow(
                         leading: const Icon(Icons.cloud_outlined),
-                        label: 'Status',
+                        label: m.backupStatus,
                         trailing: const SyncStatusBadge(),
                         showChevron: false,
                       ),
@@ -38,28 +41,26 @@ class BackupSettingsScreen extends ConsumerWidget {
                     children: [
                       BalsmListRow(
                         leading: const Icon(Icons.cloud_upload_outlined),
-                        label: 'Back up now',
-                        onTap: () => _backUpNow(context, backup),
+                        label: m.backupNow,
+                        onTap: () => _backUpNow(context, backup, m),
                       ),
                       BalsmListRow(
                         leading: const Icon(Icons.vpn_key_outlined),
-                        label: 'View recovery code',
-                        onTap: () => _viewCode(context, backup),
+                        label: m.viewRecoveryCode,
+                        onTap: () => _viewCode(context, backup, m),
                       ),
                       BalsmListRow(
                         leading: const Icon(Icons.autorenew),
-                        label: 'Rotate recovery code',
-                        onTap: () => _rotate(context, backup),
+                        label: m.rotateRecoveryCode,
+                        onTap: () => _rotate(context, backup, m),
                       ),
                     ],
                   ),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(4, 16, 4, 0),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(4, 16, 4, 0),
                     child: Text(
-                      'Your health data is end-to-end encrypted and stored in your '
-                      'own cloud. Only your recovery code can unlock it — Balsm can '
-                      'never read or recover it. Keep your code safe.',
-                      style: TextStyle(fontSize: 12, height: 1.5, color: BalsmColors.fg3),
+                      m.backupExplainer,
+                      style: const TextStyle(fontSize: FontSizes.meta, height: 1.5, color: AppColors.textTertiary),
                     ),
                   ),
                 ],
@@ -71,42 +72,41 @@ class BackupSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _backUpNow(BuildContext context, BackupService backup) async {
+  Future<void> _backUpNow(BuildContext context, BackupService backup, Messages m) async {
     final messenger = ScaffoldMessenger.of(context);
     if (!await backup.isProvisioned()) {
       final code = await backup.provisionIfNeeded();
       if (code != null && context.mounted) await showRecoveryCodeDialog(context, code);
     }
-    messenger.showSnackBar(const SnackBar(content: Text('Backing up…')));
+    messenger.showSnackBar(SnackBar(content: Text(m.backingUp)));
     await backup.backUpNow();
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(const SnackBar(content: Text('Backup complete')));
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(m.backupComplete)));
   }
 
-  Future<void> _viewCode(BuildContext context, BackupService backup) async {
+  Future<void> _viewCode(BuildContext context, BackupService backup, Messages m) async {
     final code = await backup.revealCode();
     if (!context.mounted) return;
     if (code == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No backup set up yet — tap "Back up now".')),
+        SnackBar(content: Text(m.noBackupYet)),
       );
       return;
     }
     await showRecoveryCodeDialog(context, code);
   }
 
-  Future<void> _rotate(BuildContext context, BackupService backup) async {
+  Future<void> _rotate(BuildContext context, BackupService backup, Messages m) async {
+    final common = coreMessagesOf(context).common;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rotate recovery code?'),
-        content: const Text(
-          'A new code will be generated and your backup re-encrypted. Your old '
-          'code stops working immediately. Save the new one.',
-        ),
+        title: Text(m.rotateTitle),
+        content: Text(m.rotateBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Rotate')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(common.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(m.rotateAction)),
         ],
       ),
     );

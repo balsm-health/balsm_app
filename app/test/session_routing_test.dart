@@ -82,8 +82,13 @@ void main() {
 
   test('unresolved merge goes through Unlock first while the device password exists', () async {
     await prefs.setSignedIn(true);
-    final s = await PatientAppState.load(prefs,
-        hasSession: true, accountMode: AccountMode.deviceOnly, pendingMerge: true, hasOfflinePassword: true);
+    final s = await PatientAppState.load(
+      prefs,
+      hasSession: true,
+      accountMode: AccountMode.deviceOnly,
+      pendingMerge: true,
+      hasOfflinePassword: true,
+    );
     expect(s.route, AppRoutes.unlock);
   });
 

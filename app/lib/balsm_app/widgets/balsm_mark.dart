@@ -1,8 +1,13 @@
 import 'dart:math' as math;
-import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../assets.dart';
 import '../tokens.dart';
+
+// One cycle of the MarkSpinner bloom.
+const _markLoop = Duration(milliseconds: 3600);
 
 /// The official Balsm five-ribbon ring mark (`assets/brand/icon.svg`), ported
 /// from the design project's `petalmark.jsx` / `assets/icon.svg`.
@@ -31,8 +36,7 @@ class MarkSpinner extends StatefulWidget {
 }
 
 class _MarkSpinnerState extends State<MarkSpinner> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3600))
-    ..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: _markLoop)..repeat();
 
   @override
   void dispose() {
@@ -86,12 +90,12 @@ class _MarkRingPainter extends CustomPainter {
   // NOTE: this is the retired five-petal flower's order. brand/icon.svg
   // paints the current mark aqua → blue → emerald → violet → mint. Changing
   // it here is a visual change with goldens attached — left as-is on purpose.
-  static const _colors = [
-    T.hueEmerald,
-    T.hueBlue,
-    T.hueMint,
-    T.hueViolet,
-    T.hueAqua,
+  static const List<Color> _colors = [
+    AppColors.hueEmerald,
+    AppColors.hueBlue,
+    AppColors.hueMint,
+    AppColors.hueViolet,
+    AppColors.hueAqua,
   ];
 
   @override

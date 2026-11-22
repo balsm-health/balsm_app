@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pregnancy/pregnancy.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import '../family/family_kit.dart';
 import '../family/member_screen.dart';
 import 'baby_screen.dart';
@@ -61,9 +60,9 @@ class PregnancyScreen extends ConsumerWidget {
     final p = s.strings.pregnancy;
     final preg = ref.watch(activePregnancyOfProvider(mother));
     final owner = pregnancyOwner(ref, mother);
-    if (preg == null) return const Scaffold(backgroundColor: Colors.white);
-    final babies = ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const <PregnancyBaby>[];
-    final items = ref.watch(pregnancyItemsProvider(preg.itemsKey)).valueOrNull ?? const <PregnancyItem>[];
+    if (preg == null) return const Scaffold(backgroundColor: AppColors.white);
+    final babies = ref.watch(pregnancyBabiesProvider(preg.id)).value ?? const <PregnancyBaby>[];
+    final items = ref.watch(pregnancyItemsProvider(preg.itemsKey)).value ?? const <PregnancyItem>[];
     final active = babies.where((b) => b.isActive).toList();
     final born = babies.where((b) => b.isBorn).toList();
     final multi = babies.length > 1;
@@ -78,24 +77,39 @@ class PregnancyScreen extends ConsumerWidget {
         PregnancyGuidanceCard(week: preg.infoOn(DateTime.now()).week, multiples: multi, mother: mother),
         Padding(
           padding: const EdgeInsets.only(top: 22, bottom: 10),
-          child: Row(children: [
-            Expanded(
-              child:
-                  Text(multi ? p.babies : p.baby, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-            ),
-            _LinkButton(
-                icon: LucideIcons.paperclip, label: p.attach, onTap: () => openPregnancyAdd(context, mother: mother)),
-          ]),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  multi ? p.babies : p.baby,
+                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              _LinkButton(
+                icon: LucideIcons.paperclip,
+                label: p.attach,
+                onTap: () => openPregnancyAdd(context, mother: mother),
+              ),
+            ],
+          ),
         ),
-        LayoutBuilder(builder: (context, c) {
-          const gap = 10.0;
-          final w = active.length > 1 ? (c.maxWidth - gap) / 2 : c.maxWidth;
-          return Wrap(spacing: gap, runSpacing: gap, children: [
-            for (final b in active)
-              SizedBox(
-                  width: w, child: _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items, mother: mother)),
-          ]);
-        }),
+        LayoutBuilder(
+          builder: (context, c) {
+            const gap = 10.0;
+            final w = active.length > 1 ? (c.maxWidth - gap) / 2 : c.maxWidth;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final b in active)
+                  SizedBox(
+                    width: w,
+                    child: _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items, mother: mother),
+                  ),
+              ],
+            );
+          },
+        ),
         if (born.isNotEmpty) ...[
           const SizedBox(height: 10),
           RowsCard(children: [for (final b in born) _BornRow(baby: b)]),
@@ -113,16 +127,26 @@ class PregnancyScreen extends ConsumerWidget {
         else
           RowsCard(children: [for (final it in mine) PregnancyItemRow(item: it, pregnancy: preg, babies: babies)]),
         const SizedBox(height: 12),
-        RowsCard(children: [
-          ChevronRow(
-              icon: LucideIcons.idCard, label: p.card_row, onTap: () => openPregnancyCard(context, mother: mother)),
-        ]),
+        RowsCard(
+          children: [
+            ChevronRow(
+              icon: LucideIcons.idCard,
+              label: p.card_row,
+              onTap: () => openPregnancyCard(context, mother: mother),
+            ),
+          ],
+        ),
         FamilySecHead(p.birth_sec),
-        RowsCard(children: [
-          if (active.isNotEmpty)
-            ChevronRow(label: multi ? p.arrived_multi : p.arrived_one, onTap: () => openBirth(context, mother: mother)),
-          ChevronRow(label: p.end_t, onTap: () => _confirmEnd(context, ref, preg)),
-        ]),
+        RowsCard(
+          children: [
+            if (active.isNotEmpty)
+              ChevronRow(
+                label: multi ? p.arrived_multi : p.arrived_one,
+                onTap: () => openBirth(context, mother: mother),
+              ),
+            ChevronRow(label: p.end_t, onTap: () => _confirmEnd(context, ref, preg)),
+          ],
+        ),
       ],
     );
   }
@@ -155,15 +179,30 @@ Future<bool?> _confirmSheet(BuildContext context, {required String title, requir
   return showAppSheet<bool>(
     context,
     textDirection: s.dir,
-    builder: (ctx) => FamilySheet(title: title, children: [
-      Text(body, style: Typo.body(ar: s.rtl)),
-      const SizedBox(height: 18),
-      PButton(cta,
-          large: true, block: true, variant: BtnVariant.secondary, ar: s.rtl, onTap: () => Navigator.pop(ctx, true)),
-      const SizedBox(height: 8),
-      PButton(s.strings.pregnancy.go_back,
-          large: true, block: true, variant: BtnVariant.ghost, ar: s.rtl, onTap: () => Navigator.pop(ctx, false)),
-    ]),
+    builder: (ctx) => FamilySheet(
+      title: title,
+      children: [
+        Text(body, style: Typo.body(ar: s.rtl)),
+        const SizedBox(height: 18),
+        PButton(
+          cta,
+          large: true,
+          block: true,
+          variant: BtnVariant.secondary,
+          ar: s.rtl,
+          onTap: () => Navigator.pop(ctx, true),
+        ),
+        const SizedBox(height: 8),
+        PButton(
+          s.strings.pregnancy.go_back,
+          large: true,
+          block: true,
+          variant: BtnVariant.ghost,
+          ar: s.rtl,
+          onTap: () => Navigator.pop(ctx, false),
+        ),
+      ],
+    ),
   );
 }
 
@@ -181,11 +220,14 @@ class _LinkButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 15, color: s.accent.d),
-            const SizedBox(width: 6),
-            Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: s.accent.d)),
-          ]),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: s.accent.d),
+              const SizedBox(width: 6),
+              Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: s.accent.d)),
+            ],
+          ),
         ),
       ),
     );
@@ -213,80 +255,103 @@ class _Hero extends StatelessWidget {
     Widget tile(String big, String small, {bool large = true}) => Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(big,
+            decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(AppRadii.control)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  big,
                   textDirection: TextDirection.ltr,
                   style: large
-                      ? Typo.num(size: FS.xl, weight: FontWeight.w800)
-                      : Typo.num(size: FS.md, weight: FontWeight.w600).copyWith(height: 1.6)),
-              Text(small, style: Typo.meta(ar: s.rtl)),
-            ]),
+                      ? Typo.num(size: FontSizes.heading, weight: FontWeight.w800)
+                      : Typo.num().copyWith(height: 1.6),
+                ),
+                Text(small, style: Typo.meta(ar: s.rtl)),
+              ],
+            ),
           ),
         );
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(20)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(p.week, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: babyInk)),
-            Text('$w', style: Typo.num(size: 56, weight: FontWeight.w800).copyWith(height: 1)),
-          ]),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text('${p.day_n(info.day)} · ${trimesterLabel(s, info.trimester)}', style: Typo.bodySm(ar: s.rtl)),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 14),
-        Row(children: [
-          for (var i = 0; i < 3; i++) ...[
-            if (i > 0) const SizedBox(width: 4),
-            Expanded(
-              flex: _flex[i],
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(T.rPill),
-                child: Container(
-                  height: 6,
-                  color: Colors.white,
-                  alignment: AlignmentDirectional.centerStart,
-                  child: FractionallySizedBox(
-                    widthFactor: fill[i],
-                    child: Container(color: T.hueAqua),
+      decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(AppRadii.xl)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.week, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: babyInk)),
+                  Text('$w', style: Typo.num(size: 56, weight: FontWeight.w800).copyWith(height: 1)),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '${p.day_n(info.day)} · ${trimesterLabel(s, info.trimester)}',
+                    style: Typo.bodySm(ar: s.rtl),
                   ),
                 ),
               ),
-            ),
-          ],
-        ]),
-        const SizedBox(height: 6),
-        Row(children: [
-          for (var i = 0; i < 3; i++) ...[
-            if (i > 0) const SizedBox(width: 4),
-            Expanded(
-              flex: _flex[i],
-              child: Text(
-                shorts[i],
-                style: Typo.meta(ar: s.rtl).copyWith(
-                  fontSize: FS.xs2,
-                  color: i + 1 == info.trimester ? T.fg1 : T.fg3,
-                  fontWeight: i + 1 == info.trimester ? FontWeight.w700 : FontWeight.w400,
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (var i = 0; i < 3; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
+                Expanded(
+                  flex: _flex[i],
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                    child: Container(
+                      height: 6,
+                      color: AppColors.white,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: FractionallySizedBox(
+                        widthFactor: fill[i],
+                        child: Container(color: AppColors.hueAqua),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ]),
-        const SizedBox(height: 14),
-        Row(children: [
-          // Past the due date the count goes up again, labelled as such.
-          tile('${info.daysLeft.abs()}', info.daysLeft < 0 ? p.days_past_due_label : p.days_to_due),
-          const SizedBox(width: 8),
-          tile(formatDay(pregnancy.dueDate), p.due_date, large: false),
-        ]),
-      ]),
+              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              for (var i = 0; i < 3; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
+                Expanded(
+                  flex: _flex[i],
+                  child: Text(
+                    shorts[i],
+                    style: Typo.meta(ar: s.rtl).copyWith(
+                      fontSize: FontSizes.eyebrow,
+                      color: i + 1 == info.trimester ? AppColors.textPrimary : AppColors.textTertiary,
+                      fontWeight: i + 1 == info.trimester ? FontWeight.w700 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              // Past the due date the count goes up again, labelled as such.
+              tile('${info.daysLeft.abs()}', info.daysLeft < 0 ? p.days_past_due_label : p.days_to_due),
+              const SizedBox(width: 8),
+              tile(formatDay(pregnancy.dueDate), p.due_date, large: false),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -303,27 +368,34 @@ class _NextVisitCard extends ConsumerWidget {
     final v = pregnancy.nextVisit;
     void edit() => showAppSheet<void>(context, textDirection: s.dir, builder: (_) => _VisitSheet(pregnancy: pregnancy));
     if (v == null) return RowsCard(children: [ChevronRow(icon: LucideIcons.calendar, label: p.add_visit, onTap: edit)]);
-    final when = [formatDay(v.date), if (v.time != null) v.time!].join(' · ');
-    final who = [if (pregnancy.obName != null) pregnancy.obName!, if (v.clinic != null) v.clinic!].join(' · ');
+    final when = [formatDay(v.date), if (v.time case final time?) time].join(' · ');
+    final who = [if (pregnancy.obName case final obName?) obName, if (v.clinic case final clinic?) clinic].join(' · ');
     return Semantics(
       button: true,
       child: PCard(
         onTap: edit,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(children: [
-          IconSquare(LucideIcons.calendar, bg: s.accent.bg, fg: s.accent.d, size: 42, iconSize: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(p.next_visit_t, style: Typo.meta(ar: s.rtl)),
-              Text(when,
-                  textDirection: TextDirection.ltr,
-                  textAlign: s.rtl ? TextAlign.right : TextAlign.left,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              if (who.isNotEmpty) Text(who, style: Typo.meta(ar: s.rtl)),
-            ]),
-          ),
-        ]),
+        child: Row(
+          children: [
+            IconSquare(LucideIcons.calendar, bg: s.accent.bg, fg: s.accent.d, size: 42, iconSize: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.next_visit_t, style: Typo.meta(ar: s.rtl)),
+                  Text(
+                    when,
+                    textDirection: TextDirection.ltr,
+                    textAlign: s.rtl ? TextAlign.right : TextAlign.left,
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  ),
+                  if (who.isNotEmpty) Text(who, style: Typo.meta(ar: s.rtl)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -368,58 +440,75 @@ class _VisitSheetState extends ConsumerState<_VisitSheet> {
     final date = _date;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: FamilySheet(title: p.next_visit_t, children: [
-        LabelledField(
-          label: p.visit_date,
-          child: DayField(
-            value: date,
-            placeholder: p.pick_date,
-            onTap: () async {
-              final picked = await pickDay(context,
-                  title: p.visit_date, initial: date ?? now, first: now, last: now.add(const Duration(days: 300)));
-              if (picked != null && mounted) setState(() => _date = picked);
-            },
+      child: FamilySheet(
+        title: p.next_visit_t,
+        children: [
+          LabelledField(
+            label: p.visit_date,
+            child: DayField(
+              value: date,
+              placeholder: p.pick_date,
+              onTap: () async {
+                final picked = await pickDay(
+                  context,
+                  title: p.visit_date,
+                  initial: date ?? now,
+                  first: now,
+                  last: now.add(const Duration(days: 300)),
+                );
+                if (picked != null && mounted) setState(() => _date = picked);
+              },
+            ),
           ),
-        ),
-        LabelledField(
-          label: p.visit_time,
-          child: TextField(
-            controller: _time,
-            keyboardType: TextInputType.datetime,
-            textDirection: TextDirection.ltr,
-            decoration: fieldDecoration(s, p.visit_time_ph),
+          LabelledField(
+            label: p.visit_time,
+            child: TextField(
+              controller: _time,
+              keyboardType: TextInputType.datetime,
+              textDirection: TextDirection.ltr,
+              decoration: fieldDecoration(s, p.visit_time_ph),
+            ),
           ),
-        ),
-        LabelledField(
-          label: p.visit_clinic,
-          child: TextField(controller: _clinic, decoration: fieldDecoration(s, null)),
-        ),
-        PButton(s.strings.family.save,
+          LabelledField(
+            label: p.visit_clinic,
+            child: TextField(controller: _clinic, decoration: fieldDecoration(s, null)),
+          ),
+          PButton(
+            s.strings.family.save,
             large: true,
             block: true,
             accent: s.accent,
             ar: s.rtl,
             onTap: date == null || _saving
                 ? null
-                : () => _save(NextVisit(date: date, time: _time.text, clinic: _clinic.text))),
-        if (widget.pregnancy.nextVisit != null) ...[
-          const SizedBox(height: 8),
-          PButton(p.visit_remove,
+                : () => _save(NextVisit(date: date, time: _time.text, clinic: _clinic.text)),
+          ),
+          if (widget.pregnancy.nextVisit != null) ...[
+            const SizedBox(height: 8),
+            PButton(
+              p.visit_remove,
               large: true,
               block: true,
               variant: BtnVariant.ghost,
               ar: s.rtl,
-              onTap: _saving ? null : () => _save(null)),
+              onTap: _saving ? null : () => _save(null),
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }
 
 /// `MCBabyCard` — label, record count, menu, and the last measurement.
 class _BabyCard extends ConsumerWidget {
-  const _BabyCard(
-      {required this.pregnancy, required this.baby, required this.babies, required this.items, required this.mother});
+  const _BabyCard({
+    required this.pregnancy,
+    required this.baby,
+    required this.babies,
+    required this.items,
+    required this.mother,
+  });
   final Pregnancy pregnancy;
   final HealthProfileId? mother;
   final PregnancyBaby baby;
@@ -433,57 +522,72 @@ class _BabyCard extends ConsumerWidget {
     final its = items.where((i) => i.isAbout(baby.id)).toList();
     final last = its.where((i) => i.kind == ItemKind.measure).firstOrNull;
     final label = babyLabel(s, baby, babies);
-    final strong = Typo.num(size: FS.sm, weight: FontWeight.w700);
+    final strong = Typo.num(size: FontSizes.bodySm, weight: FontWeight.w700);
     return Semantics(
       button: true,
       child: PCard(
         onTap: () => openBaby(context, baby.id, mother: mother),
         padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Icon and menu on top, the name and count below at the card's
-          // full width: two cards share a phone row, too narrow for all
-          // four side by side.
-          Row(children: [
-            const IconSquare(LucideIcons.sprout, bg: babyWash, fg: babyInk, size: 38, iconSize: 19),
-            const Spacer(),
-            RoundBtn(
-              icon: LucideIcons.ellipsis,
-              semanticLabel: p.options,
-              ghost: true,
-              iconSize: 18,
-              onTap: () => _babyMenu(context, ref, pregnancy, baby, label, mother),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icon and menu on top, the name and count below at the card's
+            // full width: two cards share a phone row, too narrow for all
+            // four side by side.
+            Row(
+              children: [
+                const IconSquare(LucideIcons.sprout, bg: babyWash, fg: babyInk),
+                const Spacer(),
+                RoundBtn(
+                  icon: LucideIcons.ellipsis,
+                  semanticLabel: p.options,
+                  ghost: true,
+                  iconSize: 18,
+                  onTap: () => _babyMenu(context, ref, pregnancy, baby, label, mother),
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 10),
-          Text(label,
+            const SizedBox(height: 10),
+            Text(
+              label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-          Text(s.strings.family.records_n(its.length),
-              maxLines: 1, overflow: TextOverflow.ellipsis, style: Typo.meta(ar: s.rtl)),
-          if (last != null) ...[
-            const SizedBox(height: 10),
-            Text('${p.last_measure} · ${formatDay(last.recordedOn)}', style: Typo.meta(ar: s.rtl)),
-            if (last.fetalHeartRateBpm != null)
-              Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: '${p.hr} '),
-                  TextSpan(text: '${last.fetalHeartRateBpm}', style: strong),
-                  TextSpan(text: ' ${p.bpm}'),
-                ]),
-                style: Typo.bodySm(ar: s.rtl),
-              ),
-            if (last.estimatedFetalWeightG != null)
-              Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: '${p.efw} '),
-                  TextSpan(text: '${last.estimatedFetalWeightG}', style: strong),
-                  TextSpan(text: ' ${p.grams}'),
-                ]),
-                style: Typo.bodySm(ar: s.rtl),
-              ),
+              style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+            Text(
+              s.strings.family.records_n(its.length),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Typo.meta(ar: s.rtl),
+            ),
+            if (last != null) ...[
+              const SizedBox(height: 10),
+              Text('${p.last_measure} · ${formatDay(last.recordedOn)}', style: Typo.meta(ar: s.rtl)),
+              if (last.fetalHeartRateBpm != null)
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: '${p.hr} '),
+                      TextSpan(text: '${last.fetalHeartRateBpm}', style: strong),
+                      TextSpan(text: ' ${p.bpm}'),
+                    ],
+                  ),
+                  style: Typo.bodySm(ar: s.rtl),
+                ),
+              if (last.estimatedFetalWeightG != null)
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: '${p.efw} '),
+                      TextSpan(text: '${last.estimatedFetalWeightG}', style: strong),
+                      TextSpan(text: ' ${p.grams}'),
+                    ],
+                  ),
+                  style: Typo.bodySm(ar: s.rtl),
+                ),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
@@ -491,32 +595,46 @@ class _BabyCard extends ConsumerWidget {
 
 /// Rename · Stop following this baby.
 Future<void> _babyMenu(
-    BuildContext context, WidgetRef ref, Pregnancy preg, PregnancyBaby baby, String label, HealthProfileId? mother) {
+  BuildContext context,
+  WidgetRef ref,
+  Pregnancy preg,
+  PregnancyBaby baby,
+  String label,
+  HealthProfileId? mother,
+) {
   final s = AppScope.of(context);
   final p = s.strings.pregnancy;
   return showAppSheet<void>(
     context,
     textDirection: s.dir,
-    builder: (ctx) => FamilySheet(title: label, children: [
-      for (final (icon, text, action) in [
-        (LucideIcons.pencil, p.rename, () => openBaby(context, baby.id, rename: true, mother: mother)),
-        (LucideIcons.archive, p.stop_t, () => _stopFollowing(context, ref, preg, baby, mother)),
-      ])
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(icon, color: T.fg2),
-          title: Text(text, style: Typo.body(ar: s.rtl).copyWith(color: T.fg1)),
-          onTap: () {
-            Navigator.pop(ctx);
-            action();
-          },
-        ),
-    ]),
+    builder: (ctx) => FamilySheet(
+      title: label,
+      children: [
+        for (final (icon, text, action) in [
+          (LucideIcons.pencil, p.rename, () => openBaby(context, baby.id, rename: true, mother: mother)),
+          (LucideIcons.archive, p.stop_t, () => _stopFollowing(context, ref, preg, baby, mother)),
+        ])
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(icon, color: AppColors.textSecondary),
+            title: Text(text, style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary)),
+            onTap: () {
+              Navigator.pop(ctx);
+              unawaited(action());
+            },
+          ),
+      ],
+    ),
   );
 }
 
 Future<void> _stopFollowing(
-    BuildContext context, WidgetRef ref, Pregnancy preg, PregnancyBaby baby, HealthProfileId? mother) async {
+  BuildContext context,
+  WidgetRef ref,
+  Pregnancy preg,
+  PregnancyBaby baby,
+  HealthProfileId? mother,
+) async {
   final s = AppScope.of(context);
   final p = s.strings.pregnancy;
   final yes = await _confirmSheet(context, title: p.stop_t, body: p.stop_b, cta: p.stop_cta);
@@ -547,23 +665,31 @@ class _BornRow extends ConsumerWidget {
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(children: [
-            Avatar(
-              initials: name.isEmpty ? '' : name.characters.first.toUpperCase(),
-              color: toneColors(MemberTone.tryFromWire(baby.tone)).c,
-              size: 34,
-              fontSize: 14,
-              ar: s.rtl,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                if (dob != null) Text(s.strings.pregnancy.born_on(formatDay(dob)), style: Typo.meta(ar: s.rtl)),
-              ]),
-            ),
-            Icon(s.rtl ? LucideIcons.chevronLeft : LucideIcons.chevronRight, size: 18, color: T.fg4),
-          ]),
+          child: Row(
+            children: [
+              Avatar(
+                initials: name.isEmpty ? '' : name.characters.first.toUpperCase(),
+                color: toneColors(MemberTone.tryFromWire(baby.tone)).c,
+                size: 34,
+                fontSize: FontSizes.description,
+                ar: s.rtl,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    ),
+                    if (dob != null) Text(s.strings.pregnancy.born_on(formatDay(dob)), style: Typo.meta(ar: s.rtl)),
+                  ],
+                ),
+              ),
+              Icon(forwardChevron(context), size: 18, color: AppColors.textHint),
+            ],
+          ),
         ),
       ),
     );

@@ -23,8 +23,13 @@ class MultiAnalyticsLogger implements AnalyticsLogger {
   }
 
   @override
-  void logError(Object error,
-      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) {
     for (final p in providers) {
       p.logError(error, stackTrace: stackTrace, message: message, context: context, fatal: fatal);
     }

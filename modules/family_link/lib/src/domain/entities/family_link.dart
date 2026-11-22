@@ -9,6 +9,9 @@ import '../value_objects/link_relation.dart';
 class ScannedIdentity {
   const ScannedIdentity({this.name, this.dateOfBirth});
 
+  factory ScannedIdentity.fromJson(Map<String, dynamic> json) =>
+      ScannedIdentity(name: json['name'] as String?, dateOfBirth: json['dob'] as String?);
+
   final String? name;
 
   /// Calendar date, `yyyy-MM-dd`.
@@ -20,9 +23,6 @@ class ScannedIdentity {
   }
 
   Map<String, dynamic> toJson() => {'name': name, 'dob': dateOfBirth};
-
-  factory ScannedIdentity.fromJson(Map<String, dynamic> json) =>
-      ScannedIdentity(name: json['name'] as String?, dateOfBirth: json['dob'] as String?);
 }
 
 /// The signed-in account's view of one link to another Balsm account (read
@@ -123,19 +123,19 @@ class FamilyLinks {
   /// Requests waiting for this account's answer — what the avatar dot counts.
   List<FamilyLink> get awaitingMe => [
         for (final l in incoming)
-          if (l.canRespond) l
+          if (l.canRespond) l,
       ];
 
   /// Requests this account sent that are still waiting.
   List<FamilyLink> get waiting => [
         for (final l in outgoing)
-          if (l.isPending) l
+          if (l.isPending) l,
       ];
 
   /// Every open link, either direction, oldest first.
   List<FamilyLink> get linked => [
         for (final l in [...outgoing, ...incoming])
-          if (l.isLinked) l
+          if (l.isLinked) l,
       ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
   FamilyLink? byId(String id) {

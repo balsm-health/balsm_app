@@ -30,36 +30,37 @@ void main() {
       file = File('${dir.path}/v1.db');
       // The v1 shapes, before profiles were per person: no is_self/kind/…,
       // prescriptions keyed by user only, and NULL anchors waiting on backfill.
-      final seed = sqlite3.open(file.path);
-      seed.execute('CREATE TABLE health_profile (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, blood_type TEXT, '
-          'weight_kg REAL, height_cm REAL, updated_at TEXT NOT NULL)');
-      seed.execute("INSERT INTO health_profile (id, user_id, updated_at) VALUES ('hp-u1', 'u1', 1), "
-          "('hp-u1-dup', 'u1', 2), ('hp-u2', 'u2', 3)");
-      seed.execute('CREATE TABLE prescription (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, clinician TEXT NOT NULL, '
-          'specialty TEXT, reference TEXT, items TEXT NOT NULL, issued_at TEXT NOT NULL, valid_until TEXT, '
-          'created_at TEXT NOT NULL)');
-      seed.execute("INSERT INTO prescription (id, user_id, clinician, items, issued_at, created_at) "
-          "VALUES ('rx1', 'u1', 'Test Clinician', '[]', 't', 't')");
-      seed.execute('CREATE TABLE health_record (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, health_profile_id TEXT, '
-          'type TEXT NOT NULL, title TEXT NOT NULL, tags TEXT NOT NULL, source TEXT NOT NULL, file_type TEXT, '
-          'file_path TEXT, pages INTEGER, result_note TEXT, taken_at TEXT NOT NULL, created_at TEXT NOT NULL)');
-      seed.execute("INSERT INTO health_record (id, user_id, type, title, tags, source, taken_at, created_at) "
-          "VALUES ('r1', 'u2', 'lab', 'Test record', '[]', 'self', 't', 't')");
-      seed.dispose();
+      sqlite3.open(file.path)
+        ..execute('CREATE TABLE health_profile (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, blood_type TEXT, '
+            'weight_kg REAL, height_cm REAL, updated_at TEXT NOT NULL)')
+        ..execute("INSERT INTO health_profile (id, user_id, updated_at) VALUES ('hp-u1', 'u1', 1), "
+            "('hp-u1-dup', 'u1', 2), ('hp-u2', 'u2', 3)")
+        ..execute('CREATE TABLE prescription (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, clinician TEXT NOT NULL, '
+            'specialty TEXT, reference TEXT, items TEXT NOT NULL, issued_at TEXT NOT NULL, valid_until TEXT, '
+            'created_at TEXT NOT NULL)')
+        ..execute('INSERT INTO prescription (id, user_id, clinician, items, issued_at, created_at) '
+            "VALUES ('rx1', 'u1', 'Test Clinician', '[]', 't', 't')")
+        ..execute('CREATE TABLE health_record (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, health_profile_id TEXT, '
+            'type TEXT NOT NULL, title TEXT NOT NULL, tags TEXT NOT NULL, source TEXT NOT NULL, file_type TEXT, '
+            'file_path TEXT, pages INTEGER, result_note TEXT, taken_at TEXT NOT NULL, created_at TEXT NOT NULL)')
+        ..execute('INSERT INTO health_record (id, user_id, type, title, tags, source, taken_at, created_at) '
+            "VALUES ('r1', 'u2', 'lab', 'Test record', '[]', 'self', 't', 't')")
+        ..dispose();
     });
 
-    test('gains the member columns; each account\'s earliest row becomes its self', () async {
+    test("gains the member columns; each account's earliest row becomes its self", () async {
       final db = AppDatabase(NativeDatabase(file));
       addTearDown(db.close);
 
       final cols =
           (await db.customSelect('PRAGMA table_info(health_profile)').get()).map((r) => r.read<String>('name')).toSet();
       expect(
-          cols,
-          containsAll([
-            'is_self', 'kind', 'display_name', 'date_of_birth', 'sex', 'relationship', 'group_id', //
-            'tone', 'status', 'closed_on', 'pregnancy_id', 'sequence',
-          ]));
+        cols,
+        containsAll([
+          'is_self', 'kind', 'display_name', 'date_of_birth', 'sex', 'relationship', 'group_id', //
+          'tone', 'status', 'closed_on', 'pregnancy_id', 'sequence',
+        ]),
+      );
       expect(await rows(db, 'SELECT id, is_self, kind, status FROM health_profile ORDER BY id'), [
         'hp-u1|1|self|active',
         'hp-u1-dup|0|dependent|active',
@@ -108,7 +109,7 @@ void main() {
     test('NULL anchors go to self even with several profiles', () async {
       await addDependent(db, 'hp-kid', u1);
       final self = await db.ensureSelfHealthProfile(u1);
-      await db.customStatement("INSERT INTO prescription (id, user_id, clinician, items, issued_at, created_at) "
+      await db.customStatement('INSERT INTO prescription (id, user_id, clinician, items, issued_at, created_at) '
           "VALUES ('rx1', 'u1', 'Test Clinician', '[]', 't', 't')");
 
       await db.runProfileAnchorBackfill();
@@ -166,7 +167,7 @@ void main() {
       expect(await db.resolveActiveHealthProfile(u1), self);
     });
 
-    test('refuses a closed profile or another account\'s profile', () async {
+    test("refuses a closed profile or another account's profile", () async {
       await addDependent(db, 'hp-closed', u1, status: 'closed');
       final other = await db.ensureSelfHealthProfile(u2);
 
@@ -189,17 +190,19 @@ void main() {
     tearDown(() => db.close());
 
     ProviderContainer container({UserId? user = u1}) {
-      final c = ProviderContainer(overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        currentUserIdProvider.overrideWithValue(user),
-      ]);
+      final c = ProviderContainer(
+        retry: noProviderRetry,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          currentUserIdProvider.overrideWithValue(user),
+        ],
+      );
       addTearDown(c.dispose);
       return c;
     }
 
     test('currentProfileIdProvider follows the switcher and the choice persists', () async {
-      final c = container();
-      c.listen(currentProfileIdProvider, (_, __) {});
+      final c = container()..listen(currentProfileIdProvider, (_, __) {});
       final self = await c.read(activeProfileProvider.future);
       expect(c.read(currentProfileIdProvider), self);
       await addDependent(db, 'hp-kid', u1);

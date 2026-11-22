@@ -38,9 +38,11 @@ void main() {
 
       await expectLater(
         () => api.passwordSignIn(signIn()),
-        throwsA(isA<ApiException>()
-            .having((e) => e.code, 'code', 'account_locked')
-            .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', 90)),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.code, 'code', 'account_locked')
+              .having((e) => e.retryAfterSeconds, 'retryAfterSeconds', 90),
+        ),
       );
     });
 
@@ -115,7 +117,7 @@ void main() {
   });
 
   test('e2eApiOverrides binds every Provider<XxxApi> to a fake', () {
-    final container = ProviderContainer(overrides: e2eApiOverrides());
+    final container = ProviderContainer(retry: noProviderRetry, overrides: e2eApiOverrides());
     addTearDown(container.dispose);
 
     expect(container.read(authApiProvider), isA<FakeAuthApi>());
@@ -159,7 +161,7 @@ void main() {
 
   test('e2eApiOverrides accepts a pre-configured fake so a test can force state', () {
     final auth = FakeAuthApi()..lockedOut = true;
-    final container = ProviderContainer(overrides: e2eApiOverrides(auth: auth));
+    final container = ProviderContainer(retry: noProviderRetry, overrides: e2eApiOverrides(auth: auth));
     addTearDown(container.dispose);
 
     expect(identical(container.read(authApiProvider), auth), isTrue);
@@ -183,7 +185,7 @@ void main() {
     });
 
     test('filters by radius', () async {
-      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, radiusKm: 1.0));
+      final res = await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357, radiusKm: 1));
       expect(res.every((p) => (p.distanceKm ?? 0) <= 1.0), isTrue);
       expect(res.length, lessThan((await api.nearby(const NearbyCareQuery(lat: 30.0444, lng: 31.2357))).length));
     });

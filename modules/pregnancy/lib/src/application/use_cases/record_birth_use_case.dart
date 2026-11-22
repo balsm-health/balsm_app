@@ -40,7 +40,7 @@ class RecordBirthUseCase {
     final items = await _pregnancies.findItems(id, scope: motherId);
     final left = [
       for (final i in items)
-        if (i.isAbout(details.babyId) && !details.keepItemIds.contains(i.id)) i.id
+        if (i.isAbout(details.babyId) && !details.keepItemIds.contains(i.id)) i.id,
     ];
     await _pregnancies.detachItems(details.babyId, left, scope: motherId);
     return AppResult.success(await settlePregnancy(p.value, pregnancies: _pregnancies, babies: _babies, now: now));

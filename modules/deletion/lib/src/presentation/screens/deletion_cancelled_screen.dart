@@ -1,7 +1,9 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../i18n/i18n.dart';
 
 /// Success screen shown after a deletion is cancelled (account kept).
 class DeletionCancelledScreen extends ConsumerWidget {
@@ -9,8 +11,9 @@ class DeletionCancelledScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(deletionStringsProvider);
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -24,39 +27,39 @@ class DeletionCancelledScreen extends ConsumerWidget {
                     width: 72,
                     height: 72,
                     decoration: const BoxDecoration(
-                      color: BalsmColors.successBg,
+                      color: AppColors.successBackground,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.check_rounded,
                       size: 40,
-                      color: BalsmColors.success,
+                      color: AppColors.success,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    'Deletion cancelled',
+                  Text(
+                    m.cancelled,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
+                    style: const TextStyle(
+                      fontSize: FontSizes.headline,
                       fontWeight: FontWeight.w700,
-                      color: BalsmColors.fg1,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Your account is safe. Nothing was deleted.',
+                  Text(
+                    m.safeBody,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
+                    style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
                   ),
                 ],
               ),
             ),
             const Spacer(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 16),
               child: BalsmButton(
-                label: 'Return to home',
+                label: m.returnHome,
                 onPressed: () => context.go('/'),
               ),
             ),

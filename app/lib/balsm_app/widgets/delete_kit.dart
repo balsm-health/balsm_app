@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
 import '../tokens.dart';
+
+// The 24pt select check of delete mode.
+const _checkRadius = 7.0;
 
 /// The shared delete pattern — port of the Claude Design `delete-kit.jsx`:
 /// a row swipes toward the start edge to reveal Delete, its `⋮` opens a
@@ -58,7 +61,7 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
   }) async {
     final ok = await showDialog<bool>(
       context: context,
-      barrierColor: const Color(0x6114202B),
+      barrierColor: AppColors.scrim,
       builder: (_) => ConfirmDeleteDialog(title: title, body: body),
     );
     if (!mounted) return false;
@@ -103,39 +106,48 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
     final picked = await showMenu<RowMenuAction>(
       context: context,
       position: RelativeRect.fromLTRB(x, rect.bottom + 4, overlay.size.width - x, overlay.size.height - rect.bottom),
-      color: Colors.white,
+      color: AppColors.white,
       surfaceTintColor: Colors.transparent,
       elevation: 8,
-      shadowColor: const Color(0x3314202B),
+      shadowColor: AppColors.shadow,
       menuPadding: const EdgeInsets.all(6),
       constraints: const BoxConstraints(minWidth: 184),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(T.rLg),
-        side: const BorderSide(color: T.ink100),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        side: const BorderSide(color: AppColors.ink100),
       ),
-      popUpAnimationStyle: const AnimationStyle(duration: Duration(milliseconds: 120), curve: Motion.easeOut),
+      popUpAnimationStyle: const AnimationStyle(duration: Motion.fast, curve: Motion.easeOut),
       items: [
         if (editLabel != null)
           PopupMenuItem<RowMenuAction>(
             value: RowMenuAction.edit,
             height: 44,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(children: [
-              const Icon(LucideIcons.pencil, size: 18, color: T.fg1),
-              const SizedBox(width: 10),
-              Text(editLabel, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            ]),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.pencil, size: 18, color: AppColors.textPrimary),
+                const SizedBox(width: 10),
+                Text(
+                  editLabel,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+              ],
+            ),
           ),
         PopupMenuItem<RowMenuAction>(
           value: RowMenuAction.delete,
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(children: [
-            const Icon(LucideIcons.trash2, size: 18, color: T.danger),
-            const SizedBox(width: 10),
-            Text(deleteLabel ?? s.strings.common.del,
-                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.danger)),
-          ]),
+          child: Row(
+            children: [
+              const Icon(LucideIcons.trash2, size: 18, color: AppColors.danger),
+              const SizedBox(width: 10),
+              Text(
+                deleteLabel ?? s.strings.common.del,
+                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.danger),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -146,11 +158,11 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
   /// several (defaults to [item]).
   Widget kitSwipe({
     required K item,
-    Object? rowKey,
     required String label,
     required VoidCallback onDelete,
-    double radius = 0,
     required Widget child,
+    Object? rowKey,
+    double radius = 0,
   }) {
     final key = rowKey ?? item;
     return SwipeRow(
@@ -185,9 +197,11 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
           : RowMoreButton(
               label: label,
               onTap: (button) async {
-                final picked = await openRowMenu(button,
-                    deleteLabel: menuLabel,
-                    editLabel: onEdit == null ? null : AppScope.of(context).strings.common.a11y_edit);
+                final picked = await openRowMenu(
+                  button,
+                  deleteLabel: menuLabel,
+                  editLabel: onEdit == null ? null : AppScope.of(context).strings.common.a11y_edit,
+                );
                 if (picked == RowMenuAction.delete) onDelete();
                 if (picked == RowMenuAction.edit) onEdit?.call();
               },
@@ -198,7 +212,7 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
         icon: LucideIcons.listChecks,
         semanticLabel: AppScope.of(context).strings.common.del_select,
         iconSize: 19,
-        onTap: () => startSelect(),
+        onTap: startSelect,
       );
 
   /// Design `selectAppbar`: close, "N selected", Select all / Clear all.
@@ -206,32 +220,36 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
     final s = AppScope.of(context);
     final c = s.strings.common;
     final allOn = all.isNotEmpty && all.every(selected.contains);
-    return AppBarRow(children: [
-      RoundBtn(icon: LucideIcons.x, semanticLabel: c.del_select_done, onTap: endSelect),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Semantics(
-          liveRegion: true,
-          child: Text(
-            selected.isEmpty ? (title ?? c.del_select_items) : c.del_selected(selected.length),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Typo.heading(ar: s.rtl),
+    return AppBarRow(
+      children: [
+        RoundBtn(icon: LucideIcons.x, semanticLabel: c.del_select_done, onTap: endSelect),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              selected.isEmpty ? (title ?? c.del_select_items) : c.del_selected(selected.length),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Typo.heading(ar: s.rtl),
+            ),
           ),
         ),
-      ),
-      PButton(allOn ? c.del_clear_all : c.del_select_all,
+        PButton(
+          allOn ? c.del_clear_all : c.del_select_all,
           variant: BtnVariant.ghost,
           size: BtnSize.sm,
           ar: s.rtl,
           onTap: () => setState(() {
-                if (allOn) {
-                  selected.clear();
-                } else {
-                  selected.addAll(all);
-                }
-              })),
-    ]);
+            if (allOn) {
+              selected.clear();
+            } else {
+              selected.addAll(all);
+            }
+          }),
+        ),
+      ],
+    );
   }
 
   /// Room to leave under a list so the bar and the notice never cover its
@@ -271,7 +289,6 @@ mixin DeleteKit<W extends StatefulWidget, K> on State<W> {
 /// selecting, a tap toggles the row instead.
 class SwipeRow extends StatefulWidget {
   const SwipeRow({
-    super.key,
     required this.open,
     required this.radius,
     required this.deleteLabel,
@@ -284,6 +301,7 @@ class SwipeRow extends StatefulWidget {
     required this.onLongPress,
     required this.onToggle,
     required this.child,
+    super.key,
   });
   final bool open;
   final double radius;
@@ -316,73 +334,85 @@ class _SwipeRowState extends State<SwipeRow> {
     // The row slides toward the start edge: left in English, right in Arabic.
     final dir = Directionality.of(context) == TextDirection.rtl ? 1.0 : -1.0;
     final rest = widget.open ? dir * _reveal : 0.0;
-    return LayoutBuilder(builder: (context, box) {
-      final w = box.maxWidth;
-      final content = TweenAnimationBuilder<double>(
-        tween: Tween(end: _drag ?? rest),
-        duration: _drag != null ? Duration.zero : const Duration(milliseconds: 200),
-        curve: Motion.easeOut,
-        builder: (context, offset, child) {
-          final amt = math.max(0.0, offset * dir);
-          return Stack(children: [
-            if (amt > 0)
-              PositionedDirectional(
-                top: 0,
-                bottom: 0,
-                end: 0,
-                width: math.max(_reveal, amt),
-                child: ExcludeSemantics(
-                  child: GestureDetector(
-                    onTap: widget.onDelete,
-                    child: Container(
-                      color: T.danger,
-                      alignment: Alignment.center,
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(LucideIcons.trash2, size: 20, color: Colors.white),
-                        const SizedBox(height: 4),
-                        Text(widget.deleteLabel,
-                            style: Typo.meta(ar: s.rtl)
-                                .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, color: Colors.white)),
-                      ]),
+    return LayoutBuilder(
+      builder: (context, box) {
+        final w = box.maxWidth;
+        final content = TweenAnimationBuilder<double>(
+          tween: Tween(end: _drag ?? rest),
+          duration: _drag != null ? Duration.zero : const Duration(milliseconds: 200),
+          curve: Motion.easeOut,
+          builder: (context, offset, child) {
+            final amt = math.max<double>(0, offset * dir);
+            return Stack(
+              children: [
+                if (amt > 0)
+                  PositionedDirectional(
+                    top: 0,
+                    bottom: 0,
+                    end: 0,
+                    width: math.max(_reveal, amt),
+                    child: ExcludeSemantics(
+                      child: GestureDetector(
+                        onTap: widget.onDelete,
+                        child: Container(
+                          color: AppColors.danger,
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.trash2, size: 20, color: AppColors.white),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.deleteLabel,
+                                style: Typo.meta(ar: s.rtl).copyWith(
+                                  fontSize: FontSizes.meta,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
+                // While open or selecting, the row's own taps (open a dose, a
+                // prescription) wait; the revealed Delete stays live.
+                Transform.translate(
+                  offset: Offset(offset, 0),
+                  child: widget.open || widget.selecting ? AbsorbPointer(child: child) : child,
                 ),
-              ),
-            // While open or selecting, the row's own taps (open a dose, a
-            // prescription) wait; the revealed Delete stays live.
-            Transform.translate(
-              offset: Offset(offset, 0),
-              child: widget.open || widget.selecting ? AbsorbPointer(child: child) : child,
-            ),
-          ]);
-        },
-        child: widget.child,
-      );
-      final row = widget.selecting
-          ? Semantics(
-              checked: widget.selected,
-              label: widget.label,
-              child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: widget.onToggle, child: content),
-            )
-          : GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: widget.open ? widget.onClose : null,
-              onLongPress: widget.onLongPress,
-              onHorizontalDragStart: (_) {
-                _base = rest;
-                _dx = 0;
-                setState(() => _drag = rest);
-              },
-              onHorizontalDragUpdate: (e) {
-                _dx += e.delta.dx;
-                setState(() => _drag = ((_base + _dx) * dir).clamp(0.0, w) * dir);
-              },
-              onHorizontalDragEnd: (_) => _settle(w),
-              onHorizontalDragCancel: () => _settle(w),
-              child: content,
+              ],
             );
-      return ClipRRect(borderRadius: BorderRadius.circular(widget.radius), child: row);
-    });
+          },
+          child: widget.child,
+        );
+        final row = widget.selecting
+            ? Semantics(
+                checked: widget.selected,
+                label: widget.label,
+                child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: widget.onToggle, child: content),
+              )
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.open ? widget.onClose : null,
+                onLongPress: widget.onLongPress,
+                onHorizontalDragStart: (_) {
+                  _base = rest;
+                  _dx = 0;
+                  setState(() => _drag = rest);
+                },
+                onHorizontalDragUpdate: (e) {
+                  _dx += e.delta.dx;
+                  setState(() => _drag = ((_base + _dx) * dir).clamp(0.0, w) * dir);
+                },
+                onHorizontalDragEnd: (_) => _settle(w),
+                onHorizontalDragCancel: () => _settle(w),
+                child: content,
+              );
+        return ClipRRect(borderRadius: BorderRadius.circular(widget.radius), child: row);
+      },
+    );
   }
 
   void _settle(double w) {
@@ -403,28 +433,28 @@ enum RowMenuAction { edit, delete }
 
 /// Design `Check`: a row's tick box while selecting.
 class SelectCheck extends StatelessWidget {
-  const SelectCheck({super.key, required this.on});
+  const SelectCheck({required this.on, super.key});
   final bool on;
 
   @override
   Widget build(BuildContext context) => AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
+        duration: Motion.fast,
         curve: Motion.easeOut,
         width: 24,
         height: 24,
         decoration: BoxDecoration(
-          color: on ? AccentScope.of(context).main : Colors.white,
-          borderRadius: BorderRadius.circular(7),
-          border: on ? null : Border.all(color: T.ink300, width: 2),
+          color: on ? AccentScope.of(context).main : AppColors.white,
+          borderRadius: BorderRadius.circular(_checkRadius),
+          border: on ? null : Border.all(color: AppColors.ink300, width: 2),
         ),
-        child: on ? const Icon(LucideIcons.check, size: 16, color: Colors.white) : null,
+        child: on ? const Icon(LucideIcons.check, size: 16, color: AppColors.white) : null,
       );
 }
 
 /// Design `More`: a row's `⋮`. Hands [onTap] its own context so the menu can
 /// open under it.
 class RowMoreButton extends StatelessWidget {
-  const RowMoreButton({super.key, required this.label, required this.onTap});
+  const RowMoreButton({required this.label, required this.onTap, super.key});
   final String label;
   final void Function(BuildContext button) onTap;
 
@@ -434,7 +464,7 @@ class RowMoreButton extends StatelessWidget {
         semanticLabel: AppScope.of(context).strings.common.del_options(label),
         ghost: true,
         iconSize: 18,
-        fg: T.fg3,
+        fg: AppColors.textTertiary,
         onTap: () => onTap(context),
       );
 }
@@ -442,7 +472,7 @@ class RowMoreButton extends StatelessWidget {
 /// Design's delete alert: what goes and what it means, then Delete or
 /// Cancel. Pops `true` to delete.
 class ConfirmDeleteDialog extends StatelessWidget {
-  const ConfirmDeleteDialog({super.key, required this.title, required this.body});
+  const ConfirmDeleteDialog({required this.title, required this.body, super.key});
   final String title;
   final String body;
 
@@ -450,40 +480,56 @@ class ConfirmDeleteDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(T.rXl)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.xl)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 340),
         child: Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(20, 22, 20, 18),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const Align(
-              alignment: AlignmentDirectional.centerStart,
-              child:
-                  IconSquare(LucideIcons.trash2, bg: T.dangerBg, fg: T.danger, size: 44, iconSize: 22, radius: T.rMd),
-            ),
-            const SizedBox(height: 14),
-            Text(title,
-                style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1, height: 1.35)),
-            const SizedBox(height: 6),
-            Text(body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5)),
-            const SizedBox(height: 20),
-            PButton(s.strings.common.del,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: IconSquare(
+                  LucideIcons.trash2,
+                  bg: AppColors.dangerBackground,
+                  fg: AppColors.danger,
+                  size: 44,
+                  iconSize: 22,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                style: Typo.subhead(ar: s.rtl)
+                    .copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary, height: 1.35),
+              ),
+              const SizedBox(height: 6),
+              Text(body, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary, height: 1.5)),
+              const SizedBox(height: 20),
+              PButton(
+                s.strings.common.del,
                 variant: BtnVariant.danger,
                 large: true,
                 block: true,
                 ar: s.rtl,
-                onTap: () => Navigator.pop(context, true)),
-            const SizedBox(height: 10),
-            PButton(s.strings.common.cancel,
+                onTap: () => Navigator.pop(context, true),
+              ),
+              const SizedBox(height: 10),
+              PButton(
+                s.strings.common.cancel,
                 variant: BtnVariant.secondary,
                 large: true,
                 block: true,
                 ar: s.rtl,
-                onTap: () => Navigator.pop(context, false)),
-          ]),
+                onTap: () => Navigator.pop(context, false),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -492,7 +538,7 @@ class ConfirmDeleteDialog extends StatelessWidget {
 
 /// Pinned under the list while selecting; disabled until a row is ticked.
 class SelectionBar extends StatelessWidget {
-  const SelectionBar({super.key, required this.label, required this.onDelete});
+  const SelectionBar({required this.label, required this.onDelete, super.key});
   final String label;
   final VoidCallback? onDelete;
 
@@ -502,19 +548,26 @@ class SelectionBar extends StatelessWidget {
     return Container(
       padding: EdgeInsetsDirectional.fromSTEB(16, 12, 16, 24 + MediaQuery.paddingOf(context).bottom),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: T.ink100)),
-        boxShadow: [BoxShadow(color: Color(0x0F14202B), offset: Offset(0, -6), blurRadius: 18)],
+        color: AppColors.white,
+        border: Border(top: BorderSide(color: AppColors.ink100)),
+        boxShadow: [BoxShadow(color: AppColors.shadowSoft, offset: Offset(0, -6), blurRadius: 18)],
       ),
-      child: PButton(label,
-          icon: LucideIcons.trash2, variant: BtnVariant.danger, large: true, block: true, ar: s.rtl, onTap: onDelete),
+      child: PButton(
+        label,
+        icon: LucideIcons.trash2,
+        variant: BtnVariant.danger,
+        large: true,
+        block: true,
+        ar: s.rtl,
+        onTap: onDelete,
+      ),
     );
   }
 }
 
 /// Design's dark "deleted" notice, announced to screen readers as it appears.
 class DoneToast extends StatelessWidget {
-  const DoneToast({super.key, required this.text});
+  const DoneToast({required this.text, super.key});
   final String text;
 
   @override
@@ -524,17 +577,25 @@ class DoneToast extends StatelessWidget {
       liveRegion: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: T.ink800, borderRadius: BorderRadius.circular(T.rLg), boxShadow: T.shadowLg),
-        child: Row(children: [
-          const Icon(LucideIcons.check, size: 17, color: T.hueMint),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(text,
+        decoration: BoxDecoration(
+          color: AppColors.ink800,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          boxShadow: AppShadows.lg,
+        ),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.check, size: 17, color: AppColors.hueMint),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
-          ),
-        ]),
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

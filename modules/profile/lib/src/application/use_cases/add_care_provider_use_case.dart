@@ -1,6 +1,7 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../profile.dart' show AddEmergencyContactUseCase;
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/entities/care_provider.dart';
 import '../../domain/events/health_profile_updated.dart';
@@ -10,6 +11,7 @@ import '../../infrastructure/drift/drift_care_providers_data_source.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
 import '../ports/care_providers_data_source.dart';
 import '../ports/health_profiles_data_source.dart';
+import 'add_emergency_contact_use_case.dart' show AddEmergencyContactUseCase;
 
 /// Adds a [CareProvider] to the patient's care team and publishes
 /// [HealthProfileUpdated].
@@ -115,7 +117,7 @@ class AddCareProviderUseCase {
       _bus.publish(HealthProfileUpdated(userId: userId, fieldChanged: 'care_provider_added'));
 
       return AppResult.success(draft);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

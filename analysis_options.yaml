@@ -2,5 +2,15 @@
 # nearest analysis_options.yaml (no upward merge), so per-package files also
 # set the same width — this root covers loose dirs (test/, tool/, packages
 # without their own options).
+include: package:balsm_lints/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - '**/*.g.dart'
+    - '**/*.i69n.dart'
+    - '**/*.freezed.dart'
+    # Packages carry their own analysis_options; vendored skills are third-party.
+    - '**/skills/**'
+
 formatter:
   page_width: 120

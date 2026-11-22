@@ -22,6 +22,6 @@ final selfReportStrings = LocalizedStrings<Messages>.defaultLangs(
   ar: LocaleFactory.sync(() => const Messages_ar()),
 );
 
-/// Locale-explicit lookup (prototype [PatientAppState.lang], route params).
+/// Locale-explicit lookup (prototype `PatientAppState.lang`, route params).
 Messages selfReportMessagesOf(String locale) =>
     selfReportStrings.resolveSync(Locale(locale.split(RegExp('[-_]')).first));

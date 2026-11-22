@@ -1,10 +1,11 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/flags.dart';
-import 'package:app/balsm_app/tokens.dart';
 import 'package:app/balsm_app/widgets/beta_banner.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'support/flag_overrides.dart';
 
 /// The beta ribbon: on by default, in the app's language, never in the way of
 /// a tap, and gone when its flag is switched off.
@@ -31,7 +32,7 @@ void main() {
     await pump(tester, PatientAppState());
     expect(ribbon(tester).message, 'Beta');
     expect(ribbon(tester).location, BannerLocation.topEnd);
-    expect(ribbon(tester).color, T.warning, reason: 'amber whatever the accent');
+    expect(ribbon(tester).color, AppColors.warning, reason: 'amber whatever the accent');
   });
 
   testWidgets('reads «إطلاق تجريبي» in Arabic and lays out right to left', (tester) async {
@@ -50,7 +51,7 @@ void main() {
   });
 
   testWidgets('is gone once the flag is switched off', (tester) async {
-    final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.betaBanner, false);
+    final flags = flagsWith({AppFlags.betaBanner: false});
     await pump(tester, PatientAppState()..attachFlags(flags));
     expect(find.byType(Banner), findsNothing);
     expect(find.text('under the ribbon'), findsOne);

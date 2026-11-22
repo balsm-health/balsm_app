@@ -113,7 +113,7 @@ class DriftGrowthLogDataSource extends ProfileDataSource<GrowthEntryId, GrowthEn
 
   Stream<T> _watch<T>(Future<T> Function() read) => Stream<T>.multi((emitter) async {
         emitter.add(await read());
-        emitter.addStream(_changes.stream.asyncMap((_) => read()));
+        unawaited(emitter.addStream(_changes.stream.asyncMap((_) => read())));
       });
 
   // ── Writes ───────────────────────────────────────────────────────────────

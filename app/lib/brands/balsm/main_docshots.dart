@@ -11,8 +11,8 @@
 import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
 
-import 'docshots_places.dart';
 import 'docshots_persona.dart';
+import 'docshots_places.dart';
 import 'docshots_seed.dart';
 import 'main_balsm.dart' as app;
 

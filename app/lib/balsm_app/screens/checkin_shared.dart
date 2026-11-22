@@ -1,19 +1,19 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:self_report/self_report.dart';
+
 import '../app_state.dart';
 import '../kit.dart';
-import '../tokens.dart';
 import '../widgets/mood_face.dart';
 
 /// MoodFace stroke color per level (1 = rough … 5 = great).
 const moodColors = <Color>[
-  T.danger,
-  Color(0xFFD97A20),
-  T.sun600,
-  T.hueMint,
-  T.hueMint600,
+  AppColors.danger,
+  AppColors.expiring,
+  AppColors.sun600,
+  AppColors.hueMint,
+  AppColors.hueMint600,
 ];
 
 /// The self-report symptom catalog paired with its display icon. Ids come from
@@ -90,19 +90,25 @@ String urineColorLabel(PatientAppState s, UrineColor colour) {
 ({String lbl, Color color}) painInfo(PatientAppState s, int n) {
   final c = s.strings.checkin;
   return switch (PainLevel(n).band) {
-    PainBand.none => (lbl: c.pain_0, color: T.hueMint),
-    PainBand.mild => (lbl: c.pain_mild, color: T.hueMint600),
-    PainBand.moderate => (lbl: c.pain_mod, color: T.sun600),
-    PainBand.severe => (lbl: c.pain_sev, color: T.expiring),
-    PainBand.worst => (lbl: c.pain_worst, color: T.danger),
+    PainBand.none => (lbl: c.pain_0, color: AppColors.hueMint),
+    PainBand.mild => (lbl: c.pain_mild, color: AppColors.hueMint600),
+    PainBand.moderate => (lbl: c.pain_mod, color: AppColors.sun600),
+    PainBand.severe => (lbl: c.pain_sev, color: AppColors.expiring),
+    PainBand.worst => (lbl: c.pain_worst, color: AppColors.danger),
   };
 }
 
 /// One of the five mood faces (`.mood` cell) — shared by the full check-in
 /// and the one-metric log templates.
 class MoodCell extends StatelessWidget {
-  const MoodCell(
-      {super.key, required this.lv, required this.selected, required this.s, required this.onTap, this.subject});
+  const MoodCell({
+    required this.lv,
+    required this.selected,
+    required this.s,
+    required this.onTap,
+    super.key,
+    this.subject,
+  });
   final int lv;
 
   /// Gender of the person being logged for, when it is a family member.
@@ -121,23 +127,31 @@ class MoodCell extends StatelessWidget {
             transform: Matrix4.translationValues(0, selected ? -2 : 0, 0),
             transformAlignment: Alignment.center,
             decoration: BoxDecoration(
-              color: selected ? s.accent.bg : Colors.white,
-              borderRadius: BorderRadius.circular(T.rLg),
-              border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
+              color: selected ? s.accent.bg : AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: selected ? s.accent.main : AppColors.border, width: 1.5),
             ),
             // A 360dp phone leaves each square ~51dp — less than the face and
             // label need — so the content scales down rather than overflow.
             padding: const EdgeInsets.all(4),
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
-                const SizedBox(height: 8),
-                Text(moodLabel(s, lv, subject: subject),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  MoodFace(level: lv, color: selected ? moodColors[lv - 1] : AppColors.ink400),
+                  const SizedBox(height: 8),
+                  Text(
+                    moodLabel(s, lv, subject: subject),
                     maxLines: 1,
-                    style: Typo.meta(ar: s.rtl)
-                        .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),
-              ]),
+                    style: Typo.meta(ar: s.rtl).copyWith(
+                      fontSize: FontSizes.eyebrow,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? s.accent.d : AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -178,7 +192,7 @@ List<List<CheckIn>> groupCheckInsByDay(Iterable<CheckIn> history) {
 /// `.history-row` for one day — day chip, then the day's newest blood
 /// pressure, glucose, mood and pain, whichever check-in each came from.
 class CheckInDayRow extends StatelessWidget {
-  const CheckInDayRow({super.key, required this.day, required this.first, this.onTap});
+  const CheckInDayRow({required this.day, required this.first, super.key, this.onTap});
 
   /// The day's check-ins, oldest first, as [groupCheckInsByDay] gives them.
   final List<CheckIn> day;
@@ -204,38 +218,54 @@ class CheckInDayRow extends StatelessWidget {
     final pain = newest((c) => c.reportsPain ? c.painLevel.value : null);
 
     final row = Container(
-      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
+      decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: AppColors.ink100))),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(children: [
-        SizedBox(
-          width: 50,
-          child: Column(children: [
-            Text(d.day.toString(),
-                style: Typo.num(size: FS.lg, weight: FontWeight.w800, color: T.fg1).copyWith(height: 1)),
-            Text(checkInMonthShort(s, d),
-                style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, letterSpacing: s.rtl ? 0 : 1.1)),
-          ]),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-            if (bp != null) ...[
-              const Icon(LucideIcons.activity, size: 14, color: T.hueViolet),
-              Text('${bp.systolic}/${bp.diastolic}',
-                  textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, color: T.fg1)),
-            ],
-            if (glucose != null) ...[
-              const Icon(LucideIcons.droplet, size: 14, color: T.hueMint600),
-              Text('$glucose', style: Typo.num(size: FS.sm, color: T.fg1)),
-            ],
-          ]),
-        ),
-        if (mood != null) ...[
-          MoodFace(level: mood.score, size: 26, color: moodColors[mood.score - 1]),
-          const SizedBox(width: 10),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 50,
+            child: Column(
+              children: [
+                Text(
+                  d.day.toString(),
+                  style: Typo.num(size: FontSizes.subhead, weight: FontWeight.w800).copyWith(height: 1),
+                ),
+                Text(
+                  checkInMonthShort(s, d),
+                  style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.eyebrow, letterSpacing: s.rtl ? 0 : 1.1),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (bp != null) ...[
+                  const Icon(LucideIcons.activity, size: 14, color: AppColors.hueViolet),
+                  Text(
+                    '${bp.systolic}/${bp.diastolic}',
+                    textDirection: TextDirection.ltr,
+                    style: Typo.num(size: FontSizes.bodySm),
+                  ),
+                ],
+                if (glucose != null) ...[
+                  const Icon(LucideIcons.droplet, size: 14, color: AppColors.hueMint600),
+                  Text('$glucose', style: Typo.num(size: FontSizes.bodySm)),
+                ],
+              ],
+            ),
+          ),
+          if (mood != null) ...[
+            MoodFace(level: mood.score, size: 26, color: moodColors[mood.score - 1]),
+            const SizedBox(width: 10),
+          ],
+          if (pain != null) Pill('$pain', kind: painBadgeKind(pain), small: true, dot: false, ar: s.rtl),
         ],
-        if (pain != null) Pill('$pain', kind: painBadgeKind(pain), small: true, dot: false, ar: s.rtl),
-      ]),
+      ),
     );
     if (onTap == null) return row;
     return Pressable(onTap: onTap, scale: 0.99, child: row);
@@ -268,7 +298,7 @@ String checkInStepLabel(PatientAppState s, String id) {
 /// language the dispense and onboarding flows use, so a patient reads one
 /// pattern everywhere.
 class CheckInSteps extends StatelessWidget {
-  const CheckInSteps({super.key, required this.s, required this.steps, required this.current});
+  const CheckInSteps({required this.s, required this.steps, required this.current, super.key});
 
   final PatientAppState s;
   final List<String> steps;
@@ -291,52 +321,55 @@ class CheckInSteps extends StatelessWidget {
               child: Padding(
                 // Sits against the discs, not the captions under them.
                 padding: EdgeInsets.only(top: 12, bottom: showCaptions ? 20 : 0),
-                child: Container(height: 2, color: i <= current ? accent : T.ink100),
+                child: Container(height: 2, color: i <= current ? accent : AppColors.ink100),
               ),
             ),
           // Both the step and the rule are `flex: 1` in the design, so discs
           // land at even intervals whatever their captions measure.
           Expanded(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                width: 26,
-                height: 26,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: i <= current ? accent : T.ink100,
-                  shape: BoxShape.circle,
-                ),
-                child: i < current
-                    ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
-                    : Text(
-                        '${i + 1}',
-                        textDirection: TextDirection.ltr,
-                        style: Typo.num(
-                          size: 12,
-                          weight: FontWeight.w700,
-                          color: i <= current ? Colors.white : T.fg4,
-                        ),
-                      ),
-              ),
-              if (showCaptions) ...[
-                const SizedBox(height: 6),
-                Text(
-                  checkInStepLabel(s, id),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(
-                    fontSize: 10,
-                    fontWeight: i == current ? FontWeight.w700 : FontWeight.w600,
-                    color: i == current
-                        ? T.fg1
-                        : i < current
-                            ? T.fg3
-                            : T.fg4,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: i <= current ? accent : AppColors.ink100,
+                    shape: BoxShape.circle,
                   ),
+                  child: i < current
+                      ? const Icon(LucideIcons.check, size: 14, color: AppColors.white)
+                      : Text(
+                          '${i + 1}',
+                          textDirection: TextDirection.ltr,
+                          style: Typo.num(
+                            size: 12,
+                            weight: FontWeight.w700,
+                            color: i <= current ? AppColors.white : AppColors.textHint,
+                          ),
+                        ),
                 ),
+                if (showCaptions) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    checkInStepLabel(s, id),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(
+                      fontSize: FontSizes.micro,
+                      fontWeight: i == current ? FontWeight.w700 : FontWeight.w600,
+                      color: i == current
+                          ? AppColors.textPrimary
+                          : i < current
+                              ? AppColors.textTertiary
+                              : AppColors.textHint,
+                    ),
+                  ),
+                ],
               ],
-            ]),
+            ),
           ),
         ],
       ],

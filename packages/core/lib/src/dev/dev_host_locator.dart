@@ -142,17 +142,19 @@ class DevHostLocator {
   /// on a development port, and pointing the app at the wrong one fails later
   /// and less legibly than not finding it at all.
   static Future<bool> _healthProbe(String host, int port, Duration timeout) async {
-    final dio = Dio(BaseOptions(
-      baseUrl: 'http://$host:$port',
-      connectTimeout: timeout,
-      receiveTimeout: timeout,
-      validateStatus: (_) => true,
-    ));
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: 'http://$host:$port',
+        connectTimeout: timeout,
+        receiveTimeout: timeout,
+        validateStatus: (_) => true,
+      ),
+    );
     try {
       final res = await dio.get<dynamic>(ApiRoutes.health);
       final code = res.statusCode ?? 0;
       return code >= 200 && code < 300;
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     } finally {
       dio.close(force: true);
@@ -168,7 +170,7 @@ class DevHostLocator {
     final prefixes = <String>{};
     final List<NetworkInterface> interfaces;
     try {
-      interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4, includeLoopback: false);
+      interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
     } on SocketException catch (e) {
       // Some Android builds refuse to enumerate interfaces. Nothing to sweep
       // is a dead end, not a crash on the path that opens the app.

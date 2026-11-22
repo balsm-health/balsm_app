@@ -12,7 +12,7 @@ import '../tokens.dart';
 ///
 /// Shown while [AppFlags.betaBanner] is on, which is its default.
 class BetaBanner extends StatelessWidget {
-  const BetaBanner({super.key, required this.state, required this.child});
+  const BetaBanner({required this.state, required this.child, super.key});
 
   final PatientAppState state;
   final Widget child;
@@ -25,13 +25,13 @@ class BetaBanner extends StatelessWidget {
       location: BannerLocation.topEnd,
       // Amber, not the accent: it reads as "beta" at a glance and stays the
       // same whichever accent the patient picked.
-      color: T.warning,
+      color: AppColors.warning,
       textDirection: state.dir,
       layoutDirection: state.dir,
       // The ribbon is 80pt long and 12pt deep; both labels fit at this size.
       textStyle: TextStyle(
-        color: T.ink900,
-        fontSize: 10,
+        color: AppColors.ink900,
+        fontSize: FontSizes.micro,
         fontWeight: FontWeight.w800,
         height: 1,
         // Arabic letters join, so spacing them apart breaks the word.

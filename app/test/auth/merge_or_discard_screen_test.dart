@@ -46,32 +46,39 @@ void main() {
     when(() => controller.pendingChoice()).thenAnswer((_) async => null);
     dao = _MockDisclosureDao();
     // The disclosure accepted while offline is already on the device.
-    when(() => dao.watchAcceptance(any(), any())).thenAnswer((_) => Stream.value(DisclosureAcceptance(
+    when(() => dao.watchAcceptance(any(), any())).thenAnswer(
+      (_) => Stream.value(
+        DisclosureAcceptance(
           disclosureId: const DisclosureId.value('consolidated'),
           version: '1',
           countryCodeAtAccept: 'EG',
           supervisoryAuthorityNameAtAccept: 'x',
           preferredLanguageAtAccept: 'en',
           acceptedAt: DateTime.utc(2026),
-        )));
+        ),
+      ),
+    );
   });
 
   Future<void> pump(WidgetTester tester, PatientAppState state) async {
     tester.view.physicalSize = const Size(402, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        goOnlineControllerProvider.overrideWithValue(controller),
-        disclosureDaoProvider.overrideWithValue(dao),
-      ],
-      child: MaterialApp(
-        home: Material(
-          type: MaterialType.transparency,
-          child: AppScope(state: state, child: const AuthRouter()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          goOnlineControllerProvider.overrideWithValue(controller),
+          disclosureDaoProvider.overrideWithValue(dao),
+        ],
+        child: MaterialApp(
+          home: Material(
+            type: MaterialType.transparency,
+            child: AppScope(state: state, child: const AuthRouter()),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pump();
   }
 
@@ -152,8 +159,14 @@ void main() {
 
   testWidgets('a restart with a pending merge boots back onto this screen', (tester) async {
     // A choice interrupted by a crash: the keys are still set at next boot.
-    final state = await tester.runAsync(() => PatientAppState.load(PatientAppPrefs(_MemoryKV()),
-        hasSession: true, accountMode: AccountMode.deviceOnly, pendingMerge: true));
+    final state = await tester.runAsync(
+      () => PatientAppState.load(
+        PatientAppPrefs(_MemoryKV()),
+        hasSession: true,
+        accountMode: AccountMode.deviceOnly,
+        pendingMerge: true,
+      ),
+    );
     expect(state!.route, AppRoutes.mergeOrDiscard);
 
     await pump(tester, state);

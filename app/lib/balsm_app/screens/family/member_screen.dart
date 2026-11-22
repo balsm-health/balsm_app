@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
 import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
@@ -13,10 +14,9 @@ import 'package:vaccinations/vaccinations.dart';
 import '../../app_state.dart';
 import '../../kit.dart';
 import '../../routes.dart';
-import '../../tokens.dart';
-import '../profile_subscreens.dart' show memberHealthProfileProvider;
 import '../pregnancy/pregnancy_kit.dart' show dueLine;
 import '../pregnancy/pregnancy_screen.dart';
+import '../profile_subscreens.dart' show memberHealthProfileProvider;
 import '../records_screen.dart';
 import '../trend_series.dart';
 import '../trends_screen.dart';
@@ -35,7 +35,7 @@ Future<void> openMember(BuildContext context, HealthProfileId id) =>
 /// A member's own screen: their head and tiles, with edit and close in the
 /// app bar menu. Leaves itself when the member is closed.
 class MemberScreen extends ConsumerWidget {
-  const MemberScreen({super.key, required this.id});
+  const MemberScreen({required this.id, super.key});
   final HealthProfileId id;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,9 +46,8 @@ class MemberScreen extends ConsumerWidget {
     ref.listen<HealthProfileId?>(currentProfileIdProvider, (previous, next) {
       if (previous == id && next != null && next != id) Navigator.maybePop(context);
     });
-    final m =
-        (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[]).where((x) => x.id == id).firstOrNull;
-    if (m == null) return const Scaffold(backgroundColor: Colors.white);
+    final m = (ref.watch(familyMembersProvider).value ?? const <FamilyMember>[]).where((x) => x.id == id).firstOrNull;
+    if (m == null) return const Scaffold(backgroundColor: AppColors.white);
     return FamilyScaffold(
       title: m.shortName,
       bar: const ProfileBar(),
@@ -69,22 +68,28 @@ Future<void> _showMemberMenu(BuildContext context, WidgetRef ref, FamilyMember m
   return showAppSheet<void>(
     context,
     textDirection: s.dir,
-    builder: (ctx) => FamilySheet(title: m.displayName, children: [
-      for (final (icon, label, danger, action) in [
-        (LucideIcons.pencilLine, f.edit_details, false, () => _editDetails(context, m)),
-        (LucideIcons.clipboardList, f.edit_medical, false, () => openMemberMedical(context, m)),
-        (LucideIcons.archive, f.close_profile, true, () => _confirmClose(context, ref, m)),
-      ])
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(icon, color: danger ? T.danger : T.fg2),
-          title: Text(label, style: Typo.body(ar: s.rtl).copyWith(color: danger ? T.danger : T.fg1)),
-          onTap: () {
-            Navigator.pop(ctx);
-            action();
-          },
-        ),
-    ]),
+    builder: (ctx) => FamilySheet(
+      title: m.displayName,
+      children: [
+        for (final (icon, label, danger, action) in [
+          (LucideIcons.pencilLine, f.edit_details, false, () => _editDetails(context, m)),
+          (LucideIcons.clipboardList, f.edit_medical, false, () => openMemberMedical(context, m)),
+          (LucideIcons.archive, f.close_profile, true, () => _confirmClose(context, ref, m)),
+        ])
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(icon, color: danger ? AppColors.danger : AppColors.textSecondary),
+            title: Text(
+              label,
+              style: Typo.body(ar: s.rtl).copyWith(color: danger ? AppColors.danger : AppColors.textPrimary),
+            ),
+            onTap: () {
+              Navigator.pop(ctx);
+              unawaited(action());
+            },
+          ),
+      ],
+    ),
   );
 }
 
@@ -102,7 +107,7 @@ Future<void> _editDetails(BuildContext context, FamilyMember m) async {
 /// The member's head and tiles (`MCMemberBody`), shared by the member screen
 /// and Home while the member is the active profile.
 class MemberBody extends ConsumerWidget {
-  const MemberBody({super.key, required this.member});
+  const MemberBody({required this.member, super.key});
   final FamilyMember member;
 
   @override
@@ -111,25 +116,25 @@ class MemberBody extends ConsumerWidget {
     final f = s.strings.family;
     final m = member;
     final now = DateTime.now();
-    final health = ref.watch(memberHealthProfileProvider(m.id)).valueOrNull;
+    final health = ref.watch(memberHealthProfileProvider(m.id)).value;
     final age = m.ageOn(now);
     final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
     final allergies = health?.allergies.length ?? 0;
     final conditions = health?.conditions.length ?? 0;
     final preg = ref.watch(activePregnancyOfProvider(m.id));
     final trends = trendSeries(
-      ref.watch(profileCheckInsProvider(m.id)).valueOrNull ?? const <CheckIn>[],
-      growth: ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[],
+      ref.watch(profileCheckInsProvider(m.id)).value ?? const <CheckIn>[],
+      growth: ref.watch(growthEntriesProvider(m.id)).value ?? const <GrowthEntry>[],
     ).length;
     // The tiles count the active profile's data; this member is the active
     // profile whenever their home is on screen (opening them selects them).
     final active = ref.watch(currentProfileIdProvider) == m.id;
-    final meds = active ? (ref.watch(medicationListProvider).valueOrNull ?? const <Medication>[]).length : 0;
-    final records = active ? (ref.watch(recordListProvider).valueOrNull ?? const <RecordDocument>[]).length : 0;
+    final meds = active ? (ref.watch(medicationListProvider).value ?? const <Medication>[]).length : 0;
+    final records = active ? (ref.watch(recordListProvider).value ?? const <RecordDocument>[]).length : 0;
     final meta = [
       relationLabel(s, m.relationship, m.sex),
       if (age != null) ageLabel(s, age),
-      if (m.dateOfBirth != null) f.born(formatDay(m.dateOfBirth!)),
+      if (m.dateOfBirth case final dateOfBirth?) f.born(formatDay(dateOfBirth)),
     ].join(' · ');
 
     final tiles = <Widget>[
@@ -138,7 +143,7 @@ class MemberBody extends ConsumerWidget {
         tone: MemberTone.blue,
         title: f.tile_card,
         // "O+ · 1 allergy" (canvas); no dash in front while no blood type is set.
-        sub: [if (blood != null) blood, allergies == 0 ? f.no_allergies : f.allergies_n(allergies)].join(' · '),
+        sub: [if (blood != null) blood, if (allergies == 0) f.no_allergies else f.allergies_n(allergies)].join(' · '),
         onTap: () => openMemberCard(context, m.id),
       ),
       ..._childTiles(context, ref, m, now),
@@ -186,34 +191,52 @@ class MemberBody extends ConsumerWidget {
       ),
     ];
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Padding(
-        // Canvas "06 Member profile": 8 above, 84px avatar, 12 to the 26/800
-        // name, 6 to the meta, 10 to the chips, 16 to the tiles.
-        padding: const EdgeInsetsDirectional.only(top: 8, bottom: 16),
-        child: Column(children: [
-          MemberAvatar(m, size: 84),
-          const SizedBox(height: 12),
-          Text(m.displayName,
-              textAlign: TextAlign.center,
-              style: Typo.title(ar: s.rtl).copyWith(fontWeight: FontWeight.w800, height: 1.3)),
-          const SizedBox(height: 6),
-          Text(meta, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          if (blood != null || (health?.conditions.isNotEmpty ?? false)) ...[
-            const SizedBox(height: 10),
-            Wrap(alignment: WrapAlignment.center, spacing: 6, runSpacing: 6, children: [
-              if (blood != null) _Badge(blood, ltr: true),
-              for (final c in health?.conditions ?? const <ChronicCondition>[]) _Badge(c.name),
-            ]),
-          ],
-        ]),
-      ),
-      LayoutBuilder(builder: (context, c) {
-        const gap = 10.0;
-        final w = (c.maxWidth - gap) / 2;
-        return Wrap(spacing: gap, runSpacing: gap, children: [for (final t in tiles) SizedBox(width: w, child: t)]);
-      }),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          // Canvas "06 Member profile": 8 above, 84px avatar, 12 to the 26/800
+          // name, 6 to the meta, 10 to the chips, 16 to the tiles.
+          padding: const EdgeInsetsDirectional.only(top: 8, bottom: 16),
+          child: Column(
+            children: [
+              MemberAvatar(m, size: 84),
+              const SizedBox(height: 12),
+              Text(
+                m.displayName,
+                textAlign: TextAlign.center,
+                style: Typo.title(ar: s.rtl).copyWith(fontWeight: FontWeight.w800, height: 1.3),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                meta,
+                textAlign: TextAlign.center,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+              ),
+              if (blood != null || (health?.conditions.isNotEmpty ?? false)) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (blood != null) _Badge(blood, ltr: true),
+                    for (final c in health?.conditions ?? const <ChronicCondition>[]) _Badge(c.name),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        LayoutBuilder(
+          builder: (context, c) {
+            const gap = 10.0;
+            final w = (c.maxWidth - gap) / 2;
+            return Wrap(spacing: gap, runSpacing: gap, children: [for (final t in tiles) SizedBox(width: w, child: t)]);
+          },
+        ),
+      ],
+    );
   }
 
   /// Tiles only a child gets (`m.isChildOn(now)`), after the emergency
@@ -223,9 +246,9 @@ class MemberBody extends ConsumerWidget {
   List<Widget> _childTiles(BuildContext context, WidgetRef ref, FamilyMember m, DateTime now) {
     if (!m.isChildOn(now)) return const [];
     final s = AppScope.of(context);
-    final vaccines = ref.watch(vaccinationsProvider(m.id)).valueOrNull ?? const <VaccinationRecord>[];
+    final vaccines = ref.watch(vaccinationsProvider(m.id)).value ?? const <VaccinationRecord>[];
     final next = VaccinationStatus.of(vaccines, today: now).next;
-    final growth = ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[];
+    final growth = ref.watch(growthEntriesProvider(m.id)).value ?? const <GrowthEntry>[];
     return [
       FamilyTile(
         icon: LucideIcons.syringe,
@@ -273,13 +296,13 @@ class _Badge extends StatelessWidget {
       height: 26,
       alignment: Alignment.center,
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
-      decoration: BoxDecoration(color: T.neutralBg, borderRadius: BorderRadius.circular(T.rPill)),
+      decoration: BoxDecoration(color: AppColors.neutralBackground, borderRadius: BorderRadius.circular(AppRadii.pill)),
       child: Text(
         label,
         textDirection: ltr ? TextDirection.ltr : null,
         style: ltr
-            ? Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg1)
-            : Typo.meta(ar: s.rtl).copyWith(color: T.fg2),
+            ? Typo.num(size: FontSizes.meta, weight: FontWeight.w700)
+            : Typo.meta(ar: s.rtl).copyWith(color: AppColors.textSecondary),
       ),
     );
   }

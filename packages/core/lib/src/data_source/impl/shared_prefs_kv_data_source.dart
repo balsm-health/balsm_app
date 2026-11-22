@@ -73,7 +73,7 @@ class SharedPrefsKVDataSource extends GlobalKVDataSource {
   @override
   Future<void> clear() async {
     if (!await _prefs.clear()) {
-      throw StorageWriteException('clear: platform clear failed');
+      throw const StorageWriteException('clear: platform clear failed');
     }
   }
 

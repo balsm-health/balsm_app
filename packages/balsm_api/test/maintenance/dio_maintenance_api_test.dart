@@ -5,9 +5,11 @@ import '../helpers/fake_http_adapter.dart';
 
 void main() {
   test('GETs /api/v1/maintenance and parses the envelope', () async {
-    final adapter = FakeHttpAdapter((_) =>
-        jsonResponse('{"data": {"mode": "readonly", "message": " Back soon ", "ends_at": "2025-01-01T02:00:00+00:00", '
-            '"updated_at": "2025-01-01T00:00:00+00:00"}}'));
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse(
+          '{"data": {"mode": "readonly", "message": " Back soon ", "ends_at": "2025-01-01T02:00:00+00:00", '
+          '"updated_at": "2025-01-01T00:00:00+00:00"}}'),
+    );
 
     final res = await DioMaintenanceApi(net: fakeNet(adapter)).getStatus();
 
@@ -16,7 +18,7 @@ void main() {
     expect(res.mode, 'readonly');
     expect(res.message, 'Back soon');
     expect(res.endsAt, DateTime.utc(2025, 1, 1, 2));
-    expect(res.updatedAt, DateTime.utc(2025, 1, 1));
+    expect(res.updatedAt, DateTime.utc(2025));
   });
 
   test('null message / end time stay null; blank message is null', () async {

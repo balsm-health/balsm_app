@@ -42,7 +42,7 @@ MaintenanceNotice? parseMaintenanceNotice(String manifest) {
   final Object? root;
   try {
     root = jsonDecode(manifest);
-  } catch (_) {
+  } on Object catch (_) {
     return null;
   }
   if (root is! Map<String, dynamic>) return null;
@@ -70,11 +70,13 @@ class ManifestMaintenanceSource {
   ManifestMaintenanceSource({required String url, Dio? dio})
       : _url = url,
         _dio = dio ??
-            Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 5),
-              receiveTimeout: const Duration(seconds: 5),
-              responseType: ResponseType.plain,
-            ));
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 5),
+                receiveTimeout: const Duration(seconds: 5),
+                responseType: ResponseType.plain,
+              ),
+            );
 
   final String _url;
   final Dio _dio;
@@ -83,7 +85,7 @@ class ManifestMaintenanceSource {
     try {
       final body = (await _dio.get<String>(_url)).data;
       return body == null ? null : parseMaintenanceNotice(body);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

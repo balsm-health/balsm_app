@@ -12,10 +12,12 @@ class ConflictResolver {
   ) {
     final merged = <DoseEventRecord>[...existing];
     for (final event in incoming) {
-      final isDuplicate = merged.any((e) =>
-          e.medicationId == event.medicationId &&
-          e.outcome == event.outcome &&
-          (e.scheduledAt.difference(event.scheduledAt).abs() <= const Duration(minutes: 5)));
+      final isDuplicate = merged.any(
+        (e) =>
+            e.medicationId == event.medicationId &&
+            e.outcome == event.outcome &&
+            (e.scheduledAt.difference(event.scheduledAt).abs() <= const Duration(minutes: 5)),
+      );
       if (!isDuplicate) merged.add(event);
     }
     merged.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));

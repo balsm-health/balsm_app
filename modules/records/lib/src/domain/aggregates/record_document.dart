@@ -38,14 +38,14 @@ class RecordDocument {
     required this.userId,
     required this.type,
     required this.title,
+    required this.takenAt,
+    required this.createdAt,
     this.tags = const [],
     this.source = RecordSource.self,
     this.fileType,
     this.filePath,
     this.pages,
     this.resultNote,
-    required this.takenAt,
-    required this.createdAt,
     this.history = EntryHistory.none,
   });
 

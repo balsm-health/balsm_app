@@ -4,7 +4,7 @@ import 'allowlist.dart';
 
 /// Replacement value for a key that is not on [kTelemetryAllowlist]. Aliases the
 /// canonical marker so every scrubber on an egress path uses the same one.
-const kTelemetryRedacted = kRedacted;
+const String kTelemetryRedacted = kRedacted;
 
 /// Deny-by-default scrub for any telemetry map (breadcrumb data, event props,
 /// error context). Every top-level key not in [kTelemetryAllowlist] has its

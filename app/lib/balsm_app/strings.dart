@@ -42,7 +42,7 @@ Strings stringsFor(String lang) {
 /// i69n ships no Arabic plural rules, so `_plural` in the Arabic bundle would
 /// fall back to a generic resolver (3–4 few, 5+ other). Registers CLDR's
 /// cardinal rules once, on first lookup (a top-level final is lazy).
-final _arabicPluralsRegistered = () {
+final bool _arabicPluralsRegistered = () {
   i69n.registerResolver('ar', arabicPluralCategory);
   return true;
 }();
@@ -68,7 +68,7 @@ String tr(String key, String lang) {
   try {
     final value = bundle[_alias[key] ?? key];
     if (value is String) return value;
-  } catch (_) {
+  } on Object catch (_) {
     // nothrow flag returns the key path for unknown keys; treat as miss.
   }
   return key;

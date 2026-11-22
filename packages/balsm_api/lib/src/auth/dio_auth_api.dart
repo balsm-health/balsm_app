@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart' show CancelToken;
 
+import '../../balsm_api.dart' show ApiException;
 import '../api_routes.dart';
+import '../transport/api_exception.dart' show ApiException;
 import '../transport/envelope.dart';
 import '../transport/network_manager.dart';
 import 'auth_api.dart';
@@ -36,7 +38,8 @@ class DioAuthApi implements AuthApi {
   @override
   Future<AuthTokensResponse> verifyLink(VerifyLinkRequest request, {CancelToken? cancelToken}) async =>
       AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.auth_otp_verify_link, request.toJson(), cancelToken: cancelToken));
+        await _post(ApiRoutes.auth_otp_verify_link, request.toJson(), cancelToken: cancelToken),
+      );
 
   @override
   Future<AuthTokensResponse> signInWithGoogle(GoogleSignInRequest request, {CancelToken? cancelToken}) async =>
@@ -56,12 +59,14 @@ class DioAuthApi implements AuthApi {
   @override
   Future<RefreshedTokensResponse> recoveryClaim(RecoveryClaimRequest request, {CancelToken? cancelToken}) async =>
       RefreshedTokensResponse.fromJson(
-          await _post(ApiRoutes.auth_recovery_claim, request.toJson(), cancelToken: cancelToken));
+        await _post(ApiRoutes.auth_recovery_claim, request.toJson(), cancelToken: cancelToken),
+      );
 
   @override
   Future<AuthTokensResponse> passwordSignIn(PasswordSignInRequest request, {CancelToken? cancelToken}) async =>
       AuthTokensResponse.fromJson(
-          await _post(ApiRoutes.auth_password_sign_in, request.toJson(), cancelToken: cancelToken));
+        await _post(ApiRoutes.auth_password_sign_in, request.toJson(), cancelToken: cancelToken),
+      );
 
   @override
   Future<void> setPassword(SetPasswordRequest request, {CancelToken? cancelToken}) =>

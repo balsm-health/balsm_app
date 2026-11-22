@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:account/account.dart' show ProfileDetails;
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/family/profile_own_emergency_card.dart';
@@ -15,8 +16,9 @@ import 'package:family_link/family_link.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:account/account.dart' show ProfileDetails;
 import 'package:profile/profile.dart';
+
+import 'support/flag_overrides.dart';
 
 /// Family links behind `family_link` + `mother_child`: the scan row, incoming
 /// requests, the pending badge, a linked member's read-only shared card — and
@@ -37,9 +39,7 @@ void main() {
   tearDown(() => db.close());
 
   PatientAppState appState({bool family = true, bool links = true}) {
-    final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true)
-      ..setOverride(AppFlags.motherChild, family)
-      ..setOverride(AppFlags.familyLink, links);
+    final flags = flagsWith({AppFlags.motherChild: family, AppFlags.familyLink: links});
     return PatientAppState()..attachFlags(flags);
   }
 
@@ -49,7 +49,7 @@ void main() {
         relation: 'daughter',
         status: status,
         direction: direction,
-        createdAt: DateTime.utc(2026, 9, 1),
+        createdAt: DateTime.utc(2026, 9),
         otherAccountId: status == 'linked' || direction == 'incoming' ? other : null,
         otherDisplayName: name,
         otherHandle: handle,
@@ -62,31 +62,38 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    final container = ProviderContainer(overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      currentUserIdProvider.overrideWithValue(user),
-      secureStorageProvider.overrideWithValue(storage),
-      familyLinksApiProvider.overrideWithValue(api),
-      familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
-      accountSummaryProvider.overrideWith((ref) async => const AccountSummary(
+    final container = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        currentUserIdProvider.overrideWithValue(user),
+        secureStorageProvider.overrideWithValue(storage),
+        familyLinksApiProvider.overrideWithValue(api),
+        familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+        accountSummaryProvider.overrideWith(
+          (ref) async => const AccountSummary(
             id: user,
             displayName: 'Test Holder',
             countryCode: 'EG',
             preferredLanguage: 'en',
             deletionState: 'ACTIVE',
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: Scaffold(body: screen),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: Scaffold(body: screen),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return container;
   }
@@ -258,7 +265,7 @@ void main() {
         relation: 'daughter',
         status: 'linked',
         direction: 'outgoing',
-        createdAt: DateTime.utc(2026, 9, 1),
+        createdAt: DateTime.utc(2026, 9),
         otherAccountId: other,
         otherDisplayName: 'Test Linked',
         otherPublicKey: base64.encode(viewerKey.publicKey),

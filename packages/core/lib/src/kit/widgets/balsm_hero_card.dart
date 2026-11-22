@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 enum BalsmHeroCardVariant { prompt, done }
 
@@ -8,18 +8,18 @@ enum BalsmHeroCardVariant { prompt, done }
 /// `done` variant: white bg + checkmark + chevron.
 class BalsmHeroCard extends StatelessWidget {
   const BalsmHeroCard.prompt({
-    super.key,
     required this.eyebrow,
     required this.title,
     required this.ctaLabel,
     required this.onCta,
+    super.key,
     this.clockMeta,
   }) : variant = BalsmHeroCardVariant.prompt;
 
   const BalsmHeroCard.done({
-    super.key,
     required this.eyebrow,
     required this.title,
+    super.key,
     this.ctaLabel,
     this.onCta,
     this.clockMeta,
@@ -40,26 +40,26 @@ class BalsmHeroCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: isDone ? BalsmColors.surface : null,
+        color: isDone ? AppColors.surface : null,
         gradient: isDone
             ? null
             : const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [BalsmColors.hueBlue, Color(0xFF0F6BCC)],
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [AppColors.hueBlue, AppColors.hueBlue600],
               ),
-        borderRadius: BorderRadius.circular(BalsmRadius.xl),
-        border: isDone ? Border.all(color: BalsmColors.border) : null,
-        boxShadow: isDone ? BalsmShadow.sm : BalsmShadow.brand,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: isDone ? Border.all(color: AppColors.border) : null,
+        boxShadow: isDone ? AppShadows.sm : AppShadows.brand,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(BalsmRadius.xl),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         child: Stack(
           children: [
             if (!isDone)
-              Positioned(
-                right: isRtl ? null : -28,
-                left: isRtl ? -28 : null,
+              PositionedDirectional(
+                end: isRtl ? null : -28,
+                start: isRtl ? -28 : null,
                 top: -28,
                 child: Opacity(
                   opacity: 0.16,
@@ -68,7 +68,7 @@ class BalsmHeroCard extends StatelessWidget {
                     height: 150,
                     decoration: const BoxDecoration(
                       gradient: RadialGradient(
-                        colors: [Colors.white, Colors.transparent],
+                        colors: [AppColors.white, Colors.transparent],
                       ),
                       shape: BoxShape.circle,
                     ),
@@ -83,9 +83,9 @@ class BalsmHeroCard extends StatelessWidget {
                   Text(
                     eyebrow,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: FontSizes.bodySm,
                       fontWeight: FontWeight.w600,
-                      color: isDone ? BalsmColors.appAccent : Colors.white.withValues(alpha: 0.9),
+                      color: isDone ? AppColors.hueBlue : AppColors.white.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -94,10 +94,10 @@ class BalsmHeroCard extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w800,
-                      fontSize: 26,
+                      fontSize: FontSizes.title,
                       letterSpacing: -0.01 * 26,
                       height: 1.18,
-                      color: isDone ? BalsmColors.fg1 : Colors.white,
+                      color: isDone ? AppColors.textPrimary : AppColors.white,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -105,27 +105,27 @@ class BalsmHeroCard extends StatelessWidget {
                   if (isDone)
                     Row(
                       children: [
-                        Icon(Icons.check_circle_rounded, size: 18, color: BalsmColors.appAccent),
+                        const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.hueBlue),
                         const SizedBox(width: 6),
                         Text(
                           ctaLabel ?? '',
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: FontSizes.description,
                             fontWeight: FontWeight.w600,
-                            color: BalsmColors.fg3,
+                            color: AppColors.textTertiary,
                           ),
                         ),
                         const Spacer(),
-                        const Icon(Icons.chevron_right, size: 18, color: BalsmColors.fg4),
+                        const Icon(Icons.chevron_right, size: 18, color: AppColors.textHint),
                       ],
                     ),
-                  if (clockMeta != null) ...[
+                  if (clockMeta case final clockMeta?) ...[
                     const SizedBox(height: 10),
                     Text(
-                      clockMeta!,
+                      clockMeta,
                       style: TextStyle(
-                        fontSize: 12,
-                        color: isDone ? BalsmColors.fg3 : Colors.white.withValues(alpha: 0.7),
+                        fontSize: FontSizes.meta,
+                        color: isDone ? AppColors.textTertiary : AppColors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -152,8 +152,8 @@ class _CtaButton extends StatelessWidget {
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(BalsmRadius.md),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.md),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -162,12 +162,12 @@ class _CtaButton extends StatelessWidget {
               label,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: BalsmColors.appAccent600,
+                fontSize: FontSizes.body,
+                color: AppColors.hueBlue600,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward, size: 18, color: BalsmColors.appAccent600),
+            const Icon(Icons.arrow_forward, size: 18, color: AppColors.hueBlue600),
           ],
         ),
       ),

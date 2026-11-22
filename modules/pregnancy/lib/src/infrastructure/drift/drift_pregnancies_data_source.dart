@@ -38,7 +38,7 @@ class DriftPregnanciesDataSource implements PregnanciesDataSource {
 
   Stream<T> _liveRead<T>(Future<T> Function() read) => Stream<T>.multi((emitter) async {
         emitter.add(await read());
-        emitter.addStream(_changes.stream.asyncMap((_) => read()));
+        unawaited(emitter.addStream(_changes.stream.asyncMap((_) => read())));
       });
 
   HealthProfileId? _resolve(HealthProfileId? scope) => scope ?? activeProfile();
@@ -365,6 +365,6 @@ class DriftPregnanciesDataSource implements PregnanciesDataSource {
 final pregnanciesDataSourceProvider = Provider<PregnanciesDataSource>((ref) {
   return DriftPregnanciesDataSource(
     db: ref.watch(appDatabaseProvider),
-    activeProfile: () => ref.read(selfProfileIdProvider).valueOrNull,
+    activeProfile: () => ref.read(selfProfileIdProvider).value,
   );
 });

@@ -13,11 +13,11 @@ import 'dart:convert';
 /// Contains identity PHI (name, DOB) — never log, never write to disk.
 class ProfileQrPayload {
   const ProfileQrPayload({
+    required this.lang,
+    required this.createdAt,
     this.name,
     this.dateOfBirth,
     this.gender,
-    required this.lang,
-    required this.createdAt,
   });
 
   static const int schemaVersion = 1;
@@ -66,7 +66,7 @@ class ProfileQrPayload {
   static ProfileQrPayload? tryParseString(String s) {
     try {
       return tryParse(jsonDecode(s) as Map<String, dynamic>);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

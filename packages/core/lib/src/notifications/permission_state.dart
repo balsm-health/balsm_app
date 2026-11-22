@@ -1,15 +1,18 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 enum NotificationPermissionState { granted, denied, provisional, notRequested }
 
-final notificationPermissionStateProvider = StateNotifierProvider<_PermissionNotifier, NotificationPermissionState>(
-  (ref) => _PermissionNotifier(),
-);
+final notificationPermissionStateProvider =
+    NotifierProvider<_PermissionNotifier, NotificationPermissionState>(_PermissionNotifier.new);
 
-class _PermissionNotifier extends StateNotifier<NotificationPermissionState> {
-  _PermissionNotifier() : super(NotificationPermissionState.notRequested) {
-    _refresh();
+class _PermissionNotifier extends Notifier<NotificationPermissionState> {
+  @override
+  NotificationPermissionState build() {
+    // Reads the OS state once the provider is first used; until then nothing has been asked.
+    unawaited(_refresh());
+    return NotificationPermissionState.notRequested;
   }
 
   Future<void> _refresh() async {
@@ -20,7 +23,7 @@ class _PermissionNotifier extends StateNotifier<NotificationPermissionState> {
       PermissionStatus.denied => NotificationPermissionState.denied,
       _ => NotificationPermissionState.notRequested,
     };
-    if (mounted) state = next;
+    if (ref.mounted) state = next;
   }
 
   Future<void> refresh() => _refresh();

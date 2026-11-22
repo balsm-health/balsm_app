@@ -22,7 +22,7 @@ void main() {
 
   group('profile QR carries its arguments', () {
     test('token id from the path, key from the #k= fragment', () {
-      final t = parse('https://app.balsm.health/t/01J8XyZaBc#k=Zm9v-YmFy_c2Vj') as EmergencyCardTarget;
+      final t = parse('https://app.balsm.health/t/01J8XyZaBc#k=Zm9v-YmFy_c2Vj')! as EmergencyCardTarget;
       expect(t.tokenId, '01J8XyZaBc', reason: 'case preserved — the id is case-sensitive');
       expect(t.key, 'Zm9v-YmFy_c2Vj', reason: 'base64url key untouched');
       expect(t.requiresSession, isFalse, reason: 'the scanner is a first responder, not the owner');
@@ -30,14 +30,14 @@ void main() {
 
     test('legacy /emergency/ alias and the custom scheme parse identically', () {
       for (final url in ['https://app.balsm.health/emergency/01J8XyZaBc#k=abc', 'balsm://t/01J8XyZaBc#k=abc']) {
-        final t = parse(url) as EmergencyCardTarget;
+        final t = parse(url)! as EmergencyCardTarget;
         expect(t.tokenId, '01J8XyZaBc');
         expect(t.key, 'abc');
       }
     });
 
     test('a link that lost its fragment still routes, with no key', () {
-      final t = parse('https://app.balsm.health/t/01J8XyZaBc') as EmergencyCardTarget;
+      final t = parse('https://app.balsm.health/t/01J8XyZaBc')! as EmergencyCardTarget;
       expect(t.key, isNull);
     });
   });
@@ -45,24 +45,24 @@ void main() {
   group('magic sign-in link', () {
     test('https and custom-scheme forms carry the token', () {
       for (final url in ['https://app.balsm.health/auth/link?t=tok_123', 'balsm://auth/link?t=tok_123']) {
-        expect((parse(url) as MagicLinkTarget).token, 'tok_123');
+        expect((parse(url)! as MagicLinkTarget).token, 'tok_123');
       }
     });
 
     test('the link says what it was sent for, and is a sign-in when it does not', () {
-      MagicLinkPurpose purposeOf(String url) => (parse(url) as MagicLinkTarget).purpose;
+      MagicLinkPurpose purposeOf(String url) => (parse(url)! as MagicLinkTarget).purpose;
 
       expect(purposeOf('balsm://auth/link?t=tok_123'), MagicLinkPurpose.signIn);
       expect(purposeOf('balsm://auth/link?t=tok_123&p=delete'), MagicLinkPurpose.deleteAccount);
       expect(purposeOf('https://app.balsm.health/auth/link?t=tok_123&p=reset'), MagicLinkPurpose.resetPassword);
       // A purpose this build has not heard of must still sign the person in.
       expect(purposeOf('balsm://auth/link?t=tok_123&p=something-new'), MagicLinkPurpose.signIn);
-      expect((parse('balsm://auth/link?t=tok_123&p=delete') as MagicLinkTarget).token, 'tok_123');
+      expect((parse('balsm://auth/link?t=tok_123&p=delete')! as MagicLinkTarget).token, 'tok_123');
     });
 
     test('a truncated link routes with no token, so it can be reported as malformed', () {
-      expect((parse('balsm://auth/link') as MagicLinkTarget).token, isNull);
-      expect((parse('balsm://auth/link?t=') as MagicLinkTarget).token, isNull);
+      expect((parse('balsm://auth/link')! as MagicLinkTarget).token, isNull);
+      expect((parse('balsm://auth/link?t=')! as MagicLinkTarget).token, isNull);
     });
   });
 

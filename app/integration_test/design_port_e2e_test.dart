@@ -65,23 +65,25 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'dart:math' as math;
+
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/care/care_entity.dart' show DeviceLocationIssue, deviceLocationProvider;
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/i18n/strings.i69n.dart' as en;
 import 'package:app/balsm_app/i18n/strings_ar.i69n.dart' as ar;
-import 'package:app/balsm_app/kit.dart' show AppBarRow, PButton, PCard, RoundBtn;
+import 'package:app/balsm_app/kit.dart' show AppBarRow, PButton, PCard, Pressable, RoundBtn;
 import 'package:app/balsm_app/maintenance/maintenance_controller.dart';
 import 'package:app/balsm_app/maintenance/maintenance_widgets.dart';
 import 'package:app/balsm_app/screens/checkin_shared.dart' show CheckInDayRow;
 import 'package:app/balsm_app/screens/day_records_screen.dart';
-import 'package:app/balsm_app/screens/report_flow.dart' show ReportFlow;
 import 'package:app/balsm_app/screens/family/family_kit.dart' show FamilyTile;
-import 'package:app/balsm_app/care/care_entity.dart' show DeviceLocationIssue, deviceLocationProvider;
 import 'package:app/balsm_app/screens/family/member_medical_screen.dart';
-import 'package:app/balsm_app/screens/pregnancy/pregnancy_screen.dart';
 import 'package:app/balsm_app/screens/own_card_screen.dart' show OwnCardScreen;
+import 'package:app/balsm_app/screens/pregnancy/pregnancy_screen.dart';
 import 'package:app/balsm_app/screens/records_detail.dart' show RecordDetailScreen;
 import 'package:app/balsm_app/screens/records_screen.dart' show RecordsScreen, formatRecordDate;
+import 'package:app/balsm_app/screens/report_flow.dart' show ReportFlow;
 import 'package:app/balsm_app/screens/trends_screen.dart';
 import 'package:app/balsm_app/widgets/entry_attribution.dart';
 import 'package:app/balsm_app/widgets/num_pad.dart';
@@ -95,6 +97,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 // The app's TextField is material_ui's, not Flutter's — match the same class.
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher_platform_interface/link.dart' show LinkDelegate;
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:medications/medications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:records/records.dart';
@@ -120,6 +124,20 @@ const _ar = ar.Strings_ar();
 const _only = int.fromEnvironment('E2E_ONLY');
 bool _skip(int n) => _only != 0 && _only != n;
 
+/// Answers every external launch (call, mail, browser) with "nothing can open
+/// it" so a random tap in the monkey scenario cannot send the app to the
+/// background, where the raster thread can lose its GL context.
+class _NoExternalLaunch extends UrlLauncherPlatform {
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> canLaunch(String url) async => false;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async => false;
+}
+
 /// Stands in for the network under the real Dio client: records each request
 /// and answers 503 (see offline_account_test.dart).
 class _RecordingAdapter implements dio.HttpClientAdapter {
@@ -127,7 +145,10 @@ class _RecordingAdapter implements dio.HttpClientAdapter {
 
   @override
   Future<dio.ResponseBody> fetch(
-      dio.RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+    dio.RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     requests.add(options);
     return dio.ResponseBody.fromString('', 503);
   }
@@ -145,7 +166,7 @@ Finder _roundBtn(String label) => find.byWidgetPredicate((w) => w is RoundBtn &&
 Finder _pButton(String label) => find.widgetWithText(PButton, label);
 
 /// The tab bar's centre "+" (the shell's private `_QuickLog`).
-final _quickLogFab = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_QuickLog');
+final Finder _quickLogFab = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_QuickLog');
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -180,8 +201,11 @@ void main() {
     throw TestFailure('Timed out waiting for $finder\nOn screen: ${visibleTexts()}');
   }
 
-  Future<void> pumpUntilGone(WidgetTester tester, Finder finder,
-      {Duration timeout = const Duration(seconds: 15)}) async {
+  Future<void> pumpUntilGone(
+    WidgetTester tester,
+    Finder finder, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final end = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(end)) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -190,8 +214,12 @@ void main() {
     throw TestFailure('Still showing $finder after $timeout\nOn screen: ${visibleTexts()}');
   }
 
-  Future<void> pumpUntilTrue(WidgetTester tester, Future<bool> Function() cond, String what,
-      {Duration timeout = const Duration(seconds: 15)}) async {
+  Future<void> pumpUntilTrue(
+    WidgetTester tester,
+    Future<bool> Function() cond,
+    String what, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final end = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(end)) {
       await tester.pump(const Duration(milliseconds: 100));
@@ -247,7 +275,7 @@ void main() {
     }
     try {
       await binding.takeScreenshot(name);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('screenshot $name not taken: $e');
     }
     await settle(tester, 1);
@@ -337,7 +365,7 @@ void main() {
     await pumpUntil(tester, find.text(_en.privacy.pv_agree));
     await acceptDisclosure(tester);
     await pumpUntil(tester, find.text(_en.nav.tab_meds).hitTestable());
-    await settle(tester, 10);
+    await settle(tester);
     expect(await storage.read(key: kAccountModeKey), AccountMode.deviceOnly.wire);
   }
 
@@ -470,8 +498,11 @@ void main() {
     await pumpUntil(tester, find.text(c.rec_delete));
     final editItem = find.text(_en.common.a11y_edit).hitTestable();
     expect(editItem, findsOneWidget);
-    expect(tester.getTopLeft(editItem).dy, lessThan(tester.getTopLeft(find.text(c.rec_delete)).dy),
-        reason: 'Edit sits above Delete');
+    expect(
+      tester.getTopLeft(editItem).dy,
+      lessThan(tester.getTopLeft(find.text(c.rec_delete)).dy),
+      reason: 'Edit sits above Delete',
+    );
     await snap(tester, '05-row-menu-edit-above-delete');
 
     // Edit from the menu → the form again → "Delete this entry" → it asks.
@@ -539,13 +570,20 @@ void main() {
     final dateText = formatRecordDate(record.takenAt, appState());
     final dateRow = find.ancestor(of: find.byIcon(LucideIcons.calendar), matching: find.byType(Row));
     expect(find.descendant(of: card, matching: find.byIcon(LucideIcons.calendar)), findsOneWidget);
-    expect(find.descendant(of: find.descendant(of: card, matching: dateRow).first, matching: find.text(dateText)),
-        findsOneWidget,
-        reason: 'the date is its own line, next to the calendar');
-    expect(find.descendant(of: card, matching: find.text(r.rec_self)), findsOneWidget,
-        reason: '"You uploaded" is its own line, not joined to the date');
-    expect(tester.getTopLeft(find.descendant(of: card, matching: find.text(dateText))).dy,
-        lessThan(tester.getTopLeft(find.descendant(of: card, matching: find.text(r.rec_self))).dy));
+    expect(
+      find.descendant(of: find.descendant(of: card, matching: dateRow).first, matching: find.text(dateText)),
+      findsOneWidget,
+      reason: 'the date is its own line, next to the calendar',
+    );
+    expect(
+      find.descendant(of: card, matching: find.text(r.rec_self)),
+      findsOneWidget,
+      reason: '"You uploaded" is its own line, not joined to the date',
+    );
+    expect(
+      tester.getTopLeft(find.descendant(of: card, matching: find.text(dateText))).dy,
+      lessThan(tester.getTopLeft(find.descendant(of: card, matching: find.text(r.rec_self))).dy),
+    );
     await snap(tester, '08-records-list-date-line');
 
     // Open → pencil → the edit sheet, filled in.
@@ -587,7 +625,7 @@ void main() {
 
     // Arabic (RTL): the detail and the edit sheet.
     appState().setLang(LanguageCode.ar);
-    await settle(tester, 10);
+    await settle(tester);
     expect(Directionality.of(tester.element(find.text(_recordEdited))), TextDirection.rtl);
     await snap(tester, '12-ar-record-detail');
     await tapWhenReady(tester, _roundBtn(_ar.common.a11y_edit));
@@ -675,10 +713,16 @@ void main() {
       expect(find.descendant(of: card(0), matching: find.text(_allergen)), findsOneWidget, reason: 'allergies card');
       expect(find.descendant(of: card(1), matching: find.text(_condition)), findsOneWidget, reason: 'conditions card');
       // On this screen (the member screen underneath also names them).
-      expect(find.text(_allergen).hitTestable(), findsOneWidget,
-          reason: 'the allergen is listed once, under allergies');
-      expect(find.text(_condition).hitTestable(), findsOneWidget,
-          reason: 'the condition is listed once, under conditions');
+      expect(
+        find.text(_allergen).hitTestable(),
+        findsOneWidget,
+        reason: 'the allergen is listed once, under allergies',
+      );
+      expect(
+        find.text(_condition).hitTestable(),
+        findsOneWidget,
+        reason: 'the condition is listed once, under conditions',
+      );
     }
 
     await pumpUntil(tester, card(1));
@@ -701,7 +745,7 @@ void main() {
 
     // Arabic (RTL): the medical profile and the member screen.
     appState().setLang(LanguageCode.ar);
-    await settle(tester, 10);
+    await settle(tester);
     await pumpUntil(tester, find.text(_ar.family.tile_medical));
     expect(Directionality.of(tester.element(find.text(_allergen))), TextDirection.rtl);
     await snap(tester, '18-ar-member-medical');
@@ -711,7 +755,7 @@ void main() {
     await snap(tester, '19-ar-member-screen');
     expect(tester.takeException(), isNull);
     appState().setLang(LanguageCode.en);
-    await settle(tester, 10);
+    await settle(tester);
 
     // Trends tile → the member's Trends.
     await tapWhenReady(tester, find.text(f.tile_trends));
@@ -766,7 +810,8 @@ void main() {
             takenAt: DateTime(2026, 1, 5, 9),
             createdAt: DateTime(2026, 1, 5, 9),
             history: EntryHistory(
-                [ProvenanceEvent(id: 'e2e-prov-rec', actor: byFamily, action: ProvenanceAction.added, at: addedAt)]),
+              [ProvenanceEvent(id: 'e2e-prov-rec', actor: byFamily, action: ProvenanceAction.added, at: addedAt)],
+            ),
           ),
         );
 
@@ -775,16 +820,20 @@ void main() {
     final meds = c.read(medicationsDataSourceProvider);
     final med = (await meds.findAll()).singleWhere((m) => m.name == _medName);
     await meds.put(
-        med.id,
-        med.copyWith(
-            history: EntryHistory(
-                [ProvenanceEvent(id: 'e2e-prov-med', actor: byFamily, action: ProvenanceAction.added, at: addedAt)])));
+      med.id,
+      med.copyWith(
+        history: EntryHistory(
+          [ProvenanceEvent(id: 'e2e-prov-med', actor: byFamily, action: ProvenanceAction.added, at: addedAt)],
+        ),
+      ),
+    );
     expect((await meds.find(med.id))!.history.isAttributed, isTrue, reason: 'the history was stored');
     // The medications watch streams declare no `readsFrom`, so a write that
     // bypasses the use cases does not reach the Meds screen by itself; the
     // screen's own writers invalidate these, as the test does here.
-    c.invalidate(medicationListProvider);
-    c.invalidate(todayDosesProvider);
+    c
+      ..invalidate(medicationListProvider)
+      ..invalidate(todayDosesProvider);
 
     // Meds list carries the chip.
     final chip = find.byType(EntryAttributionChip);
@@ -836,9 +885,11 @@ void main() {
     await pumpUntil(tester, find.text(a.history_title));
     expect(find.text(a.you_edited(Gender.other)), findsOneWidget);
     expect(find.text(a.added_this(_relative)), findsOneWidget);
-    expect(tester.getTopLeft(find.text(a.you_edited(Gender.other))).dy,
-        lessThan(tester.getTopLeft(find.text(a.added_this(_relative))).dy),
-        reason: 'newest first');
+    expect(
+      tester.getTopLeft(find.text(a.you_edited(Gender.other))).dy,
+      lessThan(tester.getTopLeft(find.text(a.added_this(_relative))).dy),
+      reason: 'newest first',
+    );
     final history = (await c.read(recordsDataSourceProvider).find(recordId))!.history;
     expect(history.events.map((e) => (e.actor.kind, e.action)).toList(), [
       (ProvenanceActorKind.family, ProvenanceAction.added),
@@ -852,7 +903,7 @@ void main() {
   // ── 5 ─────────────────────────────────────────────────────────────────────
   testWidgets('5. maintenance: readonly strip + paused actions; block page; off; an erroring endpoint pauses nothing',
       skip: _skip(5), (tester) async {
-    final api = FakeMaintenanceApi(mode: 'off');
+    final api = FakeMaintenanceApi();
     await freshAccount(tester, maintenance: api);
     final m = _en.maintenance;
     Future<void> setMode(String mode) async {
@@ -882,8 +933,10 @@ void main() {
     expect(find.text(_en.nav.tab_meds).hitTestable(), findsOneWidget, reason: 'the app stays usable');
     expect(find.textContaining('Back in about 1 h 4'), findsOneWidget, reason: 'the countdown');
     expect(
-        find.descendant(of: find.byType(MaintenanceStrip), matching: find.byType(FractionallySizedBox)), findsOneWidget,
-        reason: 'the progress bar');
+      find.descendant(of: find.byType(MaintenanceStrip), matching: find.byType(FractionallySizedBox)),
+      findsOneWidget,
+      reason: 'the progress bar',
+    );
     // The quick-log button is washed out with a lock and says why.
     expect(find.byKey(const ValueKey('maintenance-fab-lock')), findsOneWidget);
     expect(find.bySemanticsLabel(m.fab_paused), findsOneWidget);
@@ -955,8 +1008,10 @@ void main() {
     final call = m.call_emergency(s.country.emergencyNumber, s.gender);
     final buttons = find.descendant(of: page, matching: find.byType(PButton));
     expect(
-        tester.widgetList<PButton>(buttons).map((b) => b.label).toSet(), {m.open_card, call, m.check_again(s.gender)},
-        reason: 'only the emergency card, the emergency call and Check again');
+      tester.widgetList<PButton>(buttons).map((b) => b.label).toSet(),
+      {m.open_card, call, m.check_again(s.gender)},
+      reason: 'only the emergency card, the emergency call and Check again',
+    );
     expect(find.text(_en.nav.tab_meds).hitTestable(), findsNothing, reason: 'the app is covered');
     expect(strip.hitTestable(), findsNothing);
     await snap(tester, '31-maintenance-block-page');
@@ -965,8 +1020,11 @@ void main() {
     // phone (design MCCardScreen id="self"), not the emergency numbers.
     await tapWhenReady(tester, find.text(m.open_card));
     await pumpUntil(tester, find.byType(OwnCardScreen));
-    await pumpUntil(tester, find.byType(OwnCardScreen).hitTestable(),
-        timeout: const Duration(seconds: 5)); // must not open under the page
+    await pumpUntil(
+      tester,
+      find.byType(OwnCardScreen).hitTestable(),
+      timeout: const Duration(seconds: 5),
+    ); // must not open under the page
     expect(find.text(_en.family.own_card_note).hitTestable(), findsOneWidget);
     await snap(tester, '32-maintenance-block-emergency-card');
     Navigator.of(tester.element(find.byType(OwnCardScreen))).pop();
@@ -1079,7 +1137,7 @@ void main() {
     for (final l in [p.m_o2, p.m_pulse, p.m_weight, p.m_mood, p.m_pain]) {
       expect(find.text(l, skipOffstage: false), findsWidgets, reason: l); // Home behind has them too
     }
-    expect(find.text(_en.checkin.full_checkin), findsNothing, reason: "the full check-in is the adult set");
+    expect(find.text(_en.checkin.full_checkin), findsNothing, reason: 'the full check-in is the adult set');
     await snap(tester, '44-quicklog-child-en');
     final pain = find.text(p.m_pain);
     await reveal(tester, pain);
@@ -1093,7 +1151,7 @@ void main() {
     await snap(tester, '41-member-home-en-bottom');
 
     appState().setLang(LanguageCode.ar);
-    await settle(tester, 10);
+    await settle(tester);
     final arQ = find.text(_ar.home.member_ci_q(short));
     await reveal(tester, arQ);
     await pumpUntil(tester, arQ);
@@ -1105,7 +1163,7 @@ void main() {
     await snap(tester, '43-member-home-ar-bottom');
     expect(tester.takeException(), isNull);
     appState().setLang(LanguageCode.en);
-    await settle(tester, 10);
+    await settle(tester);
 
     // An adult member (the spouse): the full check-in names her instead of
     // speaking to the account holder, with Quick log's "Logging for" banner.
@@ -1153,8 +1211,10 @@ void main() {
       await tapWhenReady(tester, find.text(l.home.member_ci_cta(Gender.other, _memberShort)));
       await pumpUntil(tester, find.byType(ReportFlow));
       await settle(tester, 3);
-      expect(find.descendant(of: find.byType(ReportFlow), matching: find.text(l.checkin.m_q_mood_t(_memberShort))),
-          findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(ReportFlow), matching: find.text(l.checkin.m_q_mood_t(_memberShort))),
+        findsOneWidget,
+      );
       expect(find.text('${l.checkin.ql_logging_for(Gender.other)}$_memberShort', findRichText: true), findsOneWidget);
       expect(find.text(l.checkin.q_mood_t(Gender.other)), findsNothing);
     }
@@ -1170,7 +1230,7 @@ void main() {
     await pumpUntilGone(tester, find.byType(ReportFlow));
 
     appState().setLang(LanguageCode.ar);
-    await settle(tester, 10);
+    await settle(tester);
     await openMemberCheckin(_ar);
     expect(Directionality.of(tester.element(find.byType(ReportFlow))), TextDirection.rtl);
     await snap(tester, '47-checkin-member-ar');
@@ -1182,8 +1242,123 @@ void main() {
     await pumpUntilGone(tester, find.byType(ReportFlow));
     expect(tester.takeException(), isNull);
     appState().setLang(LanguageCode.en);
-    await settle(tester, 10);
+    await settle(tester);
 
+    await shutDown(tester);
+  });
+
+  // 7. Monkey: random taps, typing and scrolling over every screen, EN then AR.
+  //    Collects every framework error (overflow, assertion, build failure) instead
+  //    of stopping at the first, and fails with the list and the last actions.
+  //    `--dart-define=MONKEY_SEED=<n>` / `MONKEY_STEPS=<n>` replay or lengthen a run.
+  testWidgets('7. monkey: random taps, typing and scrolling across every screen, EN then AR, raise no error',
+      skip: _skip(7), timeout: const Timeout(Duration(minutes: 20)), (tester) async {
+    UrlLauncherPlatform.instance = _NoExternalLaunch();
+    await freshAccount(tester, motherChild: true);
+    const seed = int.fromEnvironment('MONKEY_SEED', defaultValue: 1);
+    const steps = int.fromEnvironment('MONKEY_STEPS', defaultValue: 400);
+    final rng = math.Random(seed);
+    final errors = <String>{};
+    final trail = <String>[];
+    final previous = FlutterError.onError;
+    FlutterError.onError = (d) {
+      // The message plus the first app frames, so each error points at a screen.
+      final all = (d.stack?.toString().split('\n') ?? const <String>[]).map((l) => l.trim()).where((l) => l.isNotEmpty);
+      final app = all
+          .where((l) => l.contains('package:app/') || l.contains('package:core/') || l.contains('/src/presentation/'));
+      // Errors raised inside the framework may carry no app frame at all; keep the
+      // top of the stack, and the context Flutter prints (the widget being built).
+      final context = d.context?.toDescription() ?? '';
+      final frames = '${(app.isNotEmpty ? app : all).take(6).join(' <- ')} | $context';
+      // Known upstream bug: material_ui 1.11 (latest) calls setState during build from
+      // the time picker's hour dial (time_picker.dart) and the InkResponse it drives.
+      // Not our code; drop this filter once a fixed material_ui ships.
+      if (all.any((l) => l.contains('package:material_ui/src/time_picker.dart')) ||
+          (context.contains('WidgetStatesController') &&
+              all.any((l) => l.contains('package:material_ui/src/ink_well.dart')))) {
+        return;
+      }
+      errors.add('${d.exceptionAsString().split('\n').first}  [${d.library}]  $frames');
+    };
+
+    final junk = <String>[
+      '',
+      ' ',
+      '0',
+      '-1',
+      '999999999',
+      '1e5',
+      'NaN',
+      '٧٢',
+      '۷۲٫٥',
+      '😀',
+      'a' * 300,
+      '<b>x</b>',
+      "'; --",
+      '\u202e12',
+    ];
+    final tappable = find
+        .byWidgetPredicate(
+          (w) =>
+              (w is InkWell && w.onTap != null) ||
+              (w is GestureDetector && w.onTap != null) ||
+              w is PButton ||
+              w is RoundBtn ||
+              w is Pressable,
+        )
+        .hitTestable();
+
+    for (var i = 0; i < steps; i++) {
+      if (i == steps ~/ 2) {
+        appState().setLang(LanguageCode.ar);
+        await settle(tester, 3);
+        trail.add('--- switched to Arabic ---');
+      }
+      final roll = rng.nextInt(100);
+      try {
+        if (roll < 62) {
+          final n = tappable.evaluate().length;
+          if (n > 0) {
+            final k = rng.nextInt(n);
+            trail.add('tap #$k/$n ${tappable.at(k).evaluate().first.widget.runtimeType}');
+            await tester.tap(tappable.at(k), warnIfMissed: false);
+          }
+        } else if (roll < 77) {
+          final fields = find.byType(EditableText).hitTestable();
+          final n = fields.evaluate().length;
+          if (n > 0) {
+            final text = junk[rng.nextInt(junk.length)];
+            trail.add('type "${text.length > 12 ? '${text.substring(0, 12)}…' : text}"');
+            await tester.enterText(fields.at(rng.nextInt(n)), text);
+          }
+        } else if (roll < 92) {
+          final scrolls = find.byType(Scrollable).hitTestable();
+          final n = scrolls.evaluate().length;
+          if (n > 0) {
+            final dy = (rng.nextBool() ? -1 : 1) * (150.0 + rng.nextInt(500));
+            trail.add('drag ${dy.round()}');
+            await tester.drag(scrolls.at(rng.nextInt(n)), Offset(0, dy), warnIfMissed: false);
+          }
+        } else {
+          trail.add('back');
+          await tester.state<NavigatorState>(find.byType(Navigator).last).maybePop();
+        }
+      } on Object catch (e) {
+        errors.add('action threw: ${e.toString().split('\n').first}');
+      }
+      await tester.pump(const Duration(milliseconds: 250));
+      if (trail.length > 40) trail.removeRange(0, trail.length - 40);
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
+
+    FlutterError.onError = previous;
+    await settle(tester, 5);
+    debugPrint('MONKEY seed=$seed steps=$steps unique errors=${errors.length}');
+    for (final e in errors) {
+      debugPrint('MONKEY ERROR: $e');
+    }
+    expect(errors, isEmpty,
+        reason: 'errors:\n${errors.join('\n')}\n\nlast actions:\n${trail.reversed.take(15).join('\n')}');
     await shutDown(tester);
   });
 }

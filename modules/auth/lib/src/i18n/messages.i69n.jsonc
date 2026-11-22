@@ -35,5 +35,18 @@
     "needHelp": "Need help?",
     "contactSupport(String email)": "Email $email",
     "serviceStatus": "Check service status"
-  }
+  },
+  "errorLockedFor(int seconds)": "Account temporarily locked. Try again in $seconds seconds.",
+  "errorInvalidRequest": "The request was invalid. Please check your input.",
+  "errorUnauthorized": "Authentication required. Please sign in again.",
+  "errorForbidden": "Access denied.",
+  "errorNotFound": "The requested resource was not found.",
+  "errorConflict": "A conflict occurred. This account may already exist.",
+  "errorValidation": "Validation failed. Please check your input.",
+  "errorLocked": "Account temporarily locked. Please try again later.",
+  "errorRateLimited": "Too many requests. Please wait before trying again.",
+  "errorServer": "A server error occurred. Please try again later.",
+  "errorOtpExpired": "The verification code has expired. Please request a new one.",
+  "errorOtpInvalid": "Incorrect verification code.",
+  "errorUnexpected": "An unexpected error occurred. Please try again."
 }

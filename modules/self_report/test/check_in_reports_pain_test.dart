@@ -22,6 +22,6 @@ void main() {
   });
 
   test('marked sites report pain even at score zero', () {
-    expect(entry(sites: {PainSite(Muscle.chest)}).reportsPain, isTrue);
+    expect(entry(sites: {const PainSite(Muscle.chest)}).reportsPain, isTrue);
   });
 }

@@ -38,7 +38,7 @@ List<FamilySection> groupFamily(List<MemberGroup> groups, List<FamilyMember> mem
   final known = {for (final g in kept) g.id};
 
   MemberGroupId? home(FamilyMember m) {
-    final id = m.groupId == null ? null : (alias[m.groupId!] ?? m.groupId!);
+    final id = switch (m.groupId) { final groupId? => (alias[groupId] ?? groupId), _ => null };
     return id != null && known.contains(id) ? id : fallback;
   }
 

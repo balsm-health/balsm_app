@@ -29,8 +29,13 @@ enum MaintenanceMode {
 /// written by a Balsm admin, the same for every patient.
 @immutable
 class MaintenanceStatus {
-  const MaintenanceStatus(
-      {this.mode = MaintenanceMode.unknown, this.message, this.startsAt, this.endsAt, this.checking = false});
+  const MaintenanceStatus({
+    this.mode = MaintenanceMode.unknown,
+    this.message,
+    this.startsAt,
+    this.endsAt,
+    this.checking = false,
+  });
 
   final MaintenanceMode mode;
 
@@ -55,11 +60,12 @@ class MaintenanceStatus {
   bool get blocks => mode == MaintenanceMode.block;
 
   MaintenanceStatus copyWith({bool? checking, DateTime? startsAt}) => MaintenanceStatus(
-      mode: mode,
-      message: message,
-      startsAt: startsAt ?? this.startsAt,
-      endsAt: endsAt,
-      checking: checking ?? this.checking);
+        mode: mode,
+        message: message,
+        startsAt: startsAt ?? this.startsAt,
+        endsAt: endsAt,
+        checking: checking ?? this.checking,
+      );
 
   @override
   bool operator ==(Object other) =>
@@ -89,7 +95,7 @@ final maintenanceNoticeSourceProvider = Provider<ManifestMaintenanceSource>(
 );
 
 /// Reads the maintenance state on first read, every
-/// [maintenancePollIntervalProvider], on resume (the shell calls [check]) and on
+/// [maintenancePollIntervalProvider], on resume (the shell calls `check`) and on
 /// "Check again", from two places at once:
 ///
 /// - the release manifest's `maintenance` block — the primary switch. It lives
@@ -132,6 +138,7 @@ class MaintenanceController extends Notifier<MaintenanceStatus> {
     }
     state = state.copyWith(checking: true);
     final (manifest, server) = await (_fromManifest(), _fromServer()).wait;
+    if (!ref.mounted) return;
     state = _withStart(_stricter(manifest, server) ?? const MaintenanceStatus());
   }
 
@@ -156,15 +163,23 @@ class MaintenanceController extends Notifier<MaintenanceStatus> {
     return n == null
         ? null
         : MaintenanceStatus(
-            mode: MaintenanceMode.fromWire(n.mode), message: n.message, startsAt: n.startsAt, endsAt: n.endsAt);
+            mode: MaintenanceMode.fromWire(n.mode),
+            message: n.message,
+            startsAt: n.startsAt,
+            endsAt: n.endsAt,
+          );
   }
 
   Future<MaintenanceStatus?> _fromServer() async {
     try {
       final res = await ref.read(maintenanceApiProvider).getStatus();
       return MaintenanceStatus(
-          mode: MaintenanceMode.fromWire(res.mode), message: res.message, startsAt: res.updatedAt, endsAt: res.endsAt);
-    } catch (_) {
+        mode: MaintenanceMode.fromWire(res.mode),
+        message: res.message,
+        startsAt: res.updatedAt,
+        endsAt: res.endsAt,
+      );
+    } on Object catch (_) {
       // Unreachable or refused: never block on a guess (see MaintenanceMode.unknown).
       return null;
     }

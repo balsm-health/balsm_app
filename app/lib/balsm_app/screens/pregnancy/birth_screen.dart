@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pregnancy/pregnancy.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
 import '../../shell.dart';
-import '../../tokens.dart';
 import '../family/family_kit.dart';
 import '../family/member_screen.dart';
 import 'pregnancy_kit.dart';
@@ -57,7 +56,7 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
     _bloodUnsure = false;
     _keep = {
       for (final i in items)
-        if (i.isAbout(b.id)) i.id
+        if (i.isAbout(b.id)) i.id,
     };
   }
 
@@ -111,9 +110,11 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
     } else {
       nav.popUntil((route) => route.isFirst);
     }
-    unawaited(nav.push(MaterialPageRoute<void>(
-      builder: (_) => Directionality(textDirection: dir, child: AdaptiveFrame(child: MemberScreen(id: id))),
-    )));
+    nav.push(
+      MaterialPageRoute<void>(
+        builder: (_) => Directionality(textDirection: dir, child: AdaptiveFrame(child: MemberScreen(id: id))),
+      ),
+    );
   }
 
   @override
@@ -121,10 +122,13 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
     final f = s.strings.family;
+    // `_relationship` awaits the family members when Create is tapped. Riverpod 3 pauses a stream provider that
+    // nothing listens to (a `ref.read` does not count), so keep it subscribed while this screen is open.
+    ref.watch(familyMembersProvider);
     final preg = ref.watch(activePregnancyOfProvider(widget.mother));
-    if (preg == null) return const Scaffold(backgroundColor: Colors.white);
-    final all = ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const <PregnancyBaby>[];
-    final items = ref.watch(pregnancyItemsProvider(preg.itemsKey)).valueOrNull ?? const <PregnancyItem>[];
+    if (preg == null) return const Scaffold(backgroundColor: AppColors.white);
+    final all = ref.watch(pregnancyBabiesProvider(preg.id)).value ?? const <PregnancyBaby>[];
+    final items = ref.watch(pregnancyItemsProvider(preg.itemsKey)).value ?? const <PregnancyItem>[];
     final active = all.where((b) => b.isActive).toList();
     if (_babyId == null && active.length == 1) _choose(active.single, items);
     final b = active.where((x) => x.id == _babyId).firstOrNull;
@@ -136,31 +140,47 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
 
     return FamilyScaffold(
       title: b != null && multi ? p.birth_title(babyLabel(s, b, all)) : p.birth_title_one,
-      footer: PButton(p.create_cta,
-          large: true, block: true, accent: s.accent, ar: s.rtl, onTap: ok && !_saving ? () => _save(preg) : null),
+      footer: PButton(
+        p.create_cta,
+        large: true,
+        block: true,
+        accent: s.accent,
+        ar: s.rtl,
+        onTap: ok && !_saving ? () => _save(preg) : null,
+      ),
       children: [
         Container(
           margin: const EdgeInsets.only(bottom: 18),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(T.rLg)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(p.arrived_t, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-            Text(multi ? p.arrived_b_multi : p.arrived_b, style: Typo.bodySm(ar: s.rtl)),
-          ]),
+          decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(AppRadii.lg)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                p.arrived_t,
+                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              Text(multi ? p.arrived_b_multi : p.arrived_b, style: Typo.bodySm(ar: s.rtl)),
+            ],
+          ),
         ),
         if (active.length > 1)
           LabelledField(
             label: p.which,
-            child: Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final x in active)
-                BChip(
-                  babyLabel(s, x, all),
-                  active: x.id == _babyId,
-                  accent: s.accent.main,
-                  ar: s.rtl,
-                  onTap: () => setState(() => _choose(x, items)),
-                ),
-            ]),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final x in active)
+                  BChip(
+                    babyLabel(s, x, all),
+                    active: x.id == _babyId,
+                    accent: s.accent.main,
+                    ar: s.rtl,
+                    onTap: () => setState(() => _choose(x, items)),
+                  ),
+              ],
+            ),
           ),
         if (b != null) ...[
           LabelledField(
@@ -188,8 +208,13 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
               placeholder: p.pick_date,
               onTap: () async {
                 final now = DateTime.now();
-                final picked = await pickDay(context,
-                    title: f.f_dob, initial: _dob ?? now, first: now.subtract(const Duration(days: 365)), last: now);
+                final picked = await pickDay(
+                  context,
+                  title: f.f_dob,
+                  initial: _dob ?? now,
+                  first: now.subtract(const Duration(days: 365)),
+                  last: now,
+                );
                 if (picked != null && mounted) setState(() => _dob = picked);
               },
             ),
@@ -200,26 +225,28 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
             help: p.me_stay,
             child: its.isEmpty
                 ? Text(p.no_records, style: Typo.meta(ar: s.rtl))
-                : RowsCard(children: [
-                    for (final it in its)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        child: BCheck(
-                          label: [
-                            it.title ?? itemKindLabel(s, it.kind),
-                            '${itemKindLabel(s, it.kind)} · ${formatDay(it.recordedOn)}'
-                                '${it.isShared ? ' · ${p.shared}' : ''}',
-                          ].join('\n'),
-                          checked: keep.contains(it.id),
-                          accent: s.accent,
-                          ar: s.rtl,
-                          onTap: () => setState(() {
-                            final k = _keep ??= {};
-                            k.contains(it.id) ? k.remove(it.id) : k.add(it.id);
-                          }),
+                : RowsCard(
+                    children: [
+                      for (final it in its)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          child: BCheck(
+                            label: [
+                              it.title ?? itemKindLabel(s, it.kind),
+                              '${itemKindLabel(s, it.kind)} · ${formatDay(it.recordedOn)}'
+                                  '${it.isShared ? ' · ${p.shared}' : ''}',
+                            ].join('\n'),
+                            checked: keep.contains(it.id),
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: () => setState(() {
+                              final k = _keep ??= {};
+                              k.contains(it.id) ? k.remove(it.id) : k.add(it.id);
+                            }),
+                          ),
                         ),
-                      ),
-                  ]),
+                    ],
+                  ),
           ),
         ],
       ],
@@ -228,38 +255,44 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
 
   Widget _bloodGrid(PatientAppState s) {
     final types = BloodType.values.where((b) => b != BloodType.bombay).toList();
-    return LayoutBuilder(builder: (context, c) {
-      const gap = 8.0;
-      final w = (c.maxWidth - gap * 3) / 4;
-      return Wrap(spacing: gap, runSpacing: gap, children: [
-        for (final b in types)
-          SizedBox(
-            width: w,
-            child: BChip(
-              b.code.replaceAll('-', '−'),
-              active: !_bloodUnsure && _blood == b,
-              accent: s.accent.main,
-              ar: s.rtl,
-              onTap: () => setState(() {
-                _blood = b;
-                _bloodUnsure = false;
-              }),
+    return LayoutBuilder(
+      builder: (context, c) {
+        const gap = 8.0;
+        final w = (c.maxWidth - gap * 3) / 4;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final b in types)
+              SizedBox(
+                width: w,
+                child: BChip(
+                  b.code.replaceAll('-', '−'),
+                  active: !_bloodUnsure && _blood == b,
+                  accent: s.accent.main,
+                  ar: s.rtl,
+                  onTap: () => setState(() {
+                    _blood = b;
+                    _bloodUnsure = false;
+                  }),
+                ),
+              ),
+            SizedBox(
+              width: c.maxWidth,
+              child: BChip(
+                s.strings.family.blood_unsure,
+                active: _bloodUnsure,
+                accent: s.accent.main,
+                ar: s.rtl,
+                onTap: () => setState(() {
+                  _bloodUnsure = true;
+                  _blood = null;
+                }),
+              ),
             ),
-          ),
-        SizedBox(
-          width: c.maxWidth,
-          child: BChip(
-            s.strings.family.blood_unsure,
-            active: _bloodUnsure,
-            accent: s.accent.main,
-            ar: s.rtl,
-            onTap: () => setState(() {
-              _bloodUnsure = true;
-              _blood = null;
-            }),
-          ),
-        ),
-      ]);
-    });
+          ],
+        );
+      },
+    );
   }
 }

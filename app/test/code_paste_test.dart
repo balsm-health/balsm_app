@@ -14,8 +14,10 @@ void main() {
 
     test('the code is found inside a sentence', () => expect(codeFromText('Your code is 123456.'), '123456'));
 
-    test('other numbers in the message do not leak into the code',
-        () => expect(codeFromText('Valid for 10 minutes. Your code: 482913'), '482913'));
+    test(
+      'other numbers in the message do not leak into the code',
+      () => expect(codeFromText('Valid for 10 minutes. Your code: 482913'), '482913'),
+    );
 
     test('a partial code is kept', () => expect(codeFromText('12'), '12'));
 
@@ -46,7 +48,9 @@ void main() {
       expect(f.formatEditUpdate(v('12'), v('12654321')).text, '654321');
     });
 
-    test('a paste with no code leaves the field as it was',
-        () => expect(f.formatEditUpdate(v('12'), v('12hello')).text, '12'));
+    test(
+      'a paste with no code leaves the field as it was',
+      () => expect(f.formatEditUpdate(v('12'), v('12hello')).text, '12'),
+    );
   });
 }

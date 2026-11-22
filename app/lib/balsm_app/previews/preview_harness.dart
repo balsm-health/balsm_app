@@ -40,8 +40,8 @@
 library;
 
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
@@ -53,50 +53,58 @@ import '../theme.dart';
 /// providers resolve, then [AppScope] so `AppScope.of` works, then the
 /// MaterialApp that supplies Material ancestors (ink, text style, overlays)
 /// plus the framework's own localizations.
-Widget balsmPreview(Widget child) => _harness(child, lang: LanguageCode.en);
+Widget balsmPreview(Widget child) => _Harness(child, lang: LanguageCode.en);
 
 /// Arabic / RTL context, same widget.
 ///
 /// Worth a second preview on anything directional rather than trusting it:
 /// RTL breaks show up as mirrored padding and clipped rows, and this app
 /// ships Arabic as a first-class locale, not a translation afterthought.
-Widget balsmPreviewAr(Widget child) => _harness(child, lang: LanguageCode.ar);
+Widget balsmPreviewAr(Widget child) => _Harness(child, lang: LanguageCode.ar);
 
 /// A preview surface with the app's page background and comfortable padding,
 /// for primitives that would otherwise render edge-to-edge on white.
-Widget balsmPreviewPadded(Widget child) => _harness(
+Widget balsmPreviewPadded(Widget child) => _Harness(
       Padding(padding: const EdgeInsets.all(16), child: child),
       lang: LanguageCode.en,
     );
 
-Widget _harness(Widget child, {required LanguageCode lang}) {
-  final state = PatientAppState()..lang = lang;
-  return ProviderScope(
-    child: AppScope(
-      state: state,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        locale: Locale(lang.value),
-        // material_ui's bundle of the Cupertino/Material/Widgets delegates —
-        // Flutter 3.47 moved them out of flutter_localizations, so listing
-        // them individually now collides with that package's own names.
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        supportedLocales: const [Locale('en'), Locale('ar', 'EG')],
-        theme: balsmTheme(),
-        home: Directionality(
-          textDirection: state.dir,
-          // Publishes `--app-accent` to the kit, the same as the real shell —
-          // without it every accent-driven widget silently falls back to blue
-          // and the preview lies about the shipped colour.
-          child: AccentScope(
-            accent: state.accent,
-            child: Scaffold(
-              backgroundColor: Colors.white,
-              body: Center(child: child),
+class _Harness extends StatelessWidget {
+  const _Harness(this.child, {required this.lang});
+  final Widget child;
+  final LanguageCode lang;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = PatientAppState()..lang = lang;
+    return ProviderScope(
+      retry: noProviderRetry,
+      child: AppScope(
+        state: state,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          locale: Locale(lang.value),
+          // material_ui's bundle of the Cupertino/Material/Widgets delegates —
+          // Flutter 3.47 moved them out of flutter_localizations, so listing
+          // them individually now collides with that package's own names.
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: const [Locale('en'), Locale('ar', 'EG')],
+          theme: balsmTheme(),
+          home: Directionality(
+            textDirection: state.dir,
+            // Publishes `--app-accent` to the kit, the same as the real shell —
+            // without it every accent-driven widget silently falls back to blue
+            // and the preview lies about the shipped colour.
+            child: AccentScope(
+              accent: state.accent,
+              child: Scaffold(
+                backgroundColor: AppColors.white,
+                body: Center(child: child),
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

@@ -6,17 +6,17 @@ import 'package:cryptography/cryptography.dart' show Sha256;
 class CardContact {
   const CardContact({required this.name, required this.phone, this.relation});
 
-  final String name;
-  final String phone;
-  final String? relation;
-
-  Map<String, dynamic> toJson() => {'name': name, 'phone': phone, if (relation != null) 'relation': relation};
-
   factory CardContact.fromJson(Map<String, dynamic> json) => CardContact(
         name: json['name'] as String? ?? '',
         phone: json['phone'] as String? ?? '',
         relation: json['relation'] as String?,
       );
+
+  final String name;
+  final String phone;
+  final String? relation;
+
+  Map<String, dynamic> toJson() => {'name': name, 'phone': phone, if (relation != null) 'relation': relation};
 }
 
 /// The emergency card an account holder may share with a linked member:
@@ -72,7 +72,7 @@ class EmergencyCardPayload {
       allergies: [for (final a in json['allergies'] as List? ?? const []) a as String],
       conditions: [for (final c in json['conditions'] as List? ?? const []) c as String],
       contacts: [
-        for (final c in json['contacts'] as List? ?? const []) CardContact.fromJson(c as Map<String, dynamic>)
+        for (final c in json['contacts'] as List? ?? const []) CardContact.fromJson(c as Map<String, dynamic>),
       ],
     );
   }

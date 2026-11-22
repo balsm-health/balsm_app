@@ -1,6 +1,6 @@
 import 'package:app/balsm_app/kit.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Bottom-sheet footer inset.
 ///
@@ -19,15 +19,19 @@ void main() {
     double? base,
   }) async {
     late double result;
-    await tester.pumpWidget(MaterialApp(
-      home: MediaQuery(
-        data: data,
-        child: Builder(builder: (context) {
-          result = base == null ? sheetBottomInset(context) : sheetBottomInset(context, base: base);
-          return const SizedBox.shrink();
-        }),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: data,
+          child: Builder(
+            builder: (context) {
+              result = base == null ? sheetBottomInset(context) : sheetBottomInset(context, base: base);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
       ),
-    ));
+    );
     return result;
   }
 
@@ -36,7 +40,7 @@ void main() {
     expect(value, 34 + 36);
   });
 
-  testWidgets('defaults to the design\'s 38px .flow-foot base', (tester) async {
+  testWidgets("defaults to the design's 38px .flow-foot base", (tester) async {
     final value = await inset(tester, data: const MediaQueryData(padding: notch));
     expect(value, 34 + 38);
   });

@@ -8,7 +8,7 @@ import '../ports/denied_countries_port.dart';
 ///
 /// Flow:
 /// 1. Reject if the target country is geofence-denied (GeofenceFailure).
-/// 2. POST /account/country  body: { "country_code": "<ISO>" }.
+/// 2. POST /account/country  body: { "country_code": "`<ISO>`" }.
 /// 3. On success, dispatch [CountryChanged] on the [EventBus].
 ///
 /// RR-001: changing the account country does NOT migrate DOB residency.
@@ -56,11 +56,13 @@ class ChangeCountryUseCase {
       // Ahead of the switch: an offline failure carries a null statusCode, and
       // so does an unmapped one — the switch cannot tell them apart.
       if (e.isOffline) return AppResult.failure(const OfflineFailure());
-      return AppResult.failure(switch (e.statusCode) {
-        401 || 403 => const UnauthorizedFailure(),
-        400 || 422 => const ValidationFailure('Invalid country'),
-        _ => const NetworkFailure(),
-      });
+      return AppResult.failure(
+        switch (e.statusCode) {
+          401 || 403 => const UnauthorizedFailure(),
+          400 || 422 => const ValidationFailure('Invalid country'),
+          _ => const NetworkFailure(),
+        },
+      );
     }
   }
 }

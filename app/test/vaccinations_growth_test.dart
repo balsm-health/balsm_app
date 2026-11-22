@@ -15,6 +15,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:vaccinations/vaccinations.dart';
 
+import 'support/flag_overrides.dart';
+
 /// Mother & Child stage 3: a child's vaccinations and growth log, and their
 /// tiles on the member home. Every name and value here is invented by the
 /// test.
@@ -29,7 +31,7 @@ void main() {
   DateTime daysFromToday(int n) => DateTime(today.year, today.month, today.day + n);
 
   PatientAppState familyState() {
-    final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true);
+    final flags = flagsWith({AppFlags.motherChild: true});
     return PatientAppState()..attachFlags(flags);
   }
 
@@ -40,29 +42,36 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    final container = ProviderContainer(overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      currentUserIdProvider.overrideWithValue(user),
-      familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
-      accountSummaryProvider.overrideWith((ref) async => const AccountSummary(
+    final container = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        currentUserIdProvider.overrideWithValue(user),
+        familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+        accountSummaryProvider.overrideWith(
+          (ref) async => const AccountSummary(
             id: user,
             displayName: 'Test Parent',
             countryCode: 'EG',
             preferredLanguage: 'en',
             deletionState: 'ACTIVE',
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: Scaffold(body: screen),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: Scaffold(body: screen),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return container;
   }
@@ -78,17 +87,26 @@ void main() {
 
   /// A container just for seeding, before a screen that needs the member id.
   Future<FamilyMember> seedFirst(String name, {DateTime? dob}) async {
-    final c = ProviderContainer(overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      currentUserIdProvider.overrideWithValue(user),
-      familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
-    ]);
+    final c = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        currentUserIdProvider.overrideWithValue(user),
+        familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+      ],
+    );
     addTearDown(c.dispose);
-    return seed(c, name, dob ?? DateTime(today.year - 4, 3, 1));
+    return seed(c, name, dob ?? DateTime(today.year - 4, 3));
   }
 
-  Future<void> dose(ProviderContainer c, HealthProfileId id, String vaccine, int n,
-      {required DateTime given, DateTime? next}) async {
+  Future<void> dose(
+    ProviderContainer c,
+    HealthProfileId id,
+    String vaccine,
+    int n, {
+    required DateTime given,
+    DateTime? next,
+  }) async {
     final r = await c.read(recordVaccinationUseCaseProvider)(
       vaccine: vaccine,
       doseNumber: n,
@@ -116,7 +134,12 @@ void main() {
       final next = daysFromToday(12);
       await dose(c, kid.id, 'Test Vaccine', 2, given: daysFromToday(-2), next: next);
       await c.read(recordGrowthEntryUseCaseProvider)(
-          measuredOn: daysFromToday(-3), weightKg: 14, heightCm: null, now: DateTime.now(), profileId: kid.id);
+        measuredOn: daysFromToday(-3),
+        weightKg: 14,
+        heightCm: null,
+        now: DateTime.now(),
+        profileId: kid.id,
+      );
       await tester.pumpAndSettle();
       expect(find.text(state.strings.vacc.tile_next(formatDay(next))), findsOne);
       expect(find.text(state.strings.growth.tile_last(formatDay(daysFromToday(-3)))), findsOne);
@@ -124,7 +147,7 @@ void main() {
 
     testWidgets('an adult member gets neither tile', (tester) async {
       final state = familyState();
-      final adult = await seedFirst('Test Adult', dob: DateTime(today.year - 40, 1, 1));
+      final adult = await seedFirst('Test Adult', dob: DateTime(today.year - 40));
       await pump(tester, MemberScreen(id: adult.id), state);
       expect(find.text(state.strings.family.tile_card), findsOne);
       expect(find.text(state.strings.vacc.title), findsNothing);
@@ -237,7 +260,12 @@ void main() {
       final add = find.widgetWithText(PButton, g.add);
       expect(tester.widget<PButton>(add).onTap, isNull);
       await c.read(recordGrowthEntryUseCaseProvider)(
-          measuredOn: daysFromToday(-30), weightKg: 12, heightCm: 88, now: DateTime.now(), profileId: kid.id);
+        measuredOn: daysFromToday(-30),
+        weightKg: 12,
+        heightCm: 88,
+        now: DateTime.now(),
+        profileId: kid.id,
+      );
       await tester.enterText(find.byType(TextField).first, '12,5');
       await tester.pump();
       await tester.tap(add);
@@ -249,8 +277,11 @@ void main() {
       expect(find.text(g.cm('88')), findsOne);
       final log = await c.read(growthLogDataSourceProvider).findAll(scope: kid.id);
       expect([for (final e in log) e.weightKg], [12.5, 12.0]);
-      expect(tester.widget<TextField>(find.byType(TextField).first).controller!.text, isEmpty,
-          reason: 'the form clears after adding');
+      expect(
+        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+        isEmpty,
+        reason: 'the form clears after adding',
+      );
     });
 
     testWidgets('an out-of-range number is refused with a message', (tester) async {
@@ -271,7 +302,12 @@ void main() {
       final kid = await seedFirst('Test Kid');
       final c = await pump(tester, GrowthScreen(id: kid.id), state);
       await c.read(recordGrowthEntryUseCaseProvider)(
-          measuredOn: daysFromToday(-30), weightKg: 12, heightCm: 88, now: DateTime.now(), profileId: kid.id);
+        measuredOn: daysFromToday(-30),
+        weightKg: 12,
+        heightCm: 88,
+        now: DateTime.now(),
+        profileId: kid.id,
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(g.kg('12')));
@@ -296,7 +332,7 @@ void main() {
     });
   });
 
-  testWidgets('Arabic: the screens lay out right to left in the patient\'s own words', (tester) async {
+  testWidgets("Arabic: the screens lay out right to left in the patient's own words", (tester) async {
     final state = familyState()..setLang(LanguageCode.ar);
     final kid = await seedFirst('Test Kid');
     final c = await pump(tester, VaccinationsScreen(id: kid.id), state);

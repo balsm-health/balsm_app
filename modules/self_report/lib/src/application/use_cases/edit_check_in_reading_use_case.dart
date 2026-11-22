@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/aggregates/check_in.dart';
 import '../../domain/value_objects/check_in_metric.dart';
 import '../../domain/value_objects/symptom.dart';
-import '../ports/check_ins_data_source.dart';
 import '../../infrastructure/drift/drift_check_ins_data_source.dart';
+import '../ports/check_ins_data_source.dart';
 
 /// Stores the patient's edit of one reading they logged (`quicklog.jsx`
 /// `QuickLogSheet` with `edit`): the same one-metric form, opened on the

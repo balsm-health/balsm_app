@@ -100,7 +100,6 @@
     "map_directions": "اتجاهات",
     "map_list": "قائمة",
     "map_map": "خريطة",
-    "map_found": "مكان بالقرب منك",
     "map_no_results": "لا توجد أماكن",
     "map_no_res_h": "جرّب بحثًا أو تصنيفًا آخر.",
     "map_search_area": "ابحث في هذه المنطقة",
@@ -197,7 +196,15 @@
     "care_attach_empty_h": "صور، فيديو أو PDF",
     "care_link_opens(Gender gender)": "افتح${_select(gender, female: 'ي', other: '')} الرابط على",
     "care_link_remove": "إزالة الرابط إلى",
-    "care_attach_add": "إضافة"
+    "care_attach_add": "إضافة",
+    "map_found_count(int n)": "${_plural(n, zero:'لا أماكن قريبة', one:'مكان واحد بالقرب منك', two:'مكانان بالقرب منك', few:'$n أماكن بالقرب منك', many:'$n مكانًا بالقرب منك', other:'$n مكان بالقرب منك')}",
+    "type_hospital": "مستشفيات",
+    "type_clinic": "عيادات",
+    "type_dentist": "أطباء أسنان",
+    "type_pharmacy": "صيدليات",
+    "type_lab": "مختبرات",
+    "type_scan": "مراكز أشعة",
+    "type_store": "أدوات طبية"
   },
   "checkin": {
     "latest": "آخر القياسات",
@@ -1028,7 +1035,8 @@
     "na_status_support": "حالة الخدمة والدعم",
     "cal_months": "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر",
     "cal_months_short": "ينا|فبر|مار|أبر|ماي|يون|يول|أغس|سبت|أكت|نوف|ديس",
-    "cal_weekdays": "أحد|إثن|ثلا|أرب|خمي|جمع|سبت"
+    "cal_weekdays": "أحد|إثن|ثلا|أرب|خمي|جمع|سبت",
+    "cal_months_abbr": "يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر"
   },
   "storage": {
     "store_delete_rec": "حذف السجل",

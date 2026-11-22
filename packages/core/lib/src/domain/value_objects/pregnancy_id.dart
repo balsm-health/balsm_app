@@ -1,4 +1,6 @@
+import '../../../core.dart' show MemberGroupId;
 import '../../extensions/type_extensions.dart';
+import 'member_group_id.dart' show MemberGroupId;
 import 'unique_id.dart';
 
 /// Typed id of a pregnancy (`pregnancy`) — the mother's tracker that a
@@ -12,5 +14,5 @@ class PregnancyId extends UniqueId {
   const PregnancyId.empty() : super.empty();
   PregnancyId.uuid() : super.uuidv7('preg');
 
-  static PregnancyId? fromString(String? value) => value?.mapNotNull((v) => PregnancyId.value(v));
+  static PregnancyId? fromString(String? value) => value.mapNotNull(PregnancyId.value);
 }

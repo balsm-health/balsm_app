@@ -7,7 +7,7 @@ final RegExp kHandleFormat = RegExp(r'^[a-z0-9_.]{3,30}$');
 
 /// Validates and claims a public handle for the signed-in user.
 ///
-/// POST /account/handle/claim  body: { "handle": "<value>" }
+/// POST /account/handle/claim  body: { "handle": "`<value>`" }
 /// 409 -> [ConflictFailure] ("Handle taken").
 class ClaimHandleUseCase {
   ClaimHandleUseCase(this._api);
@@ -31,12 +31,14 @@ class ClaimHandleUseCase {
       // Ahead of the switch: an offline failure carries a null statusCode, and
       // so does an unmapped one — the switch cannot tell them apart.
       if (e.isOffline) return AppResult.failure(const OfflineFailure());
-      return AppResult.failure(switch (e.statusCode) {
-        409 => const ConflictFailure('Handle taken'),
-        401 || 403 => const UnauthorizedFailure(),
-        400 || 422 => const ValidationFailure('Invalid handle'),
-        _ => const NetworkFailure(),
-      });
+      return AppResult.failure(
+        switch (e.statusCode) {
+          409 => const ConflictFailure('Handle taken'),
+          401 || 403 => const UnauthorizedFailure(),
+          400 || 422 => const ValidationFailure('Invalid handle'),
+          _ => const NetworkFailure(),
+        },
+      );
     }
   }
 }

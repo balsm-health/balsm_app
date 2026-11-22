@@ -34,7 +34,9 @@ void main() {
     expect(Muscle.chest, isNot(Bone.chest));
     expect(Muscle.chest, Muscle.chest);
     expect({Muscle.chest, Bone.chest}.length, 2);
-    expect(<BodyRegion>[Muscle.chest, Muscle.chest].toSet().length, 1);
+    // The duplicate is the point: equal regions must collapse to one entry.
+    // ignore: equal_elements_in_set
+    expect(<BodyRegion>{Muscle.chest, Muscle.chest}.length, 1);
   });
 
   test('PainSite equality follows its region', () {

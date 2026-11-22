@@ -20,7 +20,8 @@ const _link = '''
   "updated_at": "2026-10-02T12:00:00Z"
 }, "error": null}''';
 
-const _row = '''{
+const _row = '''
+{
   "id": "00000000-0000-0000-0000-0000000000a1",
   "relation": "son",
   "status": "pending",
@@ -151,11 +152,13 @@ void main() {
 
   test('getCard parses the sealed card and maps 404 to null', () async {
     var status = 200;
-    final adapter = FakeHttpAdapter((_) => jsonResponse(
-          '{"data": {"version": 3, "ephemeral_public_key": "ZXBr", "nonce": "bg==", "ciphertext": "Y3Q=", '
-          '"updated_at": "2026-10-03T08:00:00Z"}, "error": null}',
-          status: status,
-        ));
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse(
+        '{"data": {"version": 3, "ephemeral_public_key": "ZXBr", "nonce": "bg==", "ciphertext": "Y3Q=", '
+        '"updated_at": "2026-10-03T08:00:00Z"}, "error": null}',
+        status: status,
+      ),
+    );
     final api = DioFamilyLinksApi(net: fakeNet(adapter));
 
     final card = await api.getCard(id);

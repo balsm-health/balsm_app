@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 enum BalsmMetricTrend { up, down, none }
 
@@ -26,8 +26,8 @@ class BalsmMetricTile {
 /// P001 use: home today-summary (next dose, taken count, missed count).
 class BalsmMetricGrid extends StatelessWidget {
   const BalsmMetricGrid({
-    super.key,
     required this.tiles,
+    super.key,
   });
 
   final List<BalsmMetricTile> tiles;
@@ -57,16 +57,16 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final trendColor = tile.trend == BalsmMetricTrend.up
-        ? BalsmColors.danger
-        : (tile.trend == BalsmMetricTrend.down ? const Color(0xFF1F6A36) : BalsmColors.fg3);
+        ? AppColors.danger
+        : (tile.trend == BalsmMetricTrend.down ? AppColors.hueMintInk : AppColors.textTertiary);
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(BalsmRadius.lg),
-        border: Border.all(color: BalsmColors.border),
-        boxShadow: BalsmShadow.xs,
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.xs,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,16 +74,16 @@ class _MetricTile extends StatelessWidget {
           Row(
             children: [
               if (tile.icon != null) ...[
-                Icon(tile.icon, size: 15, color: BalsmColors.fg3),
+                Icon(tile.icon, size: 15, color: AppColors.textTertiary),
                 const SizedBox(width: 7),
               ],
               Expanded(
                 child: Text(
                   tile.label,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: FontSizes.meta,
                     fontWeight: FontWeight.w600,
-                    color: BalsmColors.fg3,
+                    color: AppColors.textTertiary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -100,8 +100,8 @@ class _MetricTile extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.w800,
-                    fontSize: 26,
-                    color: BalsmColors.fg1,
+                    fontSize: FontSizes.title,
+                    color: AppColors.textPrimary,
                     letterSpacing: -0.01 * 26,
                     height: 1.1,
                   ),
@@ -112,8 +112,8 @@ class _MetricTile extends StatelessWidget {
                     style: const TextStyle(
                       fontFamily: 'IBM Plex Sans',
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: BalsmColors.fg3,
+                      fontSize: FontSizes.bodySm,
+                      color: AppColors.textTertiary,
                     ),
                   ),
               ],
@@ -132,7 +132,7 @@ class _MetricTile extends StatelessWidget {
                 Text(
                   tile.trendLabel!,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: FontSizes.meta,
                     color: trendColor,
                   ),
                 ),

@@ -15,11 +15,30 @@ class Messages implements i69n.I69nMessageBundle {
   CountryMessages get country => CountryMessages(this);
   LanguageMessages get language => LanguageMessages(this);
   RelationMessages get relation => RelationMessages(this);
+  String get nav_home => "Home";
+  String get nav_card => "Card";
+  String get nav_meds => "Meds";
+  String get nav_sessions => "Sessions";
+  String get nav_settings => "Settings";
+  String get trust_on_device => "On-device";
+  String get trust_private => "Private";
+  String get trust_offline => "Offline-ready";
+  String get backup_save_title => "Save your recovery code";
+  String get backup_save_body =>
+      "This is the only key that can restore your health data on a new device. Write it down and keep it safe — we can never recover it.";
+  String get backup_saved => "I've saved it";
+  String get restore_title => "Restore your data?";
+  String get restore_body =>
+      "We found a backup in your cloud. Enter your recovery code to restore your profile, medications, and history.";
+  String get restore_code_label => "Recovery code";
+  String get restore_error => "Wrong code or no backup found. Try again.";
+  String get restore_action => "Restore";
+  String get calendar_months => "January|February|March|April|May|June|July|August|September|October|November|December";
+  String get calendar_weekdays => "Sun|Mon|Tue|Wed|Thu|Fri|Sat";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'status':
@@ -36,6 +55,42 @@ class Messages implements i69n.I69nMessageBundle {
         return language;
       case 'relation':
         return relation;
+      case 'nav_home':
+        return nav_home;
+      case 'nav_card':
+        return nav_card;
+      case 'nav_meds':
+        return nav_meds;
+      case 'nav_sessions':
+        return nav_sessions;
+      case 'nav_settings':
+        return nav_settings;
+      case 'trust_on_device':
+        return trust_on_device;
+      case 'trust_private':
+        return trust_private;
+      case 'trust_offline':
+        return trust_offline;
+      case 'backup_save_title':
+        return backup_save_title;
+      case 'backup_save_body':
+        return backup_save_body;
+      case 'backup_saved':
+        return backup_saved;
+      case 'restore_title':
+        return restore_title;
+      case 'restore_body':
+        return restore_body;
+      case 'restore_code_label':
+        return restore_code_label;
+      case 'restore_error':
+        return restore_error;
+      case 'restore_action':
+        return restore_action;
+      case 'calendar_months':
+        return calendar_months;
+      case 'calendar_weekdays':
+        return calendar_weekdays;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -54,14 +109,12 @@ class StatusMessages implements i69n.I69nMessageBundle {
   String get no_incidents => "No incidents";
   String get incident => "Incident";
   String get unavailable => "Status unavailable";
-  String get unavailable_body =>
-      "We could not reach the status service. If you need help, contact support below.";
+  String get unavailable_body => "We could not reach the status service. If you need help, contact support below.";
   String get need_help => "Need help?";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
@@ -104,11 +157,15 @@ class CommonMessages implements i69n.I69nMessageBundle {
   String get retry => "Retry";
   String get save => "Save";
   String get delete => "Delete";
+  String get close => "Close";
+  String get copy => "Copy";
+  String get skip => "Skip";
+  String get clear => "Clear";
+  String get dismiss => "Dismiss";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'continue_':
@@ -129,6 +186,16 @@ class CommonMessages implements i69n.I69nMessageBundle {
         return save;
       case 'delete':
         return delete;
+      case 'close':
+        return close;
+      case 'copy':
+        return copy;
+      case 'skip':
+        return skip;
+      case 'clear':
+        return clear;
+      case 'dismiss':
+        return dismiss;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -142,8 +209,7 @@ class ErrorMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'unknown':
@@ -159,17 +225,19 @@ class NotfoundMessages implements i69n.I69nMessageBundle {
   const NotfoundMessages(this._parent);
   String get title => "Page not found";
   String get body => "The page you are looking for does not exist.";
+  String get go_home => "Go home";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'title':
         return title;
       case 'body':
         return body;
+      case 'go_home':
+        return go_home;
       default:
         throw Exception('Message $key doesn\'t exist in $this');
     }
@@ -194,8 +262,7 @@ class CountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'eg':
@@ -236,8 +303,7 @@ class EgCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -258,8 +324,7 @@ class SaCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -280,8 +345,7 @@ class AeCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -302,8 +366,7 @@ class QaCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -324,8 +387,7 @@ class KwCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -346,8 +408,7 @@ class BhCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -368,8 +429,7 @@ class OmCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -390,8 +450,7 @@ class JoCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -412,8 +471,7 @@ class LbCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -434,8 +492,7 @@ class MaCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -456,8 +513,7 @@ class UsCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -478,8 +534,7 @@ class GbCountryMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -504,8 +559,7 @@ class LanguageMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'ar':
@@ -533,8 +587,7 @@ class ArLanguageMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -552,8 +605,7 @@ class EnLanguageMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -571,8 +623,7 @@ class FrLanguageMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -590,8 +641,7 @@ class UrLanguageMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -609,8 +659,7 @@ class FaLanguageMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -628,8 +677,7 @@ class TrLanguageMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'name':
@@ -658,8 +706,7 @@ class RelationMessages implements i69n.I69nMessageBundle {
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
-      return (this[key.substring(0, index)]
-          as i69n.I69nMessageBundle)[key.substring(index + 1)];
+      return (this[key.substring(0, index)] as i69n.I69nMessageBundle)[key.substring(index + 1)];
     }
     switch (key) {
       case 'spouse':

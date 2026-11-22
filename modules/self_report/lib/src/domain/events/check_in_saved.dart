@@ -1,5 +1,7 @@
 import 'package:core/core.dart';
 
+import '../../../self_report.dart' show CheckIn;
+import '../aggregates/check_in.dart' show CheckIn;
 import '../value_objects/ids.dart';
 
 /// Published after a [CheckIn] is persisted on-device. PHI-free — carries only

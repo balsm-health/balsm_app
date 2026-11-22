@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core/core.dart';
 
+import '../../../auth.dart' show UserSignedIn, UserSignedOut, UserSignedUp;
 import '../../domain/aggregates/auth_session.dart';
 import '../../domain/repositories/read_auth_repository.dart';
 

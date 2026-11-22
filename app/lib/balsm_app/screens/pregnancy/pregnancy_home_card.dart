@@ -1,12 +1,12 @@
+import 'dart:async';
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pregnancy/pregnancy.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import '../family/family_kit.dart';
 import 'pregnancy_kit.dart';
 import 'pregnancy_screen.dart';
@@ -35,9 +35,9 @@ class PregnancyHomeCards extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final all = ref.watch(pregnanciesOfProvider(mother)).valueOrNull;
+    final all = ref.watch(pregnanciesOfProvider(mother)).value;
     final owner = pregnancyOwner(ref, mother);
-    final dismissed = ref.watch(pregnancyPromptDismissedProvider).valueOrNull;
+    final dismissed = ref.watch(pregnancyPromptDismissedProvider).value;
     if (all == null) return const SizedBox.shrink();
     final preg = all.where((x) => x.isActive).firstOrNull;
     final Widget child;
@@ -45,42 +45,53 @@ class PregnancyHomeCards extends ConsumerWidget {
       child =
           _TrackerCard(pregnancy: preg, mother: mother, title: owner == null ? p.title : p.title_of(owner.shortName));
     } else if (mother == null && all.isEmpty && dismissed == false && s.gender != Gender.male) {
-      child = Stack(children: [
-        PCard(
-          onTap: () => openPregnancy(context, ref),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(children: [
-            const IconSquare(LucideIcons.sprout, bg: babyWash, fg: babyInk, size: 44, iconSize: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(p.title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                Text(p.prompt_b, style: Typo.meta(ar: s.rtl)),
-              ]),
+      child = Stack(
+        children: [
+          PCard(
+            onTap: () => openPregnancy(context, ref),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                const IconSquare(LucideIcons.sprout, bg: babyWash, fg: babyInk, size: 44, iconSize: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.title,
+                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      Text(p.prompt_b, style: Typo.meta(ar: s.rtl)),
+                    ],
+                  ),
+                ),
+                // Room for the ✕, which sits over the card's end.
+                const SizedBox(width: 28),
+              ],
             ),
-            // Room for the ✕, which sits over the card's end.
-            const SizedBox(width: 28),
-          ]),
-        ),
-        PositionedDirectional(
-          end: 8,
-          top: 0,
-          bottom: 0,
-          child: Center(
+          ),
+          PositionedDirectional(
+            end: 8,
+            top: 0,
+            bottom: 0,
+            child: Center(
               child: RoundBtn(
-            icon: LucideIcons.x,
-            semanticLabel: p.hide_a11y,
-            ghost: true,
-            fg: T.fg3,
-            iconSize: 17,
-            onTap: () => _askToHide(context, ref, s),
-          )),
-        ),
-      ]);
+                icon: LucideIcons.x,
+                semanticLabel: p.hide_a11y,
+                ghost: true,
+                fg: AppColors.textTertiary,
+                iconSize: 17,
+                onTap: () => _askToHide(context, ref, s),
+              ),
+            ),
+          ),
+        ],
+      );
     } else {
       return const SizedBox.shrink();
     }
-    return Padding(padding: EdgeInsets.fromLTRB(gutter, 0, gutter, 14), child: child);
+    return Padding(padding: EdgeInsetsDirectional.fromSTEB(gutter, 0, gutter, 14), child: child);
   }
 }
 
@@ -92,34 +103,50 @@ Future<void> _askToHide(BuildContext context, WidgetRef ref, PatientAppState s) 
   return showAppSheet<void>(
     context,
     textDirection: s.dir,
-    builder: (sheet) => FamilySheet(title: p.hide_title, sub: p.hide_sub, children: [
-      Container(
-        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(14)),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(
-            padding: EdgeInsetsDirectional.only(top: 2),
-            child: Icon(LucideIcons.info, size: 16, color: T.fg3),
+    builder: (sheet) => FamilySheet(
+      title: p.hide_title,
+      sub: p.hide_sub,
+      children: [
+        Container(
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
+          decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.lg)),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsetsDirectional.only(top: 2),
+                child: Icon(LucideIcons.info, size: 16, color: AppColors.textTertiary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(p.hide_note, style: Typo.bodySm(ar: s.rtl))),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(p.hide_note, style: Typo.bodySm(ar: s.rtl))),
-        ]),
-      ),
-      const SizedBox(height: 16),
-      PButton(p.hide_btn, block: true, large: true, accent: s.accent, ar: s.rtl, onTap: () {
-        ref.read(pregnancyPromptDismissedProvider.notifier).dismiss();
-        Navigator.of(sheet).pop();
-      }),
-      const SizedBox(height: 10),
-      PButton(s.strings.common.cancel,
+        ),
+        const SizedBox(height: 16),
+        PButton(
+          p.hide_btn,
+          block: true,
+          large: true,
+          accent: s.accent,
+          ar: s.rtl,
+          onTap: () {
+            unawaited(ref.read(pregnancyPromptDismissedProvider.notifier).dismiss());
+            Navigator.of(sheet).pop();
+          },
+        ),
+        const SizedBox(height: 10),
+        PButton(
+          s.strings.common.cancel,
           variant: BtnVariant.ghost,
           size: BtnSize.md,
           block: true,
           accent: s.accent,
           ar: s.rtl,
-          onTap: () => Navigator.of(sheet).pop()),
-      const SizedBox(height: 4),
-    ]),
+          onTap: () => Navigator.of(sheet).pop(),
+        ),
+        const SizedBox(height: 4),
+      ],
+    ),
   );
 }
 
@@ -141,45 +168,66 @@ class _TrackerCard extends ConsumerWidget {
         onTap: () => openPregnancy(context, ref, mother: mother),
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(20)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(title, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: babyInk)),
-                  Text(p.week_n(info.week), style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w800)),
-                  Text(
-                    '${trimesterLabel(s, info.trimester)} · ${dueLine(s, info)}',
-                    style: Typo.bodySm(ar: s.rtl),
+          decoration: BoxDecoration(color: babyWash, borderRadius: BorderRadius.circular(AppRadii.xl)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: babyInk)),
+                        Text(p.week_n(info.week), style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w800)),
+                        Text(
+                          '${trimesterLabel(s, info.trimester)} · ${dueLine(s, info)}',
+                          style: Typo.bodySm(ar: s.rtl),
+                        ),
+                      ],
+                    ),
                   ),
-                ]),
+                  const IconSquare(
+                    LucideIcons.sprout,
+                    bg: AppColors.white,
+                    fg: AppColors.hueAqua,
+                    size: 40,
+                    iconSize: 20,
+                    radius: 12,
+                  ),
+                ],
               ),
-              const IconSquare(LucideIcons.sprout, bg: Colors.white, fg: T.hueAqua, size: 40, iconSize: 20, radius: 12),
-            ]),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(T.rPill),
-              child: Container(
-                height: 6,
-                color: Colors.white,
-                alignment: AlignmentDirectional.centerStart,
-                child: FractionallySizedBox(
-                  widthFactor: (info.week / 40).clamp(0.0, 1.0),
-                  child: Container(color: T.hueAqua),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+                child: Container(
+                  height: 6,
+                  color: AppColors.white,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: FractionallySizedBox(
+                    widthFactor: (info.week / 40).clamp(0.0, 1.0),
+                    child: Container(color: AppColors.hueAqua),
+                  ),
                 ),
               ),
-            ),
-            if (visit != null) ...[
-              const SizedBox(height: 12),
-              Row(children: [
-                const Icon(LucideIcons.calendar, size: 15, color: T.fg2),
-                const SizedBox(width: 6),
-                Text('${p.next_visit} ', style: Typo.bodySm(ar: s.rtl)),
-                Text(formatDay(visit.date),
-                    textDirection: TextDirection.ltr, style: Typo.num(size: FS.sm, weight: FontWeight.w700)),
-              ]),
+              if (visit != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(LucideIcons.calendar, size: 15, color: AppColors.textSecondary),
+                    const SizedBox(width: 6),
+                    Text('${p.next_visit} ', style: Typo.bodySm(ar: s.rtl)),
+                    Text(
+                      formatDay(visit.date),
+                      textDirection: TextDirection.ltr,
+                      style: Typo.num(size: FontSizes.bodySm, weight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ]),
+          ),
         ),
       ),
     );

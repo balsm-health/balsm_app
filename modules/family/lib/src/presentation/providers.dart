@@ -34,8 +34,8 @@ final memberGroupsProvider = StreamProvider<List<MemberGroup>>((ref) async* {
 /// and the people picker. Null until both the members and the groups have
 /// loaded, so a screen never flashes "no members yet" on its way in.
 final familySectionsProvider = Provider<List<FamilySection>?>((ref) {
-  final members = ref.watch(familyMembersProvider).valueOrNull;
-  final groups = ref.watch(memberGroupsProvider).valueOrNull;
+  final members = ref.watch(familyMembersProvider).value;
+  final groups = ref.watch(memberGroupsProvider).value;
   if (members == null || groups == null) return null;
   return groupFamily(groups, members.where((m) => m.kind == ProfileKind.dependent).toList());
 });
@@ -45,7 +45,7 @@ final familySectionsProvider = Provider<List<FamilySection>?>((ref) {
 final activeFamilyMemberProvider = Provider<FamilyMember?>((ref) {
   final active = ref.watch(currentProfileIdProvider);
   if (active == null) return null;
-  final members = ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[];
+  final members = ref.watch(familyMembersProvider).value ?? const <FamilyMember>[];
   return members.where((m) => m.id == active).firstOrNull;
 });
 

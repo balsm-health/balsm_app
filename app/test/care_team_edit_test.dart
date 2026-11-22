@@ -1,9 +1,9 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
+import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/widgets/attachment_thumb.dart';
 import 'package:app/balsm_app/widgets/phone_field.dart';
 import 'package:app/balsm_app/widgets/photo_attach.dart';
-import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +23,7 @@ void main() {
         name: name,
         phone: phone,
         mapUrl: mapUrl,
-        createdAt: DateTime.utc(2026, 1, 1),
+        createdAt: DateTime.utc(2026),
       );
 
   Future<PatientAppState> pump(
@@ -40,16 +40,19 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        careTeamProvider.overrideWith((ref) => Stream.value(team)),
-        contactPickerProvider.overrideWithValue(_StubPicker(picks)),
-      ],
-      child: AppScope(
-        state: state,
-        child: const MaterialApp(home: CareTeamScreen()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          careTeamProvider.overrideWith((ref) => Stream.value(team)),
+          contactPickerProvider.overrideWithValue(_StubPicker(picks)),
+        ],
+        child: AppScope(
+          state: state,
+          child: const MaterialApp(home: CareTeamScreen()),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return state;
   }
@@ -201,10 +204,12 @@ void main() {
       await tester.tap(attach);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.descendant(
-        of: find.byType(AttachSourceSheet),
-        matching: find.byIcon(LucideIcons.x),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AttachSourceSheet),
+          matching: find.byIcon(LucideIcons.x),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Back on the form, nothing picked, no platform call attempted.
@@ -310,8 +315,10 @@ void main() {
       expect(find.text(c.care_map_bad), findsOne);
       expect(find.text(c.care_map_help), findsNothing);
 
-      await tester.enterText(find.byWidgetPredicate((w) => w is TextField && w.controller?.text == 'not a link'),
-          'https://maps.app.goo.gl/abc');
+      await tester.enterText(
+        find.byWidgetPredicate((w) => w is TextField && w.controller?.text == 'not a link'),
+        'https://maps.app.goo.gl/abc',
+      );
       await tester.pumpAndSettle();
       expect(find.text(c.care_map_bad), findsNothing);
     });
@@ -332,8 +339,11 @@ void main() {
       // landed mid-field on top of the hint, because a TextField under loose
       // constraints shrink-wraps to its hint width.
       expect(pasteRect.right, lessThanOrEqualTo(fieldRect.right + 0.5));
-      expect(pasteRect.left, greaterThan(fieldRect.left + fieldRect.width / 2),
-          reason: 'Paste belongs in the trailing half of the field');
+      expect(
+        pasteRect.left,
+        greaterThan(fieldRect.left + fieldRect.width / 2),
+        reason: 'Paste belongs in the trailing half of the field',
+      );
       // And the hint has to have room, clear of it. The suffix used to swallow
       // the field, collapsing the content area to zero width.
       final hintRect = tester.getRect(find.text(c.care_ph_map));

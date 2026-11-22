@@ -43,8 +43,10 @@ void main() {
     });
 
     test('blank values are dropped rather than stored empty', () {
-      expect(campaignPropertiesFrom(Uri.parse('https://balsm.health/?utm_source=%20&utm_medium=cpc')),
-          {'utm_medium': 'cpc'});
+      expect(
+        campaignPropertiesFrom(Uri.parse('https://balsm.health/?utm_source=%20&utm_medium=cpc')),
+        {'utm_medium': 'cpc'},
+      );
     });
   });
 

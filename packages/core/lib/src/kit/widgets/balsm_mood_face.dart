@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 // Not wired in P001 (no daily check-in). Lifted for P002 forward-compat.
 enum BalsmMood { happy, neutral, sad, veryHappy, verySad }
@@ -8,8 +8,8 @@ enum BalsmMood { happy, neutral, sad, veryHappy, verySad }
 /// Not used in P001 — forward-compat for P002 daily check-in.
 class BalsmMoodFace extends StatelessWidget {
   const BalsmMoodFace({
-    super.key,
     required this.mood,
+    super.key,
     this.size = 34,
     this.selected = false,
   });
@@ -25,7 +25,7 @@ class BalsmMoodFace extends StatelessWidget {
       painter: _MoodFacePainter(
         mood: mood,
         selected: selected,
-        accent: BalsmColors.appAccent,
+        accent: AppColors.hueBlue,
       ),
     );
   }
@@ -46,7 +46,7 @@ class _MoodFacePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final r = size.width / 2;
     final center = Offset(r, r);
-    final faceColor = selected ? accent : BalsmColors.ink300;
+    final faceColor = selected ? accent : AppColors.ink300;
     final paint = Paint()
       ..color = faceColor
       ..style = PaintingStyle.stroke
@@ -62,8 +62,9 @@ class _MoodFacePainter extends CustomPainter {
     final eyePaint = Paint()
       ..color = faceColor
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(r - eyeX, eyeY), r * 0.09, eyePaint);
-    canvas.drawCircle(Offset(r + eyeX, eyeY), r * 0.09, eyePaint);
+    canvas
+      ..drawCircle(Offset(r - eyeX, eyeY), r * 0.09, eyePaint)
+      ..drawCircle(Offset(r + eyeX, eyeY), r * 0.09, eyePaint);
 
     // Mouth arc
     final mouthRect = Rect.fromCenter(

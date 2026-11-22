@@ -49,8 +49,11 @@ void main() {
     await ds.put(original.id, original);
     final later = at.add(const Duration(hours: 2));
 
-    final stored = await edit(original, CheckInMetric.bloodPressure,
-        entry('draft', vitals: const Vitals(systolic: 131, diastolic: 84), recordedAt: later, note: 'New note'));
+    final stored = await edit(
+      original,
+      CheckInMetric.bloodPressure,
+      entry('draft', vitals: const Vitals(systolic: 131, diastolic: 84), recordedAt: later, note: 'New note'),
+    );
 
     expect(stored.id, original.id);
     final back = (await ds.findAll()).single;
@@ -61,11 +64,13 @@ void main() {
     expect(back.note, 'New note');
   });
 
-  test('editing one reading leaves the check-in\'s other readings alone', () async {
-    final original = entry('chk-1',
-        mood: Mood.good,
-        vitals: const Vitals(systolic: 118, diastolic: 76, glucoseFasting: 95),
-        symptoms: {SymptomId.headache});
+  test("editing one reading leaves the check-in's other readings alone", () async {
+    final original = entry(
+      'chk-1',
+      mood: Mood.good,
+      vitals: const Vitals(systolic: 118, diastolic: 76, glucoseFasting: 95),
+      symptoms: {SymptomId.headache},
+    );
     await ds.put(original.id, original);
 
     await edit(original, CheckInMetric.glucose, entry('draft', vitals: const Vitals(glucoseRandom: 140)));
@@ -92,7 +97,7 @@ void main() {
   });
 
   test('pain takes its score and marked sites from the edit', () async {
-    final original = entry('chk-1', painLevel: const PainLevel(6), painSites: {PainSite(Muscle.chest)});
+    final original = entry('chk-1', painLevel: const PainLevel(6), painSites: {const PainSite(Muscle.chest)});
     final edited = original.withReading(CheckInMetric.pain, entry('d', painLevel: const PainLevel(3)));
     expect(edited.painLevel, const PainLevel(3));
     expect(edited.painSites, isEmpty);
@@ -100,8 +105,12 @@ void main() {
 
   test('editing one symptom keeps the others and their details', () async {
     const urine = SymptomDetail(blood: true);
-    final original = entry('chk-1',
-        symptoms: {SymptomId.headache, SymptomId.urine}, details: {SymptomId.urine: urine}, note: 'Kept note');
+    final original = entry(
+      'chk-1',
+      symptoms: {SymptomId.headache, SymptomId.urine},
+      details: {SymptomId.urine: urine},
+      note: 'Kept note',
+    );
 
     final edited = original.withReading(
       CheckInMetric.symptoms,
@@ -123,7 +132,9 @@ void main() {
   test('the photo follows the edit, so a removed photo is unlinked', () async {
     final original = entry('chk-1', vitals: const Vitals(spo2: 97), photo: 'rec-photo');
     final kept = original.withReading(
-        CheckInMetric.spo2, entry('d', vitals: const Vitals(spo2: 98), photo: original.photoRecordId));
+      CheckInMetric.spo2,
+      entry('d', vitals: const Vitals(spo2: 98), photo: original.photoRecordId),
+    );
     expect(kept.photoRecordId, 'rec-photo');
     final removed = original.withReading(CheckInMetric.spo2, entry('d', vitals: const Vitals(spo2: 98)));
     expect(removed.photoRecordId, isNull);

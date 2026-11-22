@@ -12,7 +12,7 @@ class _FakeSnapshot implements SnapshotPort {
         'schemaVersion': 1,
         'tables': {
           'health_profile': [
-            {'id': 'p1', 'user_id': 'u1', 'blood_type': 'B+', 'updated_at': '2026-01-01T00:00:00Z'}
+            {'id': 'p1', 'user_id': 'u1', 'blood_type': 'B+', 'updated_at': '2026-01-01T00:00:00Z'},
           ],
         },
       };

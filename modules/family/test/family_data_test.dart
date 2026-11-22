@@ -20,8 +20,12 @@ class _FakeMembers implements FamilyMembersPort {
   Future<List<FamilyMember>> listMembers() async => List.of(members);
 
   @override
-  Future<AppResult<FamilyMember>> createMember(MemberDraft draft,
-      {required MemberGroupId? groupId, required MemberTone tone, required DateTime now}) async {
+  Future<AppResult<FamilyMember>> createMember(
+    MemberDraft draft, {
+    required MemberGroupId? groupId,
+    required MemberTone tone,
+    required DateTime now,
+  }) async {
     final m = FamilyMember(
       id: HealthProfileId.value('hp-${members.length}'),
       kind: ProfileKind.dependent,
@@ -37,8 +41,12 @@ class _FakeMembers implements FamilyMembersPort {
   }
 
   @override
-  Future<AppResult<FamilyMember>> updateMember(HealthProfileId id, MemberDraft draft,
-      {required MemberGroupId? groupId, required DateTime now}) async {
+  Future<AppResult<FamilyMember>> updateMember(
+    HealthProfileId id,
+    MemberDraft draft, {
+    required MemberGroupId? groupId,
+    required DateTime now,
+  }) async {
     calls.add('update ${id.value} ${groupId?.value}');
     return AppResult.success(members.firstWhere((m) => m.id == id));
   }
@@ -68,7 +76,7 @@ void main() {
   MemberDraft draft({String? newGroup, MemberGroupId? group, String name = 'Test Child'}) => MemberDraft(
         displayName: name,
         relationship: Relationship.child,
-        dateOfBirth: DateTime(2022, 6, 1),
+        dateOfBirth: DateTime(2022, 6),
         sex: Sex.male,
         groupId: group,
         newGroupName: newGroup,
@@ -137,8 +145,11 @@ void main() {
     });
 
     test('refuses an incomplete form with every broken rule, storing nothing', () async {
-      final r = await save.add(const MemberDraft(displayName: '', relationship: null, dateOfBirth: null, sex: null),
-          userId: user, now: now);
+      final r = await save.add(
+        const MemberDraft(displayName: '', relationship: null, dateOfBirth: null, sex: null),
+        userId: user,
+        now: now,
+      );
       expect(r.error.message, 'nameRequired,relationshipRequired,birthDateRequired,sexRequired');
       expect(members.members, isEmpty);
     });

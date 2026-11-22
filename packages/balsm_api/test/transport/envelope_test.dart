@@ -10,10 +10,12 @@ Response<dynamic> _resp(Object? body, {int status = 200}) => Response(
 
 void main() {
   test('unwrapEnvelope returns data map', () {
-    final data = unwrapEnvelope(_resp({
-      'data': {'a': 1},
-      'error': null
-    }));
+    final data = unwrapEnvelope(
+      _resp({
+        'data': {'a': 1},
+        'error': null,
+      }),
+    );
     expect(data, {'a': 1});
   });
 
@@ -25,32 +27,44 @@ void main() {
 
   test('unwrapEnvelope throws ApiException with fromEnvelope on error', () {
     expect(
-      () => unwrapEnvelope(_resp({
-        'data': null,
-        'error': {'code': 'conflict', 'message': 'Handle taken'},
-      })),
-      throwsA(isA<ApiException>()
-          .having((e) => e.code, 'code', 'conflict')
-          .having((e) => e.serverMessage, 'serverMessage', 'Handle taken')
-          .having((e) => e.fromEnvelope, 'fromEnvelope', isTrue)),
+      () => unwrapEnvelope(
+        _resp({
+          'data': null,
+          'error': {'code': 'conflict', 'message': 'Handle taken'},
+        }),
+      ),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.code, 'code', 'conflict')
+            .having((e) => e.serverMessage, 'serverMessage', 'Handle taken')
+            .having((e) => e.fromEnvelope, 'fromEnvelope', isTrue),
+      ),
     );
   });
 
   test('unwrapEnvelopeList returns list data and throws on error', () {
     expect(
-        unwrapEnvelopeList(_resp({
-          'data': [1, 2]
-        })),
-        [1, 2]);
+      unwrapEnvelopeList(
+        _resp({
+          'data': [1, 2],
+        }),
+      ),
+      [1, 2],
+    );
     expect(
-        unwrapEnvelopeList(_resp({
-          'data': {'not': 'list'}
-        })),
-        isEmpty);
+      unwrapEnvelopeList(
+        _resp({
+          'data': {'not': 'list'},
+        }),
+      ),
+      isEmpty,
+    );
     expect(
-      () => unwrapEnvelopeList(_resp({
-        'error': {'message': 'x'}
-      })),
+      () => unwrapEnvelopeList(
+        _resp({
+          'error': {'message': 'x'},
+        }),
+      ),
       throwsA(isA<ApiException>()),
     );
   });

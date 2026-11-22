@@ -18,8 +18,11 @@ class PregnancyBabiesUseCase {
   final PregnancyBabiesPort _babies;
 
   /// A new baby after the last one of pregnancy [id].
-  Future<AppResult<PregnancyBaby>> add(PregnancyId id,
-      {required HealthProfileId motherId, required DateTime now}) async {
+  Future<AppResult<PregnancyBaby>> add(
+    PregnancyId id, {
+    required HealthProfileId motherId,
+    required DateTime now,
+  }) async {
     final p = await activePregnancy(_pregnancies, id, motherId);
     if (p.isFailure) return AppResult.failure(p.error);
     final existing = await _babies.listBabies(id);

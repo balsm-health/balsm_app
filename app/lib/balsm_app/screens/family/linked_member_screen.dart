@@ -7,7 +7,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import 'family_kit.dart';
 import 'family_link_kit.dart';
 import 'member_card_screen.dart';
@@ -22,7 +21,7 @@ Future<void> openLinkedMember(BuildContext context, String linkId) =>
 /// own switch for sharing its card back, and Unlink. No other health tiles:
 /// their records live on their phone.
 class LinkedMemberScreen extends ConsumerWidget {
-  const LinkedMemberScreen({super.key, required this.linkId});
+  const LinkedMemberScreen({required this.linkId, super.key});
   final String linkId;
 
   Future<void> _refresh(WidgetRef ref) async {
@@ -34,8 +33,8 @@ class LinkedMemberScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final f = s.strings.family;
-    final link = ref.watch(familyLinksProvider).valueOrNull?.byId(linkId);
-    if (link == null || !link.isLinked) return const Scaffold(backgroundColor: Colors.white);
+    final link = ref.watch(familyLinksProvider).value?.byId(linkId);
+    if (link == null || !link.isLinked) return const Scaffold(backgroundColor: AppColors.white);
     final name = linkName(s, link);
     final sub = linkSubtitle(s, link);
     return FamilyScaffold(
@@ -53,18 +52,27 @@ class LinkedMemberScreen extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 4, bottom: 8),
-          child: Column(children: [
-            LinkAvatar(link, size: 84),
-            const SizedBox(height: 14),
-            Text(name,
-                textAlign: TextAlign.center, style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-            if (sub.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(sub, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+          child: Column(
+            children: [
+              LinkAvatar(link, size: 84),
+              const SizedBox(height: 14),
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (sub.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  sub,
+                  textAlign: TextAlign.center,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Pill(f.link_read_only, kind: PillKind.outline, icon: LucideIcons.lock, ar: s.rtl),
             ],
-            const SizedBox(height: 10),
-            Pill(f.link_read_only, kind: PillKind.outline, icon: LucideIcons.lock, ar: s.rtl),
-          ]),
+          ),
         ),
         FamilySecHead(f.link_card_section),
         _SharedCard(link: link),
@@ -88,7 +96,7 @@ class LinkedMemberScreen extends ConsumerWidget {
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.strings.common.cancel)),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(f.link_unlink, style: const TextStyle(color: T.danger)),
+              child: Text(f.link_unlink, style: const TextStyle(color: AppColors.danger)),
             ),
           ],
         ),
@@ -117,7 +125,7 @@ class _SharedCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final f = s.strings.family;
-    final result = ref.watch(sharedCardProvider(link.id)).valueOrNull;
+    final result = ref.watch(sharedCardProvider(link.id)).value;
     if (result == null) return const SizedBox(height: 120);
     if (result.isFailure) {
       final stale = result.error is ValidationFailure;
@@ -133,20 +141,23 @@ class _SharedCard extends ConsumerWidget {
     final card = shared.card;
     final dob = card.dateOfBirthDay;
     final age = dob == null ? null : MemberAge.between(dob, DateTime.now());
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      EmergencyCardBody(
-        name: (card.name ?? '').trim().isEmpty ? linkName(s, link) : card.name!.trim(),
-        meta: [if (age != null) ageLabel(s, age), if (dob != null) f.born(formatDay(dob))].join(' · '),
-        bloodType: card.bloodType,
-        allergies: card.allergies,
-        conditions: card.conditions,
-        contacts: [for (final c in card.contacts) (name: c.name, phone: c.phone, relation: c.relation)],
-      ),
-      Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(4, 10, 4, 0),
-        child: Text(f.link_card_updated(formatDay(shared.updatedAt.toLocal())), style: Typo.meta(ar: s.rtl)),
-      ),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        EmergencyCardBody(
+          name: (card.name ?? '').trim().isEmpty ? linkName(s, link) : card.name!.trim(),
+          meta: [if (age != null) ageLabel(s, age), if (dob != null) f.born(formatDay(dob))].join(' · '),
+          bloodType: card.bloodType,
+          allergies: card.allergies,
+          conditions: card.conditions,
+          contacts: [for (final c in card.contacts) (name: c.name, phone: c.phone, relation: c.relation)],
+        ),
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(4, 10, 4, 0),
+          child: Text(f.link_card_updated(formatDay(shared.updatedAt.toLocal())), style: Typo.meta(ar: s.rtl)),
+        ),
+      ],
+    );
   }
 }
 
@@ -179,25 +190,38 @@ class _ShareSwitchState extends ConsumerState<_ShareSwitch> {
     final f = s.strings.family;
     return PCard(
       padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          Expanded(
-            child:
-                Text(f.link_share_t, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  f.link_share_t,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+              ),
+              Semantics(
+                toggled: widget.link.cardSharing,
+                label: f.link_share_t,
+                child: PSwitch(on: widget.link.cardSharing, accent: s.accent.main, onTap: _toggle),
+              ),
+            ],
           ),
-          Semantics(
-            toggled: widget.link.cardSharing,
-            label: f.link_share_t,
-            child: PSwitch(on: widget.link.cardSharing, accent: s.accent.main, onTap: _toggle),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(LucideIcons.lock, size: 14, color: AppColors.textTertiary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(f.link_share_b(s.gender), style: Typo.meta(ar: s.rtl).copyWith(height: 1.5))),
+            ],
           ),
-        ]),
-        const SizedBox(height: 6),
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.only(top: 2), child: Icon(LucideIcons.lock, size: 14, color: T.fg3)),
-          const SizedBox(width: 8),
-          Expanded(child: Text(f.link_share_b(s.gender), style: Typo.meta(ar: s.rtl).copyWith(height: 1.5))),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -212,16 +236,26 @@ class _Note extends StatelessWidget {
     final s = AppScope.of(context);
     return PCard(
       padding: const EdgeInsets.all(16),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        IconSquare(icon, bg: T.ink50, fg: T.fg3, size: 38, iconSize: 18),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            if (body != null) Text(body!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ]),
-        ),
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconSquare(icon, bg: AppColors.ink50, fg: AppColors.textTertiary, iconSize: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+                if (body case final body?)
+                  Text(body, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

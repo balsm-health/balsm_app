@@ -37,8 +37,13 @@ class ConsoleAnalyticsLogger implements AnalyticsLogger {
   }
 
   @override
-  void logError(Object error,
-      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) {
     developer.log(
       '${fatal ? 'FATAL ' : ''}${message ?? error.toString()}${_fmt(context)}',
       name: '$_name.error',

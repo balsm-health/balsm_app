@@ -1,29 +1,31 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('opens on the initial month and returns the selected date', (tester) async {
     DateTime? picked;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () async {
-              picked = await showBalsmDatePicker(
-                context,
-                initial: DateTime(2020, 6, 15),
-                firstDate: DateTime(2020, 1, 1),
-                lastDate: DateTime(2020, 12, 31),
-                title: 'Pick a date',
-                confirmLabel: 'OK',
-              );
-            },
-            child: const Text('open'),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                picked = await showBalsmDatePicker(
+                  context,
+                  initial: DateTime(2020, 6, 15),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2020, 12, 31),
+                  title: 'Pick a date',
+                  confirmLabel: 'OK',
+                );
+              },
+              child: const Text('open'),
+            ),
           ),
         ),
       ),
-    ));
+    );
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
@@ -40,25 +42,27 @@ void main() {
 
   testWidgets('a day after lastDate is not selectable', (tester) async {
     DateTime? picked;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () async {
-              picked = await showBalsmDatePicker(
-                context,
-                initial: DateTime(2020, 6, 10),
-                firstDate: DateTime(2020, 6, 1),
-                lastDate: DateTime(2020, 6, 15),
-                title: 'Pick a date',
-                confirmLabel: 'OK',
-              );
-            },
-            child: const Text('open'),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                picked = await showBalsmDatePicker(
+                  context,
+                  initial: DateTime(2020, 6, 10),
+                  firstDate: DateTime(2020, 6),
+                  lastDate: DateTime(2020, 6, 15),
+                  title: 'Pick a date',
+                  confirmLabel: 'OK',
+                );
+              },
+              child: const Text('open'),
+            ),
           ),
         ),
       ),
-    ));
+    );
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();

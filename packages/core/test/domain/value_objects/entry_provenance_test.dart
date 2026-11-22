@@ -38,14 +38,14 @@ void main() {
   });
 
   group('EntryHistory', () {
-    test('the patient\'s own entry has no attribution and stays empty when edited', () {
+    test("the patient's own entry has no attribution and stays empty when edited", () {
       expect(EntryHistory.none.isAttributed, isFalse);
       expect(EntryHistory.none.stampSelfEdit(DateTime.utc(2026, 1, 2)), same(EntryHistory.none));
     });
 
     test('attribution is the latest event by someone else', () {
       final h = EntryHistory([
-        ev('1', doctor, ProvenanceAction.added, DateTime.utc(2026, 1, 1)),
+        ev('1', doctor, ProvenanceAction.added, DateTime.utc(2026)),
         ev('2', family, ProvenanceAction.edited, DateTime.utc(2026, 1, 3)),
         ev('3', ProvenanceActor.self, ProvenanceAction.edited, DateTime.utc(2026, 1, 4)),
       ]);
@@ -54,7 +54,7 @@ void main() {
     });
 
     test('a self edit is appended to an attributed entry, never replacing anything', () {
-      final added = ev('1', family, ProvenanceAction.added, DateTime.utc(2026, 1, 1));
+      final added = ev('1', family, ProvenanceAction.added, DateTime.utc(2026));
       final h = EntryHistory([added]);
       final at = DateTime.utc(2026, 2, 1, 9);
       final next = h.stampSelfEdit(at);
@@ -69,10 +69,10 @@ void main() {
     });
 
     test('newestFirst orders by time, later-appended first on a tie', () {
-      final t = DateTime.utc(2026, 1, 1);
+      final t = DateTime.utc(2026);
       final h = EntryHistory([
         ev('a', doctor, ProvenanceAction.shared, t),
-        ev('b', family, ProvenanceAction.edited, DateTime.utc(2026, 3, 1)),
+        ev('b', family, ProvenanceAction.edited, DateTime.utc(2026, 3)),
         ev('c', ProvenanceActor.self, ProvenanceAction.edited, t),
       ]);
       expect(h.newestFirst.map((e) => e.id), ['b', 'c', 'a']);

@@ -14,13 +14,15 @@ class _MockDisclosureApi extends Mock implements DisclosureApi {}
 void main() {
   setUpAll(() {
     registerFallbackValue(const DisclosureId.value(''));
-    registerFallbackValue(AcceptDisclosureRequest(
-      disclosureId: '',
-      version: '',
-      countryCode: '',
-      supervisoryAuthority: '',
-      preferredLanguage: '',
-    ));
+    registerFallbackValue(
+      const AcceptDisclosureRequest(
+        disclosureId: '',
+        version: '',
+        countryCode: '',
+        supervisoryAuthority: '',
+        preferredLanguage: '',
+      ),
+    );
   });
 
   late _MockDisclosureDao dao;
@@ -37,14 +39,18 @@ void main() {
 
   group('resync', () {
     test('sends the stored acceptance', () async {
-      when(() => dao.watchAcceptance(any(), any())).thenAnswer((_) => Stream.value(DisclosureAcceptance(
+      when(() => dao.watchAcceptance(any(), any())).thenAnswer(
+        (_) => Stream.value(
+          DisclosureAcceptance(
             disclosureId: const DisclosureId.value('consolidated'),
             version: 'v1',
             countryCodeAtAccept: 'EG',
             supervisoryAuthorityNameAtAccept: 'PDPC',
             preferredLanguageAtAccept: 'ar',
-            acceptedAt: DateTime.utc(2026, 10, 1),
-          )));
+            acceptedAt: DateTime.utc(2026, 10),
+          ),
+        ),
+      );
       when(() => api.accept(any())).thenAnswer((_) async {});
       expect(await usecase.resync(disclosureId: const DisclosureId.value('consolidated'), version: 'v1'), isTrue);
       final sent = verify(() => api.accept(captureAny())).captured.single as AcceptDisclosureRequest;
@@ -62,14 +68,18 @@ void main() {
     });
 
     test('API failure → false, no throw', () async {
-      when(() => dao.watchAcceptance(any(), any())).thenAnswer((_) => Stream.value(DisclosureAcceptance(
+      when(() => dao.watchAcceptance(any(), any())).thenAnswer(
+        (_) => Stream.value(
+          DisclosureAcceptance(
             disclosureId: const DisclosureId.value('consolidated'),
             version: 'v1',
             countryCodeAtAccept: 'EG',
             supervisoryAuthorityNameAtAccept: 'PDPC',
             preferredLanguageAtAccept: 'ar',
-            acceptedAt: DateTime.utc(2026, 10, 1),
-          )));
+            acceptedAt: DateTime.utc(2026, 10),
+          ),
+        ),
+      );
       when(() => api.accept(any())).thenThrow(Exception('offline'));
       expect(await usecase.resync(disclosureId: const DisclosureId.value('consolidated'), version: 'v1'), isFalse);
     });

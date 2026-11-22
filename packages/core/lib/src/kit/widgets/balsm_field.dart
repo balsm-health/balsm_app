@@ -1,14 +1,15 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import '../_tokens.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../tokens.dart';
 
 enum BalsmFieldVariant { text, email, numeric, date, dropdown }
 
 /// Input field porting prototype `.field` (label above, 56pt height, error state).
 class BalsmField extends StatefulWidget {
   const BalsmField({
-    super.key,
     required this.label,
+    super.key,
     this.hint,
     this.controller,
     this.errorText,
@@ -22,8 +23,8 @@ class BalsmField extends StatefulWidget {
   });
 
   const BalsmField.email({
-    super.key,
     required this.label,
+    super.key,
     this.hint,
     this.controller,
     this.errorText,
@@ -36,8 +37,8 @@ class BalsmField extends StatefulWidget {
         maxLines = 1;
 
   const BalsmField.numeric({
-    super.key,
     required this.label,
+    super.key,
     this.hint,
     this.controller,
     this.errorText,
@@ -84,7 +85,7 @@ class _BalsmFieldState extends State<BalsmField> {
   List<TextInputFormatter>? get _formatters {
     if (widget.variant == BalsmFieldVariant.numeric) {
       return [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩]')), // Arabic + Latin
+        FilteringTextInputFormatter.allow(RegExp('[0-9٠-٩]')), // Arabic + Latin
       ];
     }
     return null;
@@ -93,7 +94,7 @@ class _BalsmFieldState extends State<BalsmField> {
   @override
   Widget build(BuildContext context) {
     final hasError = widget.errorText != null;
-    final borderColor = hasError ? BalsmColors.danger : (_focused ? BalsmColors.borderFocus : BalsmColors.border);
+    final borderColor = hasError ? AppColors.danger : (_focused ? AppColors.borderFocus : AppColors.border);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,27 +103,26 @@ class _BalsmFieldState extends State<BalsmField> {
         Text(
           widget.label,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: FontSizes.bodySm,
             fontWeight: FontWeight.w600,
-            color: BalsmColors.fg2,
+            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 8),
         Focus(
           onFocusChange: (f) => setState(() => _focused = f),
           child: AnimatedContainer(
-            duration: BalsmDuration.base,
-            curve: kBalsmEaseOut,
+            duration: Motion.base,
+            curve: Motion.easeOut,
             height: widget.maxLines == 1 ? 56 : null,
             decoration: BoxDecoration(
-              color: widget.enabled ? Colors.white : BalsmColors.ink50,
-              borderRadius: BorderRadius.circular(BalsmRadius.md),
+              color: widget.enabled ? AppColors.white : AppColors.ink50,
+              borderRadius: BorderRadius.circular(AppRadii.md),
               border: Border.all(color: borderColor, width: 1.5),
               boxShadow: _focused
                   ? [
                       BoxShadow(
-                        color: (hasError ? BalsmColors.danger : BalsmColors.appAccent).withValues(alpha: 0.16),
-                        blurRadius: 0,
+                        color: (hasError ? AppColors.danger : AppColors.hueBlue).withValues(alpha: 0.16),
                         spreadRadius: 4,
                       ),
                     ]
@@ -136,12 +136,12 @@ class _BalsmFieldState extends State<BalsmField> {
               enabled: widget.enabled,
               autofocus: widget.autofocus,
               style: const TextStyle(
-                fontSize: 18,
-                color: BalsmColors.fg1,
+                fontSize: FontSizes.subhead,
+                color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
                 hintText: widget.hint,
-                hintStyle: const TextStyle(color: BalsmColors.fg4),
+                hintStyle: const TextStyle(color: AppColors.textHint),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 border: InputBorder.none,
                 isDense: true,
@@ -155,13 +155,13 @@ class _BalsmFieldState extends State<BalsmField> {
           const SizedBox(height: 6),
           Text(
             widget.errorText!,
-            style: const TextStyle(fontSize: 12, color: BalsmColors.danger),
+            style: const TextStyle(fontSize: FontSizes.meta, color: AppColors.danger),
           ),
-        ] else if (widget.helperText != null) ...[
+        ] else if (widget.helperText case final helperText?) ...[
           const SizedBox(height: 6),
           Text(
-            widget.helperText!,
-            style: const TextStyle(fontSize: 12, color: BalsmColors.fg3),
+            helperText,
+            style: const TextStyle(fontSize: FontSizes.meta, color: AppColors.textTertiary),
           ),
         ],
       ],

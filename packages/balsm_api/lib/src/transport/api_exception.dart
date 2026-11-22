@@ -16,40 +16,6 @@ class ApiException implements Exception, OfflineAware {
     this.isOffline = false,
   });
 
-  /// Machine-readable code: server-provided `code` when present, else
-  /// derived from the HTTP status via [codeForStatus].
-  final String code;
-
-  final int? statusCode;
-
-  /// Raw server-provided message. May contain PII — the display layer
-  /// decides whether to show it; never log it.
-  final String? serverMessage;
-
-  /// Parsed `Retry-After` header in seconds (lockout/rate-limit responses).
-  final int? retryAfterSeconds;
-
-  /// True when the failure came from a `{data, error}` envelope on an
-  /// otherwise-successful HTTP response (legacy behavior surfaces these as
-  /// validation failures with the server message).
-  final bool fromEnvelope;
-
-  /// Whether the request never reached a server.
-  ///
-  /// Decided at construction, where the [DioException] is still in hand, and
-  /// carried because every caller catches [ApiException] rather than the dio
-  /// error. `code == 'network_error'` cannot stand in for it: that code is also
-  /// produced for the null status of a malformed body and for any unmapped
-  /// status, and treating those as "offline" would serve stale data to hide a
-  /// server bug.
-  @override
-  final bool isOffline;
-
-  bool get isUnauthorized => statusCode == 401 || statusCode == 403;
-
-  /// True when the request was aborted via its [CancelToken].
-  bool get isCancelled => code == 'cancelled';
-
   factory ApiException.fromDioException(DioException e) {
     // A caller-initiated cancellation is not a server error — surface it
     // distinctly so callers can ignore it rather than show a failure.
@@ -94,6 +60,40 @@ class ApiException implements Exception, OfflineAware {
       fromEnvelope: true,
     );
   }
+
+  /// Machine-readable code: server-provided `code` when present, else
+  /// derived from the HTTP status via [codeForStatus].
+  final String code;
+
+  final int? statusCode;
+
+  /// Raw server-provided message. May contain PII — the display layer
+  /// decides whether to show it; never log it.
+  final String? serverMessage;
+
+  /// Parsed `Retry-After` header in seconds (lockout/rate-limit responses).
+  final int? retryAfterSeconds;
+
+  /// True when the failure came from a `{data, error}` envelope on an
+  /// otherwise-successful HTTP response (legacy behavior surfaces these as
+  /// validation failures with the server message).
+  final bool fromEnvelope;
+
+  /// Whether the request never reached a server.
+  ///
+  /// Decided at construction, where the [DioException] is still in hand, and
+  /// carried because every caller catches [ApiException] rather than the dio
+  /// error. `code == 'network_error'` cannot stand in for it: that code is also
+  /// produced for the null status of a malformed body and for any unmapped
+  /// status, and treating those as "offline" would serve stale data to hide a
+  /// server bug.
+  @override
+  final bool isOffline;
+
+  bool get isUnauthorized => statusCode == 401 || statusCode == 403;
+
+  /// True when the request was aborted via its [CancelToken].
+  bool get isCancelled => code == 'cancelled';
 
   /// Status → code mapping, lifted verbatim from the legacy auth adapter
   /// (plus 410 for expired emergency-QR tokens).

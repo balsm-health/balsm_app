@@ -39,15 +39,17 @@ void main() {
 
   test('upsert with the same key replaces in place', () async {
     await store.upsert(row());
-    await store.upsert(MapPackDownloadRow(
-      governorateId: 'cairo',
-      kind: MapPackKind.basemap,
-      version: '20260920',
-      sha256: '0' * 64,
-      sizeBytes: 1000,
-      localPath: '/tmp/cairo-basemap.bin',
-      downloadedAt: DateTime.utc(2026, 9, 13),
-    ));
+    await store.upsert(
+      MapPackDownloadRow(
+        governorateId: 'cairo',
+        kind: MapPackKind.basemap,
+        version: '20260920',
+        sha256: '0' * 64,
+        sizeBytes: 1000,
+        localPath: '/tmp/cairo-basemap.bin',
+        downloadedAt: DateTime.utc(2026, 9, 13),
+      ),
+    );
     final all = await store.all();
     expect(all, hasLength(1));
     expect(all.single.version, '20260920');

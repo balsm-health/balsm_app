@@ -23,7 +23,7 @@ void main() {
       kind: ProfileKind.dependent,
       displayName: 'Test Member',
       now: DateTime.utc(2026, 11, 3),
-      dateOfBirth: DateTime.utc(2019, 1, 1),
+      dateOfBirth: DateTime.utc(2019),
       sex: Sex.female,
     ).value;
     await ds.createMember(member);
@@ -85,7 +85,12 @@ void main() {
 
   test('clears the blood type when none is chosen', () async {
     await save.execute(
-        userId: user, profileId: memberId, bloodType: BloodType.oPositive, allergies: const [], conditions: const []);
+      userId: user,
+      profileId: memberId,
+      bloodType: BloodType.oPositive,
+      allergies: const [],
+      conditions: const [],
+    );
     await save.execute(userId: user, profileId: memberId, bloodType: null, allergies: const [], conditions: const []);
 
     expect((await ds.find(memberId))!.bloodType, isNull);

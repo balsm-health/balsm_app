@@ -8,7 +8,7 @@ import 'database_connection_io.dart' if (dart.library.js_interop) 'database_conn
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [])
+@DriftDatabase()
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -76,12 +76,15 @@ class AppDatabase extends _$AppDatabase {
           // before the patches) would fail with "no such column".
           await customStatement('CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
           await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)');
+            'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)',
+          );
           await customStatement('CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)');
           await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_prescription_profile ON prescription(health_profile_id, issued_at)');
+            'CREATE INDEX IF NOT EXISTS idx_prescription_profile ON prescription(health_profile_id, issued_at)',
+          );
           await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_health_profile_user ON health_profile(user_id, is_self)');
+            'CREATE INDEX IF NOT EXISTS idx_health_profile_user ON health_profile(user_id, is_self)',
+          );
           await runProfileAnchorBackfill();
         },
       );
@@ -123,7 +126,8 @@ class AppDatabase extends _$AppDatabase {
     await _ensureColumn('member_group', 'system_key', 'TEXT');
     if (addedIsSelf) {
       await customStatement(
-          'UPDATE health_profile SET is_self = 1 WHERE rowid IN (SELECT MIN(rowid) FROM health_profile GROUP BY user_id)');
+        'UPDATE health_profile SET is_self = 1 WHERE rowid IN (SELECT MIN(rowid) FROM health_profile GROUP BY user_id)',
+      );
       await customStatement("UPDATE health_profile SET kind = CASE WHEN is_self = 1 THEN 'self' ELSE 'dependent' END");
     }
   }
@@ -147,12 +151,12 @@ class AppDatabase extends _$AppDatabase {
     ''');
     if (hasTissue) {
       await customStatement(
-        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        'INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) '
         "SELECT check_in_id, region_id, COALESCE(tissue_id, 'muscle') FROM check_in_pain_region",
       );
     } else {
       await customStatement(
-        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        'INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) '
         "SELECT check_in_id, region_id, 'muscle' FROM check_in_pain_region",
       );
     }

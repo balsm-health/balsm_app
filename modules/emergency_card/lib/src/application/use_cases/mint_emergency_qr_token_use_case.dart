@@ -11,8 +11,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../domain/aggregates/emergency_qr_token.dart';
 import '../../domain/aggregates/profile_qr_payload.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/emergency_qr_token_minted.dart';
+import '../../domain/value_objects/ids.dart';
 import '../permanent_qr_store.dart';
 import '../profile_identity_reader.dart';
 
@@ -34,9 +34,9 @@ String payloadEtag(ProfileQrPayload payload) {
 List<int> sha256Sync(List<int> bytes) {
   // package:cryptography's Sha256 is async-first; DartSha256 hashSync avoids
   // an await in a pure function.
-  final sink = const DartSha256().newHashSink();
-  sink.add(bytes);
-  sink.close();
+  final sink = const DartSha256().newHashSink()
+    ..add(bytes)
+    ..close();
   return sink.hashSync().bytes;
 }
 
@@ -107,30 +107,34 @@ class MintEmergencyQrTokenUseCase {
     //    client-supplied token_id). Temporary tokens still mint online — their
     //    expiry is server-enforced and useless without a resolvable row.
     if (ttlSeconds == kPermanentQrTtlSeconds) {
-      final jti = QrTokenId.value(const Uuid().v4(config: V4Options(null, CryptoRNG())));
+      final jti = QrTokenId.value(const Uuid().v4(config: const V4Options(null, CryptoRNG())));
       final qrUrl = '$_qrBaseUrl/${jti.value}#k=$keyB64Url';
 
       var synced = false;
       try {
-        await _api.mint(MintQrRequest(
-          ciphertextBase64: ciphertextBase64,
-          ttlSeconds: ttlSeconds,
-          profileEtag: etag,
-          tokenId: jti.value,
-        ));
+        await _api.mint(
+          MintQrRequest(
+            ciphertextBase64: ciphertextBase64,
+            ttlSeconds: ttlSeconds,
+            profileEtag: etag,
+            tokenId: jti.value,
+          ),
+        );
         synced = true;
       } on ApiException {
         // Offline or transient — the QR is already usable; the refresh use
         // case retries the sync (app start + sheet open).
       }
 
-      await _permanentStore.write(PermanentQrRecord(
-        jti: jti.value,
-        keyB64Url: keyB64Url,
-        etag: etag,
-        qrUrl: qrUrl,
-        synced: synced,
-      ));
+      await _permanentStore.write(
+        PermanentQrRecord(
+          jti: jti.value,
+          keyB64Url: keyB64Url,
+          etag: etag,
+          qrUrl: qrUrl,
+          synced: synced,
+        ),
+      );
 
       final token = EmergencyQrToken(jti: jti, expiresAt: null, ttlSeconds: ttlSeconds);
       _eventBus.publish(EmergencyQrTokenMinted(jti: jti, expiresAt: null));
@@ -140,11 +144,13 @@ class MintEmergencyQrTokenUseCase {
     // Temporary: POST ciphertext only — key never leaves the device.
     final MintQrResponse minted;
     try {
-      minted = await _api.mint(MintQrRequest(
-        ciphertextBase64: ciphertextBase64,
-        ttlSeconds: ttlSeconds,
-        profileEtag: etag,
-      ));
+      minted = await _api.mint(
+        MintQrRequest(
+          ciphertextBase64: ciphertextBase64,
+          ttlSeconds: ttlSeconds,
+          profileEtag: etag,
+        ),
+      );
     } on ApiException catch (e) {
       return AppResult.failure(_mapApiError(e));
     } on TypeError {

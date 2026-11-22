@@ -34,13 +34,15 @@ void main() {
   });
 
   test('fromDioException prefers body code, parses Retry-After', () {
-    final e = ApiException.fromDioException(_dioError(
-      status: 423,
-      data: <String, dynamic>{'code': 'account_locked', 'message': 'locked'},
-      headers: {
-        'Retry-After': ['90']
-      },
-    ));
+    final e = ApiException.fromDioException(
+      _dioError(
+        status: 423,
+        data: <String, dynamic>{'code': 'account_locked', 'message': 'locked'},
+        headers: {
+          'Retry-After': ['90'],
+        },
+      ),
+    );
     expect(e.code, 'account_locked');
     expect(e.statusCode, 423);
     expect(e.serverMessage, 'locked');
@@ -49,13 +51,15 @@ void main() {
   });
 
   test('fromDioException reads nested envelope error code', () {
-    final e = ApiException.fromDioException(_dioError(
-      status: 400,
-      data: <String, dynamic>{
-        'data': null,
-        'error': <String, dynamic>{'code': 'otp_invalid', 'message': 'bad'},
-      },
-    ));
+    final e = ApiException.fromDioException(
+      _dioError(
+        status: 400,
+        data: <String, dynamic>{
+          'data': null,
+          'error': <String, dynamic>{'code': 'otp_invalid', 'message': 'bad'},
+        },
+      ),
+    );
     expect(e.code, 'otp_invalid');
     expect(e.serverMessage, 'bad');
   });

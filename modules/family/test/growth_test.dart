@@ -13,7 +13,7 @@ void main() {
       expect(GrowthEntry.violationsOf(measuredOn: now, weightKg: 12.5, heightCm: null, now: now), isEmpty);
       expect(GrowthEntry.violationsOf(measuredOn: now, weightKg: null, heightCm: 90, now: now), isEmpty);
       final r = GrowthEntry.record(measuredOn: DateTime(2026, 10, 1, 9), weightKg: 3.4, heightCm: 50, now: now);
-      expect(r.value.measuredOn, DateTime.utc(2026, 10, 1));
+      expect(r.value.measuredOn, DateTime.utc(2026, 10));
       expect((r.value.weightKg, r.value.heightCm), (3.4, 50.0));
     });
 
@@ -63,9 +63,9 @@ void main() {
       db = AppDatabase(NativeDatabase.memory());
       self = await db.ensureSelfHealthProfile(user);
       otherSelf = await db.ensureSelfHealthProfile(other);
-      await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) "
+      await db.customStatement('INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) '
           "VALUES ('${child.value}', '${user.value}', 0, 'dependent', 0)");
-      await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at) "
+      await db.customStatement('INSERT INTO health_profile (id, user_id, is_self, kind, status, updated_at) '
           "VALUES ('${closed.value}', '${user.value}', 0, 'dependent', 'closed', 0)");
       active = child;
       ds = DriftGrowthLogDataSource(
@@ -81,7 +81,7 @@ void main() {
     test('round-trips an entry, newest first, per person', () async {
       await ds.put(const GrowthEntryId.value('g1'), entry('g1', DateTime(2026, 4, 3), kg: 9.1, cm: 74));
       await ds.put(const GrowthEntryId.value('g2'), entry('g2', DateTime(2026, 10, 5), kg: null, cm: 77.5));
-      await ds.put(const GrowthEntryId.value('s1'), entry('s1', DateTime(2026, 9, 1)), scope: self);
+      await ds.put(const GrowthEntryId.value('s1'), entry('s1', DateTime(2026, 9)), scope: self);
 
       final log = await ds.findAll();
       expect([for (final g in log) g.id.value], ['g2', 'g1']);
@@ -90,21 +90,27 @@ void main() {
       expect([for (final g in await ds.findAll(scope: self)) g.id.value], ['s1']);
     });
 
-    test('refuses another account\'s person and a closed profile', () async {
-      await expectLater(ds.put(const GrowthEntryId.value('x'), entry('x', now), scope: otherSelf),
-          throwsA(isA<StorageWriteException>()));
-      await expectLater(ds.put(const GrowthEntryId.value('y'), entry('y', now), scope: closed),
-          throwsA(isA<StorageWriteException>()));
+    test("refuses another account's person and a closed profile", () async {
+      await expectLater(
+        ds.put(const GrowthEntryId.value('x'), entry('x', now), scope: otherSelf),
+        throwsA(isA<StorageWriteException>()),
+      );
+      await expectLater(
+        ds.put(const GrowthEntryId.value('y'), entry('y', now), scope: closed),
+        throwsA(isA<StorageWriteException>()),
+      );
       active = null;
       await expectLater(
-          ds.put(const GrowthEntryId.value('z'), entry('z', now)), throwsA(isA<NoActiveProfileException>()));
+        ds.put(const GrowthEntryId.value('z'), entry('z', now)),
+        throwsA(isA<NoActiveProfileException>()),
+      );
     });
 
     test('delete is soft and watchAll follows every change', () async {
       final seen = <List<String>>[];
       final sub = ds.watchAll().listen((l) => seen.add([for (final g in l) g.id.value]));
       await pumpEventQueue();
-      await ds.put(const GrowthEntryId.value('w1'), entry('w1', DateTime(2026, 10, 1)));
+      await ds.put(const GrowthEntryId.value('w1'), entry('w1', DateTime(2026, 10)));
       await pumpEventQueue();
       await ds.delete(const GrowthEntryId.value('w1'));
       await pumpEventQueue();
@@ -130,14 +136,22 @@ void main() {
     });
 
     test('UpdateGrowthEntryUseCase edits in place, keeping id and first-recorded time', () async {
-      await ds.put(const GrowthEntryId.value('e1'), entry('e1', DateTime(2026, 9, 1)), scope: child);
+      await ds.put(const GrowthEntryId.value('e1'), entry('e1', DateTime(2026, 9)), scope: child);
       final use = UpdateGrowthEntryUseCase(ds);
       const id = GrowthEntryId.value('e1');
-      expect((await use(id: id, measuredOn: now, weightKg: null, heightCm: null, now: now, profileId: child)).error,
-          isA<ValidationFailure>());
+      expect(
+        (await use(id: id, measuredOn: now, weightKg: null, heightCm: null, now: now, profileId: child)).error,
+        isA<ValidationFailure>(),
+      );
 
       final ok = await use(
-          id: id, measuredOn: DateTime(2026, 10, 2), weightKg: 12.5, heightCm: 80, now: now, profileId: child);
+        id: id,
+        measuredOn: DateTime(2026, 10, 2),
+        weightKg: 12.5,
+        heightCm: 80,
+        now: now,
+        profileId: child,
+      );
       expect(ok.isSuccess, isTrue);
       final back = (await ds.findAll(scope: child)).single;
       expect(back.id, id);
@@ -147,18 +161,19 @@ void main() {
       expect(back.createdAt, DateTime.utc(2026));
 
       final gone = await use(
-          id: const GrowthEntryId.value('nope'),
-          measuredOn: now,
-          weightKg: 1,
-          heightCm: null,
-          now: now,
-          profileId: child);
+        id: const GrowthEntryId.value('nope'),
+        measuredOn: now,
+        weightKg: 1,
+        heightCm: null,
+        now: now,
+        profileId: child,
+      );
       expect(gone.error, isA<NotFoundFailure>());
       expect(await ds.findAll(scope: child), hasLength(1), reason: 'an edit never adds a row');
     });
 
     test('DeleteGrowthEntryUseCase soft-deletes; a closed profile is refused', () async {
-      await ds.put(const GrowthEntryId.value('e1'), entry('e1', DateTime(2026, 9, 1)), scope: child);
+      await ds.put(const GrowthEntryId.value('e1'), entry('e1', DateTime(2026, 9)), scope: child);
       final use = DeleteGrowthEntryUseCase(ds);
       expect((await use(const GrowthEntryId.value('e1'), profileId: child)).isSuccess, isTrue);
       expect(await ds.findAll(scope: child), isEmpty);

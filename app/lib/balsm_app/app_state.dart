@@ -1,12 +1,14 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Notifier;
+import 'package:flutter_riverpod/legacy.dart';
 import 'care/care_entity.dart';
 import 'prefs.dart';
 import 'routes.dart';
+import 'screens/map_screen.dart' show MapScreen;
 import 'storage_target.dart';
 import 'strings.dart';
-import 'tokens.dart';
 
 /// Shared-kernel reference translations (localized country/language names) —
 /// resolved via the `CountryCodeL10n`/`LanguageCodeL10n` extensions.
@@ -14,7 +16,7 @@ const kCatalog = TranslationCatalog();
 
 /// Balsm's home market — drives the "home country" badge and the default
 /// dial-code country.
-const kHomeCountry = CountryCode.egypt;
+const CountryCode kHomeCountry = CountryCode.egypt;
 
 /// Global app context — mirrors the React `AppCtx`. Holds language, accent,
 /// current tab/route, country, and the active backup target. The signed-in
@@ -142,26 +144,27 @@ class PatientAppState extends ChangeNotifier {
     bool pendingMerge = false,
     bool hasOfflinePassword = false,
   }) async {
-    final s = PatientAppState();
-    s._prefs = prefs;
+    final s = PatientAppState().._prefs = prefs;
     try {
       // Persisted as the bare code; anything unsupported falls back to en.
-      s.lang = LanguageCode.tryParseUi(await prefs.lang()) ?? LanguageCode.en;
-      // Accent is a design constant (`TWEAK_DEFAULTS.accent` in app.jsx), not a
-      // user setting — nothing in the app calls [setAccent]. It is deliberately
-      // NOT restored from prefs: `_save()` used to stamp the then-current
-      // default into storage as a side effect of any lang/country/storage
-      // write, which pinned existing installs to a stale accent and silently
-      // overrode the design. Restore this read only alongside a real picker.
-      // Persisted as the bare ISO code; malformed values fall back to home.
-      s.country = CountryCode.tryFromCode(await prefs.country()) ?? kHomeCountry;
+      s
+        ..lang = LanguageCode.tryParseUi(await prefs.lang()) ?? LanguageCode.en
+        // Accent is a design constant (`TWEAK_DEFAULTS.accent` in app.jsx), not a
+        // user setting — nothing in the app calls [setAccent]. It is deliberately
+        // NOT restored from prefs: `_save()` used to stamp the then-current
+        // default into storage as a side effect of any lang/country/storage
+        // write, which pinned existing installs to a stale accent and silently
+        // overrode the design. Restore this read only alongside a real picker.
+        // Persisted as the bare ISO code; malformed values fall back to home.
+        ..country = CountryCode.tryFromCode(await prefs.country()) ?? kHomeCountry;
       // Cloud backup is disabled (see storage_sheet): only `local` is a real
       // target, so a target persisted before that change must not keep
       // claiming the record is backed up to a cloud that never received it.
       final storedTarget = await prefs.storage();
-      s.storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local;
-      s.accountMode = accountMode;
-      s.careCloudSync = await prefs.careCloudSync();
+      s
+        ..storageProvider = storedTarget.isLocal ? storedTarget : StorageTarget.local
+        ..accountMode = accountMode
+        ..careCloudSync = await prefs.careCloudSync();
       if (hasSession && pendingMerge) {
         // The merge screen moves or deletes the device's data, so while the
         // device password still guards it, Unlock comes first (Unlock then
@@ -177,7 +180,7 @@ class PatientAppState extends ChangeNotifier {
         if (!hasSession) await prefs.setSignedIn(false);
         s.route = await prefs.walkthroughSeen() ? AppRoutes.welcome : AppRoutes.walkthrough;
       }
-    } catch (_) {
+    } on Object catch (_) {
       s.route = AppRoutes.welcome;
     }
     return s;
@@ -188,10 +191,10 @@ class PatientAppState extends ChangeNotifier {
   void _save() {
     final p = _prefs;
     if (p == null) return;
-    p.setSignedIn(route == AppRoutes.app);
-    p.setLang(lang.value);
-    p.setCountry(country.value);
-    p.setStorage(storageProvider);
+    unawaited(p.setSignedIn(route == AppRoutes.app));
+    unawaited(p.setLang(lang.value));
+    unawaited(p.setCountry(country.value));
+    unawaited(p.setStorage(storageProvider));
   }
 
   bool get rtl => lang.isRtl;
@@ -262,7 +265,7 @@ class PatientAppState extends ChangeNotifier {
     if (r == AppRoutes.app) tab = AppTab.home;
     // Leaving the first-run walkthrough (Skip or Get started) marks it seen so
     // it never shows again on this device, signed in or not.
-    if (route == AppRoutes.walkthrough && r != AppRoutes.walkthrough) _prefs?.setWalkthroughSeen(true);
+    if (route == AppRoutes.walkthrough && r != AppRoutes.walkthrough) unawaited(_prefs?.setWalkthroughSeen(true));
     route = r;
     _save(); // persist signed-in / signed-out
     notifyListeners();
@@ -314,22 +317,25 @@ class PatientAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addFamilyMember(
-      {required String name,
-      required String relation,
-      DateTime? dob,
-      String? linkJti,
-      FamilyLinkStatus status = FamilyLinkStatus.linked}) {
-    const palette = [T.hueAqua, T.hueBlue, T.hueViolet, T.hueMint, T.sun500];
-    extraFamily.add(FamilyMemberPreview(
-      id: 'fam_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      relation: relation,
-      color: palette[extraFamily.length % palette.length],
-      dob: dob,
-      linkJti: linkJti,
-      status: status,
-    ));
+  void addFamilyMember({
+    required String name,
+    required String relation,
+    DateTime? dob,
+    String? linkJti,
+    FamilyLinkStatus status = FamilyLinkStatus.linked,
+  }) {
+    const palette = [AppColors.hueAqua, AppColors.hueBlue, AppColors.hueViolet, AppColors.hueMint, AppColors.sun500];
+    extraFamily.add(
+      FamilyMemberPreview(
+        id: 'fam_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        relation: relation,
+        color: palette[extraFamily.length % palette.length],
+        dob: dob,
+        linkJti: linkJti,
+        status: status,
+      ),
+    );
     notifyListeners();
   }
 
@@ -481,7 +487,7 @@ final patientAppStateProvider = ChangeNotifierProvider<PatientAppState>(
 /// non-Consumer widgets don't each need a WidgetRef. New code with a `ref` in
 /// scope should prefer the provider directly.
 class AppScope extends InheritedNotifier<PatientAppState> {
-  const AppScope({super.key, required PatientAppState state, required super.child}) : super(notifier: state);
+  const AppScope({required PatientAppState state, required super.child, super.key}) : super(notifier: state);
 
   static PatientAppState of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();

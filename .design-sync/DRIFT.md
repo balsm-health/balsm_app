@@ -318,9 +318,9 @@ error, which would otherwise have shipped as a blank mark.
 
 `_ds/…/brand/colors_and_type.css` unchanged; `_ds/…/responsive.css` (new
 Tier 5 layer) is `BalsmWindow` / `BalsmWindowClass` / `BalsmDensity` in
-`packages/core/lib/src/kit/_tokens.dart`. Upstream still says `--petal-*`;
+`packages/core/lib/src/kit/balsm_window.dart`. Upstream still says `--petal-*`;
 this repo says `hue*` (naming only). `app.jsx` `ACCENTS.violet` is `#8350DE`
-while the DS token is `#724DD0` — the DS wins (`T.hueViolet`).
+while the DS token is `#724DD0` — the DS wins (`AppColors.hueViolet`).
 
 ## 2026-09-23 — the cache was stale against the live project
 

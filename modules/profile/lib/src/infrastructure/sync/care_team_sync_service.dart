@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 /// Converges the on-device care team with the Balsm cloud mirror (FR-500).
 ///
@@ -72,7 +73,7 @@ class CareTeamSyncService {
       await _drainInner();
       await _pullInner(profileId);
       _status.set(SyncState.synced, lastSyncedAt: DateTime.now());
-    } catch (e) {
+    } on Object catch (e) {
       _status.set(SyncState.offline, message: e.toString());
     } finally {
       _inFlight = false;
@@ -84,7 +85,7 @@ class CareTeamSyncService {
     if (!await _isEnabled()) return;
     try {
       await _drainInner();
-    } catch (e) {
+    } on Object catch (e) {
       _status.set(SyncState.offline, message: e.toString());
     }
   }
@@ -94,7 +95,7 @@ class CareTeamSyncService {
     if (!await _isEnabled()) return;
     try {
       await _pullInner(profileId);
-    } catch (e) {
+    } on Object catch (e) {
       _status.set(SyncState.offline, message: e.toString());
     }
   }
@@ -168,21 +169,23 @@ class CareTeamSyncService {
         switch (entry.op) {
           case OutboxOp.upsert:
             final json = jsonDecode(entry.payload) as Map<String, dynamic>;
-            await _api.upsert(UpsertCareProviderRequest(
-              id: json['id'] as String,
-              healthProfileId: json['health_profile_id'] as String,
-              type: json['type'] as String,
-              name: json['name'] as String,
-              specialty: json['specialty'] as String?,
-              phone: json['phone'] as String?,
-              phone2: json['phone2'] as String?,
-              email: json['email'] as String?,
-              clinic: json['clinic'] as String?,
-              address: json['address'] as String?,
-              mapUrl: json['map_url'] as String?,
-              notes: json['notes'] as String?,
-              createdAt: DateTime.parse(json['created_at'] as String),
-            ));
+            await _api.upsert(
+              UpsertCareProviderRequest(
+                id: json['id'] as String,
+                healthProfileId: json['health_profile_id'] as String,
+                type: json['type'] as String,
+                name: json['name'] as String,
+                specialty: json['specialty'] as String?,
+                phone: json['phone'] as String?,
+                phone2: json['phone2'] as String?,
+                email: json['email'] as String?,
+                clinic: json['clinic'] as String?,
+                address: json['address'] as String?,
+                mapUrl: json['map_url'] as String?,
+                notes: json['notes'] as String?,
+                createdAt: DateTime.parse(json['created_at'] as String),
+              ),
+            );
           case OutboxOp.delete:
             await _api.delete(entry.entityId);
         }

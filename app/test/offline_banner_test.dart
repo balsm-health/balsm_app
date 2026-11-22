@@ -1,11 +1,13 @@
-import 'package:app/balsm_app/offline_banner.dart';
 import 'dart:async';
-import 'package:core/core.dart' show onlineProvider;
-import 'package:material_ui/material_ui.dart';
+
+import 'package:app/balsm_app/offline_banner.dart';
+import 'package:core/core.dart' show noProviderRetry, onlineProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _host(Stream<bool> online) => ProviderScope(
+      retry: noProviderRetry,
       overrides: [onlineProvider.overrideWith((ref) => online)],
       child: const MaterialApp(
         home: Scaffold(body: OfflineBanner(message: 'No connection')),
@@ -16,6 +18,7 @@ Widget _host(Stream<bool> online) => ProviderScope(
 const _headerKey = Key('header');
 
 Widget _hostWithHeader(Stream<bool> online, {required bool inFlow}) => ProviderScope(
+      retry: noProviderRetry,
       overrides: [onlineProvider.overrideWith((ref) => online)],
       child: MaterialApp(
         home: Scaffold(
@@ -50,9 +53,12 @@ void main() {
   testWidgets('hidden before connectivity is known', (t) async {
     await t.pumpWidget(_host(const Stream<bool>.empty()));
     await t.pump();
-    expect(find.text('No connection'), findsNothing,
-        reason: 'an unknown state must not be reported as offline — it would '
-            'flash the banner on every launch');
+    expect(
+      find.text('No connection'),
+      findsNothing,
+      reason: 'an unknown state must not be reported as offline — it would '
+          'flash the banner on every launch',
+    );
   });
 
   testWidgets('appears and disappears as connectivity changes', (t) async {
@@ -85,8 +91,11 @@ void main() {
       final banner = t.getRect(find.text('No connection'));
       final header = t.getRect(find.byKey(_headerKey));
 
-      expect(banner.bottom, lessThanOrEqualTo(header.top),
-          reason: 'the banner must push the header down, never cover it');
+      expect(
+        banner.bottom,
+        lessThanOrEqualTo(header.top),
+        reason: 'the banner must push the header down, never cover it',
+      );
     });
 
     testWidgets('the overlay version really did overlap — the bug this guards', (t) async {
@@ -96,16 +105,22 @@ void main() {
       final banner = t.getRect(find.text('No connection'));
       final header = t.getRect(find.byKey(_headerKey));
 
-      expect(banner.bottom, greaterThan(header.top),
-          reason: 'if this ever passes as non-overlapping, the test above proves nothing');
+      expect(
+        banner.bottom,
+        greaterThan(header.top),
+        reason: 'if this ever passes as non-overlapping, the test above proves nothing',
+      );
     });
 
     testWidgets('online, nothing is inserted above the header', (t) async {
       await t.pumpWidget(_hostWithHeader(Stream.value(true), inFlow: true));
       await t.pump();
 
-      expect(t.getRect(find.byKey(_headerKey)).top, 0,
-          reason: 'the layout must not shift while the connection is fine');
+      expect(
+        t.getRect(find.byKey(_headerKey)).top,
+        0,
+        reason: 'the layout must not shift while the connection is fine',
+      );
     });
   });
 }

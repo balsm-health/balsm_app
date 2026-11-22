@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 enum BalsmRoundButtonVariant { default_, ghost }
 
@@ -7,18 +7,18 @@ enum BalsmRoundButtonVariant { default_, ghost }
 /// Press animates scale → 0.97; ghost variant: transparent bg + no border.
 class BalsmRoundButton extends StatefulWidget {
   const BalsmRoundButton({
-    super.key,
     required this.icon,
     required this.onTap,
+    super.key,
     this.variant = BalsmRoundButtonVariant.default_,
     this.size = 44,
     this.semanticLabel,
   });
 
   const BalsmRoundButton.ghost({
-    super.key,
     required this.icon,
     required this.onTap,
+    super.key,
     this.size = 44,
     this.semanticLabel,
   }) : variant = BalsmRoundButtonVariant.ghost;
@@ -44,10 +44,10 @@ class _BalsmRoundButtonState extends State<BalsmRoundButton> with SingleTickerPr
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: BalsmDuration.fast,
+      duration: Motion.fast,
     );
     _scale = Tween<double>(begin: 1, end: 0.97).animate(
-      CurvedAnimation(parent: _ctrl, curve: kBalsmEaseOut),
+      CurvedAnimation(parent: _ctrl, curve: Motion.easeOut),
     );
   }
 
@@ -89,9 +89,9 @@ class _BalsmRoundButtonState extends State<BalsmRoundButton> with SingleTickerPr
             width: widget.size,
             height: widget.size,
             decoration: BoxDecoration(
-              color: isGhost ? Colors.transparent : (_pressed ? BalsmColors.ink100 : BalsmColors.ink50),
-              borderRadius: BorderRadius.circular(BalsmRadius.pill),
-              border: isGhost ? null : Border.all(color: BalsmColors.border),
+              color: isGhost ? Colors.transparent : (_pressed ? AppColors.ink100 : AppColors.ink50),
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              border: isGhost ? null : Border.all(color: AppColors.border),
             ),
             child: widget.icon,
           ),

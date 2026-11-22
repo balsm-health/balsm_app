@@ -9,7 +9,6 @@ import 'package:app/balsm_app/routes.dart';
 import 'package:auth/auth.dart';
 // The adapter is the auth module's transport seam; mocking it is the only way
 // to run the real SignInUseCase here.
-// ignore: implementation_imports
 import 'package:auth/src/infrastructure/api/balsm_auth_adapter.dart';
 import 'package:balsm_api/balsm_api.dart' show ApiRoutes;
 import 'package:core/core.dart';
@@ -52,9 +51,13 @@ class _RecordingHttp implements HttpClientAdapter {
   @override
   Future<ResponseBody> fetch(RequestOptions o, Stream<Uint8List>? _, Future<void>? __) async {
     requests.add(o);
-    return ResponseBody.fromString('{"data":{}}', 200, headers: {
-      Headers.contentTypeHeader: ['application/json'],
-    });
+    return ResponseBody.fromString(
+      '{"data":{}}',
+      200,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
   }
 
   @override
@@ -92,11 +95,13 @@ void main() {
 
   Future<PatientAppState> boot() async {
     final b = await resolveBootSession(storage: storage, prefs: prefs, offline: offline);
-    return PatientAppState.load(prefs,
-        hasSession: b.sessionUserId != null,
-        accountMode: b.accountMode,
-        pendingMerge: b.pendingMerge,
-        hasOfflinePassword: b.hasOfflinePassword);
+    return PatientAppState.load(
+      prefs,
+      hasSession: b.sessionUserId != null,
+      accountMode: b.accountMode,
+      pendingMerge: b.pendingMerge,
+      hasOfflinePassword: b.hasOfflinePassword,
+    );
   }
 
   group('remove a device-only account from this phone', () {
@@ -234,7 +239,7 @@ void main() {
       expect(await readAll(), {'balsm.device_id': 'dev-1'});
     });
 
-    test('the same keychain with this install\'s prefs still boots to Unlock', () async {
+    test("the same keychain with this install's prefs still boots to Unlock", () async {
       await prefs.setWalkthroughSeen(true);
       final id = await offline.create(email: 'a@b.co', password: 'correct-horse');
       keychain['balsm.file_key.$id'] = 'k';
@@ -298,20 +303,26 @@ void main() {
 
     test('creating a device-only account is anonymous', () async {
       keychain['balsm.account_mode'] = 'deviceOnly';
-      expect(await telemetryUserIdAfterSignIn(storage, const UserSignedIn(userId: id, email: '', provider: 'device')),
-          isNull);
+      expect(
+        await telemetryUserIdAfterSignIn(storage, const UserSignedIn(userId: id, email: '', provider: 'device')),
+        isNull,
+      );
     });
 
     test('a sign-in while the account is still device-only is anonymous', () async {
       keychain['balsm.account_mode'] = 'deviceOnly';
-      expect(await telemetryUserIdAfterSignIn(storage, const UserSignedIn(userId: id, email: '', provider: 'email')),
-          isNull);
+      expect(
+        await telemetryUserIdAfterSignIn(storage, const UserSignedIn(userId: id, email: '', provider: 'email')),
+        isNull,
+      );
     });
 
     test('once online, the id is bound', () async {
       keychain['balsm.account_mode'] = 'online';
-      expect(await telemetryUserIdAfterSignIn(storage, const UserSignedIn(userId: id, email: '', provider: 'email')),
-          'u-1');
+      expect(
+        await telemetryUserIdAfterSignIn(storage, const UserSignedIn(userId: id, email: '', provider: 'email')),
+        'u-1',
+      );
     });
   });
 }
