@@ -46,7 +46,7 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   /// Emits [read] now and again after every write through this source.
   Stream<T> _live<T>(Future<T> Function() read) => Stream<T>.multi((emitter) async {
         emitter.add(await read());
-        emitter.addStream(_changes.stream.asyncMap((_) => read()));
+        unawaited(emitter.addStream(_changes.stream.asyncMap((_) => read())));
       });
 
   UserId? _resolve(UserId? scope) => scope ?? activeUser();
@@ -120,12 +120,17 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
   @override
   Future<void> put(HealthProfileId key, HealthProfile value, {UserId? scope}) async {
     final user = _resolve(scope) ?? value.userId;
-    await _insert(key, value, user, onConflict: '''
+    await _insert(
+      key,
+      value,
+      user,
+      onConflict: '''
       ON CONFLICT(id) DO UPDATE SET
         blood_type = excluded.blood_type,
         weight_kg = excluded.weight_kg,
         height_cm = excluded.height_cm,
-        updated_at = excluded.updated_at''');
+        updated_at = excluded.updated_at''',
+    );
     _notifyChanged();
   }
 
@@ -420,17 +425,19 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     ).get();
 
     return rows
-        .map((r) => Allergy(
-              id: AllergyId.value(r.read<String>('id')),
-              healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
-              name: r.read<String>('name'),
-              severity: r.read<String>('severity'),
-              isControlledSubstance: r.read<int>('is_controlled_substance') == 1,
-              createdAt: DateTime.fromMillisecondsSinceEpoch(
-                r.read<int>('created_at'),
-                isUtc: true,
-              ),
-            ))
+        .map(
+          (r) => Allergy(
+            id: AllergyId.value(r.read<String>('id')),
+            healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
+            name: r.read<String>('name'),
+            severity: r.read<String>('severity'),
+            isControlledSubstance: r.read<int>('is_controlled_substance') == 1,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              r.read<int>('created_at'),
+              isUtc: true,
+            ),
+          ),
+        )
         .toList();
   }
 
@@ -445,17 +452,19 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     ).get();
 
     return rows
-        .map((r) => ChronicCondition(
-              id: ChronicConditionId.value(r.read<String>('id')),
-              healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
-              name: r.read<String>('name'),
-              icd10Code: r.readNullable<String>('icd10_code'),
-              onsetYear: r.readNullable<int>('onset_year'),
-              createdAt: DateTime.fromMillisecondsSinceEpoch(
-                r.read<int>('created_at'),
-                isUtc: true,
-              ),
-            ))
+        .map(
+          (r) => ChronicCondition(
+            id: ChronicConditionId.value(r.read<String>('id')),
+            healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
+            name: r.read<String>('name'),
+            icd10Code: r.readNullable<String>('icd10_code'),
+            onsetYear: r.readNullable<int>('onset_year'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              r.read<int>('created_at'),
+              isUtc: true,
+            ),
+          ),
+        )
         .toList();
   }
 
@@ -470,18 +479,20 @@ class DriftProfileDataSource extends HealthProfilesDataSource {
     ).get();
 
     return rows
-        .map((r) => EmergencyContact(
-              id: EmergencyContactId.value(r.read<String>('id')),
-              healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
-              name: r.read<String>('name'),
-              phone: r.read<String>('phone'),
-              relation: r.readNullable<String>('relation'),
-              isPrimary: r.read<int>('is_primary') == 1,
-              createdAt: DateTime.fromMillisecondsSinceEpoch(
-                r.read<int>('created_at'),
-                isUtc: true,
-              ),
-            ))
+        .map(
+          (r) => EmergencyContact(
+            id: EmergencyContactId.value(r.read<String>('id')),
+            healthProfileId: HealthProfileId.value(r.read<String>('health_profile_id')),
+            name: r.read<String>('name'),
+            phone: r.read<String>('phone'),
+            relation: r.readNullable<String>('relation'),
+            isPrimary: r.read<int>('is_primary') == 1,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              r.read<int>('created_at'),
+              isUtc: true,
+            ),
+          ),
+        )
         .toList();
   }
 }

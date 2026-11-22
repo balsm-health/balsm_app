@@ -19,11 +19,11 @@ void main() {
     });
 
     test('exactly 25 is overweight, not normal', () {
-      expect(bmi(weightFor(25.0), 175)!.category, BmiCategory.overweight);
+      expect(bmi(weightFor(25), 175)!.category, BmiCategory.overweight);
     });
 
     test('exactly 30 is obese, not overweight', () {
-      expect(bmi(weightFor(30.0), 175)!.category, BmiCategory.obese);
+      expect(bmi(weightFor(30), 175)!.category, BmiCategory.obese);
     });
 
     test('just under 25 is still normal', () {

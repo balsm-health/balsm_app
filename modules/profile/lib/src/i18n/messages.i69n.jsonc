@@ -13,5 +13,25 @@
     "severe": "Severe"
   },
   "conditions": "Conditions",
-  "contacts": "Emergency contacts"
+  "contacts": "Emergency contacts",
+  "loadError": "Could not load profile",
+  "noAllergies": "No allergies added",
+  "controlled": "Controlled",
+  "remove": "Remove",
+  "chronicConditions": "Chronic Conditions",
+  "noConditions": "No conditions added",
+  "noContacts": "No emergency contacts added",
+  "primary": "Primary",
+  "addShort": "Add",
+  "selectBloodType": "Select blood type",
+  "unknown": "Unknown",
+  "allergen": "Allergen",
+  "severityLabel": "Severity",
+  "controlledSubstance": "Controlled substance",
+  "addCondition": "Add Condition",
+  "condition": "Condition",
+  "addContact": "Add Emergency Contact",
+  "name": "Name",
+  "phone": "Phone",
+  "relationOptional": "Relation (optional)"
 }

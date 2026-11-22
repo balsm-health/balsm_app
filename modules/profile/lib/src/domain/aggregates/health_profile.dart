@@ -19,12 +19,12 @@ class HealthProfile {
     required this.id,
     required this.userId,
     required this.bloodType,
-    this.weightKg,
-    this.heightCm,
     required this.allergies,
     required this.conditions,
     required this.emergencyContacts,
     required this.updatedAt,
+    this.weightKg,
+    this.heightCm,
     this.kind = ProfileKind.self,
     this.displayName,
     this.dateOfBirth,
@@ -213,28 +213,30 @@ class HealthProfile {
   AppResult<HealthProfile> close(DateTime on) {
     if (isSelf) return AppResult.failure(ValidationFailure(MemberRuleViolation.selfCannotClose.name));
     if (isClosed) return AppResult.failure(ValidationFailure(MemberRuleViolation.closed.name));
-    return AppResult.success(HealthProfile(
-      id: id,
-      userId: userId,
-      bloodType: bloodType,
-      weightKg: weightKg,
-      heightCm: heightCm,
-      allergies: allergies,
-      conditions: conditions,
-      emergencyContacts: emergencyContacts,
-      updatedAt: on,
-      kind: kind,
-      displayName: displayName,
-      dateOfBirth: dateOfBirth,
-      sex: sex,
-      relationship: relationship,
-      groupId: groupId,
-      tone: tone,
-      status: ProfileStatus.closed,
-      closedOn: _day(on),
-      pregnancyId: pregnancyId,
-      sequence: sequence,
-    ));
+    return AppResult.success(
+      HealthProfile(
+        id: id,
+        userId: userId,
+        bloodType: bloodType,
+        weightKg: weightKg,
+        heightCm: heightCm,
+        allergies: allergies,
+        conditions: conditions,
+        emergencyContacts: emergencyContacts,
+        updatedAt: on,
+        kind: kind,
+        displayName: displayName,
+        dateOfBirth: dateOfBirth,
+        sex: sex,
+        relationship: relationship,
+        groupId: groupId,
+        tone: tone,
+        status: ProfileStatus.closed,
+        closedOn: _day(on),
+        pregnancyId: pregnancyId,
+        sequence: sequence,
+      ),
+    );
   }
 
   /// Birth: this prenatal profile becomes the child — the **same** profile
@@ -393,9 +395,9 @@ class ChronicCondition {
     required this.id,
     required this.healthProfileId,
     required this.name,
+    required this.createdAt,
     this.icd10Code,
     this.onsetYear,
-    required this.createdAt,
   });
 
   final ChronicConditionId id;

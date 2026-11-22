@@ -2,12 +2,12 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/health_profile_updated.dart';
-import '../ports/health_profiles_data_source.dart';
-import '../ports/profile_child_data_sources.dart';
+import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_profile_child_data_sources.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
+import '../ports/health_profiles_data_source.dart';
+import '../ports/profile_child_data_sources.dart';
 
 /// Adds an [EmergencyContact] to the user's [HealthProfile] and publishes
 /// [HealthProfileUpdated] on the [EventBus].
@@ -35,13 +35,13 @@ class AddEmergencyContactUseCase {
   /// Validates input, persists the contact, and emits an event.
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
+    required String name,
+    required String phone,
 
-    /// The person to change: a member profile of [userId], or null for the
+    /// The person to change: a member profile of `userId`, or null for the
     /// account holder's own (self) profile. A missing or closed member fails
     /// with [NotFoundFailure].
     HealthProfileId? profileId,
-    required String name,
-    required String phone,
     String? relation,
     bool isPrimary = false,
   }) async {
@@ -106,7 +106,7 @@ class AddEmergencyContactUseCase {
 
       final updated = await _dao.resolveProfile(userId, profileId: profileId);
       return AppResult.success(updated ?? profile);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

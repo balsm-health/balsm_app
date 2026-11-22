@@ -136,7 +136,7 @@ void main() {
   });
 
   test('removing an id that is already gone succeeds', () async {
-    final result = await remove.execute(userId: user, providerId: CareProviderId.value('cp-missing'));
+    final result = await remove.execute(userId: user, providerId: const CareProviderId.value('cp-missing'));
     expect(result.isSuccess, isTrue);
   });
 

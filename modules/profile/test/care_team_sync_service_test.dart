@@ -72,7 +72,7 @@ void main() {
         healthProfileId: '00000000-0000-4000-8000-00000000dead',
         type: 'doctor',
         name: name,
-        createdAt: DateTime.utc(2026, 9, 1),
+        createdAt: DateTime.utc(2026, 9),
         updatedAt: updatedAt ?? DateTime.utc(2026, 9, 2),
         isDeleted: isDeleted,
       );

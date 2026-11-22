@@ -77,7 +77,7 @@ class UpdateCareProviderUseCase {
       _bus.publish(HealthProfileUpdated(userId: userId, fieldChanged: 'care_provider_updated'));
 
       return AppResult.success(updated);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

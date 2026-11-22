@@ -2,8 +2,8 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
-import '../ports/health_profiles_data_source.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
+import '../ports/health_profiles_data_source.dart';
 import 'add_allergy_use_case.dart';
 import 'add_chronic_condition_use_case.dart';
 import 'remove_allergy_use_case.dart';
@@ -49,19 +49,20 @@ class SaveMedicalSummaryUseCase {
   /// holder's own. A missing or closed member fails with [NotFoundFailure].
   Future<AppResult<void>> execute({
     required UserId userId,
-    HealthProfileId? profileId,
     required BloodType? bloodType,
     required List<String> allergies,
     required List<String> conditions,
+    HealthProfileId? profileId,
   }) async {
     final HealthProfile? current;
     try {
       current = await _dao.resolveProfile(userId, profileId: profileId);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
-    if (current == null && profileId != null)
+    if (current == null && profileId != null) {
       return AppResult.failure(const NotFoundFailure('Health profile not found'));
+    }
 
     if (current?.bloodType != bloodType) {
       final r = await _update.execute(
