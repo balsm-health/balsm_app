@@ -1,7 +1,9 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../i18n/i18n.dart';
 
 /// Account settings hub.
 ///
@@ -16,75 +18,76 @@ class SettingsScreen extends ConsumerWidget {
     final summaryAsync = ref.watch(accountSummaryProvider);
     final summary = summaryAsync.asData?.value;
     final isDev = FlavorConfig.current.flavor == Flavor.dev;
+    final m = ref.watch(accountStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const BalsmAppBar(title: 'Settings'),
+            BalsmAppBar(title: m.account.settings),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
                   const SizedBox(height: 8),
-                  const _SectionLabel('Account'),
+                  _SectionLabel(m.sectionAccount),
                   BalsmListCard(
                     children: [
                       BalsmListRow(
                         leading: const Icon(Icons.public),
-                        label: 'Country',
+                        label: m.account.country,
                         sublabel: summary?.countryCode,
                         onTap: () => context.goNamed('account.country'),
                       ),
                       BalsmListRow(
                         leading: const Icon(Icons.language),
-                        label: 'Language',
+                        label: m.account.language,
                         sublabel: summary?.preferredLanguage,
                         onTap: () => context.goNamed('account.language'),
                       ),
                       BalsmListRow(
                         leading: const Icon(Icons.alternate_email),
-                        label: 'Handle',
-                        sublabel: summary?.handle != null ? '@${summary!.handle}' : 'Not set',
+                        label: m.rowHandle,
+                        sublabel: summary?.handle != null ? '@${summary!.handle}' : m.notSet,
                         onTap: () => context.goNamed('handle.claim'),
                       ),
                     ],
                   ),
-                  const _SectionLabel('Backup'),
+                  _SectionLabel(m.sectionBackup),
                   BalsmListCard(
                     children: [
                       BalsmListRow(
                         leading: const Icon(Icons.cloud_outlined),
-                        label: 'Backup & sync',
+                        label: m.backupTitle,
                         trailing: const SyncStatusBadge(compact: true),
-                        onTap: () => _maybeGo(context, 'account.backup'),
+                        onTap: () => _maybeGo(context, m, 'account.backup'),
                       ),
                     ],
                   ),
-                  const _SectionLabel('Privacy'),
+                  _SectionLabel(m.sectionPrivacy),
                   BalsmListCard(
                     children: [
                       BalsmListRow(
                         leading: const Icon(Icons.devices),
-                        label: 'Sessions',
-                        onTap: () => _maybeGo(context, 'account.sessions'),
+                        label: m.rowSessions,
+                        onTap: () => _maybeGo(context, m, 'account.sessions'),
                       ),
                       BalsmListRow(
                         leading: const Icon(Icons.delete_outline),
-                        label: 'Delete Account',
-                        onTap: () => _maybeGo(context, 'account.delete'),
+                        label: m.rowDeleteAccount,
+                        onTap: () => _maybeGo(context, m, 'account.delete'),
                       ),
                     ],
                   ),
-                  const _SectionLabel('Emergency'),
+                  _SectionLabel(m.sectionEmergency),
                   BalsmListCard(
                     children: [
                       BalsmListRow(
                         leading: const Icon(Icons.medical_services_outlined),
-                        label: 'Emergency Card',
-                        onTap: () => _maybeGo(context, 'emergency.card'),
+                        label: m.rowEmergencyCard,
+                        onTap: () => _maybeGo(context, m, 'emergency.card'),
                       ),
                     ],
                   ),
@@ -115,7 +118,7 @@ class SettingsScreen extends ConsumerWidget {
   String _activePreset(WidgetRef ref) {
     try {
       return ref.read(balsmApiClientProvider).dio.options.baseUrl;
-    } catch (_) {
+    } on Object catch (_) {
       return FlavorConfig.current.defaultServer.apiBaseUrl;
     }
   }
@@ -123,12 +126,12 @@ class SettingsScreen extends ConsumerWidget {
   /// Navigates to a named route if it is registered; otherwise shows a
   /// lightweight "coming soon" notice (these routes are owned by sibling
   /// modules that may not be wired in every build).
-  void _maybeGo(BuildContext context, String name) {
+  void _maybeGo(BuildContext context, Messages m, String name) {
     try {
       context.goNamed(name);
-    } catch (_) {
+    } on Object catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not available yet.')),
+        SnackBar(content: Text(m.notAvailableYet)),
       );
     }
   }
@@ -140,14 +143,14 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+        padding: const EdgeInsetsDirectional.fromSTEB(4, 16, 4, 8),
         child: Text(
           text.toUpperCase(),
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: FontSizes.meta,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
-            color: BalsmColors.fg3,
+            color: AppColors.textTertiary,
           ),
         ),
       );
@@ -158,18 +161,18 @@ class _DevSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+        padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 8),
         child: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, size: 16, color: BalsmColors.warning),
+            const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warning),
             const SizedBox(width: 6),
             Text(
               'DEVELOPER',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: FontSizes.meta,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.6,
-                color: BalsmColors.warning.withValues(alpha: 0.9),
+                color: AppColors.warning.withValues(alpha: 0.9),
               ),
             ),
           ],

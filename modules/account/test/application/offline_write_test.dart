@@ -25,7 +25,7 @@ void main() {
       ChangeLanguageUseCase(api: _ThrowingApi(error), bus: EventBus());
 
   Future<AppResult<String>> run(Object error) => useCaseThrowing(error).execute(
-        userId: UserId.value('00000000-0000-0000-0000-0000000000a1'),
+        userId: const UserId.value('00000000-0000-0000-0000-0000000000a1'),
         oldLanguage: 'en',
         newLanguage: 'ar',
       );
