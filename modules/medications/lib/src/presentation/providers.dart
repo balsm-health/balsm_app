@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/src/providers/future_provider.dart';
 
 import '../domain/aggregates/medication.dart';
 import '../domain/entities/dose_event.dart';
@@ -124,6 +125,7 @@ final weekAdherenceProvider = FutureProvider<WeekAdherence>((ref) async {
 /// active profile, so nothing recomputes it when the profile changes. Held
 /// past the screen it feeds it would both retain dose events in memory after
 /// sign-out and re-serve a stale list on the next visit.
-final doseHistoryProvider = FutureProvider.autoDispose.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
+final FutureProviderFamily<List<DoseEvent>, MedicationId> doseHistoryProvider =
+    FutureProvider.autoDispose.family<List<DoseEvent>, MedicationId>((ref, medicationId) {
   return ref.watch(medicationsDataSourceProvider).getDoseEvents(medicationId);
 });

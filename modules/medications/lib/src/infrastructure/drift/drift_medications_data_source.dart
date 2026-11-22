@@ -90,7 +90,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
       'WHERE health_profile_id = ? AND id IN ($placeholders)',
       variables: [
         Variable<String>(profile.value),
-        ...ids.map((id) => Variable<String>(id)),
+        ...ids.map(Variable<String>.new),
       ],
     ).get();
     return _withHistories(rows, profile);
@@ -204,8 +204,10 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
           readsFrom: {/* TODO: medications table after build_runner */},
         )
         .watch()
-        .asyncMap((rows) async =>
-            rows.isEmpty ? null : _medicationFromRow(rows.first.data, await _history.historyOf(key.value, profile)));
+        .asyncMap(
+          (rows) async =>
+              rows.isEmpty ? null : _medicationFromRow(rows.first.data, await _history.historyOf(key.value, profile)),
+        );
   }
 
   @override
@@ -277,7 +279,7 @@ class DriftMedicationsDataSource extends MedicationsDataSource {
   @override
   Future<List<DoseEvent>> getMissedEvents(DateTime cutoff) async {
     final rows = await _db.customSelect(
-      "SELECT * FROM $_kDoseEventsTable "
+      'SELECT * FROM $_kDoseEventsTable '
       "WHERE outcome = 'missed' AND scheduled_at < ? "
       'ORDER BY scheduled_at DESC',
       variables: [Variable<String>(cutoff.toIso8601String())],
