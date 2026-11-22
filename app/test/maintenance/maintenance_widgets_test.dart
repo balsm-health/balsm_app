@@ -1,6 +1,7 @@
 import 'dart:ui' show SemanticsAction;
 
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/i18n/strings.i69n.dart';
 import 'package:app/balsm_app/maintenance/maintenance_controller.dart';
 import 'package:app/balsm_app/maintenance/maintenance_guard.dart';
 import 'package:app/balsm_app/maintenance/maintenance_widgets.dart';
@@ -25,7 +26,7 @@ class _Pinned extends MaintenanceController {
   Future<void> check() async => checks++;
 }
 
-final _en = stringsFor('en').maintenance;
+final MaintenanceStrings _en = stringsFor('en').maintenance;
 final _now = DateTime(2025, 1, 1, 12);
 
 /// Read-only from 11:00 to 13:45: an hour of 2 h 45 min gone.
@@ -35,32 +36,41 @@ final _window = MaintenanceStatus(
   endsAt: DateTime(2025, 1, 1, 13, 45),
 );
 
-Future<_Pinned> _pump(WidgetTester tester, MaintenanceStatus status, Widget Function(BuildContext) body,
-    {bool reducedMotion = true}) async {
+Future<_Pinned> _pump(
+  WidgetTester tester,
+  MaintenanceStatus status,
+  Widget Function(BuildContext) body, {
+  bool reducedMotion = true,
+}) async {
   // The badge pulse and the dot blink repeat for ever, which pumpAndSettle
   // would wait out; reduced motion holds them still.
   tester.platformDispatcher.accessibilityFeaturesTestValue =
       FakeAccessibilityFeatures(disableAnimations: reducedMotion);
   addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
   final pinned = _Pinned(status);
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      maintenanceProvider.overrideWith(() => pinned),
-      maintenanceClockProvider.overrideWithValue(() => _now),
-    ],
-    child: AppScope(
-      state: PatientAppState(),
-      // Watching the provider stands in for the shell, which starts the check.
-      child: MaterialApp(
-        home: Scaffold(
-          body: Consumer(builder: (context, ref, _) {
-            ref.watch(maintenanceProvider);
-            return body(context);
-          }),
+  await tester.pumpWidget(
+    ProviderScope(
+      retry: noProviderRetry,
+      overrides: [
+        maintenanceProvider.overrideWith(() => pinned),
+        maintenanceClockProvider.overrideWithValue(() => _now),
+      ],
+      child: AppScope(
+        state: PatientAppState(),
+        // Watching the provider stands in for the shell, which starts the check.
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                ref.watch(maintenanceProvider);
+                return body(context);
+              },
+            ),
+          ),
         ),
       ),
     ),
-  ));
+  );
   await tester.pump();
   return pinned;
 }
@@ -101,13 +111,17 @@ void main() {
 
     testWidgets('before the shell has started the check nothing is paused', (tester) async {
       bool? paused;
-      await tester.pumpWidget(ProviderScope(
-        child: MaterialApp(
-          home: Builder(
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: noProviderRetry,
+          child: MaterialApp(
+            home: Builder(
               builder: (context) =>
-                  TextButton(onPressed: () => paused = maintenancePaused(context), child: const Text('add'))),
+                  TextButton(onPressed: () => paused = maintenancePaused(context), child: const Text('add')),
+            ),
+          ),
         ),
-      ));
+      );
 
       await tester.tap(find.text('add'));
 
@@ -116,11 +130,14 @@ void main() {
 
     testWidgets('outside a ProviderScope nothing is paused', (tester) async {
       bool? paused;
-      await tester.pumpWidget(MaterialApp(
-        home: Builder(
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
             builder: (context) =>
-                TextButton(onPressed: () => paused = maintenancePaused(context), child: const Text('add'))),
-      ));
+                TextButton(onPressed: () => paused = maintenancePaused(context), child: const Text('add')),
+          ),
+        ),
+      );
 
       await tester.tap(find.text('add'));
 
@@ -152,8 +169,11 @@ void main() {
     });
 
     testWidgets('without an announced end: "Duration not announced yet" and no progress bar', (tester) async {
-      await _pump(tester, const MaintenanceStatus(mode: MaintenanceMode.readonly),
-          (_) => const Align(alignment: Alignment.bottomCenter, child: MaintenanceStrip()));
+      await _pump(
+        tester,
+        const MaintenanceStatus(mode: MaintenanceMode.readonly),
+        (_) => const Align(alignment: Alignment.bottomCenter, child: MaintenanceStrip()),
+      );
 
       expect(find.text(_en.left_unknown), findsOneWidget);
       expect(find.byType(FractionallySizedBox), findsNothing);
@@ -172,13 +192,16 @@ void main() {
       tester.platformDispatcher.accessibilityFeaturesTestValue =
           const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-      await tester.pumpWidget(ProviderScope(
-        overrides: [
-          maintenanceProvider.overrideWith(() => pinned),
-          maintenanceClockProvider.overrideWithValue(() => now),
-        ],
-        child: AppScope(state: PatientAppState(), child: const MaterialApp(home: Scaffold(body: MaintenanceStrip()))),
-      ));
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: noProviderRetry,
+          overrides: [
+            maintenanceProvider.overrideWith(() => pinned),
+            maintenanceClockProvider.overrideWithValue(() => now),
+          ],
+          child: AppScope(state: PatientAppState(), child: const MaterialApp(home: Scaffold(body: MaintenanceStrip()))),
+        ),
+      );
       expect(find.text(_en.left_hm(1, 45)), findsOneWidget);
 
       now = now.add(const Duration(minutes: 5));
@@ -245,9 +268,13 @@ void main() {
 
     testWidgets('an admin message gets its own card and the default copy stays', (tester) async {
       await open(
-          tester,
-          MaintenanceStatus(
-              mode: MaintenanceMode.readonly, message: 'Moving servers', endsAt: DateTime(2025, 1, 1, 13, 45)));
+        tester,
+        MaintenanceStatus(
+          mode: MaintenanceMode.readonly,
+          message: 'Moving servers',
+          endsAt: DateTime(2025, 1, 1, 13, 45),
+        ),
+      );
 
       expect(find.text(_en.message_title), findsOneWidget);
       expect(find.text('Moving servers'), findsOneWidget);
@@ -413,15 +440,18 @@ void main() {
     test('progress: share of the window gone, clamped 0.04–1, none without an end', () {
       expect(maintenanceProgress(_window, _now), closeTo(1 / 2.75, 0.001));
       expect(
-          maintenanceProgress(
-              MaintenanceStatus(mode: MaintenanceMode.readonly, endsAt: DateTime(2025, 1, 1, 13)), _now),
-          0.04,
-          reason: 'no start: the window begins now');
+        maintenanceProgress(
+          MaintenanceStatus(mode: MaintenanceMode.readonly, endsAt: DateTime(2025, 1, 1, 13)),
+          _now,
+        ),
+        0.04,
+        reason: 'no start: the window begins now',
+      );
       expect(maintenanceProgress(const MaintenanceStatus(mode: MaintenanceMode.readonly), _now), isNull);
     });
   });
 
-  test('Arabic imperatives follow the patient\'s gender', () {
+  test("Arabic imperatives follow the patient's gender", () {
     final ar = stringsFor('ar').maintenance;
 
     expect(ar.check_again(Gender.female), 'تحقّقي مرة أخرى');

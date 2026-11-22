@@ -131,8 +131,11 @@ void main() {
     // Without this, a path change turns every assertion below into a no-op loop
     // that passes — which is exactly how the previous version of this file went
     // unnoticed while broken.
-    expect(pairs.length, greaterThanOrEqualTo(_minimumBundlePairs),
-        reason: 'Found only ${pairs.length} en/ar bundle pairs under ${root.path}');
+    expect(
+      pairs.length,
+      greaterThanOrEqualTo(_minimumBundlePairs),
+      reason: 'Found only ${pairs.length} en/ar bundle pairs under ${root.path}',
+    );
   });
 
   for (final pair in pairs) {

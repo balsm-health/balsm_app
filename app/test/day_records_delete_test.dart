@@ -49,22 +49,25 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
-        updateCheckInUseCaseProvider.overrideWithValue(recorder),
-      ],
-      child: AppScope(
-        state: state,
-        // The app sets direction above the navigator (shell.dart), so dialogs
-        // and menus follow it too.
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: DayRecordsScreen(checkIns: checkIns),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
+          updateCheckInUseCaseProvider.overrideWithValue(recorder),
+        ],
+        child: AppScope(
+          state: state,
+          // The app sets direction above the navigator (shell.dart), so dialogs
+          // and menus follow it too.
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: DayRecordsScreen(checkIns: checkIns),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (recorder, state);
   }

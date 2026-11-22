@@ -29,15 +29,18 @@ void main() {
         for (final f in _dartFiles('${root.path}/modules/$m/lib')) {
           for (final other in modules) {
             if (other == m) continue;
-            if (f.text.contains("package:$other/")) {
+            if (f.text.contains('package:$other/')) {
               offenders.add('${f.rel(root)} imports package:$other/');
             }
           }
         }
       }
-      expect(offenders, isEmpty,
-          reason: 'cross-module reads go through core contracts/ports, never a '
-              'direct import:\n${offenders.join('\n')}');
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'cross-module reads go through core contracts/ports, never a '
+            'direct import:\n${offenders.join('\n')}',
+      );
     });
 
     test('no module declares another module as a dependency', () {
@@ -70,12 +73,15 @@ void main() {
           if (banned.hasMatch(f.text)) offenders.add(f.rel(root));
         }
       }
-      expect(offenders, isEmpty,
-          reason: 'the domain layer must not know about storage, use cases, '
-              'widgets or DI:\n${offenders.join('\n')}');
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'the domain layer must not know about storage, use cases, '
+            'widgets or DI:\n${offenders.join('\n')}',
+      );
     });
 
-    test('nothing outside a module names that module\'s Drift classes', () {
+    test("nothing outside a module names that module's Drift classes", () {
       // Each module's barrel deliberately exports its own `Drift*` class so the
       // module's own tests can construct one against an in-memory database.
       // That is the whole permitted blast radius: application, presentation and
@@ -145,15 +151,18 @@ void main() {
         for (final f in _dartFiles(dir)) {
           if (adapters.any(f.path.endsWith)) continue;
           for (final vendor in vendors) {
-            if (f.text.contains("package:$vendor/")) {
+            if (f.text.contains('package:$vendor/')) {
               offenders.add('${f.rel(root)} imports package:$vendor/');
             }
           }
         }
       }
-      expect(offenders, isEmpty,
-          reason: 'use ref.watch(analyticsLoggerProvider), or add a new backend '
-              'adapter to the `adapters` list above:\n${offenders.join('\n')}');
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'use ref.watch(analyticsLoggerProvider), or add a new backend '
+            'adapter to the `adapters` list above:\n${offenders.join('\n')}',
+      );
     });
 
     test('the adapter list is real, so the rule cannot pass vacuously', () {
@@ -173,7 +182,7 @@ void main() {
       for (final dir in [
         '${root.path}/app/lib',
         '${root.path}/packages/core/lib',
-        for (final m in modules) '${root.path}/modules/$m/lib'
+        for (final m in modules) '${root.path}/modules/$m/lib',
       ])
         for (final f in _dartFiles(dir))
           if (tokenKey.hasMatch(f.text) && f.text.contains('FlutterSecureStorage(')) f.rel(root),

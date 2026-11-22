@@ -10,7 +10,7 @@ import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
 
 const _self = HealthProfileId.value('hp-1');
-final _at = DateTime(2025, 1, 1);
+final _at = DateTime(2025);
 
 // Synthetic fixture: obviously fake values, no real person.
 final _profile = HealthProfile(
@@ -45,18 +45,21 @@ final _profile = HealthProfile(
 
 void main() {
   testWidgets('shows the own card from the on-device profile, with no server call', (tester) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        selfProfileIdProvider.overrideWith((ref) async => _self),
-        healthProfileProvider.overrideWith((ref) async => _profile),
-        accountSummaryProvider.overrideWith((ref) async => null),
-        pregnanciesOfProvider.overrideWith((ref, _) => Stream.value(const <Pregnancy>[])),
-      ],
-      child: AppScope(
-        state: PatientAppState(),
-        child: const MaterialApp(home: OwnCardScreen()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          selfProfileIdProvider.overrideWith((ref) async => _self),
+          healthProfileProvider.overrideWith((ref) async => _profile),
+          accountSummaryProvider.overrideWith((ref) async => null),
+          pregnanciesOfProvider.overrideWith((ref, _) => Stream.value(const <Pregnancy>[])),
+        ],
+        child: AppScope(
+          state: PatientAppState(),
+          child: const MaterialApp(home: OwnCardScreen()),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     final f = stringsFor('en').family;

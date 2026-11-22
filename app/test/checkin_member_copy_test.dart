@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/screens/report_flow.dart';
@@ -9,6 +11,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
 import 'package:self_report/self_report.dart';
 
+import 'support/flag_overrides.dart';
+
 /// The full check-in names the active family member instead of speaking to
 /// the account holder; for the account holder it is unchanged.
 void main() {
@@ -18,34 +22,41 @@ void main() {
     displayName: 'Test Adult',
   );
 
-  Future<PatientAppState> open(WidgetTester tester,
-      {FamilyMember? member,
-      bool ar = false,
-      bool summary = false,
-      Gender holder = Gender.other,
-      List<CheckInMetric> metrics = const [CheckInMetric.mood],
-      List<Medication>? meds}) async {
+  Future<PatientAppState> open(
+    WidgetTester tester, {
+    FamilyMember? member,
+    bool ar = false,
+    bool summary = false,
+    Gender holder = Gender.other,
+    List<CheckInMetric> metrics = const [CheckInMetric.mood],
+    List<Medication>? meds,
+  }) async {
     final s = PatientAppState()
-      ..attachFlags(FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true));
+      ..attachFlags(
+        flagsWith({AppFlags.motherChild: true}),
+      );
     if (ar) s.setLang(LanguageCode.ar);
     s.setGender(holder);
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        activeFamilyMemberProvider.overrideWithValue(member),
-        // Mood first, as in the default full check-up.
-        trackedCheckInMetricsProvider.overrideWithValue(metrics),
-        if (meds != null) medicationListProvider.overrideWith((ref) => Stream.value(meds)),
-      ],
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: Directionality(textDirection: s.dir, child: ReportFlow(s: s, debugShowSummary: summary)),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          activeFamilyMemberProvider.overrideWithValue(member),
+          // Mood first, as in the default full check-up.
+          trackedCheckInMetricsProvider.overrideWithValue(metrics),
+          if (meds != null) medicationListProvider.overrideWith((ref) => Stream.value(meds)),
+        ],
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Directionality(textDirection: s.dir, child: ReportFlow(s: s, debugShowSummary: summary)),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return s;
   }
@@ -61,7 +72,7 @@ void main() {
       expect(find.text('${c.ql_logging_for(s.gender)}Test', findRichText: true), findsOne);
     });
 
-    testWidgets('$lang: a member\'s done screen names them', (tester) async {
+    testWidgets("$lang: a member's done screen names them", (tester) async {
       final s = await open(tester, member: adult, ar: ar, summary: true);
       expect(find.text(s.strings.checkin.m_saved_t('Test')), findsOne);
       expect(find.text(s.strings.common.saved_t), findsNothing);
@@ -74,7 +85,7 @@ void main() {
       expect(find.text('${c.ql_logging_for(s.gender)}Test', findRichText: true), findsNothing);
     });
 
-    testWidgets('$lang: the account holder\'s done screen is unchanged', (tester) async {
+    testWidgets("$lang: the account holder's done screen is unchanged", (tester) async {
       final s = await open(tester, ar: ar, summary: true);
       expect(find.text(s.strings.common.saved_t), findsOne);
     });
@@ -110,16 +121,22 @@ void main() {
 
   for (final (holder, want) in [(Gender.female, 'هل أخذتِ أدويتك؟'), (Gender.male, 'هل أخذت أدويتك؟')]) {
     testWidgets('AR: the medicines question follows the account holder ($holder)', (tester) async {
-      await open(tester, ar: true, holder: holder, metrics: const [], meds: [
-        Medication(
-          id: const MedicationId.value('med-a'),
-          userId: const UserId.value('u1'),
-          name: 'Testamol',
-          scheduleType: ScheduleType.daily,
-          scheduleConfig: const ScheduleConfig(times: ['08:00']),
-          startDate: DateTime(2026, 1, 1),
-        ),
-      ]);
+      await open(
+        tester,
+        ar: true,
+        holder: holder,
+        metrics: const [],
+        meds: [
+          Medication(
+            id: const MedicationId.value('med-a'),
+            userId: const UserId.value('u1'),
+            name: 'Testamol',
+            scheduleType: ScheduleType.daily,
+            scheduleConfig: const ScheduleConfig(times: ['08:00']),
+            startDate: DateTime(2026),
+          ),
+        ],
+      );
       expect(find.text(want), findsOne);
     });
   }

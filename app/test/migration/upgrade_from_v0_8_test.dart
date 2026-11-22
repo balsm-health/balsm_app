@@ -30,11 +30,17 @@ void main() {
   Future<AppDatabase> open() async {
     final seed = !file.existsSync();
     final dump = seed ? File('test/migration/fixtures/v0_8_database.sql').readAsStringSync() : '';
-    final db = AppDatabase(NativeDatabase(file, setup: (raw) {
-      if (!seed) return;
-      raw.execute(dump);
-      raw.execute('PRAGMA user_version = 1');
-    }));
+    final db = AppDatabase(
+      NativeDatabase(
+        file,
+        setup: (raw) {
+          if (!seed) return;
+          raw
+            ..execute(dump)
+            ..execute('PRAGMA user_version = 1');
+        },
+      ),
+    );
     addTearDown(db.close);
     return db;
   }
@@ -52,12 +58,14 @@ void main() {
     expect(profile.id, self);
     expect(profile.isSelf, isTrue);
     expect((profile.bloodType, profile.weightKg, profile.heightCm), (BloodType.oPositive, 70.0, 170.0));
-    expect(await rows(db, 'SELECT user_id, is_self, kind, status FROM health_profile ORDER BY user_id'),
-        ['user-a|1|self|active', 'user-b|1|self|active']);
+    expect(
+      await rows(db, 'SELECT user_id, is_self, kind, status FROM health_profile ORDER BY user_id'),
+      ['user-a|1|self|active', 'user-b|1|self|active'],
+    );
     expect((await profiles.findMembers()).map((m) => m.id), [self], reason: 'no member is invented');
   });
 
-  test('every v0.8 entry is found under the account holder\'s profile', () async {
+  test("every v0.8 entry is found under the account holder's profile", () async {
     final db = await open();
     final self = await db.resolveActiveHealthProfile(userA);
     HealthProfileId? active() => self;
@@ -69,14 +77,19 @@ void main() {
 
     expect(records.map((r) => r.id.value), unorderedEquals(['rec-early', 'rec-1']));
     expect(rx.map((p) => (p.id.value, p.items.length)), [('rx-1', 1)]);
-    expect((await meds.findAll()).map((m) => m.id.value), unorderedEquals(['med-1', 'med-legacy']),
-        reason: 'a medication saved before it carried a profile is anchored to self');
+    expect(
+      (await meds.findAll()).map((m) => m.id.value),
+      unorderedEquals(['med-1', 'med-legacy']),
+      reason: 'a medication saved before it carried a profile is anchored to self',
+    );
     expect((await meds.getDoseEvents(const MedicationId.value('med-1'))).map((e) => e.outcome), [DoseOutcome.taken]);
     expect(checkIns.single.symptoms, {SymptomId.headache});
     expect(checkIns.single.vitals.systolic, 120);
     expect((await DriftAllergiesDataSource(db: db, activeProfile: active).findAll()).single.name, 'Test allergy');
-    expect((await DriftChronicConditionsDataSource(db: db, activeProfile: active).findAll()).single.name,
-        'Test condition');
+    expect(
+      (await DriftChronicConditionsDataSource(db: db, activeProfile: active).findAll()).single.name,
+      'Test condition',
+    );
     expect((await DriftEmergencyContactsDataSource(db: db, activeProfile: active).findAll()).single.isPrimary, isTrue);
   });
 
@@ -101,8 +114,8 @@ void main() {
       userId: userA,
       kind: ProfileKind.dependent,
       displayName: 'Test Member',
-      now: DateTime.utc(2026, 11, 1),
-      dateOfBirth: DateTime.utc(2020, 1, 1),
+      now: DateTime.utc(2026, 11),
+      dateOfBirth: DateTime.utc(2020),
       sex: Sex.female,
       relationship: Relationship.child,
     ).value;
@@ -114,28 +127,33 @@ void main() {
       id: const VaccinationRecordId.value('vac-1'),
       vaccine: 'Test vaccine',
       doseNumber: 1,
-      administeredOn: DateTime.utc(2021, 1, 1),
-      createdAt: DateTime.utc(2026, 11, 1),
+      administeredOn: DateTime.utc(2021),
+      createdAt: DateTime.utc(2026, 11),
     );
     await vaccinations.put(dose.id, dose);
 
     expect(await db.resolveActiveHealthProfile(userA), child.id);
     expect((await vaccinations.findAll()).map((v) => v.id.value), ['vac-1']);
-    expect(await DriftRecordsDataSource(db, () => child.id).findAll(), isEmpty,
-        reason: 'the account holder\'s v0.8 records stay theirs');
+    expect(
+      await DriftRecordsDataSource(db, () => child.id).findAll(),
+      isEmpty,
+      reason: "the account holder's v0.8 records stay theirs",
+    );
     expect(await db.selfHealthProfileId(userA), self);
   });
 
   test('reopening changes nothing: a member is never promoted to self', () async {
     var db = await open();
     final self = await db.resolveActiveHealthProfile(userA);
-    await DriftProfileDataSource(db: db, activeUser: () => userA).createMember(HealthProfile.createMember(
-      id: const HealthProfileId.value('hp-member'),
-      userId: userA,
-      kind: ProfileKind.dependent,
-      displayName: 'Test Member',
-      now: DateTime.utc(2026, 11, 1),
-    ).value);
+    await DriftProfileDataSource(db: db, activeUser: () => userA).createMember(
+      HealthProfile.createMember(
+        id: const HealthProfileId.value('hp-member'),
+        userId: userA,
+        kind: ProfileKind.dependent,
+        displayName: 'Test Member',
+        now: DateTime.utc(2026, 11),
+      ).value,
+    );
     final before = await rows(db, 'SELECT id, is_self, kind FROM health_profile ORDER BY rowid');
     await db.close();
 

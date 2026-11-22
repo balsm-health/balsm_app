@@ -1,13 +1,13 @@
-import 'package:app/balsm_app/dev/shake_to_dev_config.dart';
 import 'package:app/balsm_app/app_state.dart';
+import 'package:app/balsm_app/dev/shake_to_dev_config.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
     show DisclosureAcceptance, DisclosureDao, DisclosureId, disclosureDaoProvider;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _FakeDisclosureDao extends Mock implements DisclosureDao {}
@@ -37,6 +37,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           disclosureDaoProvider.overrideWithValue(disclosure),
           // An emulator: nothing to shake, so the pill is the way in.

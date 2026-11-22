@@ -3,8 +3,8 @@ import 'package:app/balsm_app/family/family_flag_guard.dart';
 import 'package:app/balsm_app/family/profile_family_members.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
-import 'package:app/balsm_app/screens/family/family_screen.dart';
 import 'package:app/balsm_app/screens/family/family_kit.dart';
+import 'package:app/balsm_app/screens/family/family_screen.dart';
 import 'package:app/balsm_app/screens/family/member_card_screen.dart';
 import 'package:app/balsm_app/screens/family/profile_bar.dart';
 import 'package:app/balsm_app/screens/home_screen.dart';
@@ -15,6 +15,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
+
+import 'support/flag_overrides.dart';
 
 /// Mother & Child stage 2: family members on this phone, the people picker
 /// that re-points the active profile, and today's app with the flag off.
@@ -27,7 +29,7 @@ void main() {
   tearDown(() => db.close());
 
   PatientAppState familyState({bool on = true}) {
-    final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, on);
+    final flags = flagsWith({AppFlags.motherChild: on});
     return PatientAppState()..attachFlags(flags);
   }
 
@@ -44,44 +46,55 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  Future<ProviderContainer> pump(WidgetTester tester, Widget screen, PatientAppState state,
-      {bool settle = true}) async {
+  Future<ProviderContainer> pump(
+    WidgetTester tester,
+    Widget screen,
+    PatientAppState state, {
+    bool settle = true,
+  }) async {
     tester.view.physicalSize = const Size(390, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    final container = ProviderContainer(overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      currentUserIdProvider.overrideWithValue(user),
-      familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
-      accountSummaryProvider.overrideWith((ref) async => const AccountSummary(
+    final container = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        currentUserIdProvider.overrideWithValue(user),
+        familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+        accountSummaryProvider.overrideWith(
+          (ref) async => const AccountSummary(
             id: user,
             displayName: 'Test Parent',
             countryCode: 'EG',
             preferredLanguage: 'en',
             deletionState: 'ACTIVE',
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: Scaffold(body: screen),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: Scaffold(body: screen),
+          ),
         ),
       ),
-    ));
+    );
     settle ? await tester.pumpAndSettle() : await frames(tester);
     return container;
   }
 
   Future<FamilyMember> seed(ProviderContainer c, String name, {Relationship rel = Relationship.child}) async {
     final r = await c.read(saveFamilyMemberUseCaseProvider).add(
-          MemberDraft(displayName: name, relationship: rel, dateOfBirth: DateTime(2021, 3, 1), sex: Sex.female),
+          MemberDraft(displayName: name, relationship: rel, dateOfBirth: DateTime(2021, 3), sex: Sex.female),
           userId: user,
           now: DateTime.now(),
         );
@@ -101,7 +114,7 @@ void main() {
         MemberDraft(
           displayName: 'Test Child',
           relationship: Relationship.child,
-          dateOfBirth: DateTime(2022, 6, 1),
+          dateOfBirth: DateTime(2022, 6),
           sex: Sex.male,
           bloodType: BloodType.oPositive,
         ),
@@ -119,7 +132,12 @@ void main() {
 
       final edited = await port.updateMember(
         id,
-        MemberDraft(displayName: 'Test Renamed', relationship: Relationship.child, dateOfBirth: null, sex: Sex.male),
+        const MemberDraft(
+          displayName: 'Test Renamed',
+          relationship: Relationship.child,
+          dateOfBirth: null,
+          sex: Sex.male,
+        ),
         groupId: null,
         now: DateTime(2026, 11, 3),
       );
@@ -131,19 +149,23 @@ void main() {
       await pumpEventQueue();
       expect((await port.closeMember(id, now: DateTime(2026, 11, 3))).error, isA<NotFoundFailure>());
       expect(
-          (await port.updateMember(
-                  selfId, const MemberDraft(displayName: 'x', relationship: null, dateOfBirth: null, sex: null),
-                  groupId: null, now: DateTime(2026, 11, 3)))
-              .error,
-          isA<NotFoundFailure>(),
-          reason: 'self is never edited as a member');
+        (await port.updateMember(
+          selfId,
+          const MemberDraft(displayName: 'x', relationship: null, dateOfBirth: null, sex: null),
+          groupId: null,
+          now: DateTime(2026, 11, 3),
+        ))
+            .error,
+        isA<NotFoundFailure>(),
+        reason: 'self is never edited as a member',
+      );
       await sub.cancel();
 
       // A details edit writes twice (details, then blood type), so the same
       // list can arrive twice in a row; what matters is the sequence.
       final changes = [
         for (final (i, x) in seen.indexed)
-          if (i == 0 || x.join() != seen[i - 1].join()) x
+          if (i == 0 || x.join() != seen[i - 1].join()) x,
       ];
       expect(changes, [
         <String>[],
@@ -155,7 +177,9 @@ void main() {
 
     test('a rule the profile aggregate breaks comes back as a validation failure', () async {
       final port = ProfileFamilyMembers(
-          profiles: DriftProfileDataSource(db: db, activeUser: () => user), activeUser: () => user);
+        profiles: DriftProfileDataSource(db: db, activeUser: () => user),
+        activeUser: () => user,
+      );
       final r = await port.createMember(
         MemberDraft(displayName: 'Test', relationship: Relationship.child, dateOfBirth: DateTime(2099), sex: Sex.male),
         groupId: null,
@@ -225,7 +249,7 @@ void main() {
   });
 
   group('People picker', () {
-    testWidgets('the bar shows the other members\' avatars, not the one on screen', (tester) async {
+    testWidgets("the bar shows the other members' avatars, not the one on screen", (tester) async {
       final state = familyState();
       final c = await pump(tester, const ProfileBar(), state);
       final kid = await seed(c, 'Test Kid');
@@ -273,13 +297,15 @@ void main() {
       await c
           .read(addEmergencyContactUseCaseProvider)
           .execute(userId: user, profileId: kid.id, name: 'Test Contact', phone: '+200000000001', isPrimary: true);
-      await tester.pumpWidget(UncontrolledProviderScope(
-        container: c,
-        child: AppScope(
-          state: state,
-          child: MaterialApp(home: MemberCardScreen(id: kid.id)),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: c,
+          child: AppScope(
+            state: state,
+            child: MaterialApp(home: MemberCardScreen(id: kid.id)),
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       expect(find.text('Test Contact'), findsOne);
 
@@ -338,7 +364,7 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('flag off: today\'s home — no profile bar, the session-only banner still works', (tester) async {
+    testWidgets("flag off: today's home — no profile bar, the session-only banner still works", (tester) async {
       final state = familyState(on: false)..addFamilyMember(name: 'Test Relative', relation: 'Father');
       state.selectFamilyMember(state.extraFamily.first.id);
       await pump(tester, const HomeScreen(), state, settle: false);

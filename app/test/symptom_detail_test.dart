@@ -1,10 +1,10 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/screens/metric_log.dart';
+import 'package:core/core.dart' show LanguageCode, noProviderRetry;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:core/core.dart' show LanguageCode;
 import 'package:self_report/self_report.dart';
 
 /// `quicklog.jsx` `QuickSymptomDetail` — the urine card (colour · quantity ·
@@ -30,24 +30,27 @@ void main() {
       });
     }
     final captures = <MetricLogCapture>[];
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: MetricLog(
-                metric: CheckInMetric.symptoms,
-                s: state,
-                host: MetricLogHost.standalone,
-                focusedSymptom: symptom,
-                onChanged: (c, {required bool valid}) => captures.add(c),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MetricLog(
+                  metric: CheckInMetric.symptoms,
+                  s: state,
+                  host: MetricLogHost.standalone,
+                  focusedSymptom: symptom,
+                  onChanged: (c, {required valid}) => captures.add(c),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (state, captures);
   }

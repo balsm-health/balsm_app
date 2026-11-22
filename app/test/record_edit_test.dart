@@ -35,11 +35,14 @@ void main() {
       takenAt: DateTime(2026, 6, 12, 14, 30),
       createdAt: DateTime(2026, 6, 12),
     );
-    final container = ProviderContainer(overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      currentUserIdProvider.overrideWithValue(user),
-      currentProfileIdProvider.overrideWithValue(profile),
-    ]);
+    final container = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        currentUserIdProvider.overrideWithValue(user),
+        currentProfileIdProvider.overrideWithValue(profile),
+      ],
+    );
     addTearDown(container.dispose);
     await container.read(recordsDataSourceProvider).put(id, record);
 
@@ -49,16 +52,18 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: RecordDetailScreen(record: record),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: RecordDetailScreen(record: record),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (state, db, profile);
   }

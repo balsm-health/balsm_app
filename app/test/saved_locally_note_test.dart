@@ -25,7 +25,7 @@ void main() {
   ];
 
   /// PatientApp.builder clamps Dynamic Type to 0.9–1.3.
-  const scales = <double>[1.0, 1.3];
+  const scales = <double>[1, 1.3];
 
   Widget host({required Size size, required bool ar, required double scale}) {
     final state = PatientAppState();
@@ -75,7 +75,7 @@ void main() {
     await tester.binding.setSurfaceSize(wide);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(host(size: wide, ar: false, scale: 1.0));
+    await tester.pumpWidget(host(size: wide, ar: false, scale: 1));
     await tester.pump();
 
     // A pill that stretched the full column would be a different bug fixed by

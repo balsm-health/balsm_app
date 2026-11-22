@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/routes.dart';
-import 'package:app/balsm_app/tokens.dart';
 import 'package:app/balsm_app/screens/auth_flow.dart';
 import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:auth/auth.dart';
@@ -11,10 +10,11 @@ import 'package:disclosure/disclosure.dart'
     show DisclosureAcceptance, DisclosureDao, DisclosureId, disclosureDaoProvider;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:profile/profile.dart' show CareProvider;
 import 'package:mocktail/mocktail.dart';
+import 'package:profile/profile.dart' show CareProvider;
 
 class _MockDisclosureDao extends Mock implements DisclosureDao {}
 
@@ -56,8 +56,12 @@ void main() {
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
   }
 
-  Future<SemanticsHandle> pump(WidgetTester tester, Widget screen,
-      {List<Override> overrides = const [], String? route}) async {
+  Future<SemanticsHandle> pump(
+    WidgetTester tester,
+    Widget screen, {
+    List<Override> overrides = const [],
+    String? route,
+  }) async {
     final handle = tester.ensureSemantics();
     tester.view.physicalSize = const Size(402, 1400);
     tester.view.devicePixelRatio = 1.0;
@@ -66,19 +70,22 @@ void main() {
     final state = PatientAppState();
     if (route != null) state.route = route;
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        disclosureDaoProvider.overrideWithValue(disclosure),
-        offlineAccountServiceProvider.overrideWithValue(offline),
-        ...overrides,
-      ],
-      child: MaterialApp(
-        home: Material(
-          type: MaterialType.transparency,
-          child: AppScope(state: state, child: screen),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          disclosureDaoProvider.overrideWithValue(disclosure),
+          offlineAccountServiceProvider.overrideWithValue(offline),
+          ...overrides,
+        ],
+        child: MaterialApp(
+          home: Material(
+            type: MaterialType.transparency,
+            child: AppScope(state: state, child: screen),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return handle;
   }
@@ -99,15 +106,27 @@ void main() {
   }
 
   test('every text ink clears 4.5:1 on the cream ground', () {
-    for (final (name, ink) in [('fg1', T.fg1), ('fg2', T.fg2), ('fg3', T.fg3), ('fg4', T.fg4)]) {
-      expect(contrast(ink, T.cream50), greaterThanOrEqualTo(4.5), reason: '$name is body text somewhere');
+    for (final (name, ink) in [
+      ('fg1', AppColors.textPrimary),
+      ('fg2', AppColors.textSecondary),
+      ('fg3', AppColors.textTertiary),
+      ('fg4', AppColors.textHint),
+    ]) {
+      expect(contrast(ink, AppColors.cream50), greaterThanOrEqualTo(4.5), reason: '$name is body text somewhere');
     }
   });
 
   test('a filled button picks text that can be read on it', () {
     // White was assumed everywhere; on mint it measures 2.28:1.
-    for (final fill in [T.hueMint600, T.hueAqua600, T.hueEmerald600, T.sun500, T.danger, T.hueViolet600]) {
-      expect(contrast(T.onFill(fill), fill), greaterThanOrEqualTo(4.5));
+    for (final fill in [
+      AppColors.hueMint600,
+      AppColors.hueAqua600,
+      AppColors.hueEmerald600,
+      AppColors.sun500,
+      AppColors.danger,
+      AppColors.hueViolet600,
+    ]) {
+      expect(contrast(ColorContrast.onFill(fill), fill), greaterThanOrEqualTo(4.5));
     }
   });
 

@@ -39,13 +39,15 @@ void main() {
   });
 
   test('saves and reloads on the device without calling the API', () async {
-    final r = await profile.update(const UpdateProfileInput(
-      firstName: 'Test',
-      lastName: 'Person',
-      gender: Gender.male,
-      nationality: 'EG',
-      dateOfBirth: '1990-01-15',
-    ));
+    final r = await profile.update(
+      const UpdateProfileInput(
+        firstName: 'Test',
+        lastName: 'Person',
+        gender: Gender.male,
+        nationality: 'EG',
+        dateOfBirth: '1990-01-15',
+      ),
+    );
     expect(r.isSuccess, isTrue);
 
     final p = (await profile.load())!;

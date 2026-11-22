@@ -19,7 +19,7 @@ void main() {
   const phone = Size(360, 640);
 
   /// PatientApp.builder clamps Dynamic Type to 0.9–1.3.
-  const scales = <double>[1.0, 1.3];
+  const scales = <double>[1, 1.3];
 
   Widget host({required bool ar, required double scale}) {
     final state = PatientAppState();

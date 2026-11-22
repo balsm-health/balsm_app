@@ -1,6 +1,6 @@
 import 'package:app/balsm_app/app_state.dart';
-import 'package:core/core.dart';
 import 'package:app/balsm_app/screens/home_screen.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,8 +14,7 @@ import 'package:material_ui/material_ui.dart';
 /// behaviour.
 void main() {
   Future<PatientAppState> pump(WidgetTester tester, {bool selectMember = false}) async {
-    final state = PatientAppState();
-    state.addFamilyMember(name: 'Karim Hassan', relation: 'Father');
+    final state = PatientAppState()..addFamilyMember(name: 'Karim Hassan', relation: 'Father');
     if (selectMember) {
       state.selectFamilyMember(state.extraFamily.first.id);
     }
@@ -25,12 +24,15 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: state,
-        child: const MaterialApp(home: Scaffold(body: HomeScreen())),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: state,
+          child: const MaterialApp(home: Scaffold(body: HomeScreen())),
+        ),
       ),
-    ));
+    );
     await tester.pump();
     return state;
   }

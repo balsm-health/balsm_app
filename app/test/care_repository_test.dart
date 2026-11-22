@@ -165,8 +165,11 @@ void main() {
     test('a result survives a relaunch', () async {
       await localWith().put(a, [_place('x')]);
       // A fresh source over the same database is what a relaunch looks like.
-      expect((await localWith().find(a))!.single.id, 'x',
-          reason: 'surviving the process is the whole reason this replaced the memory-only source');
+      expect(
+        (await localWith().find(a))!.single.id,
+        'x',
+        reason: 'surviving the process is the whole reason this replaced the memory-only source',
+      );
     });
 
     test('an undecodable payload reads as a miss, not an error', () async {
@@ -219,8 +222,9 @@ void main() {
 
       expect(await retainedCount(), 0, reason: 'nothing retained');
 
-      remote.throws = null;
-      remote.result = [_place('recovered')];
+      remote
+        ..throws = null
+        ..result = [_place('recovered')];
       final retry = await repo.nearby(cairo, const CareSearch());
 
       expect(retry.entities.single.id, 'recovered', reason: 'a retry must reach the network again');
@@ -228,7 +232,7 @@ void main() {
     });
 
     test('an empty result IS retained — "nothing here" is a real answer', () async {
-      final remote = _FakeRemote(result: const []);
+      final remote = _FakeRemote();
       final repo = CachingCareDirectoryRepository(remote: remote, local: localWith());
 
       expect((await repo.nearby(cairo, const CareSearch())).entities, isEmpty);
@@ -305,7 +309,7 @@ void main() {
       final repo = CachingCareDirectoryRepository(remote: remote, local: localWith(maxEntries: 3));
 
       for (var i = 0; i < 6; i++) {
-        await repo.nearby(LatLng(30.0 + i, 31.0), const CareSearch());
+        await repo.nearby(LatLng(30.0 + i, 31), const CareSearch());
       }
 
       expect(await retainedCount(), 3);
@@ -375,7 +379,7 @@ void main() {
     });
 
     test('a missing place is not retained as an answer', () async {
-      final remote = _FakeRemote(detail: null);
+      final remote = _FakeRemote();
       final repo = CachingCareDirectoryRepository(remote: remote, local: localWith());
 
       expect(await repo.byId('gone', cairo), isNull);
@@ -386,8 +390,11 @@ void main() {
       final remote = _FakeRemote(throws: _offline);
       final repo = CachingCareDirectoryRepository(remote: remote, local: localWith());
 
-      expect(await repo.byId('d1', cairo), isNull,
-          reason: 'the sheet has an empty state; an error dialog would be no more informative');
+      expect(
+        await repo.byId('d1', cairo),
+        isNull,
+        reason: 'the sheet has an empty state; an error dialog would be no more informative',
+      );
     });
 
     test('a server error still surfaces', () async {

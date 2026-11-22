@@ -1,15 +1,17 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/flags.dart';
-import 'package:family/family.dart';
-import 'package:core/core.dart';
-import 'package:app/balsm_app/screens/metric_log.dart';
-import 'package:app/balsm_app/screens/quick_log.dart';
 import 'package:app/balsm_app/kit.dart';
 import 'package:app/balsm_app/screens/checkin_shared.dart';
+import 'package:app/balsm_app/screens/metric_log.dart';
+import 'package:app/balsm_app/screens/quick_log.dart';
+import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'support/flag_overrides.dart';
 
 /// quicklog.jsx `Sheet` — Save in the header and at the bottom, Cancel, and a
 /// discard prompt before unsaved input is thrown away.
@@ -21,18 +23,21 @@ void main() {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text(s.strings.profile.m_mood));
@@ -153,18 +158,21 @@ void main() {
     tester.view.physicalSize = const Size(402, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
   }
@@ -216,25 +224,27 @@ void main() {
     );
 
     Future<void> open(WidgetTester tester, {FamilyMember? member, bool ar = false}) async {
-      s = PatientAppState()
-        ..attachFlags(FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true));
+      s = PatientAppState()..attachFlags(flagsWith({AppFlags.motherChild: true}));
       if (ar) s.setLang(LanguageCode.ar);
       tester.view.physicalSize = const Size(402, 874);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(ProviderScope(
-        overrides: [activeFamilyMemberProvider.overrideWithValue(member)],
-        child: AppScope(
-          state: s,
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: noProviderRetry,
+          overrides: [activeFamilyMemberProvider.overrideWithValue(member)],
+          child: AppScope(
+            state: s,
+            child: MaterialApp(
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+                ),
               ),
             ),
           ),
         ),
-      ));
+      );
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
     }
@@ -265,13 +275,13 @@ void main() {
       id: const HealthProfileId.value('hp-child'),
       kind: ProfileKind.dependent,
       displayName: 'Test Child',
-      dateOfBirth: DateTime(now.year - 6, 1, 1),
+      dateOfBirth: DateTime(now.year - 6),
     );
     final grownUp = FamilyMember(
       id: const HealthProfileId.value('hp-adult'),
       kind: ProfileKind.dependent,
       displayName: 'Test Adult',
-      dateOfBirth: DateTime(now.year - 40, 1, 1),
+      dateOfBirth: DateTime(now.year - 40),
     );
     Finder row(String label) => find.text(label, skipOffstage: false);
 

@@ -31,7 +31,7 @@ void main() {
   test('pairs blood pressure, skips half readings, and leaves out metrics with nothing', () {
     final s = trendSeries([
       at('b', DateTime(2026, 11, 2), vitals: const Vitals(systolic: 120)),
-      at('a', DateTime(2026, 11, 1), vitals: const Vitals(systolic: 118, diastolic: 76), pain: 3),
+      at('a', DateTime(2026, 11), vitals: const Vitals(systolic: 118, diastolic: 76), pain: 3),
     ]);
 
     expect(s.keys, [TrendMetric.bp, TrendMetric.pain]);
@@ -44,7 +44,7 @@ void main() {
       [at('c', DateTime(2026, 11, 10), vitals: const Vitals(weightKg: 15.2))],
       growth: [
         growth('g2', DateTime.utc(2026, 11, 12), cm: 101),
-        growth('g1', DateTime.utc(2026, 11, 1), kg: 14.8, cm: 100),
+        growth('g1', DateTime.utc(2026, 11), kg: 14.8, cm: 100),
       ],
     );
 

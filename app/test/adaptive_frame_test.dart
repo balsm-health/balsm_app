@@ -1,7 +1,7 @@
 import 'package:app/balsm_app/shell.dart';
 import 'package:app/balsm_app/tokens.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// `AdaptiveFrame` — app.css `@container app (min-width: 1024px)`: from the
 /// expanded window class a screen is contained at `--content-max` (1024) on
@@ -14,11 +14,13 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(MaterialApp(
-      home: minWidth == null
-          ? const AdaptiveFrame(child: SizedBox.expand(key: Key('c')))
-          : AdaptiveFrame(minWidth: minWidth, child: const SizedBox.expand(key: Key('c'))),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: minWidth == null
+            ? const AdaptiveFrame(child: SizedBox.expand(key: Key('c')))
+            : AdaptiveFrame(minWidth: minWidth, child: const SizedBox.expand(key: Key('c'))),
+      ),
+    );
     return tester.getSize(find.byKey(const Key('c'))).width;
   }
 
@@ -28,7 +30,7 @@ void main() {
 
   testWidgets('contains an expanded window at --content-max inside the hairlines', (tester) async {
     // 1024 minus the two 1px inline borders.
-    expect(await childWidthAt(tester, 1280), closeTo(T.contentMax - 2, 0.5));
+    expect(await childWidthAt(tester, 1280), closeTo(BalsmWindow.appContentMax - 2, 0.5));
   });
 
   testWidgets('the shell pane threshold is the window threshold less the rail', (tester) async {

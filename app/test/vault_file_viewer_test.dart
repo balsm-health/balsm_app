@@ -4,12 +4,12 @@ import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/prefs.dart';
 import 'package:app/balsm_app/vault/memory_file_store.dart';
 import 'package:app/balsm_app/widgets/vault_file_viewer.dart';
-import 'package:core/core.dart' show userFileStoreProvider;
 import 'package:core/core.dart' show KeyValueDataSource;
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart' show noProviderRetry, userFileStoreProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _MemoryKV implements KeyValueDataSource {
   final store = <String, Object?>{};
@@ -67,6 +67,7 @@ void main() {
       final s = await state();
       await tester.pumpWidget(
         ProviderScope(
+          retry: noProviderRetry,
           overrides: [userFileStoreProvider.overrideWithValue(store)],
           child: MaterialApp(
             home: AppScope(state: s, child: VaultFileViewer(paths: [path], title: 'Scan')),
@@ -124,6 +125,7 @@ void main() {
       final s = await state();
       await tester.pumpWidget(
         ProviderScope(
+          retry: noProviderRetry,
           overrides: [userFileStoreProvider.overrideWithValue(store)],
           child: MaterialApp(
             home: AppScope(state: s, child: VaultFileViewer(paths: paths, index: index, title: 'Scan')),

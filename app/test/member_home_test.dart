@@ -15,6 +15,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'support/flag_overrides.dart';
+
 /// Home while a family member is the active profile (home-mc.jsx
 /// `HomeMemberV2`): the account holder's header, then the member's check-in,
 /// latest readings, six shortcuts and recent logs. The member profile screen
@@ -37,54 +39,66 @@ void main() {
   }
 
   PatientAppState familyState() {
-    final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true);
+    final flags = flagsWith({AppFlags.motherChild: true});
     return PatientAppState()..attachFlags(flags);
   }
 
   /// Pumps [screen] (Home by default) with a three-year-old son — or, with
   /// [adult], a forty-year-old father — as the active profile.
-  Future<(ProviderContainer, FamilyMember)> pumpHome(WidgetTester tester, PatientAppState state,
-      {bool adult = false, Widget Function(FamilyMember m)? screen}) async {
+  Future<(ProviderContainer, FamilyMember)> pumpHome(
+    WidgetTester tester,
+    PatientAppState state, {
+    bool adult = false,
+    Widget Function(FamilyMember m)? screen,
+  }) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    final c = ProviderContainer(overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      currentUserIdProvider.overrideWithValue(user),
-      familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
-      accountSummaryProvider.overrideWith((ref) async => const AccountSummary(
+    final c = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        currentUserIdProvider.overrideWithValue(user),
+        familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+        accountSummaryProvider.overrideWith(
+          (ref) async => const AccountSummary(
             id: user,
             displayName: 'Test Parent',
             countryCode: 'EG',
             preferredLanguage: 'en',
             deletionState: 'ACTIVE',
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     addTearDown(c.dispose);
     final kid = (await c.read(saveFamilyMemberUseCaseProvider).add(
               MemberDraft(
-                  displayName: adult ? 'Test Elder' : 'Test Kid',
-                  relationship: adult ? Relationship.parent : Relationship.child,
-                  dateOfBirth: DateTime(today.year - (adult ? 40 : 3), 1, 1),
-                  sex: Sex.male),
+                displayName: adult ? 'Test Elder' : 'Test Kid',
+                relationship: adult ? Relationship.parent : Relationship.child,
+                dateOfBirth: DateTime(today.year - (adult ? 40 : 3)),
+                sex: Sex.male,
+              ),
               userId: user,
               now: DateTime.now(),
             ))
         .value;
     await c.read(activeProfileSwitcherProvider).select(kid.id);
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: c,
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: Scaffold(body: screen == null ? const HomeScreen() : SingleChildScrollView(child: screen(kid))),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: c,
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: Scaffold(body: screen == null ? const HomeScreen() : SingleChildScrollView(child: screen(kid))),
+          ),
         ),
       ),
-    ));
+    );
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
     await settle(tester);
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
@@ -112,8 +126,10 @@ void main() {
     expect(find.text(h.member_ci_cta(state.gender, name)), findsOneWidget);
     expect(find.text(h.hero_time), findsNothing);
 
-    expect(tester.widgetList<HomeSectionHead>(find.byType(HomeSectionHead)).map((w) => w.title),
-        [state.strings.checkin.latest, state.strings.common.recent]);
+    expect(
+      tester.widgetList<HomeSectionHead>(find.byType(HomeSectionHead)).map((w) => w.title),
+      [state.strings.checkin.latest, state.strings.common.recent],
+    );
     expect(find.text(state.strings.profile.m_weight), findsOneWidget);
     expect(find.text(h.m_height), findsOneWidget);
     expect(find.text(state.strings.profile.m_bp), findsNothing, reason: "a child's readings start with weight");
@@ -140,8 +156,10 @@ void main() {
     final f = state.strings.family;
     expect(find.text(state.strings.profile.m_bp), findsOneWidget);
     expect(find.text(h.member_ci_note(state.gender, elder.shortName)), findsOneWidget);
-    expect(shortcutLabels(tester),
-        [f.tile_card, f.tile_medical, h.sc_records, f.tile_meds, f.tile_trends, h.sc_full_profile]);
+    expect(
+      shortcutLabels(tester),
+      [f.tile_card, f.tile_medical, h.sc_records, f.tile_meds, f.tile_trends, h.sc_full_profile],
+    );
   });
 
   testWidgets("an adult's \"Log for {name}\" opens the full check-in", (tester) async {

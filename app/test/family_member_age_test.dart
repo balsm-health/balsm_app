@@ -12,7 +12,7 @@ void main() {
         id: 'fam_test',
         name: 'Test',
         relation: 'Sibling',
-        color: T.hueAqua,
+        color: AppColors.hueAqua,
         dob: dob,
       );
 
@@ -52,8 +52,7 @@ void main() {
   });
 
   test('birth date is optional', () {
-    final s = PatientAppState();
-    s.addFamilyMember(name: 'Sam', relation: 'Sibling');
+    final s = PatientAppState()..addFamilyMember(name: 'Sam', relation: 'Sibling');
     expect(s.extraFamily.single.dob, isNull);
     expect(s.extraFamily.single.age, isNull);
   });

@@ -22,6 +22,8 @@ import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/flag_overrides.dart';
+
 /// Mother & Child stage 4: the pregnancy tracker on the account holder's own
 /// profile, its babies as prenatal profiles, and birth keeping the baby's
 /// profile id. Every name and value here is invented by the test.
@@ -38,7 +40,7 @@ void main() {
   tearDown(() => db.close());
 
   PatientAppState state() {
-    final flags = FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true);
+    final flags = flagsWith({AppFlags.motherChild: true});
     return PatientAppState()..attachFlags(flags);
   }
 
@@ -55,34 +57,41 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    final container = ProviderContainer(overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      currentUserIdProvider.overrideWithValue(user),
-      globalKVDataSourceProvider.overrideWithValue(kv),
-      familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
-      pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
-      // No guidance content (the fake answers 404): the card stays out.
-      contentApiProvider.overrideWithValue(FakeContentApi()),
-      pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource),
-      accountSummaryProvider.overrideWith((ref) async => const AccountSummary(
+    final container = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        currentUserIdProvider.overrideWithValue(user),
+        globalKVDataSourceProvider.overrideWithValue(kv),
+        familyMembersPortProvider.overrideWith(profileFamilyMembersPort),
+        pregnancyBabiesPortProvider.overrideWith(profilePregnancyBabiesPort),
+        // No guidance content (the fake answers 404): the card stays out.
+        contentApiProvider.overrideWithValue(FakeContentApi()),
+        pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource),
+        accountSummaryProvider.overrideWith(
+          (ref) async => const AccountSummary(
             id: user,
             displayName: 'Test Mother',
             countryCode: 'EG',
             preferredLanguage: 'en',
             deletionState: 'ACTIVE',
-          )),
-    ]);
+          ),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: s.dir, child: child!),
-          home: Scaffold(body: screen),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: s.dir, child: child!),
+            home: Scaffold(body: screen),
+          ),
         ),
       ),
-    ));
+    );
     settle ? await tester.pumpAndSettle() : await frames(tester);
     return container;
   }
@@ -127,7 +136,12 @@ void main() {
 
       final born = await port.recordBirth(
         BirthDetails(
-            babyId: a.id, name: 'Test Baby', sex: Sex.female, dateOfBirth: now, bloodType: BloodType.oPositive),
+          babyId: a.id,
+          name: 'Test Baby',
+          sex: Sex.female,
+          dateOfBirth: now,
+          bloodType: BloodType.oPositive,
+        ),
         now: now,
       );
       expect(born.isSuccess, isTrue);
@@ -140,10 +154,11 @@ void main() {
       expect(MemberTone.tryFromWire(child.tone), isNotNull);
       expect((await port.listBabies(preg)).first.status, BabyStatus.born);
       expect(
-          (await port.recordBirth(BirthDetails(babyId: b.id, name: 'x', sex: Sex.male, dateOfBirth: now), now: now))
-              .error,
-          isA<NotFoundFailure>(),
-          reason: 'a baby no longer followed is not born');
+        (await port.recordBirth(BirthDetails(babyId: b.id, name: 'x', sex: Sex.male, dateOfBirth: now), now: now))
+            .error,
+        isA<NotFoundFailure>(),
+        reason: 'a baby no longer followed is not born',
+      );
     });
   });
 
@@ -151,9 +166,9 @@ void main() {
     test('counts down, says due today, then counts the days past', () {
       final s = state();
       final p = s.strings.pregnancy;
-      final due = DateTime(2026, 10, 1);
+      final due = DateTime(2026, 10);
       expect(dueLine(s, PregnancyInfo.on(due, DateTime(2026, 9, 29))), p.days_to_go(2));
-      expect(dueLine(s, PregnancyInfo.on(due, DateTime(2026, 10, 1))), p.due_today);
+      expect(dueLine(s, PregnancyInfo.on(due, DateTime(2026, 10))), p.due_today);
       expect(dueLine(s, PregnancyInfo.on(due, DateTime(2026, 10, 4))), p.days_past_due(3));
     });
   });
@@ -317,11 +332,14 @@ void main() {
   });
 
   group("A family member's pregnancy", () {
-    Future<FamilyMember> member(ProviderContainer c,
-        {Relationship rel = Relationship.child, Sex sex = Sex.female}) async {
+    Future<FamilyMember> member(
+      ProviderContainer c, {
+      Relationship rel = Relationship.child,
+      Sex sex = Sex.female,
+    }) async {
       await c.read(selfProfileIdProvider.future);
       final r = await c.read(saveFamilyMemberUseCaseProvider).add(
-            MemberDraft(displayName: 'Test Daughter', relationship: rel, dateOfBirth: DateTime(1998, 4, 1), sex: sex),
+            MemberDraft(displayName: 'Test Daughter', relationship: rel, dateOfBirth: DateTime(1998, 4), sex: sex),
             userId: user,
             now: DateTime.now(),
           );
@@ -339,7 +357,7 @@ void main() {
       return r.value;
     }
 
-    testWidgets('her member screen offers pregnancy tracking; a man\'s does not', (tester) async {
+    testWidgets("her member screen offers pregnancy tracking; a man's does not", (tester) async {
       final s = state();
       final c = await pump(tester, const SizedBox(), s);
       final her = await member(c);
@@ -353,7 +371,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1));
     });
 
-    testWidgets('is stored on her profile and shown with her name, never as the account holder\'s', (tester) async {
+    testWidgets("is stored on her profile and shown with her name, never as the account holder's", (tester) async {
       final s = state();
       final p = s.strings.pregnancy;
       final c = await pump(tester, const SizedBox(), s);

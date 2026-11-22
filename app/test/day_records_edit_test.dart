@@ -1,10 +1,10 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
+import 'package:app/balsm_app/screens/checkin_shared.dart';
 import 'package:app/balsm_app/screens/day_records_screen.dart';
 import 'package:app/balsm_app/screens/metric_log.dart';
 import 'package:app/balsm_app/vault/memory_file_store.dart';
 import 'package:app/balsm_app/widgets/num_pad.dart';
-import 'package:app/balsm_app/screens/checkin_shared.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,20 +45,23 @@ void main() {
     tester.view.physicalSize = const Size(402, 874);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
-        checkInsDataSourceProvider.overrideWithValue(ds),
-      ],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: DayRecordsScreen(checkIns: [entry]),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          userFileStoreProvider.overrideWithValue(MemoryUserFileStore()),
+          checkInsDataSourceProvider.overrideWithValue(ds),
+        ],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: DayRecordsScreen(checkIns: [entry]),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (state, ds);
   }
@@ -106,8 +109,11 @@ void main() {
 
   testWidgets('the ⋮ menu offers Edit above Delete', (tester) async {
     final (s, _) = await pump(tester, checkIn(mood: Mood.low));
-    await tester.tap(find.byWidgetPredicate(
-        (w) => w is RoundBtn && w.semanticLabel == s.strings.common.del_options(s.strings.profile.m_mood)));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) => w is RoundBtn && w.semanticLabel == s.strings.common.del_options(s.strings.profile.m_mood),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text(s.strings.checkin.rec_delete), findsOne);
     await tester.tap(find.text(s.strings.common.a11y_edit));
