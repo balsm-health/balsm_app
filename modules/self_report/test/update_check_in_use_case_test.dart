@@ -22,7 +22,7 @@ void main() {
         recordedAt: DateTime.utc(2026, 7, 24, 9),
         mood: Mood.good,
         painLevel: const PainLevel(5),
-        painSites: {PainSite(Muscle.chest)},
+        painSites: {const PainSite(Muscle.chest)},
         symptoms: {SymptomId.headache},
         vitals: const Vitals(systolic: 118, diastolic: 76, glucoseFasting: 95),
       );
@@ -72,7 +72,7 @@ void main() {
     final addedByFamily =
         ProvenanceEvent(id: 'p1', actor: family, action: ProvenanceAction.added, at: DateTime.utc(2026, 7, 24, 9));
 
-    test('removing a reading from a check-in someone else added appends the patient\'s edit', () async {
+    test("removing a reading from a check-in someone else added appends the patient's edit", () async {
       final c = entry('chk-1').withHistory(EntryHistory([addedByFamily]));
       await ds.put(c.id, c);
       final stamped = UpdateCheckInUseCase(dao: ds, clock: () => DateTime.utc(2026, 7, 25));
@@ -86,12 +86,12 @@ void main() {
       expect(got.history.events.last.actor.isSelf, isTrue);
     });
 
-    test('without() keeps the check-in\'s history', () {
+    test("without() keeps the check-in's history", () {
       final c = entry('chk-1').withHistory(EntryHistory([addedByFamily]));
       expect(c.without(CheckInMetric.mood).history, c.history);
     });
 
-    test('the patient\'s own check-in stays without history when edited', () async {
+    test("the patient's own check-in stays without history when edited", () async {
       final c = entry('chk-1');
       await ds.put(c.id, c);
       await update(c.without(CheckInMetric.bloodPressure));

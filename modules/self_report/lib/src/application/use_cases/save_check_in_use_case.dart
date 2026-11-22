@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/check_in.dart';
 import '../../domain/events/check_in_saved.dart';
-import '../ports/check_ins_data_source.dart';
 import '../../infrastructure/drift/drift_check_ins_data_source.dart';
+import '../ports/check_ins_data_source.dart';
 
 /// Persists a self-report check-in on-device and announces it.
 ///
@@ -20,10 +20,12 @@ class SaveCheckInUseCase {
 
   Future<void> call(CheckIn checkIn) async {
     await dao.put(checkIn.id, checkIn);
-    bus.publish(CheckInSaved(
-      checkInId: checkIn.id,
-      occurredAt: DateTime.now(),
-    ));
+    bus.publish(
+      CheckInSaved(
+        checkInId: checkIn.id,
+        occurredAt: DateTime.now(),
+      ),
+    );
   }
 }
 

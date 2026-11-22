@@ -1,9 +1,10 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/src/providers/stream_provider.dart';
 
 import '../../domain/aggregates/check_in.dart';
-import '../ports/check_ins_data_source.dart';
 import '../../infrastructure/drift/drift_check_ins_data_source.dart';
+import '../ports/check_ins_data_source.dart';
 
 /// Reads the active profile's check-in history, newest first.
 class ListCheckInsUseCase {
@@ -31,9 +32,10 @@ final checkInHistoryProvider = StreamProvider<List<CheckIn>>((ref) {
   return ref.watch(listCheckInsUseCaseProvider).watch();
 });
 
-/// Person [profileId]'s check-in history, newest first, live. Empty while
+/// Person `profileId`'s check-in history, newest first, live. Empty while
 /// signed out.
-final profileCheckInsProvider = StreamProvider.autoDispose.family<List<CheckIn>, HealthProfileId>((ref, profileId) {
+final StreamProviderFamily<List<CheckIn>, HealthProfileId> profileCheckInsProvider =
+    StreamProvider.autoDispose.family<List<CheckIn>, HealthProfileId>((ref, profileId) {
   if (ref.watch(currentUserIdProvider) == null) return Stream.value(const <CheckIn>[]);
   return ref.watch(listCheckInsUseCaseProvider).watchFor(profileId);
 });

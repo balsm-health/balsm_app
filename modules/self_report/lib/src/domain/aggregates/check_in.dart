@@ -1,10 +1,10 @@
 import 'package:core/core.dart';
 
 import '../value_objects/check_in_metric.dart';
-import '../value_objects/pain_site.dart';
 import '../value_objects/ids.dart';
 import '../value_objects/mood.dart';
 import '../value_objects/pain_level.dart';
+import '../value_objects/pain_site.dart';
 import '../value_objects/symptom.dart';
 import '../value_objects/symptom_detail.dart';
 import '../value_objects/vitals.dart';
@@ -22,12 +22,12 @@ class CheckIn {
     required this.id,
     required this.healthProfileId,
     required this.recordedAt,
-    this.mood,
     required this.painLevel,
     required this.painSites,
     required this.symptoms,
-    this.symptomDetails = const {},
     required this.vitals,
+    this.mood,
+    this.symptomDetails = const {},
     this.note,
     this.photoRecordId,
     this.history = EntryHistory.none,
@@ -137,7 +137,10 @@ class CheckIn {
       vitals = rest.copyWith(systolic: f.systolic, diastolic: f.diastolic);
     } else if (metric == CheckInMetric.glucose) {
       vitals = rest.copyWith(
-          glucoseFasting: f.glucoseFasting, glucosePostMeal: f.glucosePostMeal, glucoseRandom: f.glucoseRandom);
+        glucoseFasting: f.glucoseFasting,
+        glucosePostMeal: f.glucosePostMeal,
+        glucoseRandom: f.glucoseRandom,
+      );
     } else if (metric == CheckInMetric.spo2) {
       vitals = rest.copyWith(spo2: f.spo2);
     } else if (metric == CheckInMetric.heartRate) {

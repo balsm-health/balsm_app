@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/check_in.dart';
-import '../ports/check_ins_data_source.dart';
 import '../../infrastructure/drift/drift_check_ins_data_source.dart';
+import '../ports/check_ins_data_source.dart';
 
 /// Stores the patient's edit of one of their own check-ins, such as a reading
 /// removed from the day screen ([CheckIn.without]). A check-in left with
