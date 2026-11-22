@@ -20,7 +20,8 @@ import 'metric_log.dart';
 import 'quick_log.dart' show MemberLogBanner;
 import '../maintenance/maintenance_guard.dart';
 
-export 'checkin_shared.dart' show CheckInSteps, MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
+export 'checkin_shared.dart'
+    show CheckInSteps, MoodCell, genderForSex, moodColors, painInfo, symptomIcons, symptomLabel;
 
 /// Opens the full daily check-in flow (report.jsx ReportFlow).
 ///
@@ -496,7 +497,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         if (_member case final m?)
           _title(s.strings.checkin.m_q_med_t(m.shortName), s.strings.checkin.m_q_med_h(s.gender, m.shortName))
         else
-          _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h(s.gender)),
+          _title(s.strings.checkin.q_med_t(s.gender), s.strings.checkin.q_med_h(s.gender)),
         ..._meds.map(_medCheck),
       ]);
     }
@@ -511,6 +512,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         metric: metric,
         s: s,
         host: MetricLogHost.embedded,
+        subject: _member == null ? null : genderForSex(_member!.sex),
         onChanged: (capture, {required valid}) => _onCapture(id, capture, valid: valid),
         // `SkipRow` sits between the field card and the date/time group
         // (report.jsx), so it threads through the metric's own chrome.

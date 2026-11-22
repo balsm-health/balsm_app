@@ -221,7 +221,7 @@
     "glu_fast": "صائمة",
     "glu_meal": "بعد الأكل",
     "glu_random": "عشوائي",
-    "q_med_t": "هل أخذتِ أدويتك؟",
+    "q_med_t(Gender gender)": "هل أخذت${_select(gender, female: 'ِ', other: '')} أدويتك؟",
     "q_med_h(Gender gender)": "اضغط${_select(gender, female: 'ي', other: '')} على كل دواء ${_select(gender, female: 'أخذتِه', other: 'أخذته')} اليوم.",
     "q_sym_t": "هل لديك ألم أو أعراض؟",
     "pain_0": "لا ألم",

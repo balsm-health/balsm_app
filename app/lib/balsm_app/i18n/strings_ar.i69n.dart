@@ -842,7 +842,8 @@ class CheckinStrings_ar extends CheckinStrings {
   String get glu_fast => "صائمة";
   String get glu_meal => "بعد الأكل";
   String get glu_random => "عشوائي";
-  String get q_med_t => "هل أخذتِ أدويتك؟";
+  String q_med_t(Gender gender) =>
+      "هل أخذت${_select(gender, {'female': 'ِ', 'other': ''})} أدويتك؟";
   String q_med_h(Gender gender) => "اضغط${_select(gender, {
             'female': 'ي',
             'other': ''

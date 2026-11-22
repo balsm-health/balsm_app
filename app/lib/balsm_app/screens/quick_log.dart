@@ -608,6 +608,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         focusedSymptom: activeSymptom,
         s: s,
         host: MetricLogHost.standalone,
+        subject: _subject,
         initial: initial,
         onChanged: _onChanged,
         onSave: _save,
@@ -619,6 +620,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
         metric: _catalogMetric(active!),
         s: s,
         host: MetricLogHost.standalone,
+        subject: _subject,
         initial: initial,
         onChanged: _onChanged,
         onSave: _save,
@@ -626,6 +628,14 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
       );
     }
     return _menu();
+  }
+
+  /// Gender of the active family member (null for you), for copy that
+  /// describes them.
+  Gender? get _subject {
+    if (!s.flags.isOn(AppFlags.motherChild)) return null;
+    final m = ref.read(activeFamilyMemberProvider);
+    return m == null ? null : genderForSex(m.sex);
   }
 
   /// The active profile is a family member under 18 (`FamilyMember.isChildOn`,

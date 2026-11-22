@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -124,9 +125,14 @@ class MetricLog extends StatelessWidget {
     this.focusedSymptom,
     this.belowField,
     this.initial,
+    this.subject,
   });
 
   final CheckInMetric metric;
+
+  /// Gender of the family member being logged for (from their [Sex]); null
+  /// for the account holder. Copy that describes that person follows it.
+  final Gender? subject;
   final PatientAppState s;
   final MetricLogHost host;
   final MetricLogSave? onSave;
@@ -166,7 +172,8 @@ class MetricLog extends StatelessWidget {
           onSave: onSave,
           onCancel: onCancel,
           onChanged: onChanged,
-          initial: initial);
+          initial: initial,
+          subject: subject);
     }
     if (metric == CheckInMetric.bloodPressure) {
       return _BpLog(
@@ -466,8 +473,16 @@ String? _trimmedNote(TextEditingController c) {
 
 class _MoodLog extends StatefulWidget {
   const _MoodLog(
-      {required this.s, required this.host, this.onSave, this.onCancel, this.onChanged, this.belowField, this.initial});
+      {required this.s,
+      required this.host,
+      this.onSave,
+      this.onCancel,
+      this.onChanged,
+      this.belowField,
+      this.initial,
+      this.subject});
   final PatientAppState s;
+  final Gender? subject;
   final Widget? belowField;
   final MetricLogHost host;
   final MetricLogSave? onSave;
@@ -505,7 +520,7 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
 
   @override
   MetricLogCapture get capture => MetricLogCapture(
-        summary: mood > 0 ? moodLabel(s, mood) : '',
+        summary: mood > 0 ? moodLabel(s, mood, subject: widget.subject) : '',
         note: _trimmedNote(noteCtrl),
         mood: mood > 0 ? Mood(mood) : null,
         when: when,
@@ -530,6 +545,7 @@ class _MoodLogState extends State<_MoodLog> with _MetricLogState {
                   lv: i + 1,
                   selected: mood == i + 1,
                   s: s,
+                  subject: widget.subject,
                   onTap: () => setState(() {
                         mood = i + 1;
                         emit();

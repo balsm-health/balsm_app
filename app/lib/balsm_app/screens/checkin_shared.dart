@@ -1,3 +1,4 @@
+import 'package:core/core.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:self_report/self_report.dart';
@@ -33,13 +34,26 @@ const symptomIcons = <(SymptomId, IconData)>[
   (SymptomId.stool, LucideIcons.toilet),
 ];
 
-String moodLabel(PatientAppState s, int lv) => switch (lv) {
-      1 => s.strings.checkin.mood_1(s.gender),
-      2 => s.strings.checkin.mood_2(s.gender),
-      3 => s.strings.checkin.mood_3(s.gender),
-      4 => s.strings.checkin.mood_4(s.gender),
-      _ => s.strings.checkin.mood_5(s.gender),
+/// The grammatical gender for copy that describes a family member: their
+/// recorded [Sex]; unknown sex takes the masculine (`other`) form.
+Gender genderForSex(Sex? sex) => switch (sex) {
+      Sex.female => Gender.female,
+      Sex.male => Gender.male,
+      null => Gender.other,
     };
+
+/// The mood word for [lv], gendered for the person it describes: [subject]
+/// when logging for a family member, otherwise the account holder.
+String moodLabel(PatientAppState s, int lv, {Gender? subject}) {
+  final g = subject ?? s.gender;
+  return switch (lv) {
+    1 => s.strings.checkin.mood_1(g),
+    2 => s.strings.checkin.mood_2(g),
+    3 => s.strings.checkin.mood_3(g),
+    4 => s.strings.checkin.mood_4(g),
+    _ => s.strings.checkin.mood_5(g),
+  };
+}
 
 String symptomLabel(PatientAppState s, SymptomId id) {
   final c = s.strings.checkin;
@@ -87,8 +101,12 @@ String urineColorLabel(PatientAppState s, UrineColor colour) {
 /// One of the five mood faces (`.mood` cell) — shared by the full check-in
 /// and the one-metric log templates.
 class MoodCell extends StatelessWidget {
-  const MoodCell({super.key, required this.lv, required this.selected, required this.s, required this.onTap});
+  const MoodCell(
+      {super.key, required this.lv, required this.selected, required this.s, required this.onTap, this.subject});
   final int lv;
+
+  /// Gender of the person being logged for, when it is a family member.
+  final Gender? subject;
   final bool selected;
   final PatientAppState s;
   final VoidCallback onTap;
@@ -115,7 +133,7 @@ class MoodCell extends StatelessWidget {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 MoodFace(level: lv, size: 34, color: selected ? moodColors[lv - 1] : T.ink400),
                 const SizedBox(height: 8),
-                Text(moodLabel(s, lv),
+                Text(moodLabel(s, lv, subject: subject),
                     maxLines: 1,
                     style: Typo.meta(ar: s.rtl)
                         .copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg3)),

@@ -220,7 +220,7 @@
     "glu_fast": "Fasting",
     "glu_meal": "After a meal",
     "glu_random": "Random",
-    "q_med_t": "Did you take your medications?",
+    "q_med_t(Gender gender)": "Did you take your medications?",
     "q_med_h(Gender gender)": "Tap each one you've taken today.",
     "q_sym_t": "Any pain or symptoms?",
     "pain_0": "No pain",

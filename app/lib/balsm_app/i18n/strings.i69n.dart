@@ -785,7 +785,7 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String get glu_fast => "Fasting";
   String get glu_meal => "After a meal";
   String get glu_random => "Random";
-  String get q_med_t => "Did you take your medications?";
+  String q_med_t(Gender gender) => "Did you take your medications?";
   String q_med_h(Gender gender) => "Tap each one you've taken today.";
   String get q_sym_t => "Any pain or symptoms?";
   String get pain_0 => "No pain";
