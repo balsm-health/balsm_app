@@ -36,13 +36,15 @@ class MemberGroup {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return AppResult.failure(const ValidationFailure('groupNameRequired'));
     if (trimmed.length > maxNameLength) return AppResult.failure(const ValidationFailure('groupNameTooLong'));
-    return AppResult.success(MemberGroup(
-      id: id ?? MemberGroupId.uuid(),
-      userId: userId,
-      sort: afterSort + 1,
-      createdAt: now,
-      name: trimmed,
-    ));
+    return AppResult.success(
+      MemberGroup(
+        id: id ?? MemberGroupId.uuid(),
+        userId: userId,
+        sort: afterSort + 1,
+        createdAt: now,
+        name: trimmed,
+      ),
+    );
   }
 
   final MemberGroupId id;

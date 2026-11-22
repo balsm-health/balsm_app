@@ -49,7 +49,8 @@ class FamilyMember {
   }
 
   /// Age on [now]; null without a date of birth.
-  MemberAge? ageOn(DateTime now) => dateOfBirth == null ? null : MemberAge.between(dateOfBirth!, now);
+  MemberAge? ageOn(DateTime now) =>
+      switch (dateOfBirth) { final dateOfBirth? => MemberAge.between(dateOfBirth, now), _ => null };
 
   /// Under 18 on [now] — the tiles only a child gets (vaccinations, growth)
   /// key off this. Unknown age is not a child.
@@ -59,7 +60,7 @@ class FamilyMember {
   }
 
   /// Ages between which pregnancy tracking is offered for a member.
-  static const pregnancyAgeYears = (min: 14, max: 55);
+  static const ({int max, int min}) pregnancyAgeYears = (min: 14, max: 55);
 
   /// Whether pregnancy can be tracked on this profile on [now]
   /// (mother-child.jsx `mcCanPreg`): a woman of childbearing age whose

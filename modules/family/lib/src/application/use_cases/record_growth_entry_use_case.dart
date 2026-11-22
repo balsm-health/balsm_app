@@ -3,7 +3,7 @@ import 'package:core/core.dart';
 import '../../domain/aggregates/growth_entry.dart';
 import '../ports/growth_log_data_source.dart';
 
-/// Adds a measurement for [profileId] (null = the active profile) from the
+/// Adds a measurement for `profileId` (null = the active profile) from the
 /// growth form. A [ValidationFailure] lists the broken rules; a profile the
 /// signed-in account does not hold, or one that is closed, is a
 /// [StorageFailure].
