@@ -5,7 +5,7 @@ import '../ports/pregnancies_data_source.dart';
 import '../ports/pregnancy_babies_port.dart';
 
 /// Starts tracking a pregnancy on the mother's own profile (design
-/// `MCPregStartScreen`) with [babyCount] babies, each its own prenatal
+/// `MCPregStartScreen`) with `babyCount` babies, each its own prenatal
 /// profile ("Baby", or "Baby A", "Baby B"…). Refused while another pregnancy
 /// is being tracked on that profile.
 class StartPregnancyUseCase {

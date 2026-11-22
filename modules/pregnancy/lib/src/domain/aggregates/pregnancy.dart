@@ -37,7 +37,7 @@ class Pregnancy {
   static const maxTextLength = 80;
 
   /// The furthest a due date can be: a last period beginning today.
-  static const maxDaysAhead = PregnancyDates.termDays;
+  static const int maxDaysAhead = PregnancyDates.termDays;
 
   /// The longest a due date may already have passed when tracking starts.
   static const maxDaysPast = 42;
