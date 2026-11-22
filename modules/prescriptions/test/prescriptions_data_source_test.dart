@@ -22,15 +22,15 @@ void main() {
           PrescribedItem(name: 'Metformin', dose: '500mg · twice daily'),
           PrescribedItem(name: 'Atorvastatin'),
         ],
-        issuedAt: DateTime.utc(2026, 8, 1),
+        issuedAt: DateTime.utc(2026, 8),
         validUntil: until,
-        createdAt: DateTime.utc(2026, 8, 1),
+        createdAt: DateTime.utc(2026, 8),
       );
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     self = await db.ensureSelfHealthProfile(user);
-    await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) "
+    await db.customStatement('INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) '
         "VALUES ('${child.value}', '${user.value}', 0, 'dependent', 0)");
     active = self;
     ds = DriftPrescriptionsDataSource(db, () => active);
@@ -38,7 +38,7 @@ void main() {
   tearDown(() => db.close());
 
   test('items round-trip through the json column', () async {
-    final rx = sample('r1', until: DateTime.utc(2026, 12, 1));
+    final rx = sample('r1', until: DateTime.utc(2026, 12));
     await ds.put(rx.id, rx);
 
     final got = await ds.find(rx.id);
@@ -49,7 +49,7 @@ void main() {
     // A line with no dose keeps a null rather than an empty string.
     expect(got.items.last.dose, isNull);
     expect(got.reference, 'RX-4821-QQ');
-    expect(got.validUntil?.toUtc(), DateTime.utc(2026, 12, 1));
+    expect(got.validUntil?.toUtc(), DateTime.utc(2026, 12));
   });
 
   test('an open-ended script stays active', () {
@@ -57,28 +57,32 @@ void main() {
   });
 
   test('validity drives active/expired', () {
-    final now = DateTime.utc(2026, 9, 1);
-    expect(sample('a', until: DateTime.utc(2026, 12, 1)).isActive(now), isTrue);
-    expect(sample('b', until: DateTime.utc(2026, 1, 1)).isActive(now), isFalse);
+    final now = DateTime.utc(2026, 9);
+    expect(sample('a', until: DateTime.utc(2026, 12)).isActive(now), isTrue);
+    expect(sample('b', until: DateTime.utc(2026)).isActive(now), isFalse);
   });
 
   test('findAll is newest-first and profile-scoped', () async {
     await ds.put(
-        const PrescriptionId.value('old'),
-        Prescription(
-            id: const PrescriptionId.value('old'),
-            userId: user,
-            clinician: 'A',
-            issuedAt: DateTime.utc(2026, 1, 1),
-            createdAt: DateTime.utc(2026, 1, 1)));
+      const PrescriptionId.value('old'),
+      Prescription(
+        id: const PrescriptionId.value('old'),
+        userId: user,
+        clinician: 'A',
+        issuedAt: DateTime.utc(2026),
+        createdAt: DateTime.utc(2026),
+      ),
+    );
     await ds.put(
-        const PrescriptionId.value('new'),
-        Prescription(
-            id: const PrescriptionId.value('new'),
-            userId: user,
-            clinician: 'B',
-            issuedAt: DateTime.utc(2026, 12, 1),
-            createdAt: DateTime.utc(2026, 1, 1)));
+      const PrescriptionId.value('new'),
+      Prescription(
+        id: const PrescriptionId.value('new'),
+        userId: user,
+        clinician: 'B',
+        issuedAt: DateTime.utc(2026, 12),
+        createdAt: DateTime.utc(2026),
+      ),
+    );
 
     expect((await ds.findAll()).map((r) => r.id.value), ['new', 'old']);
     expect(await ds.findAll(scope: child), isEmpty);
@@ -96,7 +100,7 @@ void main() {
     expect((await ds.find(const PrescriptionId.value('kid')))!.userId, user);
   });
 
-  test('put refuses a profile the prescription\'s account does not own', () async {
+  test("put refuses a profile the prescription's account does not own", () async {
     final other = await db.ensureSelfHealthProfile(const UserId.value('u-2'));
     active = other;
     expect(() => ds.put(const PrescriptionId.value('x'), sample('x')), throwsA(isA<StorageWriteException>()));
@@ -112,8 +116,8 @@ void main() {
       attachmentPath: 'u-1/rx.jpg.enc',
       attachmentKind: 'image',
       items: const [PrescribedItem(name: 'Amoxicillin', dose: '500 mg · One time', notes: 'with food')],
-      issuedAt: DateTime.utc(2026, 9, 1),
-      createdAt: DateTime.utc(2026, 9, 1),
+      issuedAt: DateTime.utc(2026, 9),
+      createdAt: DateTime.utc(2026, 9),
     );
     await ds.put(rx.id, rx);
     final got = await ds.find(rx.id);
