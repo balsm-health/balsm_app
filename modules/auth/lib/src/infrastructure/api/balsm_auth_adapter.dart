@@ -2,6 +2,7 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart'; // for authApiProvider; core does NOT re-export AuthApi, so no clash
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../i18n/strings.dart';
 import 'auth_exception.dart';
 
 /// ({String accessToken, String refreshToken, String userId, bool isNewUser})
@@ -39,10 +40,12 @@ class BalsmAuthAdapter {
     required OtpPurpose purpose,
     CancelToken? cancelToken,
   }) =>
-      _guard(() => _api.requestOtp(
-            RequestOtpRequest(email: email, countryCode: countryCode, purpose: purpose, language: _language?.call()),
-            cancelToken: cancelToken,
-          ));
+      _guard(
+        () => _api.requestOtp(
+          RequestOtpRequest(email: email, countryCode: countryCode, purpose: purpose, language: _language?.call()),
+          cancelToken: cancelToken,
+        ),
+      );
 
   /// POST /auth/otp/verify
   Future<AuthTokens> verifyOtp(
@@ -52,7 +55,9 @@ class BalsmAuthAdapter {
     String deviceLabel, {
     CancelToken? cancelToken,
   }) =>
-      _guard(() async => _toAuthTokens(await _api.verifyOtp(
+      _guard(
+        () async => _toAuthTokens(
+          await _api.verifyOtp(
             VerifyOtpRequest(
               email: email,
               code: code,
@@ -60,7 +65,9 @@ class BalsmAuthAdapter {
               deviceLabel: deviceLabel,
             ),
             cancelToken: cancelToken,
-          )));
+          ),
+        ),
+      );
 
   /// POST /auth/otp/verify for a device-only account going online. Returns
   /// whether the server kept the device's id.
@@ -93,14 +100,18 @@ class BalsmAuthAdapter {
     String deviceLabel, {
     CancelToken? cancelToken,
   }) =>
-      _guard(() async => _toAuthTokens(await _api.verifyLink(
+      _guard(
+        () async => _toAuthTokens(
+          await _api.verifyLink(
             VerifyLinkRequest(
               token: token,
               deviceId: deviceId,
               deviceLabel: deviceLabel,
             ),
             cancelToken: cancelToken,
-          )));
+          ),
+        ),
+      );
 
   /// POST /auth/google
   Future<AuthTokens> signInWithGoogle(
@@ -110,7 +121,9 @@ class BalsmAuthAdapter {
     String countryCode, {
     CancelToken? cancelToken,
   }) =>
-      _guard(() async => _toAuthTokens(await _api.signInWithGoogle(
+      _guard(
+        () async => _toAuthTokens(
+          await _api.signInWithGoogle(
             GoogleSignInRequest(
               idToken: idToken,
               deviceId: deviceId,
@@ -118,7 +131,9 @@ class BalsmAuthAdapter {
               countryCode: countryCode,
             ),
             cancelToken: cancelToken,
-          )));
+          ),
+        ),
+      );
 
   /// POST /auth/apple
   Future<AuthTokens> signInWithApple(
@@ -129,7 +144,9 @@ class BalsmAuthAdapter {
     String countryCode, {
     CancelToken? cancelToken,
   }) =>
-      _guard(() async => _toAuthTokens(await _api.signInWithApple(
+      _guard(
+        () async => _toAuthTokens(
+          await _api.signInWithApple(
             AppleSignInRequest(
               idToken: idToken,
               authorizationCode: authCode,
@@ -138,7 +155,9 @@ class BalsmAuthAdapter {
               countryCode: countryCode,
             ),
             cancelToken: cancelToken,
-          )));
+          ),
+        ),
+      );
 
   /// POST /auth/sign-out
   Future<void> signOut({CancelToken? cancelToken}) => _guard(() => _api.signOut(cancelToken: cancelToken));
@@ -181,7 +200,9 @@ class BalsmAuthAdapter {
     String deviceLabel, {
     CancelToken? cancelToken,
   }) =>
-      _guard(() async => _toAuthTokens(await _api.passwordSignIn(
+      _guard(
+        () async => _toAuthTokens(
+          await _api.passwordSignIn(
             PasswordSignInRequest(
               email: email,
               password: password,
@@ -189,13 +210,17 @@ class BalsmAuthAdapter {
               deviceLabel: deviceLabel,
             ),
             cancelToken: cancelToken,
-          )));
+          ),
+        ),
+      );
 
   /// POST /auth/password — set/change the signed-in user's password.
-  Future<void> setPassword(String password, {CancelToken? cancelToken}) => _guard(() => _api.setPassword(
-        SetPasswordRequest(password: password),
-        cancelToken: cancelToken,
-      ));
+  Future<void> setPassword(String password, {CancelToken? cancelToken}) => _guard(
+        () => _api.setPassword(
+          SetPasswordRequest(password: password),
+          cancelToken: cancelToken,
+        ),
+      );
 
   /// POST /auth/password/reset
   Future<void> resetPassword(
@@ -204,10 +229,12 @@ class BalsmAuthAdapter {
     String newPassword, {
     CancelToken? cancelToken,
   }) =>
-      _guard(() => _api.resetPassword(
-            ResetPasswordRequest(email: email, code: code, newPassword: newPassword),
-            cancelToken: cancelToken,
-          ));
+      _guard(
+        () => _api.resetPassword(
+          ResetPasswordRequest(email: email, code: code, newPassword: newPassword),
+          cancelToken: cancelToken,
+        ),
+      );
 
   // ── Internals ─────────────────────────────────────────────────────────────
 
@@ -231,27 +258,32 @@ class BalsmAuthAdapter {
       final retryAfter = e.retryAfterSeconds ?? 60;
       return AuthException(
         code: 'account_locked',
-        message: 'Account temporarily locked. Try again in $retryAfter seconds.',
+        message: authStrings.current.errorLockedFor(retryAfter),
       );
     }
     // Use generic message; never echo server text (may contain PII).
     return AuthException(code: e.code, message: _messageFromCode(e.code));
   }
 
-  String _messageFromCode(String code) => switch (code) {
-        'invalid_request' => 'The request was invalid. Please check your input.',
-        'unauthorized' => 'Authentication required. Please sign in again.',
-        'forbidden' => 'Access denied.',
-        'not_found' => 'The requested resource was not found.',
-        'conflict' => 'A conflict occurred. This account may already exist.',
-        'validation_error' => 'Validation failed. Please check your input.',
-        'account_locked' => 'Account temporarily locked. Please try again later.',
-        'rate_limited' => 'Too many requests. Please wait before trying again.',
-        'server_error' => 'A server error occurred. Please try again later.',
-        'otp_expired' => 'The verification code has expired. Please request a new one.',
-        'otp_invalid' => 'Incorrect verification code.',
-        _ => 'An unexpected error occurred. Please try again.',
-      };
+  /// The user-facing message for an API error [code], in the active language. Infrastructure reads the
+  /// module bundle synchronously (`authStrings.current`), as its docs allow outside presentation.
+  String _messageFromCode(String code) {
+    final m = authStrings.current;
+    return switch (code) {
+      'invalid_request' => m.errorInvalidRequest,
+      'unauthorized' => m.errorUnauthorized,
+      'forbidden' => m.errorForbidden,
+      'not_found' => m.errorNotFound,
+      'conflict' => m.errorConflict,
+      'validation_error' => m.errorValidation,
+      'account_locked' => m.errorLocked,
+      'rate_limited' => m.errorRateLimited,
+      'server_error' => m.errorServer,
+      'otp_expired' => m.errorOtpExpired,
+      'otp_invalid' => m.errorOtpInvalid,
+      _ => m.errorUnexpected,
+    };
+  }
 }
 
 // ── Riverpod provider ────────────────────────────────────────────────────────

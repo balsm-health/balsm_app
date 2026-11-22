@@ -35,5 +35,18 @@
     "needHelp": "تحتاج مساعدة؟",
     "contactSupport(String email)": "راسل $email",
     "serviceStatus": "تحقق من حالة الخدمة"
-  }
+  },
+  "errorLockedFor(int seconds)": "الحساب مقفل مؤقتًا. حاول مجددًا بعد $seconds ثانية.",
+  "errorInvalidRequest": "الطلب غير صالح. يرجى التحقق من البيانات المدخلة.",
+  "errorUnauthorized": "يلزم تسجيل الدخول. يرجى تسجيل الدخول مجددًا.",
+  "errorForbidden": "تم رفض الوصول.",
+  "errorNotFound": "لم يتم العثور على المطلوب.",
+  "errorConflict": "حدث تعارض. ربما يكون هذا الحساب موجودًا بالفعل.",
+  "errorValidation": "فشل التحقق. يرجى مراجعة البيانات المدخلة.",
+  "errorLocked": "الحساب مقفل مؤقتًا. يرجى المحاولة لاحقًا.",
+  "errorRateLimited": "طلبات كثيرة جدًا. يرجى الانتظار قبل المحاولة مجددًا.",
+  "errorServer": "حدث خطأ في الخادم. يرجى المحاولة لاحقًا.",
+  "errorOtpExpired": "انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد.",
+  "errorOtpInvalid": "رمز التحقق غير صحيح.",
+  "errorUnexpected": "حدث خطأ غير متوقع. يرجى المحاولة مجددًا."
 }

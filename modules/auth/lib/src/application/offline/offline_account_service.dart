@@ -114,7 +114,7 @@ class OfflineAccountService {
 
   Future<LockedUntil?> lockout() async {
     final st = await _readLockout();
-    if (st.until != null && _now().isBefore(st.until!)) return LockedUntil(st.until!);
+    if (st.until case final until? when _now().isBefore(st.until!)) return LockedUntil(until);
     return null;
   }
 
