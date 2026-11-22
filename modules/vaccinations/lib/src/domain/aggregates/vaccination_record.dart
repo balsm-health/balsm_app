@@ -93,15 +93,17 @@ class VaccinationRecord {
     );
     if (broken.isNotEmpty) return AppResult.failure(ValidationFailure(broken.map((b) => b.name).join(',')));
     final place = clinic?.trim() ?? '';
-    return AppResult.success(VaccinationRecord(
-      id: id ?? VaccinationRecordId.uuid(),
-      vaccine: vaccine.trim(),
-      doseNumber: doseNumber,
-      administeredOn: _day(administeredOn!),
-      clinic: place.isEmpty ? null : place,
-      nextDueOn: nextDueOn == null ? null : _day(nextDueOn),
-      createdAt: now.toUtc(),
-    ));
+    return AppResult.success(
+      VaccinationRecord(
+        id: id ?? VaccinationRecordId.uuid(),
+        vaccine: vaccine.trim(),
+        doseNumber: doseNumber,
+        administeredOn: _day(administeredOn!),
+        clinic: place.isEmpty ? null : place,
+        nextDueOn: nextDueOn == null ? null : _day(nextDueOn),
+        createdAt: now.toUtc(),
+      ),
+    );
   }
 
   /// Groups doses of the same vaccine whatever the spacing or case it was

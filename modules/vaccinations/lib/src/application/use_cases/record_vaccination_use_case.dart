@@ -3,7 +3,7 @@ import 'package:core/core.dart';
 import '../../domain/aggregates/vaccination_record.dart';
 import '../ports/vaccinations_data_source.dart';
 
-/// Records a dose for [profileId] (null = the active profile) from the add
+/// Records a dose for `profileId` (null = the active profile) from the add
 /// form. A [ValidationFailure] lists the broken rules; a profile the
 /// signed-in account does not hold, or one that is closed, is a
 /// [StorageFailure].

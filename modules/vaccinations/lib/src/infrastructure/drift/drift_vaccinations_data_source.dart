@@ -114,7 +114,7 @@ class DriftVaccinationsDataSource extends ProfileDataSource<VaccinationRecordId,
 
   Stream<T> _watch<T>(Future<T> Function() read) => Stream<T>.multi((emitter) async {
         emitter.add(await read());
-        emitter.addStream(_changes.stream.asyncMap((_) => read()));
+        unawaited(emitter.addStream(_changes.stream.asyncMap((_) => read())));
       });
 
   // ── Writes ───────────────────────────────────────────────────────────────
@@ -159,7 +159,7 @@ class DriftVaccinationsDataSource extends ProfileDataSource<VaccinationRecordId,
           Variable.withInt(value.doseNumber),
           Variable.withString(_iso(value.administeredOn)),
           Variable<String>(value.clinic),
-          Variable<String>(value.nextDueOn == null ? null : _iso(value.nextDueOn!)),
+          Variable<String>(switch (value.nextDueOn) { final nextDueOn? => _iso(nextDueOn), _ => null }),
           Variable.withInt(value.createdAt.millisecondsSinceEpoch),
         ],
       );
