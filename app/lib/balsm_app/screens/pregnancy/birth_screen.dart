@@ -122,6 +122,9 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
     final f = s.strings.family;
+    // `_relationship` awaits the family members when Create is tapped. Riverpod 3 pauses a stream provider that
+    // nothing listens to (a `ref.read` does not count), so keep it subscribed while this screen is open.
+    ref.watch(familyMembersProvider);
     final preg = ref.watch(activePregnancyOfProvider(widget.mother));
     if (preg == null) return const Scaffold(backgroundColor: AppColors.white);
     final all = ref.watch(pregnancyBabiesProvider(preg.id)).value ?? const <PregnancyBaby>[];
