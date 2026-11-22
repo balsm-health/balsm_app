@@ -31,7 +31,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     aliceSelf = await db.ensureSelfHealthProfile(alice);
     bobSelf = await db.ensureSelfHealthProfile(bob);
-    await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) "
+    await db.customStatement('INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) '
         "VALUES ('${aliceChild.value}', 'alice', 0, 'dependent', 0)");
     active = aliceSelf;
     ds = DriftRecordsDataSource(db, () => active);
@@ -86,7 +86,7 @@ void main() {
     expect(await ds.findAll(), hasLength(1)); // clear was a real no-op
   });
 
-  test('put rejects a profile the aggregate\'s account does not own', () async {
+  test("put rejects a profile the aggregate's account does not own", () async {
     expect(
       () => ds.put(const RecordDocumentId.value('r9'), doc('r9', bob)),
       throwsA(isA<StorageWriteException>()),
@@ -126,7 +126,7 @@ void main() {
 
   test('corrupt row fails loudly on decode', () async {
     await db.customInsert(
-      "INSERT INTO health_record (id, user_id, health_profile_id, type, title, tags, source, "
+      'INSERT INTO health_record (id, user_id, health_profile_id, type, title, tags, source, '
       "taken_at, created_at) VALUES ('bad', 'alice', '${aliceSelf.value}', 'notatype', 't', '[]', "
       "'self', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')",
     );

@@ -6,8 +6,8 @@ import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/records_data_source.dart';
 import '../ports/records_data_source.dart';
 
-/// Edits a record's own metadata in place: its [title], [type], the date and
-/// time it was [takenAt], and — when given — its [tags].
+/// Edits a record's own metadata in place: its `title`, `type`, the date and
+/// time it was `takenAt`, and — when given — its `tags`.
 ///
 /// Everything else — the attached file, source, result note and when
 /// the entry was first created — is kept from the stored row, so an edit can

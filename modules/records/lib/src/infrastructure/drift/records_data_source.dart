@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:core/core.dart';
-
-import '../../application/ports/records_data_source.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/ports/records_data_source.dart';
 import '../../domain/aggregates/record_document.dart';
 import '../../domain/value_objects/ids.dart';
 
@@ -95,7 +94,7 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
       'ORDER BY taken_at DESC',
       variables: [
         Variable<String>(profile.value),
-        ...ids.map((id) => Variable<String>(id)),
+        ...ids.map(Variable<String>.new),
       ],
     ).get();
     final histories = await _history.historiesOf(profile);
@@ -113,8 +112,10 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
     if (profile == null) return Stream.value(null);
     return Stream<RecordDocument?>.multi((emitter) async {
       emitter.add(await find(key, scope: profile));
-      emitter.addStream(
-        _changes.stream.asyncMap((_) => find(key, scope: profile)),
+      unawaited(
+        emitter.addStream(
+          _changes.stream.asyncMap((_) => find(key, scope: profile)),
+        ),
       );
     });
   }
@@ -125,8 +126,10 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
     if (profile == null) return Stream.value(const []);
     return Stream<List<RecordDocument>>.multi((emitter) async {
       emitter.add(await findAll(scope: profile));
-      emitter.addStream(
-        _changes.stream.asyncMap((_) => findAll(scope: profile)),
+      unawaited(
+        emitter.addStream(
+          _changes.stream.asyncMap((_) => findAll(scope: profile)),
+        ),
       );
     });
   }
@@ -201,7 +204,7 @@ class DriftRecordsDataSource extends ProfileDataSource<RecordDocumentId, RecordD
       'DELETE FROM $_table WHERE health_profile_id = ? AND id IN ($placeholders)',
       variables: [
         Variable<String>(profile.value),
-        ...ids.map((id) => Variable<String>(id)),
+        ...ids.map(Variable<String>.new),
       ],
       updateKind: UpdateKind.delete,
     );
