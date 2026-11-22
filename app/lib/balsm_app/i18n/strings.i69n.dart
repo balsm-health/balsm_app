@@ -883,6 +883,20 @@ class CheckinStrings implements i69n.I69nMessageBundle {
   String q_mood_t(Gender gender) => "How are you feeling today?";
   String q_sym_h(Gender gender) =>
       "Slide to your pain level, then tap anything you feel.";
+  String m_q_mood_t(String name) => "How is $name feeling today?";
+  String m_q_mood_h(Gender gender, String name) =>
+      "Pick the face that fits $name best.";
+  String m_q_bp_t(String name) => "What's $name's blood pressure?";
+  String m_q_glu_t(String name) => "And $name's blood sugar?";
+  String m_q_glu_h(Gender gender) => "Enter the reading from the glucometer.";
+  String m_q_med_t(String name) => "Did $name take their medications?";
+  String m_q_med_h(Gender gender, String name) =>
+      "Tap each one $name has taken today.";
+  String m_q_sym_t(String name) => "Does $name have any pain or symptoms?";
+  String m_q_sym_h(Gender gender, String name) =>
+      "Slide to $name's pain level, then tap anything they feel.";
+  String m_q_vitals_t(String name) => "$name's vitals";
+  String m_saved_t(String name) => "Check-in saved for $name";
   String get sd_color => "Color";
   String get sd_quantity => "Quantity";
   String get sd_ml => "ml";
@@ -1134,6 +1148,28 @@ class CheckinStrings implements i69n.I69nMessageBundle {
         return q_mood_t;
       case 'q_sym_h':
         return q_sym_h;
+      case 'm_q_mood_t':
+        return m_q_mood_t;
+      case 'm_q_mood_h':
+        return m_q_mood_h;
+      case 'm_q_bp_t':
+        return m_q_bp_t;
+      case 'm_q_glu_t':
+        return m_q_glu_t;
+      case 'm_q_glu_h':
+        return m_q_glu_h;
+      case 'm_q_med_t':
+        return m_q_med_t;
+      case 'm_q_med_h':
+        return m_q_med_h;
+      case 'm_q_sym_t':
+        return m_q_sym_t;
+      case 'm_q_sym_h':
+        return m_q_sym_h;
+      case 'm_q_vitals_t':
+        return m_q_vitals_t;
+      case 'm_saved_t':
+        return m_saved_t;
       case 'sd_color':
         return sd_color;
       case 'sd_quantity':

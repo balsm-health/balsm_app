@@ -5,9 +5,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:medications/medications.dart';
 import 'package:self_report/self_report.dart';
 import '../app_state.dart';
+import '../flags.dart';
 import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
@@ -15,6 +17,7 @@ import '../tokens.dart';
 import '../vault/vault_blob.dart';
 import 'checkin_shared.dart';
 import 'metric_log.dart';
+import 'quick_log.dart' show MemberLogBanner;
 import '../maintenance/maintenance_guard.dart';
 
 export 'checkin_shared.dart' show CheckInSteps, MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
@@ -67,15 +70,19 @@ void openCheckin(BuildContext context) {
 ///
 /// Every metric page is the same one-metric log template used by quick-log.
 class ReportFlow extends ConsumerStatefulWidget {
-  const ReportFlow({super.key, required this.s});
+  const ReportFlow({super.key, required this.s, @visibleForTesting this.debugShowSummary = false});
   final PatientAppState s;
+
+  /// Opens straight on the closing summary, so tests can reach it without
+  /// saving a check-in to the on-device store.
+  final bool debugShowSummary;
   @override
   ConsumerState<ReportFlow> createState() => _ReportFlowState();
 }
 
 class _ReportFlowState extends ConsumerState<ReportFlow> {
   int step = 0;
-  bool submitted = false;
+  late bool submitted = widget.debugShowSummary;
   bool saving = false;
 
   /// Medication adherence marks captured in the meds step, keyed by med id:
@@ -94,6 +101,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   List<String> _steps = const [];
 
   PatientAppState get s => widget.s;
+
+  /// The family member this check-in is for, or null for the account holder.
+  /// Refreshed each build; the copy then names the member instead of "you".
+  FamilyMember? _member;
 
   // ── Product analytics: positions and counts only, never metric ids ──
   // Read once up front: `ref` cannot be used in dispose, where an abandoned
@@ -330,6 +341,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
   @override
   Widget build(BuildContext context) {
+    _member = s.flags.isOn(AppFlags.motherChild) ? ref.watch(activeFamilyMemberProvider) : null;
     _meds = ref.watch(medicationListProvider).valueOrNull ?? const [];
     _steps = fullCheckInSteps(
       tracked: ref.watch(trackedCheckInMetricsProvider),
@@ -401,6 +413,12 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
                 child: CheckInSteps(s: s, steps: _steps, current: step),
               ),
+            // Whose check-in this is — Quick log's "Logging for {name}" banner.
+            if (_member case final m?)
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
+                child: MemberLogBanner(s: s, member: m),
+              ),
             Expanded(
               child: IndexedStack(
                 index: _steps.isEmpty ? 0 : step,
@@ -446,6 +464,16 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   /// to the shared "Your vitals" heading rather than shipping an untitled page.
   (String, String) _question(CheckInMetric metric) {
     final c = s.strings.checkin;
+    if (_member case final m?) {
+      final n = m.shortName;
+      return switch (metric) {
+        CheckInMetric.mood => (c.m_q_mood_t(n), c.m_q_mood_h(s.gender, n)),
+        CheckInMetric.bloodPressure => (c.m_q_bp_t(n), c.q_bp_h(s.gender)),
+        CheckInMetric.glucose => (c.m_q_glu_t(n), c.m_q_glu_h(s.gender)),
+        CheckInMetric.pain || CheckInMetric.symptoms => (c.m_q_sym_t(n), c.m_q_sym_h(s.gender, n)),
+        _ => (c.m_q_vitals_t(n), c.q_vitals_h(s.gender)),
+      };
+    }
     return switch (metric) {
       CheckInMetric.mood => (c.q_mood_t(s.gender), c.q_mood_h(s.gender)),
       CheckInMetric.bloodPressure => (c.q_bp_t, c.q_bp_h(s.gender)),
@@ -465,7 +493,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   Widget _stepBody(String id) {
     if (id == kMedsCheckInStepId) {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h(s.gender)),
+        if (_member case final m?)
+          _title(s.strings.checkin.m_q_med_t(m.shortName), s.strings.checkin.m_q_med_h(s.gender, m.shortName))
+        else
+          _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h(s.gender)),
         ..._meds.map(_medCheck),
       ]);
     }
@@ -603,7 +634,13 @@ class _Summary extends StatelessWidget {
                     decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
                     child: const Icon(LucideIcons.check, size: 44, color: T.hueMint600)),
                 const SizedBox(height: 18),
-                Text(s.strings.common.saved_t, style: Typo.title(ar: s.rtl)),
+                Text(
+                    switch (state._member) {
+                      final m? => s.strings.checkin.m_saved_t(m.shortName),
+                      null => s.strings.common.saved_t,
+                    },
+                    textAlign: TextAlign.center,
+                    style: Typo.title(ar: s.rtl)),
                 const SizedBox(height: 14),
                 SavedLocallyNote(s: s),
               ]),

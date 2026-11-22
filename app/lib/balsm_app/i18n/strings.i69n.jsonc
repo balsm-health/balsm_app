@@ -315,6 +315,21 @@
     "sym_thirst": "Excess thirst",
     "q_mood_t(Gender gender)": "How are you feeling today?",
     "q_sym_h(Gender gender)": "Slide to your pain level, then tap anything you feel.",
+    // Full check-in for a family member (the active profile is a dependant):
+    // questions ABOUT the member name them (member Home's "How is {name}
+    // today?") and are not patient-gendered; only the instructions that
+    // address the account holder take Gender.
+    "m_q_mood_t(String name)": "How is $name feeling today?",
+    "m_q_mood_h(Gender gender, String name)": "Pick the face that fits $name best.",
+    "m_q_bp_t(String name)": "What's $name's blood pressure?",
+    "m_q_glu_t(String name)": "And $name's blood sugar?",
+    "m_q_glu_h(Gender gender)": "Enter the reading from the glucometer.",
+    "m_q_med_t(String name)": "Did $name take their medications?",
+    "m_q_med_h(Gender gender, String name)": "Tap each one $name has taken today.",
+    "m_q_sym_t(String name)": "Does $name have any pain or symptoms?",
+    "m_q_sym_h(Gender gender, String name)": "Slide to $name's pain level, then tap anything they feel.",
+    "m_q_vitals_t(String name)": "$name's vitals",
+    "m_saved_t(String name)": "Check-in saved for $name",
     "sd_color": "Color",
     "sd_quantity": "Quantity",
     "sd_ml": "ml",

@@ -981,6 +981,32 @@ class CheckinStrings_ar extends CheckinStrings {
             'female': 'اختاري',
             'other': 'اختر'
           })} ما تشعر${_select(gender, {'female': 'ين', 'other': ''})} به.";
+  String m_q_mood_t(String name) => "كيف حال $name اليوم؟";
+  String m_q_mood_h(Gender gender, String name) => "${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} الوجه الأقرب لحال $name.";
+  String m_q_bp_t(String name) => "كم ضغط دم $name؟";
+  String m_q_glu_t(String name) => "وكم نسبة السكر لدى $name؟";
+  String m_q_glu_h(Gender gender) => "أدخل${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} القراءة من جهاز قياس السكر.";
+  String m_q_med_t(String name) => "هل أُخذت أدوية $name؟";
+  String m_q_med_h(Gender gender, String name) => "اضغط${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} على كل دواء أُخذ اليوم.";
+  String m_q_sym_t(String name) => "هل لدى $name ألم أو أعراض؟";
+  String m_q_sym_h(Gender gender, String name) => "حرّك${_select(gender, {
+            'female': 'ي',
+            'other': ''
+          })} المؤشر لمستوى ألم $name، ثم ${_select(gender, {
+            'female': 'اختاري',
+            'other': 'اختر'
+          })} أي أعراض.";
+  String m_q_vitals_t(String name) => "المؤشرات الحيوية لـ$name";
+  String m_saved_t(String name) => "تم حفظ متابعة $name";
   String get sd_color => "اللون";
   String get sd_quantity => "الكمية";
   String get sd_ml => "مل";
@@ -1232,6 +1258,28 @@ class CheckinStrings_ar extends CheckinStrings {
         return q_mood_t;
       case 'q_sym_h':
         return q_sym_h;
+      case 'm_q_mood_t':
+        return m_q_mood_t;
+      case 'm_q_mood_h':
+        return m_q_mood_h;
+      case 'm_q_bp_t':
+        return m_q_bp_t;
+      case 'm_q_glu_t':
+        return m_q_glu_t;
+      case 'm_q_glu_h':
+        return m_q_glu_h;
+      case 'm_q_med_t':
+        return m_q_med_t;
+      case 'm_q_med_h':
+        return m_q_med_h;
+      case 'm_q_sym_t':
+        return m_q_sym_t;
+      case 'm_q_sym_h':
+        return m_q_sym_h;
+      case 'm_q_vitals_t':
+        return m_q_vitals_t;
+      case 'm_saved_t':
+        return m_saved_t;
       case 'sd_color':
         return sd_color;
       case 'sd_quantity':

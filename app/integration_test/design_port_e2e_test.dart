@@ -74,6 +74,7 @@ import 'package:app/balsm_app/maintenance/maintenance_controller.dart';
 import 'package:app/balsm_app/maintenance/maintenance_widgets.dart';
 import 'package:app/balsm_app/screens/checkin_shared.dart' show CheckInDayRow;
 import 'package:app/balsm_app/screens/day_records_screen.dart';
+import 'package:app/balsm_app/screens/report_flow.dart' show ReportFlow;
 import 'package:app/balsm_app/screens/family/family_kit.dart' show FamilyTile;
 import 'package:app/balsm_app/care/care_entity.dart' show DeviceLocationIssue, deviceLocationProvider;
 import 'package:app/balsm_app/screens/family/member_medical_screen.dart';
@@ -1102,6 +1103,86 @@ void main() {
     await reveal(tester, arEmpty);
     await settle(tester, 3);
     await snap(tester, '43-member-home-ar-bottom');
+    expect(tester.takeException(), isNull);
+    appState().setLang(LanguageCode.en);
+    await settle(tester, 10);
+
+    // An adult member (the spouse): the full check-in names her instead of
+    // speaking to the account holder, with Quick log's "Logging for" banner.
+    await goHome(tester);
+    // Home was left scrolled to its bottom; the profile bar is at the top.
+    for (final e in find.byType(Scrollable).evaluate()) {
+      final pos = (e as StatefulElement).state as ScrollableState;
+      if (pos.position.axis == Axis.vertical) pos.position.jumpTo(0);
+    }
+    await settle(tester, 3);
+    final famBar = find.text(f.bar_family);
+    await tapWhenReady(tester, famBar.evaluate().isEmpty ? find.text(f.bar_change) : famBar);
+    await tapWhenReady(tester, _pButton(f.manage_family));
+    await tapWhenReady(tester, _pButton(f.add_member));
+    await tapWhenReady(tester, find.text(f.manual_t));
+    await pumpUntil(tester, find.text(f.f_relation));
+    await tapWhenReady(tester, find.text(f.pick_spouse));
+    await tester.enterText(find.widgetWithText(TextField, f.f_name_ph(Gender.other)), _memberName);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await settle(tester, 3);
+    final adultDob = find.text(f.f_dob_ph);
+    await reveal(tester, adultDob);
+    await tapWhenReady(tester, adultDob);
+    await tapWhenReady(tester, find.text('${months[now.month - 1]} ${now.year - 5}'));
+    final y1990 = find.text('1990');
+    await reveal(tester, y1990);
+    await tapWhenReady(tester, y1990);
+    await tapWhenReady(tester, find.text('15'));
+    await tapWhenReady(tester, find.text(_en.onboarding.dob_confirm));
+    await pumpUntilGone(tester, find.text(_en.onboarding.dob_confirm));
+    final female = find.text(f.sex_female);
+    await reveal(tester, female);
+    await tapWhenReady(tester, female);
+    await tapWhenReady(tester, _pButton(f.next));
+    await pumpUntil(tester, find.text(f.consent_check_f(_memberShort)));
+    await tapWhenReady(tester, find.text(f.consent_check_f(_memberShort)));
+    await tapWhenReady(tester, _pButton(f.add_cta(_memberShort)));
+    await pumpUntil(tester, find.text(_memberName));
+    await tapWhenReady(tester, _roundBtn(_en.common.a11y_back));
+    await settle(tester, 3);
+
+    // Opened from Home's "Log for {name}"; closing the check-in lands back there.
+    Future<void> openMemberCheckin(en.Strings l) async {
+      await tapWhenReady(tester, find.text(l.home.member_ci_cta(Gender.other, _memberShort)));
+      await pumpUntil(tester, find.text(l.checkin.ql_search));
+      final full = find.text(l.checkin.full_checkin);
+      await reveal(tester, full);
+      await tapWhenReady(tester, full);
+      await pumpUntil(tester, find.byType(ReportFlow));
+      await settle(tester, 3);
+      expect(find.descendant(of: find.byType(ReportFlow), matching: find.text(l.checkin.m_q_mood_t(_memberShort))),
+          findsOneWidget);
+      expect(find.text('${l.checkin.ql_logging_for(Gender.other)}$_memberShort', findRichText: true), findsOneWidget);
+      expect(find.text(l.checkin.q_mood_t(Gender.other)), findsNothing);
+    }
+
+    await goHome(tester);
+    await openMemberCheckin(_en);
+    await snap(tester, '46-checkin-member-en');
+    await tapWhenReady(tester, _roundBtn(_en.common.a11y_close));
+    await settle(tester, 3);
+    if (_pButton(_en.checkin.ql_discard).evaluate().isNotEmpty) {
+      await tapWhenReady(tester, _pButton(_en.checkin.ql_discard));
+    }
+    await pumpUntilGone(tester, find.byType(ReportFlow));
+
+    appState().setLang(LanguageCode.ar);
+    await settle(tester, 10);
+    await openMemberCheckin(_ar);
+    expect(Directionality.of(tester.element(find.byType(ReportFlow))), TextDirection.rtl);
+    await snap(tester, '47-checkin-member-ar');
+    await tapWhenReady(tester, _roundBtn(_ar.common.a11y_close));
+    await settle(tester, 3);
+    if (_pButton(_ar.checkin.ql_discard).evaluate().isNotEmpty) {
+      await tapWhenReady(tester, _pButton(_ar.checkin.ql_discard));
+    }
+    await pumpUntilGone(tester, find.byType(ReportFlow));
     expect(tester.takeException(), isNull);
     appState().setLang(LanguageCode.en);
     await settle(tester, 10);

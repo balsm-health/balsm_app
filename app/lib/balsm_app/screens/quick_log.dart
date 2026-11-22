@@ -682,7 +682,7 @@ class _QuickLogSheetState extends ConsumerState<_QuickLogSheet> {
     final member = s.flags.isOn(AppFlags.motherChild) ? ref.watch(activeFamilyMemberProvider) : null;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (member != null) _MemberBanner(s: s, member: member),
+      if (member != null) MemberLogBanner(s: s, member: member),
       _searchField(),
       if (showCta) ...[
         _fullCheckinCta(),
@@ -933,8 +933,9 @@ enum _Leave { back, close }
 /// "Saved" and the reading. Status only; nothing in it is tappable.
 /// quicklog.jsx `member` banner: whose profile a quick log lands in while a
 /// family member is the active one, and how to log for yourself instead.
-class _MemberBanner extends StatelessWidget {
-  const _MemberBanner({required this.s, required this.member});
+/// Shared with the full check-in (report_flow.dart).
+class MemberLogBanner extends StatelessWidget {
+  const MemberLogBanner({super.key, required this.s, required this.member});
   final PatientAppState s;
   final FamilyMember member;
 
