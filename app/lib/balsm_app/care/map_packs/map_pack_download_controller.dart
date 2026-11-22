@@ -4,6 +4,7 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import 'map_pack_download_row.dart';
 import 'map_pack_download_store.dart';
@@ -68,7 +69,7 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
   var _cachedNames = <String, String>{};
 
   Future<void> load(String lang) async {
-    state = MapPackDownloadState(items: state.items, loading: true, offline: state.offline);
+    state = MapPackDownloadState(items: state.items, offline: state.offline);
     try {
       final catalogue = await _api.packs(MapPacksQuery(lang: lang));
       for (final pack in catalogue) {
@@ -86,7 +87,7 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
         ),
         loading: false,
       );
-    } catch (_) {
+    } on Object catch (_) {
       final downloaded = await _store.all();
       final names = <String, String>{};
       for (final row in downloaded) {
@@ -123,21 +124,33 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
     }
 
     try {
-      await _downloadArtifact(governorateId, MapPackKind.basemap, pack.basemap, token, onBytes: (r) {
-        basemapReceived = r;
-        recompute();
-      });
-      await _downloadArtifact(governorateId, MapPackKind.places, pack.places, token, onBytes: (r) {
-        placesReceived = r;
-        recompute();
-      });
+      await _downloadArtifact(
+        governorateId,
+        MapPackKind.basemap,
+        pack.basemap,
+        token,
+        onBytes: (r) {
+          basemapReceived = r;
+          recompute();
+        },
+      );
+      await _downloadArtifact(
+        governorateId,
+        MapPackKind.places,
+        pack.places,
+        token,
+        onBytes: (r) {
+          placesReceived = r;
+          recompute();
+        },
+      );
 
       _downloading.remove(governorateId);
       _lastDownloaded = await _store.all();
     } on DioException catch (e) {
       _downloading.remove(governorateId);
       if (e.type != DioExceptionType.cancel) _failed.add(governorateId);
-    } catch (_) {
+    } on Object catch (_) {
       _downloading.remove(governorateId);
       _failed.add(governorateId);
     } finally {
@@ -180,15 +193,17 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
         throw MapPackVerificationException(governorateId, kind);
       }
       await File(tmpPath).rename(finalPath);
-      await _store.upsert(MapPackDownloadRow(
-        governorateId: governorateId,
-        kind: kind,
-        version: artifact.version,
-        sha256: actual,
-        sizeBytes: artifact.sizeBytes,
-        localPath: finalPath,
-        downloadedAt: DateTime.now().toUtc(),
-      ));
+      await _store.upsert(
+        MapPackDownloadRow(
+          governorateId: governorateId,
+          kind: kind,
+          version: artifact.version,
+          sha256: actual,
+          sizeBytes: artifact.sizeBytes,
+          localPath: finalPath,
+          downloadedAt: DateTime.now().toUtc(),
+        ),
+      );
     } catch (_) {
       if (File(tmpPath).existsSync()) await File(tmpPath).delete();
       rethrow;
@@ -213,7 +228,6 @@ class MapPackDownloadController extends StateNotifier<MapPackDownloadState> {
         failed: Set.of(_failed),
       ),
       loading: false,
-      offline: false,
     );
   }
 }

@@ -1,14 +1,18 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../tokens.dart';
 
 /// In-memory ring of recent log lines for the desktop Logs screen.
 ///
 /// Captures what the app already prints — [debugPrint] output and framework
 /// errors — nothing new is logged, so the existing no-PHI-in-logs discipline
 /// is the only discipline. Debug/profile builds only: release keeps
-/// [debugPrint] as a no-op and [install] leaves it that way.
+/// [debugPrint] as a no-op and `install` leaves it that way.
 /// Riverpod handle on the process-wide buffer. The singleton stays: install()
 /// must hook debugPrint before the first frame, earlier than any provider
 /// scope exists — the provider is how widgets subscribe to it.
@@ -28,7 +32,7 @@ class LogBuffer extends ChangeNotifier {
     if (_installed || kReleaseMode) return;
     _installed = true;
     final prior = debugPrint;
-    debugPrint = (String? message, {int? wrapWidth}) {
+    debugPrint = (message, {wrapWidth}) {
       if (message != null) add(message);
       prior(message, wrapWidth: wrapWidth);
     };
@@ -73,7 +77,7 @@ class LogsScreen extends ConsumerWidget {
             icon: const Icon(Icons.copy_all, size: 20),
             onPressed: () {
               final text = buf.lines.map((l) => '${l.$1.toIso8601String()} ${l.$2}').join('\n');
-              Clipboard.setData(ClipboardData(text: text));
+              unawaited(Clipboard.setData(ClipboardData(text: text)));
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logs copied')));
             },
           ),
@@ -85,7 +89,7 @@ class LogsScreen extends ConsumerWidget {
         ],
       ),
       body: buf.lines.isEmpty
-          ? const Center(child: Text('Nothing logged yet.', style: TextStyle(color: Colors.grey)))
+          ? const Center(child: Text('Nothing logged yet.', style: TextStyle(color: AppColors.textHint)))
           : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: buf.lines.length,
@@ -96,9 +100,9 @@ class LogsScreen extends ConsumerWidget {
                   '${t.toIso8601String().substring(11, 19)}  $msg',
                   style: TextStyle(
                     fontFamily: 'IBM Plex Mono',
-                    fontSize: 12,
+                    fontSize: FontSizes.meta,
                     height: 1.5,
-                    color: isError ? const Color(0xFFB3261E) : const Color(0xFF333333),
+                    color: isError ? AppColors.danger : AppColors.textPrimary,
                   ),
                 );
               },
