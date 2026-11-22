@@ -34,25 +34,31 @@ abstract class LocalizationUtil {
   /// Presentation-layer adapter: a locale-reactive provider around a
   /// module's [LocalizedStrings]. Business logic must NOT use this — read
   /// `strings.current` (sync) or `strings.load()` (deferred-safe) instead.
-  static StateNotifierProvider<StringsProvider<T>, T> getProvider<T>(
+  static NotifierProvider<StringsProvider<T>, T> getProvider<T>(
     LocalizedStrings<T> strings,
   ) {
-    return StateNotifierProvider<StringsProvider<T>, T>(
-      (ref) => StringsProvider<T>(strings),
-    );
+    return NotifierProvider<StringsProvider<T>, T>(() => StringsProvider<T>(strings));
   }
 }
 
-/// Locale-reactive [StateNotifier] emitting the typed bundle. Presentation
-/// only; subscribes to [LocalizationUtil.stream] and cancels on dispose.
-class StringsProvider<T> extends StateNotifier<T> {
-  StringsProvider(this._strings) : super(_strings.current) {
-    _subscription = LocalizationUtil.stream.listen(_apply);
-    _apply(LocalizationUtil.currentLocale); // kick deferred load if needed
-  }
+/// Locale-reactive [Notifier] emitting the typed bundle. Presentation only;
+/// subscribes to [LocalizationUtil.stream] and cancels on dispose.
+class StringsProvider<T> extends Notifier<T> {
+  StringsProvider(this._strings);
 
   final LocalizedStrings<T> _strings;
-  late final StreamSubscription<Locale> _subscription;
+
+  @override
+  T build() {
+    final subscription = LocalizationUtil.stream.listen(_apply);
+    ref.onDispose(subscription.cancel);
+    final locale = LocalizationUtil.currentLocale;
+    final epoch = ++_epoch;
+    final sync = _strings.resolveSyncOrNull(locale);
+    if (sync != null) return sync;
+    _loadLater(locale, epoch); // deferred bundle: show the fallback until it arrives
+    return _strings.resolveSync(locale);
+  }
 
   /// Monotonic switch counter. A deferred load only applies its result if no
   /// newer switch happened while it was in flight — otherwise a slow
@@ -67,15 +73,15 @@ class StringsProvider<T> extends StateNotifier<T> {
       return;
     }
     state = _strings.resolveSync(locale); // fallback while loading
-    _strings.loadFor(locale).then((loaded) {
-      if (mounted && epoch == _epoch) state = loaded;
-    });
+    _loadLater(locale, epoch);
   }
 
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
+  void _loadLater(Locale locale, int epoch) {
+    unawaited(
+      _strings.loadFor(locale).then((loaded) {
+        if (ref.mounted && epoch == _epoch) state = loaded;
+      }),
+    );
   }
 }
 
@@ -94,9 +100,6 @@ class LocalizedStrings<T> {
       : _factories = Map.of(factories),
         assert(factories.isNotEmpty, 'register at least one locale');
 
-  static const arLocale = Locale('ar');
-  static const enLocale = Locale('en');
-
   /// The common Balsm pair — English default plus one Arabic bundle.
   factory LocalizedStrings.defaultLangs({
     required LocaleFactory<T> en,
@@ -106,6 +109,9 @@ class LocalizedStrings<T> {
         enLocale: en,
         if (ar != null) arLocale: ar,
       });
+
+  static const arLocale = Locale('ar');
+  static const enLocale = Locale('en');
 
   final Map<Locale, LocaleFactory<T>> _factories;
 

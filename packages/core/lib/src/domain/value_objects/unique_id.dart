@@ -1,7 +1,8 @@
 import 'dart:convert';
 
-import 'uuid_v7.dart';
 import 'package:equatable/equatable.dart';
+
+import 'uuid_v7.dart';
 
 /// Identity value object. [value] is the bare id string; [isLocal] flags ids
 /// minted on-device (offline, before the server confirms them) so they can be
@@ -17,11 +18,6 @@ import 'package:equatable/equatable.dart';
 /// [UniqueId.value]; keep sync/dirty state on the *record*, not by rewriting an
 /// id already used as a key elsewhere.
 class UniqueId extends Id<String> {
-  static const key_uuid_v7 = 'uuidv7';
-  static const key_timestamp = 'timestamp';
-  final bool isLocal;
-  final String prefix;
-  final String type;
   const UniqueId.value(
     super.value, {
     this.isLocal = false,
@@ -48,6 +44,18 @@ class UniqueId extends Id<String> {
         prefix = '',
         super('');
 
+  factory UniqueId.fromJson(Map<String, dynamic> json) => UniqueId.value(
+        json['value'] as String,
+        isLocal: json['isLocal'] as bool? ?? false,
+        prefix: json['prefix'] as String? ?? '',
+        type: json['type'] as String? ?? UniqueId.key_uuid_v7,
+      );
+  static const key_uuid_v7 = 'uuidv7';
+  static const key_timestamp = 'timestamp';
+  final bool isLocal;
+  final String prefix;
+  final String type;
+
   bool get isEmpty => value.isEmpty;
   bool get isNotEmpty => value.isNotEmpty;
 
@@ -61,13 +69,6 @@ class UniqueId extends Id<String> {
         'isLocal': isLocal,
         'value': value,
       };
-
-  factory UniqueId.fromJson(Map<String, dynamic> json) => UniqueId.value(
-        json['value'] as String,
-        isLocal: json['isLocal'] as bool? ?? false,
-        prefix: json['prefix'] as String? ?? '',
-        type: json['type'] as String? ?? UniqueId.key_uuid_v7,
-      );
 
   /// Rich, provenance-carrying serialization for callers that deliberately want
   /// to persist + rehydrate the metadata (round-trips via [UniqueId.fromJson]).

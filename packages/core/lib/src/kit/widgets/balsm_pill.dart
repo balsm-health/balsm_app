@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 enum BalsmPillVariant { success, warn, danger, neutral, info, controlled }
 
@@ -7,9 +7,9 @@ enum BalsmPillVariant { success, warn, danger, neutral, info, controlled }
 /// Optional leading dot (6×6 colored circle).
 class BalsmPill extends StatelessWidget {
   const BalsmPill({
-    super.key,
     required this.label,
     required this.variant,
+    super.key,
     this.showDot = false,
   });
 
@@ -24,7 +24,7 @@ class BalsmPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
       decoration: BoxDecoration(
         color: style.bg,
-        borderRadius: BorderRadius.circular(BalsmRadius.pill),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -43,7 +43,7 @@ class BalsmPill extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: FontSizes.meta,
               fontWeight: FontWeight.w600,
               color: style.fg,
               height: 1.4,
@@ -57,40 +57,40 @@ class BalsmPill extends StatelessWidget {
   _PillStyle _styleFor(BalsmPillVariant v) {
     switch (v) {
       case BalsmPillVariant.success:
-        return _PillStyle(
-          bg: BalsmColors.successBg,
-          fg: const Color(0xFF1F6A36),
-          dot: BalsmColors.hueMint,
+        return const _PillStyle(
+          bg: AppColors.successBackground,
+          fg: AppColors.onSuccessBackground,
+          dot: AppColors.hueMint,
         );
       case BalsmPillVariant.warn:
-        return _PillStyle(
-          bg: BalsmColors.warningBg,
-          fg: const Color(0xFF7A5A0F),
-          dot: BalsmColors.warning,
+        return const _PillStyle(
+          bg: AppColors.warningBackground,
+          fg: AppColors.onWarningBackground,
+          dot: AppColors.warning,
         );
       case BalsmPillVariant.danger:
-        return _PillStyle(
-          bg: BalsmColors.dangerBg,
-          fg: const Color(0xFF7A2A20),
-          dot: BalsmColors.danger,
+        return const _PillStyle(
+          bg: AppColors.dangerBackground,
+          fg: AppColors.onDangerBackground,
+          dot: AppColors.danger,
         );
       case BalsmPillVariant.neutral:
-        return _PillStyle(
-          bg: BalsmColors.ink100,
-          fg: BalsmColors.ink700,
-          dot: BalsmColors.ink500,
+        return const _PillStyle(
+          bg: AppColors.ink100,
+          fg: AppColors.ink700,
+          dot: AppColors.ink500,
         );
       case BalsmPillVariant.info:
-        return _PillStyle(
-          bg: BalsmColors.hueBlue50,
-          fg: const Color(0xFF08407A),
-          dot: BalsmColors.hueBlue,
+        return const _PillStyle(
+          bg: AppColors.hueBlue50,
+          fg: AppColors.onInfoBackground,
+          dot: AppColors.hueBlue,
         );
       case BalsmPillVariant.controlled:
-        return _PillStyle(
-          bg: BalsmColors.controlledBg,
-          fg: const Color(0xFF3D2872),
-          dot: BalsmColors.controlled,
+        return const _PillStyle(
+          bg: AppColors.controlledBackground,
+          fg: AppColors.onControlledBackground,
+          dot: AppColors.controlled,
         );
     }
   }

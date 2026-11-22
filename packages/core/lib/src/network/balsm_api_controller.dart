@@ -3,18 +3,18 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/active_server.dart';
-import '../dev/dev_host_locator.dart';
-import '../dev/server_url.dart';
 import '../config/flavor.dart';
 import '../config/server_preset.dart';
+import '../dev/dev_host_locator.dart';
+import '../dev/server_url.dart';
 import '../domain/events/app_event.dart';
 import '../event_bus/event_bus.dart';
 import 'auth_interceptor.dart';
 import 'dev_host_interceptor.dart';
 
 class ServerReconfigured extends AppEvent {
-  final ServerPreset preset;
   const ServerReconfigured(this.preset);
+  final ServerPreset preset;
   @override
   String get eventName => 'server_reconfigured';
   @override
@@ -153,10 +153,12 @@ class BalsmApiController {
     // dev machine's address changes under a running app, and re-finding it
     // beats relaunching to pick up a new one.
     if (kDebugMode) {
-      client.dio.interceptors.add(DevHostInterceptor(
-        rediscover: controller.rediscover,
-        retry: (options) => client.dio.fetch<dynamic>(options),
-      ));
+      client.dio.interceptors.add(
+        DevHostInterceptor(
+          rediscover: controller.rediscover,
+          retry: (options) => client.dio.fetch<dynamic>(options),
+        ),
+      );
     }
     return controller;
   }

@@ -15,7 +15,7 @@ class Idb {
   Future<web.IDBDatabase> _open() => _db ??= () {
         final request = web.window.indexedDB.open(name, 1);
         request.onupgradeneeded = ((web.Event _) {
-          final db = request.result as web.IDBDatabase;
+          final db = request.result! as web.IDBDatabase;
           for (final store in stores) {
             db.createObjectStore(store);
           }

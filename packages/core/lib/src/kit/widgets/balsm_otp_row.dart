@@ -1,13 +1,15 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import '../_tokens.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../domain/western_digits.dart';
+import '../tokens.dart';
 
 /// 6-box OTP input porting prototype `.otp-row` + `.otp-box`.
 /// Auto-advances on each digit; paste-fills all boxes; auto-submits on 6th digit.
 class BalsmOtpRow extends StatefulWidget {
   const BalsmOtpRow({
-    super.key,
     required this.onCompleted,
+    super.key,
     this.length = 6,
   });
 
@@ -33,15 +35,19 @@ class _BalsmOtpRowState extends State<BalsmOtpRow> {
 
   @override
   void dispose() {
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
   void _onChanged(int index, String val) {
     // Handle paste
     if (val.length > 1) {
-      final digits = val.replaceAll(RegExp(r'\D'), '');
+      final digits = toWesternDigits(val).replaceAll(RegExp(r'\D'), '');
       for (var i = 0; i < widget.length && i < digits.length; i++) {
         _controllers[i].text = digits[i];
         _values[i] = digits[i];
@@ -54,7 +60,7 @@ class _BalsmOtpRowState extends State<BalsmOtpRow> {
       return;
     }
 
-    final digit = val.replaceAll(RegExp(r'\D'), '');
+    final digit = toWesternDigits(val).replaceAll(RegExp(r'\D'), '');
     setState(() => _values[index] = digit);
     _controllers[index].text = digit;
 
@@ -104,22 +110,19 @@ class _BalsmOtpRowState extends State<BalsmOtpRow> {
                   children: [
                     // Visible box
                     AnimatedContainer(
-                      duration: BalsmDuration.base,
-                      curve: kBalsmEaseOut,
+                      duration: Motion.base,
+                      curve: Motion.easeOut,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(BalsmRadius.md),
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppRadii.md),
                         border: Border.all(
-                          color: isFocused
-                              ? BalsmColors.appAccent
-                              : (isFilled ? BalsmColors.appAccent : BalsmColors.border),
+                          color: isFocused ? AppColors.hueBlue : (isFilled ? AppColors.hueBlue : AppColors.border),
                           width: 1.5,
                         ),
                         boxShadow: isFocused
                             ? [
                                 BoxShadow(
-                                  color: BalsmColors.appAccent.withValues(alpha: 0.16),
-                                  blurRadius: 0,
+                                  color: AppColors.hueBlue.withValues(alpha: 0.16),
                                   spreadRadius: 4,
                                 ),
                               ]
@@ -131,8 +134,8 @@ class _BalsmOtpRowState extends State<BalsmOtpRow> {
                         style: const TextStyle(
                           fontFamily: 'monospace',
                           fontWeight: FontWeight.w600,
-                          fontSize: 26,
-                          color: BalsmColors.fg1,
+                          fontSize: FontSizes.title,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),

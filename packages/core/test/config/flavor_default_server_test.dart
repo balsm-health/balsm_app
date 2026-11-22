@@ -44,8 +44,8 @@ void main() {
 
   group('envHost', () {
     test('no suffix is the production name', () {
-      expect(envHost('app', suffix: ''), 'app.balsm.health');
-      expect(envHost('api', suffix: ''), 'api.balsm.health');
+      expect(envHost('app'), 'app.balsm.health');
+      expect(envHost('api'), 'api.balsm.health');
     });
 
     test('a suffix is appended to the first label', () {

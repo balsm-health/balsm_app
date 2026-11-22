@@ -1,3 +1,6 @@
+import '../../../core.dart' show CountryCode;
+import 'country_code.dart' show CountryCode;
+
 /// Emergency-contact relationship — a fixed, localizable set.
 ///
 /// A native enhanced enum (the modern replacement for the `super_enum`

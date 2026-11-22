@@ -45,11 +45,6 @@ enum ProvenanceAction {
 /// name), or by [careProviderId], a reference to an entry in the patient's
 /// care team, whose current name the app looks up. At least one is present.
 class ProvenanceActor {
-  const ProvenanceActor._(this.kind, this.displayName, this.careProviderId);
-
-  /// The account holder on this device.
-  static const self = ProvenanceActor._(ProvenanceActorKind.self, null, null);
-
   /// Someone other than the patient. Throws [ArgumentError] for
   /// [ProvenanceActorKind.self], or when neither a name nor a care-team
   /// reference is given: an attribution must say who.
@@ -68,6 +63,10 @@ class ProvenanceActor {
       ref == null || ref.isEmpty ? null : ref,
     );
   }
+  const ProvenanceActor._(this.kind, this.displayName, this.careProviderId);
+
+  /// The account holder on this device.
+  static const self = ProvenanceActor._(ProvenanceActorKind.self, null, null);
 
   final ProvenanceActorKind kind;
 

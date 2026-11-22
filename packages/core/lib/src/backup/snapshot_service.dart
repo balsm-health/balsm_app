@@ -40,6 +40,7 @@ class SnapshotService implements SnapshotPort {
   ];
 
   /// Reads every PHI table into a JSON-serializable snapshot.
+  @override
   Future<Map<String, dynamic>> export() async {
     final tables = <String, List<Map<String, dynamic>>>{};
     for (final t in _tables) {
@@ -54,6 +55,7 @@ class SnapshotService implements SnapshotPort {
   }
 
   /// Merges a snapshot into the local DB. Idempotent and FK-safe.
+  @override
   Future<void> import(Map<String, dynamic> snapshot) async {
     final tables = (snapshot['tables'] as Map?)?.cast<String, dynamic>() ?? {};
     await _db.transaction(() async {

@@ -53,16 +53,18 @@ class SyncOutboxDao {
       ],
     ).get();
     return rows
-        .map((r) => OutboxEntry(
-              id: r.read<int>('id'),
-              entity: r.read<String>('entity'),
-              entityId: r.read<String>('entity_id'),
-              op: OutboxOp.fromId(r.read<String>('op')),
-              payload: r.read<String>('payload'),
-              createdAt: DateTime.fromMillisecondsSinceEpoch(r.read<int>('created_at'), isUtc: true),
-              attempts: r.read<int>('attempts'),
-              userId: r.readNullable<String>('user_id'),
-            ))
+        .map(
+          (r) => OutboxEntry(
+            id: r.read<int>('id'),
+            entity: r.read<String>('entity'),
+            entityId: r.read<String>('entity_id'),
+            op: OutboxOp.fromId(r.read<String>('op')),
+            payload: r.read<String>('payload'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(r.read<int>('created_at'), isUtc: true),
+            attempts: r.read<int>('attempts'),
+            userId: r.readNullable<String>('user_id'),
+          ),
+        )
         .toList();
   }
 

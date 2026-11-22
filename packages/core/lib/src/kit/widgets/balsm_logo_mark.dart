@@ -1,6 +1,7 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../_tokens.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../tokens.dart';
 
 enum BalsmLogoMarkVariant { small, medium, large, spinner }
 
@@ -68,7 +69,7 @@ class _BalsmLogoMarkState extends State<BalsmLogoMark> with SingleTickerProvider
         height: _size,
         child: const Center(
           child: CircularProgressIndicator(
-            color: BalsmColors.appAccent,
+            color: AppColors.hueBlue,
             strokeWidth: 2,
           ),
         ),

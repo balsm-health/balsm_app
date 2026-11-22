@@ -44,7 +44,7 @@ class TranslationCatalog {
     try {
       final value = bundle[_alias[key] ?? key];
       return value is String ? value : key;
-    } catch (_) {
+    } on Object catch (_) {
       return key; // unknown key → graceful fallback to the key itself
     }
   }
@@ -53,7 +53,7 @@ class TranslationCatalog {
     final bundle = _bundles[locale] ?? _bundles[_langOf(locale)] ?? _bundles['en']!;
     try {
       return bundle[_alias[key] ?? key] is String;
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }

@@ -1,16 +1,16 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 /// Segmented control porting prototype `.segmented`.
 /// Generic over T option type.
 /// Active slot: white bg + shadow-xs; inactive: transparent.
 class BalsmSegmented<T> extends StatelessWidget {
   const BalsmSegmented({
-    super.key,
     required this.options,
     required this.labelOf,
     required this.selected,
     required this.onChanged,
+    super.key,
   });
 
   final List<T> options;
@@ -23,9 +23,9 @@ class BalsmSegmented<T> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: BalsmColors.ink50,
-        borderRadius: BorderRadius.circular(BalsmRadius.md),
-        border: Border.all(color: BalsmColors.border),
+        color: AppColors.ink50,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: options.map((opt) {
@@ -34,21 +34,21 @@ class BalsmSegmented<T> extends StatelessWidget {
             child: GestureDetector(
               onTap: () => onChanged(opt),
               child: AnimatedContainer(
-                duration: BalsmDuration.base,
-                curve: kBalsmEaseOut,
+                duration: Motion.base,
+                curve: Motion.easeOut,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: isActive ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                  boxShadow: isActive ? BalsmShadow.xs : null,
+                  color: isActive ? AppColors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppRadii.segment),
+                  boxShadow: isActive ? AppShadows.xs : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   labelOf(opt),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: isActive ? BalsmColors.fg1 : BalsmColors.fg3,
+                    fontSize: FontSizes.bodySm,
+                    color: isActive ? AppColors.textPrimary : AppColors.textTertiary,
                   ),
                 ),
               ),

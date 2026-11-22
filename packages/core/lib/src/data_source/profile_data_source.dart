@@ -1,3 +1,4 @@
+import '../../core.dart' show EntityDataSource, UserDataSource;
 import '../domain/value_objects/health_profile_id.dart';
 import 'data_source.dart';
 

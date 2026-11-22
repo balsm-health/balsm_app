@@ -23,14 +23,20 @@
     "done": "Done",
     "retry": "Retry",
     "save": "Save",
-    "delete": "Delete"
+    "delete": "Delete",
+    "close": "Close",
+    "copy": "Copy",
+    "skip": "Skip",
+    "clear": "Clear",
+    "dismiss": "Dismiss"
   },
   "error": {
     "unknown": "Something went wrong. Please try again."
   },
   "notfound": {
     "title": "Page not found",
-    "body": "The page you are looking for does not exist."
+    "body": "The page you are looking for does not exist.",
+    "go_home": "Go home"
   },
   "country": {
     "eg": {
@@ -115,5 +121,23 @@
     "caregiver": "Caregiver",
     "neighbour": "Neighbour",
     "other": "Other"
-  }
+  },
+  "nav_home": "Home",
+  "nav_card": "Card",
+  "nav_meds": "Meds",
+  "nav_sessions": "Sessions",
+  "nav_settings": "Settings",
+  "trust_on_device": "On-device",
+  "trust_private": "Private",
+  "trust_offline": "Offline-ready",
+  "backup_save_title": "Save your recovery code",
+  "backup_save_body": "This is the only key that can restore your health data on a new device. Write it down and keep it safe — we can never recover it.",
+  "backup_saved": "I've saved it",
+  "restore_title": "Restore your data?",
+  "restore_body": "We found a backup in your cloud. Enter your recovery code to restore your profile, medications, and history.",
+  "restore_code_label": "Recovery code",
+  "restore_error": "Wrong code or no backup found. Try again.",
+  "restore_action": "Restore",
+  "calendar_months": "January|February|March|April|May|June|July|August|September|October|November|December",
+  "calendar_weekdays": "Sun|Mon|Tue|Wed|Thu|Fri|Sat"
 }

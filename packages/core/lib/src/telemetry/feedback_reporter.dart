@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core.dart' show AnalyticsLogger;
+
+import 'analytics_logger.dart' show AnalyticsLogger;
+
 /// What the patient sent from the in-app feedback sheet.
 ///
 /// [note] is free text, so it can hold anything a patient types — the sheet

@@ -40,7 +40,7 @@ void main() {
     expect(await _owners(db, 'sync_outbox'), ['srv', 'other']);
   });
 
-  test('merge drops the retired account\'s outbox rows', () async {
+  test("merge drops the retired account's outbox rows", () async {
     final db = await _seed();
     await rekeyOwner(db, from: 'off', to: 'srv', dropOutbox: true);
     expect(await _owners(db, 'sync_outbox'), ['other']);
@@ -74,7 +74,8 @@ Future<_Db> _seedProfiles({required bool targetHasProfile}) async {
   await db.customStatement('CREATE TABLE medications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, '
       'health_profile_id TEXT NOT NULL REFERENCES health_profile(id) ON DELETE CASCADE)');
   await db.customStatement(
-      'CREATE TABLE dose_events (id TEXT PRIMARY KEY, medication_id TEXT NOT NULL REFERENCES medications(id))');
+    'CREATE TABLE dose_events (id TEXT PRIMARY KEY, medication_id TEXT NOT NULL REFERENCES medications(id))',
+  );
   await db.customStatement('CREATE TABLE sync_outbox (id INTEGER PRIMARY KEY, user_id TEXT)');
   await db.customStatement("INSERT INTO health_profile VALUES ('p-off','off')");
   if (targetHasProfile) {
@@ -102,8 +103,10 @@ void main2() {
       final db = await _seedProfiles(targetHasProfile: true);
       await mergeOwner(db, from: 'off', to: 'srv');
       expect(await _rows(db, 'SELECT id, user_id FROM health_profile'), ['p-srv|srv']);
-      expect(await _rows(db, 'SELECT id, health_profile_id FROM allergy ORDER BY id'),
-          ['a-srv|p-srv', 'a1|p-srv', 'a2|p-srv']);
+      expect(
+        await _rows(db, 'SELECT id, health_profile_id FROM allergy ORDER BY id'),
+        ['a-srv|p-srv', 'a1|p-srv', 'a2|p-srv'],
+      );
       expect(await _rows(db, 'SELECT id, user_id, health_profile_id FROM medications'), ['m1|srv|p-srv']);
       expect(await _rows(db, 'SELECT id FROM dose_events'), ['d1']);
       expect(await _rows(db, 'SELECT user_id FROM sync_outbox'), ['srv']);
@@ -152,7 +155,8 @@ void main2() {
     test('any delete guard other than the approved dose-history one makes it throw, changing nothing', () async {
       final db = await _seedProfiles(targetHasProfile: false);
       await db.customStatement(
-          "CREATE TRIGGER allergy_keep BEFORE DELETE ON allergy BEGIN SELECT RAISE(ABORT, 'kept'); END");
+        "CREATE TRIGGER allergy_keep BEFORE DELETE ON allergy BEGIN SELECT RAISE(ABORT, 'kept'); END",
+      );
       await expectLater(discardOwner(db, owner: 'off'), throwsStateError);
       expect(await _rows(db, 'SELECT id FROM allergy ORDER BY id'), ['a1', 'a2']);
       expect(await _rows(db, 'SELECT id FROM medications'), ['m1']);
@@ -185,8 +189,9 @@ void main2() {
       final db = AppDatabase(NativeDatabase.memory());
       for (final u in ['off', 'srv']) {
         await db.customStatement(
-            "INSERT INTO health_profile (id, user_id, is_self, updated_at) VALUES ('p-$u','$u',1,'t')");
-        await db.customStatement("INSERT INTO allergy (id, health_profile_id, name, severity, created_at) "
+          "INSERT INTO health_profile (id, user_id, is_self, updated_at) VALUES ('p-$u','$u',1,'t')",
+        );
+        await db.customStatement('INSERT INTO allergy (id, health_profile_id, name, severity, created_at) '
             "VALUES ('a-$u','p-$u','n','mild','t')");
         await db.customStatement('INSERT INTO medications (id, user_id, health_profile_id, name, schedule_type, '
             "schedule_config, start_date) VALUES ('m-$u','$u','p-$u','n','daily','{}','t')");
@@ -199,14 +204,16 @@ void main2() {
     test('mergeOwner folds only the self profiles; a dependent moves across whole', () async {
       final db = await seedReal();
       addTearDown(db.close);
-      await db.customStatement("INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) "
+      await db.customStatement('INSERT INTO health_profile (id, user_id, is_self, kind, updated_at) '
           "VALUES ('p-kid','off',0,'dependent','t')");
-      await db.customStatement("INSERT INTO allergy (id, health_profile_id, name, severity, created_at) "
+      await db.customStatement('INSERT INTO allergy (id, health_profile_id, name, severity, created_at) '
           "VALUES ('a-kid','p-kid','n','mild','t')");
       await mergeOwner(db, from: 'off', to: 'srv');
       final profiles = await db.customSelect('SELECT id, user_id, is_self FROM health_profile ORDER BY id').get();
-      expect(profiles.map((r) => '${r.data['id']}|${r.data['user_id']}|${r.data['is_self']}'),
-          ['p-kid|srv|0', 'p-srv|srv|1']);
+      expect(
+        profiles.map((r) => '${r.data['id']}|${r.data['user_id']}|${r.data['is_self']}'),
+        ['p-kid|srv|0', 'p-srv|srv|1'],
+      );
       final kid = await db.customSelect("SELECT health_profile_id AS p FROM allergy WHERE id = 'a-kid'").getSingle();
       expect(kid.read<String>('p'), 'p-kid');
     });
@@ -226,7 +233,8 @@ void main2() {
       final db = await seedReal();
       addTearDown(db.close);
       await db.customStatement(
-          "UPDATE health_profile SET blood_type = 'O+', weight_kg = 70.5, height_cm = 180 WHERE id = 'p-off'");
+        "UPDATE health_profile SET blood_type = 'O+', weight_kg = 70.5, height_cm = 180 WHERE id = 'p-off'",
+      );
       // The target already knows its weight: that one must win.
       await db.customStatement("UPDATE health_profile SET weight_kg = 82 WHERE id = 'p-srv'");
 

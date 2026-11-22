@@ -1,8 +1,13 @@
 import 'dart:typed_data';
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
+
+import '../../core.dart' show BackupService;
 import 'backup_adapter.dart';
+import 'backup_service.dart' show BackupService;
+import 'google_sign_in_gate.dart';
 
 /// Stores the encrypted backup blob in the user's **private** Google Drive
 /// `appDataFolder` (hidden from their Drive UI; only this app can read it).
@@ -75,14 +80,17 @@ class DriveBackupAdapter implements BackupAdapter {
 /// Silent Google sign-in scoped to `drive.appdata`, wrapped as an auth-injecting
 /// HTTP client. Returns null when there is no usable Google session.
 Future<http.Client?> _googleDriveClient() async {
-  final gsi = GoogleSignIn(scopes: [drive.DriveApi.driveAppdataScope]);
-  final account = await gsi.signInSilently();
+  await GoogleSignInGate.ensureInitialized();
+  final account = await GoogleSignIn.instance.attemptLightweightAuthentication();
   if (account == null) return null;
-  // Ensure the appdata scope was actually granted.
-  final granted = await gsi.requestScopes([drive.DriveApi.driveAppdataScope]);
-  if (!granted) return null;
-  final headers = await account.authHeaders;
-  return _AuthHeaderClient(headers);
+  // Ensure the appdata scope was actually granted, prompting once if it was not.
+  try {
+    final headers = await account.authorizationClient
+        .authorizationHeaders([drive.DriveApi.driveAppdataScope], promptIfNecessary: true);
+    return headers == null ? null : _AuthHeaderClient(headers);
+  } on GoogleSignInException {
+    return null;
+  }
 }
 
 /// Injects Google auth headers on every request.
