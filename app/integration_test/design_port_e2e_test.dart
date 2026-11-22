@@ -1147,13 +1147,10 @@ void main() {
     await tapWhenReady(tester, _roundBtn(_en.common.a11y_back));
     await settle(tester, 3);
 
-    // Opened from Home's "Log for {name}"; closing the check-in lands back there.
+    // Home's "Log for {name}" opens the full check-in straight away for an
+    // adult member; closing the check-in lands back there.
     Future<void> openMemberCheckin(en.Strings l) async {
       await tapWhenReady(tester, find.text(l.home.member_ci_cta(Gender.other, _memberShort)));
-      await pumpUntil(tester, find.text(l.checkin.ql_search));
-      final full = find.text(l.checkin.full_checkin);
-      await reveal(tester, full);
-      await tapWhenReady(tester, full);
       await pumpUntil(tester, find.byType(ReportFlow));
       await settle(tester, 3);
       expect(find.descendant(of: find.byType(ReportFlow), matching: find.text(l.checkin.m_q_mood_t(_memberShort))),

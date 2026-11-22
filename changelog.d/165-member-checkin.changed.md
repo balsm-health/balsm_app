@@ -1,0 +1,1 @@
+On an adult family member's Home, "Log for {name}" opens the full check-in for them; a child's still opens Quick log with the child readings ([#165](https://github.com/balsm-health/balsm_app/pull/165))

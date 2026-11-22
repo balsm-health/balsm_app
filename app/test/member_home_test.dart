@@ -7,6 +7,7 @@ import 'package:app/balsm_app/screens/family/member_screen.dart';
 import 'package:app/balsm_app/screens/family/vaccinations_screen.dart';
 import 'package:app/balsm_app/screens/home_screen.dart';
 import 'package:app/balsm_app/screens/home_widgets.dart';
+import 'package:app/balsm_app/screens/report_flow.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
 import 'package:family/family.dart';
@@ -141,6 +142,26 @@ void main() {
     expect(find.text(h.member_ci_note(state.gender, elder.shortName)), findsOneWidget);
     expect(shortcutLabels(tester),
         [f.tile_card, f.tile_medical, h.sc_records, f.tile_meds, f.tile_trends, h.sc_full_profile]);
+  });
+
+  testWidgets("an adult's \"Log for {name}\" opens the full check-in", (tester) async {
+    final state = familyState();
+    final (_, elder) = await pumpHome(tester, state, adult: true);
+    await tester.tap(find.text(state.strings.home.member_ci_cta(state.gender, elder.shortName)));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await settle(tester);
+    expect(find.byType(ReportFlow), findsOneWidget);
+    expect(find.text(state.strings.checkin.ql_search), findsNothing);
+  });
+
+  testWidgets("a child's \"Log for {name}\" opens Quick log with the child set", (tester) async {
+    final state = familyState();
+    final (_, kid) = await pumpHome(tester, state);
+    await tester.tap(find.text(state.strings.home.member_ci_cta(state.gender, kid.shortName)));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await settle(tester);
+    expect(find.byType(ReportFlow), findsNothing);
+    expect(find.text(state.strings.checkin.ql_search), findsOneWidget);
   });
 
   testWidgets("the Vaccinations shortcut opens the member's vaccinations", (tester) async {

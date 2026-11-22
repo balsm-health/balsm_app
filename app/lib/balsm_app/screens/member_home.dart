@@ -20,6 +20,7 @@ import 'family/member_card_screen.dart';
 import 'family/member_medical_screen.dart';
 import 'family/member_screen.dart';
 import 'quick_log.dart';
+import 'report_flow.dart';
 import 'family/vaccinations_screen.dart';
 import 'home_widgets.dart';
 import 'profile_subscreens.dart' show memberHealthProfileProvider;
@@ -99,10 +100,11 @@ class _MemberCheckIn extends StatelessWidget {
       cta: h.member_ci_cta(s.gender, name),
       doneLabel: h.member_ci_done(name),
       showTime: false,
-      // home-mc.jsx HomeMemberV2: "Log for {name}" opens Quick log, which says
-      // whose profile the reading goes to — not the full check-in, which
-      // speaks to the account holder and asks for adult readings.
-      onStart: () => showQuickLog(context, source: ProductSource.home),
+      // "Log for {name}" opens the full check-in for an adult member, worded
+      // for them. A child gets Quick log instead: its child set (weight to
+      // the growth log, no blood pressure or glucose) — the full check-in
+      // asks for adult readings.
+      onStart: () => child ? showQuickLog(context, source: ProductSource.home) : openCheckin(context),
       onReview: () => openMemberTrends(context, member),
     );
   }
