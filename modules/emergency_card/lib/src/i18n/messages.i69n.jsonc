@@ -4,5 +4,12 @@
   "title": "Emergency card",
   "generate": "Generate card",
   "revoke": "Revoke card",
-  "unavailable": "This emergency card is unavailable"
+  "unavailable": "This emergency card is unavailable",
+  "qrUnavailable": "This emergency QR is no longer available.",
+  "profileHeading": "Balsm Profile",
+  "fieldName": "Name",
+  "fieldDateOfBirth": "Date of birth",
+  "fieldGender": "Gender",
+  "needsRefresh": "This code needs a refresh",
+  "needsRefreshBody": "Ask the owner to open their Balsm app once — the code updates itself."
 }

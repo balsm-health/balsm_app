@@ -19,6 +19,15 @@ class PermanentQrRecord {
     this.synced = true,
   });
 
+  factory PermanentQrRecord.fromJson(Map<String, dynamic> json) => PermanentQrRecord(
+        jti: json['jti'] as String,
+        keyB64Url: json['key'] as String,
+        etag: json['etag'] as String,
+        qrUrl: json['qrUrl'] as String,
+        // Records written before the offline-first mint were server-minted.
+        synced: json['synced'] as bool? ?? true,
+      );
+
   final String jti;
   final String keyB64Url;
   final String etag;
@@ -44,15 +53,6 @@ class PermanentQrRecord {
         'qrUrl': qrUrl,
         'synced': synced,
       };
-
-  factory PermanentQrRecord.fromJson(Map<String, dynamic> json) => PermanentQrRecord(
-        jti: json['jti'] as String,
-        keyB64Url: json['key'] as String,
-        etag: json['etag'] as String,
-        qrUrl: json['qrUrl'] as String,
-        // Records written before the offline-first mint were server-minted.
-        synced: json['synced'] as bool? ?? true,
-      );
 }
 
 /// Persistence for the (at most one) permanent QR record.
