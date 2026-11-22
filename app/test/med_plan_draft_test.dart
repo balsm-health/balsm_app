@@ -10,7 +10,7 @@ import 'package:medications/medications.dart';
 /// "to take" list is computed from this, so each frequency option must map to
 /// the schedule agreed for it.
 void main() {
-  final user = UserId.value('u');
+  const user = UserId.value('u');
   final now = DateTime(2026, 10, 5, 10, 30); // added mid-morning
 
   MedPlanDraft draft(String freq, {String n = '2', String unit = 'hours'}) => MedPlanDraft()

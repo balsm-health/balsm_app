@@ -119,7 +119,8 @@ void main() {
 
       final edited = await port.updateMember(
         id,
-        MemberDraft(displayName: 'Test Renamed', relationship: Relationship.child, dateOfBirth: null, sex: Sex.male),
+        const MemberDraft(
+            displayName: 'Test Renamed', relationship: Relationship.child, dateOfBirth: null, sex: Sex.male),
         groupId: null,
         now: DateTime(2026, 11, 3),
       );
