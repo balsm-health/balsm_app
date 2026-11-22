@@ -7,12 +7,20 @@ environment:
   flutter: '>=3.22.0'
 
 dev_dependencies:
-  melos: ^7.0.0
-  flutter_test:
-    sdk: flutter
+  balsm_api:
+    path: packages/balsm_api
+  balsm_lints:
+    path: packages/balsm_lints
   # Used by the repo-root test/ suites (golden, phi_leak_fuzz) which exercise
   # the app's shared code; resolved against the app package's dependencies.
   core:
     path: packages/core
-  golden_toolkit: ^0.15.0
   dio: ^5.8.0
+  flutter_test:
+    sdk: flutter
+  golden_toolkit: ^0.15.0
+  # The app's Material library (a fork of flutter/material); core's BalsmTheme returns its ThemeData.
+  material_ui: ^1.2.0
+  melos: ^7.0.0
+dependencies:
+  marionette_flutter: ^0.7.0

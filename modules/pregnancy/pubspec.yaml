@@ -5,15 +5,18 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
   flutter: '>=3.22.0'
 dependencies:
-  flutter:
-    sdk: flutter
   core:
     path: ../../packages/core
-  flutter_riverpod: ^2.6.1
-  drift: ^2.29.0
+  drift: ^2.31.0
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.1
+  riverpod: any
 dev_dependencies:
-  custom_lint: ^0.8.0
   balsm_boundary_lint:
     path: ../../packages/balsm_boundary_lint
+  balsm_lints:
+    path: ../../packages/balsm_lints
+  custom_lint: ^0.8.0
   flutter_test:
     sdk: flutter
