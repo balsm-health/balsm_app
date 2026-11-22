@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:riverpod/src/providers/notifier.dart';
 
 import '../../i18n/strings.dart';
 
@@ -10,4 +11,5 @@ export '../../i18n/strings.dart';
 /// ```dart
 /// final m = ref.watch(disclosureStringsProvider);
 /// ```
-final disclosureStringsProvider = LocalizationUtil.getProvider<Messages>(disclosureStrings);
+final NotifierProvider<StringsProvider<Messages>, Messages> disclosureStringsProvider =
+    LocalizationUtil.getProvider<Messages>(disclosureStrings);

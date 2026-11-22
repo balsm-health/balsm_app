@@ -1,6 +1,7 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core/core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../application/use_cases/accept_disclosure_use_case.dart';
 import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/disclosure_dao.dart';
@@ -28,11 +29,11 @@ final acceptDisclosureUseCaseProvider = Provider<AcceptDisclosureUseCase>((ref) 
 /// - RTL-aware: wraps content in [Directionality] based on [preferredLanguage].
 class ConsolidatedDisclosureScreen extends ConsumerStatefulWidget {
   const ConsolidatedDisclosureScreen({
-    super.key,
     required this.disclosureId,
     required this.version,
     required this.countryCode,
     required this.preferredLanguage,
+    super.key,
   });
 
   final String disclosureId;
@@ -119,13 +120,13 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
     return Directionality(
       textDirection: _isRtl ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
-        backgroundColor: BalsmColors.cream50,
+        backgroundColor: AppColors.cream50,
         body: SafeArea(
           child: Column(
             children: [
               // ── Header ──────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 24, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -137,7 +138,7 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
                     Text(
                       m.subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: BalsmColors.ink600,
+                            color: AppColors.ink600,
                           ),
                     ),
                   ],
@@ -192,8 +193,8 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
                         child: Text(
                           m.scrollToContinue,
                           style: const TextStyle(
-                            color: BalsmColors.ink500,
-                            fontSize: 13,
+                            color: AppColors.ink500,
+                            fontSize: FontSizes.bodySm,
                           ),
                         ),
                       ),
@@ -202,27 +203,27 @@ class _ConsolidatedDisclosureScreenState extends ConsumerState<ConsolidatedDiscl
                 ),
               ),
               // ── Error banner ─────────────────────────────────────────────
-              if (_error != null)
+              if (_error case final error?)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: BalsmErrorBanner(
-                    message: _error!,
+                    message: error,
                     onRetry: _accept,
                   ),
                 ),
               // ── Fixed CTA ─────────────────────────────────────────────
               Container(
-                decoration: BoxDecoration(
-                  color: BalsmColors.cream50,
+                decoration: const BoxDecoration(
+                  color: AppColors.cream50,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(15),
+                      color: AppColors.shadowSoft,
                       blurRadius: 12,
-                      offset: const Offset(0, -4),
+                      offset: Offset(0, -4),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 16, 24, 24),
                 child: BalsmButton(
                   label: m.accept,
                   onPressed: _scrolledToEnd && !_loading ? _accept : null,
@@ -253,14 +254,14 @@ class _SectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: BalsmColors.ink100),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        border: Border.all(color: AppColors.ink100),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: BalsmColors.hueBlue, size: 22),
+          Icon(icon, color: AppColors.hueBlue, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -270,16 +271,16 @@ class _SectionCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: BalsmColors.ink900,
+                    fontSize: FontSizes.bodyLg,
+                    color: AppColors.ink900,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   body,
                   style: const TextStyle(
-                    fontSize: 14,
-                    color: BalsmColors.ink600,
+                    fontSize: FontSizes.description,
+                    color: AppColors.ink600,
                     height: 1.5,
                   ),
                 ),

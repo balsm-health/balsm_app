@@ -80,7 +80,7 @@ class DisclosureDao {
 
 /// Riverpod provider — requires [appDatabaseProvider] to be overridden at
 /// bootstrap. Exposes on-device disclosure-acceptance reads to app-shell seams
-/// (e.g. the post-sign-in disclosure gate, which checks [watchAcceptance] to
+/// (e.g. the post-sign-in disclosure gate, which checks `watchAcceptance` to
 /// decide whether the consolidated disclosure must be shown). Acceptance rows
 /// are PHI-free regardless of who reads the DAO.
 final disclosureDaoProvider = Provider<DisclosureDao>((ref) {
