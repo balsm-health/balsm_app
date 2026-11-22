@@ -45,7 +45,9 @@ class ReadSharedCardUseCase {
       return AppResult.failure(linkFailure(e));
     }
     if (res == null) return AppResult.success(null);
-    final Uint8List epk, nonce, ciphertext;
+    final Uint8List epk;
+    final Uint8List nonce;
+    final Uint8List ciphertext;
     try {
       epk = base64.decode(res.ephemeralPublicKey);
       nonce = base64.decode(res.nonce);

@@ -53,7 +53,7 @@ class SecureLinkLocalStore implements LinkLocalStore {
         'fp': s.sealedFingerprint,
         'ver': s.sealedVersion,
         'key': s.uploadedKey,
-        if (s.scanned != null) 'scan': s.scanned!.toJson(),
+        if (s.scanned case final scanned?) 'scan': scanned.toJson(),
       };
 
   static LinkLocalState _decode(Map<String, dynamic> j) => LinkLocalState(

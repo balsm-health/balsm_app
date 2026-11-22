@@ -10,7 +10,7 @@ import '../ports/device_key_store.dart';
 import '../ports/link_local_store.dart';
 
 /// Asks the owner of a scanned profile QR to link accounts
-/// (`POST /api/v1/family-links`). The QR's [jti] is only a request handle —
+/// (`POST /api/v1/family-links`). The QR's `jti` is only a request handle —
 /// the server resolves it to the account. This phone's public key goes with
 /// the request so the recipient can later seal their card for it, and what
 /// the scan showed is kept on this phone for the pending row.

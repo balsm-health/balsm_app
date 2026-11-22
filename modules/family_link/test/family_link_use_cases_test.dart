@@ -27,7 +27,7 @@ class _Side {
       local: local,
       card: card,
       ownerAccountId: () => accountId,
-      now: now ?? () => DateTime.utc(2026, 10, 1),
+      now: now ?? () => DateTime.utc(2026, 10),
     );
     refresh = RefreshFamilyLinksUseCase(api: api, keys: keys, local: local, sharing: sharing);
     request = RequestFamilyLinkUseCase(api: api, keys: keys, local: local, newId: () => _linkId);
@@ -64,7 +64,7 @@ class _Side {
         relation: relation,
         status: status,
         direction: direction,
-        createdAt: DateTime.utc(2026, 9, 1),
+        createdAt: DateTime.utc(2026, 9),
         otherAccountId: direction == 'incoming' || status == 'linked' ? _them : null,
         otherDisplayName: otherName,
         otherPublicKey: otherKey,
@@ -114,8 +114,7 @@ void main() {
 
   group('refresh', () {
     test('splits requests waiting for me from those I sent', () async {
-      final b = _Side(_me);
-      b.seed(status: 'pending', direction: 'incoming', otherName: 'Test Requester');
+      final b = _Side(_me)..seed(status: 'pending', direction: 'incoming', otherName: 'Test Requester');
 
       final links = (await b.refresh()).value;
 
@@ -123,8 +122,7 @@ void main() {
     });
 
     test('sends this phone key where the server holds another, once', () async {
-      final b = _Side(_me);
-      b.seed(status: 'linked', direction: 'incoming');
+      final b = _Side(_me)..seed(status: 'linked', direction: 'incoming');
 
       await b.refresh();
       await b.refresh();
@@ -153,8 +151,7 @@ void main() {
 
   group('respond', () {
     test('approve sends this phone key; a second approve is a conflict', () async {
-      final b = _Side(_me);
-      b.seed(status: 'pending', direction: 'incoming');
+      final b = _Side(_me)..seed(status: 'pending', direction: 'incoming');
 
       final first = await b.respond.approve(_linkId);
       final second = await b.respond.approve(_linkId);
@@ -166,8 +163,7 @@ void main() {
     });
 
     test('decline ends the request', () async {
-      final b = _Side(_me);
-      b.seed(status: 'pending', direction: 'incoming');
+      final b = _Side(_me)..seed(status: 'pending', direction: 'incoming');
 
       final result = await b.respond.decline(_linkId);
 
@@ -178,8 +174,7 @@ void main() {
 
   group('end', () {
     test('cancel withdraws a pending request and forgets the scan', () async {
-      final a = _Side(_me);
-      a.seed(status: 'pending', direction: 'outgoing');
+      final a = _Side(_me)..seed(status: 'pending', direction: 'outgoing');
       await a.local.write(_linkId, const LinkLocalState(scanned: ScannedIdentity(name: 'Test Member')));
 
       final result = await a.end.cancel(_linkId);
@@ -190,8 +185,7 @@ void main() {
     });
 
     test('unlink ends a link', () async {
-      final b = _Side(_me);
-      b.seed(status: 'linked', direction: 'incoming');
+      final b = _Side(_me)..seed(status: 'linked', direction: 'incoming');
 
       await b.end.unlink(_linkId);
 
@@ -212,7 +206,7 @@ void main() {
         relation: 'daughter',
         status: 'linked',
         direction: 'incoming',
-        createdAt: DateTime.utc(2026, 9, 1),
+        createdAt: DateTime.utc(2026, 9),
         otherAccountId: _me,
       );
       viewer.api.cards[_linkId] = SealedCardResponse(
@@ -220,7 +214,7 @@ void main() {
         ephemeralPublicKey: sent.ephemeralPublicKey,
         nonce: sent.nonce,
         ciphertext: sent.ciphertext,
-        updatedAt: DateTime.utc(2026, 10, 1),
+        updatedAt: DateTime.utc(2026, 10),
       );
       final opened = await viewer.read(await viewer.link());
       final stranger = _Side(_them)
@@ -231,12 +225,12 @@ void main() {
       expect(on.isSuccess, isTrue);
       expect(opened.value!.card.name, 'Test Owner');
       expect(opened.value!.card.bloodType, 'O+');
-      expect(opened.value!.updatedAt, DateTime.utc(2026, 10, 1));
+      expect(opened.value!.updatedAt, DateTime.utc(2026, 10));
       expect(notForMe.error, isA<ValidationFailure>());
     });
 
     test('re-seals only when the card or the viewer key changed', () async {
-      var clock = DateTime.utc(2026, 10, 1);
+      var clock = DateTime.utc(2026, 10);
       final owner = _Side(_me, now: () => clock);
       final viewer = _Side(_them);
       owner.seed(status: 'linked', direction: 'outgoing', otherKey: await viewer.publicKey());
@@ -259,8 +253,7 @@ void main() {
     });
 
     test('turning sharing off purges the card', () async {
-      final owner = _Side(_me);
-      owner.seed(status: 'linked', direction: 'outgoing', otherKey: await _Side(_them).publicKey());
+      final owner = _Side(_me)..seed(status: 'linked', direction: 'outgoing', otherKey: await _Side(_them).publicKey());
       await owner.sharing(await owner.link(), on: true);
 
       await owner.sharing(await owner.link(), on: false);
@@ -270,8 +263,7 @@ void main() {
     });
 
     test('a pending request cannot carry a card', () async {
-      final owner = _Side(_me);
-      owner.seed(status: 'pending', direction: 'outgoing');
+      final owner = _Side(_me)..seed(status: 'pending', direction: 'outgoing');
 
       final result = await owner.sharing(await owner.link(), on: true);
 
@@ -280,8 +272,7 @@ void main() {
     });
 
     test('an unreadable own card leaves the shared card as it was', () async {
-      final owner = _Side(_me);
-      owner.seed(status: 'linked', direction: 'outgoing', otherKey: await _Side(_them).publicKey());
+      final owner = _Side(_me)..seed(status: 'linked', direction: 'outgoing', otherKey: await _Side(_them).publicKey());
       owner.card.card = null;
 
       final result = await owner.sharing(await owner.link(), on: true);
@@ -291,8 +282,7 @@ void main() {
     });
 
     test('nothing shared reads as null', () async {
-      final viewer = _Side(_them);
-      viewer.seed(status: 'linked', direction: 'incoming');
+      final viewer = _Side(_them)..seed(status: 'linked', direction: 'incoming');
 
       final result = await viewer.read(await viewer.link());
 
