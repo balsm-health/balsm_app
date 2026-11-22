@@ -99,7 +99,6 @@
     "map_directions": "Directions",
     "map_list": "List",
     "map_map": "Map",
-    "map_found": "places nearby",
     "map_no_results": "No places found",
     "map_no_res_h": "Try a different search or filter.",
     "map_search_area": "Search this area",
@@ -196,7 +195,15 @@
     "care_attach_empty_h": "Photos, video or PDF",
     "care_link_opens(Gender gender)": "Open link at",
     "care_link_remove": "Remove link to",
-    "care_attach_add": "Add"
+    "care_attach_add": "Add",
+    "map_found_count(int n)": "${_plural(n, one:'1 place nearby', other:'$n places nearby')}",
+    "type_hospital": "Hospitals",
+    "type_clinic": "Clinics",
+    "type_dentist": "Dentists",
+    "type_pharmacy": "Pharmacies",
+    "type_lab": "Labs",
+    "type_scan": "Scan centers",
+    "type_store": "Med. stores"
   },
   "checkin": {
     "latest": "Latest readings",
@@ -1037,7 +1044,8 @@
     "na_status_support": "Service status & support",
     "cal_months": "January|February|March|April|May|June|July|August|September|October|November|December",
     "cal_months_short": "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC",
-    "cal_weekdays": "Su|Mo|Tu|We|Th|Fr|Sa"
+    "cal_weekdays": "Su|Mo|Tu|We|Th|Fr|Sa",
+    "cal_months_abbr": "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
   },
   "storage": {
     "store_delete_rec": "Delete record",
