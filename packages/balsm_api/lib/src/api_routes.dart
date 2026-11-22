@@ -1,5 +1,3 @@
-// ignore_for_file: constant_identifier_names
-
 /// Single source of truth for every Balsm API path.
 ///
 /// Keep this 1:1 with the .NET controllers so the wire contract stays
@@ -48,7 +46,7 @@ class ApiRoutes {
 
   // ── Sessions ──────────────────────────────────────────────────────────────
   static const _sessions = '/sessions';
-  static const sessions = _sessions;
+  static const String sessions = _sessions;
   static const sessions_revoke_all = '$_sessions/revoke-all';
   static String session(String sessionId) => '$_sessions/$sessionId';
 
@@ -92,7 +90,7 @@ class ApiRoutes {
   // Linking two Balsm accounts by profile QR, and the sealed emergency card
   // each side may share with the other. The server stores ciphertext only.
   static const _family_links = '/api/v1/family-links';
-  static const family_links = _family_links;
+  static const String family_links = _family_links;
   static const family_links_incoming = '$_family_links/incoming';
   static const family_links_outgoing = '$_family_links/outgoing';
   static String familyLink(String id) => '$_family_links/$id';

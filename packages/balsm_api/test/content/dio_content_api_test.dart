@@ -25,9 +25,14 @@ Map<String, dynamic> _payload({String version = 'v-test'}) => {
 void main() {
   group('DioContentApi.pregnancyWeeks', () {
     test('GETs the route, unwraps the envelope and keeps the ETag', () async {
-      final adapter = FakeHttpAdapter((_) => jsonResponse(jsonEncode({'data': _payload()}), headers: {
+      final adapter = FakeHttpAdapter(
+        (_) => jsonResponse(
+          jsonEncode({'data': _payload()}),
+          headers: {
             'etag': ['"pw-1"'],
-          }));
+          },
+        ),
+      );
 
       final res = await DioContentApi(net: fakeNet(adapter)).pregnancyWeeks();
 
@@ -80,7 +85,7 @@ void main() {
     test('a week without a number is skipped', () {
       final json = _payload();
       (json['weeks'] as List).add({
-        'title': {'en': 'x'}
+        'title': {'en': 'x'},
       });
 
       expect(PregnancyWeeksResponse.fromJson(json).weeks, hasLength(2));
@@ -88,7 +93,7 @@ void main() {
 
     test('no version or no weeks is a FormatException', () {
       expect(() => PregnancyWeeksResponse.fromJson(_payload()..remove('version')), throwsFormatException);
-      expect(() => PregnancyWeeksResponse.fromJson(_payload()..['weeks'] = []), throwsFormatException);
+      expect(() => PregnancyWeeksResponse.fromJson(_payload()..['weeks'] = <dynamic>[]), throwsFormatException);
     });
   });
 }

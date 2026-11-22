@@ -2,72 +2,66 @@
 ///
 /// Pure Dart (no Flutter). PHI constraint: nothing in this package may log
 /// or stringify emails, user ids, tokens, or payload bodies.
-library balsm_api;
+library;
+
+import 'package:dio/dio.dart' show CancelToken;
+
+import 'balsm_api.dart' show CancelToken;
 
 /// Re-exported so callers can create/cancel requests without a direct dio
 /// dependency. Pass a [CancelToken] to any API method and call
 /// `token.cancel()` to abort in-flight requests.
 export 'package:dio/dio.dart' show CancelToken;
 
-export 'src/api_routes.dart';
-export 'src/transport/api_exception.dart';
-export 'src/transport/offline.dart';
-export 'src/transport/balsm_api_client.dart';
-export 'src/transport/envelope.dart';
-export 'src/transport/network_manager.dart';
-export 'src/transport/phi_leak_interceptor.dart';
-export 'src/transport/non_phi_allowlist.dart';
-export 'src/transport/http_log_interceptor.dart';
-export 'src/transport/file_downloader.dart';
-
-export 'src/emergency_qr/emergency_qr_api.dart';
-export 'src/emergency_qr/dio_emergency_qr_api.dart';
-export 'src/emergency_qr/requests.dart';
-export 'src/emergency_qr/responses.dart';
-
-export 'src/sessions/sessions_api.dart';
-export 'src/sessions/dio_sessions_api.dart';
-export 'src/sessions/responses.dart';
-
-export 'src/deletion/deletion_api.dart';
-export 'src/deletion/dio_deletion_api.dart';
-export 'src/deletion/responses.dart';
-
 export 'src/account/account_api.dart';
 export 'src/account/dio_account_api.dart';
 export 'src/account/requests.dart';
 export 'src/account/responses.dart';
-export 'src/care_directory/care_directory_api.dart';
-export 'src/care_team/care_team_api.dart';
-export 'src/care_team/dio_care_team_api.dart';
-export 'src/care_team/requests.dart';
-export 'src/care_team/responses.dart';
-export 'src/care_directory/dio_care_directory_api.dart';
-export 'src/care_directory/requests.dart';
-export 'src/care_directory/responses.dart';
-
+export 'src/api_routes.dart';
 export 'src/auth/auth_api.dart';
 export 'src/auth/dio_auth_api.dart';
 export 'src/auth/requests.dart';
 export 'src/auth/responses.dart';
-
-export 'src/disclosure/disclosure_api.dart';
-export 'src/disclosure/dio_disclosure_api.dart';
-export 'src/disclosure/requests.dart';
-
-export 'src/family_links/family_links_api.dart';
-export 'src/family_links/dio_family_links_api.dart';
-export 'src/family_links/requests.dart';
-export 'src/family_links/responses.dart';
-
-export 'src/geofence/geofence_api.dart';
-export 'src/geofence/dio_geofence_api.dart';
-export 'src/geofence/responses.dart';
-
+export 'src/care_directory/care_directory_api.dart';
+export 'src/care_directory/dio_care_directory_api.dart';
+export 'src/care_directory/requests.dart';
+export 'src/care_directory/responses.dart';
+export 'src/care_team/care_team_api.dart';
+export 'src/care_team/dio_care_team_api.dart';
+export 'src/care_team/requests.dart';
+export 'src/care_team/responses.dart';
 export 'src/content/content_api.dart';
 export 'src/content/dio_content_api.dart';
 export 'src/content/responses.dart';
-
-export 'src/maintenance/maintenance_api.dart';
+export 'src/deletion/deletion_api.dart';
+export 'src/deletion/dio_deletion_api.dart';
+export 'src/deletion/responses.dart';
+export 'src/disclosure/dio_disclosure_api.dart';
+export 'src/disclosure/disclosure_api.dart';
+export 'src/disclosure/requests.dart';
+export 'src/emergency_qr/dio_emergency_qr_api.dart';
+export 'src/emergency_qr/emergency_qr_api.dart';
+export 'src/emergency_qr/requests.dart';
+export 'src/emergency_qr/responses.dart';
+export 'src/family_links/dio_family_links_api.dart';
+export 'src/family_links/family_links_api.dart';
+export 'src/family_links/requests.dart';
+export 'src/family_links/responses.dart';
+export 'src/geofence/dio_geofence_api.dart';
+export 'src/geofence/geofence_api.dart';
+export 'src/geofence/responses.dart';
 export 'src/maintenance/dio_maintenance_api.dart';
+export 'src/maintenance/maintenance_api.dart';
 export 'src/maintenance/responses.dart';
+export 'src/sessions/dio_sessions_api.dart';
+export 'src/sessions/responses.dart';
+export 'src/sessions/sessions_api.dart';
+export 'src/transport/api_exception.dart';
+export 'src/transport/balsm_api_client.dart';
+export 'src/transport/envelope.dart';
+export 'src/transport/file_downloader.dart';
+export 'src/transport/http_log_interceptor.dart';
+export 'src/transport/network_manager.dart';
+export 'src/transport/non_phi_allowlist.dart';
+export 'src/transport/offline.dart';
+export 'src/transport/phi_leak_interceptor.dart';

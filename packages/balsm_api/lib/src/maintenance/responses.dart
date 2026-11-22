@@ -5,16 +5,6 @@
 class MaintenanceStatusResponse {
   const MaintenanceStatusResponse({required this.mode, this.message, this.endsAt, this.updatedAt});
 
-  final String mode;
-
-  /// Optional admin message to patients; null means "use the default copy".
-  final String? message;
-
-  /// Announced end time (UTC); null means "not announced".
-  final DateTime? endsAt;
-
-  final DateTime? updatedAt;
-
   factory MaintenanceStatusResponse.fromJson(Map<String, dynamic> json) {
     final message = json['message'];
     return MaintenanceStatusResponse(
@@ -24,6 +14,16 @@ class MaintenanceStatusResponse {
       updatedAt: _instant(json['updated_at']),
     );
   }
+
+  final String mode;
+
+  /// Optional admin message to patients; null means "use the default copy".
+  final String? message;
+
+  /// Announced end time (UTC); null means "not announced".
+  final DateTime? endsAt;
+
+  final DateTime? updatedAt;
 
   static DateTime? _instant(Object? v) => v is String ? DateTime.tryParse(v)?.toUtc() : null;
 }

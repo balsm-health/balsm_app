@@ -59,14 +59,16 @@ void main() {
   test('upsert posts snake_case body', () async {
     final adapter = FakeHttpAdapter((_) => jsonResponse('{"data": {"id": "cp-1"}, "error": null}'));
 
-    await DioCareTeamApi(net: fakeNet(adapter)).upsert(UpsertCareProviderRequest(
-      id: 'cp-1',
-      healthProfileId: 'hp-1',
-      type: 'doctor',
-      name: 'Provider Alpha',
-      mapUrl: 'https://maps.example.test/x',
-      createdAt: DateTime.utc(2026, 9, 1, 12),
-    ));
+    await DioCareTeamApi(net: fakeNet(adapter)).upsert(
+      UpsertCareProviderRequest(
+        id: 'cp-1',
+        healthProfileId: 'hp-1',
+        type: 'doctor',
+        name: 'Provider Alpha',
+        mapUrl: 'https://maps.example.test/x',
+        createdAt: DateTime.utc(2026, 9, 1, 12),
+      ),
+    );
 
     final req = adapter.requests.single;
     expect(req.method, 'POST');

@@ -13,6 +13,7 @@ class DioMaintenanceApi implements MaintenanceApi {
   @override
   Future<MaintenanceStatusResponse> getStatus({CancelToken? cancelToken}) async {
     final res = await _net.get(ApiRoutes.maintenance, cancelToken: cancelToken);
+    // A decoded JSON object: its values are untyped until each field is read and checked.
     final body = res.data ?? const <String, dynamic>{};
     final data = body['data'];
     return MaintenanceStatusResponse.fromJson(data is Map<String, dynamic> ? data : body);

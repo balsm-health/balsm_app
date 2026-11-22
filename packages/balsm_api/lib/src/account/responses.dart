@@ -6,6 +6,8 @@
 class AccountSelfResponse {
   const AccountSelfResponse({
     required this.id,
+    required this.countryCode,
+    required this.preferredLanguage,
     this.handle,
     this.firstName,
     this.lastName,
@@ -14,13 +16,30 @@ class AccountSelfResponse {
     this.gender,
     this.nationality,
     this.phone,
-    required this.countryCode,
-    required this.preferredLanguage,
     this.deletionState = 'ACTIVE',
     this.dobYear,
     this.dateOfBirth,
     this.nationalId,
   });
+
+  factory AccountSelfResponse.fromJson(Map<String, dynamic> json) => AccountSelfResponse(
+        // Server sends `user_id` (consistent with verify / the rest of the API).
+        id: json['user_id'] as String,
+        handle: json['handle'] as String?,
+        firstName: json['first_name'] as String?,
+        lastName: json['last_name'] as String?,
+        displayName: json['display_name'] as String?,
+        bio: json['bio'] as String?,
+        gender: json['gender'] as String?,
+        nationality: json['nationality'] as String?,
+        phone: json['phone'] as String?,
+        countryCode: json['country_code'] as String,
+        preferredLanguage: json['preferred_language'] as String,
+        deletionState: (json['deletion_state'] as String?) ?? 'ACTIVE',
+        dobYear: (json['dob_year'] as num?)?.toInt(),
+        dateOfBirth: json['date_of_birth'] as String?,
+        nationalId: json['national_id'] as String?,
+      );
 
   final String id;
   final String? handle;
@@ -48,37 +67,18 @@ class AccountSelfResponse {
 
   /// PHI/PII: national ID, decrypted server-side for self.
   final String? nationalId;
-
-  factory AccountSelfResponse.fromJson(Map<String, dynamic> json) => AccountSelfResponse(
-        // Server sends `user_id` (consistent with verify / the rest of the API).
-        id: json['user_id'] as String,
-        handle: json['handle'] as String?,
-        firstName: json['first_name'] as String?,
-        lastName: json['last_name'] as String?,
-        displayName: json['display_name'] as String?,
-        bio: json['bio'] as String?,
-        gender: json['gender'] as String?,
-        nationality: json['nationality'] as String?,
-        phone: json['phone'] as String?,
-        countryCode: json['country_code'] as String,
-        preferredLanguage: json['preferred_language'] as String,
-        deletionState: (json['deletion_state'] as String?) ?? 'ACTIVE',
-        dobYear: (json['dob_year'] as num?)?.toInt(),
-        dateOfBirth: json['date_of_birth'] as String?,
-        nationalId: json['national_id'] as String?,
-      );
 }
 
 class ClaimHandleResponse {
   const ClaimHandleResponse({this.handle});
-  final String? handle;
   factory ClaimHandleResponse.fromJson(Map<String, dynamic> json) =>
       ClaimHandleResponse(handle: json['handle'] as String?);
+  final String? handle;
 }
 
 class HandleAvailabilityResponse {
   const HandleAvailabilityResponse({this.available = false});
-  final bool available;
   factory HandleAvailabilityResponse.fromJson(Map<String, dynamic> json) =>
       HandleAvailabilityResponse(available: json['available'] as bool? ?? false);
+  final bool available;
 }

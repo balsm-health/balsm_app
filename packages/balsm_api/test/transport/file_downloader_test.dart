@@ -15,13 +15,15 @@ void main() {
 
   test('downloads bytes to the given path', () async {
     const body = 'hello map pack';
-    final adapter = FakeHttpAdapter((_) => ResponseBody.fromString(
-          body,
-          200,
-          headers: {
-            Headers.contentLengthHeader: ['${utf8.encode(body).length}'],
-          },
-        ));
+    final adapter = FakeHttpAdapter(
+      (_) => ResponseBody.fromString(
+        body,
+        200,
+        headers: {
+          Headers.contentLengthHeader: ['${utf8.encode(body).length}'],
+        },
+      ),
+    );
     final downloader = DioFileDownloader(dio: fakeDio(adapter));
     final savePath = '${tmp.path}/out.bin';
 
@@ -32,13 +34,15 @@ void main() {
 
   test('onProgress reports a final fraction of 1.0 when content-length is known', () async {
     const body = 'x';
-    final adapter = FakeHttpAdapter((_) => ResponseBody.fromString(
-          body,
-          200,
-          headers: {
-            Headers.contentLengthHeader: ['${utf8.encode(body).length}'],
-          },
-        ));
+    final adapter = FakeHttpAdapter(
+      (_) => ResponseBody.fromString(
+        body,
+        200,
+        headers: {
+          Headers.contentLengthHeader: ['${utf8.encode(body).length}'],
+        },
+      ),
+    );
     final downloader = DioFileDownloader(dio: fakeDio(adapter));
     final seen = <double>[];
 
@@ -68,7 +72,7 @@ void main() {
     final savePath = '${tmp.path}/cancelled.bin';
     final token = CancelToken();
 
-    Future<void>.delayed(const Duration(milliseconds: 5), () => token.cancel());
+    Future<void>.delayed(const Duration(milliseconds: 5), token.cancel);
 
     await expectLater(
       downloader.download('https://cdn.test/pack.bin', savePath, cancelToken: token),

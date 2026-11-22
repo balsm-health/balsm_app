@@ -10,7 +10,7 @@ import 'api_exception.dart';
 Map<String, dynamic> unwrapEnvelope(Response<dynamic> response) {
   final body = response.data;
   if (body is! Map<String, dynamic>) return const {};
-  final error = body['error'];
+  final Object? error = body['error'];
   if (error != null) {
     throw ApiException.fromEnvelopeError(error, statusCode: response.statusCode);
   }
@@ -22,7 +22,7 @@ Map<String, dynamic> unwrapEnvelope(Response<dynamic> response) {
 List<dynamic> unwrapEnvelopeList(Response<dynamic> response) {
   final body = response.data;
   if (body is! Map<String, dynamic>) return const [];
-  final error = body['error'];
+  final Object? error = body['error'];
   if (error != null) {
     throw ApiException.fromEnvelopeError(error, statusCode: response.statusCode);
   }
@@ -36,7 +36,7 @@ List<dynamic> unwrapEnvelopeList(Response<dynamic> response) {
 Map<String, dynamic>? unwrapNullableEnvelope(Response<dynamic> response) {
   final body = response.data;
   if (body is! Map<String, dynamic>) return null;
-  final error = body['error'];
+  final Object? error = body['error'];
   if (error != null) {
     throw ApiException.fromEnvelopeError(error, statusCode: response.statusCode);
   }

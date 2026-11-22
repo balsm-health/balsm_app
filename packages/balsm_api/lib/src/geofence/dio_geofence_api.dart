@@ -13,6 +13,7 @@ class DioGeofenceApi implements GeofenceApi {
   @override
   Future<DeniedCountriesResponse> getDeniedCountries({CancelToken? cancelToken}) async {
     final res = await _net.get(ApiRoutes.geofence_denied_countries, cancelToken: cancelToken);
+    // A decoded JSON object: its values are untyped until each field is read and checked.
     final body = res.data ?? const <String, dynamic>{};
     // Legacy tolerance: unwrap {data: {...}} but fall back to the flat body.
     final data = body['data'];
