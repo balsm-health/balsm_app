@@ -1,7 +1,7 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pregnancy/pregnancy.dart';
 
 import '../../app_state.dart';
@@ -17,7 +17,7 @@ Future<void> openBaby(BuildContext context, HealthProfileId id, {bool rename = f
 /// One baby of the pregnancy (mother-child.jsx `MCBabyScreen`): its scans,
 /// measurements and documents, an optional name, and "Add a record".
 class BabyScreen extends ConsumerStatefulWidget {
-  const BabyScreen({super.key, required this.id, this.rename = false, this.mother});
+  const BabyScreen({required this.id, super.key, this.rename = false, this.mother});
   final HealthProfileId id;
   final bool rename;
 
@@ -36,7 +36,7 @@ class _BabyScreenState extends ConsumerState<BabyScreen> {
 
   PregnancyBaby? _baby(Pregnancy? preg) {
     if (preg == null) return null;
-    final babies = ref.read(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const <PregnancyBaby>[];
+    final babies = ref.read(pregnancyBabiesProvider(preg.id)).value ?? const <PregnancyBaby>[];
     return babies.where((b) => b.id == widget.id && b.isActive).firstOrNull;
   }
 
@@ -53,10 +53,10 @@ class _BabyScreenState extends ConsumerState<BabyScreen> {
     final p = s.strings.pregnancy;
     final preg = ref.watch(activePregnancyOfProvider(widget.mother));
     final babies =
-        preg == null ? const <PregnancyBaby>[] : ref.watch(pregnancyBabiesProvider(preg.id)).valueOrNull ?? const [];
+        preg == null ? const <PregnancyBaby>[] : ref.watch(pregnancyBabiesProvider(preg.id)).value ?? const [];
     final b = babies.where((x) => x.id == widget.id && x.isActive).firstOrNull;
-    if (preg == null || b == null) return const Scaffold(backgroundColor: Colors.white);
-    final items = (ref.watch(pregnancyItemsProvider(preg.itemsKey)).valueOrNull ?? const <PregnancyItem>[])
+    if (preg == null || b == null) return const Scaffold(backgroundColor: AppColors.white);
+    final items = (ref.watch(pregnancyItemsProvider(preg.itemsKey)).value ?? const <PregnancyItem>[])
         .where((i) => i.isAbout(b.id))
         .toList();
     final sections = [
@@ -67,13 +67,15 @@ class _BabyScreenState extends ConsumerState<BabyScreen> {
     return FamilyScaffold(
       title: babyLabel(s, b, babies),
       trailing: RoundBtn(icon: LucideIcons.pencil, semanticLabel: p.rename, iconSize: 18, onTap: _rename),
-      footer: PButton(p.add_record,
-          icon: LucideIcons.paperclip,
-          large: true,
-          block: true,
-          accent: s.accent,
-          ar: s.rtl,
-          onTap: () => openPregnancyAdd(context, babyIds: [b.id], mother: widget.mother)),
+      footer: PButton(
+        p.add_record,
+        icon: LucideIcons.paperclip,
+        large: true,
+        block: true,
+        accent: s.accent,
+        ar: s.rtl,
+        onTap: () => openPregnancyAdd(context, babyIds: [b.id], mother: widget.mother),
+      ),
       children: [
         if (b.givenName == null)
           Padding(
@@ -85,10 +87,12 @@ class _BabyScreenState extends ConsumerState<BabyScreen> {
           if (items.where((i) => i.kind == kind).isEmpty)
             Text(p.nothing_yet, style: Typo.meta(ar: s.rtl))
           else
-            RowsCard(children: [
-              for (final it in items.where((i) => i.kind == kind))
-                PregnancyItemRow(item: it, pregnancy: preg, babies: babies),
-            ]),
+            RowsCard(
+              children: [
+                for (final it in items.where((i) => i.kind == kind))
+                  PregnancyItemRow(item: it, pregnancy: preg, babies: babies),
+              ],
+            ),
         ],
         Padding(
           padding: const EdgeInsets.only(top: 16),
@@ -136,17 +140,27 @@ class _RenameSheetState extends ConsumerState<_RenameSheet> {
     final p = s.strings.pregnancy;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: FamilySheet(title: s.strings.family.f_name, sub: p.name_sub, children: [
-        TextField(
-          controller: _name,
-          autofocus: true,
-          maxLength: BirthDetails.maxNameLength,
-          decoration: fieldDecoration(s, p.name_ph).copyWith(counterText: ''),
-        ),
-        const SizedBox(height: 14),
-        PButton(s.strings.family.save,
-            large: true, block: true, accent: s.accent, ar: s.rtl, onTap: _saving ? null : _save),
-      ]),
+      child: FamilySheet(
+        title: s.strings.family.f_name,
+        sub: p.name_sub,
+        children: [
+          TextField(
+            controller: _name,
+            autofocus: true,
+            maxLength: BirthDetails.maxNameLength,
+            decoration: fieldDecoration(s, p.name_ph).copyWith(counterText: ''),
+          ),
+          const SizedBox(height: 14),
+          PButton(
+            s.strings.family.save,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: _saving ? null : _save,
+          ),
+        ],
+      ),
     );
   }
 }

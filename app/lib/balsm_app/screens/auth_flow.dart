@@ -1,27 +1,31 @@
 import 'dart:async';
+
 import 'package:account/account.dart';
 import 'package:auth/auth.dart';
 import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../app_state.dart';
+import '../assets.dart';
 import '../auth/auth_flow_controllers.dart';
 import '../auth/go_online_controller.dart';
 import '../dev/shake_to_dev_config.dart';
-import '../routes.dart';
-import '../assets.dart';
 import '../kit.dart';
 import '../responsive.dart';
-import '../tokens.dart';
+import '../routes.dart';
 import '../widgets/auth_fields.dart';
 import '../widgets/legal_sheet.dart';
 import 'remove_device_account.dart';
 import 'walkthrough_screen.dart';
+
+// A step dot growing into the active pill.
+const _stepDotAnimation = Duration(milliseconds: 250);
 
 /// Routes the auth flow by `state.route`.
 class AuthRouter extends StatelessWidget {
@@ -122,8 +126,9 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
   }
 
   void _start(PatientAppState s, AuthIntent intent) {
-    s.setAuthIntent(intent);
-    s.go(AppRoutes.phone);
+    s
+      ..setAuthIntent(intent)
+      ..go(AppRoutes.phone);
   }
 
   @override
@@ -136,161 +141,173 @@ class _WelcomeScreenState extends ConsumerState<_WelcomeScreen> {
     final short = MediaQuery.sizeOf(context).height < 860;
     return BalsmWelcomeBackground(
       child: SafeArea(
-        child: Stack(children: [
-          Positioned.fill(
-            child: ContentColumn(
-              maxWidth: 440,
-              maxHeight: kContentBlockMaxHeight,
-              child: Column(children: [
-                // `.wbody { margin-top: auto }` — lockup + CTAs sit on the cream
-                // fade; watercolor fills the space above.
-                // `.wbody { margin-top: auto }` with a safety valve. The design's
-                // 168px lockup assumes the prototype's welcome, which has no social
-                // buttons; Flutter still shows Google on Android/web/macOS, and that
-                // extra block plus an error line overflows a 402x900 viewport.
-                // reverse: true keeps the content bottom-anchored exactly as the
-                // Spacer did, and scrolls instead of clipping when it cannot fit.
-                Expanded(
-                  child: SingleChildScrollView(
-                    reverse: true,
-                    child: Padding(
-                      // `.wbody { padding-bottom: 36px }`, trimmed on a short phone
-                      // so the block sits down by the trust row, not high above it.
-                      padding: EdgeInsetsDirectional.fromSTEB(28, 0, 28, short ? 20 : 36),
-                      child: Column(children: [
-                        SvgPicture.asset(Assets.brand_logo_vertical,
-                            width: short ? 120 : 168, height: short ? 120 : 168, fit: BoxFit.contain),
-                        SizedBox(height: short ? 18 : 26),
-                        _SteadyLines(
-                          lines: 2,
-                          style: Typo.display(ar: s.rtl),
-                          child: Text(s.strings.onboarding.w_title,
-                              textAlign: TextAlign.center, style: Typo.display(ar: s.rtl)),
-                        ),
-                        const SizedBox(height: 14),
-                        // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
-                        // measure instead of the full 28px-gutter width. 34ch against
-                        // the 16px body face is ~326 logical px.
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 326),
-                          child: _SteadyLines(
-                            lines: 3,
-                            style: Typo.body(ar: s.rtl),
-                            child: Text(s.strings.onboarding.w_sub,
-                                textAlign: TextAlign.center, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ContentColumn(
+                maxWidth: 440,
+                maxHeight: kContentBlockMaxHeight,
+                child: Column(
+                  children: [
+                    // `.wbody { margin-top: auto }` — lockup + CTAs sit on the cream
+                    // fade; watercolor fills the space above.
+                    // `.wbody { margin-top: auto }` with a safety valve. The design's
+                    // 168px lockup assumes the prototype's welcome, which has no social
+                    // buttons; Flutter still shows Google on Android/web/macOS, and that
+                    // extra block plus an error line overflows a 402x900 viewport.
+                    // reverse: true keeps the content bottom-anchored exactly as the
+                    // Spacer did, and scrolls instead of clipping when it cannot fit.
+                    Expanded(
+                      child: SingleChildScrollView(
+                        reverse: true,
+                        child: Padding(
+                          // `.wbody { padding-bottom: 36px }`, trimmed on a short phone
+                          // so the block sits down by the trust row, not high above it.
+                          padding: EdgeInsetsDirectional.fromSTEB(28, 0, 28, short ? 20 : 36),
+                          child: Column(
+                            children: [
+                              SvgPicture.asset(
+                                Assets.brand_logo_vertical,
+                                width: short ? 120 : 168,
+                                height: short ? 120 : 168,
+                              ),
+                              SizedBox(height: short ? 18 : 26),
+                              _SteadyLines(
+                                lines: 2,
+                                style: Typo.display(ar: s.rtl),
+                                child: Text(
+                                  s.strings.onboarding.w_title,
+                                  textAlign: TextAlign.center,
+                                  style: Typo.display(ar: s.rtl),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              // `.wsub { max-width: 34ch }` — hold the sub to a comfortable
+                              // measure instead of the full 28px-gutter width. 34ch against
+                              // the 16px body face is ~326 logical px.
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 326),
+                                child: _SteadyLines(
+                                  lines: 3,
+                                  style: Typo.body(ar: s.rtl),
+                                  child: Text(
+                                    s.strings.onboarding.w_sub,
+                                    textAlign: TextAlign.center,
+                                    style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+                              // auth.jsx WelcomeScreen: one button per way in, so the next
+                              // screen knows whether it registers, signs in or creates a
+                              // device-only account.
+                              PButton(
+                                s.strings.onboarding.w_create,
+                                large: true,
+                                block: true,
+                                accent: s.accent,
+                                ar: s.rtl,
+                                onTap: () => _start(s, AuthIntent.signUp),
+                              ),
+                              const SizedBox(height: 10),
+                              PButton(
+                                s.strings.onboarding.w_signin,
+                                variant: BtnVariant.secondary,
+                                large: true,
+                                block: true,
+                                accent: s.accent,
+                                ar: s.rtl,
+                                onTap: () => _start(s, AuthIntent.signIn),
+                              ),
+                              const SizedBox(height: 10),
+                              PButton(
+                                s.strings.onboarding.w_device,
+                                icon: LucideIcons.smartphone,
+                                variant: BtnVariant.ghost,
+                                size: BtnSize.md,
+                                block: true,
+                                accent: s.accent,
+                                ar: s.rtl,
+                                onTap: () => _start(s, AuthIntent.deviceOnly),
+                              ),
+                              const SizedBox(height: 16),
+                              if (_googleAvailable) ...[
+                                _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
+                                const SizedBox(height: 14),
+                                _SocialButton(
+                                  label: s.strings.onboarding.w_google,
+                                  dark: false,
+                                  googleG: true,
+                                  busy: _busyGoogle,
+                                  onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s)),
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+                              // No social button on this platform, so no separator and
+                              // no space held for one: the design dropped both with the
+                              // buttons (auth.jsx WelcomeScreen). Holding 18px here left
+                              // an empty band under the CTAs that pushed the block up.
+                              if (_error case final error?) ...[
+                                Semantics(
+                                  liveRegion: true,
+                                  child: Text(
+                                    error,
+                                    textAlign: TextAlign.center,
+                                    style: Typo.meta(ar: s.rtl)
+                                        .copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 30),
-                        // auth.jsx WelcomeScreen: one button per way in, so the next
-                        // screen knows whether it registers, signs in or creates a
-                        // device-only account.
-                        PButton(s.strings.onboarding.w_create,
-                            variant: BtnVariant.primary,
-                            large: true,
-                            block: true,
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: () => _start(s, AuthIntent.signUp)),
-                        const SizedBox(height: 10),
-                        PButton(s.strings.onboarding.w_signin,
-                            variant: BtnVariant.secondary,
-                            large: true,
-                            block: true,
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: () => _start(s, AuthIntent.signIn)),
-                        const SizedBox(height: 10),
-                        PButton(s.strings.onboarding.w_device,
-                            icon: LucideIcons.smartphone,
-                            variant: BtnVariant.ghost,
-                            size: BtnSize.md,
-                            block: true,
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: () => _start(s, AuthIntent.deviceOnly)),
-                        const SizedBox(height: 16),
-                        if (_googleAvailable) ...[
-                          _OrDivider(label: s.strings.onboarding.w_or, ar: s.rtl),
-                          const SizedBox(height: 14),
-                          _SocialButton(
-                              label: s.strings.onboarding.w_google,
-                              dark: false,
-                              googleG: true,
-                              busy: _busyGoogle,
-                              onTap: _busyGoogle ? null : () => unawaited(_signInGoogle(s))),
-                          const SizedBox(height: 14),
-                        ],
-                        // No social button on this platform, so no separator and
-                        // no space held for one: the design dropped both with the
-                        // buttons (auth.jsx WelcomeScreen). Holding 18px here left
-                        // an empty band under the CTAs that pushed the block up.
-                        if (_error != null) ...[
-                          Semantics(
-                              liveRegion: true,
-                              child: Text(_error!,
-                                  textAlign: TextAlign.center,
-                                  style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
-                          const SizedBox(height: 12),
-                        ],
-                      ]),
+                      ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 22),
-                  child: Row(
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 22),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        // Labels are translated and wrap to different line counts;
+                        // top alignment keeps the three icons on one baseline.
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _Trust(s, LucideIcons.smartphone, s.strings.settings.trust_device),
+                          const SizedBox(width: 22),
+                          _Trust(s, LucideIcons.lock, s.strings.settings.trust_private),
+                          const SizedBox(width: 22),
+                          _Trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
+                        ],
+                      ),
+                    ),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      // Labels are translated and wrap to different line counts;
-                      // top alignment keeps the three icons on one baseline.
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _trust(s, LucideIcons.smartphone, s.strings.settings.trust_device),
-                        const SizedBox(width: 22),
-                        _trust(s, LucideIcons.lock, s.strings.settings.trust_private),
-                        const SizedBox(width: 22),
-                        _trust(s, LucideIcons.cloudOff, s.strings.settings.trust_offline),
-                      ]),
+                        // Dev Config, reachable before anyone signs in. The shake gesture
+                        // opens the same screen, but a shake is not available on a
+                        // simulator and not discoverable on a device, and the server this
+                        // build talks to is the first thing that goes wrong. Never in
+                        // prod: `serverSwitchingEnabled` is dev + staging only.
+                        // Only where a shake can't reach Dev Config: emulators,
+                        // simulators, desktop and web. A real phone or tablet shakes,
+                        // and the pill there is clutter (hidden while the check runs).
+                        if (FlavorConfig.current.serverSwitchingEnabled && ref.watch(canShakeProvider).value == false)
+                          _DevConfigPill(onClosed: () => setState(() {})),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                  ],
                 ),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  // Dev Config, reachable before anyone signs in. The shake gesture
-                  // opens the same screen, but a shake is not available on a
-                  // simulator and not discoverable on a device, and the server this
-                  // build talks to is the first thing that goes wrong. Never in
-                  // prod: `serverSwitchingEnabled` is dev + staging only.
-                  // Only where a shake can't reach Dev Config: emulators,
-                  // simulators, desktop and web. A real phone or tablet shakes,
-                  // and the pill there is clutter (hidden while the check runs).
-                  if (FlavorConfig.current.serverSwitchingEnabled && ref.watch(canShakeProvider).valueOrNull == false)
-                    _DevConfigPill(onClosed: () => setState(() {})),
-                ]),
-                const SizedBox(height: 4),
-              ]),
+              ),
             ),
-          ),
-          // auth.jsx WelcomeScreen: the language switch rides the top end
-          // corner, a light pill over the watercolour.
-          const PositionedDirectional(top: 12, end: 16, child: _LanguagePill()),
-        ]),
+            // auth.jsx WelcomeScreen: the language switch rides the top end
+            // corner, a light pill over the watercolour.
+            const PositionedDirectional(top: 12, end: 16, child: _LanguagePill()),
+          ],
+        ),
       ),
     );
   }
-
-  Widget _trust(PatientAppState s, IconData icon, String label) => SizedBox(
-        width: 84,
-        child: Column(children: [
-          Icon(icon, size: 22, color: s.accent.main),
-          const SizedBox(height: 6),
-          // Two lines held in both languages ("Private by / default" wraps in
-          // English only), so the row does not change height on a switch.
-          _SteadyLines(
-            lines: 2,
-            style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2),
-            child: Text(label,
-                textAlign: TextAlign.center,
-                style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w600, color: T.fg3)),
-          ),
-        ]),
-      );
 }
 
 /// Opens Dev Config from the welcome screen, labelled with the server this
@@ -317,31 +334,33 @@ class _DevConfigPill extends ConsumerWidget {
     String base;
     try {
       base = ref.watch(balsmApiControllerProvider).client.baseUrl;
-    } catch (_) {
+    } on Object catch (_) {
       base = FlavorConfig.current.defaultServer.apiBaseUrl;
     }
     final url = Uri.tryParse(base);
     final label = url == null || url.host.isEmpty ? '?' : (url.hasPort ? '${url.host}:${url.port}' : url.host);
 
     return Semantics(
-        button: true,
-        label: 'Dev config',
-        child: MinTapTarget(
-          child: Pressable(
-            onTap: () async {
-              await openDevConfig(context);
-              onClosed();
-            },
-            child: Container(
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0x6B1A1A17),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0x52FFFFFF)),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(LucideIcons.wrench, size: 16, color: Colors.white),
+      button: true,
+      label: 'Dev config',
+      child: MinTapTarget(
+        child: Pressable(
+          onTap: () async {
+            await openDevConfig(context);
+            onClosed();
+          },
+          child: Container(
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: AppColors.scrim,
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              border: Border.all(color: AppColors.white30),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.wrench, size: 16, color: AppColors.white),
                 const SizedBox(width: 7),
                 // Narrow enough to sit beside the language pill on a 402px screen;
                 // a long staging host ellipsises rather than overflowing the row.
@@ -351,13 +370,15 @@ class _DevConfigPill extends ConsumerWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Typo.bodySm().copyWith(fontWeight: FontWeight.w700, color: Colors.white),
+                    style: Typo.bodySm().copyWith(fontWeight: FontWeight.w700, color: AppColors.white),
                   ),
                 ),
-              ]),
+              ],
             ),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
 
@@ -367,15 +388,19 @@ class _OrDivider extends StatelessWidget {
   final String label;
   final bool ar;
   @override
-  Widget build(BuildContext context) => Row(children: [
-        const Expanded(child: ColoredBox(color: Color(0x47FFFFFF), child: SizedBox(height: 1))),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(label,
-              style: Typo.meta(ar: ar).copyWith(color: const Color(0xB3FFFFFF), fontWeight: FontWeight.w500)),
-        ),
-        const Expanded(child: ColoredBox(color: Color(0x47FFFFFF), child: SizedBox(height: 1))),
-      ]);
+  Widget build(BuildContext context) => Row(
+        children: [
+          const Expanded(child: ColoredBox(color: AppColors.white30, child: SizedBox(height: 1))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              label,
+              style: Typo.meta(ar: ar).copyWith(color: AppColors.white70, fontWeight: FontWeight.w500),
+            ),
+          ),
+          const Expanded(child: ColoredBox(color: AppColors.white30, child: SizedBox(height: 1))),
+        ],
+      );
 }
 
 // ── Auth header with step dots ───────────────────────────────
@@ -390,25 +415,29 @@ class _AuthHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-      child: Row(children: [
-        RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: onBack),
-        const Spacer(),
-        if (step case final step?)
-          Row(children: [
-            for (var i = 0; i < total; i++)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.only(left: 4),
-                width: i == step - 1 ? 22 : 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: i <= step - 1 ? s.accent.main : T.ink200,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-          ]),
-      ]),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 6, 20, 12),
+      child: Row(
+        children: [
+          RoundBtn(icon: backArrow(context), semanticLabel: s.strings.common.a11y_back, onTap: onBack),
+          const Spacer(),
+          if (step case final step?)
+            Row(
+              children: [
+                for (var i = 0; i < total; i++)
+                  AnimatedContainer(
+                    duration: _stepDotAnimation,
+                    margin: const EdgeInsetsDirectional.only(start: 4),
+                    width: i == step - 1 ? 22 : 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: i <= step - 1 ? s.accent.main : AppColors.ink200,
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
@@ -425,74 +454,80 @@ class _UnderEighteenScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Scaffold(
-      backgroundColor: T.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-              child: Row(children: [
-                RoundBtn(
-                    icon: backArrow(context),
-                    semanticLabel: s.strings.common.a11y_back,
-                    onTap: () => Navigator.of(context).maybePop()),
-              ]),
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(children: [
-                Container(
-                  width: 84,
-                  height: 84,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
-                  child: Icon(LucideIcons.shieldAlert, size: 38, color: s.accent.main),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  s.strings.settings.na_not_available,
-                  textAlign: TextAlign.center,
-                  style: Typo.display(ar: s.rtl),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  s.strings.onboarding.age_gate_body,
-                  textAlign: TextAlign.center,
-                  style: Typo.body(ar: s.rtl).copyWith(color: T.fg2),
-                ),
-                const SizedBox(height: 28),
-                PButton(
-                  s.strings.settings.na_notify_me,
-                  variant: BtnVariant.primary,
-                  large: true,
-                  block: true,
-                  accent: s.accent,
-                  ar: s.rtl,
-                  onTap: () => Navigator.of(context).maybePop(),
-                ),
-                const SizedBox(height: 8),
-                // G6 / SC-011a: a hard-blocking screen must expose a no-auth
-                // support channel + the public status page. Opens the in-app
-                // PUBLIC status page (`{BASE_URL}/status`), which carries the
-                // mailto support link — reachable in ≤2 taps, no auth.
-                TextButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const StatusScreen(),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 6, 20, 12),
+                child: Row(
+                  children: [
+                    RoundBtn(
+                      icon: backArrow(context),
+                      semanticLabel: s.strings.common.a11y_back,
+                      onTap: () => Navigator.of(context).maybePop(),
                     ),
-                  ),
-                  icon: const Icon(LucideIcons.lifeBuoy, size: 18),
-                  label: Text(
-                    s.strings.settings.na_status_support,
-                  ),
+                  ],
                 ),
-              ]),
-            ),
-            const Spacer(),
-          ]),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 84,
+                      height: 84,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
+                      child: Icon(LucideIcons.shieldAlert, size: 38, color: s.accent.main),
+                    ),
+                    const SizedBox(height: 22),
+                    Text(
+                      s.strings.settings.na_not_available,
+                      textAlign: TextAlign.center,
+                      style: Typo.display(ar: s.rtl),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      s.strings.onboarding.age_gate_body,
+                      textAlign: TextAlign.center,
+                      style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 28),
+                    PButton(
+                      s.strings.settings.na_notify_me,
+                      large: true,
+                      block: true,
+                      accent: s.accent,
+                      ar: s.rtl,
+                      onTap: () => Navigator.of(context).maybePop(),
+                    ),
+                    const SizedBox(height: 8),
+                    // G6 / SC-011a: a hard-blocking screen must expose a no-auth
+                    // support channel + the public status page. Opens the in-app
+                    // PUBLIC status page (`{BASE_URL}/status`), which carries the
+                    // mailto support link — reachable in ≤2 taps, no auth.
+                    TextButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const StatusScreen(),
+                        ),
+                      ),
+                      icon: const Icon(LucideIcons.lifeBuoy, size: 18),
+                      label: Text(
+                        s.strings.settings.na_status_support,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
         ),
       ),
     );
@@ -579,7 +614,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   // offline password can never be server-side rate-limited, so the product
   // owner raised the floor for everyone, not just device-only.
   bool get ok {
-    final emailOk = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(ctrl.text.trim());
+    final emailOk = isPlausibleEmail(ctrl.text);
     return emailOk && pwCtrl.text.length >= OfflineAccountService.minPasswordLength;
   }
 
@@ -587,9 +622,11 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
 
   void _showForgotPassword(String email) {
     final s = AppScope.of(context);
-    showAppSheet<void>(
-      context,
-      builder: (_) => _ForgotPasswordSheet(initialEmail: email, s: s),
+    unawaited(
+      showAppSheet<void>(
+        context,
+        builder: (_) => _ForgotPasswordSheet(initialEmail: email, s: s),
+      ),
     );
   }
 
@@ -658,12 +695,13 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
         .read(credentialsControllerProvider.notifier)
         .requestSignupOtp(email: address, countryCode: s.country.value);
     if (!mounted || !sent) return;
-    s.setAuthContact(method: AuthMethod.email, email: address);
-    // Held only for the length of the flow: if the code proves a NEW account
-    // it becomes that account's password, and if it proves an existing one the
-    // patient is asked whether to adopt it. Cleared either way.
-    s.setAuthPassword(pwCtrl.text);
-    s.go(AppRoutes.otp);
+    s
+      ..setAuthContact(method: AuthMethod.email, email: address)
+      // Held only for the length of the flow: if the code proves a NEW account
+      // it becomes that account's password, and if it proves an existing one the
+      // patient is asked whether to adopt it. Cleared either way.
+      ..setAuthPassword(pwCtrl.text)
+      ..go(AppRoutes.otp);
   }
 
   /// Device-only path: no network round-trip, no OTP. Creates the account
@@ -682,7 +720,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       s.setAccountMode(AccountMode.deviceOnly);
       TextInput.finishAutofillContext();
       await enterAfterSignIn(context, ref, s);
-    } catch (_) {
+    } on Object catch (_) {
       // Never the exception's own text (could be a secure-storage failure —
       // no reason to surface or log its message); a generic retry is enough.
       if (mounted) setState(() => _deviceError = s.strings.auth.device_create_failed);
@@ -694,24 +732,27 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
   /// "New to Balsm? Create an account" / "Have an account? Sign in".
   Widget _switchLine(PatientAppState s, {required String prompt, required String action, required AuthIntent to}) {
     final style = Typo.meta(ar: s.rtl);
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Flexible(child: Text('$prompt ', style: style)),
-      Semantics(
-        button: true,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: _busy ? null : () => _switchTo(s, to),
-          // 48pt tall, only as wide as the words, so it stays on the prompt's line.
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
-            child: Align(
-              widthFactor: 1,
-              child: Text(action, style: style.copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Flexible(child: Text('$prompt ', style: style)),
+        Semantics(
+          button: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _busy ? null : () => _switchTo(s, to),
+            // 48pt tall, only as wide as the words, so it stays on the prompt's line.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: BalsmWindow.touchTarget, minHeight: BalsmWindow.touchTarget),
+              child: Align(
+                widthFactor: 1,
+                child: Text(action, style: style.copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
+              ),
             ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 
   @override
@@ -725,129 +766,159 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       AuthIntent.signIn => (a.signin_title, a.signin_help, _submitting ? a.pw_signing_in : a.pw_signin),
       AuthIntent.deviceOnly => (a.device_title, a.device_help, a.device_create),
     };
-    return Container(
-      color: T.cream50,
+    return ColoredBox(
+      color: AppColors.cream50,
       // Groups the email and password fields into one credential set, so the
       // platform manager saves them as a pair rather than two loose values.
       child: AutofillGroup(
-          child: SafeArea(
-        child: ContentColumn(
-          maxWidth: 440,
-          maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            // Sign up is two steps (this, then the code); the others are one.
-            _AuthHeader(onBack: () => s.go(AppRoutes.welcome), step: _signUp ? 1 : null, total: 2),
-            Expanded(
-                child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const SizedBox(height: 8),
-                Text(title, style: Typo.title(ar: s.rtl)),
-                const SizedBox(height: 8),
-                Text(help, style: Typo.body(ar: s.rtl)),
-                const SizedBox(height: 24),
-                _Label(s.strings.emergency.em_label, ar: s.rtl),
-                const SizedBox(height: 8),
-                AuthInput(
-                    controller: ctrl,
-                    id: 'emailField',
-                    hint: s.strings.emergency.em_ph,
-                    keyboard: TextInputType.emailAddress,
-                    forceLtr: true,
-                    accent: s.accent,
-                    autofillHints: const [AutofillHints.username, AutofillHints.email],
-                    onChanged: (_) => setState(() {})),
-                const SizedBox(height: 16),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  _Label(_device ? a.device_pw_label : a.pw_label, ar: s.rtl),
-                  // Sign in only: a new account has no password to forget yet,
-                  // and a device-only account has no server-side record to
-                  // recover one from (see the warning card below).
-                  if (s.authIntent == AuthIntent.signIn)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
-                      // 48pt target around 13pt text: the label row grows, the
-                      // link does not look any bigger.
-                      child: MinTapTarget(
-                        child: Text(a.forgot_pw,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: s.accent.main, fontWeight: FontWeight.w700)),
-                      ),
+        child: SafeArea(
+          child: ContentColumn(
+            maxWidth: 440,
+            maxHeight: kContentBlockMaxHeight,
+            child: Column(
+              children: [
+                // Sign up is two steps (this, then the code); the others are one.
+                _AuthHeader(onBack: () => s.go(AppRoutes.welcome), step: _signUp ? 1 : null, total: 2),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(title, style: Typo.title(ar: s.rtl)),
+                        const SizedBox(height: 8),
+                        Text(help, style: Typo.body(ar: s.rtl)),
+                        const SizedBox(height: 24),
+                        _Label(s.strings.emergency.em_label, ar: s.rtl),
+                        const SizedBox(height: 8),
+                        AuthInput(
+                          controller: ctrl,
+                          id: 'emailField',
+                          hint: s.strings.emergency.em_ph,
+                          keyboard: TextInputType.emailAddress,
+                          forceLtr: true,
+                          accent: s.accent,
+                          autofillHints: const [AutofillHints.username, AutofillHints.email],
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _Label(_device ? a.device_pw_label : a.pw_label, ar: s.rtl),
+                            // Sign in only: a new account has no password to forget yet,
+                            // and a device-only account has no server-side record to
+                            // recover one from (see the warning card below).
+                            if (s.authIntent == AuthIntent.signIn)
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: _submitting ? null : () => _showForgotPassword(ctrl.text.trim()),
+                                // 48pt target around 13pt text: the label row grows, the
+                                // link does not look any bigger.
+                                child: MinTapTarget(
+                                  child: Text(
+                                    a.forgot_pw,
+                                    style: Typo.meta(ar: s.rtl)
+                                        .copyWith(color: s.accent.main, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        AuthInput(
+                          controller: pwCtrl,
+                          id: 'passwordField',
+                          // D5: 8 characters minimum in every mode — shown as the
+                          // hint instead of a generic placeholder.
+                          hint: a.pw_min_hint,
+                          obscure: !_showPw,
+                          forceLtr: true,
+                          accent: s.accent,
+                          // A new password where one is being chosen, so the
+                          // platform can suggest a strong one; the saved one at sign in.
+                          autofillHints: [
+                            if (s.authIntent == AuthIntent.signIn)
+                              AutofillHints.password
+                            else
+                              AutofillHints.newPassword,
+                          ],
+                          // Icon-only, so a screen reader has nothing to read, and
+                          // 17px is well under a fingertip.
+                          suffixIcon: Semantics(
+                            button: true,
+                            label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                            child: GestureDetector(
+                              // Opaque, so the whole slot the decoration reserves is
+                              // tappable rather than just the glyph.
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => setState(() => _showPw = !_showPw),
+                              child: Icon(
+                                _showPw ? LucideIcons.eyeOff : LucideIcons.eye,
+                                size: 17,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        if (_device) ...[
+                          const SizedBox(height: 12),
+                          _DeviceOnlyWarning(text: a.device_warning, ar: s.rtl),
+                        ],
+                      ],
                     ),
-                ]),
-                const SizedBox(height: 8),
-                AuthInput(
-                    controller: pwCtrl,
-                    id: 'passwordField',
-                    // D5: 8 characters minimum in every mode — shown as the
-                    // hint instead of a generic placeholder.
-                    hint: a.pw_min_hint,
-                    obscure: !_showPw,
-                    forceLtr: true,
-                    accent: s.accent,
-                    // A new password where one is being chosen, so the
-                    // platform can suggest a strong one; the saved one at sign in.
-                    autofillHints: [
-                      s.authIntent == AuthIntent.signIn ? AutofillHints.password : AutofillHints.newPassword
-                    ],
-                    // Icon-only, so a screen reader has nothing to read, and
-                    // 17px is well under a fingertip.
-                    suffixIcon: Semantics(
-                      button: true,
-                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
-                      child: GestureDetector(
-                        // Opaque, so the whole slot the decoration reserves is
-                        // tappable rather than just the glyph.
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => setState(() => _showPw = !_showPw),
-                        child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
-                      ),
-                    ),
-                    onChanged: (_) => setState(() {})),
-                if (_device) ...[
-                  const SizedBox(height: 12),
-                  _DeviceOnlyWarning(text: a.device_warning, ar: s.rtl),
-                ],
-              ]),
-            )),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-              child: Column(children: [
-                if (_displayError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Semantics(
-                        liveRegion: true,
-                        child: Text(_displayError!,
-                            textAlign: TextAlign.center,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
                   ),
-                Opacity(
-                    opacity: ok && !_busy ? 1 : 0.4,
-                    child: PButton(cta,
-                        variant: BtnVariant.primary,
-                        large: true,
-                        block: true,
-                        accent: s.accent,
-                        ar: s.rtl,
-                        onTap: ok && !_busy ? () => _submit(s) : null)),
-                const SizedBox(height: 8),
-                switch (s.authIntent) {
-                  AuthIntent.signUp =>
-                    _switchLine(s, prompt: a.have_account, action: a.pw_signin, to: AuthIntent.signIn),
-                  AuthIntent.signIn =>
-                    _switchLine(s, prompt: a.new_here, action: a.create_account, to: AuthIntent.signUp),
-                  AuthIntent.deviceOnly => const SizedBox.shrink(),
-                },
-                if (s.authIntent != AuthIntent.signIn) ...[
-                  const SizedBox(height: 8),
-                  TermsLine(s: s),
-                ],
-              ]),
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 24),
+                  child: Column(
+                    children: [
+                      if (_displayError case final displayError?)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              displayError,
+                              textAlign: TextAlign.center,
+                              style:
+                                  Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      Opacity(
+                        opacity: ok && !_busy ? 1 : 0.4,
+                        child: PButton(
+                          cta,
+                          large: true,
+                          block: true,
+                          accent: s.accent,
+                          ar: s.rtl,
+                          onTap: ok && !_busy ? () => _submit(s) : null,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      switch (s.authIntent) {
+                        AuthIntent.signUp =>
+                          _switchLine(s, prompt: a.have_account, action: a.pw_signin, to: AuthIntent.signIn),
+                        AuthIntent.signIn =>
+                          _switchLine(s, prompt: a.new_here, action: a.create_account, to: AuthIntent.signUp),
+                        AuthIntent.deviceOnly => const SizedBox.shrink(),
+                      },
+                      if (s.authIntent != AuthIntent.signIn) ...[
+                        const SizedBox(height: 8),
+                        TermsLine(s: s),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ]),
+          ),
         ),
-      )),
+      ),
     );
   }
 }
@@ -955,7 +1026,7 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
           _pwCtrl.clear();
           _startLockout(until);
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Never the exception's own text (could be a secure-storage failure —
       // no reason to surface or log its message); a generic retry is enough.
       if (mounted) {
@@ -990,90 +1061,109 @@ class _UnlockScreenState extends ConsumerState<_UnlockScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final ok = _pwCtrl.text.isNotEmpty && !_locked && !_busy;
-    return Container(
-      color: T.cream50,
+    return ColoredBox(
+      color: AppColors.cream50,
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            const SizedBox(height: 28),
-            Expanded(
+          child: Column(
+            children: [
+              const SizedBox(height: 28),
+              Expanded(
                 child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Semantics(header: true, child: Text(s.strings.auth.unlock_title, style: Typo.title(ar: s.rtl))),
-                const SizedBox(height: 8),
-                Text(s.strings.auth.unlock_help, style: Typo.body(ar: s.rtl)),
-                const SizedBox(height: 24),
-                _Label(s.strings.auth.pw_label, ar: s.rtl),
-                const SizedBox(height: 8),
-                AuthInput(
-                    controller: _pwCtrl,
-                    id: 'unlockPasswordField',
-                    hint: s.strings.auth.pw_ph,
-                    obscure: !_showPw,
-                    forceLtr: true,
-                    accent: s.accent,
-                    autofillHints: const [AutofillHints.password],
-                    suffixIcon: Semantics(
-                      button: true,
-                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => setState(() => _showPw = !_showPw),
-                        child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 17, color: T.fg3),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Semantics(header: true, child: Text(s.strings.auth.unlock_title, style: Typo.title(ar: s.rtl))),
+                      const SizedBox(height: 8),
+                      Text(s.strings.auth.unlock_help, style: Typo.body(ar: s.rtl)),
+                      const SizedBox(height: 24),
+                      _Label(s.strings.auth.pw_label, ar: s.rtl),
+                      const SizedBox(height: 8),
+                      AuthInput(
+                        controller: _pwCtrl,
+                        id: 'unlockPasswordField',
+                        hint: s.strings.auth.pw_ph,
+                        obscure: !_showPw,
+                        forceLtr: true,
+                        accent: s.accent,
+                        autofillHints: const [AutofillHints.password],
+                        suffixIcon: Semantics(
+                          button: true,
+                          label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => setState(() => _showPw = !_showPw),
+                            child: Icon(
+                              _showPw ? LucideIcons.eyeOff : LucideIcons.eye,
+                              size: 17,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 12),
+                      _DeviceOnlyWarning(text: s.strings.auth.device_warning, ar: s.rtl),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 24),
+                child: Column(
+                  children: [
+                    if (_locked)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            s.strings.auth.unlock_locked(_secsLeft.toString()),
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      )
+                    else if (_error case final error?)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            error,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    Opacity(
+                      opacity: ok ? 1 : 0.4,
+                      child: PButton(
+                        s.strings.auth.unlock_btn,
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: ok ? _submit : null,
                       ),
                     ),
-                    onChanged: (_) => setState(() {})),
-                const SizedBox(height: 12),
-                _DeviceOnlyWarning(text: s.strings.auth.device_warning, ar: s.rtl),
-              ]),
-            )),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-              child: Column(children: [
-                if (_locked)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Semantics(
-                        liveRegion: true,
-                        child: Text(s.strings.auth.unlock_locked(_secsLeft.toString()),
-                            textAlign: TextAlign.center,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
-                  )
-                else if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Semantics(
-                        liveRegion: true,
-                        child: Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
-                  ),
-                Opacity(
-                    opacity: ok ? 1 : 0.4,
-                    child: PButton(
-                      s.strings.auth.unlock_btn,
-                      variant: BtnVariant.primary,
-                      large: true,
+                    const SizedBox(height: 4),
+                    PButton(
+                      s.strings.auth.unlock_forgot,
+                      variant: BtnVariant.ghost,
                       block: true,
                       accent: s.accent,
                       ar: s.rtl,
-                      onTap: ok ? _submit : null,
-                    )),
-                const SizedBox(height: 4),
-                PButton(
-                  s.strings.auth.unlock_forgot,
-                  variant: BtnVariant.ghost,
-                  block: true,
-                  accent: s.accent,
-                  ar: s.rtl,
-                  onTap: _busy ? null : _startOver,
+                      onTap: _busy ? null : _startOver,
+                    ),
+                  ],
                 ),
-              ]),
-            ),
-          ]),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1114,7 +1204,7 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
     MergeChoice? c;
     try {
       c = await ref.read(goOnlineControllerProvider).pendingChoice();
-    } catch (_) {
+    } on Object catch (_) {
       return;
     }
     if (mounted && c != _started) setState(() => _started = c);
@@ -1142,7 +1232,7 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
     AppResult<void>? r;
     try {
       r = await action(ref.read(goOnlineControllerProvider));
-    } catch (_) {
+    } on Object catch (_) {
       // Never the exception's text; the choice can simply be made again.
       r = null;
     }
@@ -1166,66 +1256,78 @@ class _MergeOrDiscardScreenState extends ConsumerState<_MergeOrDiscardScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final st = s.strings.offline;
-    return Container(
-      color: T.cream50,
+    return ColoredBox(
+      color: AppColors.cream50,
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            const SizedBox(height: 28),
-            Expanded(
+          child: Column(
+            children: [
+              const SizedBox(height: 28),
+              Expanded(
                 child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Semantics(header: true, child: Text(st.merge_title, style: Typo.title(ar: s.rtl))),
-                const SizedBox(height: 8),
-                Text(st.merge_help(s.gender), style: Typo.body(ar: s.rtl)),
-                const SizedBox(height: 24),
-                _DeviceOnlyWarning(text: st.merge_note, ar: s.rtl),
-              ]),
-            )),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-              child: Column(children: [
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Semantics(
-                        liveRegion: true,
-                        child: Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Semantics(header: true, child: Text(st.merge_title, style: Typo.title(ar: s.rtl))),
+                      const SizedBox(height: 8),
+                      Text(st.merge_help(s.gender), style: Typo.body(ar: s.rtl)),
+                      const SizedBox(height: 24),
+                      _DeviceOnlyWarning(text: st.merge_note, ar: s.rtl),
+                    ],
                   ),
-                Opacity(
-                  opacity: _busy ? 0.4 : 1,
-                  child: Column(children: [
-                    if (_started != MergeChoice.discard)
-                      PButton(
-                        st.merge_btn,
-                        variant: BtnVariant.primary,
-                        large: true,
-                        block: true,
-                        accent: s.accent,
-                        ar: s.rtl,
-                        onTap: _busy ? null : _merge,
-                      ),
-                    if (_started == null) const SizedBox(height: 10),
-                    if (_started != MergeChoice.merge)
-                      PButton(
-                        st.discard_btn,
-                        variant: BtnVariant.secondary,
-                        large: true,
-                        block: true,
-                        accent: s.accent,
-                        ar: s.rtl,
-                        onTap: _busy ? null : _discard,
-                      ),
-                  ]),
                 ),
-              ]),
-            ),
-          ]),
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 24),
+                child: Column(
+                  children: [
+                    if (_error case final error?)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            error,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    Opacity(
+                      opacity: _busy ? 0.4 : 1,
+                      child: Column(
+                        children: [
+                          if (_started != MergeChoice.discard)
+                            PButton(
+                              st.merge_btn,
+                              large: true,
+                              block: true,
+                              accent: s.accent,
+                              ar: s.rtl,
+                              onTap: _busy ? null : _merge,
+                            ),
+                          if (_started == null) const SizedBox(height: 10),
+                          if (_started != MergeChoice.merge)
+                            PButton(
+                              st.discard_btn,
+                              variant: BtnVariant.secondary,
+                              large: true,
+                              block: true,
+                              accent: s.accent,
+                              ar: s.rtl,
+                              onTap: _busy ? null : _discard,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1243,40 +1345,49 @@ class _DiscardConfirmSheet extends StatelessWidget {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 16),
-        Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 24)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(st.discard_confirm_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Text(st.discard_confirm_body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
-            const SizedBox(height: 20),
-            PButton(
-              st.discard_confirm_btn,
-              variant: BtnVariant.danger,
-              block: true,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: () => Navigator.pop(context, true),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 16),
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, sheetBottomInset(context, base: 24)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(st.discard_confirm_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Text(
+                  st.discard_confirm_body,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary, height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                PButton(
+                  st.discard_confirm_btn,
+                  variant: BtnVariant.danger,
+                  block: true,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: () => Navigator.pop(context, true),
+                ),
+                const SizedBox(height: 8),
+                PButton(
+                  s.strings.common.cancel,
+                  variant: BtnVariant.secondary,
+                  block: true,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: () => Navigator.pop(context, false),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            PButton(
-              s.strings.common.cancel,
-              variant: BtnVariant.secondary,
-              block: true,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: () => Navigator.pop(context, false),
-            ),
-          ]),
-        ),
-      ]),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1339,40 +1450,48 @@ class _AdoptPasswordSheet extends StatelessWidget {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.6),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 16),
-        Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 24)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(c.em_adopt_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Text(c.em_adopt_help, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
-            const SizedBox(height: 20),
-            PButton(
-              c.em_adopt_yes,
-              variant: BtnVariant.primary,
-              block: true,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: () => Navigator.pop(context, true),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 16),
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, sheetBottomInset(context, base: 24)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(c.em_adopt_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Text(
+                  c.em_adopt_help,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary, height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                PButton(
+                  c.em_adopt_yes,
+                  block: true,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: () => Navigator.pop(context, true),
+                ),
+                const SizedBox(height: 8),
+                PButton(
+                  c.em_adopt_no,
+                  variant: BtnVariant.secondary,
+                  block: true,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: () => Navigator.pop(context, false),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            PButton(
-              c.em_adopt_no,
-              variant: BtnVariant.secondary,
-              block: true,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: () => Navigator.pop(context, false),
-            ),
-          ]),
-        ),
-      ]),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1491,7 +1610,8 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
           // The account exists and the session is live; only the password did
           // not stick. Say so rather than let them find out next launch.
           setState(
-              () => _notice = isNewUser ? s.strings.emergency.em_pw_set_failed : s.strings.emergency.em_adopt_failed);
+            () => _notice = isNewUser ? s.strings.emergency.em_pw_set_failed : s.strings.emergency.em_adopt_failed,
+          );
         }
       }
     }
@@ -1518,133 +1638,174 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
     final s = AppScope.of(context);
     final code = ctrl.text;
     final contact = s.authEmail.isEmpty ? 'you@example.com' : s.authEmail;
-    return Container(
-      color: T.cream50,
+    return ColoredBox(
+      color: AppColors.cream50,
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            _AuthHeader(onBack: () => s.go(AppRoutes.phone), step: 2, total: 2),
-            Expanded(
+          child: Column(
+            children: [
+              _AuthHeader(onBack: () => s.go(AppRoutes.phone), step: 2, total: 2),
+              Expanded(
                 child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const SizedBox(height: 8),
-                // auth.jsx OtpScreen: this step only follows sign-up now.
-                Text(s.strings.auth.otp_confirm_title, style: Typo.title(ar: s.rtl)),
-                const SizedBox(height: 8),
-                RichText(
-                    text: TextSpan(style: Typo.body(ar: s.rtl), children: [
-                  // Says nothing about whether this address has an account.
-                  // The screen is reached identically either way, and the copy
-                  // is the last place that distinction could leak.
-                  TextSpan(text: '${s.strings.auth.otp_sent_to} '),
-                  TextSpan(text: contact, style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
-                ])),
-                const SizedBox(height: 8),
-                Text(s.strings.auth.otp_existing_note, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
-                if (_notice != null) ...[
-                  const SizedBox(height: 12),
-                  Text(_notice!,
-                      style: Typo.meta(ar: s.rtl).copyWith(color: T.sun500, fontWeight: FontWeight.w600, height: 1.5)),
-                ],
-                const SizedBox(height: 28),
-                // Six painted boxes, one field. Read separately they are six
-                // unnamed containers: no name, no way to hear how many digits
-                // have landed, no sign it is an input at all. The boxes are
-                // excluded and the group carries the label and the count.
-                Semantics(
-                  textField: true,
-                  label: s.strings.common.a11y_code_field,
-                  value: s.strings.common.a11y_code_progress('${code.length}'),
-                  onTap: _showKeyboard,
-                  onPaste: _pasteCode,
-                  child: ExcludeSemantics(
-                    child: GestureDetector(
-                      // The gaps between boxes count as the field too.
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _showKeyboard,
-                      onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, _pasteCode),
-                      // A code reads left to right in every language: the first digit
-                      // typed lands in the leftmost box, Arabic included.
-                      child: Directionality(
-                          textDirection: TextDirection.ltr,
-                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            // Flexible: six boxes are wider than a 384dp phone's
-                            // column, so they shrink rather than overflow.
-                            for (var i = 0; i < 6; i++)
-                              Flexible(
-                                child: OtpBox(
-                                  char: i < code.length ? code[i] : '',
-                                  active: code.length == i,
-                                  accent: s.accent,
-                                ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      // auth.jsx OtpScreen: this step only follows sign-up now.
+                      Text(s.strings.auth.otp_confirm_title, style: Typo.title(ar: s.rtl)),
+                      const SizedBox(height: 8),
+                      RichText(
+                        text: TextSpan(
+                          style: Typo.body(ar: s.rtl),
+                          children: [
+                            // Says nothing about whether this address has an account.
+                            // The screen is reached identically either way, and the copy
+                            // is the last place that distinction could leak.
+                            TextSpan(text: '${s.strings.auth.otp_sent_to} '),
+                            TextSpan(
+                              text: contact,
+                              style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(s.strings.auth.otp_existing_note, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
+                      if (_notice case final notice?) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          notice,
+                          style: Typo.meta(ar: s.rtl)
+                              .copyWith(color: AppColors.sun500, fontWeight: FontWeight.w600, height: 1.5),
+                        ),
+                      ],
+                      const SizedBox(height: 28),
+                      // Six painted boxes, one field. Read separately they are six
+                      // unnamed containers: no name, no way to hear how many digits
+                      // have landed, no sign it is an input at all. The boxes are
+                      // excluded and the group carries the label and the count.
+                      Semantics(
+                        textField: true,
+                        label: s.strings.common.a11y_code_field,
+                        value: s.strings.common.a11y_code_progress('${code.length}'),
+                        onTap: _showKeyboard,
+                        onPaste: _pasteCode,
+                        child: ExcludeSemantics(
+                          child: GestureDetector(
+                            // The gaps between boxes count as the field too.
+                            behavior: HitTestBehavior.opaque,
+                            onTap: _showKeyboard,
+                            onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, _pasteCode),
+                            // A code reads left to right in every language: the first digit
+                            // typed lands in the leftmost box, Arabic included.
+                            child: Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Flexible: six boxes are wider than a 384dp phone's
+                                  // column, so they shrink rather than overflow.
+                                  for (var i = 0; i < 6; i++)
+                                    Flexible(
+                                      child: OtpBox(
+                                        char: i < code.length ? code[i] : '',
+                                        active: code.length == i,
+                                        accent: s.accent,
+                                      ),
+                                    ),
+                                ],
                               ),
-                          ])),
-                    ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Opacity(
+                        opacity: 0,
+                        child: SizedBox(
+                          height: 1,
+                          width: 1,
+                          child: TextField(
+                            controller: ctrl,
+                            focusNode: focus,
+                            textDirection: TextDirection.ltr,
+                            keyboardType: TextInputType.number,
+                            autofillHints: const [AutofillHints.oneTimeCode],
+                            maxLength: 6,
+                            inputFormatters: const [CodeInputFormatter()],
+                            onChanged: (v) {
+                              setState(() {});
+                              if (v.length == 6) unawaited(_verify(v));
+                            },
+                          ),
+                        ),
+                      ),
+                      if (_error case final error?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              error,
+                              textAlign: TextAlign.center,
+                              style:
+                                  Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: secs > 0
+                            ? RichText(
+                                text: TextSpan(
+                                  style: Typo.meta(ar: s.rtl),
+                                  children: [
+                                    TextSpan(text: '${s.strings.auth.otp_in} '),
+                                    TextSpan(
+                                      text: '${secs}s',
+                                      style: Typo.num(
+                                        size: FontSizes.meta,
+                                        weight: FontWeight.w700,
+                                        color: AppColors.textTertiary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : PButton(
+                                s.strings.auth.otp_resend,
+                                variant: BtnVariant.ghost,
+                                accent: s.accent,
+                                ar: s.rtl,
+                                onTap: ref.read(otpControllerProvider).resending ? null : () => _resend(s),
+                              ),
+                      ),
+                    ],
                   ),
                 ),
-                Opacity(
-                    opacity: 0,
-                    child: SizedBox(
-                        height: 1,
-                        width: 1,
-                        child: TextField(
-                          controller: ctrl,
-                          focusNode: focus,
-                          textDirection: TextDirection.ltr,
-                          keyboardType: TextInputType.number,
-                          autofillHints: const [AutofillHints.oneTimeCode],
-                          maxLength: 6,
-                          inputFormatters: const [CodeInputFormatter()],
-                          onChanged: (v) {
-                            setState(() {});
-                            if (v.length == 6) _verify(v);
-                          },
-                        ))),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Semantics(
-                        liveRegion: true,
-                        child: Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
-                  ),
-                const SizedBox(height: 24),
-                Center(
-                    child: secs > 0
-                        ? RichText(
-                            text: TextSpan(style: Typo.meta(ar: s.rtl), children: [
-                            TextSpan(text: '${s.strings.auth.otp_in} '),
-                            TextSpan(
-                                text: '${secs}s', style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg3)),
-                          ]))
-                        : PButton(s.strings.auth.otp_resend,
-                            variant: BtnVariant.ghost,
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: ref.read(otpControllerProvider).resending ? null : () => _resend(s))),
-              ]),
-            )),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-              child: Opacity(
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 24),
+                child: Opacity(
                   opacity: code.length == 6 && !_verifying ? 1 : 0.4,
-                  child: PButton(_verifying ? s.strings.auth.otp_verifying : s.strings.auth.verify,
-                      variant: BtnVariant.primary,
-                      large: true,
-                      block: true,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      onTap: code.length == 6 && !_verifying
-                          ? () {
-                              _verify(code);
-                            }
-                          : null)),
-            ),
-          ]),
+                  child: PButton(
+                    _verifying ? s.strings.auth.otp_verifying : s.strings.auth.verify,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: code.length == 6 && !_verifying
+                        ? () {
+                            unawaited(_verify(code));
+                          }
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1734,147 +1895,132 @@ class _DisclosureGateScreenState extends ConsumerState<_DisclosureGateScreen> {
     final s = widget.state;
     final authority = ref.watch(countryRegistryProvider).supervisoryAuthority(s.country.value);
     return Scaffold(
-      backgroundColor: T.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
-              child: Row(children: [
-                RoundBtn(
-                    icon: backArrow(context),
-                    semanticLabel: s.strings.common.a11y_back,
-                    onTap: () => Navigator.of(context).maybePop()),
-              ]),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
-                    child: Icon(LucideIcons.shieldCheck, size: 34, color: s.accent.main),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    s.strings.privacy.pv_title,
-                    style: Typo.display(ar: s.rtl),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    s.strings.privacy.pv_intro_body,
-                    style: Typo.body(ar: s.rtl).copyWith(color: T.fg2),
-                  ),
-                  const SizedBox(height: 20),
-                  _gateSection(
-                    s,
-                    LucideIcons.database,
-                    s.strings.privacy.pv_collect,
-                    s.strings.privacy.pv_collect_body,
-                  ),
-                  _gateSection(
-                    s,
-                    LucideIcons.lock,
-                    s.strings.privacy.pv_protect,
-                    s.strings.privacy.pv_protect_body,
-                  ),
-                  _gateSection(
-                    s,
-                    LucideIcons.scale,
-                    s.strings.privacy.pv_rights,
-                    s.strings.privacy.pv_rights_body,
-                  ),
-                  _gateSection(
-                    s,
-                    LucideIcons.landmark,
-                    s.strings.privacy.pv_authority,
-                    s.strings.privacy.pv_authority_body(authority),
-                  ),
-                  _gateSection(
-                    s,
-                    LucideIcons.share2,
-                    s.strings.privacy.pv_sharing2,
-                    s.strings.privacy.pv_sharing_body,
-                  ),
-                  _gateSection(
-                    s,
-                    LucideIcons.trash2,
-                    s.strings.privacy.pv_deletion,
-                    s.strings.privacy.pv_deletion_body,
-                  ),
-                  const SizedBox(height: 8),
-                  if (!_readToEnd)
-                    Center(
-                      child: Text(
-                        s.strings.privacy.pv_scroll_hint,
-                        style: Typo.meta(ar: s.rtl),
-                      ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 6, 20, 4),
+                child: Row(
+                  children: [
+                    RoundBtn(
+                      icon: backArrow(context),
+                      semanticLabel: s.strings.common.a11y_back,
+                      onTap: () => Navigator.of(context).maybePop(),
                     ),
-                ]),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              child: Column(children: [
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Semantics(
-                        liveRegion: true,
-                        child: Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600))),
-                  ),
-                Opacity(
-                  opacity: _readToEnd && !_submitting ? 1 : 0.4,
-                  child: PButton(
-                    _submitting ? (s.strings.privacy.pv_saving) : (s.strings.privacy.pv_agree),
-                    variant: BtnVariant.primary,
-                    large: true,
-                    block: true,
-                    accent: s.accent,
-                    ar: s.rtl,
-                    onTap: _readToEnd && !_submitting
-                        ? () {
-                            _accept();
-                          }
-                        : null,
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: s.accent.bg, shape: BoxShape.circle),
+                        child: Icon(LucideIcons.shieldCheck, size: 34, color: s.accent.main),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        s.strings.privacy.pv_title,
+                        style: Typo.display(ar: s.rtl),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        s.strings.privacy.pv_intro_body,
+                        style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 20),
+                      _GateSection(
+                        s,
+                        LucideIcons.database,
+                        s.strings.privacy.pv_collect,
+                        s.strings.privacy.pv_collect_body,
+                      ),
+                      _GateSection(
+                        s,
+                        LucideIcons.lock,
+                        s.strings.privacy.pv_protect,
+                        s.strings.privacy.pv_protect_body,
+                      ),
+                      _GateSection(
+                        s,
+                        LucideIcons.scale,
+                        s.strings.privacy.pv_rights,
+                        s.strings.privacy.pv_rights_body,
+                      ),
+                      _GateSection(
+                        s,
+                        LucideIcons.landmark,
+                        s.strings.privacy.pv_authority,
+                        s.strings.privacy.pv_authority_body(authority),
+                      ),
+                      _GateSection(
+                        s,
+                        LucideIcons.share2,
+                        s.strings.privacy.pv_sharing2,
+                        s.strings.privacy.pv_sharing_body,
+                      ),
+                      _GateSection(
+                        s,
+                        LucideIcons.trash2,
+                        s.strings.privacy.pv_deletion,
+                        s.strings.privacy.pv_deletion_body,
+                      ),
+                      const SizedBox(height: 8),
+                      if (!_readToEnd)
+                        Center(
+                          child: Text(
+                            s.strings.privacy.pv_scroll_hint,
+                            style: Typo.meta(ar: s.rtl),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ]),
-            ),
-          ]),
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 12, 24, 24),
+                child: Column(
+                  children: [
+                    if (_error case final error?)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            error,
+                            textAlign: TextAlign.center,
+                            style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    Opacity(
+                      opacity: _readToEnd && !_submitting ? 1 : 0.4,
+                      child: PButton(
+                        _submitting ? (s.strings.privacy.pv_saving) : (s.strings.privacy.pv_agree),
+                        large: true,
+                        block: true,
+                        accent: s.accent,
+                        ar: s.rtl,
+                        onTap: _readToEnd && !_submitting ? _accept : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _gateSection(PatientAppState s, IconData icon, String title, String body) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(T.rLg),
-        border: Border.all(color: T.border),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 20, color: s.accent.main),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.base, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
-          ]),
-        ),
-      ]),
     );
   }
 }
@@ -1906,11 +2052,11 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
     'omar',
     'sara',
     'mona',
-    'ahmed'
+    'ahmed',
   };
 
   void _setHandle(String raw) {
-    final v = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    final v = raw.toLowerCase().replaceAll(RegExp('[^a-z0-9_]'), '');
     if (handle.text != v) {
       handle.value = TextEditingValue(text: v, selection: TextSelection.collapsed(offset: v.length));
     }
@@ -1924,8 +2070,10 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
       return;
     }
     setState(() => unStatus = UsernameStatus.checking);
-    debounce = Timer(const Duration(milliseconds: 700),
-        () => setState(() => unStatus = _taken.contains(v) ? UsernameStatus.taken : UsernameStatus.available));
+    debounce = Timer(
+      const Duration(milliseconds: 700),
+      () => setState(() => unStatus = _taken.contains(v) ? UsernameStatus.taken : UsernameStatus.available),
+    );
   }
 
   bool get ok =>
@@ -1975,9 +2123,11 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
     if (d == null) return;
     final ageResult = ref.read(ageGateUseCaseProvider).validate(d);
     if (ageResult.isFailure) {
-      Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => const _UnderEighteenScreen(),
-      ));
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const _UnderEighteenScreen(),
+        ),
+      );
       return;
     }
     // The OTP-verify step already established the session (bearer token
@@ -1985,12 +2135,14 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
     // this PATCH the display name, DOB, and gender were dropped on the floor and
     // GET /account/self came back empty — a blank account-details screen.
     setState(() => _creating = true);
-    await ref.read(accountProfileUseCaseProvider).update(UpdateProfileInput(
-          firstName: first.text.trim(),
-          lastName: last.text.trim(),
-          gender: gender,
-          dateOfBirth: _isoDob(d),
-        ));
+    await ref.read(accountProfileUseCaseProvider).update(
+          UpdateProfileInput(
+            firstName: first.text.trim(),
+            lastName: last.text.trim(),
+            gender: gender,
+            dateOfBirth: _isoDob(d),
+          ),
+        );
     // Claim the chosen handle (best-effort — a genuinely-taken handle can be
     // changed later from account details; onboarding must not hard-block on it).
     final wantedHandle = handle.text.trim();
@@ -2007,98 +2159,122 @@ class _ProfileSetupScreenState extends ConsumerState<_ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return Container(
-      color: T.cream50,
+    return ColoredBox(
+      color: AppColors.cream50,
       child: SafeArea(
         child: ContentColumn(
           maxWidth: 440,
           maxHeight: kContentBlockMaxHeight,
-          child: Column(children: [
-            _AuthHeader(onBack: () => s.go(AppRoutes.otp), step: 3),
-            Expanded(
+          child: Column(
+            children: [
+              _AuthHeader(onBack: () => s.go(AppRoutes.otp), step: 3),
+              Expanded(
                 child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const SizedBox(height: 8),
-                Text(s.strings.onboarding.pf_title, style: Typo.title(ar: s.rtl)),
-                const SizedBox(height: 8),
-                Text(s.strings.onboarding.pf_help, style: Typo.body(ar: s.rtl)),
-                const SizedBox(height: 24),
-                Row(children: [
-                  Expanded(
-                      child: _Field(
-                          label: s.strings.onboarding.pf_fname,
-                          ar: s.rtl,
-                          child: AuthInput(
-                              controller: first,
-                              hint: s.strings.onboarding.pf_fname_ph,
-                              accent: s.accent,
-                              onChanged: (_) => setState(() {})))),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: _Field(
-                          label: s.strings.onboarding.pf_lname,
-                          ar: s.rtl,
-                          child: AuthInput(
-                              controller: last,
-                              hint: s.strings.onboarding.pf_lname_ph,
-                              accent: s.accent,
-                              onChanged: (_) => setState(() {})))),
-                ]),
-                const SizedBox(height: 16),
-                _UsernameField(controller: handle, status: unStatus, onChanged: _setHandle, s: s),
-                const SizedBox(height: 16),
-                _Field(
-                    label: s.strings.onboarding.pf_dob,
-                    ar: s.rtl,
-                    child: GestureDetector(
-                      onTap: _pickDob,
-                      child: AbsorbPointer(
-                        child: AuthInput(
-                            controller: dob,
-                            hint: 'DD / MM / YYYY',
-                            mono: true,
-                            forceLtr: true,
-                            accent: s.accent,
-                            prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: T.fg3),
-                            suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: T.fg4)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text(s.strings.onboarding.pf_title, style: Typo.title(ar: s.rtl)),
+                      const SizedBox(height: 8),
+                      Text(s.strings.onboarding.pf_help, style: Typo.body(ar: s.rtl)),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _Field(
+                              label: s.strings.onboarding.pf_fname,
+                              ar: s.rtl,
+                              child: AuthInput(
+                                controller: first,
+                                hint: s.strings.onboarding.pf_fname_ph,
+                                accent: s.accent,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _Field(
+                              label: s.strings.onboarding.pf_lname,
+                              ar: s.rtl,
+                              child: AuthInput(
+                                controller: last,
+                                hint: s.strings.onboarding.pf_lname_ph,
+                                accent: s.accent,
+                                onChanged: (_) => setState(() {}),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    )),
-                const SizedBox(height: 16),
-                _Field(
-                    label: s.strings.onboarding.pf_gender,
-                    ar: s.rtl,
-                    child: _Segmented<Gender>(
-                      left: s.strings.onboarding.pf_female,
-                      right: s.strings.onboarding.pf_male,
-                      leftValue: Gender.female,
-                      rightValue: Gender.male,
-                      value: gender,
-                      onChanged: (g) => setState(() => gender = g),
-                    )),
-              ]),
-            )),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-              child: Column(children: [
-                Opacity(
-                    opacity: ok && !_creating ? 1 : 0.4,
-                    child: PButton(_creating ? s.strings.onboarding.pf_creating : s.strings.onboarding.pf_create,
-                        variant: BtnVariant.primary,
+                      const SizedBox(height: 16),
+                      _UsernameField(controller: handle, status: unStatus, onChanged: _setHandle, s: s),
+                      const SizedBox(height: 16),
+                      _Field(
+                        label: s.strings.onboarding.pf_dob,
+                        ar: s.rtl,
+                        child: GestureDetector(
+                          onTap: _pickDob,
+                          child: AbsorbPointer(
+                            child: AuthInput(
+                              controller: dob,
+                              hint: 'DD / MM / YYYY',
+                              mono: true,
+                              forceLtr: true,
+                              accent: s.accent,
+                              prefixIcon: const Icon(LucideIcons.calendar, size: 18, color: AppColors.textTertiary),
+                              suffixIcon: const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textHint),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _Field(
+                        label: s.strings.onboarding.pf_gender,
+                        ar: s.rtl,
+                        child: _Segmented<Gender>(
+                          left: s.strings.onboarding.pf_female,
+                          right: s.strings.onboarding.pf_male,
+                          leftValue: Gender.female,
+                          rightValue: Gender.male,
+                          value: gender,
+                          onChanged: (g) => setState(() => gender = g),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 20, 24),
+                child: Column(
+                  children: [
+                    Opacity(
+                      opacity: ok && !_creating ? 1 : 0.4,
+                      child: PButton(
+                        _creating ? s.strings.onboarding.pf_creating : s.strings.onboarding.pf_create,
                         large: true,
                         block: true,
                         accent: s.accent,
                         ar: s.rtl,
-                        onTap: ok && !_creating ? _createAccount : null)),
-                const SizedBox(height: 12),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const Icon(LucideIcons.shieldCheck, size: 14, color: T.fg3),
-                  const SizedBox(width: 6),
-                  Text(s.strings.onboarding.pf_secure, style: Typo.meta(ar: s.rtl)),
-                ]),
-              ]),
-            ),
-          ]),
+                        onTap: ok && !_creating ? _createAccount : null,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.shieldCheck, size: 14, color: AppColors.textTertiary),
+                        const SizedBox(width: 6),
+                        Text(s.strings.onboarding.pf_secure, style: Typo.meta(ar: s.rtl)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2114,66 +2290,84 @@ class _UsernameField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, col, msg) = switch (status) {
-      UsernameStatus.checking => (LucideIcons.loader, T.fg3, s.strings.auth.un_checking),
-      UsernameStatus.available => (LucideIcons.checkCircle2, T.hueMint600, s.strings.auth.un_avail),
-      UsernameStatus.taken => (LucideIcons.xCircle, T.danger, s.strings.auth.un_taken),
-      UsernameStatus.invalid => (LucideIcons.alertCircle, T.sun500, s.strings.auth.un_invalid),
-      _ => (null, T.fg4, ''),
+      UsernameStatus.checking => (LucideIcons.loader, AppColors.textTertiary, s.strings.auth.un_checking),
+      UsernameStatus.available => (LucideIcons.checkCircle2, AppColors.hueMint600, s.strings.auth.un_avail),
+      UsernameStatus.taken => (LucideIcons.xCircle, AppColors.danger, s.strings.auth.un_taken),
+      UsernameStatus.invalid => (LucideIcons.alertCircle, AppColors.sun500, s.strings.auth.un_invalid),
+      _ => (null, AppColors.textHint, ''),
     };
     return _Field(
-        label: s.strings.auth.un_label,
-        ar: s.rtl,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Stack(alignment: Alignment.centerLeft, children: [
-            AuthInput(
+      label: s.strings.auth.un_label,
+      ar: s.rtl,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            alignment: AlignmentDirectional.centerStart,
+            children: [
+              AuthInput(
                 controller: controller,
                 hint: s.strings.auth.un_ph,
                 mono: true,
                 forceLtr: true,
                 accent: s.accent,
                 prefix: '@',
-                onChanged: onChanged),
-            if (status == UsernameStatus.checking)
-              const Positioned(right: 12, child: Spinner(size: 16, stroke: 2, color: T.fg3))
-            else if (icon != null)
-              Positioned(right: 12, child: Icon(icon, size: 17, color: col)),
-          ]),
+                onChanged: onChanged,
+              ),
+              if (status == UsernameStatus.checking)
+                const PositionedDirectional(end: 12, child: Spinner(size: 16, stroke: 2, color: AppColors.textTertiary))
+              else if (icon != null)
+                PositionedDirectional(end: 12, child: Icon(icon, size: 17, color: col)),
+            ],
+          ),
           if (msg.isNotEmpty)
             Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(msg, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: col))),
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(msg, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: col)),
+            ),
           if (controller.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Row(children: [
-                const Icon(LucideIcons.link, size: 12, color: T.fg4),
-                const SizedBox(width: 5),
-                Text(s.strings.profile.pd_handle_hint, style: Typo.num(size: FS.xs, color: T.fg3)),
-              ]),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.link, size: 12, color: AppColors.textHint),
+                  const SizedBox(width: 5),
+                  Text(
+                    s.strings.profile.pd_handle_hint,
+                    style: Typo.num(size: FontSizes.meta, color: AppColors.textTertiary),
+                  ),
+                ],
+              ),
             ),
-        ]));
+        ],
+      ),
+    );
   }
 }
 
 // ── Shared small widgets ─────────────────────────────────────
-/// Two-option segmented control. Generic over the selected value [T]: the
+/// Two-option segmented control. Generic over the selected value `T`: the
 /// caller supplies the [leftValue]/[rightValue] each segment stands for and the
 /// current [value]; the active segment is the one whose value equals [value].
 /// Use `_Segmented<bool>` for a plain toggle, `_Segmented<Gender>` for a typed
 /// choice, etc. (Param is `V`, not `T` — `T` is the design-tokens class.)
 class _Segmented<V> extends StatelessWidget {
-  const _Segmented(
-      {required this.left,
-      required this.right,
-      this.leftIcon,
-      this.rightIcon,
-      required this.leftValue,
-      required this.rightValue,
-      required this.value,
-      required this.onChanged});
-  final String left, right;
-  final IconData? leftIcon, rightIcon;
-  final V leftValue, rightValue;
+  const _Segmented({
+    required this.left,
+    required this.right,
+    required this.leftValue,
+    required this.rightValue,
+    required this.value,
+    required this.onChanged,
+    this.leftIcon,
+    this.rightIcon,
+  });
+  final String left;
+  final String right;
+  final IconData? leftIcon;
+  final IconData? rightIcon;
+  final V leftValue;
+  final V rightValue;
   final V value;
   final ValueChanged<V> onChanged;
   @override
@@ -2205,18 +2399,27 @@ class _Segmented<V> extends StatelessWidget {
                   height: 42,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                      color: active ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(7),
-                      boxShadow: active ? T.shadowXs : null),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-                    if (icon != null) ...[
-                      Icon(icon, size: 14, color: active ? T.fg1 : T.fg3),
-                      const SizedBox(width: 5)
+                    color: active ? AppColors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadii.segment),
+                    boxShadow: active ? AppShadows.xs : null,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, size: 14, color: active ? AppColors.textPrimary : AppColors.textTertiary),
+                        const SizedBox(width: 5),
+                      ],
+                      Text(
+                        label,
+                        style: Typo.bodySm(ar: s.rtl).copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: active ? AppColors.textPrimary : AppColors.textTertiary,
+                        ),
+                      ),
                     ],
-                    Text(label,
-                        style: Typo.bodySm(ar: s.rtl)
-                            .copyWith(fontWeight: FontWeight.w600, color: active ? T.fg1 : T.fg3)),
-                  ]),
+                  ),
                 ),
               ),
             ),
@@ -2225,12 +2428,17 @@ class _Segmented<V> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-          color: T.ink50, borderRadius: BorderRadius.circular(T.rMd), border: Border.all(color: T.border)),
-      child: Row(children: [
-        seg(left, leftIcon, value == leftValue, () => onChanged(leftValue)),
-        const SizedBox(width: 6),
-        seg(right, rightIcon, value == rightValue, () => onChanged(rightValue)),
-      ]),
+        color: AppColors.ink50,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          seg(left, leftIcon, value == leftValue, () => onChanged(leftValue)),
+          const SizedBox(width: 6),
+          seg(right, rightIcon, value == rightValue, () => onChanged(rightValue)),
+        ],
+      ),
     );
   }
 }
@@ -2241,7 +2449,7 @@ class _Label extends StatelessWidget {
   final bool ar;
   @override
   Widget build(BuildContext context) =>
-      Text(text, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg2));
+      Text(text, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary));
 }
 
 class _Field extends StatelessWidget {
@@ -2250,11 +2458,14 @@ class _Field extends StatelessWidget {
   final Widget child;
   final bool ar;
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _Label(label, ar: ar),
-        const SizedBox(height: 8),
-        child,
-      ]);
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Label(label, ar: ar),
+          const SizedBox(height: 8),
+          child,
+        ],
+      );
 }
 
 /// Device-only sign-in's unrecoverable-password notice — same info-card shape
@@ -2266,17 +2477,20 @@ class _DeviceOnlyWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: T.cream50, borderRadius: BorderRadius.circular(T.rLg)),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Icon(LucideIcons.info, size: 16, color: T.fg3),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(text, style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.45)),
-          ),
-        ]),
+        decoration: BoxDecoration(color: AppColors.cream50, borderRadius: BorderRadius.circular(AppRadii.lg)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(LucideIcons.info, size: 16, color: AppColors.textTertiary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(text, style: Typo.bodySm(ar: ar).copyWith(color: AppColors.textSecondary, height: 1.45)),
+            ),
+          ],
+        ),
       );
 }
 
@@ -2309,7 +2523,7 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
     super.dispose();
   }
 
-  bool get _emailOk => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_email.text.trim());
+  bool get _emailOk => isPlausibleEmail(_email.text);
   bool get _resetOk => _code.text.trim().length >= 4 && _newPw.text.length >= 8;
 
   // Forgot-password reuses the OTP-request endpoint to send the reset code.
@@ -2339,104 +2553,126 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: Container(
           decoration: const BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl))),
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Center(child: SheetGrab()),
-            const SizedBox(height: 16),
-            Text(_step == ResetStep.done ? s.strings.auth.fp_success : s.strings.auth.fp_title,
-                style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            if (_step == ResetStep.email) ...[
-              Text(s.strings.auth.fp_help, style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          ),
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(child: SheetGrab()),
               const SizedBox(height: 16),
-              AuthInput(
+              Text(
+                _step == ResetStep.done ? s.strings.auth.fp_success : s.strings.auth.fp_title,
+                style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              if (_step == ResetStep.email) ...[
+                Text(s.strings.auth.fp_help, style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
+                const SizedBox(height: 16),
+                AuthInput(
                   controller: _email,
                   hint: s.strings.emergency.em_ph,
                   keyboard: TextInputType.emailAddress,
                   forceLtr: true,
                   accent: s.accent,
-                  onChanged: (_) => setState(() {})),
-            ] else if (_step == ResetStep.code) ...[
-              RichText(
-                  text: TextSpan(style: Typo.body(ar: s.rtl).copyWith(color: T.fg2), children: [
-                TextSpan(text: '${s.strings.auth.fp_sent_help} '),
-                TextSpan(text: _email.text.trim(), style: const TextStyle(color: T.fg1, fontWeight: FontWeight.w700)),
-              ])),
-              const SizedBox(height: 16),
-              _Label(s.strings.auth.fp_code_label, ar: s.rtl),
-              const SizedBox(height: 8),
-              AuthInput(
+                  onChanged: (_) => setState(() {}),
+                ),
+              ] else if (_step == ResetStep.code) ...[
+                RichText(
+                  text: TextSpan(
+                    style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+                    children: [
+                      TextSpan(text: '${s.strings.auth.fp_sent_help} '),
+                      TextSpan(
+                        text: _email.text.trim(),
+                        style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _Label(s.strings.auth.fp_code_label, ar: s.rtl),
+                const SizedBox(height: 8),
+                AuthInput(
                   controller: _code,
                   hint: '••••••',
                   keyboard: TextInputType.number,
                   mono: true,
                   forceLtr: true,
                   accent: s.accent,
-                  onChanged: (_) => setState(() {})),
-              const SizedBox(height: 14),
-              _Label(s.strings.auth.fp_new_pw, ar: s.rtl),
-              const SizedBox(height: 8),
-              AuthInput(
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 14),
+                _Label(s.strings.auth.fp_new_pw, ar: s.rtl),
+                const SizedBox(height: 8),
+                AuthInput(
                   controller: _newPw,
                   hint: s.strings.auth.pw_ph,
                   obscure: !_showPw,
                   forceLtr: true,
                   accent: s.accent,
                   suffixIcon: Semantics(
-                      button: true,
-                      label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
-                      child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => setState(() => _showPw = !_showPw),
-                          child: Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: T.fg3))),
-                  onChanged: (_) => setState(() {})),
-            ],
-            if (_error != null)
-              Padding(
+                    button: true,
+                    label: _showPw ? s.strings.common.a11y_hide_pw : s.strings.common.a11y_show_pw,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(() => _showPw = !_showPw),
+                      child:
+                          Icon(_showPw ? LucideIcons.eyeOff : LucideIcons.eye, size: 18, color: AppColors.textTertiary),
+                    ),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ],
+              if (_error case final error?)
+                Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Semantics(
-                      liveRegion: true,
-                      child: Text(_error!,
-                          style: Typo.meta(ar: s.rtl).copyWith(color: T.danger, fontWeight: FontWeight.w600)))),
-            const SizedBox(height: 20),
-            if (_step == ResetStep.email)
-              Opacity(
+                    liveRegion: true,
+                    child: Text(
+                      error,
+                      style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.danger, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              if (_step == ResetStep.email)
+                Opacity(
                   opacity: _emailOk && !_busy ? 1 : 0.4,
-                  child: PButton(s.strings.auth.fp_send,
-                      variant: BtnVariant.primary,
-                      large: true,
-                      block: true,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      onTap: _emailOk && !_busy
-                          ? () {
-                              _sendCode();
-                            }
-                          : null))
-            else if (_step == ResetStep.code)
-              Opacity(
+                  child: PButton(
+                    s.strings.auth.fp_send,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _emailOk && !_busy ? _sendCode : null,
+                  ),
+                )
+              else if (_step == ResetStep.code)
+                Opacity(
                   opacity: _resetOk && !_busy ? 1 : 0.4,
-                  child: PButton(s.strings.auth.fp_reset,
-                      variant: BtnVariant.primary,
-                      large: true,
-                      block: true,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      onTap: _resetOk && !_busy
-                          ? () {
-                              _reset();
-                            }
-                          : null))
-            else
-              PButton(s.strings.auth.fp_done,
-                  variant: BtnVariant.primary,
+                  child: PButton(
+                    s.strings.auth.fp_reset,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: _resetOk && !_busy ? _reset : null,
+                  ),
+                )
+              else
+                PButton(
+                  s.strings.auth.fp_done,
                   large: true,
                   block: true,
                   accent: s.accent,
                   ar: s.rtl,
-                  onTap: () => Navigator.pop(context)),
-          ]),
+                  onTap: () => Navigator.pop(context),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -2444,8 +2680,13 @@ class _ForgotPasswordSheetState extends ConsumerState<_ForgotPasswordSheet> {
 }
 
 class _SocialButton extends StatelessWidget {
-  const _SocialButton(
-      {required this.label, required this.dark, this.googleG = false, this.busy = false, required this.onTap});
+  const _SocialButton({
+    required this.label,
+    required this.dark,
+    required this.onTap,
+    this.googleG = false,
+    this.busy = false,
+  });
   final String label;
   final bool dark;
   final bool googleG;
@@ -2464,32 +2705,41 @@ class _SocialButton extends StatelessWidget {
         height: 52,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: dark ? const Color(0xFF1A1A17) : Colors.white,
-          borderRadius: BorderRadius.circular(T.rMd),
-          border: dark ? null : Border.all(color: const Color(0x2E3C3C3A), width: 1.5),
+          color: dark ? AppColors.nearBlack : AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: dark ? null : Border.all(color: AppColors.nearBlackSoft.withValues(alpha: 0.18), width: 1.5),
         ),
         child: busy
             ? Center(
                 child: SizedBox(
                   width: 20,
                   height: 20,
-                  child:
-                      CircularProgressIndicator(strokeWidth: 2, color: dark ? Colors.white : const Color(0xFF3C3C3A)),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: dark ? AppColors.white : AppColors.nearBlackSoft,
+                  ),
                 ),
               )
-            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                if (googleG) const _GoogleMark(),
-                const SizedBox(width: 10),
-                // Flexible, not bare: the label is translated and text-scaled,
-                // so a fixed-width row overflows on a narrow phone in Arabic.
-                Flexible(
-                  child: Text(label,
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (googleG) const _GoogleMark(),
+                  const SizedBox(width: 10),
+                  // Flexible, not bare: the label is translated and text-scaled,
+                  // so a fixed-width row overflows on a narrow phone in Arabic.
+                  Flexible(
+                    child: Text(
+                      label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Typo.body(ar: s.rtl)
-                          .copyWith(fontWeight: FontWeight.w600, color: dark ? Colors.white : const Color(0xFF3C3C3A))),
-                ),
-              ]),
+                      style: Typo.body(ar: s.rtl).copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: dark ? AppColors.white : AppColors.nearBlackSoft,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -2531,18 +2781,21 @@ class _LanguagePill extends StatelessWidget {
             height: 40,
             padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: T.langPillBg,
-              borderRadius: BorderRadius.circular(T.rPill),
-              border: Border.all(color: T.ink200),
+              color: AppColors.white85,
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              border: Border.all(color: AppColors.ink200),
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(LucideIcons.languages, size: 17, color: T.fg1),
-              const SizedBox(width: 6),
-              Text(
-                toEn ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
-                style: Typo.bodySm(ar: !toEn).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
-              ),
-            ]),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.languages, size: 17, color: AppColors.textPrimary),
+                const SizedBox(width: 6),
+                Text(
+                  toEn ? LanguageCode.en.nativeName : LanguageCode.ar.nativeName,
+                  style: Typo.bodySm(ar: !toEn).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2569,6 +2822,77 @@ class _SteadyLines extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: line * lines),
       child: Align(heightFactor: 1, child: child),
+    );
+  }
+}
+
+class _Trust extends StatelessWidget {
+  const _Trust(this.s, this.icon, this.label);
+  final PatientAppState s;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 84,
+        child: Column(
+          children: [
+            Icon(icon, size: 22, color: s.accent.main),
+            const SizedBox(height: 6),
+            // Two lines held in both languages ("Private by / default" wraps in
+            // English only), so the row does not change height on a switch.
+            _SteadyLines(
+              lines: 2,
+              style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.eyebrow),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: Typo.meta(ar: s.rtl)
+                    .copyWith(fontSize: FontSizes.eyebrow, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _GateSection extends StatelessWidget {
+  const _GateSection(this.s, this.icon, this.title, this.body);
+  final PatientAppState s;
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: s.accent.main),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FontSizes.bodyLg, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(body, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

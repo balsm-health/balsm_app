@@ -1,12 +1,11 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:vaccinations/vaccinations.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import 'family_kit.dart';
 import 'health_log_form.dart';
 import 'profile_bar.dart';
@@ -27,14 +26,14 @@ Future<void> openEditVaccination(BuildContext context, HealthProfileId id, Vacci
 /// A person's vaccination log: the next dose due, doses past due (each with
 /// a shortcut to record it) and every dose given, newest first.
 class VaccinationsScreen extends ConsumerWidget {
-  const VaccinationsScreen({super.key, required this.id});
+  const VaccinationsScreen({required this.id, super.key});
   final HealthProfileId id;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final v = s.strings.vacc;
-    final records = ref.watch(vaccinationsProvider(id)).valueOrNull;
+    final records = ref.watch(vaccinationsProvider(id)).value;
     final today = DateTime.now();
     final status = VaccinationStatus.of(records ?? const [], today: today);
     final next = status.next;
@@ -63,14 +62,18 @@ class VaccinationsScreen extends ConsumerWidget {
           PCard(
             padding: EdgeInsets.zero,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(T.rLg),
-              child: Column(children: [
-                ...records.indexed.map((e) => _GivenRow(
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              child: Column(
+                children: [
+                  ...records.indexed.map(
+                    (e) => _GivenRow(
                       record: e.$2,
                       divider: e.$1 > 0,
                       onTap: () => openEditVaccination(context, id, e.$2),
-                    )),
-              ]),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -90,20 +93,33 @@ class _Empty extends StatelessWidget {
     final v = s.strings.vacc;
     return PCard(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-      child: Column(children: [
-        const IconSquare(LucideIcons.syringe,
-            bg: T.hueEmerald50, fg: T.hueEmeraldInk, size: 52, iconSize: 24, radius: 16),
-        const SizedBox(height: 10),
-        Text(v.empty_t,
+      child: Column(
+        children: [
+          const IconSquare(
+            LucideIcons.syringe,
+            bg: AppColors.hueEmerald50,
+            fg: AppColors.hueEmeraldInk,
+            size: 52,
+            iconSize: 24,
+            radius: 16,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            v.empty_t,
             textAlign: TextAlign.center,
-            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-        const SizedBox(height: 10),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 270),
-          child: Text(v.empty_b(s.gender),
-              textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
-        ),
-      ]),
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 10),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 270),
+            child: Text(
+              v.empty_b(s.gender),
+              textAlign: TextAlign.center,
+              style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -120,27 +136,43 @@ class _NextDose extends StatelessWidget {
     final due = record.nextDueOn!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rLg)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(v.next_dose, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
-        const SizedBox(height: 2),
-        Text('${record.vaccine} · ${v.dose(record.doseNumber + 1)}',
-            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-        const SizedBox(height: 2),
-        Row(children: [
-          const Icon(LucideIcons.calendar, size: 14, color: T.fg2),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: formatDay(due), style: Typo.num(size: FS.sm, weight: FontWeight.w500, color: T.fg2)),
-                TextSpan(text: ' · ${v.in_days(VaccinationStatus.daysBetween(today, due))}'),
-              ]),
-              style: Typo.bodySm(ar: s.rtl),
-            ),
+      decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(AppRadii.lg)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(v.next_dose, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
+          const SizedBox(height: 2),
+          Text(
+            '${record.vaccine} · ${v.dose(record.doseNumber + 1)}',
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
           ),
-        ]),
-      ]),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              const Icon(LucideIcons.calendar, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: formatDay(due),
+                        style: Typo.num(
+                          size: FontSizes.bodySm,
+                          weight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      TextSpan(text: ' · ${v.in_days(VaccinationStatus.daysBetween(today, due))}'),
+                    ],
+                  ),
+                  style: Typo.bodySm(ar: s.rtl),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -159,20 +191,29 @@ class _PastDueRow extends StatelessWidget {
     return PCard(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(children: [
-        const IconSquare(LucideIcons.clock, bg: T.ink50, fg: T.fg2, size: 38, iconSize: 18, radius: 10),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('${record.vaccine} · ${v.dose(record.doseNumber + 1)}',
-                style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            Text('${v.was_due(formatDay(due))} · ${ago == 0 ? v.due_today : v.days_ago(ago)}',
-                style: Typo.meta(ar: s.rtl)),
-          ]),
-        ),
-        const SizedBox(width: 8),
-        PButton(v.record, variant: BtnVariant.secondary, size: BtnSize.sm, ar: s.rtl, onTap: onRecord),
-      ]),
+      child: Row(
+        children: [
+          const IconSquare(LucideIcons.clock, bg: AppColors.ink50, fg: AppColors.textSecondary, iconSize: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${record.vaccine} · ${v.dose(record.doseNumber + 1)}',
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+                Text(
+                  '${v.was_due(formatDay(due))} · ${ago == 0 ? v.due_today : v.days_ago(ago)}',
+                  style: Typo.meta(ar: s.rtl),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          PButton(v.record, variant: BtnVariant.secondary, size: BtnSize.sm, ar: s.rtl, onTap: onRecord),
+        ],
+      ),
     );
   }
 }
@@ -193,29 +234,46 @@ class _GivenRow extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
-          decoration: divider ? const BoxDecoration(border: Border(top: BorderSide(color: T.ink100))) : null,
-          child: Row(children: [
-            const IconSquare(LucideIcons.check, bg: T.hueEmerald50, fg: T.hueEmeraldInk, size: 36, iconSize: 17),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(record.vaccine, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: '${v.dose(record.doseNumber)} · '),
-                    TextSpan(
-                      text: formatDay(record.administeredOn),
-                      style: Typo.num(size: FS.xs, weight: FontWeight.w500, color: T.fg3),
+          decoration: divider ? const BoxDecoration(border: Border(top: BorderSide(color: AppColors.ink100))) : null,
+          child: Row(
+            children: [
+              const IconSquare(
+                LucideIcons.check,
+                bg: AppColors.hueEmerald50,
+                fg: AppColors.hueEmeraldInk,
+                size: 36,
+                iconSize: 17,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      record.vaccine,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                     ),
-                    if (record.clinic != null) TextSpan(text: ' · ${record.clinic}'),
-                  ]),
-                  style: Typo.meta(ar: s.rtl),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: '${v.dose(record.doseNumber)} · '),
+                          TextSpan(
+                            text: formatDay(record.administeredOn),
+                            style:
+                                Typo.num(size: FontSizes.meta, weight: FontWeight.w500, color: AppColors.textTertiary),
+                          ),
+                          if (record.clinic != null) TextSpan(text: ' · ${record.clinic}'),
+                        ],
+                      ),
+                      style: Typo.meta(ar: s.rtl),
+                    ),
+                  ],
                 ),
-              ]),
-            ),
-            const SizedBox(width: 8),
-            const Icon(LucideIcons.pencil, size: 15, color: T.fg3),
-          ]),
+              ),
+              const SizedBox(width: 8),
+              const Icon(LucideIcons.pencil, size: 15, color: AppColors.textTertiary),
+            ],
+          ),
         ),
       ),
     );
@@ -228,7 +286,7 @@ class _GivenRow extends StatelessWidget {
 /// edit form (`prefill.edit`): prefilled with that dose, saving over it, and
 /// offering to delete it after a confirm sheet (`MCConfirmSheet`).
 class AddVaccinationScreen extends ConsumerStatefulWidget {
-  const AddVaccinationScreen({super.key, required this.id, this.vaccine, this.dose, this.editing});
+  const AddVaccinationScreen({required this.id, super.key, this.vaccine, this.dose, this.editing});
   final HealthProfileId id;
   final String? vaccine;
   final int? dose;
@@ -322,28 +380,32 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
     final doses = [for (var n = 1; n <= (_dose > 5 ? _dose : 5); n++) n];
     return FamilyScaffold(
       title: editing == null ? v.add : v.edit_t,
-      footer: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        PButton(
-          editing == null ? v.save : v.save_changes,
-          large: true,
-          block: true,
-          accent: s.accent,
-          ar: s.rtl,
-          onTap: _ok && !_saving ? _save : null,
-        ),
-        if (editing != null) ...[
-          const SizedBox(height: 8),
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           PButton(
-            v.delete,
-            icon: LucideIcons.trash2,
-            variant: BtnVariant.ghost,
+            editing == null ? v.save : v.save_changes,
+            large: true,
             block: true,
-            color: T.danger,
+            accent: s.accent,
             ar: s.rtl,
-            onTap: _saving ? null : () => _delete(editing),
+            onTap: _ok && !_saving ? _save : null,
           ),
+          if (editing != null) ...[
+            const SizedBox(height: 8),
+            PButton(
+              v.delete,
+              icon: LucideIcons.trash2,
+              variant: BtnVariant.ghost,
+              block: true,
+              color: AppColors.danger,
+              ar: s.rtl,
+              onTap: _saving ? null : () => _delete(editing),
+            ),
+          ],
         ],
-      ]),
+      ),
       children: [
         LogField(
           label: v.f_name,
@@ -351,23 +413,29 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
             controller: _name,
             maxLength: VaccinationRecord.maxVaccineLength,
             onChanged: (_) => setState(() {}),
-            style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
+            style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary),
             decoration: logInputDecoration(s, v.f_name_ph),
           ),
         ),
         LogField(
           label: v.f_dose,
-          child: LayoutBuilder(builder: (context, c) {
-            const gap = 8.0;
-            final w = (c.maxWidth - gap * 4) / 5;
-            return Wrap(spacing: gap, runSpacing: gap, children: [
-              for (final n in doses)
-                SizedBox(
-                  width: w,
-                  child: _DoseChip(n: n, active: _dose == n, onTap: () => setState(() => _dose = n)),
-                ),
-            ]);
-          }),
+          child: LayoutBuilder(
+            builder: (context, c) {
+              const gap = 8.0;
+              final w = (c.maxWidth - gap * 4) / 5;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final n in doses)
+                    SizedBox(
+                      width: w,
+                      child: _DoseChip(n: n, active: _dose == n, onTap: () => setState(() => _dose = n)),
+                    ),
+                ],
+              );
+            },
+          ),
         ),
         LogField(
           label: v.f_date,
@@ -389,7 +457,7 @@ class _AddVaccinationScreenState extends ConsumerState<AddVaccinationScreen> {
             controller: _clinic,
             maxLength: VaccinationRecord.maxClinicLength,
             onChanged: (_) => setState(() {}),
-            style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
+            style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary),
             decoration: logInputDecoration(s, v.f_clinic_ph),
           ),
         ),
@@ -430,13 +498,16 @@ class _DoseChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 11),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: active ? s.accent.main : Colors.white,
-            borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(color: active ? s.accent.main : T.border, width: 1.5),
+            color: active ? s.accent.main : AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            border: Border.all(color: active ? s.accent.main : AppColors.border, width: 1.5),
           ),
           child: Text(
             '$n',
-            style: Typo.num(size: FS.md, weight: FontWeight.w700, color: active ? T.onFill(s.accent.main) : T.fg2),
+            style: Typo.num(
+              weight: FontWeight.w700,
+              color: active ? ColorContrast.onFill(s.accent.main) : AppColors.textSecondary,
+            ),
           ),
         ),
       ),

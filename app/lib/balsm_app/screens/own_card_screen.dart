@@ -5,7 +5,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:pregnancy/pregnancy.dart';
 
 import '../app_state.dart';
-import '../kit.dart';
 import 'family/family_kit.dart';
 import 'family/member_card_screen.dart';
 import 'pregnancy/pregnancy_card_screen.dart';
@@ -27,11 +26,11 @@ class OwnCardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final self = ref.watch(selfProfileIdProvider).valueOrNull;
-    final health = ref.watch(healthProfileProvider).valueOrNull;
+    final self = ref.watch(selfProfileIdProvider).value;
+    final health = ref.watch(healthProfileProvider).value;
     final preg = ref.watch(activePregnancyOfProvider(null));
-    final name = (ref.watch(accountSummaryProvider).valueOrNull?.displayName ?? health?.displayName ?? '').trim();
-    if (self == null) return const Scaffold(backgroundColor: Colors.white);
+    final name = (ref.watch(accountSummaryProvider).value?.displayName ?? health?.displayName ?? '').trim();
+    if (self == null) return const Scaffold(backgroundColor: AppColors.white);
     final me = FamilyMember(
       id: self,
       kind: ProfileKind.self,

@@ -1,8 +1,8 @@
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
@@ -11,7 +11,6 @@ import 'package:vaccinations/vaccinations.dart';
 import '../app_state.dart';
 import '../kit.dart';
 import '../routes.dart';
-import '../tokens.dart';
 import 'checkin_shared.dart';
 import 'day_records_screen.dart';
 import 'family/family_kit.dart';
@@ -19,12 +18,12 @@ import 'family/growth_screen.dart';
 import 'family/member_card_screen.dart';
 import 'family/member_medical_screen.dart';
 import 'family/member_screen.dart';
-import 'quick_log.dart';
-import 'report_flow.dart';
 import 'family/vaccinations_screen.dart';
 import 'home_widgets.dart';
 import 'profile_subscreens.dart' show memberHealthProfileProvider;
+import 'quick_log.dart';
 import 'records_screen.dart';
+import 'report_flow.dart';
 import 'trend_series.dart';
 import 'trends_screen.dart';
 
@@ -43,37 +42,43 @@ import 'trends_screen.dart';
 /// against the account holder's Home: the travel banner, the onboarding
 /// nudges, and the care-team / nearby-care shortcuts.
 class MemberHomeBody extends ConsumerWidget {
-  const MemberHomeBody({super.key, required this.member, required this.wide});
+  const MemberHomeBody({required this.member, required this.wide, super.key});
   final FamilyMember member;
   final bool wide;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final history = ref.watch(profileCheckInsProvider(member.id)).valueOrNull ?? const <CheckIn>[];
+    final history = ref.watch(profileCheckInsProvider(member.id)).value ?? const <CheckIn>[];
     final checkIn = _MemberCheckIn(member: member, history: history);
     final latest = _MemberLatest(member: member, history: history);
     final shortcuts = _MemberShortcuts(member: member, history: history, row: wide);
     final recent = _MemberRecent(member: member, history: history);
     if (wide) {
-      return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(
-          flex: 115,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [checkIn, latest]),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 100,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [shortcuts, recent]),
-        ),
-      ]);
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 115,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [checkIn, latest]),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 100,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [shortcuts, recent]),
+          ),
+        ],
+      );
     }
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      checkIn,
-      latest,
-      const SizedBox(height: 10),
-      shortcuts,
-      recent,
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        checkIn,
+        latest,
+        const SizedBox(height: 10),
+        shortcuts,
+        recent,
+      ],
+    );
   }
 }
 
@@ -126,7 +131,7 @@ class _MemberLatest extends ConsumerWidget {
     final pain = r.pain == null ? null : '${r.pain!.value}/10';
     final Widget card;
     if (member.isChildOn(DateTime.now())) {
-      final growth = ref.watch(growthEntriesProvider(member.id)).valueOrNull ?? const <GrowthEntry>[];
+      final growth = ref.watch(growthEntriesProvider(member.id)).value ?? const <GrowthEntry>[];
       final weighed = growth.where((g) => g.weightKg != null).firstOrNull;
       final measured = growth.where((g) => g.heightCm != null).firstOrNull;
       final pulse = history.map((c) => c.vitals.heartRate).nonNulls.firstOrNull;
@@ -143,19 +148,25 @@ class _MemberLatest extends ConsumerWidget {
       final hasBp = r.systolic != null && r.diastolic != null;
       card = HomeVitalsCard(
         bp: hasBp ? '${r.systolic}/${r.diastolic}' : null,
-        bpHigh: hasBp && (r.systolic! >= 130 || r.diastolic! >= 85),
+        bpHigh: hasBp && VitalLimits.bloodPressureElevated(r.systolic!, r.diastolic!),
         glucose: glucose?.toString(),
-        glucoseHigh: glucose != null && glucose >= 140,
+        glucoseHigh: glucose != null && VitalLimits.glucoseElevated(glucose, r.glucoseContext ?? GlucoseContext.random),
         spo2: r.spo2?.toString(),
-        mood: r.mood == null ? null : moodLabel(s, r.mood!.score),
+        mood: switch (r.mood) { final mood? => moodLabel(s, mood.score), _ => null },
         pain: pain,
       );
     }
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      HomeSectionHead(s.strings.checkin.latest,
-          action: s.strings.common.see_all, onAction: () => openMemberTrends(context, member)),
-      card,
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HomeSectionHead(
+          s.strings.checkin.latest,
+          action: s.strings.common.see_all,
+          onAction: () => openMemberTrends(context, member),
+        ),
+        card,
+      ],
+    );
   }
 
   /// 12.0 → "12", 3.45 → "3.45".
@@ -180,90 +191,161 @@ class _MemberShortcuts extends ConsumerWidget {
     final m = member;
     final now = DateTime.now();
     final child = m.isChildOn(now);
-    final health = ref.watch(memberHealthProfileProvider(m.id)).valueOrNull;
+    final health = ref.watch(memberHealthProfileProvider(m.id)).value;
     final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
     final allergies = health?.allergies.length ?? 0;
     final conditions = health?.conditions.length ?? 0;
-    final growth = ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[];
+    final growth = ref.watch(growthEntriesProvider(m.id)).value ?? const <GrowthEntry>[];
     // Medicines and records follow the active profile, which is this member
     // whenever their Home is on screen; zero in the moment a switch resolves.
     final active = ref.watch(currentProfileIdProvider) == m.id;
-    final meds = active ? (ref.watch(medicationListProvider).valueOrNull ?? const <Medication>[]).length : 0;
-    final records = active ? (ref.watch(recordListProvider).valueOrNull ?? const <RecordDocument>[]).length : 0;
+    final meds = active ? (ref.watch(medicationListProvider).value ?? const <Medication>[]).length : 0;
+    final records = active ? (ref.watch(recordListProvider).value ?? const <RecordDocument>[]).length : 0;
 
-    HomeShortcutTile tile(IconData icon, Color bg, Color fg, String label, int count, String unit, VoidCallback onTap,
-            {String? value}) =>
+    HomeShortcutTile tile(
+      IconData icon,
+      Color bg,
+      Color fg,
+      String label,
+      int count,
+      String unit,
+      VoidCallback onTap, {
+      String? value,
+    }) =>
         HomeShortcutTile(
-            icon: icon,
-            iconBg: bg,
-            iconFg: fg,
-            label: label,
-            count: count,
-            value: value,
-            unit: unit,
-            onTap: onTap,
-            row: row);
+          icon: icon,
+          iconBg: bg,
+          iconFg: fg,
+          label: label,
+          count: count,
+          value: value,
+          unit: unit,
+          onTap: onTap,
+          row: row,
+        );
 
     final List<HomeShortcutTile> last;
     if (child) {
-      final vaccines = ref.watch(vaccinationsProvider(m.id)).valueOrNull ?? const <VaccinationRecord>[];
+      final vaccines = ref.watch(vaccinationsProvider(m.id)).value ?? const <VaccinationRecord>[];
       final next = VaccinationStatus.of(vaccines, today: now).next;
       last = [
         tile(
-            LucideIcons.syringe,
-            T.hueEmerald50,
-            T.hueEmerald,
-            s.strings.vacc.title,
-            vaccines.length,
-            next == null ? h.sc_recorded : h.sc_next(formatDay(next.nextDueOn!)),
-            () => openVaccinations(context, m.id)),
-        tile(LucideIcons.ruler, T.hueAqua50, T.hueAqua, s.strings.growth.title, growth.length, h.sc_entries,
-            () => openGrowth(context, m.id)),
+          LucideIcons.syringe,
+          AppColors.hueEmerald50,
+          AppColors.hueEmerald,
+          s.strings.vacc.title,
+          vaccines.length,
+          next == null ? h.sc_recorded : h.sc_next(formatDay(next.nextDueOn!)),
+          () => openVaccinations(context, m.id),
+        ),
+        tile(
+          LucideIcons.ruler,
+          AppColors.hueAqua50,
+          AppColors.hueAqua,
+          s.strings.growth.title,
+          growth.length,
+          h.sc_entries,
+          () => openGrowth(context, m.id),
+        ),
       ];
     } else {
       final trends = trendSeries(history, growth: growth).length;
       last = [
-        tile(LucideIcons.trendingUp, T.hueBlue50, T.hueBlue, f.tile_trends, trends, h.sc_measures,
-            () => openMemberTrends(context, m)),
-        tile(LucideIcons.user, T.ink50, T.fg2, h.sc_full_profile, 0, relationLabel(s, m.relationship, m.sex),
-            () => openMember(context, m.id),
-            value: ''),
+        tile(
+          LucideIcons.trendingUp,
+          AppColors.hueBlue50,
+          AppColors.hueBlue,
+          f.tile_trends,
+          trends,
+          h.sc_measures,
+          () => openMemberTrends(context, m),
+        ),
+        tile(
+          LucideIcons.user,
+          AppColors.ink50,
+          AppColors.textSecondary,
+          h.sc_full_profile,
+          0,
+          relationLabel(s, m.relationship, m.sex),
+          () => openMember(context, m.id),
+          value: '',
+        ),
       ];
     }
     final tiles = [
-      tile(LucideIcons.idCard, T.hueBlue50, T.hueBlue, f.tile_card, 0,
-          allergies > 0 ? h.sc_allergies(allergies) : h.sc_blood, () => openMemberCard(context, m.id),
-          value: blood ?? '—'),
-      tile(LucideIcons.clipboardList, T.hueMint50, T.hueMint600, f.tile_medical, conditions, h.sc_conditions,
-          () => openMemberMedical(context, m)),
-      tile(LucideIcons.folderHeart, T.hueViolet50, T.hueViolet, h.sc_records, records, s.strings.records.rec_documents,
-          () => s.setTab(AppTab.records)),
-      tile(LucideIcons.pill, T.hueBlue50, T.hueBlue, f.tile_meds, meds, h.sc_meds, () => s.setTab(AppTab.meds)),
+      tile(
+        LucideIcons.idCard,
+        AppColors.hueBlue50,
+        AppColors.hueBlue,
+        f.tile_card,
+        0,
+        allergies > 0 ? h.sc_allergies(allergies) : h.sc_blood,
+        () => openMemberCard(context, m.id),
+        value: blood ?? '—',
+      ),
+      tile(
+        LucideIcons.clipboardList,
+        AppColors.hueMint50,
+        AppColors.hueMint600,
+        f.tile_medical,
+        conditions,
+        h.sc_conditions,
+        () => openMemberMedical(context, m),
+      ),
+      tile(
+        LucideIcons.folderHeart,
+        AppColors.hueViolet50,
+        AppColors.hueViolet,
+        h.sc_records,
+        records,
+        s.strings.records.rec_documents,
+        () => s.setTab(AppTab.records),
+      ),
+      tile(
+        LucideIcons.pill,
+        AppColors.hueBlue50,
+        AppColors.hueBlue,
+        f.tile_meds,
+        meds,
+        h.sc_meds,
+        () => s.setTab(AppTab.meds),
+      ),
       ...last,
     ];
     if (row) {
-      return Column(children: [
-        ...tiles.indexed.map((e) => Padding(
+      return Column(
+        children: [
+          ...tiles.indexed.map(
+            (e) => Padding(
               padding: EdgeInsetsDirectional.only(top: e.$1 == 0 ? 0 : 8),
               child: e.$2,
-            )),
-      ]);
+            ),
+          ),
+        ],
+      );
     }
     Widget line(List<HomeShortcutTile> three) => IntrinsicHeight(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            ...three.indexed.map((e) => Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ...three.indexed.map(
+                (e) => Expanded(
                   child: Padding(
                     padding: EdgeInsetsDirectional.only(start: e.$1 == 0 ? 0 : 8),
                     child: e.$2,
                   ),
-                )),
-          ]),
+                ),
+              ),
+            ],
+          ),
         );
-    return Column(children: [
-      line(tiles.sublist(0, 3)),
-      const SizedBox(height: 8),
-      line(tiles.sublist(3)),
-    ]);
+    return Column(
+      children: [
+        line(tiles.sublist(0, 3)),
+        const SizedBox(height: 8),
+        line(tiles.sublist(3)),
+      ],
+    );
   }
 }
 
@@ -278,28 +360,38 @@ class _MemberRecent extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final recent = groupCheckInsByDay(history).take(3).toList();
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      HomeSectionHead(s.strings.common.recent,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HomeSectionHead(
+          s.strings.common.recent,
           action: recent.isEmpty ? null : s.strings.common.see_all,
-          onAction: recent.isEmpty ? null : () => openMemberTrends(context, member)),
-      PCard(
-        padding: EdgeInsets.zero,
-        child: recent.isEmpty
-            ? Padding(
-                padding: const EdgeInsetsDirectional.symmetric(horizontal: 16, vertical: 18),
-                child: Text(s.strings.home.member_recent_empty(member.shortName),
-                    textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
-              )
-            : Column(
-                children: recent.indexed
-                    .map((e) => CheckInDayRow(
+          onAction: recent.isEmpty ? null : () => openMemberTrends(context, member),
+        ),
+        PCard(
+          padding: EdgeInsets.zero,
+          child: recent.isEmpty
+              ? Padding(
+                  padding: const EdgeInsetsDirectional.symmetric(horizontal: 16, vertical: 18),
+                  child: Text(
+                    s.strings.home.member_recent_empty(member.shortName),
+                    textAlign: TextAlign.center,
+                    style: Typo.meta(ar: s.rtl),
+                  ),
+                )
+              : Column(
+                  children: recent.indexed
+                      .map(
+                        (e) => CheckInDayRow(
                           day: e.$2,
                           first: e.$1 == 0,
                           onTap: () => DayRecordsScreen.open(context, e.$2),
-                        ))
-                    .toList(),
-              ),
-      ),
-    ]);
+                        ),
+                      )
+                      .toList(),
+                ),
+        ),
+      ],
+    );
   }
 }

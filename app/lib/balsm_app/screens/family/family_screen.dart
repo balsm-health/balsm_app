@@ -1,17 +1,17 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:family/family.dart';
 import 'package:family_link/family_link.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app_state.dart';
 import '../../assets.dart';
 import '../../family/family_links_sync.dart';
 import '../../flags.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
 import 'family_link_rows.dart';
@@ -80,7 +80,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 14),
-          child: Text(f.intro(s.gender), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+          child: Text(f.intro(s.gender), style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
         ),
         if (links) const FamilyLinkSections(),
         if (sections == null)
@@ -93,17 +93,19 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
             PCard(
               padding: EdgeInsets.zero,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(T.rLg),
-                child: Column(children: [
-                  for (final (i, m) in section.members.indexed)
-                    _MemberRow(
-                      member: m,
-                      sub: memberSubtitle(s, m, now),
-                      divider: i > 0,
-                      onTap: () => _open(context, ref, m),
-                      onCard: () => _open(context, ref, m, card: true),
-                    ),
-                ]),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                child: Column(
+                  children: [
+                    for (final (i, m) in section.members.indexed)
+                      _MemberRow(
+                        member: m,
+                        sub: memberSubtitle(s, m, now),
+                        divider: i > 0,
+                        onTap: () => _open(context, ref, m),
+                        onCard: () => _open(context, ref, m, card: true),
+                      ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -121,19 +123,26 @@ class _Empty extends StatelessWidget {
     final f = s.strings.family;
     return PCard(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-      child: Column(children: [
-        Opacity(opacity: 0.9, child: SvgPicture.asset(Assets.brand_icon, width: 44, height: 44)),
-        const SizedBox(height: 10),
-        Text(f.empty_t,
+      child: Column(
+        children: [
+          Opacity(opacity: 0.9, child: SvgPicture.asset(Assets.brand_icon, width: 44, height: 44)),
+          const SizedBox(height: 10),
+          Text(
+            f.empty_t,
             textAlign: TextAlign.center,
-            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-        const SizedBox(height: 10),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 260),
-          child: Text(f.empty_b(s.gender),
-              textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
-        ),
-      ]),
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 10),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 260),
+            child: Text(
+              f.empty_b(s.gender),
+              textAlign: TextAlign.center,
+              style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -158,20 +167,28 @@ class _MemberRow extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 10, 12),
-        decoration: divider ? const BoxDecoration(border: Border(top: BorderSide(color: T.ink100))) : null,
-        child: Row(children: [
-          MemberAvatar(member, size: 46),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(member.displayName, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
-          ),
-          RoundBtn(icon: LucideIcons.idCard, semanticLabel: s.strings.family.tile_card, onTap: onCard),
-          const SizedBox(width: 4),
-          Chevron(rtl: s.rtl),
-        ]),
+        decoration: divider ? const BoxDecoration(border: Border(top: BorderSide(color: AppColors.ink100))) : null,
+        child: Row(
+          children: [
+            MemberAvatar(member, size: 46),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member.displayName,
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  ),
+                  Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                ],
+              ),
+            ),
+            RoundBtn(icon: LucideIcons.idCard, semanticLabel: s.strings.family.tile_card, onTap: onCard),
+            const SizedBox(width: 4),
+            Chevron(rtl: s.rtl),
+          ],
+        ),
       ),
     );
   }
@@ -187,31 +204,34 @@ Future<void> showAddMemberSheet(BuildContext context) {
     textDirection: s.dir,
     builder: (ctx) {
       final f = s.strings.family;
-      return FamilySheet(title: f.add_member, children: [
-        _AddRow(
-          icon: LucideIcons.pencilLine,
-          accent: true,
-          title: f.manual_t,
-          sub: f.manual_b(s.gender),
-          onTap: () {
-            Navigator.pop(ctx);
-            openAddMember(context);
-          },
-        ),
-        if (familyLinkOn(s.flags)) ...[
-          const SizedBox(height: 10),
+      return FamilySheet(
+        title: f.add_member,
+        children: [
           _AddRow(
-            icon: LucideIcons.qrCode,
-            title: f.scan_t,
-            sub: f.scan_b,
+            icon: LucideIcons.pencilLine,
+            accent: true,
+            title: f.manual_t,
+            sub: f.manual_b(s.gender),
             onTap: () {
               Navigator.pop(ctx);
-              openLinkScan(context);
+              unawaited(openAddMember(context));
             },
           ),
+          if (familyLinkOn(s.flags)) ...[
+            const SizedBox(height: 10),
+            _AddRow(
+              icon: LucideIcons.qrCode,
+              title: f.scan_t,
+              sub: f.scan_b,
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(openLinkScan(context));
+              },
+            ),
+          ],
+          const StaysLocalNote(center: false),
         ],
-        const StaysLocalNote(center: false),
-      ]);
+      );
     },
   );
 }
@@ -231,20 +251,36 @@ class _AddRow extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(T.rLg), border: Border.all(color: T.border)),
-        child: Row(children: [
-          IconSquare(icon,
-              bg: accent ? s.accent.bg : T.ink50, fg: accent ? s.accent.main : T.fg2, size: 44, iconSize: 22),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-              const SizedBox(height: 2),
-              Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
-          ),
-          Chevron(rtl: s.rtl),
-        ]),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            IconSquare(
+              icon,
+              bg: accent ? s.accent.bg : AppColors.ink50,
+              fg: accent ? s.accent.main : AppColors.textSecondary,
+              size: 44,
+              iconSize: 22,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                ],
+              ),
+            ),
+            Chevron(rtl: s.rtl),
+          ],
+        ),
       ),
     );
   }

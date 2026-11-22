@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -5,11 +6,10 @@ import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
 
 import '../app_state.dart';
+import '../flags.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
-import '../flags.dart';
 import '../storage_target.dart';
-import '../tokens.dart';
 import '../widgets/badges.dart';
 import 'go_online_sheet.dart';
 
@@ -40,10 +40,12 @@ import 'go_online_sheet.dart';
 /// too.
 void showStorageSync(BuildContext context) {
   final s = AppScope.of(context);
-  showAppSheet<void>(
-    context,
-    textDirection: s.dir,
-    builder: (_) => _StorageSyncSheet(s: s),
+  unawaited(
+    showAppSheet<void>(
+      context,
+      textDirection: s.dir,
+      builder: (_) => _StorageSyncSheet(s: s),
+    ),
   );
 }
 
@@ -76,7 +78,7 @@ class _StorageSyncSheet extends ConsumerStatefulWidget {
 }
 
 class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
-  /// Null is the map; a category (or [_allData]) is its editor.
+  /// Null is the map; a category (or `_allData`) is its editor.
   DataCategory? _view;
 
   /// The design's `cat === 'all'` branch, which edits every category at once.
@@ -89,49 +91,59 @@ class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
   Widget build(BuildContext context) {
     final st = s.strings.storage;
     return Material(
-      color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      color: AppColors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.92),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-            child: Column(children: [
-              const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
-              Container(
-                padding: const EdgeInsets.only(bottom: 12),
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: T.ink100))),
-                child: Row(children: [
-                  const Icon(LucideIcons.hardDrive, size: 20, color: T.fg3),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(st.storage, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700))),
-                  RoundBtn(
-                      icon: LucideIcons.x,
-                      semanticLabel: s.strings.common.a11y_close,
-                      ghost: true,
-                      iconSize: 17,
-                      onTap: () => Navigator.pop(context)),
-                ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
+              child: Column(
+                children: [
+                  const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
+                  Container(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.ink100))),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.hardDrive, size: 20, color: AppColors.textTertiary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(st.storage, style: Typo.subhead(ar: ar).copyWith(fontWeight: FontWeight.w700)),
+                        ),
+                        RoundBtn(
+                          icon: LucideIcons.x,
+                          semanticLabel: s.strings.common.a11y_close,
+                          ghost: true,
+                          iconSize: 17,
+                          onTap: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, sheetBottomInset(context, base: 36)),
-              child: (_view != null || _allView)
-                  ? CategorySyncBody(
-                      s: s,
-                      category: _view,
-                      onBack: () => setState(() {
-                        _view = null;
-                        _allView = false;
-                      }),
-                    )
-                  : _map(),
             ),
-          ),
-        ]),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, sheetBottomInset(context, base: 36)),
+                child: (_view != null || _allView)
+                    ? CategorySyncBody(
+                        s: s,
+                        category: _view,
+                        onBack: () => setState(() {
+                          _view = null;
+                          _allView = false;
+                        }),
+                      )
+                    : _map(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -139,39 +151,48 @@ class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
   /// The map: cloud accounts, then every data category and where it lives.
   Widget _map() {
     final st = s.strings.storage;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(0, 12, 0, 14),
-        child: Text(st.store_intro, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
-      ),
-      _Eyebrow(st.store_accounts, ar: ar),
-      const SizedBox(height: 10),
-      _Grouped(children: [
-        for (final t in StorageTarget.picker.where((t) => !t.isLocal)) _CloudAccountRow(s: s, target: t),
-      ]),
-      const SizedBox(height: 18),
-      Row(children: [
-        Expanded(child: _Eyebrow(st.store_your_data, ar: ar)),
-        // `storage.jsx` puts "Sync all" here. It opens the every-category
-        // editor, which is the honest half of it — there is nothing to sync.
-        PButton(
-          st.store_all_data,
-          icon: LucideIcons.layers,
-          variant: BtnVariant.ghost,
-          accent: s.accent,
-          ar: ar,
-          color: s.accent.main,
-          onTap: () => setState(() => _allView = true),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(0, 12, 0, 14),
+          child: Text(st.store_intro, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
         ),
-      ]),
-      const SizedBox(height: 10),
-      _Grouped(children: [
-        for (final cat in DataCategory.values)
-          _CategoryRow(s: s, category: cat, onTap: () => setState(() => _view = cat)),
-      ]),
-      const SizedBox(height: 14),
-      Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
-    ]);
+        _Eyebrow(st.store_accounts, ar: ar),
+        const SizedBox(height: 10),
+        _Grouped(
+          children: [
+            for (final t in StorageTarget.picker.where((t) => !t.isLocal)) _CloudAccountRow(s: s, target: t),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(child: _Eyebrow(st.store_your_data, ar: ar)),
+            // `storage.jsx` puts "Sync all" here. It opens the every-category
+            // editor, which is the honest half of it — there is nothing to sync.
+            PButton(
+              st.store_all_data,
+              icon: LucideIcons.layers,
+              variant: BtnVariant.ghost,
+              accent: s.accent,
+              ar: ar,
+              color: s.accent.main,
+              onTap: () => setState(() => _allView = true),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _Grouped(
+          children: [
+            for (final cat in DataCategory.values)
+              _CategoryRow(s: s, category: cat, onTap: () => setState(() => _view = cat)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+      ],
+    );
   }
 }
 
@@ -182,7 +203,7 @@ class _StorageSyncSheetState extends ConsumerState<_StorageSyncSheet> {
 /// the device row, the clouds greyed with why, and what will happen when they
 /// do arrive.
 class CategorySyncBody extends ConsumerWidget {
-  const CategorySyncBody({super.key, required this.s, required this.category, this.onBack});
+  const CategorySyncBody({required this.s, required this.category, super.key, this.onBack});
   final PatientAppState s;
 
   /// Null means the design's `cat === 'all'` branch.
@@ -202,9 +223,9 @@ class CategorySyncBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) =>
-      ListenableBuilder(listenable: s, builder: (context, _) => _body(ref));
+      ListenableBuilder(listenable: s, builder: (context, _) => _body(ref, context));
 
-  Widget _body(WidgetRef ref) {
+  Widget _body(WidgetRef ref, BuildContext context) {
     final st = s.strings.storage;
     final ar = s.rtl;
     final all = category == null;
@@ -214,71 +235,83 @@ class CategorySyncBody extends ConsumerWidget {
     final careSwitch =
         category == DataCategory.care && cloudSyncOn(DataCategory.care, s.flags) && s.accountMode == AccountMode.online;
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (onBack != null)
-        Align(
-          alignment: ar ? Alignment.centerRight : Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: PButton(
-              st.store_all_data_back,
-              icon: ar ? LucideIcons.arrowRight : LucideIcons.arrowLeft,
-              variant: BtnVariant.ghost,
-              accent: s.accent,
-              ar: ar,
-              color: s.accent.main,
-              onTap: onBack,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (onBack != null)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: PButton(
+                st.store_all_data_back,
+                icon: backArrow(context),
+                variant: BtnVariant.ghost,
+                accent: s.accent,
+                ar: ar,
+                color: s.accent.main,
+                onTap: onBack,
+              ),
             ),
           ),
-        ),
-      const SizedBox(height: 8),
-      Row(children: [
-        Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rMd)),
-          child: Icon(all ? LucideIcons.layers : categoryIcon(category!), size: 20, color: T.fg2),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(all ? st.store_all_data : category!.label(st),
-                style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(all ? st.store_all_applies : locSummary(st, targets), style: Typo.meta(ar: ar)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.md)),
+              child: Icon(all ? LucideIcons.layers : categoryIcon(category!), size: 20, color: AppColors.textSecondary),
             ),
-          ]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    all ? st.store_all_data : category!.label(st),
+                    style: Typo.body(ar: ar).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(all ? st.store_all_applies : locSummary(st, targets), style: Typo.meta(ar: ar)),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ]),
-      const SizedBox(height: 18),
-      _Eyebrow(st.store_stored_in, ar: ar),
-      const SizedBox(height: 10),
-      _Grouped(children: [
-        _StoredInRow(s: s, target: StorageTarget.local, on: true),
-        for (final t in StorageTarget.picker.where((t) => !t.isLocal))
-          if (careSwitch && t == StorageTarget.balsmCloud)
-            _StoredInRow(
-              s: s,
-              target: t,
-              on: s.careCloudSync,
-              onChanged: (on) => _setCareCloudSync(ref, on),
-            )
-          else
-            _StoredInRow(s: s, target: t, on: targets.contains(t)),
-      ]),
-      const SizedBox(height: 14),
-      if (careSwitch)
-        // Not the blob-backup notes below: the care team syncs as rows, on
-        // its own switch, and is not encrypted on the phone first.
-        Text(st.store_care_cloud_note, style: Typo.meta(ar: ar).copyWith(height: 1.5))
-      else ...[
-        Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+        const SizedBox(height: 18),
+        _Eyebrow(st.store_stored_in, ar: ar),
         const SizedBox(height: 10),
-        Text(st.store_encrypted_note, textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+        _Grouped(
+          children: [
+            _StoredInRow(s: s, target: StorageTarget.local, on: true),
+            for (final t in StorageTarget.picker.where((t) => !t.isLocal))
+              if (careSwitch && t == StorageTarget.balsmCloud)
+                _StoredInRow(
+                  s: s,
+                  target: t,
+                  on: s.careCloudSync,
+                  onChanged: (on) => _setCareCloudSync(ref, on),
+                )
+              else
+                _StoredInRow(s: s, target: t, on: targets.contains(t)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        if (careSwitch)
+          // Not the blob-backup notes below: the care team syncs as rows, on
+          // its own switch, and is not encrypted on the phone first.
+          Text(st.store_care_cloud_note, style: Typo.meta(ar: ar).copyWith(height: 1.5))
+        else ...[
+          Text(st.store_whole_journal, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+          const SizedBox(height: 10),
+          Text(st.store_encrypted_note, textAlign: TextAlign.center, style: Typo.meta(ar: ar).copyWith(height: 1.5)),
+        ],
       ],
-    ]);
+    );
   }
 }
 
@@ -305,10 +338,10 @@ class _Eyebrow extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text.toUpperCase(),
         style: Typo.meta(ar: ar).copyWith(
-          fontSize: FS.xs,
+          fontSize: FontSizes.meta,
           fontWeight: FontWeight.w700,
           letterSpacing: ar ? 0 : 1.4,
-          color: T.fg3,
+          color: AppColors.textTertiary,
         ),
       );
 }
@@ -322,16 +355,19 @@ class _Grouped extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(T.rLg),
-          border: Border.all(color: T.border),
-          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border),
+          color: AppColors.white,
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const Divider(height: 1, color: T.ink100),
-            children[i],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const Divider(height: 1, color: AppColors.ink100),
+              children[i],
+            ],
           ],
-        ]),
+        ),
       );
 }
 
@@ -359,44 +395,53 @@ class _CloudAccountRow extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 60),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(children: [
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: T.ink100, borderRadius: BorderRadius.circular(T.rMd)),
-              // Not connected, so the mark is muted — `muted={!on}` in the design.
-              child: StorageIcon(target, size: 20, muted: true),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(target.label(st),
-                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: Text(
-                      goOnline
-                          ? s.strings.offline.go_row_sub
-                          : available
-                              ? st.store_not_connected
-                              : st.store_available_soon,
-                      style: Typo.meta(ar: s.rtl)),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: AppColors.ink100, borderRadius: BorderRadius.circular(AppRadii.md)),
+                // Not connected, so the mark is muted — `muted={!on}` in the design.
+                child: StorageIcon(target, size: 20, muted: true),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      target.label(st),
+                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Text(
+                        goOnline
+                            ? s.strings.offline.go_row_sub
+                            : available
+                                ? st.store_not_connected
+                                : st.store_available_soon,
+                        style: Typo.meta(ar: s.rtl),
+                      ),
+                    ),
+                  ],
                 ),
-              ]),
-            ),
-            const SizedBox(width: 8),
-            // The design's Connect button. Present but inert: an enabled
-            // control here would start a flow that cannot finish.
-            Pill(
+              ),
+              const SizedBox(width: 8),
+              // The design's Connect button. Present but inert: an enabled
+              // control here would start a flow that cannot finish.
+              Pill(
                 goOnline
                     ? s.strings.offline.go_cloud_pill(s.gender)
                     : available
                         ? st.store_connect
                         : st.store_coming_soon,
                 kind: goOnline ? PillKind.brand : PillKind.neutral,
-                ar: s.rtl),
-          ]),
+                ar: s.rtl,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -436,24 +481,32 @@ class _CategoryRow extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 58),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            child: Row(children: [
-              Icon(categoryIcon(category), size: 18, color: T.fg3),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(category.label(st),
-                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Text(locSummary(st, targets), style: Typo.meta(ar: s.rtl)),
+            child: Row(
+              children: [
+                Icon(categoryIcon(category), size: 18, color: AppColors.textTertiary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.label(st),
+                        style:
+                            Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1),
+                        child: Text(locSummary(st, targets), style: Typo.meta(ar: s.rtl)),
+                      ),
+                    ],
                   ),
-                ]),
-              ),
-              const SizedBox(width: 8),
-              LocIcons(targets: targets, size: 22),
-              const SizedBox(width: 6),
-              Chevron(rtl: s.rtl),
-            ]),
+                ),
+                const SizedBox(width: 8),
+                LocIcons(targets: targets),
+                const SizedBox(width: 6),
+                Chevron(rtl: s.rtl),
+              ],
+            ),
           ),
         ),
       ),
@@ -482,57 +535,70 @@ class _StoredInRow extends StatelessWidget {
     final row = Opacity(
       opacity: available ? 1 : 0.65,
       child: ColoredBox(
-        color: on && !target.isLocal ? cfg.bg : Colors.white,
+        color: on && !target.isLocal ? cfg.bg : AppColors.white,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 60),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Row(children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                // A brand mark keeps its own colours, so when on it sits on
-                // white with a hairline; the device glyph fills with its hue.
-                decoration: BoxDecoration(
-                  color: !on
-                      ? T.ink100
-                      : brand
-                          ? Colors.white
-                          : cfg.color,
-                  borderRadius: BorderRadius.circular(T.rMd),
-                  border: brand && on ? Border.all(color: T.ink200) : null,
-                ),
-                child: StorageIcon(target, size: brand ? 20 : 18, color: on ? Colors.white : T.fg3, muted: !on),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(target.label(st),
-                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Text(
-                      target.isLocal
-                          ? st.store_local_always
-                          : switchable
-                              ? (on ? st.store_care_cloud_on : st.store_care_cloud_off)
-                              : available
-                                  ? st.store_not_connected
-                                  : st.store_available_soon,
-                      style: Typo.meta(ar: s.rtl),
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  // A brand mark keeps its own colours, so when on it sits on
+                  // white with a hairline; the device glyph fills with its hue.
+                  decoration: BoxDecoration(
+                    color: !on
+                        ? AppColors.ink100
+                        : brand
+                            ? AppColors.white
+                            : cfg.color,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: brand && on ? Border.all(color: AppColors.ink200) : null,
                   ),
-                ]),
-              ),
-              const SizedBox(width: 8),
-              if (switchable)
-                PSwitch(on: on, accent: s.accent.main, onTap: () => onChanged!(!on))
-              else
-                // The device row is locked in the design too — it is the one
-                // copy that always exists.
-                Icon(target.isLocal ? LucideIcons.lock : LucideIcons.minus, size: 16, color: T.fg3),
-            ]),
+                  child: StorageIcon(
+                    target,
+                    size: brand ? 20 : 18,
+                    color: on ? AppColors.white : AppColors.textTertiary,
+                    muted: !on,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        target.label(st),
+                        style:
+                            Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1),
+                        child: Text(
+                          target.isLocal
+                              ? st.store_local_always
+                              : switchable
+                                  ? (on ? st.store_care_cloud_on : st.store_care_cloud_off)
+                                  : available
+                                      ? st.store_not_connected
+                                      : st.store_available_soon,
+                          style: Typo.meta(ar: s.rtl),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (switchable)
+                  PSwitch(on: on, accent: s.accent.main, onTap: () => onChanged!(!on))
+                else
+                  // The device row is locked in the design too — it is the one
+                  // copy that always exists.
+                  Icon(target.isLocal ? LucideIcons.lock : LucideIcons.minus, size: 16, color: AppColors.textTertiary),
+              ],
+            ),
           ),
         ),
       ),
@@ -550,7 +616,7 @@ class _StoredInRow extends StatelessWidget {
 /// Overlapping location glyphs: the device, then each cloud the category syncs
 /// to (`LocIcons` in `storage.jsx`).
 class LocIcons extends StatelessWidget {
-  const LocIcons({super.key, required this.targets, this.size = 22});
+  const LocIcons({required this.targets, super.key, this.size = 22});
   final List<StorageTarget> targets;
   final double size;
 
@@ -573,7 +639,7 @@ class LocIcons extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: storageCfg(all[i]).bg,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: AppColors.white, width: 1.5),
                 ),
                 child: StorageIcon(all[i], size: size * 0.55, color: storageCfg(all[i]).color),
               ),
