@@ -19,22 +19,127 @@ class LocalizedTextDto {
   Map<String, dynamic> toJson() => {'en': en, 'ar': ar};
 }
 
-/// Guidance for one week of pregnancy.
+/// A published source the guidance cites.
+class ContentSourceDto {
+  const ContentSourceDto({
+    required this.id,
+    required this.title,
+    required this.publisher,
+    required this.url,
+    required this.accessed,
+  });
+
+  factory ContentSourceDto.fromJson(Map<String, dynamic> json) => ContentSourceDto(
+        id: json['id'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        publisher: json['publisher'] as String? ?? '',
+        url: json['url'] as String? ?? '',
+        accessed: json['accessed'] as String? ?? '',
+      );
+
+  final String id;
+  final String title;
+  final String publisher;
+  final String url;
+
+  /// Day the source was read, `YYYY-MM-DD`.
+  final String accessed;
+
+  Map<String, dynamic> toJson() => {'id': id, 'title': title, 'publisher': publisher, 'url': url, 'accessed': accessed};
+}
+
+/// The baby's typical size in a week. Each figure is null where the sources
+/// give none.
+class FetalSizeDto {
+  const FetalSizeDto({this.lengthMm, this.weightG, this.comparison});
+
+  factory FetalSizeDto.fromJson(Object? json) {
+    final map = json is Map<String, dynamic> ? json : const <String, dynamic>{};
+    final comparison = map['comparison'];
+    return FetalSizeDto(
+      lengthMm: (map['length_mm'] as num?)?.toInt(),
+      weightG: (map['weight_g'] as num?)?.toInt(),
+      comparison: comparison == null ? null : LocalizedTextDto.fromJson(comparison),
+    );
+  }
+
+  final int? lengthMm;
+  final int? weightG;
+
+  /// An everyday object of about that size, e.g. "a plum".
+  final LocalizedTextDto? comparison;
+
+  Map<String, dynamic> toJson() => {'length_mm': lengthMm, 'weight_g': weightG, 'comparison': comparison?.toJson()};
+}
+
+/// Guidance for one week of pregnancy. Fields after [body] arrived later:
+/// a copy cached before them reads as empty.
 class PregnancyWeekDto {
-  const PregnancyWeekDto({required this.week, required this.title, required this.body});
+  const PregnancyWeekDto({
+    required this.week,
+    required this.title,
+    required this.body,
+    this.fetalSize = const FetalSizeDto(),
+    this.testsDue = const [],
+    this.dangerSigns = const [],
+    this.topics = const [],
+    this.illustration,
+    this.sources = const [],
+  });
 
   factory PregnancyWeekDto.fromJson(Map<String, dynamic> json) => PregnancyWeekDto(
         week: (json['week'] as num).toInt(),
         title: LocalizedTextDto.fromJson(json['title']),
         body: LocalizedTextDto.fromJson(json['body']),
+        fetalSize: FetalSizeDto.fromJson(json['fetal_size']),
+        testsDue: _keys(json['tests_due']),
+        dangerSigns: _keys(json['danger_signs']),
+        topics: _keys(json['topics']),
+        illustration: json['illustration'] as String?,
+        sources: _keys(json['sources']),
       );
 
   final int week;
   final LocalizedTextDto title;
   final LocalizedTextDto body;
+  final FetalSizeDto fetalSize;
 
-  Map<String, dynamic> toJson() => {'week': week, 'title': title.toJson(), 'body': body.toJson()};
+  /// Keys of [PregnancyWeeksResponse.testLabels] usually due this week.
+  final List<String> testsDue;
+
+  /// Keys of [PregnancyWeeksResponse.dangerSignLabels] the body warns about.
+  final List<String> dangerSigns;
+
+  final List<String> topics;
+
+  /// Artwork key, e.g. `pregnancy/week-12`; the art may not exist yet.
+  final String? illustration;
+
+  /// Ids of [PregnancyWeeksResponse.sources] behind this week's copy.
+  final List<String> sources;
+
+  Map<String, dynamic> toJson() => {
+        'week': week,
+        'title': title.toJson(),
+        'body': body.toJson(),
+        'fetal_size': fetalSize.toJson(),
+        'tests_due': testsDue,
+        'danger_signs': dangerSigns,
+        'topics': topics,
+        'illustration': illustration,
+        'sources': sources,
+      };
 }
+
+List<String> _keys(Object? json) => json is List
+    ? [
+        for (final k in json)
+          if (k is String) k,
+      ]
+    : const [];
+
+Map<String, LocalizedTextDto> _labels(Object? json) =>
+    json is Map<String, dynamic> ? {for (final e in json.entries) e.key: LocalizedTextDto.fromJson(e.value)} : const {};
 
 /// `GET /api/v1/content/pregnancy-weeks` — week-by-week pregnancy guidance.
 ///
@@ -47,6 +152,9 @@ class PregnancyWeeksResponse {
     required this.disclaimer,
     required this.multiplesNote,
     required this.weeks,
+    this.sources = const [],
+    this.dangerSignLabels = const {},
+    this.testLabels = const {},
   });
 
   /// Throws [FormatException] when there is no version or no weeks — content
@@ -68,6 +176,12 @@ class PregnancyWeeksResponse {
       disclaimer: LocalizedTextDto.fromJson(json['disclaimer']),
       multiplesNote: LocalizedTextDto.fromJson(json['multiples_note']),
       weeks: weeks,
+      sources: [
+        for (final x in json['sources'] is List ? json['sources'] as List : const [])
+          if (x is Map<String, dynamic>) ContentSourceDto.fromJson(x),
+      ],
+      dangerSignLabels: _labels(json['danger_sign_labels']),
+      testLabels: _labels(json['test_labels']),
     );
   }
 
@@ -77,12 +191,24 @@ class PregnancyWeeksResponse {
   final LocalizedTextDto multiplesNote;
   final List<PregnancyWeekDto> weeks;
 
+  /// Every source the weeks cite.
+  final List<ContentSourceDto> sources;
+
+  /// Wording for each [PregnancyWeekDto.dangerSigns] key.
+  final Map<String, LocalizedTextDto> dangerSignLabels;
+
+  /// Wording for each [PregnancyWeekDto.testsDue] key.
+  final Map<String, LocalizedTextDto> testLabels;
+
   Map<String, dynamic> toJson() => {
         'version': version,
         'source': source.toJson(),
         'disclaimer': disclaimer.toJson(),
         'multiples_note': multiplesNote.toJson(),
         'weeks': [for (final w in weeks) w.toJson()],
+        'sources': [for (final x in sources) x.toJson()],
+        'danger_sign_labels': {for (final e in dangerSignLabels.entries) e.key: e.value.toJson()},
+        'test_labels': {for (final e in testLabels.entries) e.key: e.value.toJson()},
       };
 }
 

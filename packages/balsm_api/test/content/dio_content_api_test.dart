@@ -22,6 +22,40 @@ Map<String, dynamic> _payload({String version = 'v-test'}) => {
       ],
     };
 
+/// [_payload] with the sources, sizes and labels the server added later.
+Map<String, dynamic> _full() => _payload()
+  ..['sources'] = [
+    {
+      'id': 'src-1',
+      'title': 'Test page',
+      'publisher': 'Test publisher',
+      'url': 'https://example.test/',
+      'accessed': '2026-11-24',
+    },
+  ]
+  ..['danger_sign_labels'] = {
+    'bleeding': {'en': 'Bleeding', 'ar': 'نزيف'},
+  }
+  ..['test_labels'] = {
+    'early_ultrasound': {'en': 'Early ultrasound', 'ar': 'سونار مبكر'},
+  }
+  ..['weeks'] = [
+    for (final w in (_payload()['weeks'] as List).cast<Map<String, dynamic>>())
+      {
+        ...w,
+        'fetal_size': {
+          'length_mm': null,
+          'weight_g': w['week'] == 5 ? 45 : null,
+          'comparison': w['week'] == 4 ? {'en': 'a seed', 'ar': 'بذرة'} : null,
+        },
+        'tests_due': ['early_ultrasound'],
+        'danger_signs': ['bleeding'],
+        'topics': ['visits'],
+        'illustration': 'pregnancy/week-0${w['week']}',
+        'sources': ['src-1'],
+      },
+  ];
+
 void main() {
   group('DioContentApi.pregnancyWeeks', () {
     test('GETs the route, unwraps the envelope and keeps the ETag', () async {
@@ -67,11 +101,38 @@ void main() {
 
   group('PregnancyWeeksResponse', () {
     test('toJson round-trips fromJson', () {
-      final parsed = PregnancyWeeksResponse.fromJson(_payload());
+      final parsed = PregnancyWeeksResponse.fromJson(_full());
 
       final again = PregnancyWeeksResponse.fromJson(parsed.toJson());
 
       expect(again.toJson(), parsed.toJson());
+    });
+
+    test('reads the sources, sizes and labels', () {
+      final parsed = PregnancyWeeksResponse.fromJson(_full());
+      final (four, five) = (parsed.weeks.first, parsed.weeks.last);
+
+      expect(parsed.sources.single.accessed, '2026-11-24');
+      expect(parsed.dangerSignLabels['bleeding']!.ar, 'نزيف');
+      expect(parsed.testLabels['early_ultrasound']!.en, 'Early ultrasound');
+      expect((four.fetalSize.lengthMm, four.fetalSize.weightG, four.fetalSize.comparison!.en), (null, null, 'a seed'));
+      expect((five.fetalSize.weightG, five.fetalSize.comparison), (45, null));
+      expect(five.testsDue, ['early_ultrasound']);
+      expect(five.dangerSigns, ['bleeding']);
+      expect(five.topics, ['visits']);
+      expect(five.sources, ['src-1']);
+      expect(five.illustration, 'pregnancy/week-05');
+    });
+
+    test('a copy cached before those fields reads them as empty', () {
+      final parsed = PregnancyWeeksResponse.fromJson(_payload());
+      final week = parsed.weeks.first;
+
+      expect(parsed.sources, isEmpty);
+      expect(parsed.dangerSignLabels, isEmpty);
+      expect(parsed.testLabels, isEmpty);
+      expect((week.fetalSize.lengthMm, week.fetalSize.comparison, week.illustration), (null, null, null));
+      expect(week.testsDue, isEmpty);
     });
 
     test('a missing language arrives as empty, not a crash', () {
