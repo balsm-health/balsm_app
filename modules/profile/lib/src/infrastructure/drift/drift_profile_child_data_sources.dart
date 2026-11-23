@@ -210,8 +210,8 @@ class DriftChronicConditionsDataSource extends _DriftProfileChildSource<ChronicC
         'name, icd10_code, onset_year',
         [
           Variable.withString(v.name),
-          v.icd10Code != null ? Variable.withString(v.icd10Code!) : const Variable(null),
-          v.onsetYear != null ? Variable.withInt(v.onsetYear!) : const Variable(null),
+          switch (v.icd10Code) { final icd10Code? => Variable.withString(icd10Code), _ => const Variable(null) },
+          switch (v.onsetYear) { final onsetYear? => Variable.withInt(onsetYear), _ => const Variable(null) },
         ],
       );
 }
@@ -247,7 +247,7 @@ class DriftEmergencyContactsDataSource extends _DriftProfileChildSource<Emergenc
         [
           Variable.withString(v.name),
           Variable.withString(v.phone),
-          v.relation != null ? Variable.withString(v.relation!) : const Variable(null),
+          switch (v.relation) { final relation? => Variable.withString(relation), _ => const Variable(null) },
           Variable.withInt(v.isPrimary ? 1 : 0),
         ],
       );

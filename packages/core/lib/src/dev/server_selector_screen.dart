@@ -1,22 +1,35 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../config/flavor.dart';
 import '../config/server_preset.dart';
-import '../kit/_tokens.dart';
-import '../network/balsm_api_controller.dart';
 import '../flags/feature_flags.dart';
+import '../kit/tokens.dart';
+import '../network/balsm_api_controller.dart';
 import 'dev_config_store.dart';
+import 'dev_console_colors.dart';
 import 'dev_diagnostics.dart';
 import 'dev_log_buffer.dart';
 import 'server_health.dart';
 import 'server_url.dart';
 
+// Developer console only.
+const _badgeRadius = 3.0;
+// Developer console only.
+const _chipRadius = 5.0;
+// Developer console only.
+const _iconTileRadius = 8.0;
+// Developer console only.
+const _badgeFontSize = 9.0;
+// Developer console only: the monospaced log lines.
+const _monoFontSize = 10.5;
+// Developer console only.
+const _toggleAnimation = Duration(milliseconds: 180);
+
 // Dark "terminal" chrome from the Dev Config design (claude.ai/design · Balsm App).
-const _kTermBg = Color(0xFF1A1A17);
-const _kTermAccent = Color(0xFFA3FF6E); // lime — the console accent
 const _kMono = 'monospace';
 
 /// Dev Config — full port of the design's three-tab overlay
@@ -25,7 +38,7 @@ const _kMono = 'monospace';
 /// read-only diagnostics with the switcher hidden (a mis-pointed prod build
 /// could leak PHI to the wrong backend).
 class ServerSelectorScreen extends StatefulWidget {
-  const ServerSelectorScreen({super.key, required this.controller, this.screenshot});
+  const ServerSelectorScreen({required this.controller, super.key, this.screenshot});
   final BalsmApiController controller;
 
   /// PNG of the app as it was just before Dev Config opened — what the Report
@@ -42,8 +55,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   String _healthMsg = '';
   Map<String, Object?> _healthDetails = const {};
 
-  final _store = DevConfigStore.instance;
-  final _buffer = DevLogBuffer.instance;
+  final DevConfigStore _store = DevConfigStore.instance;
+  final DevLogBuffer _buffer = DevLogBuffer.instance;
 
   String _tab = 'env'; // env | logs | bug
   bool _loading = false;
@@ -81,7 +94,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     super.initState();
     _store.addListener(_onChange);
     _buffer.addListener(_onChange);
-    _store.load();
+    unawaited(_store.load());
   }
 
   void _onChange() {
@@ -116,7 +129,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Widget build(BuildContext context) {
     final cfg = FlavorConfig.current;
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       body: SafeArea(
         child: Column(
           children: [
@@ -125,12 +138,12 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             if (_loading)
               const LinearProgressIndicator(
                 minHeight: 2,
-                color: BalsmColors.appAccent,
-                backgroundColor: BalsmColors.ink100,
+                color: AppColors.hueBlue,
+                backgroundColor: AppColors.ink100,
               ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 52),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 52),
                 children: switch (_tab) {
                   'logs' => _logsBody(cfg),
                   'bug' => _bugBody(cfg),
@@ -149,18 +162,18 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     final label = _activeLabel(cfg);
     final es = _EnvStyle.of(label);
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
-      decoration: const BoxDecoration(color: BalsmColors.surface),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 8, 12),
+      decoration: const BoxDecoration(color: AppColors.surface),
       child: Row(
         children: [
           Container(
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: _kTermBg,
-              borderRadius: BorderRadius.circular(10),
+              color: DevConsoleColors.background,
+              borderRadius: BorderRadius.circular(AppRadii.md),
             ),
-            child: const Icon(Icons.terminal, size: 20, color: _kTermAccent),
+            child: const Icon(Icons.terminal, size: 20, color: DevConsoleColors.accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -171,9 +184,9 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 const Text(
                   'Dev Config',
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: FontSizes.subheadSm,
                     fontWeight: FontWeight.w700,
-                    color: BalsmColors.fg1,
+                    color: AppColors.textPrimary,
                     height: 1.1,
                   ),
                 ),
@@ -187,13 +200,13 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: _kMono,
-                          fontSize: 10,
-                          color: BalsmColors.fg4,
+                          fontSize: FontSizes.micro,
+                          color: AppColors.textHint,
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
-                    _envChip(label, es),
+                    _EnvChip(label, es),
                   ],
                 ),
               ],
@@ -201,54 +214,27 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
           ),
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.close, size: 20, color: BalsmColors.fg3),
+            icon: const Icon(Icons.close, size: 20, color: AppColors.textTertiary),
           ),
         ],
       ),
     );
   }
 
-  Widget _envChip(String label, _EnvStyle es) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: es.bg,
-          borderRadius: BorderRadius.circular(BalsmRadius.pill),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: es.dot, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: es.fg,
-              ),
-            ),
-          ],
-        ),
-      );
-
   // ── Tab strip ───────────────────────────────────────────────────────────────
   Widget _tabStrip() {
     final err = _buffer.errorCount;
     final tabs = <List<Object>>[
       ['env', Icons.dns_outlined, 'Environment'],
-      ['logs', Icons.subject, err > 0 ? 'Logs · $err err' : 'Logs'],
+      ['logs', Icons.subject, if (err > 0) 'Logs · $err err' else 'Logs'],
       ['bug', Icons.bug_report_outlined, 'Report bug'],
     ];
     return Container(
       decoration: const BoxDecoration(
-        color: BalsmColors.surface,
+        color: AppColors.surface,
         border: Border(
-          top: BorderSide(color: BalsmColors.ink100),
-          bottom: BorderSide(color: BalsmColors.ink100),
+          top: BorderSide(color: AppColors.ink100),
+          bottom: BorderSide(color: AppColors.ink100),
         ),
       ),
       child: Row(
@@ -263,7 +249,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: on ? BalsmColors.appAccent : Colors.transparent,
+                      color: on ? AppColors.hueBlue : Colors.transparent,
                       width: 2.5,
                     ),
                   ),
@@ -271,7 +257,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(t[1] as IconData, size: 14, color: on ? BalsmColors.appAccent : BalsmColors.fg3),
+                    Icon(t[1] as IconData, size: 14, color: on ? AppColors.hueBlue : AppColors.textTertiary),
                     const SizedBox(width: 5),
                     Flexible(
                       child: Text(
@@ -279,9 +265,9 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: FontSizes.bodySm,
                           fontWeight: FontWeight.w600,
-                          color: on ? BalsmColors.appAccent : BalsmColors.fg3,
+                          color: on ? AppColors.hueBlue : AppColors.textTertiary,
                         ),
                       ),
                     ),
@@ -302,18 +288,20 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   }
 
   List<Widget> _switcherBody(FlavorConfig cfg) => [
-        _eyebrow('Backend'),
+        const _Eyebrow('Backend'),
         _healthRow(),
-        ...cfg.servers.map((p) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _presetCard(p, active: _selectedBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
-            )),
+        ...cfg.servers.map(
+          (p) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _presetCard(p, active: _selectedBaseUrl == p.apiBaseUrl, onTap: () => _onPresetTap(p)),
+          ),
+        ),
         if (_store.savedEnvs.isNotEmpty) ...[
-          _savedHeader(),
+          const _SavedHeader(),
           ..._store.savedEnvs.map(_savedEnvTile),
         ],
         if (_addingCustom) _customForm() else _addCustomButton(),
-        if (_pendingProd != null) _prodConfirm(_pendingProd!),
+        if (_pendingProd case final pendingProd?) _prodConfirm(pendingProd),
         _featureFlags(),
         _appFlags(),
         _buildCard(cfg),
@@ -325,33 +313,14 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       orElse: () => ServerPreset(label: _activeLabel(cfg), apiBaseUrl: _currentBaseUrl),
     );
     return [
-      _eyebrow('Backend'),
+      const _Eyebrow('Backend'),
       _healthRow(),
-      _presetCard(active, active: true, onTap: null),
+      _presetCard(active, active: true),
       const SizedBox(height: 12),
-      _readOnlyNote(),
+      const _ReadOnlyNote(),
       _buildCard(cfg),
     ];
   }
-
-  Widget _savedHeader() => Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 6),
-        child: Container(
-          padding: const EdgeInsets.only(top: 8),
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: BalsmColors.ink100)),
-          ),
-          child: const Text(
-            'SAVED',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.4,
-              color: BalsmColors.fg4,
-            ),
-          ),
-        ),
-      );
 
   Widget _savedEnvTile(SavedEnv se) {
     final active = _selectedBaseUrl == se.url;
@@ -366,10 +335,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
               decoration: BoxDecoration(
-                color: active ? BalsmColors.ink50 : BalsmColors.surface,
-                borderRadius: BorderRadius.circular(BalsmRadius.lg),
+                color: active ? AppColors.ink50 : AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadii.lg),
                 border: Border.all(
-                  color: active ? const Color(0xFF526174) : BalsmColors.border,
+                  color: active ? AppColors.ink600 : AppColors.border,
                   width: 1.5,
                 ),
               ),
@@ -378,7 +347,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                   Container(
                     width: 10,
                     height: 10,
-                    decoration: const BoxDecoration(color: Color(0xFF526174), shape: BoxShape.circle),
+                    decoration: const BoxDecoration(color: AppColors.ink600, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 13),
                   Expanded(
@@ -386,25 +355,31 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(se.name,
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: active ? const Color(0xFF3A3A34) : BalsmColors.fg1)),
+                        Text(
+                          se.name,
+                          style: TextStyle(
+                            fontSize: FontSizes.description,
+                            fontWeight: FontWeight.w700,
+                            color: active ? DevConsoleColors.panel : AppColors.textPrimary,
+                          ),
+                        ),
                         const SizedBox(height: 1),
-                        Text(se.url,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontFamily: _kMono, fontSize: 11, color: Color(0xFF526174))),
+                        Text(
+                          se.url,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              const TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.ink600),
+                        ),
                       ],
                     ),
                   ),
                   if (active)
                     const Padding(
-                      padding: EdgeInsets.only(right: 4),
-                      child: Icon(Icons.check_circle, size: 18, color: Color(0xFF526174)),
+                      padding: EdgeInsetsDirectional.only(end: 4),
+                      child: Icon(Icons.check_circle, size: 18, color: AppColors.ink600),
                     ),
-                  _tinyBtn('edit', () {
+                  _TinyBtn('edit', () {
                     setState(() {
                       if (editing) {
                         _editingId = null;
@@ -418,7 +393,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     onPressed: () => _store.deleteSavedEnv(se.id),
-                    icon: const Icon(Icons.close, size: 14, color: BalsmColors.fg4),
+                    icon: const Icon(Icons.close, size: 14, color: AppColors.textHint),
                   ),
                 ],
               ),
@@ -430,41 +405,26 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     );
   }
 
-  Widget _tinyBtn(String label, VoidCallback onTap) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.only(left: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: BalsmColors.ink100,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(label,
-              style: const TextStyle(
-                  fontFamily: _kMono, fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF526174))),
-        ),
-      );
-
   Widget _editForm(SavedEnv se) => Container(
         margin: const EdgeInsets.only(top: 6),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: BalsmColors.ink50,
-          borderRadius: BorderRadius.circular(BalsmRadius.lg),
-          border: Border.all(color: const Color(0xFF526174), width: 1.5),
+          color: AppColors.ink50,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.ink600, width: 1.5),
         ),
         child: Column(
           children: [
-            _monoField('name', _editNameCtrl),
+            _MonoField('name', _editNameCtrl),
             const SizedBox(height: 8),
-            _monoField('url', _editUrlCtrl),
+            _MonoField('url', _editUrlCtrl),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
                   onPressed: () => setState(() => _editingId = null),
-                  child: const Text('Cancel', style: TextStyle(color: BalsmColors.fg3)),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.textTertiary)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -477,11 +437,11 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                       _snack('Enter a valid server URL, e.g. http://192.168.1.10:5050');
                       return;
                     }
-                    _store.updateSavedEnv(se.id, n, u);
+                    unawaited(_store.updateSavedEnv(se.id, n, u));
                     setState(() => _editingId = null);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3A3A34),
+                    backgroundColor: DevConsoleColors.panel,
                     minimumSize: const Size(0, 34),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
@@ -499,10 +459,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     final card = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: active ? es.bg : BalsmColors.surface,
-        borderRadius: BorderRadius.circular(BalsmRadius.lg),
+        color: active ? es.bg : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(
-          color: active ? es.dot : BalsmColors.border,
+          color: active ? es.dot : AppColors.border,
           width: 1.5,
         ),
       ),
@@ -530,26 +490,37 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               children: [
                 Row(
                   children: [
-                    Text(p.label,
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w700, color: active ? es.fg : BalsmColors.fg1)),
+                    Text(
+                      p.label,
+                      style: TextStyle(
+                        fontSize: FontSizes.description,
+                        fontWeight: FontWeight.w700,
+                        color: active ? es.fg : AppColors.textPrimary,
+                      ),
+                    ),
                     if (es.isProd) ...[
                       const SizedBox(width: 7),
-                      _liveBadge(),
+                      const _LiveBadge(),
                     ],
                   ],
                 ),
                 const SizedBox(height: 1),
-                Text(p.apiBaseUrl,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: _kMono, fontSize: 11, color: active ? es.fg : BalsmColors.fg4)),
+                Text(
+                  p.apiBaseUrl,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: _kMono,
+                    fontSize: FontSizes.eyebrow,
+                    color: active ? es.fg : AppColors.textHint,
+                  ),
+                ),
               ],
             ),
           ),
           if (active)
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsetsDirectional.only(start: 8),
               child: Icon(Icons.check_circle, size: 19, color: es.dot),
             ),
         ],
@@ -558,16 +529,6 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     if (onTap == null) return card;
     return GestureDetector(onTap: onTap, behavior: HitTestBehavior.opaque, child: card);
   }
-
-  Widget _liveBadge() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-        decoration: BoxDecoration(
-          color: BalsmColors.dangerBg,
-          borderRadius: BorderRadius.circular(3),
-        ),
-        child: const Text('LIVE',
-            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: BalsmColors.danger)),
-      );
 
   // ── Custom environment (name + url) ─────────────────────────────────────────
   Widget _addCustomButton() => GestureDetector(
@@ -580,15 +541,18 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(BalsmRadius.lg),
-            border: Border.all(color: BalsmColors.border, width: 1.5),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
           child: const Row(
             children: [
-              Icon(Icons.add, size: 16, color: BalsmColors.fg3),
+              Icon(Icons.add, size: 16, color: AppColors.textTertiary),
               SizedBox(width: 8),
-              Text('Add custom environment',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.fg3)),
+              Text(
+                'Add custom environment',
+                style:
+                    TextStyle(fontSize: FontSizes.bodySm, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+              ),
             ],
           ),
         ),
@@ -597,33 +561,39 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Widget _customForm() => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: BalsmColors.ink50,
-          borderRadius: BorderRadius.circular(BalsmRadius.lg),
-          border: Border.all(color: BalsmColors.border, width: 1.5),
+          color: AppColors.ink50,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border, width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('NEW ENVIRONMENT',
-                style:
-                    TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.0, color: BalsmColors.fg3)),
+            const Text(
+              'NEW ENVIRONMENT',
+              style: TextStyle(
+                fontSize: FontSizes.micro,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+                color: AppColors.textTertiary,
+              ),
+            ),
             const SizedBox(height: 10),
-            _monoField('name', _nameCtrl, hint: 'My Staging'),
+            _MonoField('name', _nameCtrl, hint: 'My Staging'),
             const SizedBox(height: 8),
-            _monoField('url', _urlCtrl, hint: 'https://api.example.com'),
+            _MonoField('url', _urlCtrl, hint: 'https://api.example.com'),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
                   onPressed: () => setState(() => _addingCustom = false),
-                  child: const Text('Cancel', style: TextStyle(color: BalsmColors.fg3)),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.textTertiary)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _loading ? null : _saveCustom,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BalsmColors.appAccent,
+                    backgroundColor: AppColors.hueBlue,
                     minimumSize: const Size(0, 36),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
@@ -635,40 +605,14 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         ),
       );
 
-  Widget _monoField(String label, TextEditingController ctrl, {String? hint}) => Row(
-        children: [
-          SizedBox(
-            width: 34,
-            child: Text(label, style: const TextStyle(fontFamily: _kMono, fontSize: 10, color: BalsmColors.fg3)),
-          ),
-          Expanded(
-            child: TextField(
-              controller: ctrl,
-              style: const TextStyle(fontFamily: _kMono, fontSize: 12),
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: hint,
-                filled: true,
-                fillColor: BalsmColors.surface,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: BalsmColors.border),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-
   // ── Production-switch confirm ──────────────────────────────────────────────
   Widget _prodConfirm(ServerPreset p) => Container(
         margin: const EdgeInsets.only(top: 12),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 14),
         decoration: BoxDecoration(
-          color: BalsmColors.dangerBg,
-          borderRadius: BorderRadius.circular(BalsmRadius.lg),
-          border: Border.all(color: BalsmColors.danger, width: 1.5),
+          color: AppColors.dangerBackground,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.danger, width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -676,18 +620,24 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.warning_amber_rounded, size: 18, color: BalsmColors.danger),
+                Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.danger),
                 SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Switch to production?',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF7A2A20))),
+                      Text(
+                        'Switch to production?',
+                        style: TextStyle(
+                          fontSize: FontSizes.description,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.onDangerBackground,
+                        ),
+                      ),
                       SizedBox(height: 3),
                       Text(
                         'Real patient data. Real consequences. Any action here is permanent.',
-                        style: TextStyle(fontSize: 12, height: 1.5, color: Color(0xFF9B3A2F)),
+                        style: TextStyle(fontSize: FontSizes.meta, height: 1.5, color: AppColors.danger),
                       ),
                     ],
                   ),
@@ -702,8 +652,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                     onPressed: () => setState(() => _pendingProd = null),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 40),
-                      foregroundColor: BalsmColors.fg2,
-                      side: const BorderSide(color: BalsmColors.border),
+                      foregroundColor: AppColors.textSecondary,
+                      side: const BorderSide(color: AppColors.border),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -714,12 +664,12 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
                     onPressed: () {
                       final t = _pendingProd!;
                       setState(() => _pendingProd = null);
-                      _select(t);
+                      unawaited(_select(t));
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(0, 40),
-                      backgroundColor: BalsmColors.danger,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.danger,
+                      foregroundColor: AppColors.white,
                     ),
                     child: const Text('Switch anyway'),
                   ),
@@ -730,38 +680,17 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         ),
       );
 
-  Widget _readOnlyNote() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: BalsmColors.ink50,
-          borderRadius: BorderRadius.circular(BalsmRadius.md),
-        ),
-        child: const Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.lock_outline, size: 14, color: BalsmColors.fg3),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Read-only in production. Server switching is disabled.',
-                style: TextStyle(fontSize: 11, height: 1.5, color: BalsmColors.fg3),
-              ),
-            ),
-          ],
-        ),
-      );
-
   // ── Feature flags ───────────────────────────────────────────────────────────
   Widget _featureFlags() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          _eyebrow('Feature flags'),
+          const _Eyebrow('Feature flags'),
           Container(
             decoration: BoxDecoration(
-              color: BalsmColors.surface,
-              borderRadius: BorderRadius.circular(BalsmRadius.lg),
-              border: Border.all(color: BalsmColors.border),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               children: [
@@ -780,8 +709,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         decoration: BoxDecoration(
-          color: on ? BalsmColors.appAccent50 : Colors.transparent,
-          border: first ? null : const Border(top: BorderSide(color: BalsmColors.ink100)),
+          color: on ? AppColors.hueBlue50 : Colors.transparent,
+          border: first ? null : const Border(top: BorderSide(color: AppColors.ink100)),
         ),
         child: Row(
           children: [
@@ -789,10 +718,16 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(f.label,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.fg1)),
+                  Text(
+                    f.label,
+                    style: const TextStyle(
+                      fontSize: FontSizes.bodySm,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 1),
-                  Text(f.desc, style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
+                  Text(f.desc, style: const TextStyle(fontSize: FontSizes.eyebrow, color: AppColors.textTertiary)),
                 ],
               ),
             ),
@@ -816,12 +751,12 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          _eyebrow('App feature flags'),
+          const _Eyebrow('App feature flags'),
           Container(
             decoration: BoxDecoration(
-              color: BalsmColors.surface,
-              borderRadius: BorderRadius.circular(BalsmRadius.lg),
-              border: Border.all(color: BalsmColors.border),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               children: [
@@ -844,18 +779,19 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     };
     return GestureDetector(
       onTap: () => flags.setOverride(
-          f,
-          switch (forced) {
-            null => true,
-            true => false,
-            false => null,
-          }),
+        f,
+        switch (forced) {
+          null => true,
+          true => false,
+          false => null,
+        },
+      ),
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         decoration: BoxDecoration(
-          color: forced != null ? BalsmColors.appAccent50 : Colors.transparent,
-          border: first ? null : const Border(top: BorderSide(color: BalsmColors.ink100)),
+          color: forced != null ? AppColors.hueBlue50 : Colors.transparent,
+          border: first ? null : const Border(top: BorderSide(color: AppColors.ink100)),
         ),
         child: Row(
           children: [
@@ -863,10 +799,19 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(f.label,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.fg1)),
+                  Text(
+                    f.label,
+                    style: const TextStyle(
+                      fontSize: FontSizes.bodySm,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 1),
-                  Text('${f.key} · $from', style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
+                  Text(
+                    '${f.key} · $from',
+                    style: const TextStyle(fontSize: FontSizes.eyebrow, color: AppColors.textTertiary),
+                  ),
                 ],
               ),
             ),
@@ -882,38 +827,28 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         margin: const EdgeInsets.only(top: 20),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: _kTermBg,
-          borderRadius: BorderRadius.circular(BalsmRadius.md),
+          color: DevConsoleColors.background,
+          borderRadius: BorderRadius.circular(AppRadii.md),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
               padding: EdgeInsets.only(bottom: 6),
-              child: Text('// build',
-                  style: TextStyle(fontFamily: _kMono, fontSize: 11, fontWeight: FontWeight.w700, color: _kTermAccent)),
+              child: Text(
+                '// build',
+                style: TextStyle(
+                  fontFamily: _kMono,
+                  fontSize: FontSizes.eyebrow,
+                  fontWeight: FontWeight.w700,
+                  color: DevConsoleColors.accent,
+                ),
+              ),
             ),
-            _termRow('app', cfg.appName),
-            _termRow('brand', cfg.brand.name),
-            _termRow('flavor', cfg.flavor.name),
-            _termRow('server', _currentBaseUrl),
-          ],
-        ),
-      );
-
-  Widget _termRow(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 60,
-              child: Text(k, style: const TextStyle(fontFamily: _kMono, fontSize: 10.5, color: Color(0xFF6E6E64))),
-            ),
-            Expanded(
-              child: SelectableText(v,
-                  style: const TextStyle(fontFamily: _kMono, fontSize: 10.5, color: Color(0xFFC8C8BE))),
-            ),
+            _TermRow('app', cfg.appName),
+            _TermRow('brand', cfg.brand.name),
+            _TermRow('flavor', cfg.flavor.name),
+            _TermRow('server', _currentBaseUrl),
           ],
         ),
       );
@@ -923,33 +858,33 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     final canExport = cfg.serverSwitchingEnabled; // dev/staging only
     final last = _buffer.lastAt;
     return [
-      _eyebrow('Summary'),
+      const _Eyebrow('Summary'),
       Row(
         children: [
-          _statCard('Total', _buffer.total, const Color(0xFFC8C8BE)),
+          _StatCard('Total', _buffer.total, DevConsoleColors.text),
           const SizedBox(width: 8),
-          _statCard('Errors', _buffer.errorCount, const Color(0xFFF87171)),
+          _StatCard('Errors', _buffer.errorCount, DevConsoleColors.error),
           const SizedBox(width: 8),
-          _statCard('Warnings', _buffer.warnCount, const Color(0xFFFBBF24)),
+          _StatCard('Warnings', _buffer.warnCount, DevConsoleColors.warning),
         ],
       ),
       const SizedBox(height: 8),
       Text(
         'Last entry: ${last == null ? '—' : _hms(last)}',
-        style: const TextStyle(fontSize: 11, color: BalsmColors.fg3),
+        style: const TextStyle(fontSize: FontSizes.eyebrow, color: AppColors.textTertiary),
       ),
       const SizedBox(height: 16),
-      _eyebrow('Encryption key'),
+      const _Eyebrow('Encryption key'),
       _encKeyCard(),
       const SizedBox(height: 4),
       if (!canExport)
-        _readOnlyNote()
+        const _ReadOnlyNote()
       else ...[
-        _eyebrow('Export'),
+        const _Eyebrow('Export'),
         _exportButton(
           icon: Icons.lock_outline,
-          iconBg: BalsmColors.appAccent50,
-          iconColor: BalsmColors.appAccent,
+          iconBg: AppColors.hueBlue50,
+          iconColor: AppColors.hueBlue,
           title: 'Save encrypted file',
           subtitle: 'AES-256-GCM · .enc.json',
           onTap: _saveEncrypted,
@@ -960,62 +895,30 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         _clearButton(),
       ],
       const SizedBox(height: 16),
-      _privacyNote(),
+      const _PrivacyNote(),
     ];
   }
-
-  Widget _statCard(String label, int val, Color dot) => Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: BalsmColors.surface,
-            borderRadius: BorderRadius.circular(BalsmRadius.lg),
-            border: Border.all(color: BalsmColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(width: 7, height: 7, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
-                  const SizedBox(width: 6),
-                  Text(label,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: BalsmColors.fg3)),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text('$val',
-                  style: const TextStyle(
-                      fontFamily: _kMono,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22,
-                      height: 1,
-                      color: BalsmColors.fg1)),
-            ],
-          ),
-        ),
-      );
 
   Widget _encKeyCard() => Container(
         margin: const EdgeInsets.only(top: 8, bottom: 16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(color: _kTermBg, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: DevConsoleColors.background, borderRadius: BorderRadius.circular(AppRadii.md)),
         child: Row(
           children: [
-            const Icon(Icons.vpn_key, size: 14, color: _kTermAccent),
+            const Icon(Icons.vpn_key, size: 14, color: DevConsoleColors.accent),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 _store.encKey.isEmpty ? '…' : _store.encKey,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontFamily: _kMono, fontSize: 11, color: Color(0xFFC8C8BE)),
+                style: const TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: DevConsoleColors.text),
               ),
             ),
-            _keyChip(
+            _KeyChip(
               'copy',
               () {
-                Clipboard.setData(ClipboardData(text: _store.encKey));
+                unawaited(Clipboard.setData(ClipboardData(text: _store.encKey)));
                 _snack('Key copied');
               },
             ),
@@ -1023,17 +926,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
             // The key travels — into a chat, a ticket, a screenshot of this
             // very card. Regenerating is how one that has travelled stops
             // opening the next export.
-            _keyChip('new', _regenerateKey),
+            _KeyChip('new', _regenerateKey),
           ],
-        ),
-      );
-
-  Widget _keyChip(String label, VoidCallback onTap) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(color: const Color(0x14FFFFFF), borderRadius: BorderRadius.circular(5)),
-          child: Text(label, style: const TextStyle(fontFamily: _kMono, fontSize: 10, color: Color(0xFF888888))),
         ),
       );
 
@@ -1044,13 +938,15 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _kTermBg,
-        title: const Text('New encryption key?',
-            style: TextStyle(fontFamily: _kMono, fontSize: 14, color: Color(0xFFC8C8BE))),
+        backgroundColor: DevConsoleColors.background,
+        title: const Text(
+          'New encryption key?',
+          style: TextStyle(fontFamily: _kMono, fontSize: FontSizes.description, color: DevConsoleColors.text),
+        ),
         content: const Text(
           'Exports you have already saved stay encrypted with the current key — '
           'the new one will not open them. Keep the old key if you still need those.',
-          style: TextStyle(fontFamily: _kMono, fontSize: 11, color: BalsmColors.fg3),
+          style: TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.textTertiary),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -1071,22 +967,29 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) =>
-      _cardButton(
+      _CardButton(
         onTap: onTap,
         child: Row(
           children: [
             Container(
               width: 34,
               height: 34,
-              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(_iconTileRadius)),
               child: Icon(icon, size: 16, color: iconColor),
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: BalsmColors.fg1)),
-                Text(subtitle, style: const TextStyle(fontSize: 11, color: BalsmColors.fg3)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: FontSizes.bodySm,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(subtitle, style: const TextStyle(fontSize: FontSizes.eyebrow, color: AppColors.textTertiary)),
               ],
             ),
           ],
@@ -1096,10 +999,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
   Widget _sentryButton(FlavorConfig cfg) {
     final s = _sendStatus;
     final (bg, ic, icColor, title) = switch (s) {
-      'sent' => (BalsmColors.hueMint50, Icons.check, BalsmColors.hueMint, 'Sent to Sentry!'),
-      'error' => (BalsmColors.dangerBg, Icons.warning_amber_rounded, BalsmColors.danger, 'Failed to send'),
-      'sending' => (BalsmColors.ink50, Icons.sync, BalsmColors.fg2, 'Sending…'),
-      _ => (BalsmColors.ink50, Icons.send, BalsmColors.fg2, 'Send to Sentry'),
+      'sent' => (AppColors.hueMint50, Icons.check, AppColors.hueMint, 'Sent to Sentry!'),
+      'error' => (AppColors.dangerBackground, Icons.warning_amber_rounded, AppColors.danger, 'Failed to send'),
+      'sending' => (AppColors.ink50, Icons.sync, AppColors.textSecondary, 'Sending…'),
+      _ => (AppColors.ink50, Icons.send, AppColors.textSecondary, 'Send to Sentry'),
     };
     return Opacity(
       opacity: s == 'sending' ? 0.6 : 1,
@@ -1114,8 +1017,8 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     );
   }
 
-  Widget _clearButton() => _cardButton(
-        border: BalsmColors.danger,
+  Widget _clearButton() => _CardButton(
+        border: AppColors.danger,
         onTap: () {
           _buffer.clear();
           _snack('Logs cleared');
@@ -1123,45 +1026,11 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.delete_outline, size: 16, color: BalsmColors.danger),
+            Icon(Icons.delete_outline, size: 16, color: AppColors.danger),
             SizedBox(width: 8),
-            Text('Clear all logs',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: BalsmColors.danger)),
-          ],
-        ),
-      );
-
-  Widget _cardButton({required Widget child, required VoidCallback onTap, Color? border}) => GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: BalsmColors.surface,
-            borderRadius: BorderRadius.circular(BalsmRadius.lg),
-            border: Border.all(color: border ?? BalsmColors.border),
-          ),
-          child: child,
-        ),
-      );
-
-  Widget _privacyNote() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: BalsmColors.ink50,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.shield_outlined, size: 14, color: BalsmColors.fg3),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Log content is never shown here. Save encrypted or send to Sentry to inspect.',
-                style: TextStyle(fontSize: 11, height: 1.5, color: BalsmColors.fg3),
-              ),
+            Text(
+              'Clear all logs',
+              style: TextStyle(fontSize: FontSizes.bodySm, fontWeight: FontWeight.w600, color: AppColors.danger),
             ),
           ],
         ),
@@ -1173,25 +1042,30 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     final shot = widget.screenshot;
     final size = MediaQuery.sizeOf(context);
     return [
-      _eyebrow('Screenshot'),
+      const _Eyebrow('Screenshot'),
       Container(
         constraints: const BoxConstraints(minHeight: 130),
         decoration: BoxDecoration(
-          color: BalsmColors.ink50,
-          borderRadius: BorderRadius.circular(BalsmRadius.lg),
-          border: Border.all(color: BalsmColors.border),
+          color: AppColors.ink50,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border),
         ),
         clipBehavior: Clip.antiAlias,
         alignment: Alignment.center,
         child: shot == null
             ? const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.image_outlined, size: 26, color: BalsmColors.fg4),
-                  SizedBox(height: 8),
-                  Text('No screenshot captured',
-                      style: TextStyle(fontFamily: _kMono, fontSize: 12, color: BalsmColors.fg4)),
-                ]),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.image_outlined, size: 26, color: AppColors.textHint),
+                    SizedBox(height: 8),
+                    Text(
+                      'No screenshot captured',
+                      style: TextStyle(fontFamily: _kMono, fontSize: FontSizes.meta, color: AppColors.textHint),
+                    ),
+                  ],
+                ),
               )
             : Opacity(
                 opacity: _attachShot ? 1 : 0.35,
@@ -1200,26 +1074,30 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       ),
       if (shot != null) ...[
         const SizedBox(height: 6),
-        Row(children: [
-          const Expanded(
-            child: Text('May show health data — only attach from test accounts.',
-                style: TextStyle(fontSize: 11, color: BalsmColors.fg3)),
-          ),
-          TextButton(
-            onPressed: () => setState(() => _attachShot = !_attachShot),
-            child: Text(_attachShot ? 'Remove' : 'Attach'),
-          ),
-        ]),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'May show health data — only attach from test accounts.',
+                style: TextStyle(fontSize: FontSizes.eyebrow, color: AppColors.textTertiary),
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _attachShot = !_attachShot),
+              child: Text(_attachShot ? 'Remove' : 'Attach'),
+            ),
+          ],
+        ),
       ],
       const SizedBox(height: 16),
-      _fieldLabel('Title'),
+      const _FieldLabel('Title'),
       TextField(
         controller: _bugTitleCtrl,
         onTapOutside: (_) => FocusScope.of(context).unfocus(),
         decoration: _inputDeco('Brief description of the bug'),
       ),
       const SizedBox(height: 12),
-      _fieldLabel('Steps to reproduce'),
+      const _FieldLabel('Steps to reproduce'),
       TextField(
         controller: _bugStepsCtrl,
         minLines: 3,
@@ -1228,7 +1106,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         decoration: _inputDeco('1. Go to…\n2. Tap…\n3. Expected: …\n4. Actual: …'),
       ),
       const SizedBox(height: 14),
-      _fieldLabel('Severity'),
+      const _FieldLabel('Severity'),
       Row(
         children: [
           ...const [
@@ -1244,17 +1122,24 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(color: _kTermBg, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: DevConsoleColors.background, borderRadius: BorderRadius.circular(AppRadii.md)),
         child: DefaultTextStyle(
-          style: const TextStyle(fontFamily: _kMono, fontSize: 10.5, height: 1.9, color: Color(0xFFC8C8BE)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('// context auto-attached',
-                style: TextStyle(color: _kTermAccent, fontWeight: FontWeight.w700, fontSize: 11)),
-            Text('env       ${_activeLabel(cfg)} — $_currentBaseUrl'),
-            Text('logs      ${_buffer.total} entries · ${_buffer.errorCount} errors'),
-            Text('viewport  ${size.width.round()}×${size.height.round()}'),
-            Text('shot      ${shot == null ? 'none' : _attachShot ? 'attached' : 'removed'}'),
-          ]),
+          style:
+              const TextStyle(fontFamily: _kMono, fontSize: _monoFontSize, height: 1.9, color: DevConsoleColors.text),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '// context auto-attached',
+                style:
+                    TextStyle(color: DevConsoleColors.accent, fontWeight: FontWeight.w700, fontSize: FontSizes.eyebrow),
+              ),
+              Text('env       ${_activeLabel(cfg)} — $_currentBaseUrl'),
+              Text('logs      ${_buffer.total} entries · ${_buffer.errorCount} errors'),
+              Text('viewport  ${size.width.round()}×${size.height.round()}'),
+              Text('shot      ${shot == null ? 'none' : _attachShot ? 'attached' : 'removed'}'),
+            ],
+          ),
         ),
       ),
       const SizedBox(height: 16),
@@ -1262,23 +1147,26 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         ElevatedButton.icon(
           onPressed: _bugSendStatus == 'sending' ? null : _sendBugReport,
           style: ElevatedButton.styleFrom(
-            backgroundColor: BalsmColors.appAccent,
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.hueBlue,
+            foregroundColor: AppColors.white,
             minimumSize: const Size(double.infinity, 50),
           ),
           icon: Icon(
-              switch (_bugSendStatus) {
-                'sent' => Icons.check,
-                'error' => Icons.warning_amber_rounded,
-                _ => Icons.send,
-              },
-              size: 17),
-          label: Text(switch (_bugSendStatus) {
-            'sending' => 'Sending…',
-            'sent' => 'Report sent to Sentry!',
-            'error' => 'Failed to send',
-            _ => 'Send report to Sentry',
-          }),
+            switch (_bugSendStatus) {
+              'sent' => Icons.check,
+              'error' => Icons.warning_amber_rounded,
+              _ => Icons.send,
+            },
+            size: 17,
+          ),
+          label: Text(
+            switch (_bugSendStatus) {
+              'sending' => 'Sending…',
+              'sent' => 'Report sent to Sentry!',
+              'error' => 'Failed to send',
+              _ => 'Send report to Sentry',
+            },
+          ),
         ),
         const SizedBox(height: 8),
       ],
@@ -1291,39 +1179,40 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     ];
   }
 
-  Widget _fieldLabel(String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(t, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: BalsmColors.fg2)),
-      );
-
   InputDecoration _inputDeco(String hint) => InputDecoration(
         hintText: hint,
         isDense: true,
         filled: true,
-        fillColor: BalsmColors.surface,
+        fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(BalsmRadius.md),
-          borderSide: const BorderSide(color: BalsmColors.border),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
       );
 
   Widget _sevButton(String id, String label) {
     final on = _bugSeverity == id;
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsetsDirectional.only(end: 6),
       child: GestureDetector(
         onTap: () => setState(() => _bugSeverity = id),
         child: Container(
           height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: on ? BalsmColors.fg1 : BalsmColors.surface,
-            borderRadius: BorderRadius.circular(BalsmRadius.sm),
-            border: Border.all(color: on ? BalsmColors.fg1 : BalsmColors.border),
+            color: on ? AppColors.textPrimary : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(color: on ? AppColors.textPrimary : AppColors.border),
           ),
-          child: Text(label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: on ? Colors.white : BalsmColors.fg3)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: FontSizes.meta,
+              fontWeight: FontWeight.w600,
+              color: on ? AppColors.white : AppColors.textTertiary,
+            ),
+          ),
         ),
       ),
     );
@@ -1338,38 +1227,49 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BalsmColors.border),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.control),
+          border: Border.all(color: AppColors.border),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(children: [
-            _healthButton(),
-            const SizedBox(width: 8),
-            Expanded(child: _healthStatus()),
-          ]),
-          if (_healthDetails.isNotEmpty) _healthDetailsList(),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                _healthButton(),
+                const SizedBox(width: 8),
+                Expanded(child: _healthStatus()),
+              ],
+            ),
+            if (_healthDetails.isNotEmpty) _healthDetailsList(),
+          ],
+        ),
       );
 
   // Every field the server put in its health body, in the order it sent them —
   // the deployed version, readiness and the reason when it is not ready. Values
   // are selectable so a version or timestamp can be pasted into a bug report.
   Widget _healthDetailsList() {
-    const key = TextStyle(fontFamily: _kMono, fontSize: 11, color: BalsmColors.fg4);
-    const value = TextStyle(fontFamily: _kMono, fontSize: 11, color: BalsmColors.fg2);
+    const key = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.textHint);
+    const value = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow, color: AppColors.textSecondary);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        for (final e in _healthDetails.entries)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SizedBox(width: 120, child: Text(e.key, style: key)),
-              Expanded(child: SelectableText(e.value == null ? '—' : '${e.value}', style: value)),
-            ]),
-          ),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final e in _healthDetails.entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 120, child: Text(e.key, style: key)),
+                  Expanded(child: SelectableText(e.value == null ? '—' : '${e.value}', style: value)),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1382,55 +1282,60 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: BalsmColors.ink800,
-            borderRadius: BorderRadius.circular(6),
+            color: AppColors.ink800,
+            borderRadius: BorderRadius.circular(AppRadii.sm),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (checking)
-              const SizedBox(
-                width: 13,
-                height: 13,
-                child: CircularProgressIndicator(strokeWidth: 1.6, color: Color(0xFFF4F3EC)),
-              )
-            else
-              const Icon(Icons.monitor_heart_outlined, size: 13, color: Color(0xFFF4F3EC)),
-            const SizedBox(width: 6),
-            Text(
-              checking ? 'Checking…' : 'Check connection',
-              style: const TextStyle(
-                fontFamily: _kMono,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFF4F3EC),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (checking)
+                const SizedBox(
+                  width: 13,
+                  height: 13,
+                  child: CircularProgressIndicator(strokeWidth: 1.6, color: AppColors.cream100),
+                )
+              else
+                const Icon(Icons.monitor_heart_outlined, size: 13, color: AppColors.cream100),
+              const SizedBox(width: 6),
+              Text(
+                checking ? 'Checking…' : 'Check connection',
+                style: const TextStyle(
+                  fontFamily: _kMono,
+                  fontSize: FontSizes.eyebrow,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.cream100,
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _healthStatus() {
-    const mono = TextStyle(fontFamily: _kMono, fontSize: 11);
+    const mono = TextStyle(fontFamily: _kMono, fontSize: FontSizes.eyebrow);
 
     // While checking, the design shows the URL under test rather than a
     // placeholder — it is the one moment the developer wants it confirmed.
     final (Color color, IconData? icon, String text) = switch (_health) {
-      _HealthState.idle => (BalsmColors.fg4, null, 'Not checked yet'),
-      _HealthState.checking => (BalsmColors.fg4, null, _currentBaseUrl),
-      _HealthState.ok => (const Color(0xFF1A6033), Icons.check_circle_outline, _healthMsg),
-      _HealthState.fail => (const Color(0xFFD44A3C), Icons.cancel_outlined, _healthMsg),
+      _HealthState.idle => (AppColors.textHint, null, 'Not checked yet'),
+      _HealthState.checking => (AppColors.textHint, null, _currentBaseUrl),
+      _HealthState.ok => (AppColors.hueMintInk, Icons.check_circle_outline, _healthMsg),
+      _HealthState.fail => (AppColors.danger, Icons.cancel_outlined, _healthMsg),
     };
 
-    return Row(children: [
-      if (icon != null) ...[
-        Icon(icon, size: 13, color: color),
-        const SizedBox(width: 5),
+    return Row(
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+        ],
+        Expanded(
+          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: mono.copyWith(color: color)),
+        ),
       ],
-      Expanded(
-        child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: mono.copyWith(color: color)),
-      ),
-    ]);
+    );
   }
 
   Future<void> _runHealthCheck() async {
@@ -1463,13 +1368,6 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
     });
   }
 
-  Widget _eyebrow(String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Text(t.toUpperCase(),
-            style:
-                const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: BalsmColors.fg3)),
-      );
-
   // ── Actions ─────────────────────────────────────────────────────────────────
   void _onPresetTap(ServerPreset p) {
     if (_selectedBaseUrl == p.apiBaseUrl) return;
@@ -1477,7 +1375,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       setState(() => _pendingProd = p);
       return;
     }
-    _select(p);
+    unawaited(_select(p));
   }
 
   Future<void> _select(ServerPreset preset) async {
@@ -1527,7 +1425,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       await file.writeAsString(json);
       await Clipboard.setData(ClipboardData(text: json));
       _snack('Encrypted bundle copied · ${file.path}');
-    } catch (e) {
+    } on Object catch (e) {
       _snack('Encrypt failed: $e');
     }
   }
@@ -1541,10 +1439,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         envUrl: _currentBaseUrl,
       );
       if (mounted) setState(() => _sendStatus = ok ? 'sent' : 'error');
-    } catch (_) {
+    } on Object catch (_) {
       if (mounted) setState(() => _sendStatus = 'error');
     }
-    await Future.delayed(const Duration(milliseconds: 3200));
+    await Future<void>.delayed(const Duration(milliseconds: 3200));
     if (mounted) setState(() => _sendStatus = null);
   }
 
@@ -1563,10 +1461,10 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
         screenshot: _attachShot ? widget.screenshot : null,
       );
       if (mounted) setState(() => _bugSendStatus = ok ? 'sent' : 'error');
-    } catch (_) {
+    } on Object catch (_) {
       if (mounted) setState(() => _bugSendStatus = 'error');
     }
-    await Future.delayed(const Duration(milliseconds: 3200));
+    await Future<void>.delayed(const Duration(milliseconds: 3200));
     if (mounted) setState(() => _bugSendStatus = null);
   }
 
@@ -1581,7 +1479,7 @@ class _ServerSelectorScreenState extends State<ServerSelectorScreen> {
       entries: _buffer.entries,
       viewport: '${size.width.round()}×${size.height.round()}',
     );
-    Clipboard.setData(ClipboardData(text: report));
+    unawaited(Clipboard.setData(ClipboardData(text: report)));
     setState(() => _reportCopied = true);
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) setState(() => _reportCopied = false);
@@ -1609,17 +1507,17 @@ class _DcToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: _toggleAnimation,
         width: 42,
         height: 24,
         decoration: BoxDecoration(
-          color: on ? BalsmColors.appAccent : BalsmColors.ink200,
-          borderRadius: BorderRadius.circular(999),
+          color: on ? AppColors.hueBlue : AppColors.ink200,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
         ),
         child: Stack(
           children: [
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 180),
+              duration: _toggleAnimation,
               curve: Curves.easeOut,
               left: on ? 20 : 2,
               top: 2,
@@ -1627,10 +1525,10 @@ class _DcToggle extends StatelessWidget {
                 width: 20,
                 height: 20,
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(color: Color(0x40000000), blurRadius: 3, offset: Offset(0, 1)),
+                    BoxShadow(color: DevConsoleColors.shadow, blurRadius: 3, offset: Offset(0, 1)),
                   ],
                 ),
               ),
@@ -1652,20 +1550,370 @@ class _EnvStyle {
   static _EnvStyle of(String label) {
     final l = label.toLowerCase();
     if (l.contains('local')) {
-      return const _EnvStyle(Color(0xFF3FC366), Color(0xFFE8F9EE), Color(0xFF1A6033));
+      return const _EnvStyle(AppColors.hueMint600, AppColors.hueMint50, AppColors.onSuccessBackground);
     }
     if (l.contains('prod')) {
-      return const _EnvStyle(Color(0xFFD44A3C), Color(0xFFFBEBE7), Color(0xFF7A2A20), isProd: true);
+      return const _EnvStyle(AppColors.danger, AppColors.dangerBackground, AppColors.onDangerBackground, isProd: true);
     }
     if (l.contains('stag')) {
-      return const _EnvStyle(Color(0xFFE5B428), Color(0xFFFDF5DC), Color(0xFF7A5A0F));
+      return const _EnvStyle(AppColors.warning, AppColors.warningBackground, AppColors.onWarningBackground);
     }
     if (l.contains('dev')) {
-      return const _EnvStyle(Color(0xFF1283FF), Color(0xFFE4F0FF), Color(0xFF08407A));
+      return const _EnvStyle(AppColors.hueBlue, AppColors.hueBlue50, AppColors.onInfoBackground);
     }
-    return const _EnvStyle(Color(0xFF526174), Color(0xFFF4F3EC), Color(0xFF3A3A34));
+    return const _EnvStyle(AppColors.ink600, AppColors.cream100, DevConsoleColors.panel);
   }
 }
 
 /// States of the Dev Config connection check, per the design.
 enum _HealthState { idle, checking, ok, fail }
+
+class _EnvChip extends StatelessWidget {
+  const _EnvChip(this.label, this.es);
+  final String label;
+  final _EnvStyle es;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: es.bg,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: es.dot, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: FontSizes.micro,
+                fontWeight: FontWeight.w700,
+                color: es.fg,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _SavedHeader extends StatelessWidget {
+  const _SavedHeader();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 6),
+        child: Container(
+          padding: const EdgeInsets.only(top: 8),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: AppColors.ink100)),
+          ),
+          child: const Text(
+            'SAVED',
+            style: TextStyle(
+              fontSize: FontSizes.micro,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
+              color: AppColors.textHint,
+            ),
+          ),
+        ),
+      );
+}
+
+class _TinyBtn extends StatelessWidget {
+  const _TinyBtn(this.label, this.onTap);
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsetsDirectional.only(start: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.ink100,
+            borderRadius: BorderRadius.circular(AppRadii.xs),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: _kMono,
+              fontSize: FontSizes.micro,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink600,
+            ),
+          ),
+        ),
+      );
+}
+
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+        decoration: BoxDecoration(
+          color: AppColors.dangerBackground,
+          borderRadius: BorderRadius.circular(_badgeRadius),
+        ),
+        child: const Text(
+          'LIVE',
+          style: TextStyle(
+            fontSize: _badgeFontSize,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+            color: AppColors.danger,
+          ),
+        ),
+      );
+}
+
+class _MonoField extends StatelessWidget {
+  const _MonoField(this.label, this.ctrl, {this.hint});
+  final String label;
+  final TextEditingController ctrl;
+  final String? hint;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          SizedBox(
+            width: 34,
+            child: Text(
+              label,
+              style: const TextStyle(fontFamily: _kMono, fontSize: FontSizes.micro, color: AppColors.textTertiary),
+            ),
+          ),
+          Expanded(
+            child: TextField(
+              controller: ctrl,
+              style: const TextStyle(fontFamily: _kMono, fontSize: FontSizes.meta),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: hint,
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+}
+
+class _ReadOnlyNote extends StatelessWidget {
+  const _ReadOnlyNote();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.ink50,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.lock_outline, size: 14, color: AppColors.textTertiary),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Read-only in production. Server switching is disabled.',
+                style: TextStyle(fontSize: FontSizes.eyebrow, height: 1.5, color: AppColors.textTertiary),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _TermRow extends StatelessWidget {
+  const _TermRow(this.k, this.v);
+  final String k;
+  final String v;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 60,
+              child: Text(
+                k,
+                style: const TextStyle(fontFamily: _kMono, fontSize: _monoFontSize, color: DevConsoleColors.textMuted),
+              ),
+            ),
+            Expanded(
+              child: SelectableText(
+                v,
+                style: const TextStyle(fontFamily: _kMono, fontSize: _monoFontSize, color: DevConsoleColors.text),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard(this.label, this.val, this.dot);
+  final String label;
+  final int val;
+  final Color dot;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(width: 7, height: 7, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: FontSizes.eyebrow,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$val',
+                style: const TextStyle(
+                  fontFamily: _kMono,
+                  fontWeight: FontWeight.w700,
+                  fontSize: FontSizes.headline,
+                  height: 1,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _KeyChip extends StatelessWidget {
+  const _KeyChip(this.label, this.onTap);
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(color: DevConsoleColors.chipFill, borderRadius: BorderRadius.circular(_chipRadius)),
+          child: Text(
+            label,
+            style: const TextStyle(fontFamily: _kMono, fontSize: FontSizes.micro, color: DevConsoleColors.textDim),
+          ),
+        ),
+      );
+}
+
+class _CardButton extends StatelessWidget {
+  const _CardButton({required this.child, required this.onTap, this.border});
+  final Widget child;
+  final VoidCallback onTap;
+  final Color? border;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: border ?? AppColors.border),
+          ),
+          child: child,
+        ),
+      );
+}
+
+class _PrivacyNote extends StatelessWidget {
+  const _PrivacyNote();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.ink50,
+          borderRadius: BorderRadius.circular(_iconTileRadius),
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.shield_outlined, size: 14, color: AppColors.textTertiary),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Log content is never shown here. Save encrypted or send to Sentry to inspect.',
+                style: TextStyle(fontSize: FontSizes.eyebrow, height: 1.5, color: AppColors.textTertiary),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.t);
+  final String t;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          t,
+          style: const TextStyle(fontSize: FontSizes.meta, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+        ),
+      );
+}
+
+class _Eyebrow extends StatelessWidget {
+  const _Eyebrow(this.t);
+  final String t;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(
+          t.toUpperCase(),
+          style: const TextStyle(
+            fontSize: FontSizes.eyebrow,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.4,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      );
+}

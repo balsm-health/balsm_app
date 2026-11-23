@@ -1,7 +1,8 @@
 import 'package:balsm_api/balsm_api.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../network/api_providers.dart';
+import '../update/maintenance_notice.dart';
 
 /// The single synthetic identity every e2e run uses. Fixed values so assertions
 /// can name them.
@@ -321,7 +322,7 @@ class FakeCareDirectoryApi implements CareDirectoryApi {
       hours: '08:00–20:00',
       phone: '+20 2 0000 0003',
       distanceKm: 2.1,
-      rating: 4.0,
+      rating: 4,
     ),
     CareEntityResponse(
       id: 'e2e-dentist-1',
@@ -416,7 +417,7 @@ class FakeFamilyLinksApi implements FamilyLinksApi {
 
   void _guard(String call) {
     calls.add(call);
-    if (failWith != null) throw failWith!;
+    if (failWith case final failWith?) throw failWith;
   }
 
   FamilyLinkResponse _with(FamilyLinkResponse l, {String? status, bool? byMe}) => FamilyLinkResponse(
@@ -445,7 +446,7 @@ class FakeFamilyLinksApi implements FamilyLinksApi {
       relation: request.relation,
       status: 'pending',
       direction: 'outgoing',
-      createdAt: DateTime.utc(2026, 1, 1),
+      createdAt: DateTime.utc(2026),
     );
   }
 
@@ -560,11 +561,54 @@ class FakeContentApi implements ContentApi {
   @override
   Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({String? etag, CancelToken? cancelToken}) async {
     sentEtags.add(etag);
-    if (failWith != null) throw failWith!;
+    if (failWith case final failWith?) throw failWith;
     final body = weeks;
     if (body == null) throw const ApiException(code: 'not_found', statusCode: 404);
     if (etag == this.etag) return const NotModified();
     return Modified(body, etag: this.etag);
+  }
+}
+
+/// In-memory [MaintenanceApi]. Off by default so no flow is stopped by it;
+/// set [mode] (and [failWith] for an unreachable server) to force a branch.
+class FakeMaintenanceApi implements MaintenanceApi {
+  FakeMaintenanceApi({this.mode = 'off', this.message, this.endsAt, this.updatedAt});
+
+  String mode;
+  String? message;
+  DateTime? endsAt;
+
+  /// When the server's switch last changed — the start of the window.
+  DateTime? updatedAt;
+
+  /// When set, every call throws it — e.g. an offline [ApiException].
+  ApiException? failWith;
+
+  /// How many times the status was read.
+  int calls = 0;
+
+  @override
+  Future<MaintenanceStatusResponse> getStatus({CancelToken? cancelToken}) async {
+    calls++;
+    if (failWith case final failWith?) throw failWith;
+    return MaintenanceStatusResponse(mode: mode, message: message, endsAt: endsAt, updatedAt: updatedAt);
+  }
+}
+
+/// In-memory [ManifestMaintenanceSource]: answers [notice] (null = the
+/// manifest could not be read) without touching the network.
+class FakeManifestMaintenanceSource extends ManifestMaintenanceSource {
+  FakeManifestMaintenanceSource({this.notice}) : super(url: 'https://example.invalid/version.json');
+
+  MaintenanceNotice? notice;
+
+  /// How many times the manifest was read.
+  int calls = 0;
+
+  @override
+  Future<MaintenanceNotice?> read() async {
+    calls++;
+    return notice;
   }
 }
 
@@ -584,6 +628,7 @@ List<Override> e2eApiOverrides({
   FakeCareDirectoryApi? careDirectory,
   FakeFamilyLinksApi? familyLinks,
   FakeContentApi? content,
+  FakeMaintenanceApi? maintenance,
 }) =>
     [
       authApiProvider.overrideWithValue(auth ?? FakeAuthApi()),
@@ -596,4 +641,5 @@ List<Override> e2eApiOverrides({
       careDirectoryApiProvider.overrideWithValue(careDirectory ?? FakeCareDirectoryApi()),
       familyLinksApiProvider.overrideWithValue(familyLinks ?? FakeFamilyLinksApi()),
       contentApiProvider.overrideWithValue(content ?? FakeContentApi()),
+      maintenanceApiProvider.overrideWithValue(maintenance ?? FakeMaintenanceApi()),
     ];

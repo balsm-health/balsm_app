@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/src/providers/future_provider.dart';
 
 import '../application/ports/card_sealer.dart';
 import '../application/ports/device_key_store.dart';
@@ -113,8 +114,10 @@ class FamilyLinksNotifier extends AsyncNotifier<FamilyLinks> {
   /// Pulls both lists again — app start/resume, the Family screen, pull-to-refresh.
   Future<void> refresh() async {
     if (ref.read(currentUserIdProvider) == null) return;
-    final previous = state.valueOrNull ?? FamilyLinks.empty;
-    state = AsyncData(await _pull(previous));
+    final previous = state.value ?? FamilyLinks.empty;
+    final next = await _pull(previous);
+    if (!ref.mounted) return;
+    state = AsyncData(next);
   }
 
   Future<AppResult<String>> request({required String jti, required LinkRelation relation, ScannedIdentity? scanned}) =>
@@ -134,15 +137,16 @@ class FamilyLinksNotifier extends AsyncNotifier<FamilyLinks> {
   /// Every change is followed by a pull, so the lists show the server's word.
   Future<AppResult<T>> _then<T>(Future<AppResult<T>> action) async {
     final result = await action;
-    await refresh();
+    if (ref.mounted) await refresh();
     return result;
   }
 }
 
-/// The card the other party shares over link [linkId], opened on this phone.
+/// The card the other party shares over link `linkId`, opened on this phone.
 /// Success with null when none is shared.
-final sharedCardProvider = FutureProvider.autoDispose.family<AppResult<SharedCard?>, String>((ref, linkId) async {
-  final link = ref.watch(familyLinksProvider).valueOrNull?.byId(linkId);
+final FutureProviderFamily<AppResult<SharedCard?>, String> sharedCardProvider =
+    FutureProvider.autoDispose.family<AppResult<SharedCard?>, String>((ref, linkId) async {
+  final link = ref.watch(familyLinksProvider).value?.byId(linkId);
   if (link == null) return AppResult.success(null);
   return ref.read(readSharedCardUseCaseProvider)(link);
 });

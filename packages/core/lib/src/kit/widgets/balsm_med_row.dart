@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 enum BalsmMedTone { info, controlled, success }
 
@@ -7,10 +7,10 @@ enum BalsmMedTone { info, controlled, success }
 /// Tone: `info` (hue-blue), `controlled` (hue-violet), `success` (mint).
 class BalsmMedRow extends StatelessWidget {
   const BalsmMedRow({
-    super.key,
     required this.name,
     required this.dose,
     required this.tone,
+    super.key,
     this.icon = Icons.medication_rounded,
     this.trailing,
     this.showDivider = true,
@@ -44,7 +44,7 @@ class BalsmMedRow extends StatelessWidget {
                     height: 42,
                     decoration: BoxDecoration(
                       color: bg,
-                      borderRadius: BorderRadius.circular(BalsmRadius.md),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                     ),
                     child: Icon(icon, size: 21, color: fg),
                   ),
@@ -58,8 +58,8 @@ class BalsmMedRow extends StatelessWidget {
                           name,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: BalsmColors.fg1,
+                            fontSize: FontSizes.body,
+                            color: AppColors.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -68,16 +68,16 @@ class BalsmMedRow extends StatelessWidget {
                         Text(
                           dose,
                           style: const TextStyle(
-                            fontSize: 13,
-                            color: BalsmColors.fg3,
+                            fontSize: FontSizes.bodySm,
+                            color: AppColors.textTertiary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  if (trailing != null) ...[
+                  if (trailing case final trailing?) ...[
                     const SizedBox(width: 12),
-                    trailing!,
+                    trailing,
                   ],
                 ],
               ),
@@ -86,7 +86,7 @@ class BalsmMedRow extends StatelessWidget {
               const Divider(
                 height: 1,
                 thickness: 1,
-                color: BalsmColors.ink100,
+                color: AppColors.ink100,
                 indent: 18,
                 endIndent: 18,
               ),
@@ -99,11 +99,11 @@ class BalsmMedRow extends StatelessWidget {
   (Color, Color) get _toneColors {
     switch (tone) {
       case BalsmMedTone.info:
-        return (BalsmColors.hueBlue50, BalsmColors.hueBlue);
+        return (AppColors.hueBlue50, AppColors.hueBlue);
       case BalsmMedTone.controlled:
-        return (BalsmColors.controlledBg, BalsmColors.controlled);
+        return (AppColors.controlledBackground, AppColors.controlled);
       case BalsmMedTone.success:
-        return (BalsmColors.successBg, BalsmColors.success);
+        return (AppColors.successBackground, AppColors.success);
     }
   }
 }

@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/flags.dart';
+import 'package:app/balsm_app/screens/care_team_screen.dart';
 import 'package:app/balsm_app/storage_target.dart';
 import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
+
+import 'support/flag_overrides.dart';
 
 /// Records whether the screen actually reached the network.
 class _RecordingCareTeamApi implements CareTeamApi {
@@ -35,7 +39,7 @@ void main() {
   test('careTeamSyncServiceProvider throws until bootstrap overrides it', () {
     // Guards the bootstrap contract: a missing override must fail loudly at the
     // first read rather than silently never syncing.
-    final container = ProviderContainer();
+    final container = ProviderContainer(retry: noProviderRetry);
     addTearDown(container.dispose);
 
     expect(() => container.read(careTeamSyncServiceProvider), throwsA(isA<UnimplementedError>()));
@@ -56,23 +60,26 @@ void main() {
       activeUser: () => const UserId.value('u-wiring-1'),
     );
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        careTeamProvider.overrideWith((ref) => Stream.value(const <CareProvider>[])),
-        currentProfileIdProvider.overrideWithValue(profileId),
-        careTeamSyncServiceProvider.overrideWithValue(service),
-      ],
-      child: AppScope(
-        state: PatientAppState()
-          ..attachFlags(FeatureFlags(flags: AppFlags.all, allowOverrides: true)
-            ..setOverride(AppFlags.sync, syncOn)
-            ..setOverride(AppFlags.syncFor(DataCategory.care), syncOn)),
-        // material_ui's MaterialApp, matching care_team_test.dart: this repo's
-        // Material layer is material_ui, so SubScreen's RefreshIndicator resolves
-        // to material_ui's and wants material_ui's MaterialLocalizations.
-        child: const MaterialApp(home: CareTeamScreen()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          careTeamProvider.overrideWith((ref) => Stream.value(const <CareProvider>[])),
+          currentProfileIdProvider.overrideWithValue(profileId),
+          careTeamSyncServiceProvider.overrideWithValue(service),
+        ],
+        child: AppScope(
+          state: PatientAppState()
+            ..attachFlags(
+              flagsWith({AppFlags.sync: syncOn, AppFlags.syncFor(DataCategory.care): syncOn}),
+            ),
+          // material_ui's MaterialApp, matching care_team_test.dart: this repo's
+          // Material layer is material_ui, so SubScreen's RefreshIndicator resolves
+          // to material_ui's and wants material_ui's MaterialLocalizations.
+          child: const MaterialApp(home: CareTeamScreen()),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     await tester.fling(find.byType(ListView).first, const Offset(0, 400), 1000);

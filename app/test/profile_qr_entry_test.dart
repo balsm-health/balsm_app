@@ -30,26 +30,31 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        accountSummaryProvider.overrideWith(
-          (ref) => Future.value(handle == null
-              ? null
-              : AccountSummary(
-                  id: const UserId.value('u1'),
-                  handle: handle,
-                  displayName: 'Layla Hassan',
-                  countryCode: 'EG',
-                  preferredLanguage: 'en',
-                  deletionState: 'ACTIVE',
-                )),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          accountSummaryProvider.overrideWith(
+            (ref) => Future.value(
+              handle == null
+                  ? null
+                  : AccountSummary(
+                      id: const UserId.value('u1'),
+                      handle: handle,
+                      displayName: 'Layla Hassan',
+                      countryCode: 'EG',
+                      preferredLanguage: 'en',
+                      deletionState: 'ACTIVE',
+                    ),
+            ),
+          ),
+        ],
+        child: AppScope(
+          state: state,
+          child: const MaterialApp(home: Scaffold(body: ProfileScreen())),
         ),
-      ],
-      child: AppScope(
-        state: state,
-        child: const MaterialApp(home: Scaffold(body: ProfileScreen())),
       ),
-    ));
+    );
     await tester.pump();
     await tester.pump();
   }

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/aggregates/health_profile.dart';
 import '../../domain/events/health_profile_updated.dart';
-import '../ports/health_profiles_data_source.dart';
 import '../../infrastructure/drift/drift_profile_data_source.dart';
+import '../ports/health_profiles_data_source.dart';
 
 /// Updates fields on an existing [HealthProfile] and publishes
 /// [HealthProfileUpdated] on the [EventBus].
@@ -26,7 +26,7 @@ class UpdateHealthProfileUseCase {
   Future<AppResult<HealthProfile>> execute({
     required UserId userId,
 
-    /// The person to change: a member profile of [userId], or null for the
+    /// The person to change: a member profile of `userId`, or null for the
     /// account holder's own (self) profile. A missing or closed member fails
     /// with [NotFoundFailure].
     HealthProfileId? profileId,
@@ -88,7 +88,7 @@ class UpdateHealthProfileUseCase {
       );
 
       return AppResult.success(profile);
-    } catch (e) {
+    } on Object catch (e) {
       return AppResult.failure(StorageFailure(e.toString()));
     }
   }

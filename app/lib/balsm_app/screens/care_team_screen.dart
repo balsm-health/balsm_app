@@ -1,28 +1,27 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
-
 import 'package:core/core.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:profile/profile.dart';
+import 'package:riverpod/src/providers/stream_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
+import '../flags.dart';
 import '../i18n/strings.i69n.dart';
 import '../kit.dart';
-import '../widgets/attachment_thumb.dart';
-import '../widgets/phone_field.dart';
-import '../widgets/vault_file_viewer.dart';
-import '../widgets/photo_attach.dart';
 import '../routes.dart';
-import '../tokens.dart';
+import '../storage_target.dart';
+import '../widgets/attachment_thumb.dart';
+import '../widgets/data_loc_pill.dart';
+import '../widgets/phone_field.dart';
+import '../widgets/photo_attach.dart';
+import '../widgets/vault_file_viewer.dart';
 import 'care_import_sheet.dart';
 import 'profile_subscreens.dart';
-import '../flags.dart';
-import '../storage_target.dart';
-import '../widgets/data_loc_pill.dart';
 
 /// Care team (`home.jsx` `CareTeamScreen` + its "Add a provider" sheet).
 ///
@@ -34,7 +33,8 @@ import '../widgets/data_loc_pill.dart';
 void openCareTeam(BuildContext context) => pushSubScreen(context, (s) => const CareTeamScreen());
 
 /// One provider's attachments — vault files and links together, oldest first.
-final careProviderFilesProvider = StreamProvider.autoDispose.family<List<CareProviderFile>, CareProviderId>((ref, id) {
+final StreamProviderFamily<List<CareProviderFile>, CareProviderId> careProviderFilesProvider =
+    StreamProvider.autoDispose.family<List<CareProviderFile>, CareProviderId>((ref, id) {
   return ref.watch(careProvidersDataSourceProvider).watchFiles(id);
 });
 
@@ -43,7 +43,7 @@ final careProviderFilesProvider = StreamProvider.autoDispose.family<List<CarePro
 /// Scoped to the active health profile, so it empties on sign-out and
 /// re-resolves for a dependant profile when P00X re-points
 /// [currentProfileIdProvider].
-final careTeamProvider = StreamProvider.autoDispose<List<CareProvider>>((ref) {
+final StreamProvider<List<CareProvider>> careTeamProvider = StreamProvider.autoDispose<List<CareProvider>>((ref) {
   final profileId = ref.watch(currentProfileIdProvider);
   if (profileId == null) return Stream.value(const <CareProvider>[]);
   return ref.watch(careProvidersDataSourceProvider).watchAll(scope: profileId);
@@ -200,7 +200,7 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final c = s.strings.care;
-    final team = ref.watch(careTeamProvider).valueOrNull ?? const <CareProvider>[];
+    final team = ref.watch(careTeamProvider).value ?? const <CareProvider>[];
     final q = _query.text.trim().toLowerCase();
     final shown = team.where((p) => (_typeFilter == null || p.type == _typeFilter) && _matches(p, q, c)).toList();
 
@@ -229,29 +229,33 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
             },
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),
-          child: Text(c.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
+          padding: const EdgeInsetsDirectional.fromSTEB(0, 4, 0, 14),
+          child: Text(c.care_intro, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary, height: 1.5)),
         ),
         if (_imported > 0) _ImportedBanner(s: s, count: _imported),
         if (team.isNotEmpty) ...[
           _CareSearchField(controller: _query, hint: c.care_search_ph, onChanged: () => setState(() {})),
           if (present.length > 1) ...[
             const SizedBox(height: 12),
-            Wrap(spacing: 7, runSpacing: 7, children: [
-              _TypeChip(
-                icon: LucideIcons.users,
-                label: c.care_all,
-                active: _typeFilter == null,
-                onTap: () => setState(() => _typeFilter = null),
-              ),
-              for (final t in present)
+            Wrap(
+              spacing: 7,
+              runSpacing: 7,
+              children: [
                 _TypeChip(
-                  icon: careTypeIcon(t),
-                  label: careTypeLabel(c, t),
-                  active: _typeFilter == t,
-                  onTap: () => setState(() => _typeFilter = t),
+                  icon: LucideIcons.users,
+                  label: c.care_all,
+                  active: _typeFilter == null,
+                  onTap: () => setState(() => _typeFilter = null),
                 ),
-            ]),
+                for (final t in present)
+                  _TypeChip(
+                    icon: careTypeIcon(t),
+                    label: careTypeLabel(c, t),
+                    active: _typeFilter == t,
+                    onTap: () => setState(() => _typeFilter = t),
+                  ),
+              ],
+            ),
           ],
           const SizedBox(height: 16),
         ],
@@ -269,30 +273,42 @@ class _CareTeamScreenState extends ConsumerState<CareTeamScreen> {
         if (team.isEmpty)
           PCard(
             padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-            child: Column(children: [
-              const Icon(LucideIcons.stethoscope, size: 36, color: T.ink300),
-              const SizedBox(height: 12),
-              Text(c.care_empty,
+            child: Column(
+              children: [
+                const Icon(LucideIcons.stethoscope, size: 36, color: AppColors.ink300),
+                const SizedBox(height: 12),
+                Text(
+                  c.care_empty,
                   textAlign: TextAlign.center,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-              const SizedBox(height: 4),
-              Text(c.care_add_help(s.gender),
-                  textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3, height: 1.5)),
-            ]),
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  c.care_add_help(s.gender),
+                  textAlign: TextAlign.center,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary, height: 1.5),
+                ),
+              ],
+            ),
           )
         else if (shown.isEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 22, 12, 4),
-            child: Column(children: [
-              const Icon(LucideIcons.searchX, size: 26, color: T.ink300),
-              const SizedBox(height: 10),
-              Text(c.care_no_match, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-              const SizedBox(height: 6),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 240),
-                child: Text(c.care_no_match_h(s.gender), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
-              ),
-            ]),
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 22, 12, 4),
+            child: Column(
+              children: [
+                const Icon(LucideIcons.searchX, size: 26, color: AppColors.ink300),
+                const SizedBox(height: 10),
+                Text(
+                  c.care_no_match,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 6),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 240),
+                  child: Text(c.care_no_match_h(s.gender), textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+                ),
+              ],
+            ),
           ),
         const SizedBox(height: 12),
         PButton(
@@ -330,19 +346,23 @@ class _ImportedBanner extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          decoration: BoxDecoration(color: T.successBg, borderRadius: BorderRadius.circular(T.rLg)),
+          decoration:
+              BoxDecoration(color: AppColors.successBackground, borderRadius: BorderRadius.circular(AppRadii.lg)),
           child: Semantics(
             liveRegion: true,
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Icon(LucideIcons.circleCheck, size: 17, color: T.success),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  s.strings.care.care_import_banner('$count', s.gender),
-                  style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg1, height: 1.4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(LucideIcons.circleCheck, size: 17, color: AppColors.success),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    s.strings.care.care_import_banner('$count', s.gender),
+                    style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textPrimary, height: 1.4),
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         ),
       );
@@ -368,7 +388,7 @@ class _CareFab extends StatelessWidget {
           height: 56,
           alignment: Alignment.center,
           decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle, boxShadow: s.accent.boxShadow),
-          child: const Icon(LucideIcons.userPlus, size: 22, color: Colors.white),
+          child: const Icon(LucideIcons.userPlus, size: 22, color: AppColors.white),
         ),
       ),
     );
@@ -403,11 +423,11 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final files = ref.watch(careProviderFilesProvider(provider.id)).valueOrNull ?? const <CareProviderFile>[];
+    final files = ref.watch(careProviderFilesProvider(provider.id)).value ?? const <CareProviderFile>[];
     // Only vault files have a thumbnail; a link is not something to preview.
     final thumbs = [
       for (final f in files)
-        if (!f.isLink) f.locator
+        if (!f.isLink) f.locator,
     ];
     final c = s.strings.care;
     final phone = provider.phone;
@@ -415,135 +435,172 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
 
     Widget line(IconData icon, String text, {bool ltr = false, bool italic = false}) => Padding(
           padding: const EdgeInsets.only(top: 3),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: Icon(icon, size: 12, color: T.fg3),
-            ),
-            const SizedBox(width: 4),
-            // Flexible, not Expanded: an LTR run (a phone number, an email) in
-            // an RTL card would otherwise be stranded at the far end of a
-            // full-width box instead of sitting against its icon.
-            Flexible(
-              child: Text(text,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Icon(icon, size: 12, color: AppColors.textTertiary),
+              ),
+              const SizedBox(width: 4),
+              // Flexible, not Expanded: an LTR run (a phone number, an email) in
+              // an RTL card would otherwise be stranded at the far end of a
+              // full-width box instead of sitting against its icon.
+              Flexible(
+                child: Text(
+                  text,
                   textDirection: ltr ? TextDirection.ltr : null,
                   style: Typo.bodySm(ar: s.rtl).copyWith(
-                    fontSize: FS.xs,
-                    color: T.fg3,
+                    fontSize: FontSizes.meta,
+                    color: AppColors.textTertiary,
                     height: 1.45,
                     fontStyle: italic ? FontStyle.italic : null,
-                  )),
-            ),
-          ]),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
 
     return PCard(
       padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle),
-            child: Icon(careTypeIcon(provider.type), size: 22, color: T.fg3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(color: AppColors.ink100, shape: BoxShape.circle),
+                child: Icon(careTypeIcon(provider.type), size: 22, color: AppColors.textTertiary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 7,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          provider.name,
+                          style:
+                              Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration:
+                              BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.pill)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(careTypeIcon(provider.type), size: 11, color: AppColors.textTertiary),
+                              const SizedBox(width: 4),
+                              Text(
+                                careTypeLabel(c, provider.type),
+                                style: Typo.meta(ar: s.rtl)
+                                    .copyWith(fontSize: FontSizes.eyebrow, fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (provider.specialty case final String v when v.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(v, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                      ),
+                    if (provider.placeLine case final String v?) line(LucideIcons.mapPin, v),
+                    if (widget.onDirections != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Pressable(
+                          onTap: widget.onDirections,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.navigation, size: 12, color: s.accent.d),
+                              const SizedBox(width: 4),
+                              Text(
+                                c.care_directions,
+                                style: Typo.bodySm(ar: s.rtl)
+                                    .copyWith(fontSize: FontSizes.meta, fontWeight: FontWeight.w700, color: s.accent.d),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (phones.isNotEmpty) line(LucideIcons.phone, phones, ltr: true),
+                    if (provider.email case final String v when v.isNotEmpty) line(LucideIcons.mail, v, ltr: true),
+                    if (provider.notes case final String v when v.isNotEmpty)
+                      line(LucideIcons.stickyNote, v, italic: true),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              // The design swapped remove for edit here: a provider's number or
+              // clinic changes far more often than the provider does, and removing
+              // and re-adding them lost their attached files. Removal now lives
+              // inside the edit sheet, behind a confirm.
+              // One node, naming who is being edited — what a screen reader user
+              // needs when several cards are open. An outer generic "Edit" wrapper
+              // used to sit here; it merged into this node, so it only duplicated
+              // the word.
+              RoundBtn(
+                icon: LucideIcons.pencil,
+                semanticLabel: '${c.care_edit} ${provider.name}',
+                ghost: true,
+                iconSize: 16,
+                onTap: widget.onEdit,
+              ),
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Wrap(spacing: 7, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                Text(provider.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(careTypeIcon(provider.type), size: 11, color: T.fg3),
-                    const SizedBox(width: 4),
-                    Text(careTypeLabel(c, provider.type),
-                        style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2, fontWeight: FontWeight.w700)),
-                  ]),
-                ),
-              ]),
-              if (provider.specialty case final String v when v.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(v, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                ),
-              if (provider.placeLine case final String v?) line(LucideIcons.mapPin, v),
-              if (widget.onDirections != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Pressable(
-                    onTap: widget.onDirections,
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(LucideIcons.navigation, size: 12, color: s.accent.d),
-                      const SizedBox(width: 4),
-                      Text(c.care_directions,
-                          style: Typo.bodySm(ar: s.rtl)
-                              .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, color: s.accent.d)),
-                    ]),
+          // The card previews what is attached: a 64pt strip that opens the
+          // viewer at whichever file was tapped. Managing them is the edit
+          // sheet's job, so there is no drawer for this to give way to.
+          if (thumbs.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 64,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: thumbs.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) => SizedBox(
+                  width: 64,
+                  child: VaultAttachmentThumb(
+                    path: thumbs[i],
+                    compact: true,
+                    height: 64,
+                    onOpen: () => VaultFileViewer.openAll(context, paths: thumbs, index: i, title: provider.name),
                   ),
-                ),
-              if (phones.isNotEmpty) line(LucideIcons.phone, phones, ltr: true),
-              if (provider.email case final String v when v.isNotEmpty) line(LucideIcons.mail, v, ltr: true),
-              if (provider.notes case final String v when v.isNotEmpty) line(LucideIcons.stickyNote, v, italic: true),
-            ]),
-          ),
-          const SizedBox(width: 6),
-          // The design swapped remove for edit here: a provider's number or
-          // clinic changes far more often than the provider does, and removing
-          // and re-adding them lost their attached files. Removal now lives
-          // inside the edit sheet, behind a confirm.
-          // One node, naming who is being edited — what a screen reader user
-          // needs when several cards are open. An outer generic "Edit" wrapper
-          // used to sit here; it merged into this node, so it only duplicated
-          // the word.
-          RoundBtn(
-              icon: LucideIcons.pencil,
-              semanticLabel: '${c.care_edit} ${provider.name}',
-              ghost: true,
-              iconSize: 16,
-              onTap: widget.onEdit),
-        ]),
-        // The card previews what is attached: a 64pt strip that opens the
-        // viewer at whichever file was tapped. Managing them is the edit
-        // sheet's job, so there is no drawer for this to give way to.
-        if (thumbs.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 64,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.zero,
-              itemCount: thumbs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, i) => SizedBox(
-                width: 64,
-                child: VaultAttachmentThumb(
-                  path: thumbs[i],
-                  compact: true,
-                  height: 64,
-                  onOpen: () => VaultFileViewer.openAll(context, paths: thumbs, index: i, title: provider.name),
                 ),
               ),
             ),
-          ),
+          ],
+          // The design shows Call alone: attaching moved into the edit sheet, so
+          // the card no longer carries a files button or its drawer.
+          if (phone != null && phone.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            PButton(
+              c.care_call,
+              icon: LucideIcons.phone,
+              variant: BtnVariant.secondary,
+              size: BtnSize.sm,
+              accent: s.accent,
+              ar: s.rtl,
+              block: true,
+              onTap: () => widget.onCall(phone),
+            ),
+          ],
         ],
-        // The design shows Call alone: attaching moved into the edit sheet, so
-        // the card no longer carries a files button or its drawer.
-        if (phone != null && phone.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          PButton(
-            c.care_call,
-            icon: LucideIcons.phone,
-            variant: BtnVariant.secondary,
-            size: BtnSize.sm,
-            accent: s.accent,
-            ar: s.rtl,
-            block: true,
-            onTap: () => widget.onCall(phone),
-          ),
-        ],
-      ]),
+      ),
     );
   }
 }
@@ -558,21 +615,21 @@ class _CareSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     OutlineInputBorder border(Color color) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(T.rMd),
+          borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: BorderSide(color: color, width: 1.5),
         );
     return TextField(
       controller: controller,
       onChanged: (_) => onChanged(),
-      style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.md),
+      style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.body),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.bodySm),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(vertical: 13),
-        prefixIcon: const Icon(LucideIcons.search, size: 17, color: T.fg4),
+        prefixIcon: const Icon(LucideIcons.search, size: 17, color: AppColors.textHint),
         prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: 40),
         suffixIcon: controller.text.isEmpty
             ? null
@@ -587,14 +644,14 @@ class _CareSearchField extends StatelessWidget {
                     width: 24,
                     height: 24,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: T.ink100, shape: BoxShape.circle),
-                    child: const Icon(LucideIcons.x, size: 13, color: T.fg3),
+                    decoration: const BoxDecoration(color: AppColors.ink100, shape: BoxShape.circle),
+                    child: const Icon(LucideIcons.x, size: 13, color: AppColors.textTertiary),
                   ),
                 ),
               ),
         suffixIconConstraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-        border: border(T.border),
-        enabledBorder: border(T.border),
+        border: border(AppColors.border),
+        enabledBorder: border(AppColors.border),
         focusedBorder: border(s.accent.main),
       ),
     );
@@ -604,8 +661,13 @@ class _CareSearchField extends StatelessWidget {
 /// Outline filter chip — the care-team variant (accent-50 fill when on), not
 /// the solid-accent [BChip] used by records and the map.
 class _TypeChip extends StatelessWidget {
-  const _TypeChip(
-      {required this.icon, required this.label, required this.active, required this.onTap, this.tall = false});
+  const _TypeChip({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.tall = false,
+  });
   final IconData icon;
   final String label;
   final bool active;
@@ -625,20 +687,25 @@ class _TypeChip extends StatelessWidget {
         height: tall ? 38 : 32,
         padding: EdgeInsets.symmetric(horizontal: tall ? 13 : 11),
         decoration: BoxDecoration(
-          color: active ? s.accent.bg : Colors.white,
-          borderRadius: BorderRadius.circular(T.rPill),
-          border: Border.all(color: active ? s.accent.main : T.border, width: tall ? 1.5 : 1),
+          color: active ? s.accent.bg : AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(color: active ? s.accent.main : AppColors.border, width: tall ? 1.5 : 1),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: tall ? 15 : 13, color: active ? s.accent.d : T.fg3),
-          const SizedBox(width: 5),
-          Text(label,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: tall ? 15 : 13, color: active ? s.accent.d : AppColors.textTertiary),
+            const SizedBox(width: 5),
+            Text(
+              label,
               style: Typo.body(ar: s.rtl).copyWith(
-                fontSize: tall ? FS.sm : FS.xs,
+                fontSize: tall ? FontSizes.bodySm : FontSizes.meta,
                 fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-                color: active ? s.accent.d : (tall ? T.fg2 : T.fg3),
-              )),
-        ]),
+                color: active ? s.accent.d : (tall ? AppColors.textSecondary : AppColors.textTertiary),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -734,7 +801,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
   List<CareProviderFile> _files() {
     final p = _editing;
     if (p == null) return _staged;
-    return ref.watch(careProviderFilesProvider(p.id)).valueOrNull ?? const <CareProviderFile>[];
+    return ref.watch(careProviderFilesProvider(p.id)).value ?? const <CareProviderFile>[];
   }
 
   Future<void> _attachFile() async {
@@ -755,13 +822,14 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
       await _attachLink(url);
       return;
     }
-    if (picked.bytes == null) return;
+    final bytes = picked.bytes;
+    if (bytes == null) return;
 
     setState(() => _attaching = true);
     try {
-      final path = await ref.read(userFileStoreProvider).save(picked.name ?? 'attachment', picked.bytes!);
+      final path = await ref.read(userFileStoreProvider).save(picked.name ?? 'attachment', bytes);
       await _record(CareProviderFile.file(path));
-    } catch (_) {
+    } on Object catch (_) {
       if (mounted) _fail();
     } finally {
       if (mounted) setState(() => _attaching = false);
@@ -772,7 +840,7 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
     setState(() => _attaching = true);
     try {
       await _record(CareProviderFile.link(url));
-    } catch (_) {
+    } on Object catch (_) {
       if (mounted) _fail();
     } finally {
       if (mounted) setState(() => _attaching = false);
@@ -852,8 +920,8 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
               type: _type,
               name: _name.text,
               specialty: _specialty.text,
-              phone: normalizeArabicNumerals(_phone.text),
-              phone2: normalizeArabicNumerals(_phone2.text),
+              phone: toWesternDigits(_phone.text),
+              phone2: toWesternDigits(_phone2.text),
               email: _email.text,
               clinic: _clinic.text,
               address: _address.text,
@@ -866,8 +934,8 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
               type: _type,
               name: _name.text,
               specialty: _specialty.text,
-              phone: normalizeArabicNumerals(_phone.text),
-              phone2: normalizeArabicNumerals(_phone2.text),
+              phone: toWesternDigits(_phone.text),
+              phone2: toWesternDigits(_phone2.text),
               email: _email.text,
               clinic: _clinic.text,
               address: _address.text,
@@ -910,231 +978,260 @@ class _AddCareProviderSheetState extends ConsumerState<AddCareProviderSheet> {
     final files = _files();
     final vaultFiles = [
       for (final a in files)
-        if (!a.isLink) a.locator
+        if (!a.isLink) a.locator,
     ];
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 16, 10),
-          child: Row(children: [
-            Expanded(
-                child: Text(_editing == null ? c.care_add_title : c.care_edit_title,
-                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700))),
-            RoundBtn(
-                icon: LucideIcons.x,
-                semanticLabel: s.strings.common.a11y_close,
-                ghost: true,
-                iconSize: 18,
-                onTap: () => Navigator.pop(context)),
-          ]),
-        ),
-        const Divider(height: 1, color: T.ink100),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, sheetBottomInset(context, base: 32)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text(c.care_add_note, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
-              const SizedBox(height: 16),
-              _Eyebrow(c.care_f_type, s: s),
-              const SizedBox(height: 10),
-              Wrap(spacing: 8, runSpacing: 8, children: [
-                for (final t in CareProviderType.values)
-                  _TypeChip(
-                    icon: careTypeIcon(t),
-                    label: careTypeLabel(c, t),
-                    active: _type == t,
-                    tall: true,
-                    onTap: () => setState(() => _type = t),
-                  ),
-              ]),
-              const SizedBox(height: 18),
-              _Field(
-                label: c.care_f_name,
-                controller: _name,
-                hint: place ? c.care_ph_name_place : c.care_ph_name_person,
-                autofocus: true,
-                onChanged: () => setState(() {}),
-              ),
-              const SizedBox(height: 14),
-              _Field(
-                label: place ? c.care_f_services : c.care_f_specialty,
-                controller: _specialty,
-                hint: place ? c.care_ph_services : c.care_ph_specialty,
-              ),
-              const SizedBox(height: 16),
-              _Eyebrow(c.care_s_contact, s: s),
-              const SizedBox(height: 14),
-              _LabelledPhone(label: c.care_f_phone, controller: _phone, s: s),
-              const SizedBox(height: 14),
-              _LabelledPhone(label: c.care_f_phone2, controller: _phone2, s: s, hint: c.care_ph_phone2),
-              const SizedBox(height: 14),
-              _Field(
-                label: c.care_f_email,
-                controller: _email,
-                hint: 'doctor@clinic.eg',
-                ltr: true,
-                keyboard: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              _Eyebrow(place ? c.care_s_location : c.care_s_clinic, s: s),
-              const SizedBox(height: 14),
-              _Field(
-                label: place ? c.care_f_branch : c.care_f_clinic,
-                controller: _clinic,
-                hint: c.care_ph_clinic,
-              ),
-              const SizedBox(height: 14),
-              _Field(label: c.care_f_address, controller: _address, hint: c.care_ph_address, lines: 2),
-              const SizedBox(height: 14),
-              // A map link the patient pastes from their maps app. Paste, not
-              // a picker: the design's own hint is "Share -> Copy link".
-              _MapLinkField(
-                controller: _mapUrl,
-                onPaste: _pasteMapUrl,
-                onChanged: () => setState(() {}),
-                looksWrong: _mapUrlLooksWrong,
-              ),
-              const SizedBox(height: 14),
-              _Field(label: c.care_f_notes, controller: _notes, hint: c.care_ph_notes, lines: 2),
-              const SizedBox(height: 18),
-              // Business card & files. The design attaches here, not only from
-              // the roster card — a business card is something you have in hand
-              // while you are typing the provider in.
-              Row(children: [
-                Expanded(child: _Eyebrow(c.care_files_head, s: s)),
-                if (_attaching)
-                  const SizedBox(width: 20, height: 20, child: Spinner(size: 20))
-                else
-                  PButton(
-                    c.care_attach,
-                    icon: LucideIcons.plus,
-                    variant: BtnVariant.ghost,
-                    size: BtnSize.sm,
-                    accent: s.accent,
-                    ar: s.rtl,
-                    onTap: _attachFile,
-                  ),
-              ]),
-              const SizedBox(height: 10),
-              if (files.isEmpty)
-                _AttachEmpty(s: s, onTap: _attaching ? null : _attachFile)
-              else ...[
-                if (vaultFiles.isNotEmpty)
-                  VaultAttachmentGallery(
-                    paths: vaultFiles,
-                    height: 150,
-                    title: _name.text.trim().isEmpty ? c.care_files_head : _name.text.trim(),
-                    onAdd: _attachFile,
-                    onRemove: (i) => _detachFile(CareProviderFile.file(vaultFiles[i])),
-                    addLabel: c.care_attach_add,
-                  ),
-                // Links sit under the gallery as their own rows: there is no
-                // thumbnail to render, and nothing is fetched to make one.
-                for (final link in files.where((a) => a.isLink)) ...[
-                  const SizedBox(height: 8),
-                  _LinkRow(
-                    s: s,
-                    url: link.locator,
-                    onOpen: () => _openLink(link.locator),
-                    onRemove: _saving ? null : () => _detachFile(link),
-                  ),
-                ],
-              ],
-              const SizedBox(height: 16),
-              Row(children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 10),
+            child: Row(
+              children: [
                 Expanded(
-                  child: PButton(
-                    s.strings.common.cancel,
-                    variant: BtnVariant.secondary,
-                    large: true,
-                    accent: s.accent,
-                    ar: s.rtl,
-                    onTap: () => Navigator.pop(context),
+                  child: Text(
+                    _editing == null ? c.care_add_title : c.care_edit_title,
+                    style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: PButton(
-                    _editing == null ? c.care_save : c.care_save_changes,
-                    variant: BtnVariant.primary,
-                    large: true,
-                    accent: s.accent,
-                    ar: s.rtl,
-                    onTap: ready ? _save : null,
-                  ),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 18,
+                  onTap: () => Navigator.pop(context),
                 ),
-              ]),
-              // Removal only exists in edit mode, and only behind a confirm —
-              // the row's attached files go with it.
-              if (_editing != null) ...[
-                if (!_confirmDelete)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: PButton(
-                      c.care_delete,
-                      icon: LucideIcons.trash2,
-                      variant: BtnVariant.ghost,
-                      block: true,
-                      color: T.danger,
-                      accent: s.accent,
-                      ar: s.rtl,
-                      onTap: _saving ? null : () => setState(() => _confirmDelete = true),
-                    ),
-                  )
-                else
-                  Container(
-                    margin: const EdgeInsets.only(top: 14),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: T.dangerBg,
-                      borderRadius: BorderRadius.circular(T.rLg),
-                      border: Border.all(color: T.danger),
-                    ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      Text(c.care_delete_q(_name.text.trim()),
-                          style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                      const SizedBox(height: 4),
-                      Text(c.care_delete_h,
-                          style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, color: T.fg2, height: 1.5)),
-                      const SizedBox(height: 12),
-                      Row(children: [
-                        Expanded(
-                          child: PButton(
-                            c.care_keep,
-                            variant: BtnVariant.secondary,
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: _saving ? null : () => setState(() => _confirmDelete = false),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: PButton(
-                            c.care_remove,
-                            variant: BtnVariant.primary,
-                            color: T.danger,
-                            accent: s.accent,
-                            ar: s.rtl,
-                            onTap: _saving ? null : _delete,
-                          ),
-                        ),
-                      ]),
-                    ]),
-                  ),
               ],
-            ]),
+            ),
           ),
-        ),
-      ]),
+          const Divider(height: 1, color: AppColors.ink100),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, sheetBottomInset(context, base: 32)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(c.care_add_note, style: Typo.meta(ar: s.rtl).copyWith(height: 1.5)),
+                  const SizedBox(height: 16),
+                  _Eyebrow(c.care_f_type, s: s),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final t in CareProviderType.values)
+                        _TypeChip(
+                          icon: careTypeIcon(t),
+                          label: careTypeLabel(c, t),
+                          active: _type == t,
+                          tall: true,
+                          onTap: () => setState(() => _type = t),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _Field(
+                    label: c.care_f_name,
+                    controller: _name,
+                    hint: place ? c.care_ph_name_place : c.care_ph_name_person,
+                    autofocus: true,
+                    onChanged: () => setState(() {}),
+                  ),
+                  const SizedBox(height: 14),
+                  _Field(
+                    label: place ? c.care_f_services : c.care_f_specialty,
+                    controller: _specialty,
+                    hint: place ? c.care_ph_services : c.care_ph_specialty,
+                  ),
+                  const SizedBox(height: 16),
+                  _Eyebrow(c.care_s_contact, s: s),
+                  const SizedBox(height: 14),
+                  _LabelledPhone(label: c.care_f_phone, controller: _phone, s: s),
+                  const SizedBox(height: 14),
+                  _LabelledPhone(label: c.care_f_phone2, controller: _phone2, s: s, hint: c.care_ph_phone2),
+                  const SizedBox(height: 14),
+                  _Field(
+                    label: c.care_f_email,
+                    controller: _email,
+                    hint: 'doctor@clinic.eg',
+                    ltr: true,
+                    keyboard: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+                  _Eyebrow(place ? c.care_s_location : c.care_s_clinic, s: s),
+                  const SizedBox(height: 14),
+                  _Field(
+                    label: place ? c.care_f_branch : c.care_f_clinic,
+                    controller: _clinic,
+                    hint: c.care_ph_clinic,
+                  ),
+                  const SizedBox(height: 14),
+                  _Field(label: c.care_f_address, controller: _address, hint: c.care_ph_address, lines: 2),
+                  const SizedBox(height: 14),
+                  // A map link the patient pastes from their maps app. Paste, not
+                  // a picker: the design's own hint is "Share -> Copy link".
+                  _MapLinkField(
+                    controller: _mapUrl,
+                    onPaste: _pasteMapUrl,
+                    onChanged: () => setState(() {}),
+                    looksWrong: _mapUrlLooksWrong,
+                  ),
+                  const SizedBox(height: 14),
+                  _Field(label: c.care_f_notes, controller: _notes, hint: c.care_ph_notes, lines: 2),
+                  const SizedBox(height: 18),
+                  // Business card & files. The design attaches here, not only from
+                  // the roster card — a business card is something you have in hand
+                  // while you are typing the provider in.
+                  Row(
+                    children: [
+                      Expanded(child: _Eyebrow(c.care_files_head, s: s)),
+                      if (_attaching)
+                        const SizedBox(width: 20, height: 20, child: Spinner(size: 20))
+                      else
+                        PButton(
+                          c.care_attach,
+                          icon: LucideIcons.plus,
+                          variant: BtnVariant.ghost,
+                          size: BtnSize.sm,
+                          accent: s.accent,
+                          ar: s.rtl,
+                          onTap: _attachFile,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (files.isEmpty)
+                    _AttachEmpty(s: s, onTap: _attaching ? null : _attachFile)
+                  else ...[
+                    if (vaultFiles.isNotEmpty)
+                      VaultAttachmentGallery(
+                        paths: vaultFiles,
+                        height: 150,
+                        title: _name.text.trim().isEmpty ? c.care_files_head : _name.text.trim(),
+                        onAdd: _attachFile,
+                        onRemove: (i) => _detachFile(CareProviderFile.file(vaultFiles[i])),
+                        addLabel: c.care_attach_add,
+                      ),
+                    // Links sit under the gallery as their own rows: there is no
+                    // thumbnail to render, and nothing is fetched to make one.
+                    for (final link in files.where((a) => a.isLink)) ...[
+                      const SizedBox(height: 8),
+                      _LinkRow(
+                        s: s,
+                        url: link.locator,
+                        onOpen: () => _openLink(link.locator),
+                        onRemove: _saving ? null : () => _detachFile(link),
+                      ),
+                    ],
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: PButton(
+                          s.strings.common.cancel,
+                          variant: BtnVariant.secondary,
+                          large: true,
+                          accent: s.accent,
+                          ar: s.rtl,
+                          onTap: () => Navigator.pop(context),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: PButton(
+                          _editing == null ? c.care_save : c.care_save_changes,
+                          large: true,
+                          accent: s.accent,
+                          ar: s.rtl,
+                          onTap: ready ? _save : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Removal only exists in edit mode, and only behind a confirm —
+                  // the row's attached files go with it.
+                  if (_editing != null) ...[
+                    if (!_confirmDelete)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: PButton(
+                          c.care_delete,
+                          icon: LucideIcons.trash2,
+                          variant: BtnVariant.ghost,
+                          block: true,
+                          color: AppColors.danger,
+                          accent: s.accent,
+                          ar: s.rtl,
+                          onTap: _saving ? null : () => setState(() => _confirmDelete = true),
+                        ),
+                      )
+                    else
+                      Container(
+                        margin: const EdgeInsets.only(top: 14),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.dangerBackground,
+                          borderRadius: BorderRadius.circular(AppRadii.lg),
+                          border: Border.all(color: AppColors.danger),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              c.care_delete_q(_name.text.trim()),
+                              style: Typo.bodySm(ar: s.rtl)
+                                  .copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              c.care_delete_h,
+                              style: Typo.meta(ar: s.rtl)
+                                  .copyWith(fontSize: FontSizes.meta, color: AppColors.textSecondary, height: 1.5),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: PButton(
+                                    c.care_keep,
+                                    variant: BtnVariant.secondary,
+                                    accent: s.accent,
+                                    ar: s.rtl,
+                                    onTap: _saving ? null : () => setState(() => _confirmDelete = false),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: PButton(
+                                    c.care_remove,
+                                    color: AppColors.danger,
+                                    accent: s.accent,
+                                    ar: s.rtl,
+                                    onTap: _saving ? null : _delete,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1154,49 +1251,55 @@ class _LinkRow extends StatelessWidget {
     final host = Uri.tryParse(url)?.host ?? url;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(T.rMd),
-        border: Border.all(color: T.border),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Row(children: [
-        Expanded(
-          child: Semantics(
-            button: true,
-            label: '${s.strings.care.care_link_opens(s.gender)} $host',
-            excludeSemantics: true,
-            child: GestureDetector(
-              onTap: onOpen,
-              behavior: HitTestBehavior.opaque,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: kMinTapTarget),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
-                  child: Row(children: [
-                    const Icon(LucideIcons.link, size: 16, color: T.fg3),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        host,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textDirection: TextDirection.ltr,
-                        style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1),
-                      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: '${s.strings.care.care_link_opens(s.gender)} $host',
+              excludeSemantics: true,
+              child: GestureDetector(
+                onTap: onOpen,
+                behavior: HitTestBehavior.opaque,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: BalsmWindow.touchTarget),
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.link, size: 16, color: AppColors.textTertiary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            host,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textDirection: TextDirection.ltr,
+                            style: Typo.bodySm(ar: s.rtl)
+                                .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                          ),
+                        ),
+                        const Icon(LucideIcons.externalLink, size: 14, color: AppColors.textTertiary),
+                      ],
                     ),
-                    const Icon(LucideIcons.externalLink, size: 14, color: T.fg3),
-                  ]),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        RoundBtn(
+          RoundBtn(
             icon: LucideIcons.x,
             semanticLabel: '${s.strings.care.care_link_remove} $host',
             ghost: true,
             iconSize: 15,
-            onTap: onRemove),
-      ]),
+            onTap: onRemove,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1218,24 +1321,32 @@ class _AttachEmpty extends StatelessWidget {
       child: Pressable(
         onTap: onTap,
         child: DashedBorder(
-          radius: T.rLg,
+          radius: AppRadii.lg,
           strokeWidth: 1.5,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            child: Row(children: [
-              const Icon(LucideIcons.paperclip, size: 16, color: T.fg3),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(c.care_attach_empty,
-                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(c.care_attach_empty_h, style: Typo.meta(ar: s.rtl)),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.paperclip, size: 16, color: AppColors.textTertiary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        c.care_attach_empty,
+                        style: Typo.bodySm(ar: s.rtl)
+                            .copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(c.care_attach_empty_h, style: Typo.meta(ar: s.rtl)),
+                      ),
+                    ],
                   ),
-                ]),
-              ),
-            ]),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1253,11 +1364,17 @@ class _LabelledPhone extends StatelessWidget {
   final String? hint;
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-        const SizedBox(height: 6),
-        PhoneField(controller: controller, hint: hint ?? kPhoneHintExample),
-      ]);
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          PhoneField(controller: controller, hint: hint ?? kPhoneHintExample),
+        ],
+      );
 }
 
 /// Uppercase tracked section label (`letter-spacing: 0.16em`).
@@ -1267,7 +1384,8 @@ class _Eyebrow extends StatelessWidget {
   final PatientAppState s;
 
   @override
-  Widget build(BuildContext context) => Text(label.toUpperCase(), style: Typo.eyebrow(T.fg3, ar: s.rtl));
+  Widget build(BuildContext context) =>
+      Text(label.toUpperCase(), style: Typo.eyebrow(AppColors.textTertiary, ar: s.rtl));
 }
 
 /// Labelled `.b-input`, single- or multi-line.
@@ -1295,34 +1413,40 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     OutlineInputBorder border(Color color) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(T.rMd),
+          borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: BorderSide(color: color, width: 1.5),
         );
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-      const SizedBox(height: 6),
-      TextField(
-        controller: controller,
-        autofocus: autofocus,
-        maxLines: lines,
-        minLines: lines,
-        onChanged: onChanged == null ? null : (_) => onChanged!(),
-        textDirection: ltr ? TextDirection.ltr : null,
-        keyboardType: keyboard ?? TextInputType.text,
-        style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
-          isDense: true,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          border: border(T.border),
-          enabledBorder: border(T.border),
-          focusedBorder: border(s.accent.main),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
         ),
-      ),
-    ]);
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          autofocus: autofocus,
+          maxLines: lines,
+          minLines: lines,
+          onChanged: switch (onChanged) { final onChanged? => (_) => onChanged(), _ => null },
+          textDirection: ltr ? TextDirection.ltr : null,
+          keyboardType: keyboard ?? TextInputType.text,
+          style: Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.body, color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.bodySm),
+            isDense: true,
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: border(AppColors.border),
+            enabledBorder: border(AppColors.border),
+            focusedBorder: border(s.accent.main),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -1344,62 +1468,73 @@ class _MapLinkField extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final c = s.strings.care;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(c.care_f_map, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-      const SizedBox(height: 6),
-      // Paste rides in the decoration, not in a Stack over it. A Stack sizes to
-      // its children, and a TextField given loose constraints shrink-wraps to
-      // its hint — which put the button in the middle of the field, on top of
-      // the text. As a suffix the field also reserves the room itself.
-      TextField(
-        controller: controller,
-        onChanged: (_) => onChanged(),
-        keyboardType: TextInputType.url,
-        textDirection: TextDirection.ltr,
-        style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
-        decoration: InputDecoration(
-          hintText: c.care_ph_map,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
-          isDense: true,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 15),
-          prefixIcon: const Icon(LucideIcons.mapPinned, size: 16, color: T.fg3),
-          prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: kMinTapTarget),
-          // IntrinsicWidth, not a bare Padding: [MinTapTarget] centres its
-          // child, and a Center under loose constraints expands to fill them —
-          // so the suffix took the whole field, the button floated to the
-          // middle of it and the content area collapsed to nothing. Sizing the
-          // suffix to the button's own width pins it back to the edge.
-          suffixIcon: IntrinsicWidth(
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(end: 6),
-              child: PButton(
-                c.care_paste,
-                icon: LucideIcons.clipboardPaste,
-                variant: BtnVariant.ghost,
-                size: BtnSize.sm,
-                accent: s.accent,
-                ar: s.rtl,
-                onTap: onPaste,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          c.care_f_map,
+          style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 6),
+        // Paste rides in the decoration, not in a Stack over it. A Stack sizes to
+        // its children, and a TextField given loose constraints shrink-wraps to
+        // its hint — which put the button in the middle of the field, on top of
+        // the text. As a suffix the field also reserves the room itself.
+        TextField(
+          controller: controller,
+          onChanged: (_) => onChanged(),
+          keyboardType: TextInputType.url,
+          textDirection: TextDirection.ltr,
+          style: Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.body, color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: c.care_ph_map,
+            hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.bodySm),
+            isDense: true,
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 15),
+            prefixIcon: const Icon(LucideIcons.mapPinned, size: 16, color: AppColors.textTertiary),
+            prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: BalsmWindow.touchTarget),
+            // IntrinsicWidth, not a bare Padding: [MinTapTarget] centres its
+            // child, and a Center under loose constraints expands to fill them —
+            // so the suffix took the whole field, the button floated to the
+            // middle of it and the content area collapsed to nothing. Sizing the
+            // suffix to the button's own width pins it back to the edge.
+            suffixIcon: IntrinsicWidth(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(end: 6),
+                child: PButton(
+                  c.care_paste,
+                  icon: LucideIcons.clipboardPaste,
+                  variant: BtnVariant.ghost,
+                  size: BtnSize.sm,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: onPaste,
+                ),
               ),
             ),
+            suffixIconConstraints:
+                const BoxConstraints(minWidth: BalsmWindow.touchTarget, minHeight: BalsmWindow.touchTarget),
+            // The same outline every other field in this form carries; without
+            // it Material falls back to an underline and the prefix icon sits
+            // outside the box.
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              borderSide: BorderSide(color: s.accent.main, width: 1.5),
+            ),
           ),
-          suffixIconConstraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
-          // The same outline every other field in this form carries; without
-          // it Material falls back to an underline and the prefix icon sits
-          // outside the box.
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
         ),
-      ),
-      const SizedBox(height: 6),
-      if (looksWrong)
-        Text(c.care_map_bad, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, color: T.danger))
-      else if (controller.text.trim().isEmpty)
-        Text(c.care_map_help, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs, height: 1.5)),
-    ]);
+        const SizedBox(height: 6),
+        if (looksWrong)
+          Text(c.care_map_bad, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.meta, color: AppColors.danger))
+        else if (controller.text.trim().isEmpty)
+          Text(c.care_map_help, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.meta, height: 1.5)),
+      ],
+    );
   }
 }

@@ -1,4 +1,6 @@
+import '../../../core.dart' show HealthProfileId;
 import '../../extensions/type_extensions.dart';
+import 'health_profile_id.dart' show HealthProfileId;
 import 'unique_id.dart';
 
 /// Typed id of a family group (`member_group`) a member profile is filed
@@ -12,5 +14,5 @@ class MemberGroupId extends UniqueId {
   const MemberGroupId.empty() : super.empty();
   MemberGroupId.uuid() : super.uuidv7('grp');
 
-  static MemberGroupId? fromString(String? value) => value?.mapNotNull((v) => MemberGroupId.value(v));
+  static MemberGroupId? fromString(String? value) => value.mapNotNull(MemberGroupId.value);
 }

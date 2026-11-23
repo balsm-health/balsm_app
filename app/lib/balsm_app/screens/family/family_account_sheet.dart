@@ -1,11 +1,11 @@
+import 'dart:async';
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import 'family_kit.dart';
 import 'family_screen.dart';
 
@@ -28,63 +28,89 @@ class _AccountSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
     final f = s.strings.family;
-    final summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final summary = ref.watch(accountSummaryProvider).value;
     final name = (summary?.displayName ?? '').trim();
-    return FamilySheet(title: s.strings.common.your_accounts, sub: f.acc_sub, children: [
-      PCard(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: summary == null
-            ? Row(children: [
-                const Icon(LucideIcons.userCircle2, size: 22, color: T.fg3),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(s.strings.common.acc_not_signed_in, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
+    return FamilySheet(
+      title: s.strings.common.your_accounts,
+      sub: f.acc_sub,
+      children: [
+        PCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: summary == null
+              ? Row(
+                  children: [
+                    const Icon(LucideIcons.userCircle2, size: 22, color: AppColors.textTertiary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        s.strings.common.acc_not_signed_in,
+                        style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    const SelfAvatar(size: 40),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (name.isNotEmpty)
+                            Text(
+                              name,
+                              style: Typo.body(ar: s.rtl)
+                                  .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                            ),
+                          Text(f.acc_signed_in, style: Typo.meta(ar: s.rtl)),
+                        ],
+                      ),
+                    ),
+                    Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
+                  ],
                 ),
-              ])
-            : Row(children: [
-                const SelfAvatar(size: 40),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    if (name.isNotEmpty)
-                      Text(name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                    Text(f.acc_signed_in, style: Typo.meta(ar: s.rtl)),
-                  ]),
-                ),
-                Icon(LucideIcons.checkCircle2, size: 22, color: s.accent.main),
-              ]),
-      ),
-      const SizedBox(height: 14),
-      Semantics(
-        button: true,
-        child: Pressable(
-          onTap: () {
-            Navigator.pop(context);
-            openFamily(context);
-          },
-          scale: 0.99,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: T.ink50,
-              borderRadius: BorderRadius.circular(T.rLg),
-              border: Border.all(color: T.border),
-            ),
-            child: Row(children: [
-              const IconSquare(LucideIcons.users, bg: T.hueEmerald50, fg: T.hueEmeraldInk, size: 38, iconSize: 19),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(f.acc_family_t(s.gender),
-                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-                  Text(f.acc_family_b(s.gender), style: Typo.meta(ar: s.rtl)),
-                ]),
+        ),
+        const SizedBox(height: 14),
+        Semantics(
+          button: true,
+          child: Pressable(
+            onTap: () {
+              Navigator.pop(context);
+              unawaited(openFamily(context));
+            },
+            scale: 0.99,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.ink50,
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                border: Border.all(color: AppColors.border),
               ),
-              Chevron(rtl: s.rtl),
-            ]),
+              child: Row(
+                children: [
+                  const IconSquare(LucideIcons.users, bg: AppColors.hueEmerald50, fg: AppColors.hueEmeraldInk),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          f.acc_family_t(s.gender),
+                          style: Typo.bodySm(ar: s.rtl)
+                              .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                        ),
+                        Text(f.acc_family_b(s.gender), style: Typo.meta(ar: s.rtl)),
+                      ],
+                    ),
+                  ),
+                  Chevron(rtl: s.rtl),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }

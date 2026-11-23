@@ -106,32 +106,41 @@ class PostHogAnalyticsLogger implements AnalyticsLogger, AnalyticsConsentSink {
   void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {
     if (!_enabled) return;
     if (level == LogLevel.debug || level == LogLevel.info) return;
-    _fire(_client.capture(kPostHogLogEvent, {
-      ...scrubPostHogProperties(props),
-      // `message` is a compile-time constant by the facade contract. NOT under
-      // a 'name' key — see kNonPhiAllowlist for why that one is banned.
-      'log_message': message,
-      'level': level.name,
-    }));
+    _fire(
+      _client.capture(kPostHogLogEvent, {
+        ...scrubPostHogProperties(props),
+        // `message` is a compile-time constant by the facade contract. NOT under
+        // a 'name' key — see kNonPhiAllowlist for why that one is banned.
+        'log_message': message,
+        'level': level.name,
+      }),
+    );
   }
 
   @override
-  void logError(Object error,
-      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) {
     if (!_enabled) return;
-    _fire(_client.capture(kPostHogErrorEvent, {
-      ...scrubPostHogProperties(context),
-      // The exception's type, never its `toString()`: a message can quote the
-      // row, field or query that produced it, and that is PHI. Sentry receives
-      // the full exception (scrubbed there); PostHog only needs to know that a
-      // cohort hit an error of this class.
-      'type': error.runtimeType.toString(),
-      'level': fatal ? 'fatal' : 'error',
-      // [message] is NOT sent. Unlike `log`, callers pass runtime text here —
-      // `FlutterError.onError` hands over `details.context`, which describes
-      // the failing widget and its key, and keys can be built from patient
-      // data. Sentry receives it; PostHog does not need it to count a cohort.
-    }));
+    _fire(
+      _client.capture(kPostHogErrorEvent, {
+        ...scrubPostHogProperties(context),
+        // The exception's type, never its `toString()`: a message can quote the
+        // row, field or query that produced it, and that is PHI. Sentry receives
+        // the full exception (scrubbed there); PostHog only needs to know that a
+        // cohort hit an error of this class.
+        'type': error.runtimeType.toString(),
+        'level': fatal ? 'fatal' : 'error',
+        // [message] is NOT sent. Unlike `log`, callers pass runtime text here —
+        // `FlutterError.onError` hands over `details.context`, which describes
+        // the failing widget and its key, and keys can be built from patient
+        // data. Sentry receives it; PostHog does not need it to count a cohort.
+      }),
+    );
   }
 
   @override

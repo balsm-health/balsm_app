@@ -44,7 +44,7 @@ import 'dart:io';
 
 import 'build_config.dart';
 
-final _actions = {'run', 'test', 'integration', 'gen', 'install', 'build', ..._artifacts.keys};
+final Set<String> _actions = {'run', 'test', 'integration', 'gen', 'install', 'build', ..._artifacts.keys};
 
 /// One buildable artifact: what flutter is asked for, where it lands, and what
 /// the collected copy is called.
@@ -517,7 +517,7 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
     final plist = File('$appDir/ios/Runner/Info.plist');
     // Comments are dropped first: only a value that ships counts.
     final shipped =
-        plist.existsSync() ? plist.readAsStringSync().replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '') : '';
+        plist.existsSync() ? plist.readAsStringSync().replaceAll(RegExp('<!--.*?-->', dotAll: true), '') : '';
     if (shipped.contains('REPLACE_ME')) {
       blockers.add('app/ios/Runner/Info.plist still contains a REPLACE_ME placeholder');
     }
@@ -530,7 +530,7 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
   Map<String, dynamic> defines;
   try {
     defines = jsonDecode(serversFile.readAsStringSync()) as Map<String, dynamic>;
-  } catch (_) {
+  } on Object catch (_) {
     blockers.add('${serversFile.uri.pathSegments.last} is not valid JSON');
     return (blockers: blockers, warnings: warnings);
   }
@@ -538,7 +538,10 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
   // The API a prod build talks to by default is the entry named Production.
   final servers = defines['ENVS'];
   final production = servers is List
-      ? servers.whereType<Map>().where((s) => '${s['name']}'.toLowerCase() == 'production').firstOrNull
+      ? servers
+          .whereType<Map<dynamic, dynamic>>()
+          .where((s) => '${s['name']}'.toLowerCase() == 'production')
+          .firstOrNull
       : null;
   final url = '${production?['url'] ?? ''}';
   if (production == null) {
@@ -739,8 +742,13 @@ Future<void> _codegen(List<String> extra) async {
 
   Future<Process> start(Directory d) {
     stderr.writeln('\$ (cd ${d.path} && dart run build_runner $sub)');
-    return Process.start(dart, ['run', 'build_runner', sub],
-        workingDirectory: d.path, mode: ProcessStartMode.inheritStdio, runInShell: true);
+    return Process.start(
+      dart,
+      ['run', 'build_runner', sub],
+      workingDirectory: d.path,
+      mode: ProcessStartMode.inheritStdio,
+      runInShell: true,
+    );
   }
 
   if (watch) {
@@ -863,11 +871,13 @@ Future<List<Device>> _iosDevices() async {
         .cast<Map<String, dynamic>>()
         .where((d) => (d['hardwareProperties'] as Map?)?['platform'] == 'iOS')
         .where((d) => (d['connectionProperties'] as Map?)?['tunnelState'] == 'connected')
-        .map((d) => (
-              id: d['identifier'] as String,
-              name: (d['deviceProperties'] as Map?)?['name'] as String? ?? 'iPhone',
-              platform: 'ios',
-            ))
+        .map(
+          (d) => (
+            id: d['identifier'] as String,
+            name: (d['deviceProperties'] as Map?)?['name'] as String? ?? 'iPhone',
+            platform: 'ios',
+          ),
+        )
         .toList();
   } finally {
     if (tmp.existsSync()) tmp.deleteSync();
@@ -889,11 +899,13 @@ Future<List<Device>> _androidDevices() async {
     final parts = line.trim().split(RegExp(r'\s+'));
     if (parts.length < 2 || parts[1] != 'device') continue;
     final model = parts.firstWhere((p) => p.startsWith('model:'), orElse: () => '');
-    devices.add((
-      id: parts[0],
-      name: model.isEmpty ? parts[0] : model.substring('model:'.length).replaceAll('_', ' '),
-      platform: 'android',
-    ));
+    devices.add(
+      (
+        id: parts[0],
+        name: model.isEmpty ? parts[0] : model.substring('model:'.length).replaceAll('_', ' '),
+        platform: 'android',
+      ),
+    );
   }
   return devices;
 }

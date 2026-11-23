@@ -56,7 +56,7 @@ class DioFileDownloader implements FileDownloader {
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     final base = _baseUrl?.call() ?? '';
     if (base.isEmpty) return url;
-    return '${base.replaceAll(RegExp(r'/+$'), '')}/${url.replaceAll(RegExp(r'^/+'), '')}';
+    return '${base.replaceAll(RegExp(r'/+$'), '')}/${url.replaceAll(RegExp('^/+'), '')}';
   }
 
   @override

@@ -1,3 +1,4 @@
+import '../../network/auth_interceptor.dart' show AuthInterceptor;
 import 'app_event.dart';
 
 /// Published when the API session can no longer be refreshed — the refresh

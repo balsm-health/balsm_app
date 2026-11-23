@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+
+import '../../localization/core_messages.dart';
+import '../tokens.dart';
 
 /// Bottom nav tab definition.
 class BalsmNavTab {
@@ -20,40 +22,43 @@ class BalsmNavTab {
 /// Frosted glass backdrop.
 class BalsmBottomNav extends StatelessWidget {
   const BalsmBottomNav({
-    super.key,
     required this.tabs,
     required this.currentIndex,
     required this.onTap,
+    super.key,
   });
 
-  /// Default P001 tabs.
-  static const defaultTabs = [
-    BalsmNavTab(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    BalsmNavTab(
-      icon: Icons.credit_card_outlined,
-      activeIcon: Icons.credit_card_rounded,
-      label: 'Card',
-    ),
-    BalsmNavTab(
-      icon: Icons.medication_outlined,
-      activeIcon: Icons.medication_rounded,
-      label: 'Meds',
-    ),
-    BalsmNavTab(
-      icon: Icons.devices_outlined,
-      activeIcon: Icons.devices_rounded,
-      label: 'Sessions',
-    ),
-    BalsmNavTab(
-      icon: Icons.settings_outlined,
-      activeIcon: Icons.settings_rounded,
-      label: 'Settings',
-    ),
-  ];
+  /// Default P001 tabs, in the language of [context].
+  static List<BalsmNavTab> defaultTabs(BuildContext context) {
+    final m = coreMessagesOf(context);
+    return [
+      BalsmNavTab(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: m.nav_home,
+      ),
+      BalsmNavTab(
+        icon: Icons.credit_card_outlined,
+        activeIcon: Icons.credit_card_rounded,
+        label: m.nav_card,
+      ),
+      BalsmNavTab(
+        icon: Icons.medication_outlined,
+        activeIcon: Icons.medication_rounded,
+        label: m.nav_meds,
+      ),
+      BalsmNavTab(
+        icon: Icons.devices_outlined,
+        activeIcon: Icons.devices_rounded,
+        label: m.nav_sessions,
+      ),
+      BalsmNavTab(
+        icon: Icons.settings_outlined,
+        activeIcon: Icons.settings_rounded,
+        label: m.nav_settings,
+      ),
+    ];
+  }
 
   final List<BalsmNavTab> tabs;
   final int currentIndex;
@@ -64,8 +69,8 @@ class BalsmBottomNav extends StatelessWidget {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     return DecoratedBox(
       decoration: const BoxDecoration(
-        color: Color(0xEAFFFFFF), // 92% white
-        border: Border(top: BorderSide(color: BalsmColors.border)),
+        color: AppColors.white94, // 92% white
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 10),
@@ -107,32 +112,31 @@ class _NavTab extends StatelessWidget {
       child: SizedBox(
         height: 60,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             // 3pt top indicator pill
             AnimatedContainer(
-              duration: BalsmDuration.base,
-              curve: kBalsmEaseOut,
+              duration: Motion.base,
+              curve: Motion.easeOut,
               height: 3,
               width: isActive ? 20 : 0,
               decoration: BoxDecoration(
-                color: BalsmColors.appAccent,
-                borderRadius: BorderRadius.circular(BalsmRadius.pill),
+                color: AppColors.hueBlue,
+                borderRadius: BorderRadius.circular(AppRadii.pill),
               ),
             ),
             const SizedBox(height: 8),
             Icon(
               isActive ? tab.activeIcon : tab.icon,
               size: 22,
-              color: isActive ? BalsmColors.appAccent : BalsmColors.fg4,
+              color: isActive ? AppColors.hueBlue : AppColors.textHint,
             ),
             const SizedBox(height: 3),
             Text(
               tab.label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: FontSizes.eyebrow,
                 fontWeight: FontWeight.w600,
-                color: isActive ? BalsmColors.appAccent : BalsmColors.fg4,
+                color: isActive ? AppColors.hueBlue : AppColors.textHint,
               ),
             ),
           ],

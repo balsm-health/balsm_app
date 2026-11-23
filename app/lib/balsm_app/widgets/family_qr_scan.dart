@@ -7,9 +7,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../app_state.dart';
-import '../routes.dart';
 import '../kit.dart';
+import '../routes.dart';
 import '../tokens.dart';
+
+// One pass of the scan line.
+const _scanLineLoop = Duration(milliseconds: 2200);
 
 /// A successfully scanned + decrypted profile QR.
 typedef ScannedProfile = ({String jti, ProfileQrPayload payload});
@@ -20,7 +23,7 @@ typedef ScannedProfile = ({String jti, ProfileQrPayload payload});
 /// endpoint, and decrypts it with the key from the fragment — the identity
 /// payload (PHI) stays in memory and is never logged.
 class FamilyQrScanView extends ConsumerStatefulWidget {
-  const FamilyQrScanView({super.key, required this.onFound, required this.onManual});
+  const FamilyQrScanView({required this.onFound, required this.onManual, super.key});
 
   final void Function(ScannedProfile found) onFound;
   final VoidCallback onManual;
@@ -39,7 +42,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
   @override
   void dispose() {
     _flashTimer?.cancel();
-    _controller.dispose();
+    unawaited(_controller.dispose());
     super.dispose();
   }
 
@@ -52,7 +55,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
     if (segs.length != 2 || (segs[0] != PublicQrPaths.token && segs[0] != PublicQrPaths.legacyEmergency)) {
       return null;
     }
-    String key = '';
+    var key = '';
     for (final part in uri.fragment.split('&')) {
       if (part.startsWith('k=')) key = part.substring(2);
     }
@@ -89,7 +92,7 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
     final result =
         await ref.read(resolveEmergencyQrTokenUseCaseProvider).call(tokenId: parsed.jti, keyBase64Url: parsed.key);
     if (!mounted) return;
-    final ResolvedProfileQr? resolved = result.fold((v) => v, (_) => null);
+    final resolved = result.fold((v) => v, (_) => null);
     final payload = resolved?.payload;
     if (payload == null) {
       setState(() => _busy = false);
@@ -107,91 +110,103 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final accentLine = _found ? T.hueMint600 : Colors.white;
-    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      AspectRatio(
-        aspectRatio: 1,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(T.rXl),
-          child: Stack(fit: StackFit.expand, children: [
-            ColoredBox(
-              color: const Color(0xFF14202B),
-              child: MobileScanner(
-                controller: _controller,
-                onDetect: _onDetect,
-                errorBuilder: (context, error) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      s.strings.common.fam_scan_failed(s.gender),
-                      textAlign: TextAlign.center,
-                      style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white70),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Corner brackets.
-            for (final c in const ['tl', 'tr', 'bl', 'br'])
-              PositionedDirectional(
-                top: c[0] == 't' ? 26 : null,
-                bottom: c[0] == 'b' ? 26 : null,
-                start: c[1] == 'l' ? 26 : null,
-                end: c[1] == 'r' ? 26 : null,
-                child: SizedBox(
-                  width: 42,
-                  height: 42,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: BorderDirectional(
-                        top: c[0] == 't' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
-                        bottom: c[0] == 'b' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
-                        start: c[1] == 'l' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
-                        end: c[1] == 'r' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
+    final accentLine = _found ? AppColors.hueMint600 : AppColors.white;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AspectRatio(
+          aspectRatio: 1,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ColoredBox(
+                  color: AppColors.ink900,
+                  child: MobileScanner(
+                    controller: _controller,
+                    onDetect: _onDetect,
+                    errorBuilder: (context, error) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          s.strings.common.fam_scan_failed(s.gender),
+                          textAlign: TextAlign.center,
+                          style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white70),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            if (!_found) const _ScanLine(),
-            if (_found)
-              Center(
-                child: Container(
-                  width: 62,
-                  height: 62,
-                  decoration: const BoxDecoration(color: T.hueMint600, shape: BoxShape.circle),
-                  child: const Icon(LucideIcons.check, size: 32, color: Colors.white),
-                ),
-              ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(22, 28, 22, 18),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xD914202B)],
+                // Corner brackets.
+                for (final c in const ['tl', 'tr', 'bl', 'br'])
+                  PositionedDirectional(
+                    top: c[0] == 't' ? 26 : null,
+                    bottom: c[0] == 'b' ? 26 : null,
+                    start: c[1] == 'l' ? 26 : null,
+                    end: c[1] == 'r' ? 26 : null,
+                    child: SizedBox(
+                      width: 42,
+                      height: 42,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: BorderDirectional(
+                            top: c[0] == 't' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
+                            bottom: c[0] == 'b' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
+                            start: c[1] == 'l' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
+                            end: c[1] == 'r' ? BorderSide(color: accentLine, width: 3) : BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!_found) const _ScanLine(),
+                if (_found)
+                  Center(
+                    child: Container(
+                      width: 62,
+                      height: 62,
+                      decoration: const BoxDecoration(color: AppColors.hueMint600, shape: BoxShape.circle),
+                      child: const Icon(LucideIcons.check, size: 32, color: AppColors.white),
+                    ),
+                  ),
+                PositionedDirectional(
+                  start: 0,
+                  end: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsetsDirectional.fromSTEB(22, 28, 22, 18),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, AppColors.scrimDeep],
+                      ),
+                    ),
+                    child: Text(
+                      _flash ?? (_found ? s.strings.common.fam_code_found : s.strings.common.fam_point_camera),
+                      textAlign: TextAlign.center,
+                      style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white, fontWeight: FontWeight.w500),
+                    ),
                   ),
                 ),
-                child: Text(
-                  _flash ?? (_found ? s.strings.common.fam_code_found : s.strings.common.fam_point_camera),
-                  textAlign: TextAlign.center,
-                  style: Typo.bodySm(ar: s.rtl).copyWith(color: Colors.white, fontWeight: FontWeight.w500),
-                ),
-              ),
+              ],
             ),
-          ]),
+          ),
         ),
-      ),
-      const SizedBox(height: 14),
-      Text(s.strings.common.fam_code_hint, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-      const SizedBox(height: 10),
-      PButton(s.strings.common.fam_manual_instead,
-          variant: BtnVariant.ghost, block: true, ar: s.rtl, onTap: widget.onManual),
-    ]);
+        const SizedBox(height: 14),
+        Text(s.strings.common.fam_code_hint, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+        const SizedBox(height: 10),
+        PButton(
+          s.strings.common.fam_manual_instead,
+          variant: BtnVariant.ghost,
+          block: true,
+          ar: s.rtl,
+          onTap: widget.onManual,
+        ),
+      ],
+    );
   }
 }
 
@@ -203,7 +218,7 @@ class _ScanLine extends StatefulWidget {
 }
 
 class _ScanLineState extends State<_ScanLine> with SingleTickerProviderStateMixin {
-  late final _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))..repeat();
+  late final _ctrl = AnimationController(vsync: this, duration: _scanLineLoop)..repeat();
 
   @override
   void dispose() {
@@ -225,11 +240,13 @@ class _ScanLineState extends State<_ScanLine> with SingleTickerProviderStateMixi
             margin: const EdgeInsets.symmetric(horizontal: 26),
             height: 2,
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                T.hueAqua.withValues(alpha: 0),
-                T.hueAqua,
-                T.hueAqua.withValues(alpha: 0),
-              ]),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.hueAqua.withValues(alpha: 0),
+                  AppColors.hueAqua,
+                  AppColors.hueAqua.withValues(alpha: 0),
+                ],
+              ),
             ),
           ),
         );

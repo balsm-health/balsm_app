@@ -5,13 +5,15 @@ import '../helpers/fake_http_adapter.dart';
 
 void main() {
   test('listSessions parses envelope list with UTC dates', () async {
-    final adapter = FakeHttpAdapter((_) => jsonResponse('''
+    final adapter = FakeHttpAdapter(
+      (_) => jsonResponse('''
       {"data": [{
         "id": "s1", "device_id": "d1", "device_label": "iPhone",
         "device_type": "ios", "first_seen_at": "2026-01-01T00:00:00+02:00",
         "last_activity_at": "2026-01-02T00:00:00Z",
         "revoked_at": null, "is_current": true
-      }], "error": null}'''));
+      }], "error": null}'''),
+    );
     final api = DioSessionsApi(net: fakeNet(adapter));
 
     final sessions = await api.listSessions();
@@ -29,9 +31,11 @@ void main() {
     final api = DioSessionsApi(net: fakeNet(adapter));
     expect(
       api.listSessions(),
-      throwsA(isA<ApiException>()
-          .having((e) => e.fromEnvelope, 'fromEnvelope', isTrue)
-          .having((e) => e.serverMessage, 'serverMessage', 'boom')),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.fromEnvelope, 'fromEnvelope', isTrue)
+            .having((e) => e.serverMessage, 'serverMessage', 'boom'),
+      ),
     );
   });
 

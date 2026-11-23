@@ -112,13 +112,15 @@ List<MapPackListItem> buildOfflineMapPackList({
     final basemapRow = kinds[MapPackKind.basemap];
     final placesRow = kinds[MapPackKind.places];
     if (basemapRow == null || placesRow == null) return; // incomplete pair
-    items.add(MapPackListItem(
-      governorateId: governorateId,
-      name: names[governorateId] ?? governorateId,
-      bounds: const [0, 0, 0, 0],
-      totalSizeBytes: basemapRow.sizeBytes + placesRow.sizeBytes,
-      availability: MapPackAvailability.downloaded,
-    ));
+    items.add(
+      MapPackListItem(
+        governorateId: governorateId,
+        name: names[governorateId] ?? governorateId,
+        bounds: const [0, 0, 0, 0],
+        totalSizeBytes: basemapRow.sizeBytes + placesRow.sizeBytes,
+        availability: MapPackAvailability.downloaded,
+      ),
+    );
   });
   return items;
 }

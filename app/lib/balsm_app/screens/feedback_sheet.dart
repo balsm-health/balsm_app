@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../app_state.dart';
 import '../kit.dart';
-import '../tokens.dart';
 import '../widgets/balsm_mark.dart';
 
 /// In-app rating + feedback.
@@ -61,7 +62,7 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
     // permanently blank instead of failing visibly.
     if (_loaded) return;
     _loaded = true;
-    _loadLast();
+    unawaited(_loadLast());
   }
 
   Future<void> _loadLast() async {
@@ -86,14 +87,16 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
     if (_rating == 0 || _sending) return;
     final s = AppScope.of(context);
     setState(() => _sending = true);
-    final ok = await ref.read(feedbackReporterProvider).send(UserFeedback(
-          rating: _rating,
-          topics: [
-            for (final (id, _) in _topics)
-              if (_selected.contains(id)) id
-          ],
-          note: _note.text,
-        ));
+    final ok = await ref.read(feedbackReporterProvider).send(
+          UserFeedback(
+            rating: _rating,
+            topics: [
+              for (final (id, _) in _topics)
+                if (_selected.contains(id)) id,
+            ],
+            note: _note.text,
+          ),
+        );
     if (!mounted) return;
     if (!ok) {
       setState(() => _sending = false);
@@ -121,136 +124,154 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
-          child: Row(children: [
-            Expanded(
-              child: Text(f.fb_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(f.fb_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                ),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: () => Navigator.of(context).pop(),
+                ),
+              ],
             ),
-            RoundBtn(
-                icon: LucideIcons.x,
-                semanticLabel: s.strings.common.a11y_close,
-                ghost: true,
-                iconSize: 17,
-                onTap: () => Navigator.of(context).pop()),
-          ]),
-        ),
-        const Divider(height: 1, color: T.ink100),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, sheetBottomInset(context, base: 34)),
-            child: _sent ? _thanks(s) : _form(s),
           ),
-        ),
-      ]),
-    );
-  }
-
-  Widget _thanks(PatientAppState s) {
-    final f = s.strings.feedback;
-    return Column(children: [
-      const SizedBox(height: 14),
-      const BalsmFlower(size: 58),
-      const SizedBox(height: 18),
-      Text(f.fb_thanks, textAlign: TextAlign.center, style: Typo.heading(ar: s.rtl)),
-      const SizedBox(height: 10),
-      ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 260),
-        child: Text(f.fb_thanks_sub, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+          const Divider(height: 1, color: AppColors.ink100),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, sheetBottomInset(context, base: 34)),
+              child: _sent ? _Thanks(s) : _form(s),
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 26),
-      PButton(f.fb_done, block: true, accent: s.accent, ar: s.rtl, onTap: () => Navigator.of(context).pop()),
-    ]);
+    );
   }
 
   Widget _form(PatientAppState s) {
     final f = s.strings.feedback;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const SizedBox(height: 14),
-      Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          for (var n = 1; n <= 5; n++) ...[
-            _RateMark(lit: n <= _rating, label: '$n/5', onTap: () => setState(() => _rating = n)),
-            if (n < 5) const SizedBox(width: 8),
-          ],
-        ]),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 20,
-          child: Text(_ratingLabel(s),
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: _rating > 0 ? T.fg2 : T.fg3)),
-        ),
-        if (_lastSentAt != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 3),
-            child: Text('${f.fb_last} ${_fmt(_lastSentAt!)}', style: Typo.meta(ar: s.rtl).copyWith(fontSize: FS.xs2)),
-          ),
-      ]),
-      const SizedBox(height: 20),
-      Text(f.fb_about, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-      const SizedBox(height: 10),
-      Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: [
-          for (final (id, label) in _topics)
-            _TopicChip(
-              label: label(s),
-              selected: _selected.contains(id),
-              onTap: () => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 14),
+        Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var n = 1; n <= 5; n++) ...[
+                  _RateMark(lit: n <= _rating, label: '$n/5', onTap: () => setState(() => _rating = n)),
+                  if (n < 5) const SizedBox(width: 8),
+                ],
+              ],
             ),
-        ],
-      ),
-      const SizedBox(height: 20),
-      Row(children: [
-        Text(f.fb_note_lbl, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-        Text(' · ${f.fb_optional}', style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-      ]),
-      const SizedBox(height: 10),
-      TextField(
-        controller: _note,
-        maxLines: null,
-        // A multi-line field's return key adds a line, so tapping anywhere
-        // else is the only way to put the keyboard away (it covers Send).
-        onTapOutside: (_) => FocusScope.of(context).unfocus(),
-        minLines: 4,
-        style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
-        decoration: InputDecoration(
-          hintText: f.fb_ph,
-          hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          border: _b(T.border),
-          enabledBorder: _b(T.border),
-          focusedBorder: _b(s.accent.main),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 20,
+              child: Text(
+                _ratingLabel(s),
+                style: Typo.bodySm(ar: s.rtl).copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: _rating > 0 ? AppColors.textSecondary : AppColors.textTertiary,
+                ),
+              ),
+            ),
+            if (_lastSentAt != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(
+                  '${f.fb_last} ${_fmt(_lastSentAt!)}',
+                  style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.eyebrow),
+                ),
+              ),
+          ],
         ),
-      ),
-      const SizedBox(height: 14),
-      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 1),
-          child: Icon(LucideIcons.shieldCheck, size: 16, color: T.fg3),
+        const SizedBox(height: 20),
+        Text(
+          f.fb_about,
+          style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
         ),
-        const SizedBox(width: 10),
-        Expanded(child: Text(f.fb_privacy, style: Typo.meta(ar: s.rtl))),
-      ]),
-      const SizedBox(height: 18),
-      PButton(f.fb_send,
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final (id, label) in _topics)
+              _TopicChip(
+                label: label(s),
+                selected: _selected.contains(id),
+                onTap: () => setState(() => _selected.contains(id) ? _selected.remove(id) : _selected.add(id)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Text(
+              f.fb_note_lbl,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+            ),
+            Text(' · ${f.fb_optional}', style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _note,
+          maxLines: null,
+          // A multi-line field's return key adds a line, so tapping anywhere
+          // else is the only way to put the keyboard away (it covers Send).
+          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+          minLines: 4,
+          style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: f.fb_ph,
+            hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint),
+            filled: true,
+            fillColor: AppColors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: _b(AppColors.border),
+            enabledBorder: _b(AppColors.border),
+            focusedBorder: _b(s.accent.main),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 1),
+              child: Icon(LucideIcons.shieldCheck, size: 16, color: AppColors.textTertiary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(f.fb_privacy, style: Typo.meta(ar: s.rtl))),
+          ],
+        ),
+        const SizedBox(height: 18),
+        PButton(
+          f.fb_send,
           icon: LucideIcons.send,
           block: true,
           accent: s.accent,
           ar: s.rtl,
           // Disabled until a rating is picked — the note alone is not a signal.
-          onTap: _rating == 0 || _sending ? null : _submit),
-    ]);
+          onTap: _rating == 0 || _sending ? null : _submit,
+        ),
+      ],
+    );
   }
 
   static String _fmt(DateTime d) {
@@ -259,8 +280,10 @@ class _FeedbackSheetState extends ConsumerState<_FeedbackSheet> {
     return '${p(l.day)}/${p(l.month)}/${l.year}';
   }
 
-  OutlineInputBorder _b(Color c) =>
-      OutlineInputBorder(borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: c, width: 1.5));
+  OutlineInputBorder _b(Color c) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderSide: BorderSide(color: c, width: 1.5),
+      );
 }
 
 /// One tappable mark — the brand mark in full colour when lit, flat ink when
@@ -295,7 +318,7 @@ class _RateMark extends StatelessWidget {
                   : const ColorFiltered(
                       // `.fb-petal-off` — one flat ink wash, not a
                       // desaturation of the five brand hues.
-                      colorFilter: ColorFilter.mode(T.ink200, BlendMode.srcIn),
+                      colorFilter: ColorFilter.mode(AppColors.ink200, BlendMode.srcIn),
                       child: BalsmFlower(size: 42),
                     ),
             ),
@@ -321,13 +344,41 @@ class _TopicChip extends StatelessWidget {
         curve: Motion.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? s.accent.bg : Colors.white,
-          borderRadius: BorderRadius.circular(T.rPill),
-          border: Border.all(color: selected ? s.accent.main : T.border, width: 1.5),
+          color: selected ? s.accent.bg : AppColors.white,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(color: selected ? s.accent.main : AppColors.border, width: 1.5),
         ),
-        child: Text(label,
-            style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : T.fg2)),
+        child: Text(
+          label,
+          style: Typo.bodySm(ar: s.rtl)
+              .copyWith(fontWeight: FontWeight.w600, color: selected ? s.accent.d : AppColors.textSecondary),
+        ),
       ),
+    );
+  }
+}
+
+class _Thanks extends StatelessWidget {
+  const _Thanks(this.s);
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) {
+    final f = s.strings.feedback;
+    return Column(
+      children: [
+        const SizedBox(height: 14),
+        const BalsmFlower(size: 58),
+        const SizedBox(height: 18),
+        Text(f.fb_thanks, textAlign: TextAlign.center, style: Typo.heading(ar: s.rtl)),
+        const SizedBox(height: 10),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 260),
+          child: Text(f.fb_thanks_sub, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+        ),
+        const SizedBox(height: 26),
+        PButton(f.fb_done, block: true, accent: s.accent, ar: s.rtl, onTap: () => Navigator.of(context).pop()),
+      ],
     );
   }
 }

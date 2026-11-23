@@ -31,8 +31,11 @@ class ProfilePregnancyBabies implements PregnancyBabiesPort {
   }
 
   @override
-  Future<AppResult<PregnancyBaby>> addBaby(PregnancyId pregnancy,
-      {required int sequence, required DateTime now}) async {
+  Future<AppResult<PregnancyBaby>> addBaby(
+    PregnancyId pregnancy, {
+    required int sequence,
+    required DateTime now,
+  }) async {
     final user = _activeUser();
     if (user == null) return AppResult.failure(const UnauthorizedFailure('signed out'));
     final built = HealthProfile.createMember(
@@ -120,7 +123,7 @@ class ProfilePregnancyBabies implements PregnancyBabiesPort {
   static List<PregnancyBaby> _babies(List<HealthProfile> rows, PregnancyId pregnancy) => [
         for (final p in rows)
           if (p.pregnancyId == pregnancy)
-            if (pregnancyBabyOf(p) case final baby?) baby
+            if (pregnancyBabyOf(p) case final baby?) baby,
       ]..sort((a, b) => a.sequence.compareTo(b.sequence));
 }
 

@@ -27,12 +27,12 @@ CareProviderType guessCareProviderType(String? name) {
 
   // Prefix-anchored so "Andrew" and "Sandra" are not doctors.
   if (RegExp(r'^(dr\.?\s|د\.|دكتور|doctor\b)').hasMatch(n)) return CareProviderType.doctor;
-  if (RegExp(r'pharm|صيدل').hasMatch(n)) return CareProviderType.pharmacy;
+  if (RegExp('pharm|صيدل').hasMatch(n)) return CareProviderType.pharmacy;
   if (RegExp(r'\blab\b|laborator|معمل|مختبر|تحاليل').hasMatch(n)) return CareProviderType.lab;
-  if (RegExp(r'nurse|ممرض').hasMatch(n)) return CareProviderType.nurse;
-  if (RegExp(r'physio|علاج طبيعي').hasMatch(n)) return CareProviderType.physio;
-  if (RegExp(r'clinic|hospital|centre|center|عيادة|مستشفى|مركز').hasMatch(n)) return CareProviderType.clinic;
-  if (RegExp(r'carer|caregiver|جليس|مرافق').hasMatch(n)) return CareProviderType.carer;
+  if (RegExp('nurse|ممرض').hasMatch(n)) return CareProviderType.nurse;
+  if (RegExp('physio|علاج طبيعي').hasMatch(n)) return CareProviderType.physio;
+  if (RegExp('clinic|hospital|centre|center|عيادة|مستشفى|مركز').hasMatch(n)) return CareProviderType.clinic;
+  if (RegExp('carer|caregiver|جليس|مرافق').hasMatch(n)) return CareProviderType.carer;
   return CareProviderType.other;
 }
 

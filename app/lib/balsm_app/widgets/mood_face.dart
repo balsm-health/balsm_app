@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 /// Simple line-drawn mood face (1=rough … 5=great). Mouth curvature and brow
 /// follow the level; stroke uses [color].
 class MoodFace extends StatelessWidget {
-  const MoodFace({super.key, required this.level, this.size = 34, required this.color});
+  const MoodFace({required this.level, required this.color, super.key, this.size = 34});
   final int level; // 1..5
   final double size;
   final Color color;
@@ -33,8 +33,9 @@ class _MoodPainter extends CustomPainter {
     final fill = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(w * 0.34, w * 0.40), eyeR, fill);
-    canvas.drawCircle(Offset(w * 0.66, w * 0.40), eyeR, fill);
+    canvas
+      ..drawCircle(Offset(w * 0.34, w * 0.40), eyeR, fill)
+      ..drawCircle(Offset(w * 0.66, w * 0.40), eyeR, fill);
 
     // mouth: curvature from frown (level 1) to smile (level 5)
     final t = (level - 3) / 2.0; // -1 .. 1
@@ -52,7 +53,7 @@ class _MoodPainter extends CustomPainter {
 
 /// A bigger mood face button used in the report flow's mood grid.
 class MoodFaceButton extends StatelessWidget {
-  const MoodFaceButton({super.key, required this.level, required this.color, this.size = 34});
+  const MoodFaceButton({required this.level, required this.color, super.key, this.size = 34});
   final int level;
   final Color color;
   final double size;

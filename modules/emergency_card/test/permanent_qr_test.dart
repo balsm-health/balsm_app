@@ -71,7 +71,7 @@ void main() {
       final reader = _MockIdentityReader();
       final mem = _MemStorage();
       final store = PermanentQrStore(storage: mem);
-      when(() => reader.readIdentity()).thenAnswer((_) async => _snap());
+      when(reader.readIdentity).thenAnswer((_) async => _snap());
       when(() => api.mint(any())).thenAnswer((_) async => const MintQrResponse(tokenId: 'jti-p', expiresAt: null));
 
       final uc =
@@ -97,12 +97,15 @@ void main() {
       final api = _MockApi();
       final reader = _MockIdentityReader();
       final store = PermanentQrStore(storage: _MemStorage());
-      when(() => reader.readIdentity()).thenAnswer((_) async => _snap());
+      when(reader.readIdentity).thenAnswer((_) async => _snap());
       when(() => api.mint(any())).thenThrow(const ApiException(code: 'offline', isOffline: true));
 
       final res = await MintEmergencyQrTokenUseCase(
-              api: api, identityReader: reader, eventBus: _FakeBus(), permanentStore: store)
-          .call(ttlSeconds: 0);
+        api: api,
+        identityReader: reader,
+        eventBus: _FakeBus(),
+        permanentStore: store,
+      ).call(ttlSeconds: 0);
 
       final m = res.fold((v) => v, (f) => fail('offline mint failed: $f'));
       final record = await store.read();
@@ -114,13 +117,16 @@ void main() {
       final api = _MockApi();
       final reader = _MockIdentityReader();
       final store = PermanentQrStore(storage: _MemStorage());
-      when(() => reader.readIdentity())
+      when(reader.readIdentity)
           .thenAnswer((_) async => ProfileQrPayload(lang: 'en', createdAt: DateTime.parse('2026-01-01T00:00:00Z')));
       when(() => api.mint(any())).thenAnswer((_) async => const MintQrResponse(tokenId: 'jti-empty', expiresAt: null));
 
       final res = await MintEmergencyQrTokenUseCase(
-              api: api, identityReader: reader, eventBus: _FakeBus(), permanentStore: store)
-          .call(ttlSeconds: 0);
+        api: api,
+        identityReader: reader,
+        eventBus: _FakeBus(),
+        permanentStore: store,
+      ).call(ttlSeconds: 0);
 
       final m = res.fold((v) => v, (f) => fail('mint failed: $f'));
       expect(m.token.isPermanent, isTrue);
@@ -133,9 +139,10 @@ void main() {
       final mem = _MemStorage();
       final store = PermanentQrStore(storage: mem);
       await store.write(const PermanentQrRecord(jti: 'old', keyB64Url: 'k', etag: 'e', qrUrl: 'u'));
-      when(() => reader.readIdentity()).thenAnswer((_) async => _snap());
+      when(reader.readIdentity).thenAnswer((_) async => _snap());
       when(() => api.mint(any())).thenAnswer(
-          (_) async => MintQrResponse(tokenId: 'jti-t', expiresAt: DateTime.now().add(const Duration(hours: 1))));
+        (_) async => MintQrResponse(tokenId: 'jti-t', expiresAt: DateTime.now().add(const Duration(hours: 1))),
+      );
 
       final uc =
           MintEmergencyQrTokenUseCase(api: api, identityReader: reader, eventBus: _FakeBus(), permanentStore: store);
@@ -149,7 +156,10 @@ void main() {
     test('no stored record is a no-op success', () async {
       final api = _MockApi();
       final uc = RefreshPermanentQrUseCase(
-          api: api, identityReader: _MockIdentityReader(), permanentStore: PermanentQrStore(storage: _MemStorage()));
+        api: api,
+        identityReader: _MockIdentityReader(),
+        permanentStore: PermanentQrStore(storage: _MemStorage()),
+      );
 
       final res = await uc.call();
 
@@ -162,7 +172,7 @@ void main() {
       final reader = _MockIdentityReader();
       final store = PermanentQrStore(storage: _MemStorage());
       final snap = _snap();
-      when(() => reader.readIdentity()).thenAnswer((_) async => snap);
+      when(reader.readIdentity).thenAnswer((_) async => snap);
       await store.write(PermanentQrRecord(jti: 'j', keyB64Url: 'k', etag: payloadEtag(snap), qrUrl: 'u'));
 
       final uc = RefreshPermanentQrUseCase(api: api, identityReader: reader, permanentStore: store);
@@ -181,7 +191,7 @@ void main() {
       final keyBytes = await key.extractBytes();
       final keyB64Url = base64Url.encode(keyBytes).replaceAll('=', '');
       final newSnap = _snap('A-');
-      when(() => reader.readIdentity()).thenAnswer((_) async => newSnap);
+      when(reader.readIdentity).thenAnswer((_) async => newSnap);
       when(() => api.updateCiphertext(any(), any())).thenAnswer((_) async {});
       await store.write(PermanentQrRecord(jti: 'j', keyB64Url: keyB64Url, etag: 'stale', qrUrl: 'u'));
 
@@ -211,14 +221,17 @@ void main() {
       final reader = _MockIdentityReader();
       final store = PermanentQrStore(storage: _MemStorage());
       final snap = _snap();
-      when(() => reader.readIdentity()).thenAnswer((_) async => snap);
+      when(reader.readIdentity).thenAnswer((_) async => snap);
       when(() => api.mint(any())).thenAnswer((_) async => const MintQrResponse(tokenId: 'ignored', expiresAt: null));
-      await store.write(PermanentQrRecord(
+      await store.write(
+        PermanentQrRecord(
           jti: 'jti-local',
           keyB64Url: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           etag: payloadEtag(snap),
           qrUrl: 'u',
-          synced: false));
+          synced: false,
+        ),
+      );
 
       final res = await uc(api, reader, store).call();
 
@@ -233,10 +246,16 @@ void main() {
       final api = _MockApi();
       final reader = _MockIdentityReader();
       final store = PermanentQrStore(storage: _MemStorage());
-      when(() => reader.readIdentity()).thenAnswer((_) async => _snap('B+'));
+      when(reader.readIdentity).thenAnswer((_) async => _snap('B+'));
       when(() => api.updateCiphertext(any(), any())).thenThrow(const ApiException(code: 'gone', statusCode: 410));
-      await store.write(const PermanentQrRecord(
-          jti: 'j', keyB64Url: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', etag: 'stale', qrUrl: 'u'));
+      await store.write(
+        const PermanentQrRecord(
+          jti: 'j',
+          keyB64Url: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          etag: 'stale',
+          qrUrl: 'u',
+        ),
+      );
 
       final res = await uc(api, reader, store).call();
 
@@ -248,10 +267,16 @@ void main() {
       final api = _MockApi();
       final reader = _MockIdentityReader();
       final store = PermanentQrStore(storage: _MemStorage());
-      when(() => reader.readIdentity()).thenAnswer((_) async => _snap('B+'));
+      when(reader.readIdentity).thenAnswer((_) async => _snap('B+'));
       when(() => api.updateCiphertext(any(), any())).thenThrow(const ApiException(code: 'offline', isOffline: true));
-      await store.write(const PermanentQrRecord(
-          jti: 'j', keyB64Url: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', etag: 'stale', qrUrl: 'u'));
+      await store.write(
+        const PermanentQrRecord(
+          jti: 'j',
+          keyB64Url: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          etag: 'stale',
+          qrUrl: 'u',
+        ),
+      );
 
       final res = await uc(api, reader, store).call();
 
@@ -268,7 +293,7 @@ void main() {
       await store.write(const PermanentQrRecord(jti: 'jti-p', keyB64Url: 'k', etag: 'e', qrUrl: 'u'));
 
       final res = await RevokeEmergencyQrTokenUseCase(api: api, eventBus: _FakeBus(), permanentStore: store)
-          .call(tokenId: QrTokenId.value('jti-p'));
+          .call(tokenId: const QrTokenId.value('jti-p'));
 
       expect(res.isSuccess, isTrue);
       expect(await store.read(), isNull);
@@ -282,7 +307,7 @@ void main() {
           .write(const PermanentQrRecord(jti: 'jti-local', keyB64Url: 'k', etag: 'e', qrUrl: 'u', synced: false));
 
       final res = await RevokeEmergencyQrTokenUseCase(api: api, eventBus: _FakeBus(), permanentStore: store)
-          .call(tokenId: QrTokenId.value('jti-local'));
+          .call(tokenId: const QrTokenId.value('jti-local'));
 
       expect(res.isSuccess, isTrue);
       expect(await store.read(), isNull);
@@ -295,7 +320,7 @@ void main() {
       await store.write(const PermanentQrRecord(jti: 'jti-p', keyB64Url: 'k', etag: 'e', qrUrl: 'u'));
 
       await RevokeEmergencyQrTokenUseCase(api: api, eventBus: _FakeBus(), permanentStore: store)
-          .call(tokenId: QrTokenId.value('jti-other'));
+          .call(tokenId: const QrTokenId.value('jti-other'));
 
       expect(await store.read(), isNotNull);
     });

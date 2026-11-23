@@ -143,8 +143,10 @@ void main() {
 
     test('opaque path segments are masked, route shape is kept', () {
       expect(redactUrl(qr), 'https://balsm.health/t/:id');
-      expect(redactUrl('https://api.balsm.health/api/v1/account/0f8a-uuid/profile'),
-          'https://api.balsm.health/api/v1/account/:id/profile');
+      expect(
+        redactUrl('https://api.balsm.health/api/v1/account/0f8a-uuid/profile'),
+        'https://api.balsm.health/api/v1/account/:id/profile',
+      );
     });
 
     test('unparseable input is redacted wholesale, never passed through', () {

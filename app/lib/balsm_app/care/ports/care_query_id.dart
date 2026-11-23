@@ -21,16 +21,18 @@ class CareQueryId extends UniqueId {
 
   /// Composes the id from everything that changes the response. A field left
   /// out here would serve one query's results in answer to another.
-  factory CareQueryId.of(LatLng center, CareSearch search) => CareQueryId.value([
-        center.latitude.toStringAsFixed(kCareCenterPrecision),
-        center.longitude.toStringAsFixed(kCareCenterPrecision),
-        search.radiusKm.toStringAsFixed(1),
-        // Null when several types are ticked: the narrowing happens on-device,
-        // so the SERVER response is identical and may be reused across them.
-        search.wireType ?? '',
-        search.text.trim().toLowerCase(),
-        kCareResultLimit,
-      ].join('|'));
+  factory CareQueryId.of(LatLng center, CareSearch search) => CareQueryId.value(
+        [
+          center.latitude.toStringAsFixed(kCareCenterPrecision),
+          center.longitude.toStringAsFixed(kCareCenterPrecision),
+          search.radiusKm.toStringAsFixed(1),
+          // Null when several types are ticked: the narrowing happens on-device,
+          // so the SERVER response is identical and may be reused across them.
+          search.wireType ?? '',
+          search.text.trim().toLowerCase(),
+          kCareResultLimit,
+        ].join('|'),
+      );
 }
 
 /// Typed id of one PIN query.
@@ -45,15 +47,17 @@ class CarePinQueryId extends UniqueId {
   /// Composes the id from everything that changes the response — including
   /// [noFloor], which swaps both the radius and the limit that are actually
   /// sent.
-  factory CarePinQueryId.of(LatLng center, CareSearch search, {required bool noFloor}) => CarePinQueryId.value([
-        'pins',
-        center.latitude.toStringAsFixed(kCareCenterPrecision),
-        center.longitude.toStringAsFixed(kCareCenterPrecision),
-        (noFloor ? kCareMaxRadiusKm : search.radiusKm).toStringAsFixed(1),
-        search.wireType ?? '',
-        search.text.trim().toLowerCase(),
-        noFloor ? kCarePinLimitMax : kCarePinLimit,
-      ].join('|'));
+  factory CarePinQueryId.of(LatLng center, CareSearch search, {required bool noFloor}) => CarePinQueryId.value(
+        [
+          'pins',
+          center.latitude.toStringAsFixed(kCareCenterPrecision),
+          center.longitude.toStringAsFixed(kCareCenterPrecision),
+          (noFloor ? kCareMaxRadiusKm : search.radiusKm).toStringAsFixed(1),
+          search.wireType ?? '',
+          search.text.trim().toLowerCase(),
+          if (noFloor) kCarePinLimitMax else kCarePinLimit,
+        ].join('|'),
+      );
 }
 
 /// Typed id of one place-detail lookup.

@@ -77,7 +77,7 @@ final signOutUseCaseProvider = Provider<SignOutUseCase>((ref) {
 });
 
 /// Claims a support-issued recovery token (FR-046c/d/e). Consumed by
-/// [AuthRecoveryClaimScreen].
+/// `AuthRecoveryClaimScreen`.
 final recoveryClaimUseCaseProvider = Provider<RecoveryClaimUseCase>((ref) {
   return RecoveryClaimUseCase(
     adapter: ref.watch(balsmAuthAdapterProvider),

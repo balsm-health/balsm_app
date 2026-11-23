@@ -15,6 +15,26 @@ class Messages_ar extends Messages {
   SeverityMessages_ar get severity => SeverityMessages_ar(this);
   String get conditions => "الحالات الصحية";
   String get contacts => "جهات اتصال الطوارئ";
+  String get loadError => "تعذّر تحميل الملف الصحي";
+  String get noAllergies => "لم تُضف أي حساسية";
+  String get controlled => "خاضع للرقابة";
+  String get remove => "إزالة";
+  String get chronicConditions => "الأمراض المزمنة";
+  String get noConditions => "لم تُضف أي حالات";
+  String get noContacts => "لم تُضف جهات اتصال للطوارئ";
+  String get primary => "أساسي";
+  String get addShort => "إضافة";
+  String get selectBloodType => "اختر فصيلة الدم";
+  String get unknown => "غير معروف";
+  String get allergen => "مسبّب الحساسية";
+  String get severityLabel => "الشدة";
+  String get controlledSubstance => "مادة خاضعة للرقابة";
+  String get addCondition => "إضافة حالة";
+  String get condition => "الحالة";
+  String get addContact => "إضافة جهة اتصال للطوارئ";
+  String get name => "الاسم";
+  String get phone => "الهاتف";
+  String get relationOptional => "صلة القرابة (اختياري)";
   Object operator [](String key) {
     var index = key.indexOf('.');
     if (index > 0) {
@@ -33,6 +53,46 @@ class Messages_ar extends Messages {
         return conditions;
       case 'contacts':
         return contacts;
+      case 'loadError':
+        return loadError;
+      case 'noAllergies':
+        return noAllergies;
+      case 'controlled':
+        return controlled;
+      case 'remove':
+        return remove;
+      case 'chronicConditions':
+        return chronicConditions;
+      case 'noConditions':
+        return noConditions;
+      case 'noContacts':
+        return noContacts;
+      case 'primary':
+        return primary;
+      case 'addShort':
+        return addShort;
+      case 'selectBloodType':
+        return selectBloodType;
+      case 'unknown':
+        return unknown;
+      case 'allergen':
+        return allergen;
+      case 'severityLabel':
+        return severityLabel;
+      case 'controlledSubstance':
+        return controlledSubstance;
+      case 'addCondition':
+        return addCondition;
+      case 'condition':
+        return condition;
+      case 'addContact':
+        return addContact;
+      case 'name':
+        return name;
+      case 'phone':
+        return phone;
+      case 'relationOptional':
+        return relationOptional;
       default:
         return super[key];
     }

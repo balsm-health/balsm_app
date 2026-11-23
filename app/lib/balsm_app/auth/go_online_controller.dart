@@ -65,7 +65,7 @@ class GoOnlineController {
   static const kUserId = 'balsm.user_id';
   static const kPendingMergeTarget = 'balsm.pending_merge_target';
 
-  /// The merge-or-discard choice in progress ([MergeChoice.name]). Written
+  /// The merge-or-discard choice in progress (`MergeChoice.name`). Written
   /// before the first destructive step: once a merge has committed its rows,
   /// a Remove would delete the merged records' attachments (and a discard
   /// half-done can't be merged), so only the recorded choice may run.
@@ -118,7 +118,7 @@ class GoOnlineController {
         try {
           await rekeyOwner(_db, from: localId, to: userId, dropOutbox: false);
           await _files.rekeyOwnerFiles(from: localId, to: userId);
-        } catch (_) {
+        } on Object catch (_) {
           return AppResult.failure(const StorageFailure());
         }
         await _storage.writeToken(kLocalId, userId);
@@ -211,7 +211,7 @@ class GoOnlineController {
       try {
         await _storage.writeToken(kPendingMergeChoice, choice.name);
         await moveData(localId, target);
-      } catch (_) {
+      } on Object catch (_) {
         return AppResult.failure(const StorageFailure());
       }
     }
@@ -259,10 +259,10 @@ class GoOnlineController {
   Future<void> retryPending() async {
     try {
       await finishPasswordIfPending();
-    } catch (_) {}
+    } on Object catch (_) {}
     try {
       if (await _storage.readToken(kDisclosurePending) == 'true') await _resyncDisclosure();
-    } catch (_) {}
+    } on Object catch (_) {}
   }
 
   /// Sets the password chosen offline as the server password. On failure the

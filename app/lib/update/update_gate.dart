@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
+import 'package:core/core.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:core/core.dart';
-
 import '../balsm_app/kit.dart';
-import '../balsm_app/tokens.dart';
+import '../balsm_app/maintenance/maintenance_tokens.dart';
 
 /// The words on the update sheet. A plain value so the sheet belongs to no
 /// brand's string bundle: each app shell fills it from its own, with its own
@@ -80,11 +79,11 @@ class UpdateLook {
 /// sheet can cover a required update.
 class UpdateGate extends StatefulWidget {
   const UpdateGate({
-    super.key,
     required this.child,
     required this.brand,
     required this.lang,
     required this.look,
+    super.key,
     this.prefs,
     this.cached,
     this.check,
@@ -180,28 +179,30 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
     final show =
         required || (_info.status == UpdateStatus.available && _skipped != _info.latest && _closed != _info.latest);
     if (!show) return widget.child;
-    return Stack(children: [
-      widget.child,
-      Positioned.fill(
-        // The sheet is modal: nothing beneath it is reachable, by touch or by
-        // a screen reader.
-        child: BlockSemantics(
-          child: Directionality(
-            textDirection: widget.look.rtl ? TextDirection.rtl : TextDirection.ltr,
-            child: Material(
-              type: MaterialType.transparency,
-              child: UpdateSheet(
-                look: widget.look,
-                info: _info,
-                onUpdate: _update,
-                onClose: required ? null : _close,
-                onSkip: required ? null : _skip,
+    return Stack(
+      children: [
+        widget.child,
+        Positioned.fill(
+          // The sheet is modal: nothing beneath it is reachable, by touch or by
+          // a screen reader.
+          child: BlockSemantics(
+            child: Directionality(
+              textDirection: widget.look.rtl ? TextDirection.rtl : TextDirection.ltr,
+              child: Material(
+                type: MaterialType.transparency,
+                child: UpdateSheet(
+                  look: widget.look,
+                  info: _info,
+                  onUpdate: _update,
+                  onClose: required ? null : _close,
+                  onSkip: required ? null : _skip,
+                ),
               ),
             ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -213,10 +214,10 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
 /// those two phases are not ported.
 class UpdateSheet extends StatefulWidget {
   const UpdateSheet({
-    super.key,
     required this.look,
     required this.info,
     required this.onUpdate,
+    super.key,
     this.onClose,
     this.onSkip,
   });
@@ -234,12 +235,11 @@ class UpdateSheet extends StatefulWidget {
 
 class _UpdateSheetState extends State<UpdateSheet> with SingleTickerProviderStateMixin {
   /// `upSlideUp 0.3s cubic-bezier(0.16,1,0.3,1)`.
-  late final AnimationController _in = AnimationController(vsync: this, duration: const Duration(milliseconds: 300))
-    ..forward();
-  late final Animation<double> _curve = CurvedAnimation(parent: _in, curve: const Cubic(0.16, 1, 0.3, 1));
+  late final AnimationController _in = AnimationController(vsync: this, duration: Motion.transition)..forward();
+  late final Animation<double> _curve = CurvedAnimation(parent: _in, curve: Motion.easeOut);
 
   /// The design's amber for "Required update" (`#8A6A10`).
-  static const _requiredInk = Color(0xFF8A6A10);
+  static const Color _requiredInk = MaintenanceTokens.ink2;
 
   @override
   void dispose() {
@@ -258,174 +258,201 @@ class _UpdateSheetState extends State<UpdateSheet> with SingleTickerProviderStat
     final title = required ? u.requiredTitle : u.availableTitle;
     final mq = MediaQuery.of(context);
 
-    return Stack(children: [
-      Positioned.fill(
-        child: FadeTransition(
-          opacity: _curve,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onClose,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
-              child: const ColoredBox(color: Color(0x5C14202B)),
-            ),
-          ),
-        ),
-      ),
-      Align(
-        alignment: Alignment.bottomCenter,
-        child: SlideTransition(
-          position: Tween(begin: const Offset(0, 1.1), end: Offset.zero).animate(_curve),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: mq.size.height * 0.9, maxWidth: 560),
-            child: Semantics(
-              scopesRoute: true,
-              namesRoute: true,
-              explicitChildNodes: true,
-              label: title,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
-                      // The close button rides above the mark, as in the
-                      // design (`minHeight: 36`, then `marginTop: -12`).
-                      Stack(children: [
-                        Container(
-                          // Full width, so the close button lands in the corner
-                          // rather than at the edge of the centred text.
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(top: 24),
-                          child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            look.mark,
-                            const SizedBox(height: 10),
-                            Text(
-                              (required ? u.eyebrowRequired : u.eyebrowNew).toUpperCase(),
-                              textAlign: TextAlign.center,
-                              style: Typo.meta(ar: ar).copyWith(
-                                fontSize: FS.xs,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: ar ? 0 : 1.9,
-                                color: required ? _requiredInk : look.accent.main,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(title, textAlign: TextAlign.center, style: Typo.heading(ar: ar)),
-                            const SizedBox(height: 10),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 320),
-                              child: Text(
-                                required ? u.requiredBody : u.availableBody,
-                                textAlign: TextAlign.center,
-                                style: Typo.bodySm(ar: ar).copyWith(color: T.fg2, height: 1.5),
-                              ),
-                            ),
-                          ]),
-                        ),
-                        if (dismissable)
-                          PositionedDirectional(
-                            top: 0,
-                            end: 0,
-                            child: RoundBtn(
-                              icon: LucideIcons.x,
-                              semanticLabel: u.close,
-                              ghost: true,
-                              iconSize: 17,
-                              onTap: widget.onClose,
-                            ),
-                          ),
-                      ]),
-                      Container(
-                        margin: const EdgeInsets.only(top: 16, bottom: 14),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rLg)),
-                        child: Row(children: [
-                          Expanded(child: _version(u.current, info.installed, on: false)),
-                          Icon(ar ? LucideIcons.arrowLeft : LucideIcons.arrowRight, size: 18, color: T.fg3),
-                          Expanded(child: _version(u.newVersion, info.latest, on: true)),
-                        ]),
-                      ),
-                    ]),
-                  ),
-                  if (info.notes.isNotEmpty)
-                    Flexible(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          _Notes(look: look, notes: info.notes),
-                          // The whole release history as a web page. Opens
-                          // in the browser, so it never stands between the
-                          // user and the update when there is no connection.
-                          if (info.notesUrl != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: PButton(
-                                u.fullNotes,
-                                icon: LucideIcons.externalLink,
-                                variant: BtnVariant.ghost,
-                                accent: look.accent,
-                                ar: ar,
-                                color: look.accent.main,
-                                onTap: () => launchUrl(Uri.parse(info.notesUrl!), mode: LaunchMode.externalApplication),
-                              ),
-                            ),
-                        ]),
-                      ),
-                    ),
-                  Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(border: Border(top: BorderSide(color: T.ink100))),
-                    padding: EdgeInsets.fromLTRB(20, 12, 20, 24 + mq.padding.bottom),
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      PButton(
-                        u.updateNow,
-                        icon: LucideIcons.download,
-                        variant: BtnVariant.primary,
-                        large: true,
-                        block: true,
-                        accent: look.accent,
-                        ar: ar,
-                        onTap: widget.onUpdate,
-                      ),
-                      if (widget.onSkip != null) ...[
-                        const SizedBox(height: 6),
-                        PButton(
-                          u.skip,
-                          variant: BtnVariant.ghost,
-                          block: true,
-                          ar: ar,
-                          color: T.fg2,
-                          onTap: widget.onSkip,
-                        ),
-                      ],
-                    ]),
-                  ),
-                ]),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: FadeTransition(
+            opacity: _curve,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.onClose,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+                child: const ColoredBox(color: AppColors.scrim),
               ),
             ),
           ),
         ),
-      ),
-    ]);
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: SlideTransition(
+            position: Tween(begin: const Offset(0, 1.1), end: Offset.zero).animate(_curve),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: mq.size.height * 0.9, maxWidth: 560),
+              child: Semantics(
+                scopesRoute: true,
+                namesRoute: true,
+                explicitChildNodes: true,
+                label: title,
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(20, 10, 20, 0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Padding(padding: EdgeInsets.only(bottom: 12), child: SheetGrab()),
+                            // The close button rides above the mark, as in the
+                            // design (`minHeight: 36`, then `marginTop: -12`).
+                            Stack(
+                              children: [
+                                Container(
+                                  // Full width, so the close button lands in the corner
+                                  // rather than at the edge of the centred text.
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.only(top: 24),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      look.mark,
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        (required ? u.eyebrowRequired : u.eyebrowNew).toUpperCase(),
+                                        textAlign: TextAlign.center,
+                                        style: Typo.meta(ar: ar).copyWith(
+                                          fontSize: FontSizes.meta,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: ar ? 0 : 1.9,
+                                          color: required ? _requiredInk : look.accent.main,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(title, textAlign: TextAlign.center, style: Typo.heading(ar: ar)),
+                                      const SizedBox(height: 10),
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 320),
+                                        child: Text(
+                                          required ? u.requiredBody : u.availableBody,
+                                          textAlign: TextAlign.center,
+                                          style:
+                                              Typo.bodySm(ar: ar).copyWith(color: AppColors.textSecondary, height: 1.5),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (dismissable)
+                                  PositionedDirectional(
+                                    top: 0,
+                                    end: 0,
+                                    child: RoundBtn(
+                                      icon: LucideIcons.x,
+                                      semanticLabel: u.close,
+                                      ghost: true,
+                                      iconSize: 17,
+                                      onTap: widget.onClose,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            Container(
+                              margin: const EdgeInsets.only(top: 16, bottom: 14),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.ink50,
+                                borderRadius: BorderRadius.circular(AppRadii.lg),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(child: _version(u.current, info.installed, on: false)),
+                                  Icon(forwardArrow(context), size: 18, color: AppColors.textTertiary),
+                                  Expanded(child: _version(u.newVersion, info.latest, on: true)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (info.notes.isNotEmpty)
+                        Flexible(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _Notes(look: look, notes: info.notes),
+                                // The whole release history as a web page. Opens
+                                // in the browser, so it never stands between the
+                                // user and the update when there is no connection.
+                                if (info.notesUrl case final notesUrl?)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: PButton(
+                                      u.fullNotes,
+                                      icon: LucideIcons.externalLink,
+                                      variant: BtnVariant.ghost,
+                                      accent: look.accent,
+                                      ar: ar,
+                                      color: look.accent.main,
+                                      onTap: () => launchUrl(Uri.parse(notesUrl), mode: LaunchMode.externalApplication),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.ink100))),
+                        padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, 24 + mq.padding.bottom),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PButton(
+                              u.updateNow,
+                              icon: LucideIcons.download,
+                              large: true,
+                              block: true,
+                              accent: look.accent,
+                              ar: ar,
+                              onTap: widget.onUpdate,
+                            ),
+                            if (widget.onSkip != null) ...[
+                              const SizedBox(height: 6),
+                              PButton(
+                                u.skip,
+                                variant: BtnVariant.ghost,
+                                block: true,
+                                ar: ar,
+                                color: AppColors.textSecondary,
+                                onTap: widget.onSkip,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
-  Widget _version(String label, String v, {required bool on}) => Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(label, style: Typo.meta(ar: widget.look.rtl).copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 2),
-        // Version numbers read left to right in Arabic too.
-        Text(
-          v.isEmpty ? '—' : 'v$v',
-          textDirection: TextDirection.ltr,
-          style: Typo.num(size: FS.md, weight: FontWeight.w600, color: on ? widget.look.accent.main : T.fg2),
-        ),
-      ]);
+  Widget _version(String label, String v, {required bool on}) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: Typo.meta(ar: widget.look.rtl).copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          // Version numbers read left to right in Arabic too.
+          Text(
+            v.isEmpty ? '—' : 'v$v',
+            textDirection: TextDirection.ltr,
+            style: Typo.num(color: on ? widget.look.accent.main : AppColors.textSecondary),
+          ),
+        ],
+      );
 }
 
 /// "What's new": every release the user is behind, newest first. The newest
@@ -438,45 +465,78 @@ class _Notes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ar = look.rtl;
-    final eyebrow = Typo.meta(ar: ar)
-        .copyWith(fontSize: FS.xs, fontWeight: FontWeight.w700, letterSpacing: ar ? 0 : 1.9, color: T.fg3);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-      for (var n = 0; n < notes.length; n++) ...[
-        if (n > 0) const SizedBox(height: 14),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-            Expanded(
-              child: n == 0
-                  ? Text(look.copy.whatsNew.toUpperCase(), style: eyebrow)
-                  : Text('v${notes[n].version}',
-                      textDirection: TextDirection.ltr,
-                      textAlign: ar ? TextAlign.right : TextAlign.left,
-                      style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg3)),
+    final eyebrow = Typo.meta(ar: ar).copyWith(
+      fontSize: FontSizes.meta,
+      fontWeight: FontWeight.w700,
+      letterSpacing: ar ? 0 : 1.9,
+      color: AppColors.textTertiary,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var n = 0; n < notes.length; n++) ...[
+          if (n > 0) const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(
+                  child: n == 0
+                      ? Text(look.copy.whatsNew.toUpperCase(), style: eyebrow)
+                      : Text(
+                          'v${notes[n].version}',
+                          textDirection: TextDirection.ltr,
+                          textAlign: ar ? TextAlign.right : TextAlign.left,
+                          style: Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: AppColors.textTertiary),
+                        ),
+                ),
+                if (notes[n].date != null)
+                  Text(formatReleaseDate(notes[n]), textDirection: TextDirection.ltr, style: Typo.meta(ar: ar)),
+              ],
             ),
-            if (notes[n].date != null)
-              Text(formatReleaseDate(notes[n]), textDirection: TextDirection.ltr, style: Typo.meta(ar: ar)),
-          ]),
-        ),
-        for (var i = 0; i < notes[n].items.length; i++) _item(notes[n].items[i], first: i == 0, ar: ar),
+          ),
+          for (var i = 0; i < notes[n].items.length; i++) _Item(notes[n].items[i], first: i == 0, ar: ar),
+        ],
+        const SizedBox(height: 12),
       ],
-      const SizedBox(height: 12),
-    ]);
+    );
   }
+}
 
-  /// A title and, under it, its sentence. Plain text; a line break in the
-  /// manifest is a line break here.
-  Widget _item(ReleaseNoteItem it, {required bool first, required bool ar}) => Container(
+/// A title and, under it, its sentence. Plain text; a line break in the
+/// manifest is a line break here.
+class _Item extends StatelessWidget {
+  const _Item(this.it, {required this.first, required this.ar});
+  final ReleaseNoteItem it;
+  final bool first;
+  final bool ar;
+
+  @override
+  Widget build(BuildContext context) => Container(
         width: double.infinity,
-        decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: T.ink100))),
+        decoration: BoxDecoration(border: first ? null : const Border(top: BorderSide(color: AppColors.ink100))),
         padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text(it.title, style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-          if (it.body.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(it.body, style: Typo.bodySm(ar: ar).copyWith(fontSize: FS.xs, color: T.fg2, height: 1.5)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              it.title,
+              style: Typo.bodySm(ar: ar).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
             ),
-        ]),
+            if (it.body.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  it.body,
+                  style: Typo.bodySm(ar: ar)
+                      .copyWith(fontSize: FontSizes.meta, color: AppColors.textSecondary, height: 1.5),
+                ),
+              ),
+          ],
+        ),
       );
 }

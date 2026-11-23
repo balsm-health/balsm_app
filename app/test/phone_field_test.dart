@@ -65,14 +65,14 @@ void main() {
     });
   });
 
-  group('foldPhoneDigits', () {
+  group('toWesternDigits', () {
     test('folds Arabic-Indic and Eastern Arabic-Indic digits (FR-213)', () {
-      expect(foldPhoneDigits('٠١٢٣٤٥٦٧٨٩'), '0123456789');
-      expect(foldPhoneDigits('۰۱۲۳'), '0123');
+      expect(toWesternDigits('٠١٢٣٤٥٦٧٨٩'), '0123456789');
+      expect(toWesternDigits('۰۱۲۳'), '0123');
     });
 
     test('leaves ASCII and separators alone', () {
-      expect(foldPhoneDigits('10 1234-5678'), '10 1234-5678');
+      expect(toWesternDigits('10 1234-5678'), '10 1234-5678');
     });
   });
 
@@ -98,14 +98,16 @@ void main() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
-      await tester.pumpWidget(AppScope(
-        state: state,
-        child: MaterialApp(
-          home: Scaffold(
-            body: Padding(padding: const EdgeInsets.all(20), child: PhoneField(controller: controller)),
+      await tester.pumpWidget(
+        AppScope(
+          state: state,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Padding(padding: const EdgeInsets.all(20), child: PhoneField(controller: controller)),
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       return controller;
     }

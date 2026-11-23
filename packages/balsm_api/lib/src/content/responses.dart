@@ -8,13 +8,13 @@ library;
 class LocalizedTextDto {
   const LocalizedTextDto({required this.en, required this.ar});
 
-  final String en;
-  final String ar;
-
   factory LocalizedTextDto.fromJson(Object? json) {
     final map = json is Map<String, dynamic> ? json : const <String, dynamic>{};
     return LocalizedTextDto(en: map['en'] as String? ?? '', ar: map['ar'] as String? ?? '');
   }
+
+  final String en;
+  final String ar;
 
   Map<String, dynamic> toJson() => {'en': en, 'ar': ar};
 }
@@ -23,15 +23,15 @@ class LocalizedTextDto {
 class PregnancyWeekDto {
   const PregnancyWeekDto({required this.week, required this.title, required this.body});
 
-  final int week;
-  final LocalizedTextDto title;
-  final LocalizedTextDto body;
-
   factory PregnancyWeekDto.fromJson(Map<String, dynamic> json) => PregnancyWeekDto(
         week: (json['week'] as num).toInt(),
         title: LocalizedTextDto.fromJson(json['title']),
         body: LocalizedTextDto.fromJson(json['body']),
       );
+
+  final int week;
+  final LocalizedTextDto title;
+  final LocalizedTextDto body;
 
   Map<String, dynamic> toJson() => {'week': week, 'title': title.toJson(), 'body': body.toJson()};
 }
@@ -48,12 +48,6 @@ class PregnancyWeeksResponse {
     required this.multiplesNote,
     required this.weeks,
   });
-
-  final String version;
-  final LocalizedTextDto source;
-  final LocalizedTextDto disclaimer;
-  final LocalizedTextDto multiplesNote;
-  final List<PregnancyWeekDto> weeks;
 
   /// Throws [FormatException] when there is no version or no weeks — content
   /// that cannot be shown at all. A week without a number is skipped.
@@ -76,6 +70,12 @@ class PregnancyWeeksResponse {
       weeks: weeks,
     );
   }
+
+  final String version;
+  final LocalizedTextDto source;
+  final LocalizedTextDto disclaimer;
+  final LocalizedTextDto multiplesNote;
+  final List<PregnancyWeekDto> weeks;
 
   Map<String, dynamic> toJson() => {
         'version': version,

@@ -2,9 +2,8 @@ import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../i18n/i18n.dart';
-
 import '../../application/ports/reauth_port.dart';
+import '../i18n/i18n.dart';
 
 // ReauthChannel / ReauthCredentials live in the application layer, beside the
 // port that consumes them — a port must not import presentation.
@@ -18,10 +17,10 @@ export '../../application/ports/reauth_port.dart' show ReauthChannel, ReauthCred
 /// back for verification. Neither the identifier nor the code is logged.
 class ReauthForm extends ConsumerStatefulWidget {
   const ReauthForm({
-    super.key,
     required this.onSubmit,
     required this.onRequestChallenge,
     required this.submitLabel,
+    super.key,
     this.submitVariant = BalsmButtonVariant.primary,
     this.submitting = false,
     this.error,
@@ -66,11 +65,13 @@ class _ReauthFormState extends ConsumerState<ReauthForm> {
 
   void _submit() {
     if (!_valid) return;
-    widget.onSubmit(ReauthCredentials(
-      channel: _channel,
-      identifier: _identifier.text.trim(),
-      secret: _secret.text,
-    ));
+    widget.onSubmit(
+      ReauthCredentials(
+        channel: _channel,
+        identifier: _identifier.text.trim(),
+        secret: _secret.text,
+      ),
+    );
   }
 
   @override
@@ -81,16 +82,16 @@ class _ReauthFormState extends ConsumerState<ReauthForm> {
       children: [
         Text(
           m.verifyHeading,
-          style: TextStyle(
-            fontSize: 18,
+          style: const TextStyle(
+            fontSize: FontSizes.subhead,
             fontWeight: FontWeight.w700,
-            color: BalsmColors.fg1,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           m.verifyBody,
-          style: TextStyle(fontSize: 14, color: BalsmColors.fg3),
+          style: const TextStyle(fontSize: FontSizes.description, color: AppColors.textTertiary),
         ),
         const SizedBox(height: 16),
         Wrap(
@@ -127,9 +128,9 @@ class _ReauthFormState extends ConsumerState<ReauthForm> {
             onChanged: (_) => setState(() {}),
           ),
         ],
-        if (widget.error != null) ...[
+        if (widget.error case final error?) ...[
           const SizedBox(height: 16),
-          BalsmErrorBanner(message: widget.error!),
+          BalsmErrorBanner(message: error),
         ],
         const SizedBox(height: 20),
         BalsmButton(

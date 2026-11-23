@@ -1,7 +1,7 @@
 import 'package:app/balsm_app/app_state.dart';
-import 'package:core/core.dart';
 import 'package:app/balsm_app/screens/metric_log.dart';
 import 'package:app/balsm_app/widgets/num_pad.dart';
+import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -20,23 +20,26 @@ void main() {
     tester.view.physicalSize = const Size(402, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: MetricLog(
-                metric: CheckInMetric.heartRate,
-                s: s,
-                host: MetricLogHost.standalone,
-                onChanged: (c, {required bool valid}) => seen.add((c, valid)),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MetricLog(
+                  metric: CheckInMetric.heartRate,
+                  s: s,
+                  host: MetricLogHost.standalone,
+                  onChanged: (c, {required valid}) => seen.add((c, valid)),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 

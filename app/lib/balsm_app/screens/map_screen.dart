@@ -1,15 +1,16 @@
 import 'dart:async';
 
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:core/core.dart';
+import 'package:fluster/fluster.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:fluster/fluster.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
@@ -17,7 +18,6 @@ import '../care/care_clustering.dart';
 import '../care/care_entity.dart';
 import '../kit.dart';
 import '../responsive.dart';
-import '../tokens.dart';
 import 'map_packs_sheet.dart';
 
 /// Nearby health entities (map.jsx `MapScreen`): a stylized Cairo map with
@@ -25,7 +25,7 @@ import 'map_packs_sheet.dart';
 /// Data comes from [careDirectoryProvider] (a placeholder until the
 /// care-directory backend exists); no PHI is involved.
 /// Where the map was looking, kept for the session so switching tabs and back
-/// returns to the same view. [placed] is true once the camera is somewhere the
+/// returns to the same view. `placed` is true once the camera is somewhere the
 /// patient chose — their own position, or wherever they panned — rather than
 /// the fallback shown before the location resolved.
 typedef MapView = ({LatLng center, double zoom, bool placed});
@@ -77,7 +77,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   MapView? get _openingView {
     final saved = ref.read(mapViewProvider);
     if (saved != null && saved.placed) return saved;
-    final me = ref.read(deviceLocationProvider).valueOrNull?.position;
+    final me = ref.read(deviceLocationProvider).value?.position;
     if (me != null && kCareCoverage.contains(me)) return (center: me, zoom: _kUserZoom, placed: true);
     return saved;
   }
@@ -86,7 +86,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// unless the view is already placed (restored, or they have panned).
   void _focusUserIfUnplaced() {
     if (!_mapReady || (ref.read(mapViewProvider)?.placed ?? false)) return;
-    final me = ref.read(deviceLocationProvider).valueOrNull?.position;
+    final me = ref.read(deviceLocationProvider).value?.position;
     if (me == null || !kCareCoverage.contains(me)) return;
     _mapController.move(me, _kUserZoom);
     _remember(me, _kUserZoom, placed: true);
@@ -204,15 +204,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final device = await ref.read(deviceLocationProvider.future);
     if (!mounted) return;
     final loc = device.position;
-    ref.read(analyticsLoggerProvider).logEvent(ProductEvent.nearbyLocate, props: {
-      'result': switch (device.issue) {
-        null => ProductLocateResult.found,
-        DeviceLocationIssue.serviceOff => ProductLocateResult.serviceOff,
-        DeviceLocationIssue.denied => ProductLocateResult.denied,
-        DeviceLocationIssue.deniedForever => ProductLocateResult.deniedForever,
-        DeviceLocationIssue.unavailable => ProductLocateResult.unavailable,
+    ref.read(analyticsLoggerProvider).logEvent(
+      ProductEvent.nearbyLocate,
+      props: {
+        'result': switch (device.issue) {
+          null => ProductLocateResult.found,
+          DeviceLocationIssue.serviceOff => ProductLocateResult.serviceOff,
+          DeviceLocationIssue.denied => ProductLocateResult.denied,
+          DeviceLocationIssue.deniedForever => ProductLocateResult.deniedForever,
+          DeviceLocationIssue.unavailable => ProductLocateResult.unavailable,
+        },
       },
-    });
+    );
     if (loc == null) {
       _explainNoLocation(device.issue);
       return;
@@ -235,10 +238,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       DeviceLocationIssue.denied || DeviceLocationIssue.deniedForever => (c.loc_denied, Geolocator.openAppSettings),
       _ => (c.loc_unavailable(AppScope.of(context).gender), null),
     };
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-      content: Text(message),
-      action: settings == null ? null : SnackBarAction(label: c.loc_settings, onPressed: () => settings()),
-    ));
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: settings == null ? null : SnackBarAction(label: c.loc_settings, onPressed: settings),
+      ),
+    );
   }
 
   List<CareEntity> _filter(List<CareEntity> all) => filterCareEntities(all, query: _query, types: _activeTypes);
@@ -311,159 +316,175 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final s = AppScope.of(context);
     // The position can land after the map is up; centre on it then.
     ref.listen(deviceLocationProvider, (prev, next) => _focusUserIfUnplaced());
-    final entities = ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[];
+    final entities = ref.watch(careDirectoryProvider).value?.entities ?? const <CareEntity>[];
     final filtered = _filter(entities);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(children: [
-        const PadTop(),
-        // Controls (title, search, filters) stay text-width even on tablet/desktop —
-        // only the map/list body below goes edge-to-edge.
-        ContentColumn(
-          maxWidth: 720,
-          child: Column(children: [
-            // App bar — title + list/map toggle.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-              child: Row(children: [
-                Expanded(
-                    child: Text(s.strings.care.map_nearby, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl))),
-                // "Offline" badge — the design puts the state in the app bar,
-                // not only in the notice below it.
-                if (ref.watch(carePinsProvider).valueOrNull?.stale ?? false) ...[
-                  Pill(
-                    s.strings.common.offline_badge,
-                    kind: PillKind.neutral,
-                    dot: false,
-                    icon: LucideIcons.cloudOff,
-                    ar: s.rtl,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                _softButton(
-                  icon: _mapView ? LucideIcons.list : LucideIcons.map,
-                  label: _mapView ? s.strings.care.map_list : s.strings.care.map_map,
-                  onTap: () => setState(() {
-                    _mapView = !_mapView;
-                    _selectedId = null;
-                  }),
-                ),
-              ]),
-            ),
-            // Search.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() {
-                  _query = v;
-                  _pushSearch();
-                  _selectedId = null;
-                }),
-                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.lg, color: T.fg1),
-                decoration: InputDecoration(
-                  isDense: true,
-                  filled: true,
-                  fillColor: Colors.white,
-                  hintText: s.strings.care.map_search_ph,
-                  prefixIcon: const Icon(LucideIcons.search, size: 18, color: T.fg4),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : Center(
-                          widthFactor: 1,
-                          child: GestureDetector(
-                            onTap: () => setState(() {
-                              _query = '';
-                              _searchCtrl.clear();
-                              _pushSearch(immediate: true);
-                              _selectedId = null;
-                            }),
-                            child: Container(
-                              width: 20,
-                              height: 20,
-                              alignment: Alignment.center,
-                              margin: const EdgeInsetsDirectional.only(end: 10),
-                              decoration: const BoxDecoration(color: T.ink200, shape: BoxShape.circle),
-                              child: const Icon(LucideIcons.x, size: 11, color: T.fg2),
-                            ),
-                          ),
+      backgroundColor: AppColors.white,
+      body: Column(
+        children: [
+          const PadTop(),
+          // Controls (title, search, filters) stay text-width even on tablet/desktop —
+          // only the map/list body below goes edge-to-edge.
+          ContentColumn(
+            maxWidth: 720,
+            child: Column(
+              children: [
+                // App bar — title + list/map toggle.
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 6, 20, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          s.strings.care.map_nearby,
+                          style: Typo.heading(ar: s.rtl).copyWith(fontSize: FontSizes.heading),
                         ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(T.rMd),
-                      borderSide: const BorderSide(color: T.border, width: 1.5)),
-                  focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(T.rMd),
-                      borderSide: BorderSide(color: s.accent.main, width: 1.5)),
-                ),
-              ),
-            ),
-            // Category filter — a dropdown selector (the design replaced the
-            // scrolling chip row with one, matching the Trends metrics
-            // pattern): a single trigger showing the active category, opening
-            // a checklist-style panel that closes on an outside tap.
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: _TypeDropdown(
-                  active: _activeTypes,
-                  onToggle: (t) => setState(() {
-                    // Null is the "All" row: clear the set rather than tick
-                    // every box, so "All" and all-ticked stay one state.
-                    if (t == null) {
-                      _activeTypes.clear();
-                    } else if (!_activeTypes.remove(t)) {
-                      _activeTypes.add(t);
-                    }
-                    _selectedId = null;
-                    // A single ticked type is pushed server-side; several stay
-                    // client-side because the endpoint filters on one type.
-                    _pushSearch(immediate: true);
-                  }),
-                ),
-              ),
-            ),
-          ]),
-        ),
-        // Retained results past their TTL, served because the refetch could not
-        // reach the server. Driven by the result's own provenance, not by the
-        // connectivity stream: connectivity reports whether an interface is up,
-        // not whether these particular rows are old.
-        if (ref.watch(carePinsProvider).valueOrNull?.stale ?? false)
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
-            // The design gives this its own ink-50 card rather than a bare
-            // line, so the cached state reads as deliberate, not as an error.
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rLg)),
-              child: Row(children: [
-                const Icon(LucideIcons.database, size: 16, color: T.fg3),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    s.strings.common.offline_stale_places,
-                    style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2),
+                      ),
+                      // "Offline" badge — the design puts the state in the app bar,
+                      // not only in the notice below it.
+                      if (ref.watch(carePinsProvider).value?.stale ?? false) ...[
+                        Pill(
+                          s.strings.common.offline_badge,
+                          dot: false,
+                          icon: LucideIcons.cloudOff,
+                          ar: s.rtl,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      _SoftButton(
+                        icon: _mapView ? LucideIcons.list : LucideIcons.map,
+                        label: _mapView ? s.strings.care.map_list : s.strings.care.map_map,
+                        onTap: () => setState(() {
+                          _mapView = !_mapView;
+                          _selectedId = null;
+                        }),
+                      ),
+                    ],
                   ),
                 ),
-              ]),
+                // Search.
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 10),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (v) => setState(() {
+                      _query = v;
+                      _pushSearch();
+                      _selectedId = null;
+                    }),
+                    style: Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.subhead, color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      filled: true,
+                      fillColor: AppColors.white,
+                      hintText: s.strings.care.map_search_ph,
+                      prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppColors.textHint),
+                      suffixIcon: _query.isEmpty
+                          ? null
+                          : Center(
+                              widthFactor: 1,
+                              child: GestureDetector(
+                                onTap: () => setState(() {
+                                  _query = '';
+                                  _searchCtrl.clear();
+                                  _pushSearch(immediate: true);
+                                  _selectedId = null;
+                                }),
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  alignment: Alignment.center,
+                                  margin: const EdgeInsetsDirectional.only(end: 10),
+                                  decoration: const BoxDecoration(color: AppColors.ink200, shape: BoxShape.circle),
+                                  child: const Icon(LucideIcons.x, size: 11, color: AppColors.textSecondary),
+                                ),
+                              ),
+                            ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        borderSide: BorderSide(color: s.accent.main, width: 1.5),
+                      ),
+                    ),
+                  ),
+                ),
+                // Category filter — a dropdown selector (the design replaced the
+                // scrolling chip row with one, matching the Trends metrics
+                // pattern): a single trigger showing the active category, opening
+                // a checklist-style panel that closes on an outside tap.
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+                    child: _TypeDropdown(
+                      active: _activeTypes,
+                      onToggle: (t) => setState(() {
+                        // Null is the "All" row: clear the set rather than tick
+                        // every box, so "All" and all-ticked stay one state.
+                        if (t == null) {
+                          _activeTypes.clear();
+                        } else if (!_activeTypes.remove(t)) {
+                          _activeTypes.add(t);
+                        }
+                        _selectedId = null;
+                        // A single ticked type is pushed server-side; several stay
+                        // client-side because the endpoint filters on one type.
+                        _pushSearch(immediate: true);
+                      }),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        // The map itself stays full-bleed (real map UX never letterboxes); only
-        // the list view — a column of cards — gets the same width cap as the
-        // controls above.
-        Expanded(
-          child: _mapView
-              // The map plots pins — cheap enough to cover the whole viewport —
-              // while the list shows full rows for the nearest few. Client-side
-              // type narrowing applies to both.
-              ? _mapBody(s, _filterPins(ref.watch(carePinsProvider).valueOrNull?.pins ?? const []),
-                  ref.watch(deviceLocationProvider).valueOrNull?.position)
-              : ContentColumn(maxWidth: 720, child: _listBody(s, filtered)),
-        ),
-      ]),
+          // Retained results past their TTL, served because the refetch could not
+          // reach the server. Driven by the result's own provenance, not by the
+          // connectivity stream: connectivity reports whether an interface is up,
+          // not whether these particular rows are old.
+          if (ref.watch(carePinsProvider).value?.stale ?? false)
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
+              // The design gives this its own ink-50 card rather than a bare
+              // line, so the cached state reads as deliberate, not as an error.
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.lg)),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.database, size: 16, color: AppColors.textTertiary),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        s.strings.common.offline_stale_places,
+                        style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // The map itself stays full-bleed (real map UX never letterboxes); only
+          // the list view — a column of cards — gets the same width cap as the
+          // controls above.
+          Expanded(
+            child: _mapView
+                // The map plots pins — cheap enough to cover the whole viewport —
+                // while the list shows full rows for the nearest few. Client-side
+                // type narrowing applies to both.
+                ? _mapBody(
+                    s,
+                    _filterPins(ref.watch(carePinsProvider).value?.pins ?? const []),
+                    ref.watch(deviceLocationProvider).value?.position,
+                  )
+                : ContentColumn(maxWidth: 720, child: _listBody(s, filtered)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -473,67 +494,78 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // panel strands the user: _TileMap is what reports panning, so with it gone
     // they cannot move to an area that HAS results — the only way out is
     // clearing the search. Now the message overlays a live map instead.
-    return Stack(children: [
-      Positioned.fill(
+    return Stack(
+      children: [
+        Positioned.fill(
           child: _TileMap(
-              controller: _mapController,
-              initialView: _openingView,
-              onReady: () {
-                _mapReady = true;
-                // Ready fires mid-layout; move and rebuild after the frame.
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) _focusUserIfUnplaced();
-                });
-              },
-              pins: pins,
-              selectedId: _selectedId,
-              onPin: _selectPin,
-              onMoved: _onMapMoved,
-              userLocation: userLocation)),
-      if (pins.isEmpty) Positioned.fill(child: Center(child: _emptyOverlay(s))),
-      if (_areaDirty) _searchAreaButton(s),
-      // Count badge.
-      PositionedDirectional(
-        top: 12,
-        end: 14,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
-          decoration: BoxDecoration(
-              color: const Color(0xF0FFFFFF), borderRadius: BorderRadius.circular(T.rPill), boxShadow: T.shadowSm),
-          child: Text('${pins.length} ${s.strings.care.map_found}',
-              style: Typo.num(size: FS.xs, weight: FontWeight.w700, color: T.fg2)),
+            controller: _mapController,
+            initialView: _openingView,
+            onReady: () {
+              _mapReady = true;
+              // Ready fires mid-layout; move and rebuild after the frame.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _focusUserIfUnplaced();
+              });
+            },
+            pins: pins,
+            selectedId: _selectedId,
+            onPin: _selectPin,
+            onMoved: _onMapMoved,
+            userLocation: userLocation,
+          ),
         ),
-      ),
-      // Recenter on the device's position.
-      PositionedDirectional(
-        bottom: _selectedId != null ? 220 : 20,
-        end: 14,
-        child: RoundBtn(
-            icon: LucideIcons.locateFixed,
-            semanticLabel: s.strings.common.a11y_locate,
-            bg: Colors.white,
-            fg: s.accent.main,
-            onTap: _recenter),
-      ),
-      // Offline map packs — download a governorate's basemap + places for
-      // use without a connection. Stacked above recenter, same horizontal
-      // rail, so the two never collide as the selected-card offset shifts
-      // recenter up.
-      // Offline map packs are files on the device; a browser has nowhere to
-      // keep them (see bootstrap), so the button is not offered there.
-      if (!kIsWeb)
+        if (pins.isEmpty) Positioned.fill(child: Center(child: _emptyOverlay(s))),
+        if (_areaDirty) _SearchAreaButton(s, onTap: _searchThisArea),
+        // Count badge.
         PositionedDirectional(
-          bottom: (_selectedId != null ? 220 : 20) + 56,
+          top: 12,
+          end: 14,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.white94,
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              boxShadow: AppShadows.sm,
+            ),
+            child: Text(
+              s.strings.care.map_found_count(pins.length),
+              style: Typo.num(size: FontSizes.meta, weight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
+          ),
+        ),
+        // Recenter on the device's position.
+        PositionedDirectional(
+          bottom: _selectedId != null ? 220 : 20,
           end: 14,
           child: RoundBtn(
+            icon: LucideIcons.locateFixed,
+            semanticLabel: s.strings.common.a11y_locate,
+            bg: AppColors.white,
+            fg: s.accent.main,
+            onTap: _recenter,
+          ),
+        ),
+        // Offline map packs — download a governorate's basemap + places for
+        // use without a connection. Stacked above recenter, same horizontal
+        // rail, so the two never collide as the selected-card offset shifts
+        // recenter up.
+        // Offline map packs are files on the device; a browser has nowhere to
+        // keep them (see bootstrap), so the button is not offered there.
+        if (!kIsWeb)
+          PositionedDirectional(
+            bottom: (_selectedId != null ? 220 : 20) + 56,
+            end: 14,
+            child: RoundBtn(
               icon: LucideIcons.download,
               semanticLabel: s.strings.common.a11y_download,
-              bg: Colors.white,
-              fg: T.fg2,
-              onTap: () => showMapPacksSheet(context)),
-        ),
-      if (_selectedId != null) _selectedCard(s),
-    ]);
+              bg: AppColors.white,
+              fg: AppColors.textSecondary,
+              onTap: () => showMapPacksSheet(context),
+            ),
+          ),
+        if (_selectedId != null) _selectedCard(s),
+      ],
+    );
   }
 
   /// Detail sheet for the tapped pin. Pins carry no name or contact details, so
@@ -552,8 +584,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               height: 96,
               alignment: Alignment.center,
               decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
               ),
               child: const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.2)),
             ),
@@ -563,9 +595,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   // ── List view ─────────────────────────────────────────────
   Widget _listBody(PatientAppState s, List<CareEntity> filtered) {
-    if (filtered.isEmpty) return _emptyList(s);
+    if (filtered.isEmpty) return _EmptyList(s);
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
       itemCount: filtered.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
@@ -577,32 +609,47 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: active ? e.type.bg : Colors.white,
-              borderRadius: BorderRadius.circular(T.rLg),
-              border: Border.all(color: active ? e.type.color : T.border, width: 1.5),
-              boxShadow: T.shadowSm,
+              color: active ? e.type.bg : AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: active ? e.type.color : AppColors.border, width: 1.5),
+              boxShadow: AppShadows.sm,
             ),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _typeIcon(e.type, 46),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(pick(e.name, ar: s.rtl),
-                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                  const SizedBox(height: 2),
-                  Text(pick(e.addr, ar: s.rtl), style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                  const SizedBox(height: 8),
-                  // Directory data has real gaps: no source supplies opening
-                  // hours or ratings, and ~8% of places have no phone. Omit the
-                  // row rather than rendering an empty icon or a bare "/ 5".
-                  Wrap(spacing: 14, runSpacing: 4, children: [
-                    if (e.distance.isNotEmpty) _metaBit(LucideIcons.navigation, _ltr(e.distance), s),
-                    if (e.hours.isNotEmpty) _metaBit(LucideIcons.clock, e.hours, s),
-                    if (e.rating.isNotEmpty) _metaBit(LucideIcons.star, e.rating, s, star: true),
-                  ]),
-                ]),
-              ),
-            ]),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TypeIcon(e.type, 46),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pick(e.name, ar: s.rtl),
+                        style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        pick(e.addr, ar: s.rtl),
+                        style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                      ),
+                      const SizedBox(height: 8),
+                      // Directory data has real gaps: no source supplies opening
+                      // hours or ratings, and ~8% of places have no phone. Omit the
+                      // row rather than rendering an empty icon or a bare "/ 5".
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 4,
+                        children: [
+                          if (e.distance.isNotEmpty) _MetaBit(LucideIcons.navigation, _ltr(e.distance), s),
+                          if (e.hours.isNotEmpty) _MetaBit(LucideIcons.clock, e.hours, s),
+                          if (e.rating.isNotEmpty) _MetaBit(LucideIcons.star, e.rating, s, star: true),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -611,77 +658,105 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   // ── Entity detail card (bottom sheet look) ────────────────
   Widget _entityCard(PatientAppState s, CareEntity e) => Positioned.fill(
-        child: Stack(children: [
-          GestureDetector(onTap: () => setState(() => _selectedId = null), child: const SizedBox.expand()),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: RiseIn(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
-                    boxShadow: [BoxShadow(color: Color(0x2414202B), blurRadius: 32, offset: Offset(0, -4))]),
-                padding: EdgeInsets.fromLTRB(18, 10, 18, 24 + MediaQuery.paddingOf(context).bottom),
-                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Center(child: Padding(padding: EdgeInsets.only(bottom: 14), child: SheetGrab())),
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    _typeIcon(e.type, 50),
-                    const SizedBox(width: 13),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(pick(e.name, ar: s.rtl),
-                            style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(color: e.type.bg, borderRadius: BorderRadius.circular(T.rPill)),
-                          child: Text(pick(e.type.label, ar: s.rtl),
-                              style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: e.type.color)),
-                        ),
-                      ]),
-                    ),
-                    RoundBtn(
-                        icon: LucideIcons.x,
-                        semanticLabel: s.strings.common.a11y_close,
-                        ghost: true,
-                        iconSize: 16,
-                        onTap: () => setState(() => _selectedId = null)),
-                  ]),
-                  const SizedBox(height: 14),
-                  if (pick(e.addr, ar: s.rtl).isNotEmpty) _detailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
-                  if (e.hours.isNotEmpty) _detailRow(LucideIcons.clock, e.hours, s),
-                  if (e.distance.isNotEmpty)
-                    _detailRow(LucideIcons.navigation, '${_ltr(e.distance)} ${s.strings.care.map_distance}', s),
-                  if (e.rating.isNotEmpty) _detailRow(LucideIcons.star, '${e.rating} / 5', s, star: true),
-                  const SizedBox(height: 18),
-                  Row(children: [
-                    Expanded(
-                      child: PButton(s.strings.care.map_call,
-                          icon: LucideIcons.phone,
-                          variant: BtnVariant.primary,
-                          large: true,
-                          block: true,
-                          accent: s.accent,
-                          ar: s.rtl,
-                          onTap: () => _launch('tel:${e.phone.replaceAll(' ', '')}')),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: PButton(s.strings.care.map_directions,
-                          icon: LucideIcons.navigation,
-                          variant: BtnVariant.secondary,
-                          large: true,
-                          block: true,
-                          ar: s.rtl,
-                          onTap: () => _launch(careDirectionsUrl(e))),
-                    ),
-                  ]),
-                ]),
+        child: Stack(
+          children: [
+            GestureDetector(onTap: () => setState(() => _selectedId = null), child: const SizedBox.expand()),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: RiseIn(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+                    boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 32, offset: Offset(0, -4))],
+                  ),
+                  padding: EdgeInsetsDirectional.fromSTEB(18, 10, 18, 24 + MediaQuery.paddingOf(context).bottom),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(child: Padding(padding: EdgeInsets.only(bottom: 14), child: SheetGrab())),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _TypeIcon(e.type, 50),
+                          const SizedBox(width: 13),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  pick(e.name, ar: s.rtl),
+                                  style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 5),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: e.type.bg,
+                                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                                  ),
+                                  child: Text(
+                                    e.type.label(s.strings.care),
+                                    style:
+                                        Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: e.type.color),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          RoundBtn(
+                            icon: LucideIcons.x,
+                            semanticLabel: s.strings.common.a11y_close,
+                            ghost: true,
+                            iconSize: 16,
+                            onTap: () => setState(() => _selectedId = null),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      if (pick(e.addr, ar: s.rtl).isNotEmpty)
+                        _DetailRow(LucideIcons.mapPin, pick(e.addr, ar: s.rtl), s),
+                      if (e.hours.isNotEmpty) _DetailRow(LucideIcons.clock, e.hours, s),
+                      if (e.distance.isNotEmpty)
+                        _DetailRow(LucideIcons.navigation, '${_ltr(e.distance)} ${s.strings.care.map_distance}', s),
+                      if (e.rating.isNotEmpty) _DetailRow(LucideIcons.star, '${e.rating} / 5', s, star: true),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: PButton(
+                              s.strings.care.map_call,
+                              icon: LucideIcons.phone,
+                              large: true,
+                              block: true,
+                              accent: s.accent,
+                              ar: s.rtl,
+                              onTap: () => _launch('tel:${e.phone.replaceAll(' ', '')}'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: PButton(
+                              s.strings.care.map_directions,
+                              icon: LucideIcons.navigation,
+                              variant: BtnVariant.secondary,
+                              large: true,
+                              block: true,
+                              ar: s.rtl,
+                              onTap: () => _launch(careDirectionsUrl(e)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ]),
+          ],
+        ),
       );
 
   /// Hands a facility's map link or number to whatever app handles it.
@@ -701,46 +776,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  // ── Small pieces ──────────────────────────────────────────
-  /// Map view with nothing to plot — `map-x` over the cream stage, with the
-  /// clear-search action (map.jsx). The list view uses a different empty
-  /// state; the two are deliberately not shared.
-  /// "Search this area" — the pill that appears once the map has been moved.
-  ///
-  /// Centred near the top, under the controls, where the eye already is after a
-  /// pan and clear of the detail sheet at the bottom.
-  Widget _searchAreaButton(PatientAppState s) => PositionedDirectional(
-        top: 54,
-        start: 0,
-        end: 0,
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _searchThisArea,
-              borderRadius: BorderRadius.circular(T.rPill),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(T.rPill),
-                  boxShadow: T.shadowSm,
-                  border: Border.all(color: T.border),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(LucideIcons.search, size: 15, color: s.accent.main),
-                  const SizedBox(width: 7),
-                  Text(
-                    s.strings.care.map_search_area,
-                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.main),
-                  ),
-                ]),
-              ),
-            ),
-          ),
-        ),
-      );
-
   /// No-results card, floated over a still-live map.
   ///
   /// Only the card itself takes hits — the map around it stays pannable, which
@@ -756,103 +791,41 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
       decoration: BoxDecoration(
-        color: const Color(0xF7FFFFFF),
-        borderRadius: BorderRadius.circular(T.rLg),
-        boxShadow: T.shadowSm,
+        color: AppColors.white94,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.sm,
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(zoomedOut ? LucideIcons.zoomIn : LucideIcons.mapPinOff, size: 40, color: T.fg4),
-        const SizedBox(height: 12),
-        Text(zoomedOut ? s.strings.care.map_zoomed_out : s.strings.care.map_no_results,
-            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-        const SizedBox(height: 6),
-        SizedBox(
-          width: 200,
-          child: Text(zoomedOut ? s.strings.care.map_zoomed_out_h : s.strings.care.map_no_res_h,
-              textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-        ),
-        // Clearing filters cannot fix being zoomed out, so do not offer it there.
-        if (!zoomedOut) ...[
-          const SizedBox(height: 16),
-          _softButton(label: s.strings.care.map_clear, onTap: _clearFilters),
-        ],
-      ]),
-    );
-  }
-
-  /// List view with nothing to show — a plain card, no action (map.jsx).
-  Widget _emptyList(PatientAppState s) => ListView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          PCard(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-            child: Column(children: [
-              const Icon(LucideIcons.mapPinOff, size: 32, color: T.fg4),
-              const SizedBox(height: 12),
-              Text(s.strings.care.map_no_results,
-                  textAlign: TextAlign.center,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-              const SizedBox(height: 6),
-              Text(s.strings.care.map_no_res_h,
-                  textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
+          Icon(zoomedOut ? LucideIcons.zoomIn : LucideIcons.mapPinOff, size: 40, color: AppColors.textHint),
+          const SizedBox(height: 12),
+          Text(
+            zoomedOut ? s.strings.care.map_zoomed_out : s.strings.care.map_no_results,
+            style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
           ),
-        ],
-      );
-
-  Widget _softButton({required String label, required VoidCallback onTap, IconData? icon}) {
-    final s = AppScope.of(context);
-    return Pressable(
-      onTap: onTap,
-      scale: 0.97,
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (icon != null) ...[
-            Icon(icon, size: 16, color: s.accent.d),
-            const SizedBox(width: 9),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 200,
+            child: Text(
+              zoomedOut ? s.strings.care.map_zoomed_out_h : s.strings.care.map_no_res_h,
+              textAlign: TextAlign.center,
+              style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+            ),
+          ),
+          // Clearing filters cannot fix being zoomed out, so do not offer it there.
+          if (!zoomedOut) ...[
+            const SizedBox(height: 16),
+            _SoftButton(label: s.strings.care.map_clear, onTap: _clearFilters),
           ],
-          Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: s.accent.d)),
-        ]),
+        ],
       ),
     );
   }
-
-  Widget _typeIcon(CareEntityType type, double size) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: type.bg, borderRadius: BorderRadius.circular(T.rMd)),
-        child: Icon(type.icon, size: size * 0.47, color: type.color),
-      );
 
   /// Keeps "0.3 km" in its own left-to-right run inside Arabic text, where
   /// it otherwise read "km 0.3".
   static String _ltr(String text) => '\u2066$text\u2069';
-
-  Widget _metaBit(IconData icon, String text, PatientAppState s, {bool star = false}) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: star ? T.sun500 : T.fg4),
-          const SizedBox(width: 4),
-          Text(text,
-              style:
-                  Typo.num(size: FS.xs, weight: star ? FontWeight.w700 : FontWeight.w400, color: star ? T.fg2 : T.fg3)),
-        ],
-      );
-
-  Widget _detailRow(IconData icon, String text, PatientAppState s, {bool star = false}) => Padding(
-        padding: const EdgeInsets.only(bottom: 9),
-        child: Row(children: [
-          Icon(icon, size: 16, color: star ? T.sun500 : T.fg4),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Text(text,
-                  style: Typo.bodySm(ar: s.rtl)
-                      .copyWith(color: T.fg2, fontWeight: star ? FontWeight.w600 : FontWeight.w400))),
-        ]),
-      );
 }
 
 /// Real OpenStreetMap tile map with a marker per entity. Centers on the first
@@ -958,7 +931,7 @@ class _TileMapState extends State<_TileMap> {
           // zoom the viewport is legitimately wider than the country, and
           // constraining the EDGES would fight the user at exactly that zoom.
           cameraConstraint: CameraConstraint.containCenter(bounds: kCareCoverage),
-          onPositionChanged: (camera, hasGesture) => _handleMove(camera, hasGesture),
+          onPositionChanged: _handleMove,
         ),
         children: [
           TileLayer(
@@ -975,16 +948,18 @@ class _TileMapState extends State<_TileMap> {
             ],
           ),
           // Own-position dot sits under the entity pins, as in the design.
-          if (widget.userLocation != null)
-            MarkerLayer(markers: [
-              Marker(
-                point: widget.userLocation!,
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                child: const _UserDot(),
-              ),
-            ]),
+          if (widget.userLocation case final userLocation?)
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: userLocation,
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  child: const _UserDot(),
+                ),
+              ],
+            ),
           MarkerLayer(
             markers: _visiblePoints.map((point) {
               if (point.isCluster == true) {
@@ -1037,18 +1012,18 @@ class _ClusterPin extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: T.hueBlue,
+        color: AppColors.hueBlue,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2.5),
-        boxShadow: T.shadowSm,
+        border: Border.all(color: AppColors.white, width: 2.5),
+        boxShadow: AppShadows.sm,
       ),
       alignment: Alignment.center,
       child: Text(
         count >= 1000 ? '${(count / 1000).toStringAsFixed(count >= 10000 ? 0 : 1)}k' : '$count',
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.white,
           fontWeight: FontWeight.w800,
-          fontSize: 12,
+          fontSize: FontSizes.meta,
           height: 1,
         ),
       ),
@@ -1065,19 +1040,19 @@ class _UserDot extends StatelessWidget {
           width: 36,
           height: 36,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(color: Color(0x1A1283FF), shape: BoxShape.circle),
+          decoration: const BoxDecoration(color: AppColors.hueBlueHalo, shape: BoxShape.circle),
           child: Container(
             width: 20,
             height: 20,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(color: Color(0x381283FF), shape: BoxShape.circle),
+            decoration: const BoxDecoration(color: AppColors.hueBlueGlow, shape: BoxShape.circle),
             child: Container(
               width: 17,
               height: 17,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              decoration: const BoxDecoration(color: AppColors.white, shape: BoxShape.circle),
               child: const DecoratedBox(
-                decoration: BoxDecoration(color: T.hueBlue, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: AppColors.hueBlue, shape: BoxShape.circle),
                 child: SizedBox(width: 12, height: 12),
               ),
             ),
@@ -1094,26 +1069,30 @@ class _Pin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: selected ? type.color : Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: type.color, width: 2.5),
-          boxShadow: [
-            BoxShadow(
-                color: selected ? type.color.withValues(alpha: 0.53) : const Color(0x3814202B),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: selected ? type.color : AppColors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: type.color, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: selected ? type.color.withValues(alpha: 0.53) : AppColors.shadowStrong,
                 blurRadius: selected ? 10 : 5,
-                offset: const Offset(0, 3)),
-          ],
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(type.icon, size: selected ? 18 : 15, color: selected ? AppColors.white : type.color),
         ),
-        child: Icon(type.icon, size: selected ? 18 : 15, color: selected ? Colors.white : type.color),
-      ),
-      // Downward tail.
-      CustomPaint(size: const Size(10, 7), painter: _TailPainter(type.color)),
-    ]);
+        // Downward tail.
+        CustomPaint(size: const Size(10, 7), painter: _TailPainter(type.color)),
+      ],
+    );
   }
 }
 
@@ -1179,21 +1158,23 @@ class _TypeDropdown extends StatelessWidget {
     final label = all
         ? s.strings.care.map_all
         : only != null
-            ? pick(only.label, ar: s.rtl)
+            ? only.label(s.strings.care)
             : s.strings.care.map_n_types('${active.length}');
 
     return MenuAnchor(
       alignmentOffset: const Offset(0, 6),
       style: MenuStyle(
-        backgroundColor: const WidgetStatePropertyAll(Colors.white),
+        backgroundColor: const WidgetStatePropertyAll(AppColors.white),
         elevation: const WidgetStatePropertyAll(6),
-        shadowColor: const WidgetStatePropertyAll(Color(0x2414202B)),
+        shadowColor: const WidgetStatePropertyAll(AppColors.shadow),
         padding: const WidgetStatePropertyAll(EdgeInsets.all(6)),
         minimumSize: const WidgetStatePropertyAll(Size(210, 0)),
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(T.rLg),
-          side: const BorderSide(color: T.border),
-        )),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            side: const BorderSide(color: AppColors.border),
+          ),
+        ),
       ),
       builder: (context, controller, _) => Pressable(
         onTap: () => controller.isOpen ? controller.close() : controller.open(),
@@ -1202,36 +1183,44 @@ class _TypeDropdown extends StatelessWidget {
           height: 40,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(T.rMd),
-            border: Border.all(color: T.border, width: 1.5),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.border, width: 1.5),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (only != null) ...[
-              Icon(only.icon, size: 13, color: only.color),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (only != null) ...[
+                Icon(only.icon, size: 13, color: only.color),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              ),
               const SizedBox(width: 8),
+              AnimatedRotation(
+                turns: controller.isOpen ? 0.5 : 0,
+                duration: Motion.base,
+                curve: Motion.easeOut,
+                child: const Icon(LucideIcons.chevronDown, size: 15, color: AppColors.textTertiary),
+              ),
             ],
-            Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            const SizedBox(width: 8),
-            AnimatedRotation(
-              turns: controller.isOpen ? 0.5 : 0,
-              duration: Motion.base,
-              curve: Motion.easeOut,
-              child: const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-            ),
-          ]),
+          ),
         ),
       ),
       menuChildren: [
         _row(context, null, s.strings.care.map_all, s.accent.main, LucideIcons.layoutGrid, checked: all),
-        ...CareEntityType.values.map((t) => _row(
-              context,
-              t,
-              pick(t.label, ar: s.rtl),
-              t.color,
-              t.icon,
-              checked: active.contains(t),
-            )),
+        ...CareEntityType.values.map(
+          (t) => _row(
+            context,
+            t,
+            t.label(s.strings.care),
+            t.color,
+            t.icon,
+            checked: active.contains(t),
+          ),
+        ),
       ],
     );
   }
@@ -1252,30 +1241,213 @@ class _TypeDropdown extends StatelessWidget {
       style: ButtonStyle(
         padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 10)),
         minimumSize: const WidgetStatePropertyAll(Size(198, 0)),
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(T.rSm))),
+        shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.sm))),
       ),
-      child: Row(children: [
-        // 18px checkbox: accent fill + white tick when on, else outline.
-        Container(
-          width: 18,
-          height: 18,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: checked ? s.accent.main : Colors.transparent,
-            borderRadius: BorderRadius.circular(5),
-            border: checked ? null : Border.all(color: T.borderStrong, width: 1.5),
+      child: Row(
+        children: [
+          // 18px checkbox: accent fill + white tick when on, else outline.
+          Container(
+            width: 18,
+            height: 18,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: checked ? s.accent.main : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadii.checkbox),
+              border: checked ? null : Border.all(color: AppColors.borderStrong, width: 1.5),
+            ),
+            child: checked ? const Icon(LucideIcons.check, size: 12, color: AppColors.white) : null,
           ),
-          child: checked ? const Icon(LucideIcons.check, size: 12, color: Colors.white) : null,
-        ),
-        const SizedBox(width: 10),
-        Icon(icon, size: 15, color: color),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(label,
+          const SizedBox(width: 10),
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
               style: Typo.bodySm(ar: s.rtl)
-                  .copyWith(fontWeight: checked ? FontWeight.w700 : FontWeight.w500, color: T.fg1)),
-        ),
-      ]),
+                  .copyWith(fontWeight: checked ? FontWeight.w700 : FontWeight.w500, color: AppColors.textPrimary),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+// ── Small pieces ──────────────────────────────────────────
+/// Map view with nothing to plot — `map-x` over the cream stage, with the
+/// clear-search action (map.jsx). The list view uses a different empty
+/// state; the two are deliberately not shared.
+/// "Search this area" — the pill that appears once the map has been moved.
+///
+/// Centred near the top, under the controls, where the eye already is after a
+/// pan and clear of the detail sheet at the bottom.
+class _SearchAreaButton extends StatelessWidget {
+  const _SearchAreaButton(this.s, {required this.onTap});
+  final PatientAppState s;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => PositionedDirectional(
+        top: 54,
+        start: 0,
+        end: 0,
+        child: Center(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                  boxShadow: AppShadows.sm,
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.search, size: 15, color: s.accent.main),
+                    const SizedBox(width: 7),
+                    Text(
+                      s.strings.care.map_search_area,
+                      style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.main),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+/// List view with nothing to show — a plain card, no action (map.jsx).
+class _EmptyList extends StatelessWidget {
+  const _EmptyList(this.s);
+  final PatientAppState s;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+        children: [
+          PCard(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            child: Column(
+              children: [
+                const Icon(LucideIcons.mapPinOff, size: 32, color: AppColors.textHint),
+                const SizedBox(height: 12),
+                Text(
+                  s.strings.care.map_no_results,
+                  textAlign: TextAlign.center,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  s.strings.care.map_no_res_h,
+                  textAlign: TextAlign.center,
+                  style: Typo.meta(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+}
+
+class _SoftButton extends StatelessWidget {
+  const _SoftButton({required this.label, required this.onTap, this.icon});
+  final String label;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Pressable(
+      onTap: onTap,
+      scale: 0.97,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(AppRadii.md)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: s.accent.d),
+              const SizedBox(width: 9),
+            ],
+            Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: s.accent.d)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeIcon extends StatelessWidget {
+  const _TypeIcon(this.type, this.size);
+  final CareEntityType type;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: type.bg, borderRadius: BorderRadius.circular(AppRadii.md)),
+        child: Icon(type.icon, size: size * 0.47, color: type.color),
+      );
+}
+
+class _MetaBit extends StatelessWidget {
+  const _MetaBit(this.icon, this.text, this.s, {this.star = false});
+  final IconData icon;
+  final String text;
+  final PatientAppState s;
+  final bool star;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: star ? AppColors.sun500 : AppColors.textHint),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: Typo.num(
+              size: FontSizes.meta,
+              weight: star ? FontWeight.w700 : FontWeight.w400,
+              color: star ? AppColors.textSecondary : AppColors.textTertiary,
+            ),
+          ),
+        ],
+      );
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow(this.icon, this.text, this.s, {this.star = false});
+  final IconData icon;
+  final String text;
+  final PatientAppState s;
+  final bool star;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 9),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: star ? AppColors.sun500 : AppColors.textHint),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: Typo.bodySm(ar: s.rtl)
+                    .copyWith(color: AppColors.textSecondary, fontWeight: star ? FontWeight.w600 : FontWeight.w400),
+              ),
+            ),
+          ],
+        ),
+      );
 }

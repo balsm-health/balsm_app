@@ -1,13 +1,16 @@
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import 'family_kit.dart';
+import 'member_medical_screen.dart';
+
+// Half the 4pt step bar height, so its ends are round.
+const _stepBarRadius = 2.0;
 
 /// Opens the add-member form, or the same form to edit [editing]'s details.
 /// True when the edit form closed [editing]'s profile.
@@ -22,6 +25,8 @@ enum _Rel {
   daughter(Relationship.child, Sex.female),
   mother(Relationship.parent, Sex.female),
   father(Relationship.parent, Sex.male),
+  sister(Relationship.sibling, Sex.female),
+  brother(Relationship.sibling, Sex.male),
   spouse(Relationship.spouse, null),
   neighbour(Relationship.neighbour, null),
   friend(Relationship.friend, null),
@@ -38,6 +43,8 @@ enum _Rel {
       _Rel.daughter => f.pick_daughter,
       _Rel.mother => f.pick_mother,
       _Rel.father => f.pick_father,
+      _Rel.sister => f.pick_sister,
+      _Rel.brother => f.pick_brother,
       _Rel.spouse => f.pick_spouse,
       _Rel.neighbour => f.pick_neighbour,
       _Rel.friend => f.pick_friend,
@@ -97,10 +104,18 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         relationship: _relationship,
         dateOfBirth: _dob,
         sex: _sex,
-        bloodType: _bloodUnsure ? null : _blood,
+        bloodType: _editing ? _storedBlood : (_bloodUnsure ? null : _blood),
         groupId: _groupId,
         newGroupName: _newGroup ? _newGroupName.text : null,
       );
+
+  /// Editing keeps the blood type as stored now: it is changed on the
+  /// medical profile, which may have been opened from this form.
+  BloodType? get _storedBlood {
+    final id = widget.editing!.id;
+    final live = (ref.read(familyMembersProvider).value ?? const <FamilyMember>[]).where((x) => x.id == id);
+    return live.isEmpty ? widget.editing!.bloodType : live.first.bloodType;
+  }
 
   bool get _adult => !_editing && _draft.needsConsentOn(DateTime.now());
 
@@ -158,7 +173,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
       TextField(
         controller: _name,
         onChanged: (_) => setState(() {}),
-        style: Typo.body(ar: s.rtl).copyWith(color: T.fg1, fontSize: FS.lg),
+        style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
         decoration: _dec(f.f_name_ph(s.gender)),
       ),
     );
@@ -185,7 +200,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             onChanged: (x) => setState(() => _sex = x),
           ),
         ),
-        _field(_editing ? f.f_blood : '${f.f_blood} · ${f.optional}', _bloodGrid()),
+        if (editing == null) _field('${f.f_blood} · ${f.optional}', _bloodGrid()) else _medicalRow(editing),
         if (editing != null)
           PButton(
             f.close_member(_firstName(editing)),
@@ -193,10 +208,45 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             variant: BtnVariant.ghost,
             block: true,
             ar: s.rtl,
-            color: T.danger,
+            color: AppColors.danger,
             onTap: _saving ? null : () => _close(editing),
           ),
       ],
+    );
+  }
+
+  /// The edit form's way to the member's medical profile (blood type,
+  /// allergies, long-term conditions), which used to be fields here.
+  Widget _medicalRow(FamilyMember m) {
+    final f = s.strings.family;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Semantics(
+        button: true,
+        child: PCard(
+          onTap: () => openMemberMedical(context, m),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(LucideIcons.clipboardList, size: 18, color: s.accent.main),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      f.tile_medical,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    ),
+                    Text(f.medical_row_sub, style: Typo.meta(ar: s.rtl)),
+                  ],
+                ),
+              ),
+              Icon(forwardChevron(context), size: 18, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -208,135 +258,132 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
 
   Widget _field(String label, Widget child) => Padding(
         padding: const EdgeInsets.only(bottom: 18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
-          const SizedBox(height: 8),
-          child,
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            child,
+          ],
+        ),
       );
 
   Widget _chips() {
     final selected = _Rel.of(_relationship, _sex);
-    return Wrap(spacing: 8, runSpacing: 8, children: [
-      for (final r in _Rel.values)
-        BChip(
-          r.label(s),
-          active: selected == r,
-          accent: s.accent.main,
-          ar: s.rtl,
-          onTap: () => setState(() {
-            _relationship = r.relationship;
-            if (r.sex != null) _sex = r.sex;
-          }),
-        ),
-    ]);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final r in _Rel.values)
+          BChip(
+            r.label(s),
+            active: selected == r,
+            accent: s.accent.main,
+            ar: s.rtl,
+            onTap: () => setState(() {
+              _relationship = r.relationship;
+              if (r.sex != null) _sex = r.sex;
+            }),
+          ),
+      ],
+    );
   }
 
   Widget _groups() {
     final f = s.strings.family;
-    final groups = ref.watch(memberGroupsProvider).valueOrNull ?? const <MemberGroup>[];
+    final groups = ref.watch(memberGroupsProvider).value ?? const <MemberGroup>[];
     final fallback = groups.where((g) => g.defaultGroup == DefaultGroup.family).firstOrNull?.id;
     final current = _groupId ?? fallback;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        for (final g in groups)
-          BChip(
-            groupLabel(s, g),
-            active: !_newGroup && current == g.id,
-            accent: s.accent.main,
-            ar: s.rtl,
-            onTap: () => setState(() {
-              _groupId = g.id;
-              _newGroup = false;
-            }),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final g in groups)
+              BChip(
+                groupLabel(s, g),
+                active: !_newGroup && current == g.id,
+                accent: s.accent.main,
+                ar: s.rtl,
+                onTap: () => setState(() {
+                  _groupId = g.id;
+                  _newGroup = false;
+                }),
+              ),
+            BChip(
+              '+ ${f.new_group}',
+              active: _newGroup,
+              accent: s.accent.main,
+              ar: s.rtl,
+              onTap: () => setState(() => _newGroup = true),
+            ),
+          ],
+        ),
+        if (_newGroup) ...[
+          const SizedBox(height: 10),
+          TextField(
+            controller: _newGroupName,
+            autofocus: true,
+            maxLength: MemberGroup.maxNameLength,
+            onChanged: (_) => setState(() {}),
+            style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textPrimary),
+            decoration: _dec(f.new_group_ph).copyWith(counterText: ''),
           ),
-        BChip(
-          '+ ${f.new_group}',
-          active: _newGroup,
-          accent: s.accent.main,
-          ar: s.rtl,
-          onTap: () => setState(() => _newGroup = true),
-        ),
-      ]),
-      if (_newGroup) ...[
-        const SizedBox(height: 10),
-        TextField(
-          controller: _newGroupName,
-          autofocus: true,
-          maxLength: MemberGroup.maxNameLength,
-          onChanged: (_) => setState(() {}),
-          style: Typo.body(ar: s.rtl).copyWith(color: T.fg1),
-          decoration: _dec(f.new_group_ph).copyWith(counterText: ''),
-        ),
+        ],
       ],
-    ]);
+    );
   }
 
   Widget _dobField() {
     final f = s.strings.family;
     final dob = _dob;
     final age = dob == null ? null : MemberAge.between(dob, DateTime.now());
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      GestureDetector(
-        onTap: _pickDob,
-        child: InputDecorator(
-          decoration: _dec(null),
-          child: Row(children: [
-            const Icon(LucideIcons.calendar, size: 17, color: T.fg3),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                dob == null ? f.f_dob_ph : formatDay(dob),
-                textDirection: TextDirection.ltr,
-                textAlign: s.rtl ? TextAlign.right : TextAlign.left,
-                style: Typo.body(ar: s.rtl).copyWith(color: dob == null ? T.fg3 : T.fg1),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: _pickDob,
+          child: InputDecorator(
+            decoration: _dec(null),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.calendar, size: 17, color: AppColors.textTertiary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    dob == null ? f.f_dob_ph : formatDay(dob),
+                    textDirection: TextDirection.ltr,
+                    textAlign: s.rtl ? TextAlign.right : TextAlign.left,
+                    style: Typo.body(ar: s.rtl)
+                        .copyWith(color: dob == null ? AppColors.textTertiary : AppColors.textPrimary),
+                  ),
+                ),
+                const Icon(LucideIcons.chevronDown, size: 15, color: AppColors.textTertiary),
+              ],
             ),
-            const Icon(LucideIcons.chevronDown, size: 15, color: T.fg3),
-          ]),
+          ),
         ),
-      ),
-      if (age != null) ...[
-        const SizedBox(height: 6),
-        Text([ageLabel(s, age), if (_adult) f.consent_next].join(' · '), style: Typo.meta(ar: s.rtl)),
+        if (age != null) ...[
+          const SizedBox(height: 6),
+          Text([ageLabel(s, age), if (_adult) f.consent_next].join(' · '), style: Typo.meta(ar: s.rtl)),
+        ],
       ],
-    ]);
+    );
   }
 
-  Widget _bloodGrid() {
-    final f = s.strings.family;
-    final types = BloodType.values.where((b) => b != BloodType.bombay).toList();
-    return LayoutBuilder(builder: (context, c) {
-      const gap = 8.0;
-      final w = (c.maxWidth - gap * 3) / 4;
-      return Wrap(spacing: gap, runSpacing: gap, children: [
-        for (final b in types)
-          SizedBox(
-            width: w,
-            child: _GridChip(
-              label: b.code.replaceAll('-', '−'),
-              ltr: true,
-              active: !_bloodUnsure && _blood == b,
-              onTap: () => setState(() {
-                _blood = b;
-                _bloodUnsure = false;
-              }),
-            ),
-          ),
-        SizedBox(
-          width: c.maxWidth,
-          child: _GridChip(
-            label: f.blood_unsure,
-            active: _bloodUnsure,
-            onTap: () => setState(() {
-              _bloodUnsure = true;
-              _blood = null;
-            }),
-          ),
-        ),
-      ]);
-    });
-  }
+  Widget _bloodGrid() => BloodTypeGrid(
+        value: _blood,
+        unsure: _bloodUnsure,
+        onChanged: (b) => setState(() {
+          _blood = b;
+          _bloodUnsure = b == null;
+        }),
+      );
 
   Widget _consentStep() {
     final f = s.strings.family;
@@ -363,35 +410,43 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         const SizedBox(height: 16),
         Text(f.consent_title(first, s.gender), style: Typo.heading(ar: s.rtl)),
         const SizedBox(height: 8),
-        Text(female ? f.consent_body_f(first, s.gender) : f.consent_body_m(first, s.gender),
-            style: Typo.body(ar: s.rtl).copyWith(color: T.fg2)),
+        Text(
+          female ? f.consent_body_f(first, s.gender) : f.consent_body_m(first, s.gender),
+          style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 16),
         for (final line in [f.consent_stays, f.consent_close(s.gender)])
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Icon(LucideIcons.check, size: 18, color: T.hueEmerald),
-              const SizedBox(width: 10),
-              Expanded(child: Text(line, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2))),
-            ]),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(LucideIcons.check, size: 18, color: AppColors.hueEmerald),
+                const SizedBox(width: 10),
+                Expanded(child: Text(line, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary))),
+              ],
+            ),
           ),
         const SizedBox(height: 8),
         PCard(
           flat: true,
           padding: const EdgeInsets.all(16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            BCheck(
-              label: female ? f.consent_check_f(first) : f.consent_check_m(first),
-              checked: _consent,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: () => setState(() => _consent = !_consent),
-            ),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 32, top: 4),
-              child: Text(f.consent_hint, style: Typo.meta(ar: s.rtl)),
-            ),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BCheck(
+                label: female ? f.consent_check_f(first) : f.consent_check_m(first),
+                checked: _consent,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: () => setState(() => _consent = !_consent),
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 32, top: 4),
+                child: Text(f.consent_hint, style: Typo.meta(ar: s.rtl)),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -399,16 +454,22 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
 
   InputDecoration _dec(String? hint) => InputDecoration(
         hintText: hint,
-        hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4),
+        hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: const BorderSide(color: T.border, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(T.rMd), borderSide: BorderSide(color: s.accent.main, width: 1.5)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: BorderSide(color: s.accent.main, width: 1.5),
+        ),
       );
 }
 
@@ -423,59 +484,28 @@ class _Steps extends StatelessWidget {
     final f = s.strings.family;
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          for (final (i, n) in (two ? [1, 2] : [1]).indexed) ...[
-            if (i > 0) const SizedBox(width: 6),
-            Expanded(
-              child: Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  color: n <= step ? s.accent.main : T.ink100,
-                  borderRadius: BorderRadius.circular(2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              for (final (i, n) in (two ? [1, 2] : [1]).indexed) ...[
+                if (i > 0) const SizedBox(width: 6),
+                Expanded(
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: n <= step ? s.accent.main : AppColors.ink100,
+                      borderRadius: BorderRadius.circular(_stepBarRadius),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ]),
-        const SizedBox(height: 8),
-        Text(step == 2 ? f.step_2_of_2 : (two ? f.step_1_of_2 : f.step_basic), style: Typo.meta(ar: s.rtl)),
-      ]),
-    );
-  }
-}
-
-/// A square-ish selectable chip for the blood-type grid.
-class _GridChip extends StatelessWidget {
-  const _GridChip({required this.label, required this.active, required this.onTap, this.ltr = false});
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  final bool ltr;
-  @override
-  Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    return Semantics(
-      button: true,
-      selected: active,
-      child: Pressable(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: Motion.fast,
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: active ? s.accent.main : Colors.white,
-            borderRadius: BorderRadius.circular(T.rPill),
-            border: Border.all(color: active ? s.accent.main : T.border, width: 1.5),
+              ],
+            ],
           ),
-          child: Text(
-            label,
-            textDirection: ltr ? TextDirection.ltr : null,
-            style: (ltr ? Typo.num(size: FS.md, weight: FontWeight.w700) : Typo.bodySm(ar: s.rtl))
-                .copyWith(fontWeight: FontWeight.w600, color: active ? T.onFill(s.accent.main) : T.fg2),
-          ),
-        ),
+          const SizedBox(height: 8),
+          Text(step == 2 ? f.step_2_of_2 : (two ? f.step_1_of_2 : f.step_basic), style: Typo.meta(ar: s.rtl)),
+        ],
       ),
     );
   }

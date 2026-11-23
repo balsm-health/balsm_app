@@ -21,13 +21,15 @@ class NetworkManager {
     ProgressCallback? onReceiveProgress,
     Options? options,
   }) =>
-      _guard(() => _dio.get<Map<String, dynamic>>(
-            path,
-            queryParameters: queryParameters,
-            cancelToken: cancelToken,
-            onReceiveProgress: onReceiveProgress,
-            options: options,
-          ));
+      _guard(
+        () => _dio.get<Map<String, dynamic>>(
+          path,
+          queryParameters: queryParameters,
+          cancelToken: cancelToken,
+          onReceiveProgress: onReceiveProgress,
+          options: options,
+        ),
+      );
 
   Future<Response<Map<String, dynamic>>> post(
     String path, {
@@ -37,14 +39,16 @@ class NetworkManager {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) =>
-      _guard(() => _dio.post<Map<String, dynamic>>(
-            path,
-            data: data,
-            queryParameters: queryParameters,
-            cancelToken: cancelToken,
-            onSendProgress: onSendProgress,
-            onReceiveProgress: onReceiveProgress,
-          ));
+      _guard(
+        () => _dio.post<Map<String, dynamic>>(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          cancelToken: cancelToken,
+          onSendProgress: onSendProgress,
+          onReceiveProgress: onReceiveProgress,
+        ),
+      );
 
   Future<Response<Map<String, dynamic>>> put(
     String path, {
@@ -53,13 +57,15 @@ class NetworkManager {
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
   }) =>
-      _guard(() => _dio.put<Map<String, dynamic>>(
-            path,
-            data: data,
-            queryParameters: queryParameters,
-            cancelToken: cancelToken,
-            onSendProgress: onSendProgress,
-          ));
+      _guard(
+        () => _dio.put<Map<String, dynamic>>(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          cancelToken: cancelToken,
+          onSendProgress: onSendProgress,
+        ),
+      );
 
   Future<Response<Map<String, dynamic>>> patch(
     String path, {
@@ -68,13 +74,15 @@ class NetworkManager {
     CancelToken? cancelToken,
     ProgressCallback? onSendProgress,
   }) =>
-      _guard(() => _dio.patch<Map<String, dynamic>>(
-            path,
-            data: data,
-            queryParameters: queryParameters,
-            cancelToken: cancelToken,
-            onSendProgress: onSendProgress,
-          ));
+      _guard(
+        () => _dio.patch<Map<String, dynamic>>(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          cancelToken: cancelToken,
+          onSendProgress: onSendProgress,
+        ),
+      );
 
   Future<Response<Map<String, dynamic>>> delete(
     String path, {
@@ -82,12 +90,14 @@ class NetworkManager {
     Map<String, dynamic>? queryParameters,
     CancelToken? cancelToken,
   }) =>
-      _guard(() => _dio.delete<Map<String, dynamic>>(
-            path,
-            data: data,
-            queryParameters: queryParameters,
-            cancelToken: cancelToken,
-          ));
+      _guard(
+        () => _dio.delete<Map<String, dynamic>>(
+          path,
+          data: data,
+          queryParameters: queryParameters,
+          cancelToken: cancelToken,
+        ),
+      );
 
   Future<Response<Map<String, dynamic>>> _guard(
     Future<Response<Map<String, dynamic>>> Function() run,

@@ -12,6 +12,15 @@ class DisclosureAcceptance {
     required this.acceptedAt,
   });
 
+  factory DisclosureAcceptance.fromJson(Map<String, dynamic> json) => DisclosureAcceptance(
+        disclosureId: DisclosureId.value(json['disclosure_id'] as String),
+        version: json['version'] as String,
+        countryCodeAtAccept: json['country_code'] as String,
+        supervisoryAuthorityNameAtAccept: json['supervisory_authority'] as String,
+        preferredLanguageAtAccept: json['preferred_language'] as String,
+        acceptedAt: DateTime.parse(json['accepted_at'] as String),
+      );
+
   final DisclosureId disclosureId;
   final String version;
   final String countryCodeAtAccept;
@@ -27,15 +36,6 @@ class DisclosureAcceptance {
         'preferred_language': preferredLanguageAtAccept,
         'accepted_at': acceptedAt.toIso8601String(),
       };
-
-  factory DisclosureAcceptance.fromJson(Map<String, dynamic> json) => DisclosureAcceptance(
-        disclosureId: DisclosureId.value(json['disclosure_id'] as String),
-        version: json['version'] as String,
-        countryCodeAtAccept: json['country_code'] as String,
-        supervisoryAuthorityNameAtAccept: json['supervisory_authority'] as String,
-        preferredLanguageAtAccept: json['preferred_language'] as String,
-        acceptedAt: DateTime.parse(json['accepted_at'] as String),
-      );
 
   @override
   bool operator ==(Object other) =>

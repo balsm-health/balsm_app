@@ -1,22 +1,31 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart';
+import 'package:family/family.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:core/core.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
 import 'package:self_report/self_report.dart';
+
 import '../app_state.dart';
-import '../routes.dart';
+import '../flags.dart';
 import '../kit.dart';
+import '../maintenance/maintenance_guard.dart';
 import '../responsive.dart';
-import '../tokens.dart';
+import '../routes.dart';
 import '../vault/vault_blob.dart';
 import 'checkin_shared.dart';
 import 'metric_log.dart';
+import 'quick_log.dart' show MemberLogBanner;
 
-export 'checkin_shared.dart' show CheckInSteps, MoodCell, moodColors, painInfo, symptomIcons, symptomLabel;
+export 'checkin_shared.dart'
+    show CheckInSteps, MoodCell, genderForSex, moodColors, painInfo, symptomIcons, symptomLabel;
+
+// The 30pt taken / not-taken check.
+const _doseCheckRadius = 9.0;
 
 /// Opens the full daily check-in flow (report.jsx ReportFlow).
 ///
@@ -26,18 +35,20 @@ export 'checkin_shared.dart' show CheckInSteps, MoodCell, moodColors, painInfo, 
 /// (app.css `@container app (min-width: 600px)`). It is the one screen the
 /// expanded-class containment leaves alone: `.app-main > .flow { border: 0 }`.
 void openCheckin(BuildContext context) {
+  if (maintenancePaused(context)) return;
   final s = AppScope.of(context);
   if (MediaQuery.sizeOf(context).width < BalsmWindow.mediumMin) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (_) => Directionality(textDirection: s.dir, child: ReportFlow(s: s)),
-    ));
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => Directionality(textDirection: s.dir, child: ReportFlow(s: s)),
+      ),
+    );
     return;
   }
   showDialog<void>(
     context: context,
-    useRootNavigator: true,
-    barrierColor: const Color(0x6114202B), // rgba(20,32,43,0.38)
+    barrierColor: AppColors.scrim, // rgba(20,32,43,0.38)
     builder: (ctx) {
       final window = MediaQuery.sizeOf(ctx);
       return Directionality(
@@ -49,7 +60,7 @@ void openCheckin(BuildContext context) {
               maxHeight: math.min(820, window.height - 48),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(T.rXl),
+              borderRadius: BorderRadius.circular(AppRadii.xl),
               child: ReportFlow(s: s),
             ),
           ),
@@ -65,15 +76,19 @@ void openCheckin(BuildContext context) {
 ///
 /// Every metric page is the same one-metric log template used by quick-log.
 class ReportFlow extends ConsumerStatefulWidget {
-  const ReportFlow({super.key, required this.s});
+  const ReportFlow({required this.s, super.key, @visibleForTesting this.debugShowSummary = false});
   final PatientAppState s;
+
+  /// Opens straight on the closing summary, so tests can reach it without
+  /// saving a check-in to the on-device store.
+  final bool debugShowSummary;
   @override
   ConsumerState<ReportFlow> createState() => _ReportFlowState();
 }
 
 class _ReportFlowState extends ConsumerState<ReportFlow> {
   int step = 0;
-  bool submitted = false;
+  late bool submitted = widget.debugShowSummary;
   bool saving = false;
 
   /// Medication adherence marks captured in the meds step, keyed by med id:
@@ -92,6 +107,10 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   List<String> _steps = const [];
 
   PatientAppState get s => widget.s;
+
+  /// The family member this check-in is for, or null for the account holder.
+  /// Refreshed each build; the copy then names the member instead of "you".
+  FamilyMember? _member;
 
   // ── Product analytics: positions and counts only, never metric ids ──
   // Read once up front: `ref` cannot be used in dispose, where an abandoned
@@ -128,7 +147,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   /// Measurements the patient may simply not have taken today. The design
   /// offers `SkipRow` under blood pressure and glucose; weight is the same
   /// class of reading.
-  static final _skippable = {
+  static final Set<CheckInMetric> _skippable = {
     CheckInMetric.bloodPressure,
     CheckInMetric.glucose,
     CheckInMetric.weight,
@@ -149,7 +168,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       setState(() => step++);
       _trackStep();
     } else {
-      _finish();
+      unawaited(_finish());
     }
   }
 
@@ -158,7 +177,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       setState(() => step--);
       _trackStep();
     } else if (_hasInput) {
-      _confirmLeave();
+      unawaited(_confirmLeave());
     } else {
       Navigator.pop(context);
     }
@@ -176,25 +195,40 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       textDirection: s.dir,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(c.ql_discard_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(c.ql_discard_body, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2, height: 1.5)),
-          const SizedBox(height: 18),
-          PButton(c.ql_discard,
-              variant: BtnVariant.danger, large: true, block: true, ar: s.rtl, onTap: () => Navigator.pop(ctx, true)),
-          const SizedBox(height: 10),
-          PButton(c.ql_keep_editing,
+        padding: const EdgeInsetsDirectional.fromSTEB(20, 22, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(c.ql_discard_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(
+              c.ql_discard_body,
+              style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary, height: 1.5),
+            ),
+            const SizedBox(height: 18),
+            PButton(
+              c.ql_discard,
+              variant: BtnVariant.danger,
+              large: true,
+              block: true,
+              ar: s.rtl,
+              onTap: () => Navigator.pop(ctx, true),
+            ),
+            const SizedBox(height: 10),
+            PButton(
+              c.ql_keep_editing,
               variant: BtnVariant.secondary,
               large: true,
               block: true,
               ar: s.rtl,
-              onTap: () => Navigator.pop(ctx, false)),
-        ]),
+              onTap: () => Navigator.pop(ctx, false),
+            ),
+          ],
+        ),
       ),
     );
     if (leave == true && mounted) Navigator.pop(context);
@@ -292,7 +326,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     );
     await ref.read(saveCheckInUseCaseProvider).call(checkIn);
 
-    final meds = ref.read(medicationListProvider).valueOrNull ?? const <Medication>[];
+    final meds = ref.read(medicationListProvider).value ?? const <Medication>[];
     final recordDose = ref.read(recordDoseOutcomeUseCaseProvider);
     final now = DateTime.now();
     for (final med in meds) {
@@ -315,10 +349,13 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
       saving = false;
       submitted = true;
     });
-    _analytics.logEvent(ProductEvent.checkInCompleted, props: {
-      'count': _steps.length,
-      'duration_ms': DateTime.now().difference(_openedAt).inMilliseconds,
-    });
+    _analytics.logEvent(
+      ProductEvent.checkInCompleted,
+      props: {
+        'count': _steps.length,
+        'duration_ms': DateTime.now().difference(_openedAt).inMilliseconds,
+      },
+    );
   }
 
   void _close(AppTab tab) {
@@ -328,7 +365,8 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
 
   @override
   Widget build(BuildContext context) {
-    _meds = ref.watch(medicationListProvider).valueOrNull ?? const [];
+    _member = s.flags.isOn(AppFlags.motherChild) ? ref.watch(activeFamilyMemberProvider) : null;
+    _meds = ref.watch(medicationListProvider).value ?? const [];
     _steps = fullCheckInSteps(
       tracked: ref.watch(trackedCheckInMetricsProvider),
       hasMeds: _meds.isNotEmpty,
@@ -361,79 +399,98 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
         if (!didPop) back();
       },
       child: Scaffold(
-        backgroundColor: T.cream50,
+        backgroundColor: AppColors.cream50,
         body: ContentColumn(
           maxWidth: 480,
-          child: Column(children: [
-            const PadTop(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-              child: Row(children: [
-                RoundBtn(
-                    icon: step == 0 ? LucideIcons.x : backArrow(context),
-                    semanticLabel: step == 0 ? s.strings.common.a11y_close : s.strings.common.a11y_back,
-                    ghost: true,
-                    onTap: back),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(s.strings.checkin.full_checkin,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.lg)),
-                ),
-                const SizedBox(width: 12),
-                // `.meta.num { min-width: 38px }` — a floor, not a cap. A fixed
-                // width wrapped "1 of 3" onto two lines.
-                ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 38),
-                    child: Text('${step + 1} ${s.strings.common.step_of} ${_steps.length}',
+          child: Column(
+            children: [
+              const PadTop(),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 16, 8),
+                child: Row(
+                  children: [
+                    RoundBtn(
+                      icon: step == 0 ? LucideIcons.x : backArrow(context),
+                      semanticLabel: step == 0 ? s.strings.common.a11y_close : s.strings.common.a11y_back,
+                      ghost: true,
+                      onTap: back,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        s.strings.checkin.full_checkin,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Typo.heading(ar: s.rtl).copyWith(fontSize: FontSizes.subhead),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // `.meta.num { min-width: 38px }` — a floor, not a cap. A fixed
+                    // width wrapped "1 of 3" onto two lines.
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 38),
+                      child: Text(
+                        '${step + 1} ${s.strings.common.step_of} ${_steps.length}',
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         softWrap: false,
-                        style: Typo.num(size: FS.xs, weight: FontWeight.w600, color: T.fg3))),
-              ]),
-            ),
-            // The DS Steps row replaces the old single progress bar.
-            if (_steps.length > 1)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
-                child: CheckInSteps(s: s, steps: _steps, current: step),
-              ),
-            Expanded(
-              child: IndexedStack(
-                index: _steps.isEmpty ? 0 : step,
-                children: [
-                  for (final id in _steps)
-                    SingleChildScrollView(
-                      key: ValueKey(id),
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                      child: _stepBody(id),
+                        style: Typo.num(size: FontSizes.meta, color: AppColors.textTertiary),
+                      ),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
-              // `.flow-foot` reaches solid cream by 30% and stays there, so the
-              // button never floats over half-transparent content.
-              decoration: const BoxDecoration(
+              // The DS Steps row replaces the old single progress bar.
+              if (_steps.length > 1)
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 22),
+                  child: CheckInSteps(s: s, steps: _steps, current: step),
+                ),
+              // Whose check-in this is — Quick log's "Logging for {name}" banner.
+              if (_member case final m?)
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 0),
+                  child: MemberLogBanner(s: s, member: m),
+                ),
+              Expanded(
+                child: IndexedStack(
+                  index: _steps.isEmpty ? 0 : step,
+                  children: [
+                    for (final id in _steps)
+                      SingleChildScrollView(
+                        key: ValueKey(id),
+                        padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 16),
+                        child: _stepBody(id),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 38),
+                // `.flow-foot` reaches solid cream by 30% and stays there, so the
+                // button never floats over half-transparent content.
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: [0, 0.3],
-                      colors: [Color(0x00FAFAF7), T.cream50])),
-              child: Opacity(
-                opacity: enabled ? 1 : 0.4,
-                child: PButton(isLast ? (saving ? '…' : s.strings.common.finish) : s.strings.common.continue_,
-                    variant: BtnVariant.primary,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0, 0.3],
+                    colors: [AppColors.creamClear, AppColors.cream50],
+                  ),
+                ),
+                child: Opacity(
+                  opacity: enabled ? 1 : 0.4,
+                  child: PButton(
+                    isLast ? (saving ? '…' : s.strings.common.finish) : s.strings.common.continue_,
                     large: true,
                     block: true,
                     accent: s.accent,
                     ar: s.rtl,
-                    onTap: enabled ? next : null),
+                    onTap: enabled ? next : null,
+                  ),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
@@ -444,6 +501,16 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   /// to the shared "Your vitals" heading rather than shipping an untitled page.
   (String, String) _question(CheckInMetric metric) {
     final c = s.strings.checkin;
+    if (_member case final m?) {
+      final n = m.shortName;
+      return switch (metric) {
+        CheckInMetric.mood => (c.m_q_mood_t(n), c.m_q_mood_h(s.gender, n)),
+        CheckInMetric.bloodPressure => (c.m_q_bp_t(n), c.q_bp_h(s.gender)),
+        CheckInMetric.glucose => (c.m_q_glu_t(n), c.m_q_glu_h(s.gender)),
+        CheckInMetric.pain || CheckInMetric.symptoms => (c.m_q_sym_t(n), c.m_q_sym_h(s.gender, n)),
+        _ => (c.m_q_vitals_t(n), c.q_vitals_h(s.gender)),
+      };
+    }
     return switch (metric) {
       CheckInMetric.mood => (c.q_mood_t(s.gender), c.q_mood_h(s.gender)),
       CheckInMetric.bloodPressure => (c.q_bp_t, c.q_bp_h(s.gender)),
@@ -453,49 +520,64 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
     };
   }
 
-  Widget _title(String t, String h) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(t, style: Typo.title(ar: s.rtl).copyWith(fontSize: FS.xl2)),
-        const SizedBox(height: 6),
-        Text(h, style: Typo.body(ar: s.rtl).copyWith(color: T.fg3)),
-        const SizedBox(height: 24),
-      ]);
+  Widget _title(String t, String h) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t, style: Typo.title(ar: s.rtl).copyWith(fontSize: FontSizes.title)),
+          const SizedBox(height: 6),
+          Text(h, style: Typo.body(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+          const SizedBox(height: 24),
+        ],
+      );
 
   Widget _stepBody(String id) {
     if (id == kMedsCheckInStepId) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _title(s.strings.checkin.q_med_t, s.strings.checkin.q_med_h(s.gender)),
-        ..._meds.map(_medCheck),
-      ]);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_member case final m?)
+            _title(s.strings.checkin.m_q_med_t(m.shortName), s.strings.checkin.m_q_med_h(s.gender, m.shortName))
+          else
+            _title(s.strings.checkin.q_med_t(s.gender), s.strings.checkin.q_med_h(s.gender)),
+          ..._meds.map(_medCheck),
+        ],
+      );
     }
     final metric = CheckInMetric.fromId(id);
     if (metric == null) return const SizedBox.shrink();
     final head = _question(metric);
     final skippable = _skippable.contains(metric);
     final skipped = skippable && _skipped.contains(id);
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _title(head.$1, head.$2),
-      MetricLog(
-        metric: metric,
-        s: s,
-        host: MetricLogHost.embedded,
-        onChanged: (capture, {required valid}) => _onCapture(id, capture, valid: valid),
-        // `SkipRow` sits between the field card and the date/time group
-        // (report.jsx), so it threads through the metric's own chrome.
-        belowField: skippable ? _skipRow(id, skipped: skipped) : null,
-      ),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _title(head.$1, head.$2),
+        MetricLog(
+          metric: metric,
+          s: s,
+          host: MetricLogHost.embedded,
+          subject: switch (_member) { final member? => genderForSex(member.sex), _ => null },
+          onChanged: (capture, {required valid}) => _onCapture(id, capture, valid: valid),
+          // `SkipRow` sits between the field card and the date/time group
+          // (report.jsx), so it threads through the metric's own chrome.
+          belowField: skippable ? _skipRow(id, skipped: skipped) : null,
+        ),
+      ],
+    );
   }
 
   /// `SkipRow` — "I didn't measure this today" under a vital's field card.
   Widget _skipRow(String id, {required bool skipped}) => Padding(
         padding: const EdgeInsets.only(top: 14),
         child: Center(
-          child: PButton(s.strings.meds.skip_q,
-              icon: skipped ? LucideIcons.checkCircle2 : LucideIcons.circle,
-              variant: BtnVariant.ghost,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: () => _toggleSkip(id)),
+          child: PButton(
+            s.strings.meds.skip_q,
+            icon: skipped ? LucideIcons.checkCircle2 : LucideIcons.circle,
+            variant: BtnVariant.ghost,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: () => _toggleSkip(id),
+          ),
         ),
       );
 
@@ -516,40 +598,54 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: taken ? T.hueMint50 : Colors.white,
-            borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(color: taken ? T.hueMint : T.border, width: 1.5),
+            color: taken ? AppColors.hueMint50 : AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: taken ? AppColors.hueMint : AppColors.border, width: 1.5),
           ),
-          child: Row(children: [
-            AnimatedContainer(
+          child: Row(
+            children: [
+              AnimatedContainer(
                 duration: Motion.base,
                 curve: Motion.easeOut,
                 width: 30,
                 height: 30,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                    color: taken ? T.hueMint : Colors.transparent,
-                    borderRadius: BorderRadius.circular(9),
-                    border: Border.all(color: taken ? T.hueMint : T.borderStrong, width: 2)),
-                child: taken ? const Icon(LucideIcons.check, size: 18, color: Colors.white) : null),
-            const SizedBox(width: 14),
-            Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(m.name, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-              if (subtitle != null && subtitle.isNotEmpty)
-                Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ])),
-            if (skipped)
-              Pill(s.strings.meds.skipped, kind: PillKind.neutral, ar: s.rtl)
-            else
-              GestureDetector(
-                onTap: () => setState(() => medMarks[m.id.value] = 'skipped'),
-                child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text(s.strings.meds.mark_skip,
-                        style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600))),
+                  color: taken ? AppColors.hueMint : Colors.transparent,
+                  borderRadius: BorderRadius.circular(_doseCheckRadius),
+                  border: Border.all(color: taken ? AppColors.hueMint : AppColors.borderStrong, width: 2),
+                ),
+                child: taken ? const Icon(LucideIcons.check, size: 18, color: AppColors.white) : null,
               ),
-          ]),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      m.name,
+                      style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    ),
+                    if (subtitle != null && subtitle.isNotEmpty)
+                      Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                  ],
+                ),
+              ),
+              if (skipped)
+                Pill(s.strings.meds.skipped, ar: s.rtl)
+              else
+                GestureDetector(
+                  onTap: () => setState(() => medMarks[m.id.value] = 'skipped'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      s.strings.meds.mark_skip,
+                      style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -582,83 +678,86 @@ class _Summary extends StatelessWidget {
           ),
     ];
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       body: ContentColumn(
         maxWidth: 480,
-        child: Column(children: [
-          const PadTop(),
-          Expanded(
+        child: Column(
+          children: [
+            const PadTop(),
+            Expanded(
               child: SingleChildScrollView(
-                  child: Column(children: [
-            RiseIn(
-                child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 30, 24, 8),
-              child: Column(children: [
-                Container(
-                    width: 88,
-                    height: 88,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: T.hueMint50, shape: BoxShape.circle),
-                    child: const Icon(LucideIcons.check, size: 44, color: T.hueMint600)),
-                const SizedBox(height: 18),
-                Text(s.strings.common.saved_t, style: Typo.title(ar: s.rtl)),
-                const SizedBox(height: 14),
-                SavedLocallyNote(s: s),
-              ]),
-            )),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                  children: items.indexed.map((e) => _summaryItem(s, e.$2, last: e.$1 == items.length - 1)).toList()),
+                child: Column(
+                  children: [
+                    RiseIn(
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(24, 30, 24, 8),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 88,
+                              height: 88,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(color: AppColors.hueMint50, shape: BoxShape.circle),
+                              child: const Icon(LucideIcons.check, size: 44, color: AppColors.hueMint600),
+                            ),
+                            const SizedBox(height: 18),
+                            Text(
+                              switch (state._member) {
+                                final m? => s.strings.checkin.m_saved_t(m.shortName),
+                                null => s.strings.common.saved_t,
+                              },
+                              textAlign: TextAlign.center,
+                              style: Typo.title(ar: s.rtl),
+                            ),
+                            const SizedBox(height: 14),
+                            SavedLocallyNote(s: s),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children:
+                            items.indexed.map((e) => _SummaryItem(s, e.$2, last: e.$1 == items.length - 1)).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
-          ]))),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 14, 24, 38),
-            child: Row(children: [
-              Expanded(
-                  child: PButton(s.strings.checkin.view_trends,
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(24, 14, 24, 38),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: PButton(
+                      s.strings.checkin.view_trends,
                       variant: BtnVariant.secondary,
                       large: true,
                       block: true,
                       ar: s.rtl,
-                      onTap: () => state._close(AppTab.trends))),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: PButton(s.strings.care.to_home,
-                      variant: BtnVariant.primary,
+                      onTap: () => state._close(AppTab.trends),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: PButton(
+                      s.strings.care.to_home,
                       large: true,
                       block: true,
                       accent: s.accent,
                       ar: s.rtl,
-                      onTap: () => state._close(AppTab.home))),
-            ]),
-          ),
-        ]),
+                      onTap: () => state._close(AppTab.home),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _summaryItem(PatientAppState s, (IconData, PillKind, String, String) it, {required bool last}) {
-    final c = switch (it.$2) {
-      PillKind.info => (bg: T.hueBlue50, fg: T.hueBlue),
-      PillKind.violet => (bg: T.hueViolet50, fg: T.hueViolet),
-      PillKind.success => (bg: T.hueMint50, fg: T.hueMint600),
-      PillKind.warn => (bg: const Color(0xFFFDF5DC), fg: T.sun600),
-      _ => (bg: T.ink100, fg: T.ink600),
-    };
-    return Container(
-      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: T.ink100))),
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      child: Row(children: [
-        IconSquare(it.$1, bg: c.bg, fg: c.fg, size: 40, iconSize: 20),
-        const SizedBox(width: 14),
-        Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(it.$3, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          Text(it.$4, style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FS.md)),
-        ])),
-      ]),
     );
   }
 }
@@ -676,21 +775,27 @@ class _Summary extends StatelessWidget {
 /// Without the Flexible the row asked for the full single-line width and the
 /// hug became an overflow.
 class SavedLocallyNote extends StatelessWidget {
-  const SavedLocallyNote({super.key, required this.s});
+  const SavedLocallyNote({required this.s, super.key});
 
   final PatientAppState s;
 
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(color: T.ink50, borderRadius: BorderRadius.circular(T.rPill)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(LucideIcons.cloudOff, size: 15, color: T.fg3),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(s.strings.common.saved_local, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ),
-        ]),
+        decoration: BoxDecoration(color: AppColors.ink50, borderRadius: BorderRadius.circular(AppRadii.pill)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(LucideIcons.cloudOff, size: 15, color: AppColors.textTertiary),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                s.strings.common.saved_local,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+              ),
+            ),
+          ],
+        ),
       );
 }
 
@@ -718,4 +823,41 @@ String _summaryLabel(PatientAppState s, String id) {
   if (metric == CheckInMetric.pain) return s.strings.profile.m_pain;
   if (metric == CheckInMetric.symptoms) return s.strings.checkin.symptoms;
   return id;
+}
+
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem(this.s, this.it, {required this.last});
+  final PatientAppState s;
+  final (IconData, PillKind, String, String) it;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = switch (it.$2) {
+      PillKind.info => (bg: AppColors.hueBlue50, fg: AppColors.hueBlue),
+      PillKind.violet => (bg: AppColors.hueViolet50, fg: AppColors.hueViolet),
+      PillKind.success => (bg: AppColors.hueMint50, fg: AppColors.hueMint600),
+      PillKind.warn => (bg: AppColors.warningBackground, fg: AppColors.sun600),
+      _ => (bg: AppColors.ink100, fg: AppColors.ink600),
+    };
+    return Container(
+      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: AppColors.ink100))),
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      child: Row(
+        children: [
+          IconSquare(it.$1, bg: c.bg, fg: c.fg, size: 40, iconSize: 20),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(it.$3, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                Text(it.$4, style: Typo.subhead(ar: s.rtl).copyWith(fontSize: FontSizes.body)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -21,7 +21,7 @@ class _Recorder implements DeletePrescriptionUseCase {
 
 void main() {
   const user = UserId.value('usr-1');
-  final issued = DateTime(2026, 7, 1);
+  final issued = DateTime(2026, 7);
   final mine = Prescription(
     id: const PrescriptionId.value('rx-self'),
     userId: user,
@@ -50,19 +50,22 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        prescriptionListProvider.overrideWith((ref) => Stream.value([clinic, mine])),
-        deletePrescriptionUseCaseProvider.overrideWithValue(recorder),
-      ],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: const Scaffold(body: PrescriptionsScreen()),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          prescriptionListProvider.overrideWith((ref) => Stream.value([clinic, mine])),
+          deletePrescriptionUseCaseProvider.overrideWithValue(recorder),
+        ],
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: const Scaffold(body: PrescriptionsScreen()),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (recorder, state);
   }
@@ -75,7 +78,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('only the patient\'s own prescription has a ⋮', (tester) async {
+  testWidgets("only the patient's own prescription has a ⋮", (tester) async {
     final (_, s) = await pump(tester);
     expect(more(s, 'Allergy script'), findsOne);
     expect(more(s, 'Dr Example'), findsNothing);
@@ -102,7 +105,7 @@ void main() {
     expect(recorder.deleted, isEmpty);
   });
 
-  testWidgets('Select all ticks only the patient\'s own', (tester) async {
+  testWidgets("Select all ticks only the patient's own", (tester) async {
     final (recorder, s) = await pump(tester);
     final c = s.strings.common;
     await tester.tap(find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == c.del_select));
@@ -116,7 +119,7 @@ void main() {
     expect(recorder.deleted, [mine.id]);
   });
 
-  testWidgets('the detail page\'s bin asks, deletes and returns', (tester) async {
+  testWidgets("the detail page's bin asks, deletes and returns", (tester) async {
     final (recorder, s) = await pump(tester);
     await tester.tap(find.text('Allergy script'));
     await tester.pumpAndSettle();

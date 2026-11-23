@@ -38,14 +38,15 @@ class RecordDocument {
     required this.userId,
     required this.type,
     required this.title,
+    required this.takenAt,
+    required this.createdAt,
     this.tags = const [],
     this.source = RecordSource.self,
     this.fileType,
     this.filePath,
     this.pages,
     this.resultNote,
-    required this.takenAt,
-    required this.createdAt,
+    this.history = EntryHistory.none,
   });
 
   final RecordDocumentId id;
@@ -77,6 +78,10 @@ class RecordDocument {
   /// When the vault entry was created on this device.
   final DateTime createdAt;
 
+  /// Who other than the patient added, edited or shared this record, and the
+  /// patient's own edits since. Append-only; empty for the patient's own.
+  final EntryHistory history;
+
   RecordDocument copyWith({
     RecordType? type,
     String? title,
@@ -87,6 +92,7 @@ class RecordDocument {
     int? pages,
     String? resultNote,
     DateTime? takenAt,
+    EntryHistory? history,
   }) =>
       RecordDocument(
         id: id,
@@ -101,6 +107,7 @@ class RecordDocument {
         resultNote: resultNote ?? this.resultNote,
         takenAt: takenAt ?? this.takenAt,
         createdAt: createdAt,
+        history: history ?? this.history,
       );
 
   @override

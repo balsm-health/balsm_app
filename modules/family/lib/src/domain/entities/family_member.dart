@@ -49,12 +49,30 @@ class FamilyMember {
   }
 
   /// Age on [now]; null without a date of birth.
-  MemberAge? ageOn(DateTime now) => dateOfBirth == null ? null : MemberAge.between(dateOfBirth!, now);
+  MemberAge? ageOn(DateTime now) =>
+      switch (dateOfBirth) { final dateOfBirth? => MemberAge.between(dateOfBirth, now), _ => null };
 
   /// Under 18 on [now] — the tiles only a child gets (vaccinations, growth)
   /// key off this. Unknown age is not a child.
   bool isChildOn(DateTime now) {
     final age = ageOn(now);
     return age != null && !age.isAdult;
+  }
+
+  /// Ages between which pregnancy tracking is offered for a member.
+  static const ({int max, int min}) pregnancyAgeYears = (min: 14, max: 55);
+
+  /// Whether pregnancy can be tracked on this profile on [now]
+  /// (mother-child.jsx `mcCanPreg`): a woman of childbearing age whose
+  /// profile the account holder manages — an open dependent, female, aged
+  /// [pregnancyAgeYears]. Unknown sex or age is not offered.
+  bool canTrackPregnancyOn(DateTime now) {
+    final age = ageOn(now);
+    return kind == ProfileKind.dependent &&
+        status == ProfileStatus.active &&
+        sex == Sex.female &&
+        age != null &&
+        age.years >= pregnancyAgeYears.min &&
+        age.years <= pregnancyAgeYears.max;
   }
 }

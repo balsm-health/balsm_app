@@ -1,13 +1,12 @@
 import 'package:core/core.dart';
 import 'package:family/family.dart';
 import 'package:flutter/services.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
-import '../../tokens.dart';
 import 'family_kit.dart';
 import 'health_log_form.dart';
 import 'profile_bar.dart';
@@ -21,7 +20,7 @@ Future<void> openGrowth(BuildContext context, HealthProfileId id) =>
 /// Tapping an entry loads it into the form to edit in place; each row's bin
 /// deletes it after a confirm sheet (`MCConfirmSheet`).
 class GrowthScreen extends ConsumerStatefulWidget {
-  const GrowthScreen({super.key, required this.id});
+  const GrowthScreen({required this.id, super.key});
   final HealthProfileId id;
   @override
   ConsumerState<GrowthScreen> createState() => _GrowthScreenState();
@@ -81,9 +80,11 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
     setState(() => _saving = false);
     if (result.isFailure) {
       final invalid = result.error is ValidationFailure;
-      messenger.showSnackBar(SnackBar(
-        content: Text(invalid ? g.invalid(s.gender) : s.strings.family.save_failed(s.gender)),
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(invalid ? g.invalid(s.gender) : s.strings.family.save_failed(s.gender)),
+        ),
+      );
       return;
     }
     _reset();
@@ -99,8 +100,8 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
 
   void _startEdit(GrowthEntry e) => setState(() {
         _editing = e;
-        _weight.text = e.weightKg == null ? '' : formatMeasure(e.weightKg!);
-        _height.text = e.heightCm == null ? '' : formatMeasure(e.heightCm!);
+        _weight.text = switch (e.weightKg) { final weightKg? => formatMeasure(weightKg), _ => '' };
+        _height.text = switch (e.heightCm) { final heightCm? => formatMeasure(heightCm), _ => '' };
         _day = e.measuredOn;
       });
 
@@ -121,7 +122,7 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
   @override
   Widget build(BuildContext context) {
     final g = s.strings.growth;
-    final entries = ref.watch(growthEntriesProvider(widget.id)).valueOrNull;
+    final entries = ref.watch(growthEntriesProvider(widget.id)).value;
     final now = DateTime.now();
     final editing = _editing;
     return FamilyScaffold(
@@ -131,41 +132,49 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
         PCard(
           padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 16),
           border: editing == null ? null : s.accent.main,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            if (editing != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(bottom: 12),
-                child: Text(g.editing,
-                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (editing != null)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(bottom: 12),
+                  child: Text(
+                    g.editing,
+                    style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: s.accent.d),
+                  ),
+                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: LogField(label: g.weight, child: _number(_weight))),
+                  const SizedBox(width: 10),
+                  Expanded(child: LogField(label: g.height, child: _number(_height))),
+                ],
               ),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(child: LogField(label: g.weight, child: _number(_weight))),
-              const SizedBox(width: 10),
-              Expanded(child: LogField(label: g.height, child: _number(_height))),
-            ]),
-            LogField(
-              label: g.date,
-              child: LogDateField(
-                value: _day,
-                title: g.date,
-                first: DateTime(now.year - 120),
-                last: now,
-                onPicked: (d) => setState(() => _day = d),
+              LogField(
+                label: g.date,
+                child: LogDateField(
+                  value: _day,
+                  title: g.date,
+                  first: DateTime(now.year - 120),
+                  last: now,
+                  onPicked: (d) => setState(() => _day = d),
+                ),
               ),
-            ),
-            PButton(
-              editing == null ? g.add : g.save_changes,
-              large: true,
-              block: true,
-              accent: s.accent,
-              ar: s.rtl,
-              onTap: _typed && !_saving ? _add : null,
-            ),
-            if (editing != null) ...[
-              const SizedBox(height: 8),
-              PButton(g.cancel_edit, variant: BtnVariant.ghost, block: true, ar: s.rtl, onTap: _reset),
+              PButton(
+                editing == null ? g.add : g.save_changes,
+                large: true,
+                block: true,
+                accent: s.accent,
+                ar: s.rtl,
+                onTap: _typed && !_saving ? _add : null,
+              ),
+              if (editing != null) ...[
+                const SizedBox(height: 8),
+                PButton(g.cancel_edit, variant: BtnVariant.ghost, block: true, ar: s.rtl, onTap: _reset),
+              ],
             ],
-          ]),
+          ),
         ),
         FamilySecHead(g.entries),
         if (entries == null)
@@ -176,16 +185,20 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
           PCard(
             padding: EdgeInsets.zero,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(T.rLg),
-              child: Column(children: [
-                ...entries.indexed.map((e) => _EntryRow(
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              child: Column(
+                children: [
+                  ...entries.indexed.map(
+                    (e) => _EntryRow(
                       entry: e.$2,
                       divider: e.$1 > 0,
                       selected: editing?.id == e.$2.id,
                       onTap: () => _startEdit(e.$2),
                       onDelete: () => _delete(e.$2),
-                    )),
-              ]),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         if (entries != null && entries.isNotEmpty)
@@ -201,12 +214,12 @@ class _GrowthScreenState extends ConsumerState<GrowthScreen> {
         controller: c,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9٠-٩۰-۹.,٫]')),
-          LengthLimitingTextInputFormatter(6)
+          FilteringTextInputFormatter.allow(RegExp('[0-9٠-٩۰-۹.,٫]')),
+          LengthLimitingTextInputFormatter(6),
         ],
         textDirection: TextDirection.ltr,
         onChanged: (_) => setState(() {}),
-        style: Typo.num(size: FS.md, weight: FontWeight.w500, color: T.fg1),
+        style: Typo.num(weight: FontWeight.w500),
         decoration: logInputDecoration(s, null),
       );
 }
@@ -231,7 +244,7 @@ class _EntryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final g = s.strings.growth;
-    final value = Typo.num(size: FS.md, weight: FontWeight.w600, color: T.fg1);
+    final value = Typo.num();
     return Semantics(
       button: true,
       selected: selected,
@@ -241,34 +254,41 @@ class _EntryRow extends StatelessWidget {
           padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 8, 8),
           decoration: BoxDecoration(
             color: selected ? s.accent.bg : null,
-            border: divider ? const Border(top: BorderSide(color: T.ink100)) : null,
+            border: divider ? const Border(top: BorderSide(color: AppColors.ink100)) : null,
           ),
-          child: Row(children: [
-            Expanded(
-              child: Text(formatDay(entry.measuredOn),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  formatDay(entry.measuredOn),
                   textDirection: TextDirection.ltr,
                   textAlign: s.rtl ? TextAlign.right : TextAlign.left,
-                  style: Typo.num(size: FS.sm, weight: FontWeight.w500, color: T.fg3)),
-            ),
-            Text(entry.weightKg == null ? '—' : g.kg(formatMeasure(entry.weightKg!)), style: value),
-            ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 86),
-              child: Text(
-                entry.heightCm == null ? '—' : g.cm(formatMeasure(entry.heightCm!)),
-                textAlign: TextAlign.end,
+                  style: Typo.num(size: FontSizes.bodySm, weight: FontWeight.w500, color: AppColors.textTertiary),
+                ),
+              ),
+              Text(
+                switch (entry.weightKg) { final weightKg? => g.kg(formatMeasure(weightKg)), _ => '—' },
                 style: value,
               ),
-            ),
-            const SizedBox(width: 4),
-            RoundBtn(
-              icon: LucideIcons.trash2,
-              semanticLabel: g.a11y_delete,
-              ghost: true,
-              iconSize: 16,
-              fg: T.fg3,
-              onTap: onDelete,
-            ),
-          ]),
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 86),
+                child: Text(
+                  switch (entry.heightCm) { final heightCm? => g.cm(formatMeasure(heightCm)), _ => '—' },
+                  textAlign: TextAlign.end,
+                  style: value,
+                ),
+              ),
+              const SizedBox(width: 4),
+              RoundBtn(
+                icon: LucideIcons.trash2,
+                semanticLabel: g.a11y_delete,
+                ghost: true,
+                iconSize: 16,
+                fg: AppColors.textTertiary,
+                onTap: onDelete,
+              ),
+            ],
+          ),
         ),
       ),
     );

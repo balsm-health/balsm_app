@@ -1,0 +1,1 @@
+When Balsm is under maintenance, the app now says so: a card above the tab bar counts down to the end and shows what still works, actions that need the server explain they are paused, and during a full outage your emergency card and the emergency number stay one tap away. ([#165](https://github.com/balsm-health/balsm_app/pull/165))

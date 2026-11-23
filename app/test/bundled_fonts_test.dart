@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:app/balsm_app/kit.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart' show FontLoader;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:yaml/yaml.dart';
 
 /// The design system self-hosts its type on purpose: "offline-default is
@@ -34,9 +34,12 @@ void main() {
 
   test('no runtime font fetching dependency remains', () {
     final deps = pubspec['dependencies'] as YamlMap;
-    expect(deps.containsKey('google_fonts'), isFalse,
-        reason: 'google_fonts fetches from fonts.gstatic.com at runtime, which '
-            'breaks the offline-default promise the design system is built on');
+    expect(
+      deps.containsKey('google_fonts'),
+      isFalse,
+      reason: 'google_fonts fetches from fonts.gstatic.com at runtime, which '
+          'breaks the offline-default promise the design system is built on',
+    );
     final kit = File('lib/balsm_app/kit.dart').readAsStringSync();
     expect(kit.contains('GoogleFonts'), isFalse);
   });
@@ -56,6 +59,10 @@ void main() {
     final bytes = File('assets/fonts/Montserrat-VariableFont_wght.ttf').readAsBytesSync();
     final loader = FontLoader(family)..addFont(Future.value(bytes.buffer.asByteData()));
     await loader.load();
+    // Flutter 3.50 schedules a relayout frame when fonts load; let it run so no
+    // transient callback outlives the test.
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
 
     double widthAt(FontWeight w) {
       final painter = TextPainter(
@@ -72,8 +79,11 @@ void main() {
     final heavy = widthAt(FontWeight.w800);
     // A variable font whose axis is honoured gets wider as weight climbs. If the
     // engine ignored the axis both measurements would be identical.
-    expect(heavy, greaterThan(regular),
-        reason: 'wght axis not applied — headings would render at Regular '
-            '(measured w400=$regular, w800=$heavy)');
+    expect(
+      heavy,
+      greaterThan(regular),
+      reason: 'wght axis not applied — headings would render at Regular '
+          '(measured w400=$regular, w800=$heavy)',
+    );
   });
 }

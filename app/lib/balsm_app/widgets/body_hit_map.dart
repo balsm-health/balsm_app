@@ -1,10 +1,13 @@
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path_parsing/path_parsing.dart';
+import 'package:self_report/self_report.dart' show BodyRegion;
 import 'package:xml/xml.dart';
+
+import 'body_map.dart' show BodyMap;
 
 /// Persist id encoded in a `region-{id}` or `region-{id}-{n}` element id.
 ///
@@ -140,21 +143,27 @@ class BodyHitMap {
   }
 
   static Path? _fromEllipse(XmlElement el) {
-    final cx = _num(el, 'cx'), cy = _num(el, 'cy');
-    final rx = _num(el, 'rx'), ry = _num(el, 'ry');
+    final cx = _num(el, 'cx');
+    final cy = _num(el, 'cy');
+    final rx = _num(el, 'rx');
+    final ry = _num(el, 'ry');
     if (cx == null || cy == null || rx == null || ry == null) return null;
     return Path()..addOval(Rect.fromCenter(center: Offset(cx, cy), width: rx * 2, height: ry * 2));
   }
 
   static Path? _fromCircle(XmlElement el) {
-    final cx = _num(el, 'cx'), cy = _num(el, 'cy'), r = _num(el, 'r');
+    final cx = _num(el, 'cx');
+    final cy = _num(el, 'cy');
+    final r = _num(el, 'r');
     if (cx == null || cy == null || r == null) return null;
     return Path()..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r));
   }
 
   static Path? _fromRect(XmlElement el) {
-    final x = _num(el, 'x') ?? 0, y = _num(el, 'y') ?? 0;
-    final w = _num(el, 'width'), h = _num(el, 'height');
+    final x = _num(el, 'x') ?? 0;
+    final y = _num(el, 'y') ?? 0;
+    final w = _num(el, 'width');
+    final h = _num(el, 'height');
     if (w == null || h == null) return null;
     return Path()..addRect(Rect.fromLTWH(x, y, w, h));
   }

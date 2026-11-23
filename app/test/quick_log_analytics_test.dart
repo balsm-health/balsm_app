@@ -17,8 +17,13 @@ class _RecordingLogger implements AnalyticsLogger {
   void log(String message, {LogLevel level = LogLevel.info, Map<String, Object?>? props}) {}
 
   @override
-  void logError(Object error,
-      {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) {}
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) {}
 
   @override
   void setUser(String? id) {}
@@ -39,19 +44,22 @@ void main() {
     tester.view.physicalSize = const Size(402, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ProviderScope(
-      overrides: [analyticsLoggerProvider.overrideWithValue(log)],
-      child: AppScope(
-        state: s,
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [analyticsLoggerProvider.overrideWithValue(log)],
+        child: AppScope(
+          state: s,
+          child: MaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(child: TextButton(onPressed: () => showQuickLog(context), child: const Text('open'))),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
   }

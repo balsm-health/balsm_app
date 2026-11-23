@@ -62,18 +62,21 @@ class BalsmAccountAdapter implements ReadAccountRepository {
     }
     final AccountSummary? summary;
     try {
-      summary = await _cache.read(userId, fetch: () async {
-        final res = await _api.getSelf();
-        if (res == null) return null;
-        return AccountSummary(
-          id: UserId.value(res.id),
-          handle: res.handle,
-          displayName: res.displayName,
-          countryCode: res.countryCode,
-          preferredLanguage: res.preferredLanguage,
-          deletionState: res.deletionState,
-        );
-      });
+      summary = await _cache.read(
+        userId,
+        fetch: () async {
+          final res = await _api.getSelf();
+          if (res == null) return null;
+          return AccountSummary(
+            id: UserId.value(res.id),
+            handle: res.handle,
+            displayName: res.displayName,
+            countryCode: res.countryCode,
+            preferredLanguage: res.preferredLanguage,
+            deletionState: res.deletionState,
+          );
+        },
+      );
     } catch (e) {
       // A rejected session must not keep serving a cached identity. The
       // interceptor signs out on its own; drop the row first so nothing races

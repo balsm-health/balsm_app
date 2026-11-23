@@ -98,7 +98,7 @@ class ProfileFamilyMembers implements FamilyMembersPort {
 
   static List<FamilyMember> _members(List<HealthProfile> rows) => [
         for (final p in rows)
-          if (!p.isSelf && !p.isClosed) familyMemberOf(p)
+          if (!p.isSelf && !p.isClosed) familyMemberOf(p),
       ];
 }
 

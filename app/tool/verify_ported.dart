@@ -27,7 +27,7 @@ Future<void> main(List<String> args) async {
   Future<void> ext(String method, [Map<String, String> params = const {}]) async {
     try {
       await vm.callServiceExtension(method, isolateId: isolateId, args: params);
-    } catch (e) {
+    } on Object catch (e) {
       stderr.writeln('  ! $method $params -> $e');
     }
   }

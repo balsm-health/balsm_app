@@ -9,5 +9,5 @@ class EntityId extends UniqueId {
   const EntityId.empty() : super.empty();
   EntityId.uuid() : super.uuidv7('entity');
 
-  static EntityId? fromString(String? value) => value?.mapNotNull((v) => EntityId.value(v));
+  static EntityId? fromString(String? value) => value.mapNotNull(EntityId.value);
 }

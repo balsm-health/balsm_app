@@ -20,6 +20,25 @@ class FamilyLinkResponse {
     this.cardSharedWithMe = false,
   });
 
+  /// [direction] defaults to [fallbackDirection] — the list a row came from
+  /// already says which side the caller is on.
+  factory FamilyLinkResponse.fromJson(Map<String, dynamic> json, {String fallbackDirection = 'outgoing'}) =>
+      FamilyLinkResponse(
+        id: json['id'] as String,
+        relation: json['relation'] as String? ?? 'other',
+        // Enum names come over the wire as the server spells them ("Pending").
+        status: (json['status'] as String? ?? 'pending').toLowerCase(),
+        direction: (json['direction'] as String? ?? fallbackDirection).toLowerCase(),
+        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
+        updatedAt: _date(json['updated_at']),
+        otherAccountId: json['other_account_id'] as String?,
+        otherDisplayName: json['other_display_name'] as String?,
+        otherHandle: json['other_handle'] as String?,
+        otherPublicKey: json['other_public_key'] as String?,
+        cardSharedByMe: json['card_shared_by_me'] as bool? ?? false,
+        cardSharedWithMe: json['card_shared_with_me'] as bool? ?? false,
+      );
+
   final String id;
   final String relation;
 
@@ -44,25 +63,6 @@ class FamilyLinkResponse {
   /// Whether the other party has a sealed card stored on this link for the caller.
   final bool cardSharedWithMe;
 
-  /// [direction] defaults to [fallbackDirection] — the list a row came from
-  /// already says which side the caller is on.
-  factory FamilyLinkResponse.fromJson(Map<String, dynamic> json, {String fallbackDirection = 'outgoing'}) =>
-      FamilyLinkResponse(
-        id: json['id'] as String,
-        relation: json['relation'] as String? ?? 'other',
-        // Enum names come over the wire as the server spells them ("Pending").
-        status: (json['status'] as String? ?? 'pending').toLowerCase(),
-        direction: (json['direction'] as String? ?? fallbackDirection).toLowerCase(),
-        createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
-        updatedAt: _date(json['updated_at']),
-        otherAccountId: json['other_account_id'] as String?,
-        otherDisplayName: json['other_display_name'] as String?,
-        otherHandle: json['other_handle'] as String?,
-        otherPublicKey: json['other_public_key'] as String?,
-        cardSharedByMe: json['card_shared_by_me'] as bool? ?? false,
-        cardSharedWithMe: json['card_shared_with_me'] as bool? ?? false,
-      );
-
   static DateTime? _date(Object? raw) => raw is String ? DateTime.parse(raw).toUtc() : null;
 }
 
@@ -77,12 +77,6 @@ class SealedCardResponse {
     required this.updatedAt,
   });
 
-  final int version;
-  final String ephemeralPublicKey;
-  final String nonce;
-  final String ciphertext;
-  final DateTime updatedAt;
-
   factory SealedCardResponse.fromJson(Map<String, dynamic> json) => SealedCardResponse(
         version: (json['version'] as num).toInt(),
         ephemeralPublicKey: json['ephemeral_public_key'] as String,
@@ -90,4 +84,10 @@ class SealedCardResponse {
         ciphertext: json['ciphertext'] as String,
         updatedAt: DateTime.parse(json['updated_at'] as String).toUtc(),
       );
+
+  final int version;
+  final String ephemeralPublicKey;
+  final String nonce;
+  final String ciphertext;
+  final DateTime updatedAt;
 }

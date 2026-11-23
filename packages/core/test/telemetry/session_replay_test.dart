@@ -22,8 +22,9 @@ void main() {
   });
 
   test('starts stopped and stays stopped until all three hold', () {
-    gate.update(route: 'welcome');
-    gate.setAnalyticsEnabled(true);
+    gate
+      ..update(route: 'welcome')
+      ..setAnalyticsEnabled(true);
     expect(gate.recording, isFalse);
     expect(rec.calls, isEmpty);
     gate.update(replayEnabled: true);
@@ -34,8 +35,8 @@ void main() {
   test('leaving for a screen not on the list stops it', () {
     gate
       ..setAnalyticsEnabled(true)
-      ..update(replayEnabled: true, route: 'otp');
-    gate.update(route: 'app');
+      ..update(replayEnabled: true, route: 'otp')
+      ..update(route: 'app');
     expect(gate.recording, isFalse);
     expect(rec.calls, ['start', 'stop']);
   });
@@ -43,11 +44,12 @@ void main() {
   test('switching either consent off stops it', () {
     gate
       ..setAnalyticsEnabled(true)
-      ..update(replayEnabled: true, route: 'welcome');
-    gate.setAnalyticsEnabled(false);
+      ..update(replayEnabled: true, route: 'welcome')
+      ..setAnalyticsEnabled(false);
     expect(rec.calls, ['start', 'stop']);
-    gate.setAnalyticsEnabled(true);
-    gate.update(replayEnabled: false);
+    gate
+      ..setAnalyticsEnabled(true)
+      ..update(replayEnabled: false);
     expect(rec.calls, ['start', 'stop', 'start', 'stop']);
   });
 

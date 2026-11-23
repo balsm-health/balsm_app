@@ -1,3 +1,5 @@
+import 'gender.dart' show Gender;
+
 /// Sex recorded on a managed (dependent) health profile — used for growth
 /// references and grammatically gendered copy about that person.
 ///

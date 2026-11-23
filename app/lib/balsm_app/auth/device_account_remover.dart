@@ -7,7 +7,7 @@ import 'go_online_controller.dart';
 /// Secure-storage keys the go-online flow keeps for a device-only account,
 /// on top of [OfflineAccountService]'s own. Removing the account (or finding
 /// it left over from an uninstalled copy of the app) deletes these too.
-const kDeviceAccountFlowKeys = [
+const List<String> kDeviceAccountFlowKeys = [
   GoOnlineController.kLocalId,
   GoOnlineController.kDisclosurePending,
   GoOnlineController.kPendingMergeTarget,

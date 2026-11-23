@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/flags.dart';
 import 'package:app/balsm_app/kit.dart';
@@ -9,6 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
 import 'package:prescriptions/prescriptions.dart';
+
+import 'support/flag_overrides.dart';
 
 /// `home.jsx` MedsScreen — a medication is deleted from its dose row's ⋮
 /// menu, by swiping the row, or with Select; each asks first.
@@ -42,7 +46,7 @@ void main() {
         name: name,
         scheduleType: ScheduleType.daily,
         scheduleConfig: const ScheduleConfig(times: ['08:00', '20:00']),
-        startDate: DateTime(2026, 1, 1),
+        startDate: DateTime(2026),
       );
   final alpha = med('med-a', 'Testamol');
   final beta = med('med-b', 'Placebex');
@@ -55,15 +59,20 @@ void main() {
 
   late _EditRecorder editor;
 
-  Future<(_Recorder, PatientAppState)> pump(WidgetTester tester,
-      {bool ar = false, FamilyMember? member, List<Medication>? meds}) async {
+  Future<(_Recorder, PatientAppState)> pump(
+    WidgetTester tester, {
+    bool ar = false,
+    FamilyMember? member,
+    List<Medication>? meds,
+  }) async {
     final recorder = _Recorder();
     editor = _EditRecorder();
     final state = PatientAppState();
     if (ar) state.setLang(LanguageCode.ar);
     if (member != null) {
       state.attachFlags(
-          FeatureFlags(flags: AppFlags.all, allowOverrides: true)..setOverride(AppFlags.motherChild, true));
+        flagsWith({AppFlags.motherChild: true}),
+      );
     }
     final list = meds ?? [alpha, beta];
     tester.view.physicalSize = const Size(390, 1000);
@@ -72,28 +81,31 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        currentUserIdProvider.overrideWithValue(user),
-        todayDosesProvider.overrideWith((ref) async => meds == null ? doses : const <TodayDose>[]),
-        medicationListProvider.overrideWith((ref) => Stream.value(list)),
-        if (member != null) ...[
-          familyMembersProvider.overrideWith((ref) => Stream.value([member])),
-          activeFamilyMemberProvider.overrideWithValue(member),
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: noProviderRetry,
+        overrides: [
+          currentUserIdProvider.overrideWithValue(user),
+          todayDosesProvider.overrideWith((ref) async => meds == null ? doses : const <TodayDose>[]),
+          medicationListProvider.overrideWith((ref) => Stream.value(list)),
+          if (member != null) ...[
+            familyMembersProvider.overrideWith((ref) => Stream.value([member])),
+            activeFamilyMemberProvider.overrideWithValue(member),
+          ],
+          prescriptionListProvider.overrideWith((ref) => Stream.value(const <Prescription>[])),
+          weekAdherenceProvider.overrideWith((ref) async => const WeekAdherence(scheduled: 0, taken: 0)),
+          deleteMedicationUseCaseProvider(user).overrideWithValue(recorder),
+          editMedicationUseCaseProvider(user).overrideWithValue(editor),
         ],
-        prescriptionListProvider.overrideWith((ref) => Stream.value(const <Prescription>[])),
-        weekAdherenceProvider.overrideWith((ref) async => const WeekAdherence(scheduled: 0, taken: 0)),
-        deleteMedicationUseCaseProvider(user).overrideWithValue(recorder),
-        editMedicationUseCaseProvider(user).overrideWithValue(editor),
-      ],
-      child: AppScope(
-        state: state,
-        child: MaterialApp(
-          builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
-          home: const Scaffold(body: MedsScreen()),
+        child: AppScope(
+          state: state,
+          child: MaterialApp(
+            builder: (_, child) => Directionality(textDirection: state.dir, child: child!),
+            home: const Scaffold(body: MedsScreen()),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     return (recorder, state);
   }
@@ -106,7 +118,8 @@ void main() {
   testWidgets('the ⋮ menu asks, then ends the medication', (tester) async {
     final (recorder, s) = await pump(tester);
     await tester.tap(
-        find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == s.strings.common.del_options('Placebex')));
+      find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == s.strings.common.del_options('Placebex')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text(s.strings.common.del));
     await tester.pumpAndSettle();

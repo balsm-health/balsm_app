@@ -1,5 +1,6 @@
-import 'package:core/core.dart';
 import 'package:collection/collection.dart';
+
+import '../../../core.dart';
 
 class Tag extends ValueObject {
   const Tag(this.key, {this.values = const {}});

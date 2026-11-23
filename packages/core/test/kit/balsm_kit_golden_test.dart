@@ -1,7 +1,7 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:core/core.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Golden tests for all BalsmKit widgets.
 // Run: flutter test --update-goldens (first time to generate baseline images)
@@ -38,16 +38,16 @@ void main() {
         testGoldens('all variants', (tester) async {
           await tester.pumpWidgetBuilder(
             _wrap(
-              Column(
+              const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  BalsmCard(child: const Text('Standard')),
-                  const SizedBox(height: 8),
-                  BalsmCard.accent(child: const Text('Accent')),
-                  const SizedBox(height: 8),
-                  BalsmCard.danger(child: const Text('Danger')),
-                  const SizedBox(height: 8),
-                  BalsmCard.cream(child: const Text('Cream')),
+                  BalsmCard(child: Text('Standard')),
+                  SizedBox(height: 8),
+                  BalsmCard.accent(child: Text('Accent')),
+                  SizedBox(height: 8),
+                  BalsmCard.danger(child: Text('Danger')),
+                  SizedBox(height: 8),
+                  BalsmCard.cream(child: Text('Cream')),
                 ],
               ),
               locale: locale,
@@ -64,12 +64,12 @@ void main() {
         testGoldens('sizes', (tester) async {
           await tester.pumpWidgetBuilder(
             _wrap(
-              Row(
+              const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  BalsmAvatar(initials: 'AH', size: 44),
-                  const SizedBox(width: 12),
-                  BalsmAvatar(initials: 'MK', size: 84, backgroundColor: BalsmColors.hueEmerald),
+                  BalsmAvatar(initials: 'AH'),
+                  SizedBox(width: 12),
+                  BalsmAvatar(initials: 'MK', size: 84, backgroundColor: AppColors.hueEmerald),
                 ],
               ),
               locale: locale,
@@ -99,10 +99,12 @@ void main() {
         testGoldens('tab 0 active', (tester) async {
           await tester.pumpWidgetBuilder(
             _wrap(
-              BalsmBottomNav(
-                tabs: BalsmBottomNav.defaultTabs,
-                currentIndex: 0,
-                onTap: (_) {},
+              Builder(
+                builder: (context) => BalsmBottomNav(
+                  tabs: BalsmBottomNav.defaultTabs(context),
+                  currentIndex: 0,
+                  onTap: (_) {},
+                ),
               ),
               locale: locale,
               dir: dir,

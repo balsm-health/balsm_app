@@ -5,9 +5,9 @@ import 'package:core/core.dart';
 import 'package:disclosure/disclosure.dart'
     show DisclosureAcceptance, DisclosureDao, DisclosureId, disclosureDaoProvider;
 import 'package:flutter/foundation.dart' show TargetPlatform, debugDefaultTargetPlatformOverride;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 /// Google sign-in ships on Android/web/macOS only — iOS shows no third-party
@@ -23,7 +23,7 @@ class _MockDisclosureDao extends Mock implements DisclosureDao {}
 class _StubCredentials implements SocialCredentialsPort {
   _StubCredentials(this.result);
   final SocialCredentialsResult result;
-  var calls = 0;
+  int calls = 0;
 
   @override
   Future<SocialCredentialsResult> obtain() async {
@@ -34,7 +34,6 @@ class _StubCredentials implements SocialCredentialsPort {
 
 const _googleTokens = SocialCredentials(
   idToken: 'google-id-token',
-  authorizationCode: '',
   email: 'layla@example.com',
   givenName: 'Layla',
   familyName: 'Hassan',
@@ -89,6 +88,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           signInUseCaseProvider.overrideWithValue(signIn),
           disclosureDaoProvider.overrideWithValue(disclosure),
@@ -113,11 +113,13 @@ void main() {
   Finder googleButton() => find.text('Continue with Google');
 
   void stubGoogle(AppResult<SignInResult> result) {
-    when(() => signIn.signInWithGoogle(
-          idToken: any(named: 'idToken'),
-          email: any(named: 'email'),
-          countryCode: any(named: 'countryCode'),
-        )).thenAnswer((_) async => result);
+    when(
+      () => signIn.signInWithGoogle(
+        idToken: any(named: 'idToken'),
+        email: any(named: 'email'),
+        countryCode: any(named: 'countryCode'),
+      ),
+    ).thenAnswer((_) async => result);
   }
 
   /// Taps Google and lets the awaits in the handler settle.
@@ -216,11 +218,13 @@ void main() {
         await tapGoogle(tester);
       });
 
-      verify(() => signIn.signInWithGoogle(
-            idToken: 'google-id-token',
-            email: 'layla@example.com',
-            countryCode: 'SA',
-          )).called(1);
+      verify(
+        () => signIn.signInWithGoogle(
+          idToken: 'google-id-token',
+          email: 'layla@example.com',
+          countryCode: 'SA',
+        ),
+      ).called(1);
     });
   });
 
@@ -237,11 +241,13 @@ void main() {
 
       expect(port.calls, 1);
       expect(state.route, 'welcome');
-      verifyNever(() => signIn.signInWithGoogle(
-            idToken: any(named: 'idToken'),
-            email: any(named: 'email'),
-            countryCode: any(named: 'countryCode'),
-          ));
+      verifyNever(
+        () => signIn.signInWithGoogle(
+          idToken: any(named: 'idToken'),
+          email: any(named: 'email'),
+          countryCode: any(named: 'countryCode'),
+        ),
+      );
     });
 
     testWidgets('a missing ID token reads as unavailable, not as the user failing', (tester) async {
@@ -267,11 +273,13 @@ void main() {
   });
 
   testWidgets('a lockout surfaces the countdown instead of navigating', (tester) async {
-    stubGoogle(AppResult.success(
-      SignInLockout(
-        session: LockedOut(until: DateTime.now().add(const Duration(seconds: 90)), identifier: 'x'),
+    stubGoogle(
+      AppResult.success(
+        SignInLockout(
+          session: LockedOut(until: DateTime.now().add(const Duration(seconds: 90)), identifier: 'x'),
+        ),
       ),
-    ));
+    );
 
     await onPlatform(TargetPlatform.android, () async {
       await pump(tester, google: _StubCredentials(_googleTokens));

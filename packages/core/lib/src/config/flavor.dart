@@ -1,4 +1,3 @@
-// ignore_for_file: constant_identifier_names
 import 'env_hosts.dart';
 import 'server_preset.dart';
 
@@ -43,6 +42,20 @@ enum AppBrand {
 /// single entrypoint serves every combination via `--dart-define`s instead of
 /// one `main_<x>.dart` per permutation.
 class FlavorConfig {
+  const FlavorConfig({
+    required this.brand,
+    required this.flavor,
+    required this.servers,
+    required this.appName,
+    required this.appNameSuffix,
+    required this.serverSwitchingEnabled,
+    this.sentryDsn,
+    this.posthogApiKey,
+    this.posthogHost = kDefaultPosthogHost,
+    this.socialSignInEnabled = false,
+    this.googleServerClientId = '',
+    this.googleIosClientId = '',
+  });
   final AppBrand brand;
   final Flavor flavor;
 
@@ -119,21 +132,6 @@ class FlavorConfig {
   /// the platform client alongside the server one. Empty elsewhere.
   final String googleIosClientId;
 
-  const FlavorConfig({
-    required this.brand,
-    required this.flavor,
-    required this.servers,
-    this.sentryDsn,
-    this.posthogApiKey,
-    this.posthogHost = kDefaultPosthogHost,
-    required this.appName,
-    required this.appNameSuffix,
-    required this.serverSwitchingEnabled,
-    this.socialSignInEnabled = false,
-    this.googleServerClientId = '',
-    this.googleIosClientId = '',
-  });
-
   static FlavorConfig? _current;
   static FlavorConfig get current {
     assert(_current != null, 'FlavorConfig.init() must be called before accessing current');
@@ -204,13 +202,13 @@ class FlavorConfig {
     String? googleServerClientId,
     String? googleIosClientId,
   }) {
-    const serversRaw = String.fromEnvironment('ENVS', defaultValue: '');
-    const sentryDsn = String.fromEnvironment('SENTRY_DSN', defaultValue: '');
-    const posthogApiKey = String.fromEnvironment('POSTHOG_API_KEY', defaultValue: '');
+    const serversRaw = String.fromEnvironment('ENVS');
+    const sentryDsn = String.fromEnvironment('SENTRY_DSN');
+    const posthogApiKey = String.fromEnvironment('POSTHOG_API_KEY');
     const posthogHost = String.fromEnvironment('POSTHOG_HOST', defaultValue: kDefaultPosthogHost);
     const envSocialSignInEnabled = bool.fromEnvironment('SOCIAL_SIGN_IN_ENABLED');
-    const envGoogleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
-    const envGoogleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID', defaultValue: '');
+    const envGoogleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+    const envGoogleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
     final resolved = (servers != null && servers.isNotEmpty) ? servers : _parseServers(serversRaw);
     final base = brand.displayName;
     final envSuffix = switch (flavor) { Flavor.dev => ' Dev', Flavor.staging => ' Staging', Flavor.prod => '' };

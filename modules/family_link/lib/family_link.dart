@@ -5,13 +5,6 @@
 // emergency card each side may share, sealed so only the other person's
 // phone can open it. The server never holds health data in readable form.
 
-// Domain
-export 'src/domain/entities/family_link.dart';
-export 'src/domain/value_objects/emergency_card_payload.dart';
-export 'src/domain/value_objects/link_direction.dart';
-export 'src/domain/value_objects/link_relation.dart';
-export 'src/domain/value_objects/sealed_card.dart';
-
 // Application
 export 'src/application/link_failures.dart';
 export 'src/application/ports/card_sealer.dart';
@@ -24,11 +17,15 @@ export 'src/application/use_cases/refresh_family_links_use_case.dart';
 export 'src/application/use_cases/request_family_link_use_case.dart';
 export 'src/application/use_cases/respond_to_family_link_use_case.dart';
 export 'src/application/use_cases/set_card_sharing_use_case.dart';
-
+// Domain
+export 'src/domain/entities/family_link.dart';
+export 'src/domain/value_objects/emergency_card_payload.dart';
+export 'src/domain/value_objects/link_direction.dart';
+export 'src/domain/value_objects/link_relation.dart';
+export 'src/domain/value_objects/sealed_card.dart';
 // Infrastructure — bound through its providers; the classes are exported for tests.
 export 'src/infrastructure/crypto/ecies_card_sealer.dart';
 export 'src/infrastructure/secure/secure_device_key_store.dart';
 export 'src/infrastructure/secure/secure_link_local_store.dart';
-
 // Presentation — providers
 export 'src/presentation/providers.dart';

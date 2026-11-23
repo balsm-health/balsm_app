@@ -106,7 +106,7 @@ class HttpLogInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
+  void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
     final o = response.requestOptions;
     final b = StringBuffer('← ${response.statusCode} ${o.method} ${o.uri}${_elapsed(o)}');
     _headers(b, _headersFor(response.headers.map));
@@ -148,15 +148,16 @@ class HttpLogInterceptor extends Interceptor {
     if (data is Map || data is List) {
       try {
         out = _encoder.convert(data);
-      } catch (_) {
+      } on Object catch (_) {
         out = data.toString();
       }
     } else {
       out = data.toString();
     }
     if (out.isEmpty) return;
-    b.write('\n  body: ');
-    b.write(out.replaceAll('\n', '\n  '));
+    b
+      ..write('\n  body: ')
+      ..write(out.replaceAll('\n', '\n  '));
   }
 
   String _elapsed(RequestOptions o) {
@@ -181,7 +182,7 @@ class HttpLogInterceptor extends Interceptor {
       if (data is Map || data is List) {
         try {
           body = jsonEncode(data);
-        } catch (_) {
+        } on Object catch (_) {
           body = data.toString();
         }
       } else {
@@ -194,5 +195,5 @@ class HttpLogInterceptor extends Interceptor {
 
   /// Single-quotes a shell argument, escaping embedded single quotes
   /// (`'` → `'\''`) so the printed command is directly runnable.
-  String _shQuote(String s) => "'${s.replaceAll("'", "'\\''")}'";
+  String _shQuote(String s) => "'${s.replaceAll("'", r"'\''")}'";
 }

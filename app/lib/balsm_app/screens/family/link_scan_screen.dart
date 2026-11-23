@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:family_link/family_link.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -54,7 +55,7 @@ class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
 
   void _manual() {
     Navigator.pop(context);
-    openAddMember(context);
+    unawaited(openAddMember(context));
   }
 
   @override
@@ -76,68 +77,82 @@ class _LinkScanScreenState extends ConsumerState<LinkScanScreen> {
     return FamilyScaffold(
       title: c.fam_confirm_title,
       onBack: () => setState(() => _found = null),
-      footer: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        PButton(
-          c.fam_send_request,
-          large: true,
-          block: true,
-          accent: s.accent,
-          ar: s.rtl,
-          onTap: _relation != null && !_sending ? _send : null,
-        ),
-        const SizedBox(height: 8),
-        PButton(
-          c.fam_scan_other,
-          variant: BtnVariant.ghost,
-          block: true,
-          ar: s.rtl,
-          onTap: () => setState(() {
-            _found = null;
-            _relation = null;
-          }),
-        ),
-      ]),
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PButton(
+            c.fam_send_request,
+            large: true,
+            block: true,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: _relation != null && !_sending ? _send : null,
+          ),
+          const SizedBox(height: 8),
+          PButton(
+            c.fam_scan_other,
+            variant: BtnVariant.ghost,
+            block: true,
+            ar: s.rtl,
+            onTap: () => setState(() {
+              _found = null;
+              _relation = null;
+            }),
+          ),
+        ],
+      ),
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: T.hueMint50,
-            borderRadius: BorderRadius.circular(T.rLg),
-            border: Border.all(color: T.border),
+            color: AppColors.hueMint50,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.border),
           ),
-          child: Row(children: [
-            Avatar(
-              initials: name.isEmpty ? '' : name.characters.first.toUpperCase(),
-              color: T.hueMint600,
-              size: 48,
-              fontSize: 16,
-              ar: s.rtl,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(name.isEmpty ? s.strings.family.link_someone : name,
-                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-            ),
-            const Icon(LucideIcons.badgeCheck, size: 22, color: T.hueMint600),
-          ]),
+          child: Row(
+            children: [
+              Avatar(
+                initials: name.isEmpty ? '' : name.characters.first.toUpperCase(),
+                color: AppColors.hueMint600,
+                size: 48,
+                fontSize: FontSizes.body,
+                ar: s.rtl,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  name.isEmpty ? s.strings.family.link_someone : name,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+              ),
+              const Icon(LucideIcons.badgeCheck, size: 22, color: AppColors.hueMint600),
+            ],
+          ),
         ),
         const SizedBox(height: 18),
-        Text(s.strings.family.f_relation,
-            style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg2)),
+        Text(
+          s.strings.family.f_relation,
+          style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+        ),
         const SizedBox(height: 8),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final r in LinkRelation.values)
-            BChip(
-              linkRelationPick(s, r),
-              active: _relation == r,
-              accent: s.accent.main,
-              ar: s.rtl,
-              onTap: () => setState(() => _relation = r),
-            ),
-        ]),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final r in LinkRelation.values)
+              BChip(
+                linkRelationPick(s, r),
+                active: _relation == r,
+                accent: s.accent.main,
+                ar: s.rtl,
+                onTap: () => setState(() => _relation = r),
+              ),
+          ],
+        ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(2, 16, 2, 0),
-          child: Text(c.fam_approval_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg2)),
+          padding: const EdgeInsetsDirectional.fromSTEB(2, 16, 2, 0),
+          child: Text(c.fam_approval_note, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary)),
         ),
       ],
     );

@@ -78,18 +78,20 @@ class AuthInterceptor extends Interceptor {
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     if (!_isBootstrap(options.path)) {
       if (AccountMode.fromWire(await _storage.read(key: kAccountModeKey)) == AccountMode.deviceOnly) {
-        return handler.reject(DioException(
-          requestOptions: options,
-          // connectionError (not cancel): ApiException.fromDioException short-
-          // circuits `cancel` to a silently-ignored `cancelled` code before it
-          // ever looks at the wrapped error. connectionError instead flows
-          // through to `isOfflineError`, which treats that DioExceptionType as
-          // offline — so callers see this exactly like being offline, per the
-          // class doc, while `.error` still carries DeviceOnlyAccountException
-          // for anything that wants the precise reason.
-          type: DioExceptionType.connectionError,
-          error: const DeviceOnlyAccountException(),
-        ));
+        return handler.reject(
+          DioException(
+            requestOptions: options,
+            // connectionError (not cancel): ApiException.fromDioException short-
+            // circuits `cancel` to a silently-ignored `cancelled` code before it
+            // ever looks at the wrapped error. connectionError instead flows
+            // through to `isOfflineError`, which treats that DioExceptionType as
+            // offline — so callers see this exactly like being offline, per the
+            // class doc, while `.error` still carries DeviceOnlyAccountException
+            // for anything that wants the precise reason.
+            type: DioExceptionType.connectionError,
+            error: const DeviceOnlyAccountException(),
+          ),
+        );
       }
       var token = await _storage.read(key: _kAccess);
       // Proactive refresh: renew at/near expiry before sending, so most requests
@@ -117,7 +119,7 @@ class AuthInterceptor extends Interceptor {
       if (map is! Map || map['exp'] is! int) return false;
       final expiry = DateTime.fromMillisecondsSinceEpoch((map['exp'] as int) * 1000, isUtc: true);
       return expiry.difference(DateTime.now().toUtc()) <= _proactiveWindow;
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }
@@ -164,6 +166,7 @@ class AuthInterceptor extends Interceptor {
         ApiRoutes.auth_refresh,
         data: {'refresh_token': refresh, 'device_id': deviceId},
       );
+      // A decoded JSON object: its values are untyped until each field is read and checked.
       final body = res.data ?? const <String, dynamic>{};
       final data =
           body['data'] is Map<String, dynamic> ? body['data'] as Map<String, dynamic> : const <String, dynamic>{};

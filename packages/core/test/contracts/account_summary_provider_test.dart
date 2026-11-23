@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The account summary is what Home, Profile and the account switcher show as
@@ -36,10 +37,13 @@ void main() {
 
   ({ProviderContainer container, _Server server}) boot() {
     final server = _Server();
-    final container = ProviderContainer(overrides: [
-      readAccountRepositoryProvider.overrideWithValue(server),
-      currentUserIdProvider.overrideWith((ref) => ref.watch(session)),
-    ]);
+    final container = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [
+        readAccountRepositoryProvider.overrideWithValue(server),
+        currentUserIdProvider.overrideWith((ref) => ref.watch(session)),
+      ],
+    );
     addTearDown(container.dispose);
     return (container: container, server: server);
   }

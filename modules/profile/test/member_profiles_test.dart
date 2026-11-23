@@ -41,7 +41,7 @@ void main() {
         kind: ProfileKind.dependent,
         displayName: '  Test Child ',
         now: now,
-        dateOfBirth: DateTime.utc(2020, 1, 1),
+        dateOfBirth: DateTime.utc(2020),
         sex: Sex.female,
       );
 
@@ -58,7 +58,7 @@ void main() {
         kind: ProfileKind.prenatal,
         displayName: 'x' * 61,
         now: now,
-        dateOfBirth: DateTime.utc(2027, 1, 1),
+        dateOfBirth: DateTime.utc(2027),
         sex: Sex.male,
         sequence: 0,
       );
@@ -77,13 +77,12 @@ void main() {
     test('a dependent needs a name; a prenatal profile may wait for one', () {
       expect(
         HealthProfile.createMember(
-                id: const HealthProfileId.value('hp-1'),
-                userId: user,
-                kind: ProfileKind.dependent,
-                displayName: ' ',
-                now: now)
-            .error
-            .message,
+          id: const HealthProfileId.value('hp-1'),
+          userId: user,
+          kind: ProfileKind.dependent,
+          displayName: ' ',
+          now: now,
+        ).error.message,
         'nameRequired',
       );
       expect(
@@ -103,13 +102,12 @@ void main() {
     test('the self profile is not a member and cannot be closed', () {
       expect(
         HealthProfile.createMember(
-                id: const HealthProfileId.value('hp-1'),
-                userId: user,
-                kind: ProfileKind.self,
-                displayName: 'Me',
-                now: now)
-            .error
-            .message,
+          id: const HealthProfileId.value('hp-1'),
+          userId: user,
+          kind: ProfileKind.self,
+          displayName: 'Me',
+          now: now,
+        ).error.message,
         'selfNotAMember',
       );
       final self = HealthProfile(
@@ -133,14 +131,15 @@ void main() {
       expect(
         closed
             .withMemberDetails(
-                displayName: 'Other',
-                dateOfBirth: null,
-                sex: null,
-                relationship: null,
-                groupId: null,
-                tone: null,
-                sequence: null,
-                now: now)
+              displayName: 'Other',
+              dateOfBirth: null,
+              sex: null,
+              relationship: null,
+              groupId: null,
+              tone: null,
+              sequence: null,
+              now: now,
+            )
             .isFailure,
         isTrue,
       );
@@ -217,12 +216,15 @@ void main() {
     });
 
     test('member fields round-trip', () async {
-      await ds.createMember(member(
+      await ds.createMember(
+        member(
           id: 'hp-baby',
           kind: ProfileKind.prenatal,
           name: null,
           pregnancy: const PregnancyId.value('preg-1'),
-          sequence: 2));
+          sequence: 2,
+        ),
+      );
       final dob = DateTime.utc(2021, 6, 9);
       final edited = (await ds.find(const HealthProfileId.value('hp-early')))!
           .withMemberDetails(
@@ -276,7 +278,7 @@ void main() {
           .born(
             displayName: 'Test Baby',
             sex: Sex.male,
-            dateOfBirth: DateTime.utc(2026, 11, 1),
+            dateOfBirth: DateTime.utc(2026, 11),
             relationship: Relationship.child,
             bloodType: BloodType.oNegative,
             tone: 'blue',
@@ -289,7 +291,7 @@ void main() {
       expect(stored.kind, ProfileKind.dependent);
       expect(stored.displayName, 'Test Baby');
       expect(stored.sex, Sex.male);
-      expect(stored.dateOfBirth, DateTime.utc(2026, 11, 1));
+      expect(stored.dateOfBirth, DateTime.utc(2026, 11));
       expect(stored.bloodType, BloodType.oNegative);
       expect(stored.tone, 'blue');
       expect(stored.pregnancyId, preg);
@@ -300,8 +302,10 @@ void main() {
 
     test('a self aggregate cannot be stored as a member', () async {
       final self = (await ds.getProfile(user))!;
-      expect(() => ds.createMember(self.copyWith(id: const HealthProfileId.value('hp-x'))),
-          throwsA(isA<StorageWriteException>()));
+      expect(
+        () => ds.createMember(self.copyWith(id: const HealthProfileId.value('hp-x'))),
+        throwsA(isA<StorageWriteException>()),
+      );
     });
 
     test('closing the selected member sends core back to self', () async {
@@ -319,18 +323,20 @@ void main() {
       await ds.createMember(member(id: 'hp-late', name: 'Test Late'));
       await pumpEventQueue();
       final late = (await ds.find(const HealthProfileId.value('hp-late')))!;
-      await ds.updateMember(late
-          .withMemberDetails(
-            displayName: 'Test Renamed',
-            dateOfBirth: null,
-            sex: null,
-            relationship: Relationship.child,
-            groupId: null,
-            tone: null,
-            sequence: null,
-            now: now,
-          )
-          .value);
+      await ds.updateMember(
+        late
+            .withMemberDetails(
+              displayName: 'Test Renamed',
+              dateOfBirth: null,
+              sex: null,
+              relationship: Relationship.child,
+              groupId: null,
+              tone: null,
+              sequence: null,
+              now: now,
+            )
+            .value,
+      );
       await pumpEventQueue();
       await ds.closeMember(late.id, now);
       await pumpEventQueue();
@@ -345,7 +351,7 @@ void main() {
     });
 
     test('resolveProfile reads self by default, a member by id, and never a closed one', () async {
-      final early = const HealthProfileId.value('hp-early');
+      const early = HealthProfileId.value('hp-early');
 
       expect((await ds.resolveProfile(user))!.id, selfId);
       expect((await ds.resolveProfile(user, profileId: early))!.id, early);
@@ -355,7 +361,7 @@ void main() {
     });
 
     test('profile use cases edit the member they are given, never self', () async {
-      final early = const HealthProfileId.value('hp-early');
+      const early = HealthProfileId.value('hp-early');
       final bus = EventBus();
       final allergies = DriftAllergiesDataSource(db: db, activeProfile: () => selfId);
 

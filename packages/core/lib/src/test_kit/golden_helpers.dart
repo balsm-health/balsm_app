@@ -1,5 +1,6 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../kit/theme.dart';
 
 /// Wraps [widget] in both LTR and RTL variants for golden snapshots.

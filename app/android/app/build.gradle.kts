@@ -19,7 +19,10 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "health.balsm.app"
-    compileSdk = flutter.compileSdkVersion
+    // 37, not flutter.compileSdkVersion (36): flutter_local_notifications 23 and
+    // permission_handler_android 14 require it. compileSdk only picks the android.jar
+    // compiled against; targetSdk / minSdk are unchanged.
+    compileSdk = 37
     // Flutter's NDK (28.2.13676358 for 3.47) — every plugin requires it.
     ndkVersion = flutter.ndkVersion
 

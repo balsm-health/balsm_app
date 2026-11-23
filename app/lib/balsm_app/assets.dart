@@ -1,5 +1,3 @@
-// ignore_for_file: constant_identifier_names
-
 /// Bundled asset paths — the single source of truth for every `assets/…`
 /// reference in the patient app. Keep in sync with the `flutter.assets` list
 /// in `pubspec.yaml`.
@@ -28,6 +26,10 @@ class Assets {
   /// Body-map figure for the pain report. [gender] is `male` | `female`,
   /// [view] is `front` | `back`.
   static String bodyFigure(String gender, String view) => '$_body/${gender}_$view.svg';
+
+  /// One layer of the body-map stack. [layer] is `muscles` | `bones` | `joints` |
+  /// `tendons` | `nerves` | `organs`, [view] is `front` | `back`.
+  static String bodyLayer(String layer, String view) => '$_body/${layer}_$view.svg';
 
   static const body_muscles_male = '$_body/muscles_male.svg';
 }

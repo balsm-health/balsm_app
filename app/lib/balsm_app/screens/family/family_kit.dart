@@ -2,15 +2,14 @@ import 'dart:math' as math;
 
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
 import '../../responsive.dart';
 import '../../shell.dart';
-import '../../tokens.dart';
 
 /// Shared pieces of the Mother & Child family screens (mother-child.jsx
 /// `MC_TONES`, `MCAvatar`, `MCGroupHead`, `MCSheet`, `MCScreen`, `MCSec`,
@@ -20,15 +19,15 @@ import '../../tokens.dart';
 typedef ToneColors = ({Color c, Color bg, Color ink});
 
 ToneColors toneColors(MemberTone? tone) => switch (tone ?? MemberTone.aqua) {
-      MemberTone.aqua => (c: T.hueAqua, bg: T.hueAqua50, ink: T.hueAquaInk),
-      MemberTone.emerald => (c: T.hueEmerald, bg: T.hueEmerald50, ink: T.hueEmeraldInk),
-      MemberTone.blue => (c: T.hueBlue, bg: T.hueBlue50, ink: T.hueBlueInk),
-      MemberTone.violet => (c: T.hueViolet, bg: T.hueViolet50, ink: T.hueVioletInk),
-      MemberTone.mint => (c: T.hueMint, bg: T.hueMint50, ink: T.hueMintInk),
+      MemberTone.aqua => (c: AppColors.hueAqua, bg: AppColors.hueAqua50, ink: AppColors.hueAquaInk),
+      MemberTone.emerald => (c: AppColors.hueEmerald, bg: AppColors.hueEmerald50, ink: AppColors.hueEmeraldInk),
+      MemberTone.blue => (c: AppColors.hueBlue, bg: AppColors.hueBlue50, ink: AppColors.hueBlueInk),
+      MemberTone.violet => (c: AppColors.hueViolet, bg: AppColors.hueViolet50, ink: AppColors.hueVioletInk),
+      MemberTone.mint => (c: AppColors.hueMint, bg: AppColors.hueMint50, ink: AppColors.hueMintInk),
     };
 
 /// The account holder's avatar colour, as on Home.
-const selfAvatarColor = T.hueAqua;
+const Color selfAvatarColor = AppColors.hueAqua;
 
 /// Initial of a member's short name (`mcInit`).
 String memberInitial(FamilyMember m) {
@@ -57,10 +56,11 @@ class SelfAvatar extends ConsumerWidget {
   final double size;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = (ref.watch(accountSummaryProvider).valueOrNull?.displayName ?? '').trim();
+    final name = (ref.watch(accountSummaryProvider).value?.displayName ?? '').trim();
     return Avatar(
       initials: accountInitials(name),
       color: selfAvatarColor,
+      semanticLabel: AppScope.of(context).strings.home.a11y_self_avatar,
       size: size,
       fontSize: (size * 0.4).roundToDouble(),
       ar: AppScope.of(context).rtl,
@@ -80,7 +80,11 @@ String relationLabel(PatientAppState s, Relationship? rel, Sex? sex) {
         Sex.female => f.rel_sister,
         null => f.rel_sibling
       },
-    Relationship.spouse => f.rel_spouse(s.gender),
+    Relationship.spouse => switch (sex) {
+        Sex.female => f.rel_wife,
+        Sex.male => f.rel_husband,
+        null => f.rel_spouse(s.gender)
+      },
     Relationship.partner => f.rel_partner,
     Relationship.grandparent => f.rel_grandparent,
     Relationship.relative => f.rel_relative,
@@ -120,7 +124,7 @@ String groupLabel(PatientAppState s, MemberGroup g) => switch (g.defaultGroup) {
 
 /// `MCGroupHead` — group name and its member count.
 class GroupHead extends StatelessWidget {
-  const GroupHead({super.key, required this.label, required this.count});
+  const GroupHead({required this.label, required this.count, super.key});
   final String label;
   final int count;
   @override
@@ -128,12 +132,19 @@ class GroupHead extends StatelessWidget {
     final s = AppScope.of(context);
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(4, 16, 4, 8),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-        Expanded(
-          child: Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg2)),
-        ),
-        Text('$count', style: Typo.meta(ar: s.rtl)),
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+            ),
+          ),
+          Text('$count', style: Typo.meta(ar: s.rtl)),
+        ],
+      ),
     );
   }
 }
@@ -141,7 +152,7 @@ class GroupHead extends StatelessWidget {
 /// `MCSheet` — white bottom sheet with a grab, a title, an optional
 /// subtitle, a close button and a scrolling body.
 class FamilySheet extends StatelessWidget {
-  const FamilySheet({super.key, required this.title, this.sub, required this.children});
+  const FamilySheet({required this.title, required this.children, super.key, this.sub});
   final String title;
   final String? sub;
   final List<Widget> children;
@@ -151,44 +162,55 @@ class FamilySheet extends StatelessWidget {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.88),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(T.rXl)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       ),
       // Clear the home indicator and, while typing, the keyboard.
       padding: EdgeInsets.only(
-          bottom: math.max(MediaQuery.paddingOf(context).bottom, 16.0) + MediaQuery.viewInsetsOf(context).bottom),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: Row(crossAxisAlignment: sub == null ? CrossAxisAlignment.center : CrossAxisAlignment.start, children: [
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-                if (sub != null) ...[
-                  const SizedBox(height: 4),
-                  Text(sub!, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-                ],
-              ]),
+        bottom: math.max(MediaQuery.paddingOf(context).bottom, 16) + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 12),
+            child: Row(
+              crossAxisAlignment: sub == null ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                      if (sub case final sub?) ...[
+                        const SizedBox(height: 4),
+                        Text(sub, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            RoundBtn(
-              icon: LucideIcons.x,
-              semanticLabel: s.strings.common.a11y_close,
-              ghost: true,
-              iconSize: 17,
-              onTap: () => Navigator.pop(context),
-            ),
-          ]),
-        ),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
           ),
-        ),
-      ]),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -236,7 +258,7 @@ Future<bool> confirmCloseMember(BuildContext context, WidgetRef ref, FamilyMembe
 /// Cancel, stacked so long Arabic labels never truncate. Pops `true` on
 /// confirm, `false` on cancel.
 class FamilyConfirmSheet extends StatelessWidget {
-  const FamilyConfirmSheet({super.key, required this.title, required this.body, this.confirmLabel});
+  const FamilyConfirmSheet({required this.title, required this.body, super.key, this.confirmLabel});
   final String title;
   final String body;
 
@@ -245,26 +267,30 @@ class FamilyConfirmSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return FamilySheet(title: title, sub: body, children: [
-      const SizedBox(height: 4),
-      PButton(
-        confirmLabel ?? s.strings.common.del,
-        variant: BtnVariant.danger,
-        large: true,
-        block: true,
-        ar: s.rtl,
-        onTap: () => Navigator.pop(context, true),
-      ),
-      const SizedBox(height: 10),
-      PButton(
-        s.strings.common.cancel,
-        variant: BtnVariant.secondary,
-        large: true,
-        block: true,
-        ar: s.rtl,
-        onTap: () => Navigator.pop(context, false),
-      ),
-    ]);
+    return FamilySheet(
+      title: title,
+      sub: body,
+      children: [
+        const SizedBox(height: 4),
+        PButton(
+          confirmLabel ?? s.strings.common.del,
+          variant: BtnVariant.danger,
+          large: true,
+          block: true,
+          ar: s.rtl,
+          onTap: () => Navigator.pop(context, true),
+        ),
+        const SizedBox(height: 10),
+        PButton(
+          s.strings.common.cancel,
+          variant: BtnVariant.secondary,
+          large: true,
+          block: true,
+          ar: s.rtl,
+          onTap: () => Navigator.pop(context, false),
+        ),
+      ],
+    );
   }
 }
 
@@ -272,9 +298,9 @@ class FamilyConfirmSheet extends StatelessWidget {
 /// bar), a width-capped scrolling body and an optional pinned footer.
 class FamilyScaffold extends StatelessWidget {
   const FamilyScaffold({
-    super.key,
     required this.title,
     required this.children,
+    super.key,
     this.onBack,
     this.trailing,
     this.bar,
@@ -294,51 +320,55 @@ class FamilyScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(children: [
-        const PadTop(),
-        AppBarRow(
-          leading: RoundBtn(
-            icon: backArrow(context),
-            semanticLabel: s.strings.common.a11y_back,
-            onTap: onBack ?? () => Navigator.pop(context),
-          ),
-          children: [
-            Expanded(
-              child: Text(title,
+      backgroundColor: AppColors.white,
+      body: Column(
+        children: [
+          const PadTop(),
+          AppBarRow(
+            leading: RoundBtn(
+              icon: backArrow(context),
+              semanticLabel: s.strings.common.a11y_back,
+              onTap: onBack ?? () => Navigator.pop(context),
+            ),
+            children: [
+              Expanded(
+                child: Text(
+                  title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-            ),
-            if (trailing != null) trailing!,
-          ],
-        ),
-        if (bar != null) bar!,
-        Expanded(
-          child: ContentColumn(
-            maxWidth: 640,
-            child: onRefresh == null
-                ? ListView(padding: const EdgeInsets.fromLTRB(20, 0, 20, 40), children: children)
-                : RefreshIndicator(
-                    onRefresh: onRefresh!,
+                  style: Typo.heading(ar: s.rtl).copyWith(fontSize: FontSizes.heading),
+                ),
+              ),
+              if (trailing case final trailing?) trailing,
+            ],
+          ),
+          if (bar case final bar?) bar,
+          Expanded(
+            child: ContentColumn(
+              child: switch (onRefresh) {
+                final onRefreshValue? => RefreshIndicator(
+                    onRefresh: onRefreshValue,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 40),
                       children: children,
                     ),
                   ),
-          ),
-        ),
-        if (footer != null)
-          Container(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.paddingOf(context).bottom + 26),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: T.ink100)),
+                _ => ListView(padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 40), children: children)
+              },
             ),
-            child: ContentColumn(maxWidth: 640, child: footer!),
           ),
-      ]),
+          if (footer case final footer?)
+            Container(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 12, 20, MediaQuery.paddingOf(context).bottom + 26),
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                border: Border(top: BorderSide(color: AppColors.ink100)),
+              ),
+              child: ContentColumn(child: footer),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -360,12 +390,12 @@ class FamilySecHead extends StatelessWidget {
 /// `MCTile` — icon on a tone wash, title, one line under it.
 class FamilyTile extends StatelessWidget {
   const FamilyTile({
-    super.key,
     required this.icon,
     required this.tone,
     required this.title,
     required this.sub,
     required this.onTap,
+    super.key,
   });
   final IconData icon;
   final MemberTone tone;
@@ -382,13 +412,23 @@ class FamilyTile extends StatelessWidget {
         onTap: onTap,
         padding: const EdgeInsets.all(14),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 88),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            IconSquare(icon, bg: t.bg, fg: t.ink, size: 40, iconSize: 20),
-            const SizedBox(height: 10),
-            Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            Text(sub, style: Typo.meta(ar: s.rtl)),
-          ]),
+          // Canvas tile: 118 tall with the 14 padding, a 38px icon square
+          // (radius 11), 10 to a 15/600 title, 2 to the 12px line.
+          constraints: const BoxConstraints(minHeight: 90),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconSquare(icon, bg: t.bg, fg: t.ink, radius: AppRadii.iconSquare),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: Typo.body(ar: s.rtl)
+                    .copyWith(fontSize: FontSizes.bodyLg, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 2),
+              Text(sub, style: Typo.meta(ar: s.rtl)),
+            ],
+          ),
         ),
       ),
     );
@@ -407,7 +447,7 @@ class StaysLocalNote extends StatelessWidget {
       child: Row(
         mainAxisAlignment: center ? MainAxisAlignment.center : MainAxisAlignment.start,
         children: [
-          const Icon(LucideIcons.lock, size: 13, color: T.fg3),
+          const Icon(LucideIcons.lock, size: 13, color: AppColors.textTertiary),
           const SizedBox(width: 6),
           Flexible(child: Text(s.strings.family.stays_local, style: Typo.meta(ar: s.rtl))),
         ],
@@ -420,7 +460,103 @@ class StaysLocalNote extends StatelessWidget {
 /// directionality and the tablet/desktop frame, like the profile sub-screens.
 Future<R?> pushFamilyScreen<R>(BuildContext context, Widget Function(PatientAppState s) build) {
   final s = AppScope.of(context);
-  return Navigator.of(context, rootNavigator: true).push<R>(MaterialPageRoute(
-    builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: build(s))),
-  ));
+  return Navigator.of(context, rootNavigator: true).push<R>(
+    MaterialPageRoute(
+      builder: (_) => Directionality(textDirection: s.dir, child: AdaptiveFrame(child: build(s))),
+    ),
+  );
+}
+
+/// The blood-type picker (`MC_BLOOD` chips plus "Not sure"): the eight ABO/Rh
+/// types four to a row, read left to right in both languages, and "Not sure"
+/// across the bottom. [onChanged] gets the type, or null for "Not sure".
+/// Without [enabled] the choice shows but cannot change.
+class BloodTypeGrid extends StatelessWidget {
+  const BloodTypeGrid({
+    required this.value,
+    required this.unsure,
+    required this.onChanged,
+    super.key,
+    this.enabled = true,
+  });
+  final BloodType? value;
+  final bool unsure;
+  final ValueChanged<BloodType?> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final types = BloodType.values.where((b) => b != BloodType.bombay).toList();
+    return LayoutBuilder(
+      builder: (context, c) {
+        const gap = 8.0;
+        final w = (c.maxWidth - gap * 3) / 4;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            ...types.map(
+              (b) => SizedBox(
+                width: w,
+                child: _GridChip(
+                  label: b.code.replaceAll('-', '−'),
+                  ltr: true,
+                  active: !unsure && value == b,
+                  onTap: enabled ? () => onChanged(b) : null,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: c.maxWidth,
+              child: _GridChip(
+                label: s.strings.family.blood_unsure,
+                active: unsure,
+                onTap: enabled ? () => onChanged(null) : null,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// A square-ish selectable chip for the blood-type grid.
+class _GridChip extends StatelessWidget {
+  const _GridChip({required this.label, required this.active, required this.onTap, this.ltr = false});
+  final String label;
+  final bool active;
+  final VoidCallback? onTap;
+  final bool ltr;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    return Semantics(
+      button: true,
+      selected: active,
+      enabled: onTap != null,
+      child: Pressable(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: Motion.fast,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? s.accent.main : AppColors.white,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            border: Border.all(color: active ? s.accent.main : AppColors.border, width: 1.5),
+          ),
+          child: Text(
+            label,
+            textDirection: ltr ? TextDirection.ltr : null,
+            style: (ltr ? Typo.num(weight: FontWeight.w700) : Typo.bodySm(ar: s.rtl)).copyWith(
+              fontWeight: FontWeight.w600,
+              color: active ? ColorContrast.onFill(s.accent.main) : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

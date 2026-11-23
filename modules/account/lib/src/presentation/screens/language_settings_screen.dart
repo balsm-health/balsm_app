@@ -1,14 +1,15 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../failure_text.dart';
 import '../../application/use_cases/change_language_use_case.dart';
+import '../failure_text.dart';
+import '../i18n/i18n.dart';
 
 /// Selectable account languages — the closed set of fully-supported UI
 /// locales (beta languages are picker-visible in the app-shell language
 /// sheet only, not selectable as the account's preferred language).
-const _languages = LanguageCode.uiSupported;
+const List<LanguageCode> _languages = LanguageCode.uiSupported;
 
 /// Language settings: a 2-option segmented control (English / Arabic).
 /// Selecting a language dispatches ChangeLanguageUseCase and applies an
@@ -59,19 +60,20 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
   @override
   Widget build(BuildContext context) {
     final summaryAsync = ref.watch(accountSummaryProvider);
+    final m = ref.watch(accountStringsProvider);
 
     return summaryAsync.when(
       loading: () => const Scaffold(
-        backgroundColor: BalsmColors.cream50,
+        backgroundColor: AppColors.cream50,
         body: SafeArea(child: BalsmLoadingIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: BalsmColors.cream50,
+        backgroundColor: AppColors.cream50,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: BalsmErrorBanner(
-              message: 'Could not load account.',
+              message: m.loadError,
               onRetry: () => refreshAccountSummary(ref),
             ),
           ),
@@ -79,7 +81,7 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
       ),
       data: (summary) {
         if (summary == null) {
-          return const Scaffold(body: Center(child: Text('No account.')));
+          return Scaffold(body: Center(child: Text(m.noAccount)));
         }
         final selectedTag = _pending ?? summary.preferredLanguage;
         // Match on the base subtag so a regioned tag (`ar-SA`) still
@@ -96,13 +98,13 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
         return Directionality(
           textDirection: dir,
           child: Scaffold(
-            backgroundColor: BalsmColors.cream50,
+            backgroundColor: AppColors.cream50,
             body: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   BalsmAppBar.withBack(
-                    title: 'Language',
+                    title: m.account.language,
                     onBack: () => Navigator.of(context).maybePop(),
                   ),
                   Expanded(
@@ -110,11 +112,11 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
                         const SizedBox(height: 8),
-                        const Text(
-                          'Choose your preferred language.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: BalsmColors.fg3,
+                        Text(
+                          m.languageIntro,
+                          style: const TextStyle(
+                            fontSize: FontSizes.description,
+                            color: AppColors.textTertiary,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -124,9 +126,9 @@ class _LanguageSettingsScreenState extends ConsumerState<LanguageSettingsScreen>
                           selected: selected,
                           onChanged: (l) => _onSelect(summary, l.value),
                         ),
-                        if (_error != null) ...[
+                        if (_error case final error?) ...[
                           const SizedBox(height: 16),
-                          BalsmErrorBanner(message: _error!),
+                          BalsmErrorBanner(message: error),
                         ],
                       ],
                     ),

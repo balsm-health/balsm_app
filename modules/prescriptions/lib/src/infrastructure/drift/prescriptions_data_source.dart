@@ -1,10 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:core/core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'dart:convert';
 
 import '../../application/ports/prescriptions_data_source.dart';
 import '../../domain/aggregates/prescription.dart';
@@ -122,7 +121,7 @@ class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
     if (profile == null) return Stream.value(null);
     return Stream<Prescription?>.multi((emitter) async {
       emitter.add(await find(key, scope: profile));
-      emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: profile)));
+      unawaited(emitter.addStream(_changes.stream.asyncMap((_) => find(key, scope: profile))));
     });
   }
 
@@ -132,7 +131,7 @@ class DriftPrescriptionsDataSource extends PrescriptionsDataSource {
     if (profile == null) return Stream.value(const []);
     return Stream<List<Prescription>>.multi((emitter) async {
       emitter.add(await findAll(scope: profile));
-      emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: profile)));
+      unawaited(emitter.addStream(_changes.stream.asyncMap((_) => findAll(scope: profile))));
     });
   }
 
@@ -224,7 +223,8 @@ final prescriptionsDataSourceProvider = Provider<PrescriptionsDataSource>((ref) 
 
 /// Live prescriptions for the active profile, newest first. Re-subscribes
 /// when the active profile changes.
-final prescriptionListProvider = StreamProvider.autoDispose<List<Prescription>>((ref) {
+final StreamProvider<List<Prescription>> prescriptionListProvider =
+    StreamProvider.autoDispose<List<Prescription>>((ref) {
   final profileId = ref.watch(currentProfileIdProvider);
   if (profileId == null) return Stream.value(const []);
   return ref.watch(prescriptionsDataSourceProvider).watchAll(scope: profileId);

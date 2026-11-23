@@ -27,7 +27,7 @@ void main() {
     });
 
     test('a birth date in the future reads as zero', () {
-      expect(MemberAge.between(DateTime(2027, 1, 1), now), const MemberAge(0, 0));
+      expect(MemberAge.between(DateTime(2027), now), const MemberAge(0, 0));
     });
   });
 
@@ -37,11 +37,37 @@ void main() {
         id: const HealthProfileId.value('hp-1'),
         kind: ProfileKind.dependent,
         displayName: '  Test Child Name ',
-        dateOfBirth: DateTime(2020, 5, 1),
+        dateOfBirth: DateTime(2020, 5),
       );
       expect(m.shortName, 'Test');
       expect(m.isChildOn(now), isTrue);
       expect(member('x').isChildOn(now), isFalse);
+    });
+
+    test('pregnancy is offered for an open female dependent aged 14 to 55 (mcCanPreg)', () {
+      FamilyMember w(
+        DateTime? dob, {
+        Sex? sex = Sex.female,
+        ProfileKind kind = ProfileKind.dependent,
+        ProfileStatus status = ProfileStatus.active,
+      }) =>
+          FamilyMember(
+            id: const HealthProfileId.value('hp-w'),
+            kind: kind,
+            displayName: 'Test',
+            dateOfBirth: dob,
+            sex: sex,
+            status: status,
+          );
+      final day = DateTime(2026, 11, 3);
+      expect(w(DateTime(2012, 11, 3)).canTrackPregnancyOn(day), isTrue, reason: '14 today');
+      expect(w(DateTime(2012, 11, 4)).canTrackPregnancyOn(day), isFalse, reason: 'still 13');
+      expect(w(DateTime(1971)).canTrackPregnancyOn(day), isTrue, reason: '55');
+      expect(w(DateTime(1970)).canTrackPregnancyOn(day), isFalse, reason: '56');
+      expect(w(DateTime(1990), sex: Sex.male).canTrackPregnancyOn(day), isFalse);
+      expect(w(DateTime(1990), sex: null).canTrackPregnancyOn(day), isFalse);
+      expect(w(null).canTrackPregnancyOn(day), isFalse);
+      expect(w(DateTime(1990), status: ProfileStatus.closed).canTrackPregnancyOn(day), isFalse);
     });
   });
 
@@ -69,8 +95,8 @@ void main() {
     test('asks for consent only for an adult', () {
       MemberDraft born(DateTime dob) =>
           MemberDraft(displayName: 'Test', relationship: Relationship.parent, dateOfBirth: dob, sex: Sex.female);
-      expect(born(DateTime(1960, 1, 1)).needsConsentOn(now), isTrue);
-      expect(born(DateTime(2019, 1, 1)).needsConsentOn(now), isFalse);
+      expect(born(DateTime(1960)).needsConsentOn(now), isTrue);
+      expect(born(DateTime(2019)).needsConsentOn(now), isFalse);
     });
 
     test('a blank new group name creates no group', () {
@@ -90,7 +116,9 @@ void main() {
     test('a custom group needs a name of at most 40 characters and goes last', () {
       expect(MemberGroup.custom(userId: user, name: ' ', afterSort: 1, now: now).error.message, 'groupNameRequired');
       expect(
-          MemberGroup.custom(userId: user, name: 'x' * 41, afterSort: 1, now: now).error.message, 'groupNameTooLong');
+        MemberGroup.custom(userId: user, name: 'x' * 41, afterSort: 1, now: now).error.message,
+        'groupNameTooLong',
+      );
       final ok = MemberGroup.custom(userId: user, name: ' Work mates ', afterSort: 1, now: now).value;
       expect(ok.name, 'Work mates');
       expect(ok.sort, 2);
@@ -110,24 +138,26 @@ void main() {
 
   group('groupFamily', () {
     final family = MemberGroup(
-        id: const MemberGroupId.value('g-fam'),
-        userId: user,
-        sort: 0,
-        createdAt: now,
-        defaultGroup: DefaultGroup.family);
+      id: const MemberGroupId.value('g-fam'),
+      userId: user,
+      sort: 0,
+      createdAt: now,
+      defaultGroup: DefaultGroup.family,
+    );
     final neighbours = MemberGroup(
-        id: const MemberGroupId.value('g-nb'),
-        userId: user,
-        sort: 1,
-        createdAt: now,
-        defaultGroup: DefaultGroup.neighbours);
+      id: const MemberGroupId.value('g-nb'),
+      userId: user,
+      sort: 1,
+      createdAt: now,
+      defaultGroup: DefaultGroup.neighbours,
+    );
     final work = MemberGroup(id: const MemberGroupId.value('g-work'), userId: user, sort: 2, createdAt: now, name: 'W');
 
     test('groups in display order, members in given order, empty groups left out', () {
       final sections = groupFamily([
         work,
         neighbours,
-        family
+        family,
       ], [
         member('a', group: 'g-nb'),
         member('b', group: 'g-fam'),
@@ -145,11 +175,12 @@ void main() {
 
     test('a duplicated default group folds into the first one', () {
       final twin = MemberGroup(
-          id: const MemberGroupId.value('g-fam-2'),
-          userId: user,
-          sort: 5,
-          createdAt: now,
-          defaultGroup: DefaultGroup.family);
+        id: const MemberGroupId.value('g-fam-2'),
+        userId: user,
+        sort: 5,
+        createdAt: now,
+        defaultGroup: DefaultGroup.family,
+      );
       final sections = groupFamily([family, twin], [member('a', group: 'g-fam-2'), member('b', group: 'g-fam')]);
       expect(sections.single.group.id.value, 'g-fam');
       expect(sections.single.members.map((m) => m.id.value), ['a', 'b']);

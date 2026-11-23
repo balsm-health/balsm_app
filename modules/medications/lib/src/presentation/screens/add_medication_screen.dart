@@ -1,11 +1,12 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/add_medication_use_case.dart';
 import '../../domain/aggregates/medication.dart';
 import '../../domain/value_objects/ids.dart';
+import '../i18n/i18n.dart';
 
 /// Form to add a new medication: name, dose, schedule type (segmented),
 /// reminder times, start/end dates, and a controlled-substance toggle.
@@ -38,30 +39,31 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final m = ref.watch(medicationsStringsProvider);
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       appBar: AppBar(
-        title: const Text('Add medication'),
-        backgroundColor: BalsmColors.surface,
+        title: Text(m.add),
+        backgroundColor: AppColors.surface,
         elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           BalsmTextField(
-            label: 'Name',
+            label: m.fieldName,
             controller: _nameCtrl,
-            hint: 'e.g. Amoxicillin',
+            hint: m.fieldNameHint,
             errorText: _nameError,
           ),
           const SizedBox(height: 16),
           BalsmTextField(
-            label: 'Dose amount',
+            label: m.fieldDose,
             controller: _doseCtrl,
-            hint: 'e.g. 500 mg',
+            hint: m.fieldDoseHint,
           ),
           const SizedBox(height: 24),
-          _label('Schedule'),
+          _Label(m.schedule),
           const SizedBox(height: 8),
           BalsmSegmented<ScheduleType>(
             options: const [
@@ -70,9 +72,9 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
               ScheduleType.custom,
             ],
             labelOf: (t) => switch (t) {
-              ScheduleType.daily => 'Daily',
-              ScheduleType.weekly => 'Weekly',
-              ScheduleType.custom => 'Custom',
+              ScheduleType.daily => m.scheduleDaily,
+              ScheduleType.weekly => m.scheduleWeekly,
+              ScheduleType.custom => m.scheduleCustom,
               // Not offered by this screen's options above.
               ScheduleType.once || ScheduleType.everyHours || ScheduleType.everyDays => '',
             },
@@ -89,7 +91,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
             ),
           ],
           const SizedBox(height: 24),
-          _label('Reminder times'),
+          _Label(m.reminderTimes),
           const SizedBox(height: 8),
           ..._times.asMap().entries.map(
                 (entry) => _TimeRow(
@@ -101,16 +103,16 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
           TextButton.icon(
             onPressed: _addTime,
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add time'),
+            label: Text(m.addTime),
           ),
           const SizedBox(height: 16),
           _DateRow(
-            label: 'Start date',
+            label: m.startDate,
             value: _startDate,
             onTap: () => _pickDate(isStart: true),
           ),
           _DateRow(
-            label: 'End date (optional)',
+            label: m.endDateOptional,
             value: _endDate,
             onTap: () => _pickDate(isStart: false),
             onClear: _endDate != null ? () => setState(() => _endDate = null) : null,
@@ -118,14 +120,14 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
           const SizedBox(height: 8),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Controlled substance'),
+            title: Text(m.controlledSubstance),
             value: _isControlled,
-            activeThumbColor: BalsmColors.controlled,
+            activeThumbColor: AppColors.controlled,
             onChanged: (v) => setState(() => _isControlled = v),
           ),
           const SizedBox(height: 24),
           BalsmButton(
-            label: 'Save medication',
+            label: m.saveMedication,
             loading: _saving,
             onPressed: _saving ? null : _save,
           ),
@@ -133,15 +135,6 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       ),
     );
   }
-
-  Widget _label(String text) => Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: BalsmColors.fg2,
-        ),
-      );
 
   Future<void> _addTime() async {
     final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
@@ -157,14 +150,15 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Future<void> _pickDate({required bool isStart}) async {
+    final m = ref.read(medicationsStringsProvider);
     final initial = isStart ? _startDate : (_endDate ?? _startDate);
     final picked = await showBalsmDatePicker(
       context,
       initial: initial,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      title: isStart ? 'Start date' : 'End date',
-      confirmLabel: 'Confirm',
+      title: isStart ? m.startDate : m.endDate,
+      confirmLabel: coreMessagesOf(context).common.confirm,
     );
     if (picked == null) return;
     setState(() {
@@ -177,14 +171,15 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   }
 
   Future<void> _save() async {
+    final m = ref.read(medicationsStringsProvider);
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      setState(() => _nameError = 'Name is required');
+      setState(() => _nameError = m.nameRequired);
       return;
     }
     if (_scheduleType != ScheduleType.daily && _days.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select at least one day')),
+        SnackBar(content: Text(m.selectDay)),
       );
       return;
     }
@@ -218,11 +213,11 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       await ref.read(addMedicationUseCaseProvider(userId)).call(medication);
       if (!mounted) return;
       context.goNamed('medications.list');
-    } catch (_) {
+    } on Object catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save medication')),
+        SnackBar(content: Text(m.saveError)),
       );
     }
   }
@@ -235,86 +230,84 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
   String _hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
 
-class _DayPicker extends StatelessWidget {
+class _DayPicker extends ConsumerWidget {
   const _DayPicker({required this.selected, required this.onToggle});
   final Set<int> selected;
   final ValueChanged<int> onToggle;
 
-  static const _labels = {
-    1: 'M',
-    2: 'T',
-    3: 'W',
-    4: 'T',
-    5: 'F',
-    6: 'S',
-    7: 'S',
-  };
-
   @override
-  Widget build(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: _labels.entries.map((e) {
-          final active = selected.contains(e.key);
-          return GestureDetector(
-            onTap: () => onToggle(e.key),
-            child: Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: active ? BalsmColors.hueBlue : BalsmColors.ink50,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: active ? BalsmColors.hueBlue : BalsmColors.border,
-                ),
-              ),
-              child: Text(
-                e.value,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: active ? Colors.white : BalsmColors.fg2,
-                ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    // ISO weekdays 1 (Monday) to 7 (Sunday), one initial each.
+    final labels = m.dayInitials.split('|').asMap().map((i, label) => MapEntry(i + 1, label));
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: labels.entries.map((e) {
+        final active = selected.contains(e.key);
+        return GestureDetector(
+          onTap: () => onToggle(e.key),
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: active ? AppColors.hueBlue : AppColors.ink50,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: active ? AppColors.hueBlue : AppColors.border,
               ),
             ),
-          );
-        }).toList(),
-      );
+            child: Text(
+              e.value,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: active ? AppColors.white : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 }
 
-class _TimeRow extends StatelessWidget {
+class _TimeRow extends ConsumerWidget {
   const _TimeRow({required this.time, required this.onEdit, this.onRemove});
   final TimeOfDay time;
   final VoidCallback onEdit;
   final VoidCallback? onRemove;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.schedule, size: 18),
-                label: Text(time.format(context)),
-                style: OutlinedButton.styleFrom(
-                  alignment: Alignment.centerLeft,
-                  foregroundColor: BalsmColors.fg1,
-                ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: onEdit,
+              icon: const Icon(Icons.schedule, size: 18),
+              label: Text(time.format(context)),
+              style: OutlinedButton.styleFrom(
+                alignment: AlignmentDirectional.centerStart,
+                foregroundColor: AppColors.textPrimary,
               ),
             ),
-            if (onRemove != null)
-              IconButton(
-                onPressed: onRemove,
-                icon: const Icon(Icons.close, size: 18),
-                tooltip: 'Remove time',
-              ),
-          ],
-        ),
-      );
+          ),
+          if (onRemove != null)
+            IconButton(
+              onPressed: onRemove,
+              icon: const Icon(Icons.close, size: 18),
+              tooltip: m.removeTime,
+            ),
+        ],
+      ),
+    );
+  }
 }
 
-class _DateRow extends StatelessWidget {
+class _DateRow extends ConsumerWidget {
   const _DateRow({
     required this.label,
     required this.value,
@@ -327,27 +320,45 @@ class _DateRow extends StatelessWidget {
   final VoidCallback? onClear;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(label, style: const TextStyle(fontSize: 14)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextButton(
-              onPressed: onTap,
-              child: Text(
-                value == null
-                    ? 'Set'
-                    : '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}',
-              ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(label, style: const TextStyle(fontSize: FontSizes.description)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: onTap,
+            child: Text(
+              value == null
+                  ? m.dateNotSet
+                  : '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}',
             ),
-            if (onClear != null)
-              IconButton(
-                onPressed: onClear,
-                icon: const Icon(Icons.close, size: 16),
-                tooltip: 'Clear',
-              ),
-          ],
+          ),
+          if (onClear != null)
+            IconButton(
+              onPressed: onClear,
+              icon: const Icon(Icons.close, size: 16),
+              tooltip: coreMessagesOf(context).common.clear,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Label extends StatelessWidget {
+  const _Label(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: const TextStyle(
+          fontSize: FontSizes.bodySm,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
         ),
       );
 }

@@ -40,3 +40,18 @@ Read and follow the agent instructions in the Roadmap repo: [AGENTS.md](../Balsm
 - Reference data comes from core value objects: `LanguageCode`,
   `CountryCode` (structural), `CountryRegistry` (account jurisdictions).
   No private country/language lists in screens.
+
+## Working Rules for Agents
+
+- **Plan first** for anything with 3+ steps or an architectural choice: write the plan, get it agreed, then edit.
+- **Read [docs/agent-lessons.md](./docs/agent-lessons.md) before touching code.** After the user corrects you,
+  add the lesson there as a rule (what went wrong → what to do instead) in the same change.
+- **Prove it before calling it done**: in every package you touched run `fvm flutter analyze` (zero new issues,
+  zero errors) and `fvm flutter test`; for app-shell changes also the root `test/` suites you affected. Say what you
+  ran. Ask: would a staff engineer approve this PR?
+- **Simplest change that fixes the root cause** — no workarounds, no speculative abstractions, touch as little as
+  possible.
+- **Follow `CODING_STANDARDS.md` §10–§16** (lints, widgets, RTL, colors/assets, type safety, accessibility,
+  persistence/testing) for every new or touched line.
+- **Never without explicit confirmation**: `git push --force` to `main`/release branches, publishing or promoting
+  a release, editing signing keys, keystores, certificates or production credentials, destructive `rm -rf`.

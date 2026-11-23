@@ -75,7 +75,7 @@ class BalsmGeofenceAdapter implements ReadDeniedCountriesRepository {
     _purgedLegacy = true;
     try {
       await _legacyStorage.deleteToken(_legacyCacheKey);
-    } catch (_) {
+    } on Object catch (_) {
       // Keychain unavailable — retrying next launch is fine, and failing to
       // delete a stale country list must never block the geofence check.
     }

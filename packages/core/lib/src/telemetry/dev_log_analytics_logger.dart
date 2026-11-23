@@ -1,5 +1,7 @@
+import '../../core.dart' show ConsoleAnalyticsLogger;
 import '../dev/dev_log_buffer.dart';
 import 'analytics_logger.dart';
+import 'console_analytics_logger.dart' show ConsoleAnalyticsLogger;
 import 'telemetry_scrubber.dart';
 
 /// [AnalyticsLogger] that appends every call to the Dev Config log buffer, so
@@ -35,8 +37,13 @@ class DevLogAnalyticsLogger implements AnalyticsLogger {
   /// The error's type only, never `toString()`: exception messages can quote
   /// the data that failed (a name, a value), and that text isn't scrubbed.
   @override
-  void logError(Object error,
-          {StackTrace? stackTrace, String? message, Map<String, Object?>? context, bool fatal = false}) =>
+  void logError(
+    Object error, {
+    StackTrace? stackTrace,
+    String? message,
+    Map<String, Object?>? context,
+    bool fatal = false,
+  }) =>
       _buffer.add('error', '${fatal ? 'FATAL ' : ''}${message ?? error.runtimeType}${_fmt(context)}');
 
   @override

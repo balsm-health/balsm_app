@@ -1,23 +1,30 @@
+import 'dart:async';
 import 'package:core/core.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
+import 'package:pregnancy/pregnancy.dart';
 import 'package:profile/profile.dart';
 import 'package:records/records.dart';
+import 'package:self_report/self_report.dart';
 import 'package:vaccinations/vaccinations.dart';
 
 import '../../app_state.dart';
 import '../../kit.dart';
 import '../../routes.dart';
-import '../../tokens.dart';
-import '../profile_subscreens.dart';
+import '../pregnancy/pregnancy_kit.dart' show dueLine;
+import '../pregnancy/pregnancy_screen.dart';
+import '../profile_subscreens.dart' show memberHealthProfileProvider;
 import '../records_screen.dart';
+import '../trend_series.dart';
+import '../trends_screen.dart';
 import 'add_member_screen.dart';
 import 'family_kit.dart';
 import 'growth_screen.dart';
 import 'member_card_screen.dart';
+import 'member_medical_screen.dart';
 import 'profile_bar.dart';
 import 'vaccinations_screen.dart';
 
@@ -28,7 +35,7 @@ Future<void> openMember(BuildContext context, HealthProfileId id) =>
 /// A member's own screen: their head and tiles, with edit and close in the
 /// app bar menu. Leaves itself when the member is closed.
 class MemberScreen extends ConsumerWidget {
-  const MemberScreen({super.key, required this.id});
+  const MemberScreen({required this.id, super.key});
   final HealthProfileId id;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,9 +46,8 @@ class MemberScreen extends ConsumerWidget {
     ref.listen<HealthProfileId?>(currentProfileIdProvider, (previous, next) {
       if (previous == id && next != null && next != id) Navigator.maybePop(context);
     });
-    final m =
-        (ref.watch(familyMembersProvider).valueOrNull ?? const <FamilyMember>[]).where((x) => x.id == id).firstOrNull;
-    if (m == null) return const Scaffold(backgroundColor: Colors.white);
+    final m = (ref.watch(familyMembersProvider).value ?? const <FamilyMember>[]).where((x) => x.id == id).firstOrNull;
+    if (m == null) return const Scaffold(backgroundColor: AppColors.white);
     return FamilyScaffold(
       title: m.shortName,
       bar: const ProfileBar(),
@@ -62,22 +68,28 @@ Future<void> _showMemberMenu(BuildContext context, WidgetRef ref, FamilyMember m
   return showAppSheet<void>(
     context,
     textDirection: s.dir,
-    builder: (ctx) => FamilySheet(title: m.displayName, children: [
-      for (final (icon, label, danger, action) in [
-        (LucideIcons.pencilLine, f.edit_details, false, () => _editDetails(context, m)),
-        (LucideIcons.clipboardList, f.edit_medical, false, () => openMemberMedical(context, m)),
-        (LucideIcons.archive, f.close_profile, true, () => _confirmClose(context, ref, m)),
-      ])
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(icon, color: danger ? T.danger : T.fg2),
-          title: Text(label, style: Typo.body(ar: s.rtl).copyWith(color: danger ? T.danger : T.fg1)),
-          onTap: () {
-            Navigator.pop(ctx);
-            action();
-          },
-        ),
-    ]),
+    builder: (ctx) => FamilySheet(
+      title: m.displayName,
+      children: [
+        for (final (icon, label, danger, action) in [
+          (LucideIcons.pencilLine, f.edit_details, false, () => _editDetails(context, m)),
+          (LucideIcons.clipboardList, f.edit_medical, false, () => openMemberMedical(context, m)),
+          (LucideIcons.archive, f.close_profile, true, () => _confirmClose(context, ref, m)),
+        ])
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(icon, color: danger ? AppColors.danger : AppColors.textSecondary),
+            title: Text(
+              label,
+              style: Typo.body(ar: s.rtl).copyWith(color: danger ? AppColors.danger : AppColors.textPrimary),
+            ),
+            onTap: () {
+              Navigator.pop(ctx);
+              unawaited(action());
+            },
+          ),
+      ],
+    ),
   );
 }
 
@@ -92,17 +104,10 @@ Future<void> _editDetails(BuildContext context, FamilyMember m) async {
   if (closed && context.mounted) Navigator.pop(context);
 }
 
-/// Medical details (blood type, conditions, allergies) of member [m] — the
-/// app's medical-profile editor, pointed at the member's profile.
-Future<void> openMemberMedical(BuildContext context, FamilyMember m) => pushFamilyScreen<void>(
-      context,
-      (s) => MedicalProfileScreen(s: s, profileId: m.id, title: m.displayName),
-    );
-
 /// The member's head and tiles (`MCMemberBody`), shared by the member screen
 /// and Home while the member is the active profile.
 class MemberBody extends ConsumerWidget {
-  const MemberBody({super.key, required this.member});
+  const MemberBody({required this.member, super.key});
   final FamilyMember member;
 
   @override
@@ -111,19 +116,25 @@ class MemberBody extends ConsumerWidget {
     final f = s.strings.family;
     final m = member;
     final now = DateTime.now();
-    final health = ref.watch(memberHealthProfileProvider(m.id)).valueOrNull;
+    final health = ref.watch(memberHealthProfileProvider(m.id)).value;
     final age = m.ageOn(now);
     final blood = (health?.bloodType ?? m.bloodType)?.code.replaceAll('-', '−');
     final allergies = health?.allergies.length ?? 0;
+    final conditions = health?.conditions.length ?? 0;
+    final preg = ref.watch(activePregnancyOfProvider(m.id));
+    final trends = trendSeries(
+      ref.watch(profileCheckInsProvider(m.id)).value ?? const <CheckIn>[],
+      growth: ref.watch(growthEntriesProvider(m.id)).value ?? const <GrowthEntry>[],
+    ).length;
     // The tiles count the active profile's data; this member is the active
     // profile whenever their home is on screen (opening them selects them).
     final active = ref.watch(currentProfileIdProvider) == m.id;
-    final meds = active ? (ref.watch(medicationListProvider).valueOrNull ?? const <Medication>[]).length : 0;
-    final records = active ? (ref.watch(recordListProvider).valueOrNull ?? const <RecordDocument>[]).length : 0;
+    final meds = active ? (ref.watch(medicationListProvider).value ?? const <Medication>[]).length : 0;
+    final records = active ? (ref.watch(recordListProvider).value ?? const <RecordDocument>[]).length : 0;
     final meta = [
       relationLabel(s, m.relationship, m.sex),
       if (age != null) ageLabel(s, age),
-      if (m.dateOfBirth != null) f.born(formatDay(m.dateOfBirth!)),
+      if (m.dateOfBirth case final dateOfBirth?) f.born(formatDay(dateOfBirth)),
     ].join(' · ');
 
     final tiles = <Widget>[
@@ -131,17 +142,11 @@ class MemberBody extends ConsumerWidget {
         icon: LucideIcons.idCard,
         tone: MemberTone.blue,
         title: f.tile_card,
-        sub: '${blood ?? '—'} · ${allergies == 0 ? f.no_allergies : f.allergies_n(allergies)}',
+        // "O+ · 1 allergy" (canvas); no dash in front while no blood type is set.
+        sub: [if (blood != null) blood, if (allergies == 0) f.no_allergies else f.allergies_n(allergies)].join(' · '),
         onTap: () => openMemberCard(context, m.id),
       ),
       ..._childTiles(context, ref, m, now),
-      FamilyTile(
-        icon: LucideIcons.pill,
-        tone: MemberTone.blue,
-        title: f.tile_meds,
-        sub: meds == 0 ? f.no_meds : f.meds_n(meds),
-        onTap: () => _openTab(context, ref, AppTab.meds),
-      ),
       FamilyTile(
         icon: LucideIcons.folderHeart,
         tone: MemberTone.violet,
@@ -149,33 +154,89 @@ class MemberBody extends ConsumerWidget {
         sub: records == 0 ? f.no_records : f.records_n(records),
         onTap: () => _openTab(context, ref, AppTab.records),
       ),
+      if (preg != null || m.canTrackPregnancyOn(now))
+        FamilyTile(
+          icon: LucideIcons.sprout,
+          tone: MemberTone.aqua,
+          title: s.strings.pregnancy.title,
+          sub: preg == null
+              ? f.tile_preg_off(s.gender)
+              : '${s.strings.pregnancy.week_n(preg.infoOn(now).week)} · ${dueLine(s, preg.infoOn(now))}',
+          onTap: () => openPregnancy(context, ref, mother: m.id),
+        ),
+      FamilyTile(
+        icon: LucideIcons.clipboardList,
+        tone: MemberTone.emerald,
+        title: f.tile_medical,
+        sub: [
+          blood ?? f.no_blood,
+          if (allergies > 0) f.allergies_n(allergies),
+          if (conditions > 0) f.conditions_n(conditions),
+        ].join(' · '),
+        onTap: () => openMemberMedical(context, m),
+      ),
+      FamilyTile(
+        icon: LucideIcons.trendingUp,
+        tone: MemberTone.blue,
+        title: f.tile_trends,
+        sub: trends == 0 ? f.trends_none : f.trends_n(trends),
+        onTap: () => openMemberTrends(context, m),
+      ),
+      FamilyTile(
+        icon: LucideIcons.pill,
+        tone: MemberTone.blue,
+        title: f.tile_meds,
+        sub: meds == 0 ? f.no_meds : f.meds_n(meds),
+        onTap: () => _openTab(context, ref, AppTab.meds),
+      ),
     ];
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 20),
-        child: Column(children: [
-          MemberAvatar(m, size: 84),
-          const SizedBox(height: 14),
-          Text(m.displayName,
-              textAlign: TextAlign.center, style: Typo.heading(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(meta, textAlign: TextAlign.center, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          if (blood != null || (health?.conditions.isNotEmpty ?? false)) ...[
-            const SizedBox(height: 10),
-            Wrap(alignment: WrapAlignment.center, spacing: 6, runSpacing: 6, children: [
-              if (blood != null) _Badge(blood, ltr: true),
-              for (final c in health?.conditions ?? const <ChronicCondition>[]) _Badge(c.name),
-            ]),
-          ],
-        ]),
-      ),
-      LayoutBuilder(builder: (context, c) {
-        const gap = 10.0;
-        final w = (c.maxWidth - gap) / 2;
-        return Wrap(spacing: gap, runSpacing: gap, children: [for (final t in tiles) SizedBox(width: w, child: t)]);
-      }),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          // Canvas "06 Member profile": 8 above, 84px avatar, 12 to the 26/800
+          // name, 6 to the meta, 10 to the chips, 16 to the tiles.
+          padding: const EdgeInsetsDirectional.only(top: 8, bottom: 16),
+          child: Column(
+            children: [
+              MemberAvatar(m, size: 84),
+              const SizedBox(height: 12),
+              Text(
+                m.displayName,
+                textAlign: TextAlign.center,
+                style: Typo.title(ar: s.rtl).copyWith(fontWeight: FontWeight.w800, height: 1.3),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                meta,
+                textAlign: TextAlign.center,
+                style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+              ),
+              if (blood != null || (health?.conditions.isNotEmpty ?? false)) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (blood != null) _Badge(blood, ltr: true),
+                    for (final c in health?.conditions ?? const <ChronicCondition>[]) _Badge(c.name),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        LayoutBuilder(
+          builder: (context, c) {
+            const gap = 10.0;
+            final w = (c.maxWidth - gap) / 2;
+            return Wrap(spacing: gap, runSpacing: gap, children: [for (final t in tiles) SizedBox(width: w, child: t)]);
+          },
+        ),
+      ],
+    );
   }
 
   /// Tiles only a child gets (`m.isChildOn(now)`), after the emergency
@@ -185,9 +246,9 @@ class MemberBody extends ConsumerWidget {
   List<Widget> _childTiles(BuildContext context, WidgetRef ref, FamilyMember m, DateTime now) {
     if (!m.isChildOn(now)) return const [];
     final s = AppScope.of(context);
-    final vaccines = ref.watch(vaccinationsProvider(m.id)).valueOrNull ?? const <VaccinationRecord>[];
+    final vaccines = ref.watch(vaccinationsProvider(m.id)).value ?? const <VaccinationRecord>[];
     final next = VaccinationStatus.of(vaccines, today: now).next;
-    final growth = ref.watch(growthEntriesProvider(m.id)).valueOrNull ?? const <GrowthEntry>[];
+    final growth = ref.watch(growthEntriesProvider(m.id)).value ?? const <GrowthEntry>[];
     return [
       FamilyTile(
         icon: LucideIcons.syringe,
@@ -229,14 +290,19 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
+    // Canvas chip: 26 high, 10 either side; the blood type bold in the
+    // display face, a condition in regular body text.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: T.neutralBg, borderRadius: BorderRadius.circular(T.rPill)),
+      height: 26,
+      alignment: Alignment.center,
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
+      decoration: BoxDecoration(color: AppColors.neutralBackground, borderRadius: BorderRadius.circular(AppRadii.pill)),
       child: Text(
         label,
         textDirection: ltr ? TextDirection.ltr : null,
-        style: (ltr ? Typo.num(size: FS.sm, weight: FontWeight.w700) : Typo.bodySm(ar: s.rtl))
-            .copyWith(fontWeight: FontWeight.w600, color: T.fg2),
+        style: ltr
+            ? Typo.num(size: FontSizes.meta, weight: FontWeight.w700)
+            : Typo.meta(ar: s.rtl).copyWith(color: AppColors.textSecondary),
       ),
     );
   }

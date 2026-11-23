@@ -2,8 +2,8 @@ import 'package:balsm_api/balsm_api.dart';
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/value_objects/ids.dart';
 import '../../domain/events/emergency_qr_token_revoked.dart';
+import '../../domain/value_objects/ids.dart';
 import '../permanent_qr_store.dart';
 
 /// FR: Revoke a previously minted emergency QR token so its public resolve

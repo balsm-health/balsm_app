@@ -1,15 +1,15 @@
 import 'package:material_ui/material_ui.dart';
-import '../_tokens.dart';
+import '../tokens.dart';
 
 /// Avatar circle with patient initials porting prototype `.avatar`.
 /// Background = passed color; text = white.
 /// Per P001 directive: no photo avatars, initials of first + last name.
 class BalsmAvatar extends StatelessWidget {
   const BalsmAvatar({
-    super.key,
     required this.initials,
+    super.key,
     this.size = 44,
-    this.backgroundColor = BalsmColors.hueAqua,
+    this.backgroundColor = AppColors.hueAqua,
   });
 
   final String initials;
@@ -40,7 +40,7 @@ class BalsmAvatar extends StatelessWidget {
           fontFamily: 'Montserrat',
           fontWeight: FontWeight.w700,
           fontSize: size * 0.36,
-          color: Colors.white,
+          color: AppColors.white,
           height: 1,
         ),
       ),

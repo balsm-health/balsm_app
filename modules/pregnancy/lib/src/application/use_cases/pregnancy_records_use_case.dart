@@ -57,7 +57,7 @@ class PregnancyRecordsUseCase {
     if (p.isFailure) return AppResult.failure(p.error);
     final active = {
       for (final b in await _babies.listBabies(pregnancyId))
-        if (b.isActive) b.id
+        if (b.isActive) b.id,
     };
     if (!built.value.babyIds.every(active.contains)) return AppResult.failure(const NotFoundFailure());
     try {

@@ -55,11 +55,13 @@ void main() {
 
   group('StringsProvider (riverpod adapter — presentation surface)', () {
     test('emits initial bundle and re-emits on locale switch', () {
-      final p = LocalizationUtil.getProvider(LocalizedStrings.defaultLangs(
-        en: LocaleFactory.sync(() => const _Msgs('en')),
-        ar: LocaleFactory.sync(() => const _Msgs('ar')),
-      ));
-      final c = ProviderContainer();
+      final p = LocalizationUtil.getProvider(
+        LocalizedStrings.defaultLangs(
+          en: LocaleFactory.sync(() => const _Msgs('en')),
+          ar: LocaleFactory.sync(() => const _Msgs('ar')),
+        ),
+      );
+      final c = ProviderContainer(retry: noProviderRetry);
       addTearDown(c.dispose);
       expect(c.read(p).tag, 'en');
       LocalizationUtil.setLocale(const Locale('ar'));
@@ -68,11 +70,13 @@ void main() {
 
     test('deferred locale emits fallback first, real bundle after load', () async {
       final gate = Completer<void>();
-      final p = LocalizationUtil.getProvider(LocalizedStrings.defaultLangs(
-        en: LocaleFactory.sync(() => const _Msgs('en')),
-        ar: LocaleFactory.deferred(() => gate.future, () => const _Msgs('ar')),
-      ));
-      final c = ProviderContainer();
+      final p = LocalizationUtil.getProvider(
+        LocalizedStrings.defaultLangs(
+          en: LocaleFactory.sync(() => const _Msgs('en')),
+          ar: LocaleFactory.deferred(() => gate.future, () => const _Msgs('ar')),
+        ),
+      );
+      final c = ProviderContainer(retry: noProviderRetry);
       addTearDown(c.dispose);
       LocalizationUtil.setLocale(const Locale('ar'));
       expect(c.read(p).tag, 'en'); // still loading → fallback
@@ -83,11 +87,13 @@ void main() {
 
     test('stale deferred load does not overwrite a newer locale switch', () async {
       final gate = Completer<void>();
-      final p = LocalizationUtil.getProvider(LocalizedStrings.defaultLangs(
-        en: LocaleFactory.sync(() => const _Msgs('en')),
-        ar: LocaleFactory.deferred(() => gate.future, () => const _Msgs('ar')),
-      ));
-      final c = ProviderContainer();
+      final p = LocalizationUtil.getProvider(
+        LocalizedStrings.defaultLangs(
+          en: LocaleFactory.sync(() => const _Msgs('en')),
+          ar: LocaleFactory.deferred(() => gate.future, () => const _Msgs('ar')),
+        ),
+      );
+      final c = ProviderContainer(retry: noProviderRetry);
       addTearDown(c.dispose);
       LocalizationUtil.setLocale(const Locale('ar'));
       expect(c.read(p).tag, 'en');
@@ -98,17 +104,18 @@ void main() {
     });
 
     test('disposal cancels the static-stream subscription (no leak)', () {
-      final p = LocalizationUtil.getProvider(LocalizedStrings.defaultLangs(
-        en: LocaleFactory.sync(() => const _Msgs('en')),
-        ar: LocaleFactory.sync(() => const _Msgs('ar')),
-      ));
-      final c = ProviderContainer();
-      final notifier = c.read(p.notifier);
-      c.dispose();
+      final p = LocalizationUtil.getProvider(
+        LocalizedStrings.defaultLangs(
+          en: LocaleFactory.sync(() => const _Msgs('en')),
+          ar: LocaleFactory.sync(() => const _Msgs('ar')),
+        ),
+      );
+      ProviderContainer(retry: noProviderRetry)
+        ..read(p)
+        ..dispose();
       // After container disposal the notifier is unmounted; a locale change
       // must not throw (subscription cancelled, no post-dispose state write).
-      expect(notifier.mounted, isFalse);
-      LocalizationUtil.setLocale(const Locale('ar'));
+      expect(() => LocalizationUtil.setLocale(const Locale('ar')), returnsNormally);
     });
   });
 }

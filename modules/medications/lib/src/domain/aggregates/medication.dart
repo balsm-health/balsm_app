@@ -35,6 +35,17 @@ class ScheduleConfig {
     this.durationNote,
   });
 
+  /// Rows written before interval/duration existed decode as before: no
+  /// interval, ongoing.
+  factory ScheduleConfig.fromJson(Map<String, dynamic> json) => ScheduleConfig(
+        times: (json['times'] as List).map((e) => e as String).toList(),
+        days: (json['days'] as List?)?.map((e) => e as int).toList(),
+        interval: json['interval'] as int?,
+        frequencyNote: json['frequency_note'] as String?,
+        durationKind: DurationKind.values.asNameMap()[json['duration']] ?? DurationKind.ongoing,
+        durationNote: json['duration_note'] as String?,
+      );
+
   /// Local times in `HH:mm` 24-hour format.
   final List<String> times;
 
@@ -72,17 +83,6 @@ class ScheduleConfig {
         if (durationNote != null) 'duration_note': durationNote,
       };
 
-  /// Rows written before interval/duration existed decode as before: no
-  /// interval, ongoing.
-  factory ScheduleConfig.fromJson(Map<String, dynamic> json) => ScheduleConfig(
-        times: (json['times'] as List).map((e) => e as String).toList(),
-        days: (json['days'] as List?)?.map((e) => e as int).toList(),
-        interval: json['interval'] as int?,
-        frequencyNote: json['frequency_note'] as String?,
-        durationKind: DurationKind.values.asNameMap()[json['duration']] ?? DurationKind.ongoing,
-        durationNote: json['duration_note'] as String?,
-      );
-
   @override
   bool operator ==(Object other) =>
       other is ScheduleConfig &&
@@ -96,7 +96,7 @@ class ScheduleConfig {
   @override
   int get hashCode => Object.hash(
         Object.hashAll(times),
-        days == null ? null : Object.hashAll(days!),
+        switch (days) { final days? => Object.hashAll(days), _ => null },
         interval,
         frequencyNote,
         durationKind,
@@ -113,13 +113,14 @@ class Medication {
     required this.id,
     required this.userId,
     required this.name,
-    this.doseAmount,
     required this.scheduleType,
     required this.scheduleConfig,
     required this.startDate,
+    this.doseAmount,
     this.endDate,
     this.isControlled = false,
     this.notes,
+    this.history = EntryHistory.none,
   });
 
   final MedicationId id;
@@ -134,6 +135,10 @@ class Medication {
 
   /// Free-text notes from the patient ("with food"). PHI, on-device only.
   final String? notes;
+
+  /// Who other than the patient added, edited or shared this medication, and
+  /// the patient's own edits since. Append-only; empty for the patient's own.
+  final EntryHistory history;
 
   /// True when an end date is set and has passed (medication no longer active).
   bool isExpired() => endDate != null && DateTime.now().isAfter(endDate!);
@@ -157,6 +162,7 @@ class Medication {
     DateTime? endDate,
     bool? isControlled,
     String? notes,
+    EntryHistory? history,
   }) =>
       Medication(
         id: id,
@@ -169,6 +175,7 @@ class Medication {
         endDate: endDate ?? this.endDate,
         isControlled: isControlled ?? this.isControlled,
         notes: notes ?? this.notes,
+        history: history ?? this.history,
       );
 
   @override

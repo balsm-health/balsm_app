@@ -99,7 +99,6 @@
     "map_directions": "Directions",
     "map_list": "List",
     "map_map": "Map",
-    "map_found": "places nearby",
     "map_no_results": "No places found",
     "map_no_res_h": "Try a different search or filter.",
     "map_search_area": "Search this area",
@@ -196,7 +195,15 @@
     "care_attach_empty_h": "Photos, video or PDF",
     "care_link_opens(Gender gender)": "Open link at",
     "care_link_remove": "Remove link to",
-    "care_attach_add": "Add"
+    "care_attach_add": "Add",
+    "map_found_count(int n)": "${_plural(n, one:'1 place nearby', other:'$n places nearby')}",
+    "type_hospital": "Hospitals",
+    "type_clinic": "Clinics",
+    "type_dentist": "Dentists",
+    "type_pharmacy": "Pharmacies",
+    "type_lab": "Labs",
+    "type_scan": "Scan centers",
+    "type_store": "Med. stores"
   },
   "checkin": {
     "latest": "Latest readings",
@@ -220,7 +227,7 @@
     "glu_fast": "Fasting",
     "glu_meal": "After a meal",
     "glu_random": "Random",
-    "q_med_t": "Did you take your medications?",
+    "q_med_t(Gender gender)": "Did you take your medications?",
     "q_med_h(Gender gender)": "Tap each one you've taken today.",
     "q_sym_t": "Any pain or symptoms?",
     "pain_0": "No pain",
@@ -264,6 +271,9 @@
     "ql_discard_body": "What you entered won’t be saved.",
     "ql_discard": "Discard",
     "ql_keep_editing": "Keep editing",
+    // Editing a logged reading in the same form (quicklog.jsx QuickLogSheet `edit`).
+    "ql_edit_title(String what)": "Edit · $what",
+    "ql_delete_entry": "Delete this entry",
     "body_location": "Where does it hurt?",
     // Body-map chrome. No inline ar/en ternaries in widgets.
     "body_view_front": "Front",
@@ -312,6 +322,21 @@
     "sym_thirst": "Excess thirst",
     "q_mood_t(Gender gender)": "How are you feeling today?",
     "q_sym_h(Gender gender)": "Slide to your pain level, then tap anything you feel.",
+    // Full check-in for a family member (the active profile is a dependant):
+    // questions ABOUT the member name them (member Home's "How is {name}
+    // today?") and are not patient-gendered; only the instructions that
+    // address the account holder take Gender.
+    "m_q_mood_t(String name)": "How is $name feeling today?",
+    "m_q_mood_h(Gender gender, String name)": "Pick the face that fits $name best.",
+    "m_q_bp_t(String name)": "What's $name's blood pressure?",
+    "m_q_glu_t(String name)": "And $name's blood sugar?",
+    "m_q_glu_h(Gender gender)": "Enter the reading from the glucometer.",
+    "m_q_med_t(String name)": "Did $name take their medications?",
+    "m_q_med_h(Gender gender, String name)": "Tap each one $name has taken today.",
+    "m_q_sym_t(String name)": "Does $name have any pain or symptoms?",
+    "m_q_sym_h(Gender gender, String name)": "Slide to $name's pain level, then tap anything they feel.",
+    "m_q_vitals_t(String name)": "$name's vitals",
+    "m_saved_t(String name)": "Check-in saved for $name",
     "sd_color": "Color",
     "sd_quantity": "Quantity",
     "sd_ml": "ml",
@@ -514,6 +539,10 @@
     "nudge_med(Gender gender)": "Add a medication",
     "nudge_med_sub": "Stay on track",
     "greet": "Good morning",
+    // Screen-reader label for the header avatar, which opens the account switcher.
+    "a11y_accounts": "Your accounts",
+    // Screen-reader label for the account holder's avatar circle.
+    "a11y_self_avatar": "Your account",
     "hero_time": "About 2 minutes",
     "streak": "day streak",
     "streak_help(Gender gender, int checked)": "Checked in ${checked} of the last 7 days",
@@ -528,6 +557,27 @@
     "sc_places": "places nearby",
     "sc_records": "Records",
     "viewing_member(String name)": "$name is selected",
+    // Member Home (Mother & Child, home-mc.jsx HomeMemberV2): Home while a family
+    // member is the active profile. $name is the member's short name. Copy about
+    // the member is not gendered; the verbs addressed to the account holder are
+    // (Arabic only).
+    "member_ci_q(String name)": "How is $name today?",
+    "member_ci_note(Gender gender, String name)": "Log a reading or symptom on their behalf",
+    "member_ci_note_child(Gender gender)": "Log a temperature, weight or any symptom",
+    "member_ci_cta(Gender gender, String name)": "Log for $name",
+    "member_ci_done(String name)": "Logged for $name today",
+    "member_recent_empty(String name)": "Nothing logged for $name yet.",
+    "m_height": "Height",
+    "unit_cm": "cm",
+    "sc_blood": "blood type",
+    "sc_allergies(int n)": "${_plural(n, one:'1 allergy', other:'$n allergies')}",
+    "sc_conditions": "conditions",
+    "sc_meds": "medicines",
+    "sc_measures": "measures",
+    "sc_entries": "entries",
+    "sc_recorded": "recorded",
+    "sc_next(String date)": "next $date",
+    "sc_full_profile": "Full profile",
     "viewing_own_data(Gender gender)": "Their record isn't on this device yet — you're still seeing your own.",
     "viewing_switch_back": "Switch back"
   },
@@ -969,11 +1019,9 @@
     "rec_delete_n_body": "The records and their files are removed from this device. This cannot be undone.",
     "rec_delete_confirm": "Delete",
     "rec_delete_1_title": "Delete this record?",
-    // Edit sheet on the record detail (records-mc.jsx EditRecordSheet).
-    "rec_edit": "Edit record",
-    "rec_name": "Name",
-    "rec_type": "Type",
-    "rec_date": "Date",
+    // Editing a record in the add-record sheet (records-mc.jsx AddRecordSheet `initial`).
+    "rec_edit_title(String type)": "Edit · $type",
+    "rec_changes_saved": "Changes saved",
     "rec_save_changes": "Save changes",
     "rec_save_failed(Gender gender)": "Could not save. Try again."
   },
@@ -996,7 +1044,8 @@
     "na_status_support": "Service status & support",
     "cal_months": "January|February|March|April|May|June|July|August|September|October|November|December",
     "cal_months_short": "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC",
-    "cal_weekdays": "Su|Mo|Tu|We|Th|Fr|Sa"
+    "cal_weekdays": "Su|Mo|Tu|We|Th|Fr|Sa",
+    "cal_months_abbr": "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
   },
   "storage": {
     "store_delete_rec": "Delete record",
@@ -1157,7 +1206,7 @@
     "delete": "Delete this vaccination",
     "delete_t": "Delete this vaccination?",
     "delete_b": "It will be removed from the vaccination record on this phone.",
-    "tile_next(String date)": "Next $date",
+    "tile_next(String date)": "Next dose $date",
     "recorded_n(int n)": "${_plural(n, one:'1 recorded', other:'$n recorded')}"
   },
   "growth": {
@@ -1209,7 +1258,11 @@
     "due_date": "Due date",
     "next_visit": "Next visit",
     "prompt_b": "If you're pregnant, add your due date and your obstetrician",
-    "not_now": "Not now · you can turn it on later in Profile",
+    "hide_a11y": "Hide the pregnancy card",
+    "hide_title": "Hide the pregnancy card?",
+    "hide_sub": "This card won’t appear on Home again.",
+    "hide_note": "You can turn on pregnancy tracking any time from Profile › Pregnancy.",
+    "hide_btn": "Hide card",
     "row_off": "Off",
     "next_visit_t": "Next antenatal visit",
     "add_visit": "Add your next antenatal visit",
@@ -1314,13 +1367,22 @@
     "moves": "Records that move to the child's profile",
     "no_records": "No records for this baby.",
     "me_stay": "Your “Me” records stay on your own profile.",
-    "create_cta": "Create profile"
+    "create_cta": "Create profile",
+    // A family member's pregnancy (mother-child.jsx MCPregWho): copy that
+    // names her. About the member, so not patient-gendered, except where it
+    // addresses the patient.
+    "title_of(String name)": "Pregnancy · $name",
+    "records_of(String name)": "$name's pregnancy records",
+    "records_of_empty": "The mother's own results appear here.",
+    "start_note_of(String name, Gender gender)": "Pregnancy tracking appears on $name's profile only. You manage it from your phone.",
+    "start_cta_of(Gender gender)": "Start tracking",
+    "me_of(String name)": "$name — her own results"
   },
   "family": {
     "bar_viewing(Gender gender)": "Viewing",
     "bar_your_profile": "your profile",
-    "bar_family": "Family",
     "bar_change": "Change",
+    "bar_family": "Family",
     "bar_a11y": "Change whose profile is shown",
     "picker_title(Gender gender)": "Whose profile?",
     "picker_sub(Gender gender)": "Choose whose health information the app shows.",
@@ -1337,8 +1399,6 @@
     "empty_t": "No family members yet",
     "empty_b(Gender gender)": "Add your children or parents to keep an emergency card for each.",
     "stays_local": "Your family's data stays on this phone.",
-    "home_sub(int n, Gender gender)": "${_plural(n, one:'1 profile you manage', other:'$n profiles you manage')}",
-    "home_empty_sub(Gender gender)": "Add the people you look after",
     "manual_t": "Enter details manually",
     "manual_b(Gender gender)": "For your child, or someone without a Balsm account. You manage their profile from your phone.",
     "group_family": "My family",
@@ -1355,6 +1415,9 @@
     "rel_sister": "Sister",
     "rel_sibling": "Sibling",
     "rel_spouse(Gender gender)": "Spouse",
+    // A spouse whose sex is known reads as wife or husband (mother-child.jsx mcRel).
+    "rel_wife": "Wife",
+    "rel_husband": "Husband",
     "rel_partner": "Partner",
     "rel_grandparent": "Grandparent",
     "rel_relative": "Relative",
@@ -1367,6 +1430,8 @@
     "pick_daughter": "Daughter",
     "pick_mother": "Mother",
     "pick_father": "Father",
+    "pick_sister": "Sister",
+    "pick_brother": "Brother",
     "pick_spouse": "Spouse",
     "pick_neighbour": "Neighbour",
     "pick_friend": "Friend",
@@ -1384,6 +1449,31 @@
     "tile_records": "Records",
     "no_records": "No documents yet",
     "records_n(int n)": "${_plural(n, one:'1 record', other:'$n records')}",
+    // Member home tiles (mother-child.jsx MCMemberBody): medical profile,
+    // trends and pregnancy.
+    "tile_medical": "Medical profile",
+    "no_blood": "No blood type",
+    "conditions_n(int n)": "${_plural(n, one:'1 condition', other:'$n conditions')}",
+    "tile_trends": "Trends",
+    "trends_n(int n)": "${_plural(n, one:'1 measure', other:'$n measures')}",
+    "trends_none": "Not enough data yet",
+    "tile_preg_off(Gender gender)": "Off · start tracking",
+    // Medical profile of a member (MCMedicalScreen). Copy about the member is
+    // not patient-gendered; the add placeholders address the patient.
+    "medical_intro(String name)": "This shows on $name's emergency card.",
+    "medical_conditions": "Long-term conditions",
+    "medical_allergies_none": "No allergies recorded",
+    "medical_conditions_none": "No conditions recorded",
+    "medical_allergy_ph(Gender gender)": "Add an allergy, e.g. Penicillin",
+    "medical_condition_ph(Gender gender)": "Add a condition, e.g. Asthma",
+    "medical_add": "Add",
+    "medical_remove(String item)": "Remove $item",
+    "medical_row_sub": "Blood type, allergies and long-term conditions",
+    "medical_locked": "This profile is read-only, so it can't be edited here.",
+    // A member's trends (MCTrendsScreen).
+    "trends_empty_t": "No data in this period",
+    "trends_empty_b(String name, Gender gender)": "$name's readings and growth show here over time. Try a longer range.",
+    "trends_nothing(String name)": "Nothing logged for $name yet.",
     "member_menu": "More options",
     "edit_details": "Edit details",
     "edit_medical": "Medical details",
@@ -1429,6 +1519,7 @@
     "card_contacts": "Emergency contacts",
     "card_no_contacts": "No contact added yet",
     "card_note(Gender gender)": "Show this card on your phone in an emergency. Only your own card has a code a responder can scan.",
+    "own_card_note": "This card is saved on your phone, so it opens without a connection. The card with a code a responder can scan is in Profile.",
     "add_contact": "Add a contact",
     "contact_name": "Contact name",
     "contact_phone": "Phone number",
@@ -1468,6 +1559,76 @@
     "link_unlink_b": "Neither of you will see the other's shared card any more.",
     "link_unlinked_toast": "Unlinked",
     "link_dot_a11y": "A link request is waiting"
+  },
+  // Entries someone other than the patient added, edited or shared
+  // (mother-child.jsx MCBy / MCByHistory). Kept in its own block.
+  "attribution": {
+    // Chip: icon + name; the full sentence goes to the screen reader.
+    "chip_a11y(String who)": "Edit history: $who",
+    "by(String name)": "By $name",
+    "edited_by(String name)": "Edited by $name",
+    // Shown when a care-team member the entry points at is no longer listed.
+    "someone": "Someone else",
+    "you": "You",
+    "history_title": "Edit history",
+    "history_sub": "Who added or changed this entry, and when.",
+    "added_this(String name)": "$name added this",
+    "edited_this(String name)": "$name edited this",
+    "shared_this(String name)": "$name shared this",
+    "you_added(Gender gender)": "You added this",
+    "you_edited(Gender gender)": "You edited this",
+    "role_family": "Family",
+    "role_doctor": "Doctor",
+    "role_clinic": "Care provider",
+    "locked": "Balsm keeps this history and it can’t be changed."
+  },
+  // ── Maintenance mode (design maintenance.jsx) ──────────────────────────
+  // Shown while a Balsm super admin has put the platform in maintenance.
+  // Pre-sign-in copy (pre_body, device_only) is fixed: the gender is unknown.
+  "maintenance": {
+    "eyebrow": "Maintenance",
+    "strip_title": "Maintenance · view only",
+    "strip_details": "Details",
+    "ro_title": "Balsm is under maintenance",
+    "ro_body": "We’re improving our servers. Everything on your phone is still here and readable.",
+    "block_title": "Balsm is down for maintenance",
+    "block_body": "We’re doing urgent work to keep your health data safe. The app will be back shortly.",
+    "pre_body": "Signing in and creating accounts are paused. You can use Balsm on this device only for now and connect your account later.",
+    "paused_title": "Adding and editing are paused for now",
+    "paused_body(Gender gender)": "Balsm’s servers are under maintenance. You can try again once it’s over, and nothing has been lost.",
+    "still_available": "Still available",
+    "paused_for_now": "Paused for now",
+    "ok_view": "View your records, medicines and results",
+    "ok_card": "Your emergency card and QR code",
+    "ok_reminders": "Medicine reminders on your phone",
+    "paused_log": "Logging readings, adding records and medicines",
+    "paused_sync": "Syncing and sharing with doctors",
+    "paused_signin": "Signing in and creating accounts",
+    "got_it": "Got it",
+    "open_card": "Open my emergency card",
+    "device_only": "Use on this device only",
+    "call_emergency(String number, Gender gender)": "Call emergency $number",
+    "check_again(Gender gender)": "Check again",
+    "checking": "Checking…",
+    "until(String time)": "Until about $time",
+    "until_tomorrow(String time)": "Until about $time tomorrow",
+    "end_unknown": "We’ll share the end time soon",
+    // Details sheet hero (maintenance.jsx MaintSheet).
+    "sheet_eyebrow": "View-only mode",
+    "close": "Close",
+    // Countdown (maintLeftText): hours and minutes left, rounded to the minute.
+    "left_hm(int h, int m)": "Back in about $h h $m min",
+    "left_h(int h)": "Back in about $h h",
+    "left_m(int m)": "Back in about $m min",
+    "left_unknown": "Duration not announced yet",
+    // Screen-reader name of the progress bar under the countdown.
+    "progress_label": "Maintenance progress",
+    // Screen-reader label of the floating card: "Maintenance details. Back in about 1 h 45 min".
+    "strip_a11y(String countdown)": "Maintenance details. $countdown",
+    "message_title": "Message from the Balsm team",
+    "data_safe": "Your data on this phone is safe. Nothing will be deleted.",
+    // Quick-log button while read-only.
+    "fab_paused": "Adding is paused during maintenance"
   },
   "_i69n_import": "package:core/core.dart"
 }

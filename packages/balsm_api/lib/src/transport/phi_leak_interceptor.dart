@@ -20,7 +20,7 @@ class PhiLeakInterceptor extends Interceptor {
   ///
   /// Aliases the one canonical list — this used to be a hand-maintained second
   /// copy and had drifted ~15 keys behind core's. See `non_phi_allowlist.dart`.
-  static const allowedFields = kNonPhiAllowlist;
+  static const Set<String> allowedFields = kNonPhiAllowlist;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -32,7 +32,7 @@ class PhiLeakInterceptor extends Interceptor {
   }
 
   @override
-  void onResponse(Response response, ResponseInterceptorHandler handler) {
+  void onResponse(Response<dynamic> response, ResponseInterceptorHandler handler) {
     handler.next(response);
   }
 

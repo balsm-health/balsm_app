@@ -54,7 +54,7 @@ void main() {
       final due = DateTime.utc(2027, 2, 21);
 
       expect(PregnancyInfo.weekAt(due, DateTime(2026, 11, 3)), 24);
-      expect(PregnancyInfo.weekAt(due, DateTime(2026, 1, 1)), 0);
+      expect(PregnancyInfo.weekAt(due, DateTime(2026)), 0);
       expect(PregnancyDates.dueFromLastPeriod(DateTime(2026, 5, 17)), DateTime.utc(2027, 2, 21));
     });
   });
@@ -96,7 +96,9 @@ void main() {
 
     test('settle closes as birth once no baby is active and one was born', () {
       final p = started().settle(
-          [baby('a', 1, status: BabyStatus.born), baby('b', 2, status: BabyStatus.closed)], DateTime(2027, 2, 20, 9));
+        [baby('a', 1, status: BabyStatus.born), baby('b', 2, status: BabyStatus.closed)],
+        DateTime(2027, 2, 20, 9),
+      );
 
       expect(p.status, PregnancyStatus.birth);
       expect(p.closedOn, DateTime.utc(2027, 2, 20));
@@ -132,7 +134,9 @@ void main() {
 
   group('BabyLabel', () {
     test('a name wins; one baby is "Baby"; several are lettered by sequence', () {
-      final a = baby('a', 1), b = baby('b', 2), named = baby('c', 3, name: ' Test Name ');
+      final a = baby('a', 1);
+      final b = baby('b', 2);
+      final named = baby('c', 3, name: ' Test Name ');
 
       expect(BabyLabel.of(a, [a]), isA<OnlyBaby>());
       expect((BabyLabel.of(b, [b, a]) as LetteredBaby).index, 1);
@@ -214,7 +218,11 @@ void main() {
   group('BirthDetails', () {
     test('name, sex and a date of birth not in the future', () {
       BirthDetails d({String name = 'Test Baby', DateTime? dob}) => BirthDetails(
-          babyId: const HealthProfileId.value('a'), name: name, sex: Sex.female, dateOfBirth: dob ?? today);
+            babyId: const HealthProfileId.value('a'),
+            name: name,
+            sex: Sex.female,
+            dateOfBirth: dob ?? today,
+          );
 
       expect(d().violations(today), isEmpty);
       expect(d().relationship, Relationship.child);

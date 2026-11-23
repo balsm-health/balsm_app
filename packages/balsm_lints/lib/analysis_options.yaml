@@ -1,0 +1,22 @@
+# Balsm's one lint config. Every package includes it:
+#
+#   include: package:balsm_lints/analysis_options.yaml
+#
+# and adds only its own `analyzer: exclude:` list. Change rules HERE, never per
+# package, and give every override a reason. See CODING_STANDARDS.md §10.
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    # CODING_STANDARDS.md §1: static const identifiers are snake_case
+    # (CountryCode.saudi_arabia, Assets.brand_icon, ApiRoutes.account_self).
+    constant_identifier_names: false
+    # Formatter page_width is 120 repo-wide; the formatter owns line length.
+    lines_longer_than_80_chars: false
+    # App-internal packages, never published: dartdoc on every public member
+    # would be noise. Document the non-obvious, not everything.
+    public_member_api_docs: false
+    # Inside a package's lib/ the repo imports its own files by relative path (`../tokens.dart`), about 2,000
+    # imports. very_good_analysis asks for `package:` URIs instead; one style is enforced, and it is this one.
+    always_use_package_imports: false
+    prefer_relative_imports: true

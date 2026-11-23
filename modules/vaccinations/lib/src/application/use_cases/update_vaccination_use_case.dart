@@ -4,7 +4,7 @@ import '../../domain/aggregates/vaccination_record.dart';
 import '../../domain/value_objects/ids.dart';
 import '../ports/vaccinations_data_source.dart';
 
-/// Saves the edit form over an existing dose [id] of [profileId] (null = the
+/// Saves the edit form over an existing dose `id` of `profileId` (null = the
 /// active profile), under the same rules as a new one. The dose keeps its id
 /// and when it was first recorded. A [ValidationFailure] lists the broken
 /// rules; a dose that is gone (or deleted) is a [NotFoundFailure]; a profile

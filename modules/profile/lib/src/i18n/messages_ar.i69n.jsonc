@@ -13,5 +13,25 @@
     "severe": "شديدة"
   },
   "conditions": "الحالات الصحية",
-  "contacts": "جهات اتصال الطوارئ"
+  "contacts": "جهات اتصال الطوارئ",
+  "loadError": "تعذّر تحميل الملف الصحي",
+  "noAllergies": "لم تُضف أي حساسية",
+  "controlled": "خاضع للرقابة",
+  "remove": "إزالة",
+  "chronicConditions": "الأمراض المزمنة",
+  "noConditions": "لم تُضف أي حالات",
+  "noContacts": "لم تُضف جهات اتصال للطوارئ",
+  "primary": "أساسي",
+  "addShort": "إضافة",
+  "selectBloodType": "اختر فصيلة الدم",
+  "unknown": "غير معروف",
+  "allergen": "مسبّب الحساسية",
+  "severityLabel": "الشدة",
+  "controlledSubstance": "مادة خاضعة للرقابة",
+  "addCondition": "إضافة حالة",
+  "condition": "الحالة",
+  "addContact": "إضافة جهة اتصال للطوارئ",
+  "name": "الاسم",
+  "phone": "الهاتف",
+  "relationOptional": "صلة القرابة (اختياري)"
 }

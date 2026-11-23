@@ -45,10 +45,12 @@ void main() {
   });
 
   test('legacy (pre-versioning) store migrates keys and values', () async {
-    final p = _V2Prefs(await kv({
-      'demo.lang': 'ar',
-      'demo.storage': 'gdrive',
-    }));
+    final p = _V2Prefs(
+      await kv({
+        'demo.lang': 'ar',
+        'demo.storage': 'gdrive',
+      }),
+    );
     await p.migrate();
     expect(await p.locale(), 'ar'); // renamed lang -> locale
     expect(await p.storage(), 'google_drive'); // value transformed

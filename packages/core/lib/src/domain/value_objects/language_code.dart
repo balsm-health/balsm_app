@@ -31,6 +31,9 @@ class LanguageCode extends ValueObject {
 
   final bool isRtl;
 
+  /// Joins items of a run-in list: the Arabic comma in RTL languages, `, ` otherwise.
+  String get listSeparator => isRtl ? '، ' : ', ';
+
   /// True when the app ships a complete UI translation for this language.
   /// Every language in [supported] does today; a language added before its
   /// translation is finished would be false and show in the picker as "beta",
@@ -47,12 +50,12 @@ class LanguageCode extends ValueObject {
   /// what the language picker lists. The store builds are trimmed to the same
   /// two (Android `localeFilters`, the iOS "Strip unsupported languages" build
   /// phase), so adding one here means adding it there as well.
-  static const supported = [ar, en];
+  static const List<LanguageCode> supported = [ar, en];
 
   /// The fully-supported UI locales — the closed set the app renders in
   /// (absorbs the former `AppLocale` type). Holding one of these means the
   /// app can fully render in it.
-  static const uiSupported = [en, ar];
+  static const List<LanguageCode> uiSupported = [en, ar];
 
   /// Resolve an arbitrary BCP-47 tag to a fully-supported UI language, or
   /// null for anything unsupported. Base-subtag match: `ar`, `AR`, `ar-EG`,

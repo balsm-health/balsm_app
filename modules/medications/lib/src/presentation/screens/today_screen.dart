@@ -1,10 +1,11 @@
 import 'package:core/core.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../application/use_cases/record_dose_outcome_use_case.dart';
 import '../../domain/entities/dose_event.dart';
+import '../i18n/i18n.dart';
 import '../providers.dart';
 import '../widgets/dedup_banner.dart';
 
@@ -50,7 +51,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Scrollable.ensureVisible(
         ctx,
-        duration: const Duration(milliseconds: 300),
+        duration: Motion.transition,
         alignment: 0.2,
       );
     });
@@ -63,16 +64,17 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   @override
   Widget build(BuildContext context) {
     final dosesAsync = ref.watch(todayDosesProvider);
+    final m = ref.watch(medicationsStringsProvider);
 
     return Scaffold(
-      backgroundColor: BalsmColors.cream50,
+      backgroundColor: AppColors.cream50,
       appBar: AppBar(
-        title: const Text('Today'),
-        backgroundColor: BalsmColors.surface,
+        title: Text(m.today.title),
+        backgroundColor: AppColors.surface,
         elevation: 0,
         actions: const [
           Padding(
-            padding: EdgeInsets.only(right: 16),
+            padding: EdgeInsetsDirectional.only(end: 16),
             child: Center(child: SyncStatusBadge()),
           ),
         ],
@@ -80,7 +82,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       body: dosesAsync.when(
         loading: () => const BalsmLoadingIndicator(),
         error: (e, _) => BalsmErrorBanner(
-          message: 'Could not load today\'s doses.',
+          message: m.todayLoadError,
           onRetry: () => ref.invalidate(todayDosesProvider),
         ),
         data: (doses) {
@@ -97,12 +99,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 const DedupBanner(),
                 if (hasMissed) const _MissedBanner(),
                 if (doses.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(32),
+                  Padding(
+                    padding: const EdgeInsets.all(32),
                     child: Center(
                       child: Text(
-                        'No doses scheduled today.',
-                        style: TextStyle(color: BalsmColors.fg3),
+                        m.todayEmpty,
+                        style: const TextStyle(color: AppColors.textTertiary),
                       ),
                     ),
                   ),
@@ -144,16 +146,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             snoozeUntil: snoozeUntil,
           );
       ref.invalidate(todayDosesProvider);
-    } catch (_) {
+    } on Object catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not record dose')),
+        SnackBar(content: Text(ref.read(medicationsStringsProvider).recordError)),
       );
     }
   }
 }
 
-class _DoseTile extends StatelessWidget {
+class _DoseTile extends ConsumerWidget {
   const _DoseTile({
     required this.dose,
     required this.highlighted,
@@ -169,18 +171,19 @@ class _DoseTile extends StatelessWidget {
   final VoidCallback onSnooze;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
     final med = dose.medication;
     final time = DateFormat('HH:mm').format(dose.scheduledAt);
     final outcome = dose.event?.outcome;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: Motion.transition,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: highlighted ? BalsmColors.hueBlue50 : Colors.transparent,
-        borderRadius: BorderRadius.circular(BalsmRadius.lg),
-        border: highlighted ? Border.all(color: BalsmColors.hueBlue) : null,
+        color: highlighted ? AppColors.hueBlue50 : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: highlighted ? Border.all(color: AppColors.hueBlue) : null,
       ),
       child: BalsmMedRow(
         name: med.name,
@@ -190,7 +193,7 @@ class _DoseTile extends StatelessWidget {
         trailing: dose.isPending
             ? _Actions(onTake: onTake, onSkip: onSkip, onSnooze: onSnooze)
             : BalsmPill(
-                label: _label(outcome!),
+                label: _label(m, outcome!),
                 variant: _variant(outcome),
                 showDot: true,
               ),
@@ -198,12 +201,12 @@ class _DoseTile extends StatelessWidget {
     );
   }
 
-  static String _label(DoseOutcome o) => switch (o) {
-        DoseOutcome.taken => 'Taken',
-        DoseOutcome.skipped => 'Skipped',
-        DoseOutcome.missed => 'Missed',
-        DoseOutcome.snoozed => 'Snoozed',
-        DoseOutcome.correction => 'Corrected',
+  static String _label(Messages m, DoseOutcome o) => switch (o) {
+        DoseOutcome.taken => m.outcome.taken,
+        DoseOutcome.skipped => m.outcome.skipped,
+        DoseOutcome.missed => m.outcome.missed,
+        DoseOutcome.snoozed => m.outcome.snoozed,
+        DoseOutcome.correction => m.outcome.corrected,
       };
 
   static BalsmPillVariant _variant(DoseOutcome o) => switch (o) {
@@ -215,7 +218,7 @@ class _DoseTile extends StatelessWidget {
       };
 }
 
-class _Actions extends StatelessWidget {
+class _Actions extends ConsumerWidget {
   const _Actions({
     required this.onTake,
     required this.onSkip,
@@ -226,51 +229,57 @@ class _Actions extends StatelessWidget {
   final VoidCallback onSnooze;
 
   @override
-  Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            onPressed: onSnooze,
-            icon: const Icon(Icons.snooze, color: BalsmColors.warning),
-            tooltip: 'Snooze',
-          ),
-          IconButton(
-            onPressed: onSkip,
-            icon: const Icon(Icons.close, color: BalsmColors.ink500),
-            tooltip: 'Skip',
-          ),
-          IconButton(
-            onPressed: onTake,
-            icon: const Icon(Icons.check_circle, color: BalsmColors.hueMint),
-            tooltip: 'Take',
-          ),
-        ],
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: onSnooze,
+          icon: const Icon(Icons.snooze, color: AppColors.warning),
+          tooltip: m.snooze,
+        ),
+        IconButton(
+          onPressed: onSkip,
+          icon: const Icon(Icons.close, color: AppColors.ink500),
+          tooltip: m.skip,
+        ),
+        IconButton(
+          onPressed: onTake,
+          icon: const Icon(Icons.check_circle, color: AppColors.hueMint),
+          tooltip: m.take,
+        ),
+      ],
+    );
+  }
 }
 
-class _MissedBanner extends StatelessWidget {
+class _MissedBanner extends ConsumerWidget {
   const _MissedBanner();
 
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: BalsmColors.dangerBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: BalsmColors.danger),
-        ),
-        child: Row(
-          children: const [
-            Icon(Icons.error_outline, color: BalsmColors.danger, size: 20),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'You have missed doses today. Review and update them below.',
-                style: TextStyle(fontSize: 13, height: 1.4),
-              ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = ref.watch(medicationsStringsProvider);
+    return Container(
+      margin: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.dangerBackground,
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        border: Border.all(color: AppColors.danger),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              m.missedBanner,
+              style: const TextStyle(fontSize: FontSizes.bodySm, height: 1.4),
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
+  }
 }

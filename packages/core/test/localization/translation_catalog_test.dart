@@ -5,7 +5,7 @@ void main() {
   const c = TranslationCatalog();
 
   test('resolves the English default bundle', () {
-    expect(c.translate('common.done', locale: 'en'), 'Done');
+    expect(c.translate('common.done'), 'Done');
   });
 
   test('resolves an Arabic locale', () {
@@ -21,16 +21,16 @@ void main() {
   });
 
   test('missing key falls back to the key itself', () {
-    expect(c.translate('does.not.exist', locale: 'en'), 'does.not.exist');
+    expect(c.translate('does.not.exist'), 'does.not.exist');
     expect(c.translate('does.not.exist', locale: 'ar-SA'), 'does.not.exist');
   });
 
   test('a namespace key (non-leaf) falls back to the key', () {
-    expect(c.translate('common', locale: 'en'), 'common');
+    expect(c.translate('common'), 'common');
   });
 
   test('aliased reserved-word key resolves (common.continue)', () {
-    expect(c.translate('common.continue', locale: 'en'), 'Continue');
+    expect(c.translate('common.continue'), 'Continue');
   });
 
   test('unknown locale falls back to the English bundle', () {

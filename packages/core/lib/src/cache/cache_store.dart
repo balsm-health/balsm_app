@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data_source/data_source.dart' show DataSource;
 import 'cache_row.dart';
 
 /// Raw keyed payloads, grouped by namespace.

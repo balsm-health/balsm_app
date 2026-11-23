@@ -1,17 +1,20 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart' show PlatformException;
+
 import 'package:core/core.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:profile/profile.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pasteboard/pasteboard.dart';
+import 'package:profile/profile.dart';
+import 'package:riverpod/src/providers/future_provider.dart';
+
 import '../app_state.dart';
 import '../kit.dart';
-import '../tokens.dart';
 
 /// Picked local attachment — bytes stay in memory until the form saves.
 class PickedAttach {
@@ -35,7 +38,28 @@ class PickedAttach {
 /// and never scales one up.
 const double kPickedImageMaxSide = 2560;
 
-Future<PickedAttach?> pickImageAttach({required bool camera}) async {
+/// True while a picker is on screen.
+bool _picking = false;
+
+/// Runs [pick] unless one is already open. The platform cancels an open picker
+/// when asked for a second one and raises `multiple_request`, which a double tap
+/// used to turn into an uncaught error. A denied permission (camera, photos)
+/// also surfaces as a [PlatformException]; either way the answer is "nothing picked".
+Future<PickedAttach?> _pickOnce(Future<PickedAttach?> Function() pick) async {
+  if (_picking) return null;
+  _picking = true;
+  try {
+    return await pick();
+  } on PlatformException {
+    return null;
+  } finally {
+    _picking = false;
+  }
+}
+
+Future<PickedAttach?> pickImageAttach({required bool camera}) => _pickOnce(() => _pickImage(camera: camera));
+
+Future<PickedAttach?> _pickImage({required bool camera}) async {
   final file = await ImagePicker().pickImage(
     source: camera ? ImageSource.camera : ImageSource.gallery,
     maxWidth: kPickedImageMaxSide,
@@ -46,17 +70,16 @@ Future<PickedAttach?> pickImageAttach({required bool camera}) async {
   return PickedAttach(kind: 'image', bytes: await file.readAsBytes(), name: file.name);
 }
 
-Future<PickedAttach?> pickFileAttach() async {
-  final result = await FilePicker.platform.pickFiles(
+Future<PickedAttach?> pickFileAttach() => _pickOnce(_pickFile);
+
+Future<PickedAttach?> _pickFile() async {
+  final file = await FilePicker.pickFile(
     type: FileType.custom,
     allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'heic'],
-    withData: true,
   );
-  final file = result?.files.single;
   if (file == null) return null;
   final ext = (file.extension ?? '').toLowerCase();
-  final bytes = file.bytes;
-  if (bytes == null) return null;
+  final bytes = await file.readAsBytes();
   if (ext == 'pdf') return PickedAttach(kind: 'pdf', bytes: bytes, name: file.name);
   return PickedAttach(kind: 'image', bytes: bytes, name: file.name);
 }
@@ -96,7 +119,7 @@ Future<PickedAttach?> pasteAttachment() async {
   Uint8List? image;
   try {
     image = await Pasteboard.image;
-  } catch (_) {
+  } on Object catch (_) {
     image = null;
   }
   if (image != null && image.isNotEmpty) {
@@ -106,7 +129,7 @@ Future<PickedAttach?> pasteAttachment() async {
   String? text;
   try {
     text = await Pasteboard.text;
-  } catch (_) {
+  } on Object catch (_) {
     text = null;
   }
   final trimmed = text?.trim() ?? '';
@@ -180,93 +203,105 @@ class _LinkPromptSheetState extends State<_LinkPromptSheet> {
     final bad = _touched && typed.isNotEmpty && !isStorableLink(typed);
 
     return Material(
-      color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      color: AppColors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const SizedBox(height: 10),
-          const SheetGrab(),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
-            child: Row(children: [
-              Expanded(
-                child: Text(r.att_url_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            const SheetGrab(),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(r.att_url_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                  RoundBtn(
+                    icon: LucideIcons.x,
+                    semanticLabel: s.strings.common.a11y_close,
+                    ghost: true,
+                    iconSize: 17,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-              RoundBtn(
-                  icon: LucideIcons.x,
-                  semanticLabel: s.strings.common.a11y_close,
-                  ghost: true,
-                  iconSize: 17,
-                  onTap: () => Navigator.pop(context)),
-            ]),
-          ),
-          const Divider(height: 1, color: T.ink100),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 14, 20, sheetBottomInset(context, base: 28)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              TextField(
-                controller: _url,
-                autofocus: true,
-                keyboardType: TextInputType.url,
-                textDirection: TextDirection.ltr,
-                onChanged: (_) => setState(() => _touched = true),
-                style: Typo.body(ar: s.rtl).copyWith(fontSize: FS.md, color: T.fg1),
-                decoration: InputDecoration(
-                  hintText: r.att_url_hint,
-                  hintStyle: Typo.body(ar: s.rtl).copyWith(color: T.fg4, fontSize: FS.sm),
-                  isDense: true,
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                  prefixIcon: const Icon(LucideIcons.link, size: 16, color: T.fg3),
-                  prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: kMinTapTarget),
-                  suffixIcon: IntrinsicWidth(
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 6),
-                      child: PButton(
-                        s.strings.care.care_paste,
-                        icon: LucideIcons.clipboardPaste,
-                        variant: BtnVariant.ghost,
-                        size: BtnSize.sm,
-                        accent: s.accent,
-                        ar: s.rtl,
-                        onTap: _paste,
+            ),
+            const Divider(height: 1, color: AppColors.ink100),
+            Padding(
+              padding: EdgeInsetsDirectional.fromSTEB(20, 14, 20, sheetBottomInset(context, base: 28)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _url,
+                    autofocus: true,
+                    keyboardType: TextInputType.url,
+                    textDirection: TextDirection.ltr,
+                    onChanged: (_) => setState(() => _touched = true),
+                    style: Typo.body(ar: s.rtl).copyWith(fontSize: FontSizes.body, color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: r.att_url_hint,
+                      hintStyle: Typo.body(ar: s.rtl).copyWith(color: AppColors.textHint, fontSize: FontSizes.bodySm),
+                      isDense: true,
+                      filled: true,
+                      fillColor: AppColors.white,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                      prefixIcon: const Icon(LucideIcons.link, size: 16, color: AppColors.textTertiary),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 38, minHeight: BalsmWindow.touchTarget),
+                      suffixIcon: IntrinsicWidth(
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 6),
+                          child: PButton(
+                            s.strings.care.care_paste,
+                            icon: LucideIcons.clipboardPaste,
+                            variant: BtnVariant.ghost,
+                            size: BtnSize.sm,
+                            accent: s.accent,
+                            ar: s.rtl,
+                            onTap: _paste,
+                          ),
+                        ),
+                      ),
+                      suffixIconConstraints:
+                          const BoxConstraints(minWidth: BalsmWindow.touchTarget, minHeight: BalsmWindow.touchTarget),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        borderSide: BorderSide(color: bad ? AppColors.danger : AppColors.border, width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        borderSide: BorderSide(color: bad ? AppColors.danger : s.accent.main, width: 1.5),
                       ),
                     ),
                   ),
-                  suffixIconConstraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: kMinTapTarget),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(T.rMd),
-                      borderSide: BorderSide(color: bad ? T.danger : T.border, width: 1.5)),
-                  focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(T.rMd),
-                      borderSide: BorderSide(color: bad ? T.danger : s.accent.main, width: 1.5)),
-                ),
+                  const SizedBox(height: 8),
+                  Semantics(
+                    liveRegion: bad,
+                    child: Text(
+                      bad ? r.att_url_bad : r.att_url_note,
+                      style: Typo.meta(ar: s.rtl)
+                          .copyWith(height: 1.5, color: bad ? AppColors.danger : AppColors.textTertiary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  PButton(
+                    s.strings.common.continue_,
+                    large: true,
+                    block: true,
+                    accent: s.accent,
+                    ar: s.rtl,
+                    onTap: isStorableLink(typed) ? () => Navigator.pop(context, typed) : null,
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Semantics(
-                liveRegion: bad,
-                child: Text(
-                  bad ? r.att_url_bad : r.att_url_note,
-                  style: Typo.meta(ar: s.rtl).copyWith(height: 1.5, color: bad ? T.danger : T.fg3),
-                ),
-              ),
-              const SizedBox(height: 16),
-              PButton(
-                s.strings.common.continue_,
-                variant: BtnVariant.primary,
-                large: true,
-                block: true,
-                accent: s.accent,
-                ar: s.rtl,
-                onTap: isStorableLink(typed) ? () => Navigator.pop(context, typed) : null,
-              ),
-            ]),
-          ),
-        ]),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -280,65 +315,74 @@ class AttachSourceSheet extends StatelessWidget {
     final s = AppScope.of(context);
     final r = s.strings.records;
     return Material(
-      color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(T.rXl)),
+      color: AppColors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
       clipBehavior: Clip.antiAlias,
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        const SheetGrab(),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
-          child: Row(children: [
-            Expanded(
-              child: Text(r.att_source_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          const SheetGrab(),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 16, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(r.att_source_title, style: Typo.subhead(ar: s.rtl).copyWith(fontWeight: FontWeight.w700)),
+                ),
+                RoundBtn(
+                  icon: LucideIcons.x,
+                  semanticLabel: s.strings.common.a11y_close,
+                  ghost: true,
+                  iconSize: 17,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
             ),
-            RoundBtn(
-                icon: LucideIcons.x,
-                semanticLabel: s.strings.common.a11y_close,
-                ghost: true,
-                iconSize: 17,
-                onTap: () => Navigator.pop(context)),
-          ]),
-        ),
-        const Divider(height: 1, color: T.ink100),
-        Padding(
-          padding: EdgeInsets.fromLTRB(20, 8, 20, sheetBottomInset(context, base: 28)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            _SourceRow(
-              s: s,
-              icon: LucideIcons.folderOpen,
-              label: r.att_src_files,
-              sub: r.att_src_files_h,
-              onTap: () => Navigator.pop(context, AttachSource.files),
+          ),
+          const Divider(height: 1, color: AppColors.ink100),
+          Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(20, 8, 20, sheetBottomInset(context, base: 28)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SourceRow(
+                  s: s,
+                  icon: LucideIcons.folderOpen,
+                  label: r.att_src_files,
+                  sub: r.att_src_files_h,
+                  onTap: () => Navigator.pop(context, AttachSource.files),
+                ),
+                const Divider(height: 1, color: AppColors.ink100),
+                _SourceRow(
+                  s: s,
+                  icon: LucideIcons.image,
+                  label: r.att_src_gallery,
+                  sub: r.att_src_gallery_h(s.gender),
+                  onTap: () => Navigator.pop(context, AttachSource.gallery),
+                ),
+                const Divider(height: 1, color: AppColors.ink100),
+                _SourceRow(
+                  s: s,
+                  icon: LucideIcons.clipboardPaste,
+                  label: r.att_src_paste,
+                  sub: r.att_src_paste_h,
+                  onTap: () => Navigator.pop(context, AttachSource.paste),
+                ),
+                const Divider(height: 1, color: AppColors.ink100),
+                _SourceRow(
+                  s: s,
+                  icon: LucideIcons.link,
+                  label: r.att_src_url,
+                  sub: r.att_src_url_h(s.gender),
+                  onTap: () => Navigator.pop(context, AttachSource.url),
+                ),
+              ],
             ),
-            const Divider(height: 1, color: T.ink100),
-            _SourceRow(
-              s: s,
-              icon: LucideIcons.image,
-              label: r.att_src_gallery,
-              sub: r.att_src_gallery_h(s.gender),
-              onTap: () => Navigator.pop(context, AttachSource.gallery),
-            ),
-            const Divider(height: 1, color: T.ink100),
-            _SourceRow(
-              s: s,
-              icon: LucideIcons.clipboardPaste,
-              label: r.att_src_paste,
-              sub: r.att_src_paste_h,
-              onTap: () => Navigator.pop(context, AttachSource.paste),
-            ),
-            const Divider(height: 1, color: T.ink100),
-            _SourceRow(
-              s: s,
-              icon: LucideIcons.link,
-              label: r.att_src_url,
-              sub: r.att_src_url_h(s.gender),
-              onTap: () => Navigator.pop(context, AttachSource.url),
-            ),
-          ]),
-        ),
-      ]),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -369,27 +413,36 @@ class _SourceRow extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 64),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(T.rMd)),
-                  child: Icon(icon, size: 19, color: s.accent.main),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(label, style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(sub, style: Typo.meta(ar: s.rtl)),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: s.accent.bg, borderRadius: BorderRadius.circular(AppRadii.md)),
+                    child: Icon(icon, size: 19, color: s.accent.main),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: Typo.bodySm(ar: s.rtl)
+                              .copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(sub, style: Typo.meta(ar: s.rtl)),
+                        ),
+                      ],
                     ),
-                  ]),
-                ),
-                const SizedBox(width: 8),
-                Chevron(rtl: s.rtl, size: 16),
-              ]),
+                  ),
+                  const SizedBox(width: 8),
+                  Chevron(rtl: s.rtl, size: 16),
+                ],
+              ),
             ),
           ),
         ),
@@ -398,7 +451,7 @@ class _SourceRow extends StatelessWidget {
 
 /// Claude Design `NoteAttach` camera row under a note field.
 class NotePhotoAttach extends StatelessWidget {
-  const NotePhotoAttach({super.key, required this.photo, required this.onChanged});
+  const NotePhotoAttach({required this.photo, required this.onChanged, super.key});
 
   final PickedAttach? photo;
   final ValueChanged<PickedAttach?> onChanged;
@@ -421,19 +474,24 @@ class NotePhotoAttach extends StatelessWidget {
         },
         // `.photo-add` — 1.5px **dashed** --balsm-border-strong, radius-md.
         child: DashedBorder(
-          color: T.borderStrong,
+          color: AppColors.borderStrong,
           strokeWidth: 1.5,
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(T.rMd),
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadii.md),
             ),
-            child: Row(children: [
-              const Icon(LucideIcons.camera, size: 20, color: T.fg3),
-              const SizedBox(width: 12),
-              Text(s.strings.settings.add_photo, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-            ]),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.camera, size: 20, color: AppColors.textTertiary),
+                const SizedBox(width: 12),
+                Text(
+                  s.strings.settings.add_photo,
+                  style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -444,11 +502,11 @@ class NotePhotoAttach extends StatelessWidget {
 /// Claude Design upload dropzone (camera / files / paste URL).
 class UploadDropzone extends StatelessWidget {
   const UploadDropzone({
-    super.key,
     required this.attach,
     required this.url,
     required this.onAttach,
     required this.onUrl,
+    super.key,
     this.takePhotoLabel,
     this.fromFilesLabel,
     this.orPasteLabel,
@@ -477,102 +535,111 @@ class UploadDropzone extends StatelessWidget {
     }
     // Design dropzone — 1.5px **dashed** --balsm-border-strong, radius-md.
     return DashedBorder(
-      color: T.borderStrong,
+      color: AppColors.borderStrong,
       strokeWidth: 1.5,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 26, 16, 16),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 26, 16, 16),
         decoration: BoxDecoration(
-          color: T.cream50,
-          borderRadius: BorderRadius.circular(T.rMd),
+          color: AppColors.cream50,
+          borderRadius: BorderRadius.circular(AppRadii.md),
         ),
-        child: Column(children: [
-          const Icon(LucideIcons.uploadCloud, size: 28, color: T.fg3),
-          if (help != null) ...[
+        child: Column(
+          children: [
+            const Icon(LucideIcons.uploadCloud, size: 28, color: AppColors.textTertiary),
+            if (help case final help?) ...[
+              const SizedBox(height: 12),
+              Text(help, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
+            ],
             const SizedBox(height: 12),
-            Text(help!, textAlign: TextAlign.center, style: Typo.meta(ar: s.rtl)),
-          ],
-          const SizedBox(height: 12),
-          // Wrap, not Row: three labels at the largest text scale — and in
-          // Arabic, which runs longer — overflow a single line on a small phone.
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 10,
-            runSpacing: 8,
-            children: [
-              PButton(
-                takePhotoLabel ?? s.strings.meds.rx_take_photo,
-                icon: LucideIcons.camera,
-                variant: BtnVariant.soft,
-                size: BtnSize.sm,
-                accent: s.accent,
-                ar: s.rtl,
-                onTap: () async {
-                  final picked = await pickImageAttach(camera: true);
-                  if (picked != null) onAttach(picked);
-                },
+            // Wrap, not Row: three labels at the largest text scale — and in
+            // Arabic, which runs longer — overflow a single line on a small phone.
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                PButton(
+                  takePhotoLabel ?? s.strings.meds.rx_take_photo,
+                  icon: LucideIcons.camera,
+                  variant: BtnVariant.soft,
+                  size: BtnSize.sm,
+                  accent: s.accent,
+                  ar: s.rtl,
+                  onTap: () async {
+                    final picked = await pickImageAttach(camera: true);
+                    if (picked != null) onAttach(picked);
+                  },
+                ),
+                // The photo library is a separate source from Files: on iOS the
+                // document picker cannot see Photos, so a prescription
+                // photographed earlier was unreachable without this.
+                PButton(
+                  s.strings.meds.rx_from_gallery,
+                  icon: LucideIcons.image,
+                  variant: BtnVariant.secondary,
+                  size: BtnSize.sm,
+                  ar: s.rtl,
+                  onTap: () async {
+                    final picked = await pickImageAttach(camera: false);
+                    if (picked != null) onAttach(picked);
+                  },
+                ),
+                PButton(
+                  fromFilesLabel ?? s.strings.meds.rx_from_files,
+                  icon: LucideIcons.folder,
+                  variant: BtnVariant.secondary,
+                  size: BtnSize.sm,
+                  ar: s.rtl,
+                  onTap: () async {
+                    final picked = await pickFileAttach();
+                    if (picked != null) onAttach(picked);
+                  },
+                ),
+              ],
+            ),
+            if (orPasteLabel case final orPasteLabel?) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: AppColors.ink100)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      orPasteLabel,
+                      style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textHint),
+                    ),
+                  ),
+                  const Expanded(child: Divider(color: AppColors.ink100)),
+                ],
               ),
-              // The photo library is a separate source from Files: on iOS the
-              // document picker cannot see Photos, so a prescription
-              // photographed earlier was unreachable without this.
-              PButton(
-                s.strings.meds.rx_from_gallery,
-                icon: LucideIcons.image,
-                variant: BtnVariant.secondary,
-                size: BtnSize.sm,
-                ar: s.rtl,
-                onTap: () async {
-                  final picked = await pickImageAttach(camera: false);
-                  if (picked != null) onAttach(picked);
-                },
-              ),
-              PButton(
-                fromFilesLabel ?? s.strings.meds.rx_from_files,
-                icon: LucideIcons.folder,
-                variant: BtnVariant.secondary,
-                size: BtnSize.sm,
-                ar: s.rtl,
-                onTap: () async {
-                  final picked = await pickFileAttach();
-                  if (picked != null) onAttach(picked);
-                },
+              const SizedBox(height: 8),
+              TextField(
+                textDirection: TextDirection.ltr,
+                onChanged: onUrl,
+                style: Typo.body().copyWith(color: AppColors.textPrimary, fontSize: FontSizes.subhead),
+                decoration: InputDecoration(
+                  hintText: urlHint,
+                  hintStyle: Typo.body().copyWith(color: AppColors.textHint, fontSize: FontSizes.subhead),
+                  filled: true,
+                  fillColor: AppColors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderSide: BorderSide(color: s.accent.main, width: 1.5),
+                  ),
+                ),
               ),
             ],
-          ),
-          if (orPasteLabel != null) ...[
-            const SizedBox(height: 14),
-            Row(children: [
-              const Expanded(child: Divider(color: T.ink100)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(orPasteLabel!,
-                    style: Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg4)),
-              ),
-              const Expanded(child: Divider(color: T.ink100)),
-            ]),
-            const SizedBox(height: 8),
-            TextField(
-              textDirection: TextDirection.ltr,
-              onChanged: onUrl,
-              style: Typo.body(ar: false).copyWith(color: T.fg1, fontSize: FS.lg),
-              decoration: InputDecoration(
-                hintText: urlHint,
-                hintStyle: Typo.body(ar: false).copyWith(color: T.fg4, fontSize: FS.lg),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(T.rMd),
-                    borderSide: const BorderSide(color: T.border, width: 1.5)),
-                enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(T.rMd),
-                    borderSide: const BorderSide(color: T.border, width: 1.5)),
-                focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(T.rMd),
-                    borderSide: BorderSide(color: s.accent.main, width: 1.5)),
-              ),
-            ),
           ],
-        ]),
+        ),
       ),
     );
   }
@@ -586,38 +653,40 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(T.rMd),
-        child: Image.memory(
-          bytes,
-          width: double.infinity,
-          height: height,
-          fit: BoxFit.cover,
-          // Decode to the box, not to the sensor. A phone-camera capture is
-          // ~12 MP — about 48 MB once decoded — for a 130pt strip. Only one
-          // axis is given, so the aspect ratio is preserved.
-          cacheHeight: (height * MediaQuery.devicePixelRatioOf(context)).round(),
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: Image.memory(
+            bytes,
+            width: double.infinity,
+            height: height,
+            fit: BoxFit.cover,
+            // Decode to the box, not to the sensor. A phone-camera capture is
+            // ~12 MP — about 48 MB once decoded — for a 130pt strip. Only one
+            // axis is given, so the aspect ratio is preserved.
+            cacheHeight: (height * MediaQuery.devicePixelRatioOf(context)).round(),
+          ),
         ),
-      ),
-      Positioned(
-        top: 8,
-        right: 8,
-        child: Material(
-          color: const Color(0x8C1A1A17),
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onClear,
-            child: const SizedBox(
-              width: 30,
-              height: 30,
-              child: Icon(LucideIcons.x, size: 15, color: Colors.white),
+        PositionedDirectional(
+          top: 8,
+          end: 8,
+          child: Material(
+            color: AppColors.scrimHeavy,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onClear,
+              child: const SizedBox(
+                width: 30,
+                height: 30,
+                child: Icon(LucideIcons.x, size: 15, color: AppColors.white),
+              ),
             ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -630,29 +699,33 @@ class _FileChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 8, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(T.rLg),
-        border: Border.all(color: T.border),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Row(children: [
-        Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: T.hueViolet50, borderRadius: BorderRadius.circular(T.rMd)),
-          child: const Icon(LucideIcons.fileText, size: 20, color: T.hueViolet),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(name,
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: AppColors.hueViolet50, borderRadius: BorderRadius.circular(AppRadii.md)),
+            child: const Icon(LucideIcons.fileText, size: 20, color: AppColors.hueViolet),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600)),
-        ),
-        IconButton(onPressed: onClear, icon: const Icon(LucideIcons.x, size: 16, color: T.fg4)),
-      ]),
+              style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          IconButton(onPressed: onClear, icon: const Icon(LucideIcons.x, size: 16, color: AppColors.textHint)),
+        ],
+      ),
     );
   }
 }
@@ -664,15 +737,16 @@ class _FileChip extends StatelessWidget {
 /// the widget. A family provider caches per path, dedupes concurrent readers,
 /// and `autoDispose` drops the plaintext from memory as soon as nothing is
 /// showing it — which is what we want for PHI.
-final vaultBlobProvider = FutureProvider.autoDispose.family<Uint8List?, String>(
+final FutureProviderFamily<Uint8List?, String> vaultBlobProvider =
+    FutureProvider.autoDispose.family<Uint8List?, String>(
   (ref, path) => ref.watch(userFileStoreProvider).read(path),
 );
 
 /// Renders an encrypted vault image. Bytes are never logged.
 class VaultImage extends ConsumerWidget {
   const VaultImage({
-    super.key,
     required this.path,
+    super.key,
     this.height = 180,
     this.fit = BoxFit.cover,
     this.borderRadius,
@@ -684,15 +758,15 @@ class VaultImage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final radius = borderRadius ?? BorderRadius.circular(T.rLg);
+    final radius = borderRadius ?? BorderRadius.circular(AppRadii.lg);
     final placeholder = Container(
       height: height ?? 180,
-      decoration: BoxDecoration(color: T.cream100, borderRadius: radius),
+      decoration: BoxDecoration(color: AppColors.cream100, borderRadius: radius),
     );
     // A failed decrypt shows the placeholder rather than an error surface: the
     // caller already frames this as an attachment, and the reason is not
     // something to render over PHI.
-    final bytes = ref.watch(vaultBlobProvider(path)).valueOrNull;
+    final bytes = ref.watch(vaultBlobProvider(path)).value;
     if (bytes == null) return placeholder;
     final h = height;
     return ClipRRect(

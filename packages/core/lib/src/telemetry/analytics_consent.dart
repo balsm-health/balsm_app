@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
+import '../../core.dart' show PostHogAnalyticsLogger;
 import '../data_source/key_value_data_source.dart';
 import '../data_source/module_preferences.dart';
+import 'posthog_analytics_logger.dart' show PostHogAnalyticsLogger;
 
 /// Product analytics is ON until the patient turns it off (opt-OUT model) —
 /// Profile → Privacy & data → "Anonymous analytics".

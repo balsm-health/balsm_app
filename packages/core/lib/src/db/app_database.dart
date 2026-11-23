@@ -8,7 +8,7 @@ import 'database_connection_io.dart' if (dart.library.js_interop) 'database_conn
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [])
+@DriftDatabase()
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -76,12 +76,15 @@ class AppDatabase extends _$AppDatabase {
           // before the patches) would fail with "no such column".
           await customStatement('CREATE INDEX IF NOT EXISTS idx_medications_profile ON medications(health_profile_id)');
           await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)');
+            'CREATE INDEX IF NOT EXISTS idx_health_record_profile ON health_record(health_profile_id)',
+          );
           await customStatement('CREATE INDEX IF NOT EXISTS idx_sync_outbox_user ON sync_outbox(user_id, id)');
           await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_prescription_profile ON prescription(health_profile_id, issued_at)');
+            'CREATE INDEX IF NOT EXISTS idx_prescription_profile ON prescription(health_profile_id, issued_at)',
+          );
           await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_health_profile_user ON health_profile(user_id, is_self)');
+            'CREATE INDEX IF NOT EXISTS idx_health_profile_user ON health_profile(user_id, is_self)',
+          );
           await runProfileAnchorBackfill();
         },
       );
@@ -123,7 +126,8 @@ class AppDatabase extends _$AppDatabase {
     await _ensureColumn('member_group', 'system_key', 'TEXT');
     if (addedIsSelf) {
       await customStatement(
-          'UPDATE health_profile SET is_self = 1 WHERE rowid IN (SELECT MIN(rowid) FROM health_profile GROUP BY user_id)');
+        'UPDATE health_profile SET is_self = 1 WHERE rowid IN (SELECT MIN(rowid) FROM health_profile GROUP BY user_id)',
+      );
       await customStatement("UPDATE health_profile SET kind = CASE WHEN is_self = 1 THEN 'self' ELSE 'dependent' END");
     }
   }
@@ -147,12 +151,12 @@ class AppDatabase extends _$AppDatabase {
     ''');
     if (hasTissue) {
       await customStatement(
-        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        'INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) '
         "SELECT check_in_id, region_id, COALESCE(tissue_id, 'muscle') FROM check_in_pain_region",
       );
     } else {
       await customStatement(
-        "INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) "
+        'INSERT INTO check_in_pain_region_new (check_in_id, region_id, tissue_id) '
         "SELECT check_in_id, region_id, 'muscle' FROM check_in_pain_region",
       );
     }
@@ -672,6 +676,35 @@ const _phiSchema = <String>[
     PRIMARY KEY (check_in_id, region_id, tissue_id)
   )''',
   'CREATE INDEX IF NOT EXISTS idx_check_in_profile ON check_in(health_profile_id)',
+  // Who added, edited or shared a patient entry other than the patient
+  // (records, medications, readings), and the patient's own later edits of
+  // such an entry. PHI (people's names), on-device only. One ledger for every
+  // kind of entry: `entry_kind` is the owning table, `entry_id` its row, and
+  // each module reads only its own kind (`EntryProvenanceStore`). No foreign
+  // key: `INSERT OR REPLACE` on the entry tables would cascade it away.
+  //
+  // Append-only, like dose_events: a stored event is never changed. Only
+  // `health_profile_id` may move, so an account merge can re-point rows to
+  // the surviving self profile; rows go with their profile or account when
+  // that is discarded.
+  '''
+  CREATE TABLE IF NOT EXISTS entry_provenance (
+    id TEXT PRIMARY KEY,
+    health_profile_id TEXT NOT NULL,
+    entry_kind TEXT NOT NULL,
+    entry_id TEXT NOT NULL,
+    actor_kind TEXT NOT NULL,
+    actor_name TEXT,
+    care_provider_id TEXT,
+    action TEXT NOT NULL,
+    occurred_at TEXT NOT NULL
+  )''',
+  'CREATE INDEX IF NOT EXISTS idx_entry_provenance_entry ON entry_provenance(entry_kind, health_profile_id, entry_id)',
+  '''
+  CREATE TRIGGER IF NOT EXISTS entry_provenance_no_update
+  BEFORE UPDATE OF id, entry_kind, entry_id, actor_kind, actor_name, care_provider_id, action, occurred_at
+  ON entry_provenance
+  BEGIN SELECT RAISE(ABORT, 'entry_provenance is append-only'); END''',
   // Disclosure/consent acceptance ledger (disclosure module). PHI-free —
   // records which disclosure version the user accepted and the jurisdiction
   // context at accept time. One row per (disclosure_id, version).

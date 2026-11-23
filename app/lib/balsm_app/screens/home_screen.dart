@@ -1,34 +1,36 @@
 import 'package:core/core.dart';
 import 'package:emergency_card/emergency_card.dart';
 import 'package:family/family.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:medications/medications.dart';
-import 'package:records/records.dart';
 import 'package:profile/profile.dart';
+import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
-import 'report_flow.dart';
-import 'day_records_screen.dart';
-import 'home_widgets.dart';
-import 'records_screen.dart';
-import '../care/care_entity.dart';
+
 import '../app_state.dart';
+import '../care/care_entity.dart';
 import '../flags.dart';
-import '../routes.dart';
 import '../kit.dart';
 import '../responsive.dart';
-import '../tokens.dart';
+import '../routes.dart';
 import '../widgets/account_switcher.dart';
-import 'checkin_shared.dart';
-import 'personal_details.dart';
-import 'profile_subscreens.dart';
 import 'care_team_screen.dart';
+import 'checkin_shared.dart';
+import 'day_records_screen.dart';
 import 'family/family_account_sheet.dart';
-import 'family/family_home_card.dart';
-import 'family/member_screen.dart';
 import 'family/profile_bar.dart';
+import 'home_widgets.dart';
+import 'member_home.dart';
+import 'personal_details.dart';
 import 'pregnancy/pregnancy_home_card.dart';
+import 'profile_subscreens.dart';
+import 'records_screen.dart';
+import 'report_flow.dart';
+
+// The first name under the greeting, between heading and subhead.
+const _greetingNameFontSize = 19.0;
 
 /// Home tab — P001 patient-MVP scope.
 ///
@@ -44,7 +46,7 @@ import 'pregnancy/pregnancy_home_card.dart';
 ///
 /// With Mother & Child on (home-mc.jsx), the profile bar sits under the
 /// header and, while a family member is the active profile, the member's
-/// home (`MCMemberHome`) replaces the patient's own cards.
+/// Home (`HomeMemberV2`, [MemberHomeBody]) replaces the patient's own cards.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -53,7 +55,7 @@ class HomeScreen extends ConsumerWidget {
     final s = AppScope.of(context);
     // Real account summary → greeting name. Null while loading / signed out;
     // the greeting label still renders, just without a name.
-    final summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final summary = ref.watch(accountSummaryProvider).value;
     final family = s.flags.isOn(AppFlags.motherChild);
     final member = family ? null : s.activeFamilyMember;
     final activeMember = family ? ref.watch(activeFamilyMemberProvider) : null;
@@ -64,126 +66,143 @@ class HomeScreen extends ConsumerWidget {
     // they were the patient's own.
     final displayName = (summary?.displayName ?? '').trim();
     final firstName = displayName.split(' ').first;
-    const avatarColor = T.hueAqua;
+    const avatarColor = AppColors.hueAqua;
 
     // Under a transparent status bar the scrolled cards ran beneath the
     // clock and icons; a strip in the screen's colour keeps them clear.
     final statusBar = MediaQuery.paddingOf(context).top;
-    return Stack(children: [
-      ContentColumn(
-        maxWidth: T.contentMax,
-        child: LayoutBuilder(builder: (context, box) {
-          // `.hv2 { --g }` — 16 on a phone, 24 from 600; two columns from 840.
-          final g = box.maxWidth >= 600 ? 24.0 : 16.0;
-          final wide = box.maxWidth >= 840;
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const PadTop(),
+    return Stack(
+      children: [
+        ContentColumn(
+          maxWidth: BalsmWindow.appContentMax,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              // `.hv2 { --g }` — 16 on a phone, 24 from 600; two columns from 840.
+              final g = box.maxWidth >= 600 ? 24.0 : 16.0;
+              final wide = box.maxWidth >= 840;
+              return ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  const PadTop(),
 
-              // App bar: avatar (account switcher) + greeting. The design keeps
-              // the v1 header (`BALSM_V1_HEADER`).
-              AppBarRow(children: [
-                _AvatarButton(
-                  initials: accountInitials(displayName),
-                  color: avatarColor,
-                  showBadge: !family && s.extraFamily.isNotEmpty,
-                  onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
-                    if (firstName.isNotEmpty) Text(firstName, style: Typo.heading(ar: s.rtl).copyWith(fontSize: FS.xl)),
-                  ]),
-                ),
-                // Bell hidden: it had an empty onTap, so it announced itself to a
-                // screen reader as a working button and then did nothing. Restore
-                // it with the screen it is meant to open.
-              ]),
+                  // App bar (Mother and Child canvas, Home header): the 44px
+                  // avatar with its status dot opens the account switcher, then
+                  // "Good morning" over the account holder's first name. The
+                  // canvas ends the row with a bell; it is left out because the
+                  // app has no reminders or notifications screen for it to open,
+                  // and a button that does nothing tells a screen reader it works.
+                  // The same header while a family member is the active profile
+                  // (home-mc.jsx `HomeMemberV2` keeps the v1 header): the profile
+                  // bar right under it says whose record is on screen.
+                  AppBarRow(
+                    children: [
+                      _AvatarButton(
+                        initials: accountInitials(displayName),
+                        color: avatarColor,
+                        onTap: () => family ? showFamilyAccountSheet(context) : showAccountSwitcher(context),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(child: HomeGreeting(firstName: firstName)),
+                    ],
+                  ),
 
-              // `UX Enhancement Screens.html` — "Household · active-account
-              // accent": the design keeps whose-data-is-this permanently visible.
-              // Here it says the true thing: the member is selected, but their
-              // record is not on this device yet, so this is still your own.
-              // Without Mother & Child only. With it the data really re-points,
-              // and the profile bar below says whose it is.
-              if (member != null) _ViewingBanner(member: member),
+                  // `UX Enhancement Screens.html` — "Household · active-account
+                  // accent": the design keeps whose-data-is-this permanently visible.
+                  // Here it says the true thing: the member is selected, but their
+                  // record is not on this device yet, so this is still your own.
+                  // Without Mother & Child only. With it the data really re-points,
+                  // and the profile bar below says whose it is.
+                  if (member != null) _ViewingBanner(member: member),
 
-              if (family) const ProfileBar(family: true),
+                  if (family) const ProfileBar(family: true),
 
-              if (activeMember != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                  child: MemberBody(member: activeMember),
-                )
-              else ...[
-                const AwayBanner(),
+                  if (activeMember != null) ...[
+                    // `MCHomeCards member`: her pregnancy card, when one is
+                    // tracked on her profile; never the "start pregnancy" prompt.
+                    PregnancyHomeCards(gutter: g, mother: activeMember.id),
+                    Padding(
+                      padding: EdgeInsetsDirectional.symmetric(horizontal: g),
+                      child: MemberHomeBody(member: activeMember, wide: wide),
+                    ),
+                  ] else ...[
+                    const AwayBanner(),
 
-                // The pregnancy card / "start pregnancy" prompt (design
-                // `MCHomeCards`), on the patient's own profile.
-                if (family) PregnancyHomeCards(gutter: g),
+                    // The pregnancy card / "start pregnancy" prompt (design
+                    // `MCHomeCards`), on the patient's own profile.
+                    if (family) PregnancyHomeCards(gutter: g),
 
-                // Family card: tap 1 of Home → Family → a member's card.
-                if (family) FamilyHomeCard(gutter: g),
+                    Padding(
+                      padding: EdgeInsetsDirectional.symmetric(horizontal: g),
+                      child: wide
+                          ? const Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 115,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      _CheckInSection(),
+                                      _NudgeSection(),
+                                      _LatestMetrics(),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(width: 16),
+                                Expanded(
+                                  flex: 100,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      _Shortcuts(row: true),
+                                      _RecentReports(),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _CheckInSection(),
+                                // Onboarding nudges — driven by real P001 providers
+                                // (handle / emergency card / first medication). Each
+                                // stays hidden until its provider resolves, so
+                                // signed-out never flashes a wrong nudge.
+                                _NudgeSection(),
+                                _LatestMetrics(),
+                                SizedBox(height: 10),
+                                _Shortcuts(),
+                                _RecentReports(),
+                              ],
+                            ),
+                    ),
+                  ],
 
-                Padding(
-                  padding: EdgeInsetsDirectional.symmetric(horizontal: g),
-                  child: wide
-                      ? const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Expanded(
-                            flex: 115,
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                              _CheckInSection(),
-                              _NudgeSection(),
-                              _LatestMetrics(),
-                            ]),
-                          ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            flex: 100,
-                            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                              _Shortcuts(row: true),
-                              _RecentReports(),
-                            ]),
-                          ),
-                        ])
-                      : const Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                          _CheckInSection(),
-                          // Onboarding nudges — driven by real P001 providers
-                          // (handle / emergency card / first medication). Each
-                          // stays hidden until its provider resolves, so
-                          // signed-out never flashes a wrong nudge.
-                          _NudgeSection(),
-                          _LatestMetrics(),
-                          SizedBox(height: 10),
-                          _Shortcuts(),
-                          _RecentReports(),
-                        ]),
-                ),
-              ],
-
-              const SizedBox(height: 28),
-            ],
-          );
-        }),
-      ),
-      if (statusBar > 0)
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: statusBar,
-          child: ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
+                  const SizedBox(height: 28),
+                ],
+              );
+            },
+          ),
         ),
-    ]);
+        if (statusBar > 0)
+          PositionedDirectional(
+            top: 0,
+            start: 0,
+            end: 0,
+            height: statusBar,
+            child: ColoredBox(color: Theme.of(context).scaffoldBackgroundColor),
+          ),
+      ],
+    );
   }
 }
 
 /// On-device emergency-card snapshot for the home nudge. Same seam the
 /// emergency/personal-details port uses; `null` when signed out or before a
 /// profile exists.
-final _homeEmergencySnapshotProvider = FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
+final FutureProvider<EmergencyCardSnapshot?> _homeEmergencySnapshotProvider =
+    FutureProvider.autoDispose<EmergencyCardSnapshot?>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return null;
   return ref.watch(emergencySnapshotReaderProvider).readSnapshot();
@@ -199,46 +218,48 @@ class _NudgeSection extends ConsumerWidget {
 
     // Handle: hide once the account summary carries one.
     final summaryAsync = ref.watch(accountSummaryProvider);
-    final needsHandle = summaryAsync.hasValue && summaryAsync.valueOrNull?.handle == null;
+    final needsHandle = summaryAsync.hasValue && summaryAsync.value?.handle == null;
 
     // Emergency card: nudge until the on-device snapshot has any data.
     final snapshotAsync = ref.watch(_homeEmergencySnapshotProvider);
-    final snapshot = snapshotAsync.valueOrNull;
+    final snapshot = snapshotAsync.value;
     final needsEmergencyCard = snapshotAsync.hasValue && (snapshot == null || !snapshot.hasAnyData);
 
     // First medication: nudge while the med list is empty.
     final medsAsync = ref.watch(medicationListProvider);
-    final needsFirstMedication = medsAsync.hasValue && (medsAsync.valueOrNull?.isEmpty ?? false);
+    final needsFirstMedication = medsAsync.hasValue && (medsAsync.value?.isEmpty ?? false);
 
-    return Column(children: [
-      if (needsHandle)
-        _Shortcut(
-          icon: LucideIcons.atSign,
-          iconBg: T.hueMint50,
-          iconFg: T.hueMint,
-          title: s.strings.home.nudge_handle,
-          subtitle: s.strings.home.nudge_handle_sub(s.gender),
-          onTap: () => openPersonalDetails(context),
-        ),
-      if (needsEmergencyCard)
-        _Shortcut(
-          icon: LucideIcons.shieldAlert,
-          iconBg: T.hueAqua50,
-          iconFg: T.hueAqua,
-          title: s.strings.home.nudge_ec(s.gender),
-          subtitle: s.strings.home.nudge_ec_sub(s.gender),
-          onTap: () => openEmergency(context),
-        ),
-      if (needsFirstMedication)
-        _Shortcut(
-          icon: LucideIcons.pill,
-          iconBg: T.hueViolet50,
-          iconFg: T.hueViolet,
-          title: s.strings.home.nudge_med(s.gender),
-          subtitle: s.strings.home.nudge_med_sub,
-          onTap: () => s.setTab(AppTab.meds),
-        ),
-    ]);
+    return Column(
+      children: [
+        if (needsHandle)
+          _Shortcut(
+            icon: LucideIcons.atSign,
+            iconBg: AppColors.hueMint50,
+            iconFg: AppColors.hueMint,
+            title: s.strings.home.nudge_handle,
+            subtitle: s.strings.home.nudge_handle_sub(s.gender),
+            onTap: () => openPersonalDetails(context),
+          ),
+        if (needsEmergencyCard)
+          _Shortcut(
+            icon: LucideIcons.shieldAlert,
+            iconBg: AppColors.hueAqua50,
+            iconFg: AppColors.hueAqua,
+            title: s.strings.home.nudge_ec(s.gender),
+            subtitle: s.strings.home.nudge_ec_sub(s.gender),
+            onTap: () => openEmergency(context),
+          ),
+        if (needsFirstMedication)
+          _Shortcut(
+            icon: LucideIcons.pill,
+            iconBg: AppColors.hueViolet50,
+            iconFg: AppColors.hueViolet,
+            title: s.strings.home.nudge_med(s.gender),
+            subtitle: s.strings.home.nudge_med_sub,
+            onTap: () => s.setTab(AppTab.meds),
+          ),
+      ],
+    );
   }
 }
 
@@ -246,57 +267,56 @@ class _AvatarButton extends StatelessWidget {
   const _AvatarButton({
     required this.initials,
     required this.color,
-    required this.showBadge,
     required this.onTap,
   });
   final String initials;
   final Color color;
-  final bool showBadge;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return Pressable(
-      onTap: onTap,
-      scale: 0.95,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Avatar(initials: initials, color: color, ar: s.rtl),
-          if (showBadge)
+    return Semantics(
+      button: true,
+      label: s.strings.home.a11y_accounts,
+      excludeSemantics: true,
+      child: Pressable(
+        onTap: onTap,
+        scale: 0.95,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Avatar(initials: initials, color: color, fontSize: FontSizes.body, ar: s.rtl),
+            // The canvas's status dot: 12px in the accent, ringed in the
+            // screen colour so it reads as cut out of the circle.
             PositionedDirectional(
-              bottom: -1,
-              end: -1,
+              bottom: 0,
+              end: 0,
               child: Container(
-                width: 14,
-                height: 14,
-                alignment: Alignment.center,
+                width: 12,
+                height: 12,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: s.accent.main,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(color: s.accent.main, shape: BoxShape.circle),
+                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _Shortcut extends StatelessWidget {
-  const _Shortcut(
-      {required this.icon,
-      required this.iconBg,
-      required this.iconFg,
-      required this.title,
-      required this.subtitle,
-      required this.onTap});
+  const _Shortcut({
+    required this.icon,
+    required this.iconBg,
+    required this.iconFg,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
   final IconData icon;
   final Color iconBg;
   final Color iconFg;
@@ -310,18 +330,26 @@ class _Shortcut extends StatelessWidget {
       margin: const EdgeInsetsDirectional.only(top: 14),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       onTap: onTap,
-      child: Row(children: [
-        IconSquare(icon, bg: iconBg, fg: iconFg),
-        const SizedBox(width: 13),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: T.fg1)),
-            const SizedBox(height: 1),
-            Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: T.fg3)),
-          ]),
-        ),
-        Chevron(rtl: s.rtl),
-      ]),
+      child: Row(
+        children: [
+          IconSquare(icon, bg: iconBg, fg: iconFg),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 1),
+                Text(subtitle, style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textTertiary)),
+              ],
+            ),
+          ),
+          Chevron(rtl: s.rtl),
+        ],
+      ),
     );
   }
 }
@@ -334,7 +362,7 @@ class _CheckInSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
+    final history = ref.watch(checkInHistoryProvider).value ?? const <CheckIn>[];
     return HomeCheckInCard(
       done: todayCheckIn(history) != null,
       streak: checkInStreak(history),
@@ -356,14 +384,14 @@ class _Shortcuts extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final team = (ref.watch(careTeamProvider).valueOrNull ?? const <CareProvider>[]).length;
-    final nearby = (ref.watch(careDirectoryProvider).valueOrNull?.entities ?? const <CareEntity>[]).length;
-    final records = (ref.watch(recordListProvider).valueOrNull ?? const <RecordDocument>[]).length;
+    final team = (ref.watch(careTeamProvider).value ?? const <CareProvider>[]).length;
+    final nearby = (ref.watch(careDirectoryProvider).value?.entities ?? const <CareEntity>[]).length;
+    final records = (ref.watch(recordListProvider).value ?? const <RecordDocument>[]).length;
     final tiles = [
       HomeShortcutTile(
         icon: LucideIcons.stethoscope,
-        iconBg: T.hueMint50,
-        iconFg: T.hueMint600,
+        iconBg: AppColors.hueMint50,
+        iconFg: AppColors.hueMint600,
         label: s.strings.profile.p_care,
         count: team,
         unit: s.strings.home.sc_providers,
@@ -372,8 +400,8 @@ class _Shortcuts extends ConsumerWidget {
       ),
       HomeShortcutTile(
         icon: LucideIcons.mapPin,
-        iconBg: T.hueBlue50,
-        iconFg: T.hueBlue,
+        iconBg: AppColors.hueBlue50,
+        iconFg: AppColors.hueBlue,
         label: s.strings.care.map_nearby,
         count: nearby,
         unit: s.strings.home.sc_places,
@@ -382,8 +410,8 @@ class _Shortcuts extends ConsumerWidget {
       ),
       HomeShortcutTile(
         icon: LucideIcons.folderHeart,
-        iconBg: T.hueViolet50,
-        iconFg: T.hueViolet,
+        iconBg: AppColors.hueViolet50,
+        iconFg: AppColors.hueViolet,
         label: s.strings.home.sc_records,
         count: records,
         unit: s.strings.records.rec_documents,
@@ -392,14 +420,19 @@ class _Shortcuts extends ConsumerWidget {
       ),
     ];
     if (row) {
-      return Column(children: [
-        for (final (i, t) in tiles.indexed) ...[if (i > 0) const SizedBox(height: 8), t],
-      ]);
+      return Column(
+        children: [
+          for (final (i, t) in tiles.indexed) ...[if (i > 0) const SizedBox(height: 8), t],
+        ],
+      );
     }
     return IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        for (final (i, t) in tiles.indexed) ...[if (i > 0) const SizedBox(width: 8), Expanded(child: t)],
-      ]),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, t) in tiles.indexed) ...[if (i > 0) const SizedBox(width: 8), Expanded(child: t)],
+        ],
+      ),
     );
   }
 }
@@ -412,25 +445,32 @@ class _LatestMetrics extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
+    final history = ref.watch(checkInHistoryProvider).value ?? const <CheckIn>[];
     if (history.isEmpty) return const SizedBox.shrink();
     final r = LatestReadings.from(history);
     final glucose = r.glucose;
     final hasBp = r.systolic != null && r.diastolic != null;
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      HomeSectionHead(s.strings.checkin.latest,
-          action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends)),
-      HomeVitalsCard(
-        bp: hasBp ? '${r.systolic}/${r.diastolic}' : null,
-        bpHigh: hasBp && (r.systolic! >= 130 || r.diastolic! >= 85),
-        glucose: glucose?.toString(),
-        glucoseHigh: glucose != null && glucose >= 140,
-        spo2: r.spo2?.toString(),
-        mood: r.mood == null ? null : moodLabel(s, r.mood!.score),
-        pain: r.pain == null ? null : '${r.pain!.value}/10',
-      ),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HomeSectionHead(
+          s.strings.checkin.latest,
+          action: s.strings.common.see_all,
+          onAction: () => s.setTab(AppTab.trends),
+        ),
+        HomeVitalsCard(
+          bp: hasBp ? '${r.systolic}/${r.diastolic}' : null,
+          bpHigh: hasBp && VitalLimits.bloodPressureElevated(r.systolic!, r.diastolic!),
+          glucose: glucose?.toString(),
+          glucoseHigh:
+              glucose != null && VitalLimits.glucoseElevated(glucose, r.glucoseContext ?? GlucoseContext.random),
+          spo2: r.spo2?.toString(),
+          mood: switch (r.mood) { final mood? => moodLabel(s, mood.score), _ => null },
+          pain: r.pain == null ? null : '${r.pain!.value}/10',
+        ),
+      ],
+    );
   }
 }
 
@@ -443,25 +483,33 @@ class _RecentReports extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = AppScope.of(context);
-    final history = ref.watch(checkInHistoryProvider).valueOrNull ?? const <CheckIn>[];
+    final history = ref.watch(checkInHistoryProvider).value ?? const <CheckIn>[];
     if (history.isEmpty) return const SizedBox.shrink();
     final recent = groupCheckInsByDay(history).take(3).toList();
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      HomeSectionHead(s.strings.common.recent,
-          action: s.strings.common.see_all, onAction: () => s.setTab(AppTab.trends)),
-      PCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: recent.indexed
-              .map((e) => CheckInDayRow(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HomeSectionHead(
+          s.strings.common.recent,
+          action: s.strings.common.see_all,
+          onAction: () => s.setTab(AppTab.trends),
+        ),
+        PCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: recent.indexed
+                .map(
+                  (e) => CheckInDayRow(
                     day: e.$2,
                     first: e.$1 == 0,
                     onTap: () => DayRecordsScreen.open(context, e.$2),
-                  ))
-              .toList(),
+                  ),
+                )
+                .toList(),
+          ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -481,35 +529,69 @@ class _ViewingBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      margin: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 14),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: T.ink50,
-        borderRadius: BorderRadius.circular(T.rLg),
+        color: AppColors.ink50,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         // The member's own tone, as the design's 3px accent rule does.
         border: BorderDirectional(start: BorderSide(color: member.color, width: 3)),
       ),
-      child: Row(children: [
-        Icon(LucideIcons.users, size: 17, color: member.color),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(s.strings.home.viewing_member(member.name),
-                style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: T.fg1)),
-            const SizedBox(height: 2),
-            Text(s.strings.home.viewing_own_data(s.gender), style: Typo.meta(ar: s.rtl).copyWith(height: 1.4)),
-          ]),
-        ),
-        const SizedBox(width: 8),
-        PButton(
-          s.strings.home.viewing_switch_back,
-          variant: BtnVariant.ghost,
-          size: BtnSize.sm,
-          accent: s.accent,
-          ar: s.rtl,
-          onTap: () => s.selectFamilyMember(null),
-        ),
-      ]),
+      child: Row(
+        children: [
+          Icon(LucideIcons.users, size: 17, color: member.color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.strings.home.viewing_member(member.name),
+                  style: Typo.bodySm(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(s.strings.home.viewing_own_data(s.gender), style: Typo.meta(ar: s.rtl).copyWith(height: 1.4)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          PButton(
+            s.strings.home.viewing_switch_back,
+            variant: BtnVariant.ghost,
+            size: BtnSize.sm,
+            accent: s.accent,
+            ar: s.rtl,
+            onTap: () => s.selectFamilyMember(null),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The Home header's greeting: "Good morning" in meta size above the account
+/// holder's first name (19px bold, display face). With no name — a
+/// device-only account can have none — the greeting stands alone.
+class HomeGreeting extends StatelessWidget {
+  const HomeGreeting({required this.firstName, super.key});
+  final String firstName;
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final name = firstName.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(s.strings.home.greet, style: Typo.meta(ar: s.rtl)),
+        if (name.isNotEmpty)
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Typo.heading(ar: s.rtl).copyWith(fontSize: _greetingNameFontSize, height: 1.25),
+          ),
+      ],
     );
   }
 }

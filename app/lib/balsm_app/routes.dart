@@ -5,6 +5,8 @@
 /// typo is a compile error, not a silent fall-through to the default screen.
 library;
 
+import 'app_state.dart' show PatientAppState;
+
 /// Top-level shell routes ([PatientAppState.route]).
 abstract final class AppRoutes {
   /// First-run walkthrough (before anything else, once per install).
