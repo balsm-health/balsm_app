@@ -548,6 +548,13 @@ void _collect(Artifact artifact, String brand, String env, String appDir) {
     blockers.add('no "Production" server in ENVS; a prod build would fall back to the first one listed');
   } else if (!url.startsWith('https://')) {
     blockers.add('the Production server is not https ($url)');
+  } else if (_isPlaceholderHost(url)) {
+    // The tracked template (app/env/shared.example.json) points Production at
+    // api.example.com, and CI copies it when the SHARED_ENV_JSON secret is unset.
+    blockers.add(
+      'the Production server is a placeholder ($url): put the real API in app/env/shared.json '
+      '(CI: the SHARED_ENV_JSON secret)',
+    );
   }
 
   for (final e in defines.entries) {
@@ -908,4 +915,23 @@ Future<List<Device>> _androidDevices() async {
     );
   }
   return devices;
+}
+
+/// True for a host that can never be a real production API: the reserved
+/// example / test domains, localhost and loopback or emulator addresses.
+bool _isPlaceholderHost(String url) {
+  final host = Uri.tryParse(url)?.host.toLowerCase() ?? '';
+  if (host.isEmpty) return true;
+  const exact = {'localhost', '127.0.0.1', '0.0.0.0', '10.0.2.2', '::1'};
+  const suffixes = [
+    'example.com',
+    'example.org',
+    'example.net',
+    '.example',
+    '.test',
+    '.local',
+    '.localhost',
+    '.invalid',
+  ];
+  return exact.contains(host) || suffixes.any((s) => host == s.replaceFirst('.', '') || host.endsWith(s));
 }
