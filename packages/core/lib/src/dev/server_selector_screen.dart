@@ -1542,12 +1542,8 @@ class _DcToggle extends StatelessWidget {
 /// design's `DC_ENVS` palette (Local green · Dev blue · Staging amber · Prod red).
 class _EnvStyle {
   const _EnvStyle(this.dot, this.bg, this.fg, {this.isProd = false});
-  final Color dot;
-  final Color bg;
-  final Color fg;
-  final bool isProd;
 
-  static _EnvStyle of(String label) {
+  factory _EnvStyle.of(String label) {
     final l = label.toLowerCase();
     if (l.contains('local')) {
       return const _EnvStyle(AppColors.hueMint600, AppColors.hueMint50, AppColors.onSuccessBackground);
@@ -1563,6 +1559,11 @@ class _EnvStyle {
     }
     return const _EnvStyle(AppColors.ink600, AppColors.cream100, DevConsoleColors.panel);
   }
+
+  final Color dot;
+  final Color bg;
+  final Color fg;
+  final bool isProd;
 }
 
 /// States of the Dev Config connection check, per the design.

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 import '../../../self_report.dart' show SymptomDetail;
 import 'symptom_detail.dart' show SymptomDetail;
 
@@ -5,6 +7,7 @@ import 'symptom_detail.dart' show SymptomDetail;
 /// resolves from the i69n bundle (`symptom.<id>`). This is a fixed catalog —
 /// self-report is a journal, NOT a symptom checker, so the set is closed and
 /// carries no clinical semantics or advice.
+@immutable
 class SymptomId {
   const SymptomId(this.id);
 

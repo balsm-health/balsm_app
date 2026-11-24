@@ -3,14 +3,16 @@ import 'package:pregnancy/pregnancy.dart';
 
 /// Placeholder guidance only — no real content, nothing about a patient.
 WeeklyGuidance _guidance(String version) => WeeklyGuidance(
+      language: 'en',
       version: version,
-      source: const GuidanceText(en: 'Test source', ar: ''),
-      disclaimer: const GuidanceText(en: 'Test disclaimer', ar: 'تنبيه تجريبي'),
-      multiplesNote: const GuidanceText(en: 'Test multiples', ar: 'توائم تجريبي'),
+      source: 'Test source',
+      disclaimer: 'Test disclaimer',
+      multiplesNote: 'Test multiples',
       weeks: const [
-        GuidanceWeek(week: 4, title: GuidanceText(en: 'T4', ar: 'ع4'), body: GuidanceText(en: 'B4', ar: 'ن4')),
-        GuidanceWeek(week: 5, title: GuidanceText(en: 'T5', ar: 'ع5'), body: GuidanceText(en: 'B5', ar: 'ن5')),
+        GuidanceWeek(week: 4, title: 'T4', summary: 'B4'),
+        GuidanceWeek(week: 5, title: 'T5', summary: 'B5'),
       ],
+      labels: const {'sources_more': 'Sources ({n}) for week {week}'},
     );
 
 class _Source implements PregnancyGuidanceSource {
@@ -26,18 +28,15 @@ class _Source implements PregnancyGuidanceSource {
 }
 
 void main() {
-  group('GuidanceText', () {
-    test('picks the language, English when Arabic is missing', () {
-      const t = GuidanceText(en: 'Hello', ar: 'مرحبا');
-      expect(t.inLanguage('ar'), 'مرحبا');
-      expect(t.inLanguage('en'), 'Hello');
-      expect(const GuidanceText(en: 'Hello', ar: '').inLanguage('ar'), 'Hello');
-    });
+  test('WeeklyGuidance.label fills its placeholders, and is null for a label the content lacks', () {
+    final g = _guidance('v1');
+    expect(g.label('sources_more', {'n': 2, 'week': 5}), 'Sources (2) for week 5');
+    expect(g.label('tests_due'), isNull);
   });
 
   test('WeeklyGuidance.forWeek finds the week or null outside the content', () {
     final g = _guidance('v1');
-    expect(g.forWeek(5)!.title.en, 'T5');
+    expect(g.forWeek(5)!.title, 'T5');
     expect(g.forWeek(3), isNull);
     expect(g.forWeek(41), isNull);
   });

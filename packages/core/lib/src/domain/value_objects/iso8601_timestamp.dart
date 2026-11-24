@@ -1,3 +1,6 @@
+import 'package:meta/meta.dart';
+
+@immutable
 class Iso8601Timestamp {
   const Iso8601Timestamp._(this._ms);
 

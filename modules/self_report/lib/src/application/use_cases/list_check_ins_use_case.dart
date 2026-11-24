@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/src/providers/stream_provider.dart';
+import 'package:flutter_riverpod/misc.dart' show StreamProviderFamily;
 
 import '../../domain/aggregates/check_in.dart';
 import '../../infrastructure/drift/drift_check_ins_data_source.dart';

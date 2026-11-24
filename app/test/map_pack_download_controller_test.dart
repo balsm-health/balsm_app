@@ -37,7 +37,7 @@ MapPackResponse _pack({
 class _FakeCareDirectoryApi implements CareDirectoryApi {
   _FakeCareDirectoryApi(this.packsResult, {this.throws});
   List<MapPackResponse> packsResult;
-  Object? throws;
+  Exception? throws;
 
   @override
   Future<List<MapPackResponse>> packs(MapPacksQuery query, {CancelToken? cancelToken}) async {

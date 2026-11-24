@@ -11,6 +11,8 @@ class DeviceKeyPair {
 }
 
 /// Where the account's device key pair lives (the platform secure store).
+// Port interface: the platform secure store is bound at runtime and tests swap in an in-memory fake.
+// ignore: one_member_abstracts
 abstract class DeviceKeyStore {
   /// The stored key pair, created and stored on first use.
   Future<DeviceKeyPair> ensure();

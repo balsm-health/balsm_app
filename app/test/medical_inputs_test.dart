@@ -1,6 +1,5 @@
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/kit.dart';
-import 'package:app/balsm_app/screens/checkin_shared.dart';
 import 'package:app/balsm_app/screens/quick_log.dart';
 import 'package:app/balsm_app/widgets/num_pad.dart';
 import 'package:core/core.dart';

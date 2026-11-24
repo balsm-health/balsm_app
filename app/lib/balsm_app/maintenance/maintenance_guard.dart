@@ -15,7 +15,7 @@ import 'maintenance_widgets.dart';
 bool maintenancePaused(BuildContext context) {
   if (context.findAncestorWidgetOfExactType<UncontrolledProviderScope>() == null) return false;
   final container = ProviderScope.containerOf(context, listen: false);
-  if (!container.exists(maintenanceProvider)) return false;
+  if (!container.read(maintenanceProvider.exists)) return false;
   final status = container.read(maintenanceProvider);
   if (!status.pausesActions) return false;
   unawaited(showMaintenanceSheet(context, paused: true));

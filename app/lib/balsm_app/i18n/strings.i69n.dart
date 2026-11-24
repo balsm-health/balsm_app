@@ -1290,6 +1290,9 @@ class CommonStrings implements i69n.I69nMessageBundle {
   String get fam_self_add_manual => "That's your own name — family members are other people";
   String get fam_scan_invalid => "That isn't a Balsm profile code";
   String fam_scan_failed(Gender gender) => "Couldn't read this code — try again";
+  String get perm_camera_denied => "Balsm doesn’t have permission to use the camera.";
+  String get perm_photos_denied => "Balsm doesn’t have permission to use your photos.";
+  String get perm_settings => "Settings";
   String get rel_default => "Family member";
   String get member_dob => "Date of birth";
   String get member_dob_ph => "DD / MM / YYYY";
@@ -1478,6 +1481,12 @@ class CommonStrings implements i69n.I69nMessageBundle {
         return fam_scan_invalid;
       case 'fam_scan_failed':
         return fam_scan_failed;
+      case 'perm_camera_denied':
+        return perm_camera_denied;
+      case 'perm_photos_denied':
+        return perm_photos_denied;
+      case 'perm_settings':
+        return perm_settings;
       case 'rel_default':
         return rel_default;
       case 'member_dob':
@@ -1574,6 +1583,7 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
   String get eqr_share => "Share";
   String get eqr_save => "Save";
   String get eqr_save_failed => "Could not save to gallery";
+  String get eqr_save_denied => "Balsm doesn’t have permission to save to your photos.";
   String get eqr_saved_toast => "Saved to Photos";
   String get eqr_link_copied => "Link copied";
   String get eqr_revoke => "Revoke code";
@@ -1686,6 +1696,8 @@ class EmergencyStrings implements i69n.I69nMessageBundle {
         return eqr_save;
       case 'eqr_save_failed':
         return eqr_save_failed;
+      case 'eqr_save_denied':
+        return eqr_save_denied;
       case 'eqr_saved_toast':
         return eqr_saved_toast;
       case 'eqr_link_copied':
@@ -3988,7 +4000,6 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String get all_weeks => "All weeks";
   String get weeks_title => "Week by week";
   String get this_week => "This week";
-  String content_from(String org) => "Content from $org";
   String get tri_1 => "First trimester";
   String get tri_2 => "Second trimester";
   String get tri_3 => "Third trimester";
@@ -4146,8 +4157,6 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return weeks_title;
       case 'this_week':
         return this_week;
-      case 'content_from':
-        return content_from;
       case 'tri_1':
         return tri_1;
       case 'tri_2':

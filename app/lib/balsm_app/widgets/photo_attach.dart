@@ -1,20 +1,20 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show PlatformException;
-
 import 'package:core/core.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:profile/profile.dart';
-import 'package:riverpod/src/providers/future_provider.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
+import 'permission_denied.dart';
 
 /// Picked local attachment — bytes stay in memory until the form saves.
 class PickedAttach {
@@ -44,20 +44,37 @@ bool _picking = false;
 /// Runs [pick] unless one is already open. The platform cancels an open picker
 /// when asked for a second one and raises `multiple_request`, which a double tap
 /// used to turn into an uncaught error. A denied permission (camera, photos)
-/// also surfaces as a [PlatformException]; either way the answer is "nothing picked".
-Future<PickedAttach?> _pickOnce(Future<PickedAttach?> Function() pick) async {
+/// also surfaces as a [PlatformException]; either way the answer is "nothing
+/// picked". When [context] is given, a refused permission is also explained
+/// with a way to Settings, so the tap does not look like it did nothing.
+Future<PickedAttach?> _pickOnce(Future<PickedAttach?> Function() pick, {BuildContext? context}) async {
   if (_picking) return null;
   _picking = true;
   try {
     return await pick();
-  } on PlatformException {
+  } on PlatformException catch (e) {
+    if (context != null && context.mounted) _explainDenied(context, e);
     return null;
   } finally {
     _picking = false;
   }
 }
 
-Future<PickedAttach?> pickImageAttach({required bool camera}) => _pickOnce(() => _pickImage(camera: camera));
+/// `image_picker` reports a refused permission as `camera_access_denied` (both
+/// platforms) or `photo_access_denied` (iOS before 14, which has no system
+/// photo picker). Any other error stays silent, as before.
+void _explainDenied(BuildContext context, PlatformException e) {
+  final c = AppScope.of(context).strings.common;
+  switch (e.code) {
+    case 'camera_access_denied':
+      showPermissionDenied(context, c.perm_camera_denied);
+    case 'photo_access_denied':
+      showPermissionDenied(context, c.perm_photos_denied);
+  }
+}
+
+Future<PickedAttach?> pickImageAttach(BuildContext context, {required bool camera}) =>
+    _pickOnce(() => _pickImage(camera: camera), context: context);
 
 Future<PickedAttach?> _pickImage({required bool camera}) async {
   final file = await ImagePicker().pickImage(
@@ -150,7 +167,7 @@ Future<PickedAttach?> pickAttachment(BuildContext context) async {
   if (source == null || !context.mounted) return null;
   return switch (source) {
     AttachSource.files => pickFileAttach(),
-    AttachSource.gallery => pickImageAttach(camera: false),
+    AttachSource.gallery => pickImageAttach(context, camera: false),
     AttachSource.paste => pasteAttachment(),
     AttachSource.url => askForLink(context),
   };
@@ -469,7 +486,7 @@ class NotePhotoAttach extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10),
       child: PressHighlight(
         onTap: () async {
-          final picked = await pickImageAttach(camera: false);
+          final picked = await pickImageAttach(context, camera: false);
           if (picked != null) onChanged(picked);
         },
         // `.photo-add` — 1.5px **dashed** --balsm-border-strong, radius-md.
@@ -566,7 +583,7 @@ class UploadDropzone extends StatelessWidget {
                   accent: s.accent,
                   ar: s.rtl,
                   onTap: () async {
-                    final picked = await pickImageAttach(camera: true);
+                    final picked = await pickImageAttach(context, camera: true);
                     if (picked != null) onAttach(picked);
                   },
                 ),
@@ -580,7 +597,7 @@ class UploadDropzone extends StatelessWidget {
                   size: BtnSize.sm,
                   ar: s.rtl,
                   onTap: () async {
-                    final picked = await pickImageAttach(camera: false);
+                    final picked = await pickImageAttach(context, camera: false);
                     if (picked != null) onAttach(picked);
                   },
                 ),

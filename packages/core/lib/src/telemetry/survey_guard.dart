@@ -76,6 +76,8 @@ class ChoiceOnlySurveyPlatform extends PosthogFlutterIO implements AnalyticsCons
   /// Puts the guard between the native SDK and the survey UI. Call before
   /// `Posthog().setup`; Android and iOS only (other platforms render no
   /// native-triggered surveys).
+  // Registers the guard as the PostHog platform singleton, a side effect a constructor must not have.
+  // ignore: prefer_constructors_over_static_methods
   static ChoiceOnlySurveyPlatform install({void Function(String reason)? onRefused}) {
     final guard = ChoiceOnlySurveyPlatform(onRefused: onRefused);
     PosthogFlutterPlatformInterface.instance = guard;

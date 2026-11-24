@@ -77,7 +77,7 @@ void main() {
       expect(formatMeasure(10.5), '10.5');
       expect(formatMeasure(9.85), '9.85');
       expect(formatMeasure(0), '0');
-      expect(formatMeasure(120.0), '120');
+      expect(formatMeasure(120), '120');
     });
   });
 

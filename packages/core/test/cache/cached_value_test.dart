@@ -7,9 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// Synthetic, non-PHI.
 class _Thing {
   const _Thing(this.name);
+  factory _Thing.fromJson(Map<String, dynamic> j) => _Thing(j['name'] as String);
   final String name;
   Map<String, dynamic> toJson() => {'name': name};
-  static _Thing fromJson(Map<String, dynamic> j) => _Thing(j['name'] as String);
 }
 
 void main() {

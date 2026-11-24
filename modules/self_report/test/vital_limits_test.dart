@@ -58,8 +58,11 @@ void main() {
 
     test('glucose is judged by context', () {
       expect(VitalLimits.glucoseElevated(99, GlucoseContext.fasting), isFalse);
-      expect(VitalLimits.glucoseElevated(130, GlucoseContext.fasting), isTrue,
-          reason: 'was missed at the old 140 cut-off');
+      expect(
+        VitalLimits.glucoseElevated(130, GlucoseContext.fasting),
+        isTrue,
+        reason: 'was missed at the old 140 cut-off',
+      );
       expect(VitalLimits.glucoseElevated(139, GlucoseContext.postMeal), isFalse);
       expect(VitalLimits.glucoseElevated(140, GlucoseContext.postMeal), isTrue);
       expect(VitalLimits.glucoseElevated(150, GlucoseContext.random), isFalse);

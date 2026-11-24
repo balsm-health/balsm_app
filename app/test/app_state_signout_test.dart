@@ -11,12 +11,11 @@ void main() {
     s
       ..setGender(Gender.female)
       ..setAuthContact(method: AuthMethod.email, email: 'old@example.com')
-      ..setAuthPassword('transient')
+      ..authPassword = 'transient'
       ..socialGivenName = 'Old'
       ..socialFamilyName = 'Account'
-      ..tab = AppTab.profile;
-
-    s.resetForSignOut();
+      ..tab = AppTab.profile
+      ..resetForSignOut();
 
     expect(s.extraFamily, isEmpty);
     expect(s.activeFamilyId, isNull);

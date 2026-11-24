@@ -1,9 +1,9 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:records/records.dart';
-import 'package:riverpod/src/providers/stream_provider.dart';
 
 import '../app_state.dart';
 import '../kit.dart';
@@ -47,7 +47,7 @@ class RecordDetailScreen extends ConsumerWidget {
       // fileType is stored ('PDF' / 'Image'); the image kind is shown in the
       // UI language, PDF reads the same everywhere.
       if (record.fileType case final fileType? when record.fileType!.isNotEmpty)
-        fileType.toLowerCase() == 'image' ? s.strings.records.rec_kind_image : fileType,
+        if (fileType.toLowerCase() == 'image') s.strings.records.rec_kind_image else fileType,
       if ((record.pages ?? 0) > 1) '${record.pages} ${s.strings.common.pages}',
     ];
 

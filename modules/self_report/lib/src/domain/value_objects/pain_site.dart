@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 import '../../i18n/strings.dart';
 import 'body_region.dart';
 import 'body_tissue.dart';
@@ -5,6 +7,7 @@ import 'body_tissue.dart';
 /// One marked spot on the body map. The layer rides on [region]'s subclass
 /// ([Muscle.chest] is a [Muscle]), so a site cannot claim a tissue its region
 /// is not on. The same location may appear twice in a check-in on two layers.
+@immutable
 class PainSite {
   const PainSite(this.region);
 

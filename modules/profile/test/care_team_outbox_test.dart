@@ -68,7 +68,7 @@ void main() {
 
     final pending = await outbox.pending();
     expect(pending, hasLength(2));
-    expect(jsonDecode(pending.last.payload)['name'], 'Provider Beta');
+    expect((jsonDecode(pending.last.payload) as Map<String, dynamic>)['name'], 'Provider Beta');
   });
 
   test('delete enqueues a delete', () async {

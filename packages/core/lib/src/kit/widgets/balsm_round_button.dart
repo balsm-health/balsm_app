@@ -57,12 +57,12 @@ class _BalsmRoundButtonState extends State<BalsmRoundButton> with SingleTickerPr
     super.dispose();
   }
 
-  void _onDown(_) {
+  void _onDown(TapDownDetails _) {
     setState(() => _pressed = true);
     _ctrl.forward();
   }
 
-  void _onUp(_) {
+  void _onUp(TapUpDetails _) {
     setState(() => _pressed = false);
     _ctrl.reverse();
     widget.onTap();

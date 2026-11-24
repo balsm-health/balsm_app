@@ -233,8 +233,7 @@ class _BirthScreenState extends ConsumerState<BirthScreen> {
                           child: BCheck(
                             label: [
                               it.title ?? itemKindLabel(s, it.kind),
-                              '${itemKindLabel(s, it.kind)} · ${formatDay(it.recordedOn)}'
-                                  '${it.isShared ? ' · ${p.shared}' : ''}',
+                              '${itemKindLabel(s, it.kind)} · ${formatDay(it.recordedOn)}${it.isShared ? ' · ${p.shared}' : ''}',
                             ].join('\n'),
                             checked: keep.contains(it.id),
                             accent: s.accent,

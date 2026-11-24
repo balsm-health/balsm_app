@@ -32,7 +32,7 @@ class _FakeRemote implements RemoteCareDirectoryDataSource {
   List<CareEntity> result;
   List<CarePin> pinResult;
   CareEntity? detail;
-  Object? throws;
+  Exception? throws;
   int calls = 0;
   int pinCalls = 0;
   int detailCalls = 0;
@@ -215,10 +215,10 @@ void main() {
 
     test('a failure is not retained as if it were an answer', () async {
       // A transient blip must not look like an empty area for the whole TTL.
-      final remote = _FakeRemote(throws: StateError('network down'));
+      final remote = _FakeRemote(throws: Exception('network down'));
       final repo = CachingCareDirectoryRepository(remote: remote, local: localWith());
 
-      await expectLater(repo.nearby(cairo, const CareSearch()), throwsStateError);
+      await expectLater(repo.nearby(cairo, const CareSearch()), throwsException);
 
       expect(await retainedCount(), 0, reason: 'nothing retained');
 

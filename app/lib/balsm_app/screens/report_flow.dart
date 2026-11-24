@@ -115,7 +115,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   // ── Product analytics: positions and counts only, never metric ids ──
   // Read once up front: `ref` cannot be used in dispose, where an abandoned
   // check-in is reported.
-  late final AnalyticsLogger _analytics = ref.read(analyticsLoggerProvider);
+  late final AnalyticsLogger _analytics;
   final DateTime _openedAt = DateTime.now();
   bool _startLogged = false;
 
@@ -125,7 +125,7 @@ class _ReportFlowState extends ConsumerState<ReportFlow> {
   @override
   void initState() {
     super.initState();
-    _analytics; // resolve while ref is usable
+    _analytics = ref.read(analyticsLoggerProvider);
   }
 
   @override

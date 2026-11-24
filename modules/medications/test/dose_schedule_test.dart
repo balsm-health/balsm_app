@@ -142,7 +142,7 @@ void main() {
     expect(ScheduleConfig.fromJson(cfg.toJson()), cfg);
     // A row written before these fields existed still reads.
     expect(
-      ScheduleConfig.fromJson({
+      ScheduleConfig.fromJson(const {
         'times': ['09:00'],
       }).durationKind,
       DurationKind.ongoing,

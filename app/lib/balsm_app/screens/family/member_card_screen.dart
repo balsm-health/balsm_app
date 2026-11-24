@@ -153,7 +153,7 @@ class MemberEmergencyCard extends StatelessWidget {
     return EmergencyCardBody(
       name: m.displayName,
       meta: [
-        if (m.sex != null) m.sex == Sex.female ? f.sex_female : f.sex_male,
+        if (m.sex == Sex.female) f.sex_female else if (m.sex != null) f.sex_male,
         if (age != null) ageLabel(s, age),
         if (m.dateOfBirth case final dateOfBirth?) f.born(formatDay(dateOfBirth)),
       ].join(' · '),

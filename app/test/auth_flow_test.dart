@@ -347,15 +347,19 @@ void main() {
     }
 
     Future<void> leaveAndComeBack(WidgetTester tester) async {
-      for (final s in [AppLifecycleState.inactive, AppLifecycleState.hidden, AppLifecycleState.paused]) {
-        tester.binding.handleAppLifecycleStateChanged(s);
-      }
+      [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ].forEach(tester.binding.handleAppLifecycleStateChanged);
       // Android tears the connection down while the app is away.
       tester.testTextInput.closeConnection();
       tester.testTextInput.log.clear();
-      for (final s in [AppLifecycleState.hidden, AppLifecycleState.inactive, AppLifecycleState.resumed]) {
-        tester.binding.handleAppLifecycleStateChanged(s);
-      }
+      [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ].forEach(tester.binding.handleAppLifecycleStateChanged);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 1));
     }

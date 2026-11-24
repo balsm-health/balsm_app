@@ -204,7 +204,7 @@ class _TrendsScreenState extends ConsumerState<TrendsScreen> {
           ),
         ),
         if (charts.isEmpty)
-          member == null ? _NoReadings(range: _range) : _NoMemberData(member: member)
+          if (member == null) _NoReadings(range: _range) else _NoMemberData(member: member)
         else
           // Flex.spacing gives the 14pt between cards; the first card gets none.
           Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: charts),

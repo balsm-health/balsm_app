@@ -12,8 +12,8 @@ class FakeCareTeamApi implements CareTeamApi {
   final upserted = <UpsertCareProviderRequest>[];
   final deleted = <String>[];
   final pullCursors = <DateTime?>[];
-  Object? throwOnUpsert;
-  Object? throwOnPull;
+  Exception? throwOnUpsert;
+  Exception? throwOnPull;
 
   /// Throw a permanent 409 for exactly this id, to prove the drain continues.
   String? throwOnUpsertFor;

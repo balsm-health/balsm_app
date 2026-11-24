@@ -14,7 +14,7 @@ void main() {
         painLevel: PainLevel.none,
         painSites: const {},
         symptoms: const {},
-        vitals: const Vitals(),
+        vitals: Vitals.empty,
       );
 
   test('groups newest-first history by local day, each day oldest first', () {

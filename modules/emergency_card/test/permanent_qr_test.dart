@@ -211,7 +211,7 @@ void main() {
         mac: Mac(payload.sublist(payload.length - 16)),
       );
       final plain = utf8.decode(await aes.decrypt(box, secretKey: key));
-      expect(jsonDecode(plain)['name'], 'A-');
+      expect((jsonDecode(plain) as Map<String, dynamic>)['name'], 'A-');
 
       expect((await store.read())!.etag, payloadEtag(newSnap));
     });

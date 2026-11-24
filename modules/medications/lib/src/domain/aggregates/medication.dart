@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show immutable;
 
 import '../entities/dose_event.dart';
 import '../value_objects/ids.dart';
@@ -25,6 +26,7 @@ enum DurationKind { ongoing, period, untilEmpty, other }
 /// [times] are local clock times in `HH:mm` 24-hour format (e.g. `08:00`).
 /// [days] is only meaningful for [ScheduleType.weekly] / [ScheduleType.custom]
 /// and uses ISO-8601 weekday numbering: 1 = Monday … 7 = Sunday.
+@immutable
 class ScheduleConfig {
   const ScheduleConfig({
     required this.times,
@@ -108,8 +110,9 @@ class ScheduleConfig {
 ///
 /// PHI — lives on-device only. Dose history is APPEND-ONLY: [DoseEvent]s are
 /// never mutated or deleted, only added.
+@immutable
 class Medication {
-  Medication({
+  const Medication({
     required this.id,
     required this.userId,
     required this.name,

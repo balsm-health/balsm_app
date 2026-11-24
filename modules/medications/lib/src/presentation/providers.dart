@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/src/providers/future_provider.dart';
+import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
 
 import '../domain/aggregates/medication.dart';
 import '../domain/entities/dose_event.dart';

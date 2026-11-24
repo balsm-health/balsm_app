@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'unique_id.dart';
 
 /// Who did something to a patient entry (a record, a medication, a reading).
@@ -44,6 +45,7 @@ enum ProvenanceAction {
 /// [displayName] they had when they acted (a family member's name, a clinic's
 /// name), or by [careProviderId], a reference to an entry in the patient's
 /// care team, whose current name the app looks up. At least one is present.
+@immutable
 class ProvenanceActor {
   /// Someone other than the patient. Throws [ArgumentError] for
   /// [ProvenanceActorKind.self], or when neither a name nor a care-team
@@ -91,6 +93,7 @@ class ProvenanceActor {
 }
 
 /// One immutable line of an entry's history: [actor] did [action] at [at].
+@immutable
 class ProvenanceEvent {
   const ProvenanceEvent({required this.id, required this.actor, required this.action, required this.at});
 
@@ -122,6 +125,7 @@ class ProvenanceEvent {
 /// history at all ([none]) and shows nothing. Events are only ever added
 /// ([append]); none is changed or removed, and the store refuses to change
 /// one that is already saved.
+@immutable
 class EntryHistory {
   const EntryHistory([this._events = const []]);
 

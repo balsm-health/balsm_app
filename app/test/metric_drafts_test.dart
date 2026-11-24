@@ -158,8 +158,9 @@ void main() {
       addTearDown(c.dispose);
       final a = (form: Object(), initial: const Vitals(systolic: 120, diastolic: 80));
       final b = (form: Object(), initial: null as Vitals?);
-      c.listen(bpDraftProvider(a), (_, __) {});
-      c.listen(bpDraftProvider(b), (_, __) {});
+      c
+        ..listen(bpDraftProvider(a), (_, __) {})
+        ..listen(bpDraftProvider(b), (_, __) {});
       c.read(bpDraftProvider(b).notifier).key('9');
       expect(c.read(bpDraftProvider(a)).sys, '120');
       expect(c.read(bpDraftProvider(b)).sys, '9');

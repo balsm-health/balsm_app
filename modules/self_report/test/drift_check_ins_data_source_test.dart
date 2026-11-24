@@ -154,7 +154,7 @@ void main() {
           id: CheckInId.value(id),
           healthProfileId: profile,
           recordedAt: DateTime.utc(2026, 7, 24, 9),
-          painLevel: const PainLevel(0),
+          painLevel: PainLevel.none,
           painSites: const {},
           symptoms: details.keys.toSet(),
           symptomDetails: details,

@@ -88,7 +88,7 @@ class PatientAppState extends ChangeNotifier {
 
   /// Transient — password captured on the password sign-up screen, applied via
   /// setPassword once OTP verify establishes the session. In-memory only (never
-  /// persisted); cleared after use.
+  /// persisted); cleared after use. Assigned directly: not UI-bound, so no notify.
   String? authPassword;
 
   /// One-shot name prefill from a social provider; see [setSocialName].
@@ -257,9 +257,6 @@ class PatientAppState extends ChangeNotifier {
     socialGivenName = givenName;
     socialFamilyName = familyName;
   }
-
-  /// Stash/clear the transient sign-up password (not UI-bound, no notify).
-  void setAuthPassword(String? pw) => authPassword = pw;
 
   void go(String r) {
     if (r == AppRoutes.app) tab = AppTab.home;

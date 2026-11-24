@@ -77,7 +77,8 @@ class _BalsmFieldState extends State<BalsmField> {
         return TextInputType.number;
       case BalsmFieldVariant.date:
         return TextInputType.datetime;
-      default:
+      case BalsmFieldVariant.text:
+      case BalsmFieldVariant.dropdown:
         return TextInputType.text;
     }
   }
