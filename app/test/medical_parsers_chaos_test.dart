@@ -14,7 +14,7 @@ void main() {
 
   final nasty = <String>[
     '', ' ', '\n', '\t', '--', '+', '.', ',', '٫', '٬', '1e5', '1E-9', '0x10', '1_000', '١٢٣', '۱۲۳', '१२३',
-    '‏٧٢‏', '72​', '‮72', '٧٢٫٥', '72٫5', '72,5', '72.5.1', '1,2,3', '1.2,3', 'NaN', 'Infinity',
+    '‏٧٢‏', '72​', '\u202E72', '٧٢٫٥', '72٫5', '72,5', '72.5.1', '1,2,3', '1.2,3', 'NaN', 'Infinity',
     '-Infinity', '٩٩٩٩٩٩٩٩٩٩٩٩٩٩٩٩٩٩٩٩', '9' * 400, '0' * 400, '😀', '72😀', 'seventy', "72'; DROP TABLE vitals;--",
     '<script>alert(1)</script>', '\u0000', '72\u0000', 'ｌ２３', '１２３', // full-width digits
   ];
@@ -93,7 +93,7 @@ void main() {
 
   group('email', () {
     test('isPlausibleEmail never throws, even on huge or hostile input', () {
-      for (final t in [...nasty, 'a@' + 'b.' * 5000 + 'c', 'a' * 100000 + '@x.io']) {
+      for (final t in [...nasty, 'a@${'b.' * 5000}c', 'a' * 100000 + '@x.io']) {
         expect(() => isPlausibleEmail(t), returnsNormally);
       }
     });

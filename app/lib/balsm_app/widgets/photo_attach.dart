@@ -1,17 +1,16 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show PlatformException;
-
 import 'package:core/core.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:profile/profile.dart';
-import 'package:riverpod/src/providers/future_provider.dart';
 
 import '../app_state.dart';
 import '../kit.dart';

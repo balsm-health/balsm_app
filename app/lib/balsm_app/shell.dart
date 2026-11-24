@@ -546,14 +546,14 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                         // whole — app.css `.app-body > .screen:not(.app-shell)`.
                         if (_publicResolveJti != null)
                           AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
+                        else if (_publicDelete)
+                          const AdaptiveFrame(child: PublicDeleteScreen())
+                        else if (_publicDeleteCancel)
+                          const AdaptiveFrame(child: PublicDeleteCancelledScreen())
+                        else if (state.route == AppRoutes.app)
+                          const _MainApp()
                         else
-                          _publicDelete
-                              ? const AdaptiveFrame(child: PublicDeleteScreen())
-                              : _publicDeleteCancel
-                                  ? const AdaptiveFrame(child: PublicDeleteCancelledScreen())
-                                  : state.route == AppRoutes.app
-                                      ? const _MainApp()
-                                      : const AdaptiveFrame(child: AuthRouter()),
+                          const AdaptiveFrame(child: AuthRouter()),
                         if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
                           ..._maintenancePage(maintenance),
                         if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)

@@ -59,12 +59,12 @@ class DeepLinkInbox {
     );
   }
 
-  static DeepLinkInbox? _instance;
-
-  static DeepLinkInbox get instance {
+  factory DeepLinkInbox.instance() {
     final links = AppLinks();
     return _instance ??= DeepLinkInbox._(links.uriLinkStream, links.getInitialLink());
   }
+
+  static DeepLinkInbox? _instance;
 
   final _queue = <Uri>[];
   void Function(Uri)? _sink;
@@ -134,12 +134,12 @@ class _DeepLinkHandlerState extends ConsumerState<DeepLinkHandler> {
   void initState() {
     super.initState();
     // Cold-start and live links both arrive through the process-wide inbox.
-    DeepLinkInbox.instance.attach(_onUri);
+    DeepLinkInbox.instance().attach(_onUri);
   }
 
   @override
   void dispose() {
-    DeepLinkInbox.instance.detach(_onUri);
+    DeepLinkInbox.instance().detach(_onUri);
     super.dispose();
   }
 

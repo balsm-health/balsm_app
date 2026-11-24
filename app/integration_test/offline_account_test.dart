@@ -464,7 +464,7 @@ void main() {
   Future<Uint8List?> readAttachment(String path, {String? owner}) =>
       files().read(path, scope: owner == null ? null : UserId.value(owner));
 
-  Future<bool> partitionExists(String owner) async => Directory('${(await vaultDir()).path}/$owner').exists();
+  Future<bool> partitionExists(String owner) async => Directory('${(await vaultDir()).path}/$owner').existsSync();
 
   Future<String?> key(String k) => storage.read(key: k);
 

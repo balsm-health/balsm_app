@@ -700,7 +700,7 @@ class _PhoneScreenState extends ConsumerState<_PhoneScreen> {
       // Held only for the length of the flow: if the code proves a NEW account
       // it becomes that account's password, and if it proves an existing one the
       // patient is asked whether to adopt it. Cleared either way.
-      ..setAuthPassword(pwCtrl.text)
+      ..authPassword = pwCtrl.text
       ..go(AppRoutes.otp);
   }
 
@@ -1599,7 +1599,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
   /// the password field would let a typo replace a working password for good.
   Future<void> _afterVerify(PatientAppState s, {required bool isNewUser}) async {
     final pw = s.authPassword;
-    s.setAuthPassword(null); // transient either way — never persisted
+    s.authPassword = null; // transient either way — never persisted
     if (pw != null && pw.isNotEmpty) {
       final apply = isNewUser || (await _askAdoptPassword(s) ?? false);
       if (!mounted) return;

@@ -45,8 +45,8 @@ class _MarkSpinnerState extends State<MarkSpinner> with SingleTickerProviderStat
   }
 
   // `b-mark-pulse`: triangle wave peaking at 40% of the cycle (.35 → 1 → .35).
-  double _pulse(double x) {
-    x %= 1.0;
+  double _pulse(double t) {
+    final x = t % 1.0;
     return x < 0.4 ? 0.35 + 0.65 * (x / 0.4) : 1.0 - 0.65 * ((x - 0.4) / 0.6);
   }
 

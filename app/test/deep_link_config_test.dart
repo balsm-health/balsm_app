@@ -68,8 +68,9 @@ void main() {
       expect(target['package_name'], bundleId);
     });
 
-    final fingerprints = ((jsonDecode(read('web/.well-known/assetlinks.json')) as List).single as Map)['target']
-        ['sha256_cert_fingerprints'] as List;
+    final signingTarget =
+        ((jsonDecode(read('web/.well-known/assetlinks.json')) as List).single as Map)['target'] as Map;
+    final fingerprints = signingTarget['sha256_cert_fingerprints'] as List;
     final placeholder = fingerprints.any((f) => '$f'.contains('PLACEHOLDER'));
     test(
       'assetlinks.json carries a real signing-key fingerprint',

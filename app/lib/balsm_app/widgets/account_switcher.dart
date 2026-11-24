@@ -431,7 +431,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
   DateTime? _dob;
 
   _AddMode _mode = _AddMode.choose;
-  ScannedProfile? _scanned;
+  late ScannedProfile _scanned;
 
   PatientAppState get s => widget.s;
   bool get canSave => _name.text.trim().length > 1;
@@ -570,7 +570,7 @@ class _AddFamilyMemberSheetState extends State<_AddFamilyMemberSheet> {
   }
 
   List<Widget> _foundBody(CommonStrings c) {
-    final found = _scanned!;
+    final found = _scanned;
     final name = _name.text.trim().isEmpty ? '—' : _name.text.trim();
     return [
       Container(

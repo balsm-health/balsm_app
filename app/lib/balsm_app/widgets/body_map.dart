@@ -187,11 +187,7 @@ class _BodyMapState extends State<BodyMap> {
                       if (widget.selected.length > 1)
                         _ClearAllButton(
                           label: c.body_clear_all,
-                          onTap: () {
-                            for (final site in widget.selected.toList()) {
-                              widget.onToggle(site);
-                            }
-                          },
+                          onTap: () => widget.selected.toList().forEach(widget.onToggle),
                         ),
                     ],
                   ),

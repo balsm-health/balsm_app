@@ -63,9 +63,8 @@
 // scenario.
 
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:app/balsm_app/app_state.dart';
 import 'package:app/balsm_app/care/care_entity.dart' show DeviceLocationIssue, deviceLocationProvider;
@@ -97,13 +96,13 @@ import 'package:integration_test/integration_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 // The app's TextField is material_ui's, not Flutter's — match the same class.
 import 'package:material_ui/material_ui.dart';
-import 'package:url_launcher_platform_interface/link.dart' show LinkDelegate;
-import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:medications/medications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:records/records.dart';
 import 'package:self_report/self_report.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher_platform_interface/link.dart' show LinkDelegate;
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 const _email = 'design.e2e@example.com';
 const _password = 'design-e2e-pass';
@@ -1358,7 +1357,7 @@ void main() {
       debugPrint('MONKEY ERROR: $e');
     }
     expect(errors, isEmpty,
-        reason: 'errors:\n${errors.join('\n')}\n\nlast actions:\n${trail.reversed.take(15).join('\n')}');
+        reason: 'errors:\n${errors.join('\n')}\n\nlast actions:\n${trail.reversed.take(15).join('\n')}',);
     await shutDown(tester);
   });
 }

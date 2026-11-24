@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 class _StubNotifier extends StateNotifier<MapPackDownloadState> implements MapPackDownloadController {
-  _StubNotifier(super.state);
+  _StubNotifier(super._state);
 
   @override
   Future<void> load(String lang) async {}

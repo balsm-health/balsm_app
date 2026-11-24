@@ -36,6 +36,7 @@ enum MetricLogHost {
 }
 
 /// What a metric template currently holds. PHI — never log these values.
+@immutable
 class MetricLogCapture {
   const MetricLogCapture({
     this.summary = '',
@@ -1174,7 +1175,7 @@ class _PulseLogState extends ConsumerState<_PulseLog> with _MetricLogState {
       );
     }
     final running = left != null;
-    final progress = running ? (kPulseCountSeconds - left!) / kPulseCountSeconds : 0.0;
+    final progress = running ? (kPulseCountSeconds - left) / kPulseCountSeconds : 0.0;
     return chrome(
       child: Padding(
         padding: const EdgeInsetsDirectional.only(top: 4, bottom: 8),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show NotifierProviderFamily;
 import 'package:self_report/self_report.dart';
 
 import '../widgets/photo_attach.dart';
@@ -11,8 +12,8 @@ import '../widgets/photo_attach.dart';
 /// (so they are unit-tested without a widget); each form watches one
 /// auto-disposing provider, and the draft is gone when the form closes.
 
-/// One form instance: [form] is a token the form's State creates once, so two
-/// forms open at once never share a draft; [initial] is the stored reading an
+/// One form instance: `form` is a token the form's State creates once, so two
+/// forms open at once never share a draft; `initial` is the stored reading an
 /// edit opens on (null for a new entry).
 typedef DraftKey = ({Object form, Vitals? initial});
 
@@ -68,7 +69,8 @@ class BpDraftNotifier extends Notifier<BpDraft> {
   void focus({required bool systolic}) => state = state.focus(systolic: systolic);
 }
 
-final bpDraftProvider = NotifierProvider.autoDispose.family<BpDraftNotifier, BpDraft, DraftKey>(BpDraftNotifier.new);
+final NotifierProviderFamily<BpDraftNotifier, BpDraft, DraftKey> bpDraftProvider =
+    NotifierProvider.autoDispose.family<BpDraftNotifier, BpDraft, DraftKey>(BpDraftNotifier.new);
 
 // ── Glucose ──────────────────────────────────────────────────
 
@@ -120,7 +122,7 @@ class GlucoseDraftNotifier extends Notifier<GlucoseDraft> {
   void setContext(GlucoseContext c) => state = state.withContext(c);
 }
 
-final glucoseDraftProvider =
+final NotifierProviderFamily<GlucoseDraftNotifier, GlucoseDraft, DraftKey> glucoseDraftProvider =
     NotifierProvider.autoDispose.family<GlucoseDraftNotifier, GlucoseDraft, DraftKey>(GlucoseDraftNotifier.new);
 
 // ── Weight ───────────────────────────────────────────────────
@@ -178,7 +180,7 @@ class WeightDraftNotifier extends Notifier<WeightDraft> {
   void dot() => state = state.dot();
 }
 
-final weightDraftProvider =
+final NotifierProviderFamily<WeightDraftNotifier, WeightDraft, DraftKey> weightDraftProvider =
     NotifierProvider.autoDispose.family<WeightDraftNotifier, WeightDraft, DraftKey>(WeightDraftNotifier.new);
 
 // ── SpO₂ ─────────────────────────────────────────────────────
@@ -218,7 +220,7 @@ class Spo2DraftNotifier extends Notifier<Spo2Draft> {
   void back() => state = state.back();
 }
 
-final spo2DraftProvider =
+final NotifierProviderFamily<Spo2DraftNotifier, Spo2Draft, DraftKey> spo2DraftProvider =
     NotifierProvider.autoDispose.family<Spo2DraftNotifier, Spo2Draft, DraftKey>(Spo2DraftNotifier.new);
 
 // ── Pulse ────────────────────────────────────────────────────
@@ -285,7 +287,7 @@ class PulseDraftNotifier extends Notifier<PulseDraft> {
   void tick() => state = state.tick();
 }
 
-final pulseDraftProvider =
+final NotifierProviderFamily<PulseDraftNotifier, PulseDraft, DraftKey> pulseDraftProvider =
     NotifierProvider.autoDispose.family<PulseDraftNotifier, PulseDraft, DraftKey>(PulseDraftNotifier.new);
 
 // ── Date and photo, shared by every form ─────────────────────
@@ -317,5 +319,5 @@ class EntryExtrasNotifier extends Notifier<EntryExtras> {
   void setPhoto(PickedAttach? p) => state = state.withPhoto(p);
 }
 
-final entryExtrasProvider =
+final NotifierProviderFamily<EntryExtrasNotifier, EntryExtras, ExtrasKey> entryExtrasProvider =
     NotifierProvider.autoDispose.family<EntryExtrasNotifier, EntryExtras, ExtrasKey>(EntryExtrasNotifier.new);

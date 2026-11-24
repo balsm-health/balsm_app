@@ -108,10 +108,10 @@ dev_dependencies:
   # Test-only: analytics_consent_toggle_test seeds the KV store via
   # SharedPreferences.setMockInitialValues.
   shared_preferences: ^2.3.0
-  vm_service: ^15.3.0
-  yaml: ^3.1.2
   # Test-only: the monkey e2e stubs external launches (tel:, mailto:, links) so a random tap cannot leave the app.
   url_launcher_platform_interface: ^2.3.2
+  vm_service: ^15.3.0
+  yaml: ^3.1.2
 dependency_overrides:
   # path_provider_foundation 2.6.0 migrated to package:objective_c + the
   # experimental native-assets build, which mislinks on iOS (Foundation not

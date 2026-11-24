@@ -8,7 +8,7 @@ import 'package:self_report/self_report.dart';
 /// and growth entries become one oldest-first series per metric. The readings
 /// are invented by the test.
 void main() {
-  CheckIn at(String id, DateTime when, {Vitals vitals = const Vitals(), int pain = 0}) => CheckIn(
+  CheckIn at(String id, DateTime when, {Vitals vitals = Vitals.empty, int pain = 0}) => CheckIn(
         id: CheckInId.value(id),
         healthProfileId: const HealthProfileId.value('hp-1'),
         recordedAt: when,

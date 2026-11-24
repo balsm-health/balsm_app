@@ -4,10 +4,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:riverpod/src/providers/future_provider.dart';
 
 import '../i18n/strings.i69n.dart' show CareStrings;
 import 'infrastructure/api_care_directory_data_source.dart';

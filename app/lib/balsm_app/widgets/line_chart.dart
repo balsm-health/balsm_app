@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import '../tokens.dart';
 
+@immutable
 class ChartSeries {
   const ChartSeries(this.data, this.color);
   final List<double> data;

@@ -28,25 +28,27 @@ import 'report_flow.dart';
 void showQuickLog(BuildContext context, {String source = ProductSource.tabBar}) {
   if (maintenancePaused(context)) return;
   final s = AppScope.of(context);
-  showAppSheet<void>(
-    context,
-    useRootNavigator: true,
-    size: SheetSize.lg,
-    // The sheet drags itself from its header: the route's own drag pops
-    // past [PopScope] and would drop unsaved input without asking.
-    enableDrag: false,
-    textDirection: s.dir,
-    builder: (sheetContext) => _QuickLogSheet(
-      s: s,
-      source: source,
-      onFullCheckin: () {
-        Navigator.pop(sheetContext);
-        openCheckin(context);
-      },
-      onAddRecord: (type) {
-        Navigator.pop(sheetContext);
-        unawaited(showAddRecord(context, initialType: type));
-      },
+  unawaited(
+    showAppSheet<void>(
+      context,
+      useRootNavigator: true,
+      size: SheetSize.lg,
+      // The sheet drags itself from its header: the route's own drag pops
+      // past [PopScope] and would drop unsaved input without asking.
+      enableDrag: false,
+      textDirection: s.dir,
+      builder: (sheetContext) => _QuickLogSheet(
+        s: s,
+        source: source,
+        onFullCheckin: () {
+          Navigator.pop(sheetContext);
+          openCheckin(context);
+        },
+        onAddRecord: (type) {
+          Navigator.pop(sheetContext);
+          unawaited(showAddRecord(context, initialType: type));
+        },
+      ),
     ),
   );
 }
