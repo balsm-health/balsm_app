@@ -51,8 +51,8 @@ class DriftCacheStore implements CacheStore {
 
   @override
   Future<void> evictOldest(String namespace, {required int keep}) => _db.customStatement(
-        'DELETE FROM cache_entry WHERE namespace = ? AND key NOT IN ('
-        '  SELECT key FROM cache_entry WHERE namespace = ? ORDER BY fetched_at DESC LIMIT ?'
+        'DELETE FROM cache_entry WHERE namespace = ? AND key NOT IN ( '
+        '  SELECT key FROM cache_entry WHERE namespace = ? ORDER BY fetched_at DESC LIMIT ? '
         ')',
         [namespace, namespace, keep],
       );

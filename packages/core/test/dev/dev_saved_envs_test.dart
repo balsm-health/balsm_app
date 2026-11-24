@@ -26,7 +26,7 @@ void main() {
 
     expect(store.savedEnvs.map((e) => e.url), ['http://192.168.8.3:5050', 'https://staging.example.com']);
     final persisted = jsonDecode((await SharedPreferences.getInstance()).getString(key)!) as List;
-    expect(persisted.first['url'], 'http://192.168.8.3:5050');
+    expect((persisted.first as Map<String, dynamic>)['url'], 'http://192.168.8.3:5050');
   });
 
   test('one that cannot be repaired is left to edit or delete', () async {

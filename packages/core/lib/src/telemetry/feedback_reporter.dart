@@ -23,6 +23,8 @@ class UserFeedback {
 
 /// Where in-app feedback goes. Like [AnalyticsLogger], a facade: the sheet
 /// never imports a vendor SDK, and the composition root picks the backend.
+// Port interface; the composition root binds the vendor backend, tests bind a double.
+// ignore: one_member_abstracts
 abstract class FeedbackReporter {
   /// True when the feedback was accepted for delivery (it may still be queued
   /// offline by the backend).

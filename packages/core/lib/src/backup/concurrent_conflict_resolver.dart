@@ -2,7 +2,7 @@
 // Per FR-009d, FR-009e.
 
 class ConflictResolver {
-  static T mergeAggregate<T extends _Updatable>(T existing, T incoming) {
+  static T mergeAggregate<T extends Updatable>(T existing, T incoming) {
     return existing.updatedAt.isAfter(incoming.updatedAt) ? existing : incoming;
   }
 
@@ -25,7 +25,7 @@ class ConflictResolver {
   }
 }
 
-abstract class _Updatable {
+abstract class Updatable {
   DateTime get updatedAt;
 }
 

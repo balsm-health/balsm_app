@@ -1,4 +1,5 @@
-import 'package:riverpod/src/providers/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderFamily;
 
 import 'dev_config_store.dart';
 

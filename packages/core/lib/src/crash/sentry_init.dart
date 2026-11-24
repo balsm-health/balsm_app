@@ -20,11 +20,11 @@ Future<void> initSentry() async {
       // non-PHI allowlist. The telemetry logger already scrubs at the source;
       // this catches anything Sentry auto-instrumentation adds.
       ..beforeSend = ((event, hint) => _scrub(event))
-      ..beforeBreadcrumb = ((breadcrumb, hint) => _scrubBreadcrumb(breadcrumb));
-    // In-app feedback is its own event type and skips beforeSend. Its message
-    // is the patient's note and is sent as typed; the breadcrumbs and route it
-    // carries get the same scrub as everything else.
-    options.beforeSendFeedback = (event, hint) => _scrub(event);
+      ..beforeBreadcrumb = ((breadcrumb, hint) => _scrubBreadcrumb(breadcrumb))
+      // In-app feedback is its own event type and skips beforeSend. Its message
+      // is the patient's note and is sent as typed; the breadcrumbs and route it
+      // carries get the same scrub as everything else.
+      ..beforeSendFeedback = (event, hint) => _scrub(event);
   });
 
   // `brand` and `flavor` as tags, the names product analytics uses for the

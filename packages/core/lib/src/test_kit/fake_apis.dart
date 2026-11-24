@@ -117,13 +117,11 @@ class FakeAccountApi implements AccountApi {
 
   /// The language [getSelf] answers with. Public so a screenshot driver can
   /// flip locale without going through the change-language endpoint.
-  String get language => _language;
-  set language(String value) => _language = value;
+  String language = E2eFixture.language;
 
   /// The handle [getSelf] answers with. Public so a screenshot driver can use
   /// a persona handle instead of the fixture default.
-  String? get handle => _handle;
-  set handle(String? value) => _handle = value;
+  String? handle = E2eFixture.handle;
 
   /// The remaining profile fields [getSelf] answers with. Null keeps the
   /// endpoint's "not set yet" shape, which is what e2e asserts against; the
@@ -136,45 +134,41 @@ class FakeAccountApi implements AccountApi {
   String? dateOfBirth;
   String? nationalId;
 
-  String? _handle = E2eFixture.handle;
-  String? _firstName;
-  String? _lastName;
-  String _language = E2eFixture.language;
   String _countryCode = E2eFixture.countryCode;
 
   /// Names the fake reports. Public so a screenshot driver can set them
   /// without round-tripping through [updateProfile].
-  set firstName(String? value) => _firstName = value;
-  set lastName(String? value) => _lastName = value;
+  String? firstName;
+  String? lastName;
 
   @override
   Future<AccountSelfResponse?> getSelf({CancelToken? cancelToken}) async => AccountSelfResponse(
         id: E2eFixture.userId,
-        handle: _handle,
-        firstName: firstNameByLanguage?[_language] ?? _firstName,
-        lastName: lastNameByLanguage?[_language] ?? _lastName,
-        displayName: displayNameByLanguage?[_language] ?? E2eFixture.displayName,
+        handle: handle,
+        firstName: firstNameByLanguage?[language] ?? firstName,
+        lastName: lastNameByLanguage?[language] ?? lastName,
+        displayName: displayNameByLanguage?[language] ?? E2eFixture.displayName,
         bio: bio,
         gender: gender,
         nationality: nationality,
         phone: phone,
         countryCode: _countryCode,
-        preferredLanguage: _language,
+        preferredLanguage: language,
         dateOfBirth: dateOfBirth,
         nationalId: nationalId,
       );
 
   @override
   Future<ClaimHandleResponse> claimHandle(ClaimHandleRequest request, {CancelToken? cancelToken}) async {
-    _handle = request.handle;
-    return ClaimHandleResponse(handle: _handle);
+    handle = request.handle;
+    return ClaimHandleResponse(handle: handle);
   }
 
   @override
   Future<void> updateProfile(UpdateProfileRequest request, {CancelToken? cancelToken}) async {
     // Null means "leave unchanged" on the real endpoint; mirror that.
-    _firstName = request.firstName ?? _firstName;
-    _lastName = request.lastName ?? _lastName;
+    firstName = request.firstName ?? firstName;
+    lastName = request.lastName ?? lastName;
     gender = request.gender ?? gender;
     nationality = request.nationality ?? nationality;
     phone = request.phone ?? phone;
@@ -184,7 +178,7 @@ class FakeAccountApi implements AccountApi {
 
   @override
   Future<void> changeLanguage(ChangeLanguageRequest request, {CancelToken? cancelToken}) async {
-    _language = request.preferredLanguage;
+    language = request.preferredLanguage;
   }
 
   @override

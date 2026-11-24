@@ -69,6 +69,7 @@ export 'src/dev/server_selector_screen.dart' if (dart.library.io) 'src/dev/serve
 export 'src/dev/server_url.dart' show normalizeServerUrl;
 export 'src/domain/app_failure.dart';
 export 'src/domain/app_result.dart';
+export 'src/domain/email_format.dart';
 export 'src/domain/events/app_event.dart';
 // Cross-module domain events (published by modules, consumed via the bus).
 export 'src/domain/events/country_changed.dart';
@@ -99,7 +100,6 @@ export 'src/domain/value_objects/unique_id.dart';
 export 'src/domain/value_objects/user_id.dart';
 export 'src/domain/value_objects/uuid_v7.dart';
 export 'src/domain/value_objects/value_object.dart';
-export 'src/domain/email_format.dart';
 export 'src/domain/western_digits.dart';
 export 'src/event_bus/event_bus.dart';
 export 'src/extensions/type_extensions.dart';

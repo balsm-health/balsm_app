@@ -169,7 +169,7 @@ void main() {
         'recorded_at TEXT NOT NULL, mood INTEGER NOT NULL, pain_level INTEGER NOT NULL)',
       )
       ..execute(
-        'CREATE TABLE check_in_pain_region ('
+        'CREATE TABLE check_in_pain_region ( '
         'check_in_id TEXT NOT NULL REFERENCES check_in(id) ON DELETE CASCADE, '
         'region_id TEXT NOT NULL, PRIMARY KEY (check_in_id, region_id))',
       )

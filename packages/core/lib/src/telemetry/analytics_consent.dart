@@ -43,6 +43,8 @@ class TelemetryPrefs extends ModulePreferences {
 /// A telemetry backend whose egress is gated on the patient's product-analytics
 /// consent. Implemented by [PostHogAnalyticsLogger]; Sentry does not implement
 /// it (see [kAnalyticsConsentDefault]).
+// Port interface; PostHog implements it and tests substitute fakes.
+// ignore: one_member_abstracts
 abstract class AnalyticsConsentSink {
   /// Called with the current consent at boot and again on every change.
   void setAnalyticsEnabled(bool enabled);

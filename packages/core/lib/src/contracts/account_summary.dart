@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import '../domain/value_objects/user_id.dart';
 
 /// Immutable read-model summary of the signed-in user's account.
@@ -5,6 +6,7 @@ import '../domain/value_objects/user_id.dart';
 /// PHI rule: this object carries no PHI. `displayName` and `handle` are
 /// user-chosen public-ish identifiers, never medical data. Do not add
 /// PHI fields (e.g. date_of_birth) to this summary.
+@immutable
 class AccountSummary {
   const AccountSummary({
     required this.id,

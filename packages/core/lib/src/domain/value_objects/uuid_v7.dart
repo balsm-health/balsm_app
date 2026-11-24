@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
 import 'package:uuid/parsing.dart';
 import 'package:uuid/uuid.dart';
 
@@ -11,18 +12,19 @@ import 'package:uuid/uuid.dart';
 /// `.timestamp`, and value equality — so the DB schema and all call sites are
 /// unaffected. The canonical byte/string layout is unchanged from the previous
 /// hand-rolled implementation, so existing ids remain valid (no migration).
+@immutable
 class UuidV7 {
   const UuidV7._(this._bytes);
+
+  factory UuidV7.generate() => UuidV7._(UuidParsing.parseAsByteList(_uuid.v7()));
+
+  /// Parse a canonical `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` string.
+  /// Throws [FormatException] on malformed input.
+  factory UuidV7.fromString(String uuid) => UuidV7._(UuidParsing.parseAsByteList(uuid));
 
   final Uint8List _bytes;
 
   static const _uuid = Uuid();
-
-  static UuidV7 generate() => UuidV7._(UuidParsing.parseAsByteList(_uuid.v7()));
-
-  /// Parse a canonical `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` string.
-  /// Throws [FormatException] on malformed input.
-  static UuidV7 fromString(String uuid) => UuidV7._(UuidParsing.parseAsByteList(uuid));
 
   /// Embedded 48-bit unix-ms timestamp. Uses multiplication (values stay under
   /// 2^53) instead of bit shifts, so it is correct under dart2js on web.

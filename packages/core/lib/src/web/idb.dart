@@ -3,6 +3,16 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+/// An IndexedDB request failed.
+class IdbException implements Exception {
+  const IdbException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'IdbException: $message';
+}
+
 /// One IndexedDB database with a fixed set of object stores, each request in
 /// its own transaction. Web only.
 class Idb {
@@ -16,9 +26,7 @@ class Idb {
         final request = web.window.indexedDB.open(name, 1);
         request.onupgradeneeded = ((web.Event _) {
           final db = request.result! as web.IDBDatabase;
-          for (final store in stores) {
-            db.createObjectStore(store);
-          }
+          stores.forEach(db.createObjectStore);
         }).toJS;
         return _await<web.IDBDatabase>(request);
       }();
@@ -26,7 +34,7 @@ class Idb {
   Future<T> _await<T extends JSAny?>(web.IDBRequest request) {
     final done = Completer<T>();
     request.onsuccess = ((web.Event _) => done.complete(request.result as T)).toJS;
-    request.onerror = ((web.Event _) => done.completeError(StateError('$name: ${request.error?.message}'))).toJS;
+    request.onerror = ((web.Event _) => done.completeError(IdbException('$name: ${request.error?.message}'))).toJS;
     return done.future;
   }
 

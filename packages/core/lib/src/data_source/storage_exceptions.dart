@@ -16,7 +16,17 @@ sealed class StorageException implements Exception {
   const StorageException(this.message);
   final String message;
   @override
-  String toString() => '$runtimeType: $message';
+  String toString() {
+    // Named per subtype: `runtimeType` is mangled in minified web builds.
+    final name = switch (this) {
+      NoActiveUserException() => 'NoActiveUserException',
+      NoActiveEntityException() => 'NoActiveEntityException',
+      NoActiveProfileException() => 'NoActiveProfileException',
+      StorageWriteException() => 'StorageWriteException',
+      StorageDecodeException() => 'StorageDecodeException',
+    };
+    return '$name: $message';
+  }
 }
 
 /// A user-scoped operation ran with no authenticated user and no explicit

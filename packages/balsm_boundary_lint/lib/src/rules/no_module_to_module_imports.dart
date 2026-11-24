@@ -33,7 +33,7 @@ class NoModuleToModuleImports extends DartLintRule {
   }
 
   @override
-  void run(CustomLintResolver resolver, ErrorReporter reporter, CustomLintContext context) {
+  void run(CustomLintResolver resolver, DiagnosticReporter reporter, CustomLintContext context) {
     context.registry.addImportDirective((node) {
       final uri = node.uri.stringValue ?? '';
       final currentPkg = _pkgOf(resolver.path);

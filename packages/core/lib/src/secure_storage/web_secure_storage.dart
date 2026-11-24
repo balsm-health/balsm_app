@@ -48,7 +48,7 @@ class WebSecureStorage extends FlutterSecureStoragePlatform {
         // the one read back below.
         try {
           await _idb.run<JSAny?>(_keys, (s) => s.add(fresh, _wrapKeyId.toJS), write: true);
-        } on StateError {
+        } on IdbException {
           // Lost the race.
         }
         return (await _idb.run<JSAny?>(_keys, (s) => s.get(_wrapKeyId.toJS)))! as web.CryptoKey;
