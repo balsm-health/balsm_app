@@ -577,6 +577,7 @@ class PButton extends StatelessWidget {
     this.label, {
     super.key,
     this.icon,
+    this.trailingIcon,
     this.onTap,
     this.variant = BtnVariant.primary,
     this.large = false,
@@ -589,6 +590,9 @@ class PButton extends StatelessWidget {
   });
   final String label;
   final IconData? icon;
+
+  /// An icon after the label (a "Next" arrow); use [forwardArrow] so it follows reading order.
+  final IconData? trailingIcon;
   final VoidCallback? onTap;
   final BtnVariant variant;
 
@@ -708,6 +712,7 @@ class PButton extends StatelessWidget {
               style: Typo.bodyFace(ar).copyWith(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
             ),
           ),
+          if (trailingIcon != null) ...[SizedBox(width: _gap), Icon(trailingIcon, size: 20, color: fg)],
         ],
       ),
     );
