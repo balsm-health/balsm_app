@@ -11,6 +11,7 @@ import '../../app_state.dart';
 import '../../kit.dart';
 import '../family/family_kit.dart';
 import '../family/member_screen.dart';
+import '../home_widgets.dart' show MetricGrid;
 import 'baby_screen.dart';
 import 'birth_screen.dart';
 import 'pregnancy_add_screen.dart';
@@ -93,22 +94,15 @@ class PregnancyScreen extends ConsumerWidget {
             ],
           ),
         ),
-        LayoutBuilder(
-          builder: (context, c) {
-            const gap = 10.0;
-            final w = active.length > 1 ? (c.maxWidth - gap) / 2 : c.maxWidth;
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: [
-                for (final b in active)
-                  SizedBox(
-                    width: w,
-                    child: _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items, mother: mother),
-                  ),
-              ],
-            );
-          },
+        // A two-column grid, each row as tall as its tallest card: a baby with a
+        // measurement or a two-line name must not leave its neighbour shorter,
+        // and a lone baby keeps one column rather than stretching across both.
+        MetricGrid(
+          columns: 2,
+          tiles: [
+            for (final b in active)
+              _BabyCard(pregnancy: preg, baby: b, babies: babies, items: items, mother: mother),
+          ],
         ),
         if (born.isNotEmpty) ...[
           const SizedBox(height: 10),

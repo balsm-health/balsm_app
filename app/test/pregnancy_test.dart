@@ -345,6 +345,49 @@ void main() {
       expect(p.end_b.toLowerCase(), isNot(contains('remind')), reason: 'there is no reminder scheduler');
     });
 
+    testWidgets('baby cards on a row are the same height, with or without a measurement', (tester) async {
+      final s = state();
+      final p = s.strings.pregnancy;
+      final c = await pump(tester, const SizedBox(), s);
+      final preg = await start(c, babies: 3);
+      final self = (await c.read(selfProfileIdProvider.future))!;
+      final babies = await c.read(pregnancyBabiesPortProvider).listBabies(preg.id);
+      final now = DateTime.now();
+      // Only Baby A has a measurement, so its card holds the most.
+      final added = await c.read(pregnancyRecordsUseCaseProvider).addItem(
+            pregnancyId: preg.id,
+            motherId: self,
+            about: ItemAbout.baby,
+            babyIds: [babies.first.id],
+            kind: ItemKind.measure,
+            recordedOn: now,
+            now: now,
+            fetalHeartRateBpm: 146,
+            estimatedFetalWeightG: 520,
+          );
+      expect(added.isSuccess, isTrue);
+      await pump(tester, const PregnancyScreen(), s);
+
+      Size card(String letter) =>
+          tester.getSize(find.ancestor(of: find.text(p.baby_lettered(letter)), matching: find.byType(PCard)).first);
+      expect(card('A').height, card('B').height, reason: 'one row, one height');
+      expect(card('A').width, card('B').width);
+      expect(card('C').width, card('A').width, reason: 'an odd last card keeps its half of the row');
+    });
+
+    testWidgets('a lone baby keeps one column of the two-column grid, not the full width', (tester) async {
+      final s = state();
+      final p = s.strings.pregnancy;
+      final c = await pump(tester, const SizedBox(), s);
+      await start(c);
+      await pump(tester, const PregnancyScreen(), s);
+
+      final card = tester.getSize(find.ancestor(of: find.text(p.baby), matching: find.byType(PCard)).first);
+      final screen = tester.getSize(find.byType(PregnancyScreen));
+      // Two columns and a 10dp gap inside the page padding: well under the full width.
+      expect(card.width, lessThan(screen.width / 2));
+    });
+
     testWidgets('ending the pregnancy closes it and its babies; the records stay', (tester) async {
       final s = state();
       final p = s.strings.pregnancy;
