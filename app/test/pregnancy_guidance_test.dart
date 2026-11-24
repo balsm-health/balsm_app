@@ -111,6 +111,17 @@ void main() {
       expect((await kv.get<Map<String, dynamic>>(ApiPregnancyGuidance.storageKey))!['etag'], '"e1"');
     });
 
+    test('a copy kept in the older shape (before labels) is not used: it is fetched again', () async {
+      await kv.put<Map<String, dynamic>>('content.pregnancy_weeks.v1', {'etag': '"e1"', 'data': _content().toJson()});
+      final api = FakeContentApi(weeks: _content(), etag: '"e1"');
+      final source = ApiPregnancyGuidance(api: api, kv: kv);
+
+      expect(await source.cached(), isNull);
+      await source.refresh();
+
+      expect(api.sentEtags, [null], reason: 'no ETag from the old copy, so the server sends the full body');
+    });
+
     test('a new version replaces the kept copy', () async {
       final api = FakeContentApi(weeks: _content(), etag: '"e1"');
       final source = ApiPregnancyGuidance(api: api, kv: kv);

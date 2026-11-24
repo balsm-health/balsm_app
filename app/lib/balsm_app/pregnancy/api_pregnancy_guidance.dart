@@ -21,7 +21,7 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
 
   /// Bump the suffix when the stored shape changes; an older copy is then
   /// ignored and fetched again.
-  static const storageKey = 'content.pregnancy_weeks.v1';
+  static const storageKey = 'content.pregnancy_weeks.v2';
 
   final ContentApi _api;
   final GlobalKVDataSource _kv;
