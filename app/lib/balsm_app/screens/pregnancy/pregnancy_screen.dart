@@ -114,13 +114,16 @@ class PregnancyScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           RowsCard(children: [for (final b in born) _BornRow(baby: b)]),
         ],
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: _LinkButton(icon: LucideIcons.plus, label: p.add_baby, onTap: () => _addBaby(context, ref, preg)),
+        // The domain refuses a baby past the limit; hiding the button keeps
+        // that from ever looking like a failed tap.
+        if (babies.length < Pregnancy.maxBabies)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _LinkButton(icon: LucideIcons.plus, label: p.add_baby, onTap: () => _addBaby(context, ref, preg)),
+            ),
           ),
-        ),
         FamilySecHead(owner == null ? p.my_records : p.records_of(owner.shortName)),
         if (mine.isEmpty)
           Text(owner == null ? p.my_records_empty : p.records_of_empty, style: Typo.bodySm(ar: s.rtl))

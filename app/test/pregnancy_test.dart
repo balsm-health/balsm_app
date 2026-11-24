@@ -224,7 +224,8 @@ void main() {
 
       await tester.tap(find.text(p.mode_lmp));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(p.pick_date));
+      // The first "Choose a date" is the due date / last period; the second is the optional visit.
+      await tester.tap(find.text(p.pick_date).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text(s.strings.onboarding.dob_confirm));
       await tester.pumpAndSettle();
@@ -232,9 +233,102 @@ void main() {
       expect(find.textContaining(p.est_due), findsOne);
       expect(tester.widget<PButton>(cta).onTap, isNotNull);
     });
+
+    testWidgets('the babies stepper counts 1 to 8, names the pregnancy type, and stops at each end', (tester) async {
+      final s = state();
+      final p = s.strings.pregnancy;
+      await pump(tester, const PregnancyStartScreen(), s);
+      RoundBtn button(String label) => tester.widget<RoundBtn>(
+            find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == label),
+          );
+      Future<void> more() async {
+        await tester.tap(find.byWidgetPredicate((w) => w is RoundBtn && w.semanticLabel == p.more_babies));
+        await tester.pump();
+      }
+
+      expect(find.text('1'), findsOne);
+      expect(button(p.fewer_babies).onTap, isNull, reason: 'one baby is the least');
+      expect(find.text(p.type_2), findsNothing, reason: 'a single baby has no type label');
+
+      await more();
+      expect(find.text('2'), findsOne);
+      expect(find.text(p.type_2), findsOne);
+      await more();
+      expect(find.text(p.type_3), findsOne);
+      await more();
+      expect(find.text(p.type_4), findsOne);
+      for (var n = 5; n <= 8; n++) {
+        await more();
+      }
+      expect(find.text('8'), findsOne);
+      expect(find.text(p.type_n(8)), findsOne);
+      expect(button(p.more_babies).onTap, isNull, reason: 'eight is the most');
+      expect(button(p.fewer_babies).onTap, isNotNull);
+    });
+
+    testWidgets("an optional next visit chosen here is kept as the pregnancy's next visit", (tester) async {
+      final s = state();
+      final p = s.strings.pregnancy;
+      final c = await pump(tester, const PregnancyStartScreen(), s);
+      Future<void> chooseDay(Finder field) async {
+        await tester.tap(field);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(s.strings.onboarding.dob_confirm));
+        await tester.pumpAndSettle();
+      }
+
+      // Two date fields show "Choose a date": the due date, then the visit.
+      expect(find.text('${p.next_visit_t} · ${s.strings.family.optional}'), findsOne);
+      await chooseDay(find.text(p.pick_date).first);
+      await chooseDay(find.text(p.pick_date));
+      await tester.tap(find.text(p.start_cta));
+      await tester.pumpAndSettle();
+
+      final self = await c.read(selfProfileIdProvider.future);
+      final stored = await c.read(pregnanciesDataSourceProvider).findActive(scope: self);
+      expect(stored!.nextVisit, isNotNull);
+      expect(stored.nextVisit!.date, PregnancyDates.day(DateTime.now()));
+    });
+
+    test('the pickers offer exactly the days the domain accepts, however late in the day it is', () {
+      // 23:55 is where `now.add(Duration(days: 280))` used to land on the day
+      // after the last accepted one in a zone whose clock changes in between.
+      final lateEvening = DateTime(2026, 11, 24, 23, 55);
+
+      final due = startPickerRange(lateEvening, dueDate: true);
+      expect(due.last, DateTime(2027, 8, 31));
+      expect(PregnancyDates.daysBetween(lateEvening, due.last), Pregnancy.maxDaysAhead);
+      expect(due.first, DateTime(2026, 10, 13));
+      expect(PregnancyDates.daysBetween(due.first, lateEvening), Pregnancy.maxDaysPast);
+      final lastDay = Pregnancy.start(
+        id: const PregnancyId.value('p'),
+        motherId: const HealthProfileId.value('m'),
+        dueDate: due.last,
+        now: lateEvening,
+      );
+      expect(lastDay.isSuccess, isTrue, reason: 'the last day offered must be one the domain accepts');
+
+      final lmp = startPickerRange(lateEvening, dueDate: false);
+      expect(lmp.last, DateTime(2026, 11, 24));
+      expect(PregnancyDates.daysBetween(lmp.first, lateEvening), PregnancyDates.termDays + Pregnancy.maxDaysPast);
+    });
   });
 
   group('Pregnancy screen', () {
+    testWidgets('"Add a baby" is offered until the pregnancy holds the most it can', (tester) async {
+      final s = state();
+      final p = s.strings.pregnancy;
+      final c = await pump(tester, const SizedBox(), s);
+      await start(c, babies: Pregnancy.maxBabies - 1);
+      await pump(tester, const PregnancyScreen(), s);
+      expect(find.text(p.add_baby), findsOne);
+
+      await tester.tap(find.text(p.add_baby));
+      await tester.pumpAndSettle();
+
+      expect(find.text(p.add_baby), findsNothing, reason: 'eight babies is the most one pregnancy holds');
+    });
+
     testWidgets('twins: week hero, Baby A and Baby B, no weekly guidance without content', (tester) async {
       final s = state();
       final p = s.strings.pregnancy;
