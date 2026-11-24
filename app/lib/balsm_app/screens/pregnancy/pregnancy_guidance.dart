@@ -26,7 +26,7 @@ Future<void> openPregnancyWeeks(BuildContext context, {HealthProfileId? mother})
 
 /// "General information, not medical advice. Based on …." — the line under
 /// the guidance.
-String _footer(WeeklyGuidance g, String lang) => '${g.disclaimer.inLanguage(lang)} ${g.source.inLanguage(lang)}.';
+String _footer(WeeklyGuidance g) => '${g.disclaimer} ${g.source}.';
 
 /// This week's guidance with its compact guide, "All weeks" and the footer.
 class PregnancyGuidanceCard extends ConsumerWidget {
@@ -48,7 +48,6 @@ class PregnancyGuidanceCard extends ConsumerWidget {
     if (guidance == null || entry == null) return const SizedBox.shrink();
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final lang = s.lang.value;
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: PCard(
@@ -71,11 +70,11 @@ class PregnancyGuidanceCard extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              entry.title.inLanguage(lang),
+              entry.title,
               style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
-            Text(entry.body.inLanguage(lang), style: Typo.bodySm(ar: s.rtl)),
+            Text(entry.body, style: Typo.bodySm(ar: s.rtl)),
             const SizedBox(height: 8),
             PregnancyWeekGuide(
               entry: entry,
@@ -85,7 +84,7 @@ class PregnancyGuidanceCard extends ConsumerWidget {
               onMore: () => openPregnancyWeeks(context, mother: mother),
             ),
             const SizedBox(height: 8),
-            _Footer(_footer(guidance, lang), divider: true),
+            _Footer(_footer(guidance), divider: true),
           ],
         ),
       ),
@@ -191,22 +190,20 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
 
   @override
   Widget build(BuildContext context) {
-    final s = AppScope.of(context);
-    final lang = s.lang.value;
     final entry = widget.entry;
     final g = widget.guidance;
-    String? label(String key, [Map<String, Object> args = const {}]) => g.label(key, lang, args);
+    String? label(String key, [Map<String, Object> args = const {}]) => g.label(key, args);
     final tests = [
       for (final id in entry.testsDue)
-        if (g.testLabels[id] case final label?) label.inLanguage(lang),
+        if (g.testLabels[id] case final label?) label,
     ];
     final dangers = [
       for (final id in entry.dangerSigns)
-        if (g.dangerSignLabels[id] case final label?) label.inLanguage(lang),
+        if (g.dangerSignLabels[id] case final label?) label,
     ];
     final topics = [
       for (final id in entry.topics)
-        if (g.topicLabels[id] case final name?) (_topicIcon(id), name.inLanguage(lang)),
+        if (g.topicLabels[id] case final name?) (_topicIcon(id), name),
     ];
     final sources = g.sourcesOf(entry);
     final gap = <Widget>[];
@@ -220,7 +217,7 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
       add(
         _WeekArtwork(
           art: art,
-          credit: g.illustrationCredits[art.credit]?.text.inLanguage(lang),
+          credit: g.illustrationCredits[art.credit]?.text,
           label: label('illustration', {'week': entry.week}),
           height: widget.compact ? 112 : 150,
         ),
@@ -245,7 +242,7 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
       add(
         _DangersToKnow(
           title: label('dangers_all')!,
-          labels: [for (final label in g.dangerSignLabels.values) label.inLanguage(lang)],
+          labels: [for (final label in g.dangerSignLabels.values) label],
           open: _allDangers,
           onToggle: () => setState(() => _allDangers = !_allDangers),
         ),
@@ -263,7 +260,7 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
         ),
       );
     }
-    if (widget.multiples) add(_MultiplesNote(g.multiplesNote.inLanguage(lang)));
+    if (widget.multiples) add(_MultiplesNote(g.multiplesNote));
     if (widget.compact) {
       if ((widget.onMore, label('sources_more', {'n': sources.length})) case (final onMore?, final more?)) {
         add(
@@ -363,8 +360,7 @@ class _SizeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final lang = s.lang.value;
-    String? label(String key, [Map<String, Object> args = const {}]) => guidance.label(key, lang, args);
+    String? label(String key, [Map<String, Object> args = const {}]) => guidance.label(key, args);
     String? amount(num v, String unit) => label(unit) == null ? null : '${_n(v)} ${label(unit)}';
     final mm = size.lengthMm;
     final g = size.weightG;
@@ -376,7 +372,7 @@ class _SizeRow extends StatelessWidget {
       if (weight != null)
         if (label('size_weight', {'value': weight}) case final line?) line,
     ];
-    final comparison = size.comparison?.inLanguage(lang);
+    final comparison = size.comparison;
     final heading = comparison == null ? label('size_title') : label('size_about', {'thing': comparison});
     if (heading == null && figures.isEmpty) return const SizedBox.shrink();
     return Container(
@@ -759,7 +755,6 @@ class _PregnancyWeeksScreenState extends ConsumerState<PregnancyWeeksScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final lang = s.lang.value;
     final preg = ref.watch(activePregnancyOfProvider(widget.mother));
     final guidance = ref.watch(pregnancyGuidanceProvider).value;
     if (preg == null || guidance == null) return FamilyScaffold(title: p.weeks_title, children: const []);
@@ -780,7 +775,7 @@ class _PregnancyWeeksScreenState extends ConsumerState<PregnancyWeeksScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(padding: const EdgeInsets.only(bottom: 6), child: _Footer(_footer(guidance, lang))),
+            Padding(padding: const EdgeInsets.only(bottom: 6), child: _Footer(_footer(guidance))),
             for (final w in guidance.weeks) ...[
               const SizedBox(height: 8),
               _WeekTile(
@@ -821,8 +816,7 @@ class _WeekTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final p = s.strings.pregnancy;
-    final lang = s.lang.value;
-    final title = entry.title.inLanguage(lang);
+    final title = entry.title;
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -900,7 +894,7 @@ class _WeekTile extends StatelessWidget {
                     style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 10),
-                  Text(entry.body.inLanguage(lang), style: Typo.bodySm(ar: s.rtl)),
+                  Text(entry.body, style: Typo.bodySm(ar: s.rtl)),
                   const SizedBox(height: 10),
                   PregnancyWeekGuide(entry: entry, guidance: guidance, multiples: multiples),
                 ],

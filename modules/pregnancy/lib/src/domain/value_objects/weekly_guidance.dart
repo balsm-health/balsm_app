@@ -1,19 +1,7 @@
-/// Week-by-week pregnancy guidance: general information from a partner
-/// organisation, the same for every patient. Not PHI — it says nothing about
+/// Week-by-week pregnancy guidance: general information, the same for every
+/// patient, in one language — every text here is in [WeeklyGuidance.language]. Not PHI — it says nothing about
 /// anyone's pregnancy — and it changes only when the content does.
 library;
-
-/// One piece of guidance copy in every language the app ships.
-class GuidanceText {
-  const GuidanceText({required this.en, required this.ar});
-
-  final String en;
-  final String ar;
-
-  /// The copy for [languageCode] (`ar`, `en`), English when that language is
-  /// missing.
-  String inLanguage(String languageCode) => languageCode == 'ar' && ar.isNotEmpty ? ar : en;
-}
 
 /// The baby's typical size in a week; each figure is null where the sources
 /// give none.
@@ -25,7 +13,7 @@ class GuidanceFetalSize {
   final int? weightG;
 
   /// An everyday object of about that size ("a plum").
-  final GuidanceText? comparison;
+  final String? comparison;
 
   bool get isEmpty => lengthMm == null && weightG == null && comparison == null;
 }
@@ -59,7 +47,7 @@ class GuidanceCredit {
   final String license;
 
   /// "Illustration: …, CC BY-ND 4.0".
-  final GuidanceText text;
+  final String text;
 }
 
 /// A published source the guidance is drawn from.
@@ -93,8 +81,8 @@ class GuidanceWeek {
   });
 
   final int week;
-  final GuidanceText title;
-  final GuidanceText body;
+  final String title;
+  final String body;
   final GuidanceFetalSize fetalSize;
   final List<String> testsDue;
   final List<String> dangerSigns;
@@ -110,6 +98,7 @@ class GuidanceWeek {
 /// The whole guidance set, as last received.
 class WeeklyGuidance {
   const WeeklyGuidance({
+    required this.language,
     required this.version,
     required this.source,
     required this.disclaimer,
@@ -123,6 +112,9 @@ class WeeklyGuidance {
     this.topicLabels = const {},
   });
 
+  /// `en` or `ar`: the language every text here is in.
+  final String language;
+
   /// Content version; a new one replaces the copy held on the device.
   final String version;
 
@@ -133,14 +125,14 @@ class WeeklyGuidance {
 
   /// Where the content comes from ("Based on WHO and Egypt MOHP guidance"),
   /// shown after [disclaimer].
-  final GuidanceText source;
+  final String source;
 
   /// "General information, not medical advice."
-  final GuidanceText disclaimer;
+  final String disclaimer;
 
   /// Shown with the guidance when the pregnancy carries more than one baby:
   /// the content describes a single pregnancy.
-  final GuidanceText multiplesNote;
+  final String multiplesNote;
 
   /// Ascending by week.
   final List<GuidanceWeek> weeks;
@@ -149,25 +141,25 @@ class WeeklyGuidance {
   final List<GuidanceSource> sources;
 
   /// Wording for each [GuidanceWeek.dangerSigns] key.
-  final Map<String, GuidanceText> dangerSignLabels;
+  final Map<String, String> dangerSignLabels;
 
   /// Wording for each [GuidanceWeek.testsDue] key.
-  final Map<String, GuidanceText> testLabels;
+  final Map<String, String> testLabels;
 
   /// Credit for each [GuidanceIllustration.credit] key.
   final Map<String, GuidanceCredit> illustrationCredits;
 
   /// The guide's own wording, keyed by name ("tests_due", "sources_more",
   /// …), with `{n}`-style placeholders; see [label].
-  final Map<String, GuidanceText> labels;
+  final Map<String, String> labels;
 
   /// Wording for each [GuidanceWeek.topics] key.
-  final Map<String, GuidanceText> topicLabels;
+  final Map<String, String> topicLabels;
 
-  /// Label [key] in [languageCode] with each `{name}` in it replaced by
+  /// Label [key] with each `{name}` in it replaced by
   /// [args]' value, or null when the content has no such label.
-  String? label(String key, String languageCode, [Map<String, Object> args = const {}]) {
-    var text = labels[key]?.inLanguage(languageCode);
+  String? label(String key, [Map<String, Object> args = const {}]) {
+    var text = labels[key];
     if (text == null) return null;
     for (final a in args.entries) {
       text = text!.replaceAll('{${a.key}}', '${a.value}');

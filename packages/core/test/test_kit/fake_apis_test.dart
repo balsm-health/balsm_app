@@ -134,7 +134,10 @@ void main() {
 
   test('FakeContentApi answers 304 to its current ETag and 404 when it has nothing', () async {
     final api = FakeContentApi();
-    await expectLater(api.pregnancyWeeks(), throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)));
+    await expectLater(
+      api.pregnancyWeeks(lang: 'en'),
+      throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)),
+    );
 
     api.weeks = PregnancyWeeksResponse.fromJson(const {
       'version': 'v-test',
@@ -142,11 +145,12 @@ void main() {
         {'week': 4},
       ],
     });
-    final fresh = await api.pregnancyWeeks();
-    final again = await api.pregnancyWeeks(etag: (fresh as Modified<PregnancyWeeksResponse>).etag);
+    final fresh = await api.pregnancyWeeks(lang: 'ar');
+    final again = await api.pregnancyWeeks(lang: 'ar', etag: (fresh as Modified<PregnancyWeeksResponse>).etag);
 
     expect(again, isA<NotModified<PregnancyWeeksResponse>>());
     expect(api.sentEtags, [null, null, '"fake-etag"']);
+    expect(api.sentLangs, ['en', 'ar', 'ar']);
   });
 
   test('FakeFamilyLinksApi answers 404 for an unknown jti and stores a pending request', () async {

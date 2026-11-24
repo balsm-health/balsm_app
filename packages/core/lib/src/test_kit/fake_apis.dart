@@ -558,9 +558,17 @@ class FakeContentApi implements ContentApi {
   /// The If-None-Match each call sent, in order.
   final sentEtags = <String?>[];
 
+  /// The `lang` each call asked for, in order.
+  final sentLangs = <String>[];
+
   @override
-  Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({String? etag, CancelToken? cancelToken}) async {
+  Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({
+    required String lang,
+    String? etag,
+    CancelToken? cancelToken,
+  }) async {
     sentEtags.add(etag);
+    sentLangs.add(lang);
     if (failWith case final failWith?) throw failWith;
     final body = weeks;
     if (body == null) throw const ApiException(code: 'not_found', statusCode: 404);

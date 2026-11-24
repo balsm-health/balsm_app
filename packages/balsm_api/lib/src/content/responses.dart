@@ -3,21 +3,21 @@
 /// is snake_case.
 library;
 
-/// One piece of copy in every language the app ships. A language the server
-/// leaves out arrives as `''` so the caller can fall back.
-class LocalizedTextDto {
-  const LocalizedTextDto({required this.en, required this.ar});
+String _text(Object? json) => json is String ? json : '';
 
-  factory LocalizedTextDto.fromJson(Object? json) {
-    final map = json is Map<String, dynamic> ? json : const <String, dynamic>{};
-    return LocalizedTextDto(en: map['en'] as String? ?? '', ar: map['ar'] as String? ?? '');
-  }
+List<String> _keys(Object? json) => json is List
+    ? [
+        for (final k in json)
+          if (k is String) k,
+      ]
+    : const [];
 
-  final String en;
-  final String ar;
-
-  Map<String, dynamic> toJson() => {'en': en, 'ar': ar};
-}
+Map<String, String> _labels(Object? json) => json is Map<String, dynamic>
+    ? {
+        for (final e in json.entries)
+          if (e.value case final String text) e.key: text,
+      }
+    : const {};
 
 /// A published source the guidance cites.
 class ContentSourceDto {
@@ -30,11 +30,11 @@ class ContentSourceDto {
   });
 
   factory ContentSourceDto.fromJson(Map<String, dynamic> json) => ContentSourceDto(
-        id: json['id'] as String? ?? '',
-        title: json['title'] as String? ?? '',
-        publisher: json['publisher'] as String? ?? '',
-        url: json['url'] as String? ?? '',
-        accessed: json['accessed'] as String? ?? '',
+        id: _text(json['id']),
+        title: _text(json['title']),
+        publisher: _text(json['publisher']),
+        url: _text(json['url']),
+        accessed: _text(json['accessed']),
       );
 
   final String id;
@@ -55,11 +55,10 @@ class FetalSizeDto {
 
   factory FetalSizeDto.fromJson(Object? json) {
     final map = json is Map<String, dynamic> ? json : const <String, dynamic>{};
-    final comparison = map['comparison'];
     return FetalSizeDto(
       lengthMm: (map['length_mm'] as num?)?.toInt(),
       weightG: (map['weight_g'] as num?)?.toInt(),
-      comparison: comparison == null ? null : LocalizedTextDto.fromJson(comparison),
+      comparison: map['comparison'] as String?,
     );
   }
 
@@ -67,25 +66,21 @@ class FetalSizeDto {
   final int? weightG;
 
   /// An everyday object of about that size, e.g. "a plum".
-  final LocalizedTextDto? comparison;
+  final String? comparison;
 
-  Map<String, dynamic> toJson() => {'length_mm': lengthMm, 'weight_g': weightG, 'comparison': comparison?.toJson()};
+  Map<String, dynamic> toJson() => {'length_mm': lengthMm, 'weight_g': weightG, 'comparison': comparison};
 }
 
 /// A week's artwork: [key] names the image, [credit] who made it.
 class IllustrationDto {
   const IllustrationDto({required this.key, required this.credit, required this.sourceUrl});
 
-  /// Null when [json] is not an artwork object (none, or an older shape).
+  /// Null when [json] is not an artwork object.
   static IllustrationDto? fromJson(Object? json) {
     if (json is! Map<String, dynamic>) return null;
     final key = json['key'];
     if (key is! String || key.isEmpty) return null;
-    return IllustrationDto(
-      key: key,
-      credit: json['credit'] as String? ?? '',
-      sourceUrl: json['source_url'] as String? ?? '',
-    );
+    return IllustrationDto(key: key, credit: _text(json['credit']), sourceUrl: _text(json['source_url']));
   }
 
   /// e.g. `pregnancy/week-12`.
@@ -111,11 +106,11 @@ class IllustrationCreditDto {
   });
 
   factory IllustrationCreditDto.fromJson(Map<String, dynamic> json) => IllustrationCreditDto(
-        author: json['author'] as String? ?? '',
-        license: json['license'] as String? ?? '',
-        licenseUrl: json['license_url'] as String? ?? '',
-        authorUrl: json['author_url'] as String? ?? '',
-        text: LocalizedTextDto.fromJson(json['text']),
+        author: _text(json['author']),
+        license: _text(json['license']),
+        licenseUrl: _text(json['license_url']),
+        authorUrl: _text(json['author_url']),
+        text: _text(json['text']),
       );
 
   final String author;
@@ -124,19 +119,18 @@ class IllustrationCreditDto {
   final String authorUrl;
 
   /// Credit line shown under the artwork.
-  final LocalizedTextDto text;
+  final String text;
 
   Map<String, dynamic> toJson() => {
         'author': author,
         'license': license,
         'license_url': licenseUrl,
         'author_url': authorUrl,
-        'text': text.toJson(),
+        'text': text,
       };
 }
 
-/// Guidance for one week of pregnancy. Fields after [body] arrived later:
-/// a copy cached before them reads as empty.
+/// Guidance for one week of pregnancy, in the document's language.
 class PregnancyWeekDto {
   const PregnancyWeekDto({
     required this.week,
@@ -152,8 +146,8 @@ class PregnancyWeekDto {
 
   factory PregnancyWeekDto.fromJson(Map<String, dynamic> json) => PregnancyWeekDto(
         week: (json['week'] as num).toInt(),
-        title: LocalizedTextDto.fromJson(json['title']),
-        body: LocalizedTextDto.fromJson(json['body']),
+        title: _text(json['title']),
+        body: _text(json['body']),
         fetalSize: FetalSizeDto.fromJson(json['fetal_size']),
         testsDue: _keys(json['tests_due']),
         dangerSigns: _keys(json['danger_signs']),
@@ -163,8 +157,8 @@ class PregnancyWeekDto {
       );
 
   final int week;
-  final LocalizedTextDto title;
-  final LocalizedTextDto body;
+  final String title;
+  final String body;
   final FetalSizeDto fetalSize;
 
   /// Keys of [PregnancyWeeksResponse.testLabels] usually due this week.
@@ -173,6 +167,7 @@ class PregnancyWeekDto {
   /// Keys of [PregnancyWeeksResponse.dangerSignLabels] the body warns about.
   final List<String> dangerSigns;
 
+  /// Keys of [PregnancyWeeksResponse.topicLabels].
   final List<String> topics;
 
   /// The week's artwork, or null when it has none.
@@ -183,8 +178,8 @@ class PregnancyWeekDto {
 
   Map<String, dynamic> toJson() => {
         'week': week,
-        'title': title.toJson(),
-        'body': body.toJson(),
+        'title': title,
+        'body': body,
         'fetal_size': fetalSize.toJson(),
         'tests_due': testsDue,
         'danger_signs': dangerSigns,
@@ -194,33 +189,25 @@ class PregnancyWeekDto {
       };
 }
 
-List<String> _keys(Object? json) => json is List
-    ? [
-        for (final k in json)
-          if (k is String) k,
-      ]
-    : const [];
-
-Map<String, LocalizedTextDto> _labels(Object? json) =>
-    json is Map<String, dynamic> ? {for (final e in json.entries) e.key: LocalizedTextDto.fromJson(e.value)} : const {};
-
-/// `GET /api/v1/content/pregnancy-weeks` — week-by-week pregnancy guidance.
+/// `GET /api/v1/content/pregnancy-weeks?lang=` — week-by-week pregnancy
+/// guidance, every text in one language ([language]).
 ///
 /// [toJson] round-trips [PregnancyWeeksResponse.fromJson] so a caller can keep
 /// the last good copy on the device.
 class PregnancyWeeksResponse {
   const PregnancyWeeksResponse({
+    required this.language,
     required this.version,
     required this.source,
     required this.disclaimer,
     required this.multiplesNote,
     required this.weeks,
+    this.labels = const {},
     this.sources = const [],
     this.dangerSignLabels = const {},
     this.testLabels = const {},
-    this.illustrationCredits = const {},
-    this.labels = const {},
     this.topicLabels = const {},
+    this.illustrationCredits = const {},
   });
 
   /// Throws [FormatException] when there is no version or no weeks — content
@@ -237,18 +224,19 @@ class PregnancyWeeksResponse {
     ];
     if (weeks.isEmpty) throw const FormatException('pregnancy-weeks: no weeks');
     return PregnancyWeeksResponse(
+      language: _text(json['language']),
       version: version,
-      source: LocalizedTextDto.fromJson(json['source']),
-      disclaimer: LocalizedTextDto.fromJson(json['disclaimer']),
-      multiplesNote: LocalizedTextDto.fromJson(json['multiples_note']),
+      source: _text(json['source']),
+      disclaimer: _text(json['disclaimer']),
+      multiplesNote: _text(json['multiples_note']),
       weeks: weeks,
+      labels: _labels(json['labels']),
       sources: [
         for (final x in json['sources'] is List ? json['sources'] as List : const [])
           if (x is Map<String, dynamic>) ContentSourceDto.fromJson(x),
       ],
       dangerSignLabels: _labels(json['danger_sign_labels']),
       testLabels: _labels(json['test_labels']),
-      labels: _labels(json['labels']),
       topicLabels: _labels(json['topic_labels']),
       illustrationCredits: {
         if (json['illustration_credits'] case final Map<String, dynamic> credits)
@@ -258,43 +246,48 @@ class PregnancyWeeksResponse {
     );
   }
 
+  /// `en` or `ar`: the language every text here is in.
+  final String language;
   final String version;
-  final LocalizedTextDto source;
-  final LocalizedTextDto disclaimer;
-  final LocalizedTextDto multiplesNote;
+
+  /// Where the content comes from, shown after [disclaimer].
+  final String source;
+  final String disclaimer;
+  final String multiplesNote;
   final List<PregnancyWeekDto> weeks;
+
+  /// The guide's own wording (section headings, size phrases, units, the
+  /// sources link) keyed by name, with `{n}`-style placeholders.
+  final Map<String, String> labels;
 
   /// Every source the weeks cite.
   final List<ContentSourceDto> sources;
 
   /// Wording for each [PregnancyWeekDto.dangerSigns] key.
-  final Map<String, LocalizedTextDto> dangerSignLabels;
+  final Map<String, String> dangerSignLabels;
 
   /// Wording for each [PregnancyWeekDto.testsDue] key.
-  final Map<String, LocalizedTextDto> testLabels;
+  final Map<String, String> testLabels;
+
+  /// Wording for each [PregnancyWeekDto.topics] key.
+  final Map<String, String> topicLabels;
 
   /// Credit for each [IllustrationDto.credit] key.
   final Map<String, IllustrationCreditDto> illustrationCredits;
 
-  /// The guide's own wording (section headings, size phrases, units, the
-  /// sources link) keyed by name, with `{n}`-style placeholders.
-  final Map<String, LocalizedTextDto> labels;
-
-  /// Wording for each [PregnancyWeekDto.topics] key.
-  final Map<String, LocalizedTextDto> topicLabels;
-
   Map<String, dynamic> toJson() => {
+        'language': language,
         'version': version,
-        'source': source.toJson(),
-        'disclaimer': disclaimer.toJson(),
-        'multiples_note': multiplesNote.toJson(),
+        'source': source,
+        'disclaimer': disclaimer,
+        'multiples_note': multiplesNote,
         'weeks': [for (final w in weeks) w.toJson()],
+        'labels': labels,
         'sources': [for (final x in sources) x.toJson()],
-        'danger_sign_labels': {for (final e in dangerSignLabels.entries) e.key: e.value.toJson()},
-        'test_labels': {for (final e in testLabels.entries) e.key: e.value.toJson()},
+        'danger_sign_labels': dangerSignLabels,
+        'test_labels': testLabels,
+        'topic_labels': topicLabels,
         'illustration_credits': {for (final e in illustrationCredits.entries) e.key: e.value.toJson()},
-        'labels': {for (final e in labels.entries) e.key: e.value.toJson()},
-        'topic_labels': {for (final e in topicLabels.entries) e.key: e.value.toJson()},
       };
 }
 

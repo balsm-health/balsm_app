@@ -14,9 +14,14 @@ class DioContentApi implements ContentApi {
   final NetworkManager _net;
 
   @override
-  Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({String? etag, CancelToken? cancelToken}) async {
+  Future<Revalidated<PregnancyWeeksResponse>> pregnancyWeeks({
+    required String lang,
+    String? etag,
+    CancelToken? cancelToken,
+  }) async {
     final res = await _net.get(
       ApiRoutes.content_pregnancy_weeks,
+      queryParameters: {'lang': lang},
       cancelToken: cancelToken,
       options: Options(
         headers: {if (etag != null && etag.isNotEmpty) 'If-None-Match': etag},

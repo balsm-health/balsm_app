@@ -20,11 +20,14 @@ import 'support/flag_overrides.dart';
 /// Weekly pregnancy guidance: the API adapter that keeps the last good copy on
 /// the device, the card on the pregnancy screen and "Week by week". All copy
 /// here is invented test text — no partner content, nothing about a patient.
-PregnancyWeeksResponse _content({String version = 'v-test'}) => PregnancyWeeksResponse.fromJson({
+String _t(String lang, String en, String ar) => lang == 'ar' ? ar : en;
+
+PregnancyWeeksResponse _content({String version = 'v-test', String lang = 'en'}) => PregnancyWeeksResponse.fromJson({
+      'language': lang,
       'version': version,
-      'source': {'en': 'Test Source Org', 'ar': 'جهة تجريبية'},
-      'disclaimer': {'en': 'Test disclaimer.', 'ar': 'تنبيه تجريبي.'},
-      'multiples_note': {'en': 'Test multiples note', 'ar': 'ملاحظة توائم تجريبية'},
+      'source': _t(lang, 'Test Source Org', 'جهة تجريبية'),
+      'disclaimer': _t(lang, 'Test disclaimer.', 'تنبيه تجريبي.'),
+      'multiples_note': _t(lang, 'Test multiples note', 'ملاحظة توائم تجريبية'),
       'labels': {
         for (final (k, en) in [
           ('size_title', 'Test size'),
@@ -43,10 +46,10 @@ PregnancyWeeksResponse _content({String version = 'v-test'}) => PregnancyWeeksRe
           ('sources_more', 'Test sources ({n}) and more'),
           ('illustration', 'Test week {week} art'),
         ])
-          k: {'en': en, 'ar': 'ع $en'},
+          k: _t(lang, en, 'ع $en'),
       },
       'topic_labels': {
-        'movements': {'en': 'Test movements', 'ar': 'حركة تجريبية'},
+        'movements': _t(lang, 'Test movements', 'حركة تجريبية'),
       },
       'sources': [
         {
@@ -58,18 +61,18 @@ PregnancyWeeksResponse _content({String version = 'v-test'}) => PregnancyWeeksRe
         },
       ],
       'danger_sign_labels': {
-        'bleeding': {'en': 'Test bleeding', 'ar': 'نزيف تجريبي'},
-        'fever': {'en': 'Test fever', 'ar': 'حرارة تجريبية'},
+        'bleeding': _t(lang, 'Test bleeding', 'نزيف تجريبي'),
+        'fever': _t(lang, 'Test fever', 'حرارة تجريبية'),
       },
       'test_labels': {
-        'gdm': {'en': 'Test sugar test', 'ar': 'تحليل تجريبي'},
+        'gdm': _t(lang, 'Test sugar test', 'تحليل تجريبي'),
       },
       'weeks': [
         for (var w = 4; w <= 40; w++)
           {
             'week': w,
-            'title': {'en': 'Test title $w', 'ar': 'عنوان تجريبي $w'},
-            'body': {'en': 'Test body $w ($version)', 'ar': 'نص تجريبي $w'},
+            'title': _t(lang, 'Test title $w', 'عنوان تجريبي $w'),
+            'body': _t(lang, 'Test body $w ($version)', 'نص تجريبي $w'),
             // Week 24 is the current week in the screen tests: a size, a
             // test, topics (one with no label) and no danger sign;
             // week 25 warns of bleeding.
@@ -102,22 +105,22 @@ void main() {
   group('ApiPregnancyGuidance', () {
     test('keeps the first copy with its ETag, then revalidates with it and gets 304', () async {
       final api = FakeContentApi(weeks: _content(), etag: '"e1"');
-      final source = ApiPregnancyGuidance(api: api, kv: kv);
+      final source = ApiPregnancyGuidance(api: api, kv: kv, language: 'en');
 
       expect(await source.cached(), isNull);
       final first = await source.refresh();
       final second = await source.refresh();
 
-      expect(first!.forWeek(24)!.title.en, 'Test title 24');
+      expect(first!.forWeek(24)!.title, 'Test title 24');
       expect(second!.version, 'v-test');
       expect(api.sentEtags, [null, '"e1"']);
-      expect((await kv.get<Map<String, dynamic>>(ApiPregnancyGuidance.storageKey))!['etag'], '"e1"');
+      expect((await kv.get<Map<String, dynamic>>(ApiPregnancyGuidance.storageKey('en')))!['etag'], '"e1"');
     });
 
     test('a copy kept in the older shape (before labels) is not used: it is fetched again', () async {
-      await kv.put<Map<String, dynamic>>('content.pregnancy_weeks.v1', {'etag': '"e1"', 'data': _content().toJson()});
+      await kv.put<Map<String, dynamic>>('content.pregnancy_weeks.v2', {'etag': '"e1"', 'data': _content().toJson()});
       final api = FakeContentApi(weeks: _content(), etag: '"e1"');
-      final source = ApiPregnancyGuidance(api: api, kv: kv);
+      final source = ApiPregnancyGuidance(api: api, kv: kv, language: 'en');
 
       expect(await source.cached(), isNull);
       await source.refresh();
@@ -127,7 +130,7 @@ void main() {
 
     test('a new version replaces the kept copy', () async {
       final api = FakeContentApi(weeks: _content(), etag: '"e1"');
-      final source = ApiPregnancyGuidance(api: api, kv: kv);
+      final source = ApiPregnancyGuidance(api: api, kv: kv, language: 'en');
       await source.refresh();
 
       api
@@ -141,26 +144,28 @@ void main() {
 
     test('offline after the first fetch: the kept copy', () async {
       final api = FakeContentApi(weeks: _content());
-      final source = ApiPregnancyGuidance(api: api, kv: kv);
+      final source = ApiPregnancyGuidance(api: api, kv: kv, language: 'en');
       await source.refresh();
 
       api.failWith = _offline;
 
       expect((await source.refresh())!.version, 'v-test');
-      expect((await ApiPregnancyGuidance(api: api, kv: kv).cached())!.forWeek(4)!.body.en, 'Test body 4 (v-test)');
+      final kept = await ApiPregnancyGuidance(api: api, kv: kv, language: 'en').cached();
+      expect(kept!.forWeek(4)!.body, 'Test body 4 (v-test)');
     });
 
     test('nothing kept and the fetch fails: null, no throw', () async {
-      final source = ApiPregnancyGuidance(api: FakeContentApi()..failWith = _offline, kv: kv);
+      final source = ApiPregnancyGuidance(api: FakeContentApi()..failWith = _offline, kv: kv, language: 'en');
 
       expect(await source.refresh(), isNull);
-      expect(await ApiPregnancyGuidance(api: FakeContentApi(), kv: kv).refresh(), isNull, reason: '404');
+      final missing = ApiPregnancyGuidance(api: FakeContentApi(), kv: kv, language: 'en');
+      expect(await missing.refresh(), isNull, reason: '404');
     });
 
     test('an unreadable kept copy counts as none and is replaced', () async {
-      await kv.put<Map<String, dynamic>>(ApiPregnancyGuidance.storageKey, {'etag': '"old"', 'data': 'garbage'});
+      await kv.put<Map<String, dynamic>>(ApiPregnancyGuidance.storageKey('en'), {'etag': '"old"', 'data': 'garbage'});
       final api = FakeContentApi(weeks: _content());
-      final source = ApiPregnancyGuidance(api: api, kv: kv);
+      final source = ApiPregnancyGuidance(api: api, kv: kv, language: 'en');
 
       expect(await source.cached(), isNull);
       expect((await source.refresh())!.version, 'v-test');
@@ -195,6 +200,14 @@ void main() {
       final container = ProviderContainer(
         retry: noProviderRetry,
         overrides: [
+          // The app's language, followed live without handing [s] to
+          // Riverpod (which would dispose it with each test's container).
+          guidanceLanguageProvider.overrideWith((ref) {
+            void changed() => ref.invalidateSelf();
+            s.addListener(changed);
+            ref.onDispose(() => s.removeListener(changed));
+            return s.lang.value;
+          }),
           appDatabaseProvider.overrideWithValue(db),
           currentUserIdProvider.overrideWithValue(user),
           globalKVDataSourceProvider.overrideWithValue(kv),
@@ -290,7 +303,8 @@ void main() {
       expect(find.text('Test multiples note'), findsOne);
     });
 
-    testWidgets('Arabic: the copy comes in Arabic', (tester) async {
+    testWidgets('Arabic: the copy is asked for, and comes, in Arabic', (tester) async {
+      api.weeks = _content(lang: 'ar');
       final s = state(lang: LanguageCode.ar);
       final p = s.strings.pregnancy;
       await start(await pump(tester, const SizedBox(), s));
@@ -300,6 +314,21 @@ void main() {
       expect(find.text('عنوان تجريبي 24'), findsOne);
       expect(find.text('تنبيه تجريبي. جهة تجريبية.'), findsOne);
       expect(find.text('Test title 24'), findsNothing);
+      expect(api.sentLangs, everyElement('ar'));
+    });
+
+    testWidgets('switching the app to Arabic fetches the Arabic copy and shows it', (tester) async {
+      final s = state();
+      await start(await pump(tester, const SizedBox(), s));
+      await pump(tester, const PregnancyScreen(), s);
+      expect(find.text('Test title 24'), findsOne);
+
+      api.weeks = _content(lang: 'ar');
+      s.setLang(LanguageCode.ar);
+      await tester.pumpAndSettle();
+
+      expect(find.text('عنوان تجريبي 24'), findsOne);
+      expect(api.sentLangs.last, 'ar');
     });
 
     testWidgets('no guidance kept and none fetched: no card, no error', (tester) async {

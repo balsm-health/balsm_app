@@ -8,16 +8,17 @@ import '../helpers/fake_http_adapter.dart';
 
 /// A two-week payload in the server's shape. Placeholder copy only.
 Map<String, dynamic> _payload({String version = 'v-test'}) => {
+      'language': 'ar',
       'version': version,
-      'source': {'en': 'Test source', 'ar': 'مصدر تجريبي'},
-      'disclaimer': {'en': 'Test disclaimer', 'ar': 'تنبيه تجريبي'},
-      'multiples_note': {'en': 'Test multiples', 'ar': 'توائم تجريبي'},
+      'source': 'مصدر تجريبي',
+      'disclaimer': 'تنبيه تجريبي',
+      'multiples_note': 'توائم تجريبي',
       'weeks': [
         for (final w in [4, 5])
           {
             'week': w,
-            'title': {'en': 'Title $w', 'ar': 'عنوان $w'},
-            'body': {'en': 'Body $w', 'ar': 'نص $w'},
+            'title': 'عنوان $w',
+            'body': 'نص $w',
           },
       ],
     };
@@ -34,13 +35,13 @@ Map<String, dynamic> _full() => _payload()
     },
   ]
   ..['danger_sign_labels'] = {
-    'bleeding': {'en': 'Bleeding', 'ar': 'نزيف'},
+    'bleeding': 'نزيف',
   }
   ..['labels'] = {
-    'sources_more': {'en': 'Sources ({n})', 'ar': 'المصادر ({n})'},
+    'sources_more': 'المصادر ({n})',
   }
   ..['topic_labels'] = {
-    'visits': {'en': 'Visits', 'ar': 'زيارات'},
+    'visits': 'زيارات',
   }
   ..['illustration_credits'] = {
     'art': {
@@ -48,11 +49,11 @@ Map<String, dynamic> _full() => _payload()
       'license': 'CC BY-ND 4.0',
       'license_url': 'https://example.test/licence',
       'author_url': 'https://example.test/',
-      'text': {'en': 'Illustration: Test artist', 'ar': 'رسم: فنان تجريبي'},
+      'text': 'رسم: فنان تجريبي',
     },
   }
   ..['test_labels'] = {
-    'early_ultrasound': {'en': 'Early ultrasound', 'ar': 'سونار مبكر'},
+    'early_ultrasound': 'سونار مبكر',
   }
   ..['weeks'] = [
     for (final w in (_payload()['weeks'] as List).cast<Map<String, dynamic>>())
@@ -61,7 +62,7 @@ Map<String, dynamic> _full() => _payload()
         'fetal_size': {
           'length_mm': null,
           'weight_g': w['week'] == 5 ? 45 : null,
-          'comparison': w['week'] == 4 ? {'en': 'a seed', 'ar': 'بذرة'} : null,
+          'comparison': w['week'] == 4 ? 'بذرة' : null,
         },
         'tests_due': ['early_ultrasound'],
         'danger_signs': ['bleeding'],
@@ -85,22 +86,24 @@ void main() {
         ),
       );
 
-      final res = await DioContentApi(net: fakeNet(adapter)).pregnancyWeeks();
+      final res = await DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(lang: 'ar');
 
       expect(adapter.requests.single.path, ApiRoutes.content_pregnancy_weeks);
+      expect(adapter.requests.single.queryParameters, {'lang': 'ar'});
       expect(adapter.requests.single.headers.containsKey('If-None-Match'), isFalse);
       final fresh = res as Modified<PregnancyWeeksResponse>;
       expect(fresh.etag, '"pw-1"');
       expect(fresh.value.version, 'v-test');
-      expect(fresh.value.multiplesNote.ar, 'توائم تجريبي');
+      expect(fresh.value.multiplesNote, 'توائم تجريبي');
+      expect(fresh.value.language, 'ar');
       expect(fresh.value.weeks.map((w) => w.week), [4, 5]);
-      expect(fresh.value.weeks.last.title.en, 'Title 5');
+      expect(fresh.value.weeks.last.title, 'عنوان 5');
     });
 
     test('sends If-None-Match and maps an empty 304 to NotModified', () async {
       final adapter = FakeHttpAdapter((_) => ResponseBody.fromString('', 304));
 
-      final res = await DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(etag: '"pw-1"');
+      final res = await DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(lang: 'ar', etag: '"pw-1"');
 
       expect(adapter.requests.single.headers['If-None-Match'], '"pw-1"');
       expect(res, isA<NotModified<PregnancyWeeksResponse>>());
@@ -110,7 +113,7 @@ void main() {
       final adapter = FakeHttpAdapter((_) => jsonResponse('{}', status: 401));
 
       expect(
-        () => DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(),
+        () => DioContentApi(net: fakeNet(adapter)).pregnancyWeeks(lang: 'en'),
         throwsA(isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401)),
       );
     });
@@ -130,9 +133,9 @@ void main() {
       final (four, five) = (parsed.weeks.first, parsed.weeks.last);
 
       expect(parsed.sources.single.accessed, '2026-11-24');
-      expect(parsed.dangerSignLabels['bleeding']!.ar, 'نزيف');
-      expect(parsed.testLabels['early_ultrasound']!.en, 'Early ultrasound');
-      expect((four.fetalSize.lengthMm, four.fetalSize.weightG, four.fetalSize.comparison!.en), (null, null, 'a seed'));
+      expect(parsed.dangerSignLabels['bleeding'], 'نزيف');
+      expect(parsed.testLabels['early_ultrasound'], 'سونار مبكر');
+      expect((four.fetalSize.lengthMm, four.fetalSize.weightG, four.fetalSize.comparison), (null, null, 'بذرة'));
       expect((five.fetalSize.weightG, five.fetalSize.comparison), (45, null));
       expect(five.testsDue, ['early_ultrasound']);
       expect(five.dangerSigns, ['bleeding']);
@@ -140,9 +143,9 @@ void main() {
       expect(five.sources, ['src-1']);
       expect(four.illustration, isNull);
       expect((five.illustration!.key, five.illustration!.credit), ('pregnancy/week-05', 'art'));
-      expect(parsed.illustrationCredits['art']!.text.ar, 'رسم: فنان تجريبي');
-      expect(parsed.labels['sources_more']!.en, 'Sources ({n})');
-      expect(parsed.topicLabels['visits']!.ar, 'زيارات');
+      expect(parsed.illustrationCredits['art']!.text, 'رسم: فنان تجريبي');
+      expect(parsed.labels['sources_more'], 'المصادر ({n})');
+      expect(parsed.topicLabels['visits'], 'زيارات');
     });
 
     test('a copy cached before those fields reads them as empty', () {
@@ -158,18 +161,18 @@ void main() {
       expect(week.testsDue, isEmpty);
     });
 
-    test('a missing language arrives as empty, not a crash', () {
-      final json = _payload()..['source'] = {'en': 'Only English'};
+    test('a text that is not a string arrives as empty, not a crash', () {
+      final json = _payload()..['source'] = {'en': 'An old both-languages shape'};
 
       final parsed = PregnancyWeeksResponse.fromJson(json);
 
-      expect(parsed.source.ar, '');
+      expect(parsed.source, '');
     });
 
     test('a week without a number is skipped', () {
       final json = _payload();
       (json['weeks'] as List).add({
-        'title': {'en': 'x'},
+        'title': 'x',
       });
 
       expect(PregnancyWeeksResponse.fromJson(json).weeks, hasLength(2));
