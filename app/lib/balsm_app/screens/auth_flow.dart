@@ -1637,7 +1637,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
     ref.watch(otpControllerProvider); // bridge getters read current state
     final s = AppScope.of(context);
     final code = ctrl.text;
-    final contact = s.authEmail.isEmpty ? 'you@example.com' : s.authEmail;
+    final contact = s.authEmail.isEmpty ? s.strings.auth.otp_your_email : s.authEmail;
     return ColoredBox(
       color: AppColors.cream50,
       child: SafeArea(

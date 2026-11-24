@@ -1,0 +1,1 @@
+The sign-in code screen no longer tells you a code was sent to "you@example.com" when it has no address to show; it says "your email" instead. The six code boxes read left to right in Arabic and English alike, from one shared component. ([#168](https://github.com/balsm-health/balsm_app/pull/168))
