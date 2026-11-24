@@ -214,11 +214,13 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                     children: [
                       _Dots(total: total, index: _index, accent: slide.accent, onGo: _goTo),
                       const SizedBox(height: 18),
-                      _WtNextButton(
-                        label: _index == total - 1 ? wt.wt_start : wt.wt_next,
-                        accent: slide.accent,
+                      _WtActions(
+                        showBack: _index > 0,
+                        backLabel: s.strings.common.back,
+                        nextLabel: _index == total - 1 ? wt.wt_start : wt.wt_next,
                         ar: rtl,
-                        onTap: () => _next(total, s),
+                        onBack: _prev,
+                        onNext: () => _next(total, s),
                       ),
                     ],
                   ),
@@ -870,47 +872,105 @@ class _Dots extends StatelessWidget {
       );
 }
 
-/// `.wt-next` — same visual weight as the shared `PButton` primary/large
-/// variant, kept as a small local widget only because this CTA needs a
-/// *trailing* arrow (`PButton`'s optional icon renders leading).
+/// Back and Next/Get started, side by side.
 ///
-/// Fill is the **app** accent, not the slide's hue: `.b-btn-primary` paints
-/// `--balsm-primary`, which app.jsx binds once at the root to the accent tweak.
-/// The walkthrough's per-slide `accentVars` rebind only `--app-accent*`, so the
-/// slide hue reaches the box-shadow (`.b-btn-primary { box-shadow:
-/// var(--app-accent-shadow) }`) and nothing else.
-class _WtNextButton extends StatelessWidget {
-  const _WtNextButton({required this.label, required this.accent, required this.ar, required this.onTap});
-  final String label;
+/// Back sits beside Next from the second slide on, the last included: a reader
+/// who skimmed past a slide can return to it. The first slide has nowhere to go
+/// back to, so Back is not there. It grows in (and shrinks away) as the slide
+/// changes, taking its width from Next rather than popping in and shoving the
+/// layout; the Next label cross-fades when it becomes "Get started". Both
+/// honour the system's reduce-motion setting.
+class _WtActions extends StatelessWidget {
+  const _WtActions({
+    required this.showBack,
+    required this.backLabel,
+    required this.nextLabel,
+    required this.ar,
+    required this.onBack,
+    required this.onNext,
+  });
 
-  /// The slide's hue — drives the glow only.
-  final Accent accent;
+  final bool showBack;
+  final String backLabel;
+  final String nextLabel;
   final bool ar;
-  final VoidCallback onTap;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+
+  static const double _gap = 12;
+
+  /// A large [PButton]'s height: the clipped slot needs a bounded one.
+  static const double _buttonHeight = 56;
+
+  /// Back's share of the row once shown: 2 parts to Next's 3.
+  static const double _backShare = 2 / 5;
+
   @override
-  Widget build(BuildContext context) => Pressable(
-        onTap: onTap,
-        child: Container(
-          height: 56,
-          width: double.infinity,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppScope.of(context).accent.main,
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            boxShadow: accent.boxShadow,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+  Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context) ? Duration.zero : Motion.base;
+    return LayoutBuilder(
+      builder: (context, c) {
+        final backWidth = (c.maxWidth - _gap) * _backShare;
+        return TweenAnimationBuilder<double>(
+          tween: Tween(end: showBack ? 1 : 0),
+          duration: duration,
+          curve: Motion.easeOut,
+          builder: (context, t, _) => Row(
             children: [
-              Text(
-                label,
-                style: Typo.body(ar: ar)
-                    .copyWith(fontSize: FontSizes.subhead, fontWeight: FontWeight.w600, color: AppColors.white),
+              if (t > 0) ...[
+                // Laid out at its full width and clipped as the slot grows, so
+                // the label never wraps or ellipsizes mid-animation.
+                ExcludeSemantics(
+                  excluding: !showBack,
+                  child: IgnorePointer(
+                    ignoring: !showBack,
+                    child: Opacity(
+                      opacity: t,
+                      child: ClipRect(
+                        child: SizedBox(
+                          width: backWidth * t,
+                          height: _buttonHeight,
+                          child: OverflowBox(
+                            minWidth: backWidth,
+                            maxWidth: backWidth,
+                            minHeight: _buttonHeight,
+                            maxHeight: _buttonHeight,
+                            alignment: AlignmentDirectional.centerStart,
+                            child: PButton(
+                              backLabel,
+                              icon: backArrow(context),
+                              variant: BtnVariant.secondary,
+                              large: true,
+                              block: true,
+                              ar: ar,
+                              onTap: onBack,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: _gap * t),
+              ],
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: duration,
+                  child: PButton(
+                    nextLabel,
+                    key: ValueKey(nextLabel),
+                    trailingIcon: forwardArrow(context),
+                    large: true,
+                    block: true,
+                    ar: ar,
+                    onTap: onNext,
+                  ),
+                ),
               ),
-              const SizedBox(width: 9),
-              Icon(forwardArrow(context), size: 19, color: AppColors.white),
             ],
           ),
-        ),
-      );
+        );
+      },
+    );
+  }
 }

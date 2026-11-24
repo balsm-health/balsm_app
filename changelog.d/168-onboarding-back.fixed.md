@@ -1,0 +1,1 @@
+The first-run walkthrough now has a Back button beside Next on every slide after the first (the last one included), and the Next button's glow matches its own colour instead of the slide's green. ([#168](https://github.com/balsm-health/balsm_app/pull/168))
