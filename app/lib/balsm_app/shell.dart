@@ -52,6 +52,7 @@ import 'theme.dart';
 import 'widgets/account_switcher.dart';
 import 'widgets/balsm_mark.dart';
 import 'widgets/beta_banner.dart';
+import 'widgets/exit_confirm_scope.dart';
 import 'widgets/other_tab_screen.dart';
 
 // Scrolling the page to its end after a tab change.
@@ -452,6 +453,22 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
     ];
   }
 
+  /// System back (Android) on a screen of the signed-in shell that sits above
+  /// another: Records and Trends go up to Home, Prescriptions to Meds, as their
+  /// own back buttons do. True when it handled the back; otherwise
+  /// [ExitConfirmScope] asks "Exit Balsm?" instead of closing the app.
+  bool _stepBackUp() {
+    if (state.route != AppRoutes.app) return false;
+    final up = switch (state.tab) {
+      AppTab.records || AppTab.trends => AppTab.home,
+      AppTab.prescriptions => AppTab.meds,
+      _ => null,
+    };
+    if (up == null) return false;
+    state.setTab(up);
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     // ref.watch rebuilds this subtree on every state notification — the
@@ -537,28 +554,31 @@ class _PatientAppState extends ConsumerState<PatientApp> with WidgetsBindingObse
                 // follow the app accent instead of a hardcoded hue.
                 child: AccentScope(
                   accent: state.accent,
-                  child: Scaffold(
-                    backgroundColor: AppColors.white,
-                    body: Stack(
-                      children: [
-                        // The shell contains its own main pane so the rail stays
-                        // at the window edge; every other screen is contained
-                        // whole — app.css `.app-body > .screen:not(.app-shell)`.
-                        if (_publicResolveJti != null)
-                          AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
-                        else if (_publicDelete)
-                          const AdaptiveFrame(child: PublicDeleteScreen())
-                        else if (_publicDeleteCancel)
-                          const AdaptiveFrame(child: PublicDeleteCancelledScreen())
-                        else if (state.route == AppRoutes.app)
-                          const _MainApp()
-                        else
-                          const AdaptiveFrame(child: AuthRouter()),
-                        if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
-                          ..._maintenancePage(maintenance),
-                        if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
-                          Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
-                      ],
+                  child: ExitConfirmScope(
+                    stepBack: _stepBackUp,
+                    child: Scaffold(
+                      backgroundColor: AppColors.white,
+                      body: Stack(
+                        children: [
+                          // The shell contains its own main pane so the rail stays
+                          // at the window edge; every other screen is contained
+                          // whole — app.css `.app-body > .screen:not(.app-shell)`.
+                          if (_publicResolveJti != null)
+                            AdaptiveFrame(child: PublicEmergencyResolveScreen(tokenId: _publicResolveJti!))
+                          else if (_publicDelete)
+                            const AdaptiveFrame(child: PublicDeleteScreen())
+                          else if (_publicDeleteCancel)
+                            const AdaptiveFrame(child: PublicDeleteCancelledScreen())
+                          else if (state.route == AppRoutes.app)
+                            const _MainApp()
+                          else
+                            const AdaptiveFrame(child: AuthRouter()),
+                          if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
+                            ..._maintenancePage(maintenance),
+                          if (_publicResolveJti == null && !_publicDelete && !_publicDeleteCancel)
+                            Positioned.fill(child: _BootSplash(state: state, visible: _booting)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
