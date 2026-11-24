@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:core/core.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -154,12 +152,21 @@ class _Footer extends StatelessWidget {
   }
 }
 
-/// A week's guide (`MCWeekGuide`): the illustration, the baby's size, tests
+/// Every asset the app ships, read once: a week's artwork shows only when
+/// its image is among them.
+final _shippedAssetsProvider = FutureProvider<Set<String>>(
+  (ref) async => (await AssetManifest.loadFromAssetBundle(rootBundle)).listAssets().toSet(),
+);
+
+/// Where the app keeps the image for an artwork key (`pregnancy/week-12`).
+String _artworkAsset(String key) => 'assets/$key.png';
+
+/// A week's guide (`MCWeekGuide`): the artwork (when the app ships it), the baby's size, tests
 /// due, danger signs, topics, the multiples note and — in full — the sources.
 /// [compact] (the Pregnancy screen's card) leaves out the topics heading, the
 /// "Danger signs to know" list for a week without warnings and the sources,
 /// offering [onMore] instead.
-class PregnancyWeekGuide extends StatefulWidget {
+class PregnancyWeekGuide extends ConsumerStatefulWidget {
   const PregnancyWeekGuide({
     required this.entry,
     required this.guidance,
@@ -176,10 +183,10 @@ class PregnancyWeekGuide extends StatefulWidget {
   final VoidCallback? onMore;
 
   @override
-  State<PregnancyWeekGuide> createState() => _PregnancyWeekGuideState();
+  ConsumerState<PregnancyWeekGuide> createState() => _PregnancyWeekGuideState();
 }
 
-class _PregnancyWeekGuideState extends State<PregnancyWeekGuide> {
+class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
   bool _allDangers = false;
 
   @override
@@ -207,13 +214,18 @@ class _PregnancyWeekGuideState extends State<PregnancyWeekGuide> {
       ..add(const SizedBox(height: 12))
       ..add(w);
 
-    add(
-      _WeekIllustration(
-        label: label('illustration', {'week': entry.week}),
-        size: entry.fetalSize,
-        height: widget.compact ? 112 : 150,
-      ),
-    );
+    final art = entry.illustration;
+    final shipped = ref.watch(_shippedAssetsProvider).value ?? const <String>{};
+    if (art != null && shipped.contains(_artworkAsset(art.key))) {
+      add(
+        _WeekArtwork(
+          art: art,
+          credit: g.illustrationCredits[art.credit]?.text.inLanguage(lang),
+          label: label('illustration', {'week': entry.week}),
+          height: widget.compact ? 112 : 150,
+        ),
+      );
+    }
     if (!entry.fetalSize.isEmpty) add(_SizeRow(size: entry.fetalSize, guidance: g));
     if (tests.isNotEmpty) {
       add(
@@ -285,61 +297,57 @@ class _PregnancyWeekGuideState extends State<PregnancyWeekGuide> {
       };
 }
 
-/// The week's picture. The app ships no artwork yet, so it is the design's
-/// stand-in: a circle drawn to the baby's size on an aqua wash.
-class _WeekIllustration extends StatelessWidget {
-  const _WeekIllustration({required this.label, required this.size, required this.height});
+/// The week's artwork and its credit, opening the page it was published on.
+/// Shown only for a week that has artwork the app ships; otherwise the guide
+/// has no picture at all.
+class _WeekArtwork extends StatelessWidget {
+  const _WeekArtwork({required this.art, required this.credit, required this.label, required this.height});
+  final GuidanceIllustration art;
+
+  /// "Illustration: …, CC BY-ND 4.0", from the content; null leaves it out.
+  final String? credit;
 
   /// Spoken description ("Week 12 illustration"), from the content.
   final String? label;
-  final GuidanceFetalSize size;
   final double height;
-
-  /// How much of the frame the circle fills (`MC_SIZE_FILL`): length against
-  /// 51 cm, else weight against 3.4 kg by its cube root.
-  static double _fill(GuidanceFetalSize size) {
-    final mm = size.lengthMm;
-    final g = size.weightG;
-    if (mm != null && mm > 0) return math.min(1, mm / 510);
-    if (g != null && g > 0) return math.min(1, math.pow(g / 3400, 1 / 3).toDouble());
-    return 0.04;
-  }
 
   @override
   Widget build(BuildContext context) {
-    final d = (18 + _fill(size) * (height - 46)).roundToDouble();
-    return Semantics(
-      image: true,
-      label: label,
-      child: Container(
-        height: height,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadii.tile),
-          border: Border.all(color: AppColors.ink100),
-          gradient: const RadialGradient(
-            center: Alignment.bottomCenter,
-            radius: 1.2,
-            colors: [AppColors.hueAqua50, AppColors.white],
-            stops: [0, 0.7],
-          ),
-        ),
-        child: Container(
-          width: d,
-          height: d,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              center: Alignment(-0.3, -0.4),
-              colors: [AppColors.white, AppColors.hueAqua50, Color(0x5902BBB5)],
-              stops: [0, 0.45, 1],
+    final s = AppScope.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          image: true,
+          label: label,
+          child: Container(
+            height: height,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.tile),
+              border: Border.all(color: AppColors.ink100),
+              gradient: const RadialGradient(
+                center: Alignment.bottomCenter,
+                radius: 1.2,
+                colors: [AppColors.hueAqua50, AppColors.white],
+                stops: [0, 0.7],
+              ),
             ),
-            boxShadow: [BoxShadow(color: Color(0x2E02BBB5), blurRadius: 20, offset: Offset(0, 6))],
+            child: Image.asset(_artworkAsset(art.key), fit: BoxFit.contain, excludeFromSemantics: true),
           ),
-          child: d > 46 ? Icon(LucideIcons.baby, size: math.min(34, d / 3), color: AppColors.hueAquaInk) : null,
         ),
-      ),
+        if (credit case final credit?)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Semantics(
+              link: true,
+              child: GestureDetector(
+                onTap: () => _SourceList._open(art.sourceUrl),
+                child: Text(credit, style: Typo.meta(ar: s.rtl).copyWith(fontSize: FontSizes.micro)),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

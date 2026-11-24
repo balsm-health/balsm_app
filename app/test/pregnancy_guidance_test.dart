@@ -79,7 +79,10 @@ PregnancyWeeksResponse _content({String version = 'v-test'}) => PregnancyWeeksRe
             'topics': [
               if (w == 24) ...['movements', 'not-a-topic'],
             ],
-            'illustration': null,
+            // Week 24 names artwork the app does not ship: no picture.
+            'illustration': w == 24
+                ? {'key': 'pregnancy/week-24', 'credit': 'art', 'source_url': 'https://example.test/art'}
+                : null,
             'sources': ['s1'],
           },
       ],
@@ -265,7 +268,12 @@ void main() {
         reason: 'the compact guide has no danger list for a quiet week',
       );
       expect(find.text('Test sources (1) and more'), findsOne);
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Test week 24 art'), findsOne);
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Test week 24 art'),
+        findsNothing,
+        reason: 'artwork the app does not ship is left out, not drawn as a stand-in',
+      );
+      expect(find.byType(Image), findsNothing);
       expect(
         find.text('Test guideline', findRichText: true),
         findsNothing,
