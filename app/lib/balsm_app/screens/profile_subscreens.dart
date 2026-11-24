@@ -1019,37 +1019,59 @@ class _PrivacyDataScreenState extends ConsumerState<PrivacyDataScreen> {
 }
 
 // ── Emergency numbers ────────────────────────────────────────
+/// One call target: label, icon, number, icon colour and its wash.
+typedef _EmergencyLine = (String, IconData, String, Color, Color);
+
+/// The emergency numbers of the country the patient is in ([PatientAppState.country]).
+///
+/// Egypt lists four services (the numbers below are Egypt's own); every other
+/// country shows its national emergency number from [CountryCode.emergencyNumber],
+/// and a country with none on file says so instead of showing a wrong number.
 class EmergencyScreen extends StatelessWidget {
   const EmergencyScreen({required this.s, super.key});
   final PatientAppState s;
 
-  static const List<(String, IconData, String, Color, Color)> _contacts = [
-    ('emergency.em_ambulance', LucideIcons.heartPulse, '123', AppColors.danger, AppColors.dangerBackground),
-    ('emergency.em_police', LucideIcons.shield, '122', AppColors.hueBlue, AppColors.hueBlue50),
-    ('emergency.em_fire', LucideIcons.flame, '180', AppColors.expiring, AppColors.expiringBackground),
-    ('emergency.em_tourist', LucideIcons.compass, '126', AppColors.hueViolet, AppColors.hueViolet50),
-  ];
+  List<_EmergencyLine> _lines() {
+    final e = s.strings.emergency;
+    final national = s.country.emergencyNumber;
+    if (s.country == CountryCode.egypt) {
+      return [
+        (e.em_ambulance, LucideIcons.heartPulse, national, AppColors.danger, AppColors.dangerBackground),
+        (e.em_police, LucideIcons.shield, '122', AppColors.hueBlue, AppColors.hueBlue50),
+        (e.em_fire, LucideIcons.flame, '180', AppColors.expiring, AppColors.expiringBackground),
+        (e.em_tourist, LucideIcons.compass, '126', AppColors.hueViolet, AppColors.hueViolet50),
+      ];
+    }
+    return national.isEmpty
+        ? const []
+        : [(e.em_national, LucideIcons.siren, national, AppColors.danger, AppColors.dangerBackground)];
+  }
 
   @override
-  Widget build(BuildContext context) => SubScreen(
-        s: s,
-        title: s.strings.profile.p_emergency,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(LucideIcons.mapPin, size: 12, color: AppColors.textTertiary),
-            const SizedBox(width: 4),
-            Text(s.strings.emergency.em_eg, style: Typo.meta(ar: s.rtl)),
-          ],
-        ),
+  Widget build(BuildContext context) {
+    final e = s.strings.emergency;
+    final country = s.country.name(kCatalog, locale: s.lang.value);
+    final lines = _lines();
+    return SubScreen(
+      s: s,
+      title: s.strings.profile.p_emergency,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(0, 2, 0, 16),
-            child: Text(
-              s.strings.emergency.em_intro(s.gender),
-              style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary),
-            ),
+          const Icon(LucideIcons.mapPin, size: 12, color: AppColors.textTertiary),
+          const SizedBox(width: 4),
+          Text(country, style: Typo.meta(ar: s.rtl)),
+        ],
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(0, 2, 0, 16),
+          child: Text(
+            lines.isEmpty ? e.em_none(country, s.gender) : e.em_intro(country, s.gender),
+            style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.textSecondary),
           ),
+        ),
+        if (lines.isNotEmpty) ...[
           // `.emergency-grid` — two thumb-sized call targets per row on a
           // phone, `repeat(4, minmax(0, 1fr))` once the window reaches the
           // medium class and the four contacts fit on one line.
@@ -1061,9 +1083,7 @@ class EmergencyScreen extends StatelessWidget {
               return Wrap(
                 spacing: gap,
                 runSpacing: gap,
-                children: [
-                  for (final ct in _contacts) SizedBox(width: tileW, child: _tile(ct)),
-                ],
+                children: lines.map((ct) => SizedBox(width: tileW, child: _tile(ct))).toList(),
               );
             },
           ),
@@ -1074,15 +1094,17 @@ class EmergencyScreen extends StatelessWidget {
               children: [
                 const Icon(LucideIcons.phoneCall, size: 15, color: AppColors.textTertiary),
                 const SizedBox(width: 6),
-                Text(s.strings.emergency.em_tap_call(s.gender), style: Typo.meta(ar: s.rtl)),
+                Text(e.em_tap_call(s.gender), style: Typo.meta(ar: s.rtl)),
               ],
             ),
           ),
         ],
-      );
+      ],
+    );
+  }
 
   // `.emergency-tile:active { transform: scale(0.98) }` — tap-to-call tile.
-  Widget _tile((String, IconData, String, Color, Color) ct) => Pressable(
+  Widget _tile(_EmergencyLine ct) => Pressable(
         onTap: () => launchUrl(Uri(scheme: 'tel', path: ct.$3)),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -1105,7 +1127,7 @@ class EmergencyScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                s.t(ct.$1),
+                ct.$1,
                 style: Typo.body(ar: s.rtl).copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 2),
