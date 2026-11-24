@@ -11,6 +11,8 @@ import '../domain/aggregates/profile_qr_payload.dart';
 /// signed out mid-flow) return one with null identity fields; the standing
 /// refresh path fills them in later. The payload contains identity PHI and
 /// MUST NOT be logged or sent to Sentry.
+// Port interface: the app shell binds the implementation that reads the profile module, and tests swap in fakes.
+// ignore: one_member_abstracts
 abstract class ProfileIdentityReader {
   Future<ProfileQrPayload> readIdentity();
 }

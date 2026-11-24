@@ -12,8 +12,15 @@ import 'vitals.dart';
 /// Pain 0 is stored the same as "not logged", so [pain] is the newest
 /// non-zero score.
 class LatestReadings {
-  const LatestReadings(
-      {this.systolic, this.diastolic, this.glucose, this.glucoseContext, this.spo2, this.mood, this.pain});
+  const LatestReadings({
+    this.systolic,
+    this.diastolic,
+    this.glucose,
+    this.glucoseContext,
+    this.spo2,
+    this.mood,
+    this.pain,
+  });
 
   /// [history] is newest first, as the check-in history streams it.
   factory LatestReadings.from(List<CheckIn> history) {

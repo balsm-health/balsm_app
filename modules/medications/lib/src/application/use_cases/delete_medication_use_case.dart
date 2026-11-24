@@ -1,5 +1,6 @@
 import 'package:core/core.dart';
-import 'package:riverpod/src/providers/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderFamily;
 
 import '../../domain/value_objects/ids.dart';
 import '../../infrastructure/drift/drift_medications_data_source.dart';

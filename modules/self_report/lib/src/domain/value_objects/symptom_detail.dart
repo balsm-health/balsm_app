@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// Observable detail the patient can add to a reported symptom.
 ///
 /// Ported from `quicklog.jsx` `QuickSymptomDetail`, which asks for colour,
@@ -5,6 +7,7 @@
 /// patient's own observation, recorded verbatim — self-report is a journal,
 /// NOT a symptom checker, so nothing is interpreted, scored, or flagged.
 /// PHI: on-device only.
+@immutable
 class SymptomDetail {
   const SymptomDetail({this.urineColor, this.urineMl, this.blood = false});
 

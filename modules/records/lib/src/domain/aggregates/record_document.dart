@@ -1,4 +1,5 @@
 import 'package:core/core.dart';
+import 'package:flutter/foundation.dart' show immutable;
 
 import '../value_objects/ids.dart';
 
@@ -8,6 +9,7 @@ enum RecordType { lab, scan, report }
 /// Where a record came from. `self` marks user uploads; anything else is an
 /// opaque provider reference (care-team member id) until the directory
 /// context lands.
+@immutable
 class RecordSource {
   const RecordSource(this.value);
   static const self = RecordSource('self');
@@ -32,6 +34,7 @@ class RecordSource {
 /// The document bytes are NOT here: [filePath] points into the app documents
 /// directory. Metadata and bytes live and die together via the records
 /// data source + file store.
+@immutable
 class RecordDocument {
   const RecordDocument({
     required this.id,

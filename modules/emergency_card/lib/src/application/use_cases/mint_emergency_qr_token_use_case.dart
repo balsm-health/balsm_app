@@ -153,6 +153,9 @@ class MintEmergencyQrTokenUseCase {
       );
     } on ApiException catch (e) {
       return AppResult.failure(_mapApiError(e));
+      // The generated response model throws TypeError when a required field such as token_id is missing; the server
+      // reply is untrusted input, so mapping it to a failure is intended.
+      // ignore: avoid_catching_errors
     } on TypeError {
       // Missing token_id in an otherwise-successful response.
       return AppResult.failure(const NetworkFailure('Malformed mint response'));

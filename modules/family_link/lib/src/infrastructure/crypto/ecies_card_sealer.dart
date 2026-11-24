@@ -94,6 +94,9 @@ class EciesCardSealer implements CardSealer {
     } on SecretBoxAuthenticationError {
       // Wrong key, tampered bytes, or bound to another link/owner/version.
       return AppResult.failure(const ValidationFailure('Card does not open with this key'));
+      // Malformed sealed bytes (bad lengths or key sizes) surface from the crypto layer as an ArgumentError; the sealed
+      // card comes from another account, so failing closed here is the intended handling, not a masked programming bug.
+      // ignore: avoid_catching_errors
     } on ArgumentError {
       return AppResult.failure(const ValidationFailure('Corrupt sealed card'));
     } on FormatException {

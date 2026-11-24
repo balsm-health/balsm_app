@@ -1,5 +1,5 @@
 import 'package:core/core.dart';
-import 'package:riverpod/src/providers/notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../i18n/strings.dart';
 

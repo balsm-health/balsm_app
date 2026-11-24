@@ -276,7 +276,7 @@ class DriftCareProvidersDataSource extends CareProvidersDataSource {
     await _db.customInsert(
       'INSERT INTO care_provider_file (id, care_provider_id, path, kind, created_at) '
       'SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS ('
-      'SELECT 1 FROM care_provider_file WHERE care_provider_id = ? AND path = ?)',
+      ' SELECT 1 FROM care_provider_file WHERE care_provider_id = ? AND path = ?)',
       variables: [
         Variable.withString(CareProviderId.uuid().value),
         Variable.withString(providerId.value),

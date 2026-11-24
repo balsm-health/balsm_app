@@ -24,6 +24,9 @@ class SecureLinkLocalStore implements LinkLocalStore {
       return {for (final e in json.entries) e.key: _decode(e.value as Map<String, dynamic>)};
     } on FormatException {
       return {};
+      // A stored value of the wrong shape (a cast in the decode above fails with TypeError) is corrupt data on disk; treat
+      // it as no local state rather than crash.
+      // ignore: avoid_catching_errors
     } on TypeError {
       return {};
     }

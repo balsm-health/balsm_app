@@ -1,8 +1,8 @@
 import 'package:core/core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
 import 'package:material_ui/material_ui.dart';
-import 'package:riverpod/src/providers/future_provider.dart';
 
 import '../../application/use_cases/resolve_emergency_qr_token_use_case.dart';
 import '../../domain/aggregates/profile_qr_payload.dart';

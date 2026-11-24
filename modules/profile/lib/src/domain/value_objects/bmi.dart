@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show immutable;
+
 /// WHO body-mass-index category.
 enum BmiCategory { underweight, normal, overweight, obese }
 
@@ -13,6 +15,7 @@ enum BmiCategory { underweight, normal, overweight, obese }
 ///
 /// Presentation keeps what is genuinely presentation — which colour a category
 /// gets, and where the needle sits.
+@immutable
 class Bmi {
   const Bmi._(this.value, this.category);
 

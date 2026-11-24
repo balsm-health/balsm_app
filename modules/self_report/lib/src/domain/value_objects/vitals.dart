@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// A self-reported vitals snapshot taken during a check-in. Every field is
 /// nullable — the patient fills only what they measured. PHI; on-device only.
 ///
@@ -5,6 +7,7 @@
 /// SpO₂ in %, glucose in mg/dL. Glucose is split by context
 /// (fasting / post-meal / random) because those are not interchangeable
 /// readings.
+@immutable
 class Vitals {
   const Vitals({
     this.systolic,

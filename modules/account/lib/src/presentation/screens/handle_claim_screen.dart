@@ -247,7 +247,8 @@ class _HandleField extends StatelessWidget {
       case _HandleStatus.taken:
       case _HandleStatus.invalid:
         return AppColors.danger;
-      default:
+      case _HandleStatus.idle:
+      case _HandleStatus.checking:
         return AppColors.border;
     }
   }

@@ -62,12 +62,18 @@ void main() {
   });
 
   test('glucose carries how it was taken, from the same check-in', () {
-    expect(LatestReadings.from([checkIn(10, vitals: const Vitals(glucoseFasting: 95))]).glucoseContext,
-        GlucoseContext.fasting);
-    expect(LatestReadings.from([checkIn(10, vitals: const Vitals(glucosePostMeal: 150))]).glucoseContext,
-        GlucoseContext.postMeal);
-    expect(LatestReadings.from([checkIn(10, vitals: const Vitals(glucoseRandom: 110))]).glucoseContext,
-        GlucoseContext.random);
+    expect(
+      LatestReadings.from([checkIn(10, vitals: const Vitals(glucoseFasting: 95))]).glucoseContext,
+      GlucoseContext.fasting,
+    );
+    expect(
+      LatestReadings.from([checkIn(10, vitals: const Vitals(glucosePostMeal: 150))]).glucoseContext,
+      GlucoseContext.postMeal,
+    );
+    expect(
+      LatestReadings.from([checkIn(10, vitals: const Vitals(glucoseRandom: 110))]).glucoseContext,
+      GlucoseContext.random,
+    );
     expect(LatestReadings.from([checkIn(10, mood: Mood.good)]).glucoseContext, isNull);
   });
 }

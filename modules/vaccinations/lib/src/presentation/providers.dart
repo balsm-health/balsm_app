@@ -1,6 +1,6 @@
 import 'package:core/core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod/src/providers/stream_provider.dart';
+import 'package:flutter_riverpod/misc.dart' show StreamProviderFamily;
 
 import '../application/use_cases/delete_vaccination_use_case.dart';
 import '../application/use_cases/record_vaccination_use_case.dart';

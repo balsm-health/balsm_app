@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 /// Completed years and months between a date of birth and a day (the
 /// design's `mcAgeYM`). Calendar arithmetic only — time of day is ignored.
+@immutable
 class MemberAge {
   const MemberAge(this.years, this.months);
 

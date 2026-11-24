@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart' show immutable;
+
 import '../value_objects/ids.dart';
 
 /// Aggregate root representing a patient's acceptance of a disclosure document.
 /// PHI-free: no health data stored.
+@immutable
 class DisclosureAcceptance {
   const DisclosureAcceptance({
     required this.disclosureId,

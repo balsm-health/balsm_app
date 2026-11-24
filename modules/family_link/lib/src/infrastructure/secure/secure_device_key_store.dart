@@ -45,6 +45,9 @@ class SecureDeviceKeyStore implements DeviceKeyStore {
       return DeviceKeyPair(privateKey: private, publicKey: public);
     } on FormatException {
       return null;
+      // A stored value of the wrong shape (a cast in the decode above fails with TypeError) is corrupt data on disk; treat
+      // it as no key rather than crash.
+      // ignore: avoid_catching_errors
     } on TypeError {
       return null;
     }
