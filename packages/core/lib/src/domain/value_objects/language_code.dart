@@ -68,6 +68,31 @@ class LanguageCode extends ValueObject {
     return null;
   }
 
+  /// What the app shows when neither a saved choice nor the device offers a
+  /// language it can render. Arabic: the app's patients read it first, so an
+  /// unknown language should land on it rather than on English.
+  static const LanguageCode defaultUi = ar;
+
+  /// Picks the UI language at launch.
+  ///
+  /// 1. A saved choice wins, when it is one the app can render.
+  /// 2. Otherwise the first of [deviceTags] it can render. These are the
+  ///    device's languages, most preferred first, as BCP-47 tags (`ar-EG`).
+  /// 3. Otherwise [defaultUi].
+  ///
+  /// The one place the language fallback lives: callers must not add their own.
+  static LanguageCode resolveUi({String? saved, Iterable<String> deviceTags = const []}) {
+    if (saved != null) {
+      final choice = tryParseUi(saved);
+      if (choice != null) return choice;
+    }
+    for (final tag in deviceTags) {
+      final device = tryParseUi(tag);
+      if (device != null) return device;
+    }
+    return defaultUi;
+  }
+
   static final Map<String, LanguageCode> _byCode = {
     for (final l in supported) l.value: l,
   };

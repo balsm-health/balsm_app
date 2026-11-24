@@ -36,6 +36,9 @@ enum AuthMethod { phone, email }
 enum UsernameStatus { idle, checking, available, taken, invalid, required }
 
 class PatientAppState extends ChangeNotifier {
+  /// A placeholder until [load] resolves the real one (saved choice, then the
+  /// device language, then Arabic). Left as English so a state built directly,
+  /// as the widget tests do, keeps rendering in English.
   LanguageCode lang = LanguageCode.en;
 
   /// Default accent — `TWEAK_DEFAULTS.accent` in the design's `app.jsx`.
@@ -146,9 +149,10 @@ class PatientAppState extends ChangeNotifier {
   }) async {
     final s = PatientAppState().._prefs = prefs;
     try {
-      // Persisted as the bare code; anything unsupported falls back to en.
+      // `prefs.lang()` already resolves saved choice, then device language, then
+      // Arabic; the fallback here only covers a value that cannot be parsed.
       s
-        ..lang = LanguageCode.tryParseUi(await prefs.lang()) ?? LanguageCode.en
+        ..lang = LanguageCode.tryParseUi(await prefs.lang()) ?? LanguageCode.defaultUi
         // Accent is a design constant (`TWEAK_DEFAULTS.accent` in app.jsx), not a
         // user setting — nothing in the app calls [setAccent]. It is deliberately
         // NOT restored from prefs: `_save()` used to stamp the then-current

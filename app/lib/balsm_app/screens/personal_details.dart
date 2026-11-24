@@ -305,6 +305,10 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
       // Re-derive the completion card from the freshly saved fields.
       ..invalidate(profileGapsProvider);
     if (!mounted) return;
+    // Gendered copy and the body map follow the saved gender straight away. The
+    // seeding above runs once per open, so without this a gender changed here
+    // only reached the rest of the app the next time this screen was opened.
+    s.setGender(_gender ?? Gender.other);
     setState(() {
       _saving = false;
       unStatus = UsernameStatus.idle;
