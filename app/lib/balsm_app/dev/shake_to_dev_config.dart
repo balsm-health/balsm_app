@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
+import 'shake_detector.dart';
+
 /// True on a real phone or tablet (Android or iOS), where a shake opens Dev
 /// Config. False on an emulator, a simulator, desktop and web, where nobody
 /// can shake the device, so on-screen ways in are needed there. A failed
@@ -84,11 +86,11 @@ Future<void> openDevConfig(BuildContext context) async {
 
 class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
   StreamSubscription<UserAccelerometerEvent>? _sub;
-  DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
   bool _open = false;
 
   // userAccelerometer excludes gravity → ~0 at rest, spikes high on a shake.
-  static const _thresholdMs2 = 14.0;
+  // The detector wants several spikes in a row, so a bump doesn't open Dev Config.
+  final _detector = ShakeDetector();
 
   @override
   void initState() {
@@ -98,16 +100,13 @@ class _ShakeToDevConfigState extends ConsumerState<ShakeToDevConfig> {
     // channel that does not exist on web). Dev Config stays reachable there
     // from the desktop menu.
     if (kIsWeb) return;
-    _sub = userAccelerometerEventStream().listen(_onEvent, onError: (_) {});
+    // The 200 ms default misses the peaks of a shake; 66 ms catches them.
+    _sub = userAccelerometerEventStream(samplingPeriod: SensorInterval.uiInterval).listen(_onEvent, onError: (_) {});
   }
 
   void _onEvent(UserAccelerometerEvent e) {
     final mag = sqrt(e.x * e.x + e.y * e.y + e.z * e.z);
-    if (mag < _thresholdMs2) return;
-    final now = DateTime.now();
-    if (now.difference(_last) < const Duration(seconds: 1)) return; // debounce
-    _last = now;
-    unawaited(_openDevConfig());
+    if (_detector.onSample(mag, DateTime.now())) unawaited(_openDevConfig());
   }
 
   Future<void> _openDevConfig() async {
