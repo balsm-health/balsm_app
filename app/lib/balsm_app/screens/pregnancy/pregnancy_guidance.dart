@@ -188,6 +188,7 @@ class PregnancyWeekGuide extends ConsumerStatefulWidget {
 class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
   bool _allDangers = false;
   String? _openSymptom;
+  bool _sourcesOpen = false;
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +312,14 @@ class _PregnancyWeekGuideState extends ConsumerState<PregnancyWeekGuide> {
         );
       }
     } else if (sources.isNotEmpty) {
-      add(_SourceList(title: label('sources_title'), sources: sources));
+      add(
+        _SourceList(
+          title: label('sources_title'),
+          sources: sources,
+          open: _sourcesOpen,
+          onToggle: () => setState(() => _sourcesOpen = !_sourcesOpen),
+        ),
+      );
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gap.skip(1).toList());
   }
@@ -856,8 +864,12 @@ class _Tips extends StatelessWidget {
 /// "Sources": each as its title (opening the page) — publisher. Source
 /// titles are English, so the list reads left to right in either language.
 class _SourceList extends StatelessWidget {
-  const _SourceList({required this.title, required this.sources});
+  const _SourceList({required this.title, required this.sources, required this.open, required this.onToggle});
   final String? title;
+
+  /// Folded by default: the list opens on a tap of its heading.
+  final bool open;
+  final VoidCallback onToggle;
   final List<GuidanceSource> sources;
 
   static Future<void> _open(String url) async {
@@ -877,48 +889,76 @@ class _SourceList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (title case final title?)
-            _SectionHead(icon: LucideIcons.bookMarked, color: AppColors.textTertiary, text: title),
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final (i, src) in sources.indexed)
-                  Padding(
-                    padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(width: 18, child: Text('${i + 1}.', style: style)),
-                        Expanded(
-                          child: Semantics(
-                            link: true,
-                            child: GestureDetector(
-                              onTap: () => _open(src.url),
-                              child: Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: src.title,
-                                      style: style.copyWith(fontWeight: FontWeight.w600, color: s.accent.d),
-                                    ),
-                                    TextSpan(
-                                      text: ' — ${src.publisher}',
-                                      style: style.copyWith(color: AppColors.textTertiary),
-                                    ),
-                                  ],
+          Semantics(
+            button: true,
+            expanded: open,
+            child: InkWell(
+              onTap: onToggle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.bookMarked, size: 14, color: AppColors.textTertiary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '${title ?? ''} (${sources.length})'.trimLeft(),
+                        style:
+                            Typo.meta(ar: s.rtl).copyWith(fontWeight: FontWeight.w700, color: AppColors.textTertiary),
+                      ),
+                    ),
+                    Icon(
+                      open ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                      size: 16,
+                      color: AppColors.textTertiary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (open) const SizedBox(height: 6),
+          if (open)
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final (i, src) in sources.indexed)
+                    Padding(
+                      padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(width: 18, child: Text('${i + 1}.', style: style)),
+                          Expanded(
+                            child: Semantics(
+                              link: true,
+                              child: GestureDetector(
+                                onTap: () => _open(src.url),
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: src.title,
+                                        style: style.copyWith(fontWeight: FontWeight.w600, color: s.accent.d),
+                                      ),
+                                      TextSpan(
+                                        text: ' — ${src.publisher}',
+                                        style: style.copyWith(color: AppColors.textTertiary),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

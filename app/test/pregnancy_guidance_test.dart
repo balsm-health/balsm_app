@@ -437,7 +437,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('Test ginger', findRichText: true), findsOne);
       expect(find.textContaining('Test cannot keep fluids', findRichText: true), findsOne);
-      expect(find.text('Test sources heading'), findsOne);
+      expect(find.text('Test sources heading (1)'), findsOne);
+      expect(
+        find.text('Test guideline — Test publisher', findRichText: true),
+        findsNothing,
+        reason: 'sources start folded',
+      );
+      await tester.ensureVisible(find.text('Test sources heading (1)'));
+      await tester.tap(find.text('Test sources heading (1)'));
+      await tester.pumpAndSettle();
       expect(find.text('Test guideline — Test publisher', findRichText: true), findsOne);
 
       await tester.tap(find.text(p.week_n(25)));
