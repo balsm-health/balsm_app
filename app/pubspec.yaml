@@ -100,6 +100,8 @@ dev_dependencies:
   geolocator_platform_interface: ^4.2.8
   # Used by repo-root test/ suites (golden, phi_leak_fuzz) run via the app package.
   golden_toolkit: ^0.15.0
+  # Test-only: permission_denied_test fakes the picker's "permission refused" answers.
+  image_picker_platform_interface: ^2.11.1
   integration_test:
     sdk: flutter
   mocktail: ^1.0.4

@@ -1336,6 +1336,9 @@ class CommonStrings_ar extends CommonStrings {
   String get fam_scan_invalid => "هذا ليس رمز ملف بلسم";
   String fam_scan_failed(Gender gender) =>
       "تعذّرت قراءة الرمز — حاول${_select(gender, {'female': 'ي', 'other': ''})} مجددًا";
+  String get perm_camera_denied => "لا يملك بلسم إذن استخدام الكاميرا.";
+  String get perm_photos_denied => "لا يملك بلسم إذن الوصول إلى صورك.";
+  String get perm_settings => "الإعدادات";
   String get rel_default => "فرد من الأسرة";
   String get member_dob => "تاريخ الميلاد";
   String get member_dob_ph => "يوم / شهر / سنة";
@@ -1524,6 +1527,12 @@ class CommonStrings_ar extends CommonStrings {
         return fam_scan_invalid;
       case 'fam_scan_failed':
         return fam_scan_failed;
+      case 'perm_camera_denied':
+        return perm_camera_denied;
+      case 'perm_photos_denied':
+        return perm_photos_denied;
+      case 'perm_settings':
+        return perm_settings;
       case 'rel_default':
         return rel_default;
       case 'member_dob':
@@ -1630,6 +1639,7 @@ class EmergencyStrings_ar extends EmergencyStrings {
   String get eqr_share => "مشاركة";
   String get eqr_save => "حفظ";
   String get eqr_save_failed => "تعذّر الحفظ في الاستوديو";
+  String get eqr_save_denied => "لا يملك بلسم إذن الحفظ في صورك.";
   String get eqr_saved_toast => "تم حفظ الصورة";
   String get eqr_link_copied => "تم نسخ الرابط";
   String get eqr_revoke => "إلغاء الرمز";
@@ -1745,6 +1755,8 @@ class EmergencyStrings_ar extends EmergencyStrings {
         return eqr_save;
       case 'eqr_save_failed':
         return eqr_save_failed;
+      case 'eqr_save_denied':
+        return eqr_save_denied;
       case 'eqr_saved_toast':
         return eqr_saved_toast;
       case 'eqr_link_copied':

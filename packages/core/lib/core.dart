@@ -120,8 +120,6 @@ export 'src/network/api_providers.dart';
 export 'src/network/balsm_api_controller.dart';
 export 'src/network/connectivity.dart';
 export 'src/network/dev_host_interceptor.dart' show DevHostInterceptor;
-export 'src/notifications/permission_change_event.dart';
-export 'src/notifications/permission_state.dart';
 export 'src/secure_storage/secure_storage_wrapper.dart';
 export 'src/secure_storage/web_secure_storage_stub.dart'
     if (dart.library.js_interop) 'src/secure_storage/web_secure_storage.dart';

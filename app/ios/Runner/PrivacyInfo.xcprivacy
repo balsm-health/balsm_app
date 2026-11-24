@@ -71,6 +71,20 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array><string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string></array>
 		</dict>
+		<!-- The care map sends the device position, rounded to three decimals
+		     (about 110 m, so precise, not coarse), to the directory API to find
+		     nearby places. The request carries the account's bearer token, so it
+		     is linked. Not used for tracking. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePreciseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array><string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string></array>
+		</dict>
 		<!-- Product analytics (PostHog), opt-out, keyed by the account id. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>

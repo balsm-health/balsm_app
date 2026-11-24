@@ -24,6 +24,7 @@ import '../qr/qr_share_controller.dart';
 import '../responsive.dart';
 import '../shell.dart';
 import '../widgets/balsm_mark.dart';
+import '../widgets/permission_denied.dart';
 import '../widgets/phone_field.dart';
 import 'go_online_sheet.dart';
 import 'profile_screen.dart' show ProfileScreen;
@@ -1386,9 +1387,14 @@ class _QrShareSheetState extends ConsumerState<_QrShareSheet> {
         await Gal.putImageBytes(bytes, name: 'balsm-qr');
       }
       _showToast(s.strings.emergency.eqr_saved_toast);
-    } on GalException {
-      // Permission denied or storage failure — nothing PHI-safe to add.
-      _showToast(s.strings.emergency.eqr_save_failed);
+    } on GalException catch (e) {
+      // A refused permission gets its own message and a way to Settings; any
+      // other failure (storage, format) stays generic — nothing PHI-safe to add.
+      if (e.type == GalExceptionType.permissionDenied && mounted) {
+        showPermissionDenied(context, s.strings.emergency.eqr_save_denied);
+      } else {
+        _showToast(s.strings.emergency.eqr_save_failed);
+      }
     } finally {
       if (mounted) setState(() => _exporting = false);
     }

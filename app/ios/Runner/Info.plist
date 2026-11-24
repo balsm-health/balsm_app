@@ -46,7 +46,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Balsm uses your photo library so you can attach a prescription or health record.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Balsm does not save photos to your library.</string>
+	<string>Balsm saves your emergency QR code to your photo library when you tap Save.</string>
 	<!-- Dev convenience: allow cleartext HTTP to LOCAL-network hosts only
 	     (.local, private IPs like 192.168.x.x). This does NOT permit arbitrary
 	     internet HTTP — production traffic is HTTPS to the real API domain — so

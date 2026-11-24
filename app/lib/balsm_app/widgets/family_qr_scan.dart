@@ -10,6 +10,7 @@ import '../app_state.dart';
 import '../kit.dart';
 import '../routes.dart';
 import '../tokens.dart';
+import 'permission_denied.dart';
 
 // One pass of the scan line.
 const _scanLineLoop = Duration(milliseconds: 2200);
@@ -127,16 +128,40 @@ class _FamilyQrScanViewState extends ConsumerState<FamilyQrScanView> {
                   child: MobileScanner(
                     controller: _controller,
                     onDetect: _onDetect,
-                    errorBuilder: (context, error) => Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          s.strings.common.fam_scan_failed(s.gender),
-                          textAlign: TextAlign.center,
-                          style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white70),
+                    errorBuilder: (context, error) {
+                      // A refused camera permission needs its own message and a
+                      // way to Settings; "couldn't read this code" would send the
+                      // patient round in circles. Every other error keeps the
+                      // generic message.
+                      final denied = error.errorCode == MobileScannerErrorCode.permissionDenied;
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                denied
+                                    ? s.strings.common.perm_camera_denied
+                                    : s.strings.common.fam_scan_failed(s.gender),
+                                textAlign: TextAlign.center,
+                                style: Typo.bodySm(ar: s.rtl).copyWith(color: AppColors.white70),
+                              ),
+                              if (denied) ...[
+                                const SizedBox(height: 12),
+                                PButton(
+                                  s.strings.common.perm_settings,
+                                  variant: BtnVariant.secondary,
+                                  size: BtnSize.sm,
+                                  ar: s.rtl,
+                                  onTap: () => unawaited(openAppPermissionSettings()),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
                 // Corner brackets.

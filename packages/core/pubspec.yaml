@@ -22,7 +22,6 @@ dependencies:
   equatable: ^2.0.8
   flutter:
     sdk: flutter
-  flutter_local_notifications: ^23.0.3
   flutter_localizations:
     sdk: flutter
 
@@ -52,7 +51,7 @@ dependencies:
   # Installed version, for the app-update check.
   package_info_plus: ^10.2.2
   path_provider: any
-  permission_handler: ^13.0.2  # Product analytics (behaviour, funnels, campaign attribution). Reached only
+  # Product analytics (behaviour, funnels, campaign attribution). Reached only
   # through the AnalyticsLogger facade in src/telemetry — see
   # posthog_analytics_logger.dart. Manual init (AUTO_INIT: false on both native
   # sides) so the patient's consent is read before the SDK ever starts.
