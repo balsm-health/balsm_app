@@ -699,10 +699,13 @@ class HomeSectionHead extends StatelessWidget {
 /// `align-items: stretch` (both tiles in a row share the taller height) and a
 /// lone trailing tile occupying only its own column.
 class MetricGrid extends StatelessWidget {
-  const MetricGrid({required this.tiles, super.key, this.gap = 12});
+  const MetricGrid({required this.tiles, super.key, this.gap = 12, this.columns});
 
   final List<Widget> tiles;
   final double gap;
+
+  /// A fixed column count at every window width; null auto-fits (two on a phone).
+  final int? columns;
 
   /// `minmax(150px, 1fr)` — the track floor auto-fit counts columns against.
   static const _colMin = 150.0;
@@ -711,9 +714,10 @@ class MetricGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, c) {
-        final columns = windowClassOf(context) == BalsmWindowClass.compact
-            ? 2
-            : math.max(1, ((c.maxWidth + gap) / (_colMin + gap)).floor());
+        final columns = this.columns ??
+            (windowClassOf(context) == BalsmWindowClass.compact
+                ? 2
+                : math.max(1, ((c.maxWidth + gap) / (_colMin + gap)).floor()));
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: gap,
