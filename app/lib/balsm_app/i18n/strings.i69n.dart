@@ -3988,7 +3988,6 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
   String get all_weeks => "All weeks";
   String get weeks_title => "Week by week";
   String get this_week => "This week";
-  String content_from(String org) => "Content from $org";
   String get tri_1 => "First trimester";
   String get tri_2 => "Second trimester";
   String get tri_3 => "Third trimester";
@@ -4146,8 +4145,6 @@ class PregnancyStrings implements i69n.I69nMessageBundle {
         return weeks_title;
       case 'this_week':
         return this_week;
-      case 'content_from':
-        return content_from;
       case 'tri_1':
         return tri_1;
       case 'tri_2':

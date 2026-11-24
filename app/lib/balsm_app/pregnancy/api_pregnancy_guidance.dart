@@ -67,10 +67,40 @@ class ApiPregnancyGuidance implements PregnancyGuidanceSource {
         source: _text(r.source),
         disclaimer: _text(r.disclaimer),
         multiplesNote: _text(r.multiplesNote),
-        weeks: [
-          for (final w in r.weeks) GuidanceWeek(week: w.week, title: _text(w.title), body: _text(w.body)),
-        ]..sort((a, b) => a.week.compareTo(b.week)),
+        weeks: [for (final w in r.weeks) _week(w)]..sort((a, b) => a.week.compareTo(b.week)),
+        sources: [
+          for (final x in r.sources) GuidanceSource(id: x.id, title: x.title, publisher: x.publisher, url: x.url),
+        ],
+        dangerSignLabels: {for (final e in r.dangerSignLabels.entries) e.key: _text(e.value)},
+        testLabels: {for (final e in r.testLabels.entries) e.key: _text(e.value)},
+        labels: {for (final e in r.labels.entries) e.key: _text(e.value)},
+        topicLabels: {for (final e in r.topicLabels.entries) e.key: _text(e.value)},
+        illustrationCredits: {
+          for (final e in r.illustrationCredits.entries)
+            e.key: GuidanceCredit(author: e.value.author, license: e.value.license, text: _text(e.value.text)),
+        },
       );
+
+  static GuidanceWeek _week(PregnancyWeekDto w) {
+    final size = w.fetalSize;
+    final art = w.illustration;
+    return GuidanceWeek(
+      week: w.week,
+      title: _text(w.title),
+      body: _text(w.body),
+      fetalSize: GuidanceFetalSize(
+        lengthMm: size.lengthMm,
+        weightG: size.weightG,
+        comparison: size.comparison == null ? null : _text(size.comparison!),
+      ),
+      testsDue: w.testsDue,
+      dangerSigns: w.dangerSigns,
+      topics: w.topics,
+      illustration:
+          art == null ? null : GuidanceIllustration(key: art.key, credit: art.credit, sourceUrl: art.sourceUrl),
+      sources: w.sources,
+    );
+  }
 }
 
 /// The composition-root binding: `pregnancyGuidanceSourceProvider.overrideWith(apiPregnancyGuidanceSource)`.

@@ -36,6 +36,21 @@ Map<String, dynamic> _full() => _payload()
   ..['danger_sign_labels'] = {
     'bleeding': {'en': 'Bleeding', 'ar': 'نزيف'},
   }
+  ..['labels'] = {
+    'sources_more': {'en': 'Sources ({n})', 'ar': 'المصادر ({n})'},
+  }
+  ..['topic_labels'] = {
+    'visits': {'en': 'Visits', 'ar': 'زيارات'},
+  }
+  ..['illustration_credits'] = {
+    'art': {
+      'author': 'Test artist',
+      'license': 'CC BY-ND 4.0',
+      'license_url': 'https://example.test/licence',
+      'author_url': 'https://example.test/',
+      'text': {'en': 'Illustration: Test artist', 'ar': 'رسم: فنان تجريبي'},
+    },
+  }
   ..['test_labels'] = {
     'early_ultrasound': {'en': 'Early ultrasound', 'ar': 'سونار مبكر'},
   }
@@ -51,7 +66,9 @@ Map<String, dynamic> _full() => _payload()
         'tests_due': ['early_ultrasound'],
         'danger_signs': ['bleeding'],
         'topics': ['visits'],
-        'illustration': 'pregnancy/week-0${w['week']}',
+        'illustration': w['week'] == 5
+            ? {'key': 'pregnancy/week-05', 'credit': 'art', 'source_url': 'https://example.test/art'}
+            : null,
         'sources': ['src-1'],
       },
   ];
@@ -121,7 +138,11 @@ void main() {
       expect(five.dangerSigns, ['bleeding']);
       expect(five.topics, ['visits']);
       expect(five.sources, ['src-1']);
-      expect(five.illustration, 'pregnancy/week-05');
+      expect(four.illustration, isNull);
+      expect((five.illustration!.key, five.illustration!.credit), ('pregnancy/week-05', 'art'));
+      expect(parsed.illustrationCredits['art']!.text.ar, 'رسم: فنان تجريبي');
+      expect(parsed.labels['sources_more']!.en, 'Sources ({n})');
+      expect(parsed.topicLabels['visits']!.ar, 'زيارات');
     });
 
     test('a copy cached before those fields reads them as empty', () {
@@ -131,6 +152,8 @@ void main() {
       expect(parsed.sources, isEmpty);
       expect(parsed.dangerSignLabels, isEmpty);
       expect(parsed.testLabels, isEmpty);
+      expect(parsed.labels, isEmpty);
+      expect(parsed.topicLabels, isEmpty);
       expect((week.fetalSize.lengthMm, week.fetalSize.comparison, week.illustration), (null, null, null));
       expect(week.testsDue, isEmpty);
     });

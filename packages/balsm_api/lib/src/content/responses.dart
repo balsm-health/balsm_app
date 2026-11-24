@@ -72,6 +72,69 @@ class FetalSizeDto {
   Map<String, dynamic> toJson() => {'length_mm': lengthMm, 'weight_g': weightG, 'comparison': comparison?.toJson()};
 }
 
+/// A week's artwork: [key] names the image, [credit] who made it.
+class IllustrationDto {
+  const IllustrationDto({required this.key, required this.credit, required this.sourceUrl});
+
+  /// Null when [json] is not an artwork object (none, or an older shape).
+  static IllustrationDto? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final key = json['key'];
+    if (key is! String || key.isEmpty) return null;
+    return IllustrationDto(
+      key: key,
+      credit: json['credit'] as String? ?? '',
+      sourceUrl: json['source_url'] as String? ?? '',
+    );
+  }
+
+  /// e.g. `pregnancy/week-12`.
+  final String key;
+
+  /// Key of [PregnancyWeeksResponse.illustrationCredits].
+  final String credit;
+
+  /// Where the artwork was published.
+  final String sourceUrl;
+
+  Map<String, dynamic> toJson() => {'key': key, 'credit': credit, 'source_url': sourceUrl};
+}
+
+/// Who made a set of illustrations, and under which licence they are shown.
+class IllustrationCreditDto {
+  const IllustrationCreditDto({
+    required this.author,
+    required this.license,
+    required this.licenseUrl,
+    required this.authorUrl,
+    required this.text,
+  });
+
+  factory IllustrationCreditDto.fromJson(Map<String, dynamic> json) => IllustrationCreditDto(
+        author: json['author'] as String? ?? '',
+        license: json['license'] as String? ?? '',
+        licenseUrl: json['license_url'] as String? ?? '',
+        authorUrl: json['author_url'] as String? ?? '',
+        text: LocalizedTextDto.fromJson(json['text']),
+      );
+
+  final String author;
+  final String license;
+  final String licenseUrl;
+  final String authorUrl;
+
+  /// Credit line shown under the artwork.
+  final LocalizedTextDto text;
+
+  Map<String, dynamic> toJson() => {
+        'author': author,
+        'license': license,
+        'license_url': licenseUrl,
+        'author_url': authorUrl,
+        'text': text.toJson(),
+      };
+}
+
 /// Guidance for one week of pregnancy. Fields after [body] arrived later:
 /// a copy cached before them reads as empty.
 class PregnancyWeekDto {
@@ -95,7 +158,7 @@ class PregnancyWeekDto {
         testsDue: _keys(json['tests_due']),
         dangerSigns: _keys(json['danger_signs']),
         topics: _keys(json['topics']),
-        illustration: json['illustration'] as String?,
+        illustration: IllustrationDto.fromJson(json['illustration']),
         sources: _keys(json['sources']),
       );
 
@@ -112,8 +175,8 @@ class PregnancyWeekDto {
 
   final List<String> topics;
 
-  /// Artwork key, e.g. `pregnancy/week-12`; the art may not exist yet.
-  final String? illustration;
+  /// The week's artwork, or null when it has none.
+  final IllustrationDto? illustration;
 
   /// Ids of [PregnancyWeeksResponse.sources] behind this week's copy.
   final List<String> sources;
@@ -126,7 +189,7 @@ class PregnancyWeekDto {
         'tests_due': testsDue,
         'danger_signs': dangerSigns,
         'topics': topics,
-        'illustration': illustration,
+        'illustration': illustration?.toJson(),
         'sources': sources,
       };
 }
@@ -155,6 +218,9 @@ class PregnancyWeeksResponse {
     this.sources = const [],
     this.dangerSignLabels = const {},
     this.testLabels = const {},
+    this.illustrationCredits = const {},
+    this.labels = const {},
+    this.topicLabels = const {},
   });
 
   /// Throws [FormatException] when there is no version or no weeks — content
@@ -182,6 +248,13 @@ class PregnancyWeeksResponse {
       ],
       dangerSignLabels: _labels(json['danger_sign_labels']),
       testLabels: _labels(json['test_labels']),
+      labels: _labels(json['labels']),
+      topicLabels: _labels(json['topic_labels']),
+      illustrationCredits: {
+        if (json['illustration_credits'] case final Map<String, dynamic> credits)
+          for (final e in credits.entries)
+            if (e.value case final Map<String, dynamic> credit) e.key: IllustrationCreditDto.fromJson(credit),
+      },
     );
   }
 
@@ -200,6 +273,16 @@ class PregnancyWeeksResponse {
   /// Wording for each [PregnancyWeekDto.testsDue] key.
   final Map<String, LocalizedTextDto> testLabels;
 
+  /// Credit for each [IllustrationDto.credit] key.
+  final Map<String, IllustrationCreditDto> illustrationCredits;
+
+  /// The guide's own wording (section headings, size phrases, units, the
+  /// sources link) keyed by name, with `{n}`-style placeholders.
+  final Map<String, LocalizedTextDto> labels;
+
+  /// Wording for each [PregnancyWeekDto.topics] key.
+  final Map<String, LocalizedTextDto> topicLabels;
+
   Map<String, dynamic> toJson() => {
         'version': version,
         'source': source.toJson(),
@@ -209,6 +292,9 @@ class PregnancyWeeksResponse {
         'sources': [for (final x in sources) x.toJson()],
         'danger_sign_labels': {for (final e in dangerSignLabels.entries) e.key: e.value.toJson()},
         'test_labels': {for (final e in testLabels.entries) e.key: e.value.toJson()},
+        'illustration_credits': {for (final e in illustrationCredits.entries) e.key: e.value.toJson()},
+        'labels': {for (final e in labels.entries) e.key: e.value.toJson()},
+        'topic_labels': {for (final e in topicLabels.entries) e.key: e.value.toJson()},
       };
 }
 

@@ -25,12 +25,62 @@ PregnancyWeeksResponse _content({String version = 'v-test'}) => PregnancyWeeksRe
       'source': {'en': 'Test Source Org', 'ar': 'جهة تجريبية'},
       'disclaimer': {'en': 'Test disclaimer.', 'ar': 'تنبيه تجريبي.'},
       'multiples_note': {'en': 'Test multiples note', 'ar': 'ملاحظة توائم تجريبية'},
+      'labels': {
+        for (final (k, en) in [
+          ('size_title', 'Test size'),
+          ('size_about', 'Test about {thing}'),
+          ('size_length', 'Test length {value}'),
+          ('size_weight', 'Test weight {value}'),
+          ('unit_mm', 'mm'),
+          ('unit_cm', 'cm'),
+          ('unit_g', 'g'),
+          ('unit_kg', 'kg'),
+          ('tests_due', 'Test tests heading'),
+          ('dangers_now', 'Test call now'),
+          ('dangers_all', 'Test signs to know'),
+          ('topics_title', 'Test topics heading'),
+          ('sources_title', 'Test sources heading'),
+          ('sources_more', 'Test sources ({n}) and more'),
+          ('illustration', 'Test week {week} art'),
+        ])
+          k: {'en': en, 'ar': 'ع $en'},
+      },
+      'topic_labels': {
+        'movements': {'en': 'Test movements', 'ar': 'حركة تجريبية'},
+      },
+      'sources': [
+        {
+          'id': 's1',
+          'title': 'Test guideline',
+          'publisher': 'Test publisher',
+          'url': 'https://example.test/g',
+          'accessed': '2026-11-24',
+        },
+      ],
+      'danger_sign_labels': {
+        'bleeding': {'en': 'Test bleeding', 'ar': 'نزيف تجريبي'},
+        'fever': {'en': 'Test fever', 'ar': 'حرارة تجريبية'},
+      },
+      'test_labels': {
+        'gdm': {'en': 'Test sugar test', 'ar': 'تحليل تجريبي'},
+      },
       'weeks': [
         for (var w = 4; w <= 40; w++)
           {
             'week': w,
             'title': {'en': 'Test title $w', 'ar': 'عنوان تجريبي $w'},
             'body': {'en': 'Test body $w ($version)', 'ar': 'نص تجريبي $w'},
+            // Week 24 is the current week in the screen tests: a size, a
+            // test, topics (one with no label) and no danger sign;
+            // week 25 warns of bleeding.
+            'fetal_size': {'length_mm': w == 24 ? 210 : null, 'weight_g': w == 24 ? 630 : null, 'comparison': null},
+            'tests_due': [if (w == 24) 'gdm'],
+            'danger_signs': [if (w == 25) 'bleeding'],
+            'topics': [
+              if (w == 24) ...['movements', 'not-a-topic'],
+            ],
+            'illustration': null,
+            'sources': ['s1'],
           },
       ],
     });
@@ -178,7 +228,8 @@ void main() {
       );
     }
 
-    testWidgets("the card shows this week's guidance, source and disclaimer; no multiples note for one baby",
+    testWidgets(
+        "the card shows this week's guidance and compact guide, source and disclaimer; one baby, no multiples note",
         (tester) async {
       final s = state();
       final p = s.strings.pregnancy;
@@ -189,9 +240,26 @@ void main() {
       expect(find.text(p.all_weeks), findsOne);
       expect(find.text('Test title 24'), findsOne);
       expect(find.text('Test body 24 (v-test)'), findsOne);
-      expect(find.text(p.content_from('Test Source Org')), findsOne);
-      expect(find.text('Test disclaimer.'), findsOne);
+      expect(find.text('Test disclaimer. Test Source Org.'), findsOne);
       expect(find.text('Test multiples note'), findsNothing);
+      expect(find.text('Test size'), findsOne);
+      expect(find.text('Test length 21 cm · Test weight 630 g'), findsOne);
+      expect(find.text('Test tests heading'), findsOne);
+      expect(find.text('Test sugar test'), findsOne);
+      expect(find.text('Test movements'), findsOne);
+      expect(find.text('not-a-topic'), findsNothing, reason: 'a topic the content does not name is left out');
+      expect(
+        find.text('Test signs to know'),
+        findsNothing,
+        reason: 'the compact guide has no danger list for a quiet week',
+      );
+      expect(find.text('Test sources (1) and more'), findsOne);
+      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Test week 24 art'), findsOne);
+      expect(
+        find.text('Test guideline', findRichText: true),
+        findsNothing,
+        reason: 'sources are listed in Week by week',
+      );
       expect(api.sentEtags, isNotEmpty, reason: 'opening the screen asks the server');
     });
 
@@ -211,7 +279,7 @@ void main() {
 
       expect(find.text(p.guidance_week(24)), findsOne);
       expect(find.text('عنوان تجريبي 24'), findsOne);
-      expect(find.text(p.content_from('جهة تجريبية')), findsOne);
+      expect(find.text('تنبيه تجريبي. جهة تجريبية.'), findsOne);
       expect(find.text('Test title 24'), findsNothing);
     });
 
@@ -252,7 +320,7 @@ void main() {
 
       expect(find.byType(PregnancyWeeksScreen), findsOne);
       expect(find.text(p.weeks_title), findsOne);
-      expect(find.text(p.this_week), findsOne);
+      expect(find.text('${p.this_week} · Test title 24'), findsOne);
       expect(find.text('Test body 24 (v-test)'), findsOne);
       expect(find.text('Test body 23 (v-test)'), findsNothing, reason: 'only the current week starts open');
       expect(find.text('Test title 23'), findsOne, reason: 'a closed week shows its title');
@@ -271,6 +339,30 @@ void main() {
 
       expect(find.text('Test body 25 (v-test)'), findsOne);
       expect(find.text('Test body 24 (v-test)'), findsNothing);
+    });
+
+    testWidgets("Week by week: a week's warnings, its sources, and every danger sign behind a fold on a quiet week",
+        (tester) async {
+      final s = state();
+      final p = s.strings.pregnancy;
+      await start(await pump(tester, const SizedBox(), s));
+      await pump(tester, const PregnancyWeeksScreen(), s);
+
+      expect(find.text('Test signs to know'), findsOne, reason: 'week 24 warns of nothing');
+      expect(find.text('Test bleeding'), findsNothing);
+      await tester.tap(find.text('Test signs to know'));
+      await tester.pumpAndSettle();
+      expect(find.text('Test bleeding'), findsOne);
+      expect(find.text('Test fever'), findsOne);
+      expect(find.text('Test topics heading'), findsOne);
+      expect(find.text('Test sources heading'), findsOne);
+      expect(find.text('Test guideline — Test publisher', findRichText: true), findsOne);
+
+      await tester.tap(find.text(p.week_n(25)));
+      await tester.pumpAndSettle();
+      expect(find.text('Test call now'), findsOne);
+      expect(find.text('Test bleeding'), findsOne);
+      expect(find.text('Test fever'), findsNothing, reason: 'only the signs week 25 names');
     });
   });
 }
