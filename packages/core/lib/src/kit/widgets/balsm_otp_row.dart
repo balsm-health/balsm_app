@@ -90,6 +90,15 @@ class _BalsmOtpRowState extends State<BalsmOtpRow> {
 
   @override
   Widget build(BuildContext context) {
+    // A code reads left to right in every language: the first digit lands in
+    // the leftmost box, Arabic included.
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: _row(),
+    );
+  }
+
+  Widget _row() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(widget.length, (i) {

@@ -1699,26 +1699,7 @@ class _OtpScreenState extends ConsumerState<_OtpScreen> with WidgetsBindingObser
                             behavior: HitTestBehavior.opaque,
                             onTap: _showKeyboard,
                             onLongPressStart: (d) => showCodePasteMenu(context, d.globalPosition, _pasteCode),
-                            // A code reads left to right in every language: the first digit
-                            // typed lands in the leftmost box, Arabic included.
-                            child: Directionality(
-                              textDirection: TextDirection.ltr,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Flexible: six boxes are wider than a 384dp phone's
-                                  // column, so they shrink rather than overflow.
-                                  for (var i = 0; i < 6; i++)
-                                    Flexible(
-                                      child: OtpBox(
-                                        char: i < code.length ? code[i] : '',
-                                        active: code.length == i,
-                                        accent: s.accent,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
+                            child: OtpBoxRow(code: code, accent: s.accent),
                           ),
                         ),
                       ),

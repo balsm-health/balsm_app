@@ -167,6 +167,37 @@ void showCodePasteMenu(BuildContext context, Offset at, VoidCallback onPaste) {
   );
 }
 
+/// The six boxes of the verification code (`.otp-row`), centred.
+///
+/// A code reads left to right in every language: the first digit typed lands
+/// in the leftmost box, Arabic included, so the row is always LTR whatever the
+/// screen's direction. Both code screens (sign-in and Go online) use this one
+/// row, so they cannot drift apart.
+class OtpBoxRow extends StatelessWidget {
+  const OtpBoxRow({required this.code, required this.accent, super.key, this.length = 6});
+
+  /// The digits typed so far.
+  final String code;
+  final Accent accent;
+  final int length;
+
+  @override
+  Widget build(BuildContext context) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            length,
+            // Flexible: six boxes are wider than a 384dp phone's column, so they
+            // shrink rather than overflow.
+            (i) => Flexible(
+              child: OtpBox(char: i < code.length ? code[i] : '', active: code.length == i, accent: accent),
+            ),
+          ),
+        ),
+      );
+}
+
 /// One painted box of the six-digit code row (`.otp-box`).
 class OtpBox extends StatelessWidget {
   const OtpBox({required this.char, required this.active, required this.accent, super.key});
