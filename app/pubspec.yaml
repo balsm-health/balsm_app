@@ -177,6 +177,9 @@ flutter:
 # bundle id (both app.balsm.health), NOT the gradle namespace.
 patrol:
   app_name: Balsm
+  # Patrol suites live here; plain integration_test files beside them run
+  # with `flutter test integration_test` and are not Patrol's.
+  test_directory: integration_test/patrol
   android:
     package_name: app.balsm.health
   ios:

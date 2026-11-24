@@ -118,4 +118,9 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // ANDROIDX_TEST_ORCHESTRATOR (testOptions above) runs each Patrol test
+    // through these two APKs; without them `am instrument` aborts (134) and
+    // no test starts.
+    androidTestUtil("androidx.test:orchestrator:1.5.1")
+    androidTestUtil("androidx.test.services:test-services:1.5.0")
 }
